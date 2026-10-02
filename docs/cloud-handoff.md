@@ -70,3 +70,8 @@ their character descriptions are out of date (use the reference images above ins
   jump, a double jump or an air slash (`kit.dive.minHeight` 22).
 - Checked the Rogue on screen at her new size: consistent across strips.
 - Still open: Mage view polish (item 4); the itch upload.
+
+## New requests from the user (local session, 2 October 2026, later)
+
+- **Rogue size**: the 25% shrink went too far ("way too small"). She is "supposed to be a little smaller than grunts": size her strips and hurtbox just under the grunt's (compare on screen next to one).
+- Extra strips are being collected locally (idle, back/front views, finishers for both heroes) and committed one by one as `assets/sprites/strips/<hero>_<name>.png`; they are not wired in.
