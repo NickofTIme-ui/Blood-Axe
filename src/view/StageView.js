@@ -380,10 +380,13 @@ export class StageView {
       // slams up in a few frames, roars, then gutters out
       const rise = Math.min(1, age / 5);
       const fall = Math.max(0, 1 - Math.max(0, age - 38) / 12);
-      const size = (0.5 + 0.5 * rise) * (0.35 + 0.65 * fall) * (i === 1 ? 1 : 0.78);
+      // (sized to the grate: the middle column fills its opening, the two beside it are
+      // smaller and stand well inside the rim, so nothing spills over the stonework)
+      const fit = Math.min(1, (hz.w * 0.46) / (F.fw * 0.5));
+      const size = fit * (0.5 + 0.5 * rise) * (0.35 + 0.65 * fall) * (i === 1 ? 1 : 0.62);
       const frame = `f${(Math.floor((hz.t * F.fps) / 60) + i * 3) % F.count}`;
-      const fx = hz.x + (i - 1) * hz.w * 0.3;
-      const fz = hz.z + (i === 1 ? 0 : hz.d * 0.12);
+      const fx = hz.x + (i - 1) * hz.w * 0.19;
+      const fz = hz.z + (i === 1 ? hz.d * 0.04 : -hz.d * 0.06); // (the side ones a little behind)
       const flick = 1 + Math.sin(hz.t * 0.9 + i * 2.1) * 0.04;
       pair.forEach((fl, glow) => fl.setFrame(frame).setPosition(fx, fz).setScale(0.5 * size * (i === 2 ? -1 : 1), 0.5 * size * flick)
         .setDepth(fz + 0.5 + glow * 0.01).setAlpha(glow ? 0.45 : 1));

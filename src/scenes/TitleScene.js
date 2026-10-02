@@ -13,6 +13,7 @@ import { playMusic, toggleMute } from '../core/Music.js';
 import { playSfx } from '../core/Sfx.js';
 import { FONT, epicFill } from '../view/fonts.js';
 import { hostRoom, joinRoom, newCode } from '../net/Link.js';
+import { simVersion } from '../net/Version.js';
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -179,11 +180,11 @@ export class TitleScene extends Phaser.Scene {
     const menu = state === 'menu';
     L.host.setVisible(menu); L.join.setVisible(menu);
     L.big.setText(''); L.body.setText('');
-    if (menu) L.note.setText('One of you hosts and reads out the room code; the other joins with it.\nH  host      J  join      Esc  back      (gamepad: left / right, A, B)\nTyping a room code needs the keyboard.');
+    if (menu) L.note.setText(`One of you hosts and reads out the room code; the other joins with it.\nH  host      J  join      Esc  back      (gamepad: left / right, A, B)\nTyping a room code needs the keyboard.\n\nversion ${simVersion()}  (must match your friend's)`);
     else if (state === 'opening') { L.body.setText('Opening a room…'); L.note.setText('Esc  cancel'); }
     else if (state === 'hosting') {
       L.big.setText(L.code); epicFill(L.big, ['#fff6c8', '#f0c050', '#a06010']);
-      L.note.setText('ROOM CODE — tell your friend, then wait here.\nThey choose ONLINE CO-OP → JOIN A GAME and type it in.\nEsc  cancel');
+      L.note.setText(`ROOM CODE — tell your friend, then wait here.\nThey choose ONLINE CO-OP → JOIN A GAME and type it in.\nversion ${simVersion()}      Esc  cancel`);
     } else if (state === 'typing') {
       L.big.setText((L.code + '____').slice(0, 4).split('').join(' ')); epicFill(L.big, ['#fff6c8', '#f0c050', '#a06010']);
       L.note.setText('Type the 4-letter room code your friend gave you.\nBackspace  correct      Esc  back');

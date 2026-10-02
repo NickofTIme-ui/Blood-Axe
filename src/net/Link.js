@@ -14,8 +14,12 @@
 // Some networks (strict offices, some mobile carriers) don't allow direct connections;
 // there the join simply fails with a message.
 
+import { simVersion } from './Version.js';
+
 const PEERJS_URL = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
-const PREFIX = 'blood-axe-oath-';
+// (the room name carries the game's version, net/Version.js: a friend on a stale copy of
+// the page can't join a newer one — the two would drift apart)
+const prefix = () => `blood-axe-oath-${simVersion().toLowerCase()}-`;
 
 let loading = null;
 function loadPeerJs() {
@@ -60,7 +64,7 @@ function wrap(peer, conn) {
 const friendly = (err) => {
   const t = err?.type ?? '';
   if (t === 'unavailable-id') return 'That room code is in use — try again.';
-  if (t === 'peer-unavailable') return 'No game found with that code.';
+  if (t === 'peer-unavailable') return 'No game found with that code.\nIf the code is right, you are on different versions:\nboth refresh the page (Ctrl+F5) and compare the version shown here.';
   if (t === 'network' || t === 'server-error' || t === 'socket-error') return 'Could not reach the matchmaking service.';
   if (t === 'browser-incompatible') return 'This browser cannot do online play.';
   return err?.message ?? 'Connection failed.';
@@ -73,7 +77,7 @@ export function hostRoom(code, onReady) {
   let cancelled = false;
   const link = loadPeerJs().then(() => new Promise((resolve, reject) => {
     if (cancelled) return reject(new Error('cancelled'));
-    peer = new window.Peer(PREFIX + code);
+    peer = new window.Peer(prefix() + code);
     peer.on('open', () => onReady?.());
     peer.on('error', (e) => reject(new Error(friendly(e))));
     peer.on('connection', (conn) => {
@@ -92,7 +96,7 @@ export function joinRoom(code) {
     peer = new window.Peer();
     peer.on('error', (e) => reject(new Error(friendly(e))));
     peer.on('open', () => {
-      const conn = peer.connect(PREFIX + code.toUpperCase(), { reliable: true, serialization: 'json' });
+      const conn = peer.connect(prefix() + code.toUpperCase(), { reliable: true, serialization: 'json' });
       conn.on('open', () => resolve(wrap(peer, conn)));
       conn.on('error', (e) => reject(new Error(friendly(e))));
       setTimeout(() => reject(new Error('No answer from that room.')), 15000);
