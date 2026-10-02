@@ -823,6 +823,19 @@ test('mage: hold force push to charge it — the full charge hits harder and thr
   assert(full.dmg > tap.dmg * 1.8, `harder (${tap.dmg.toFixed(0)} -> ${full.dmg.toFixed(0)})`);
 });
 
+test('mage: his heavier lightning can take an arm, so his finishers are reachable without a blade', () => {
+  assert(chooseMaim({ cut: 'shock', damage: 40, maxHealth: 130, maimed: {} }, () => 0) === null, 'a plain shock never maims');
+  assert(chooseMaim({ cut: 'shock', damage: 40, maxHealth: 130, maimed: {}, maims: true }, () => 0) !== null, 'a maiming strike can');
+  let maims = 0;
+  for (let seed = 1; seed <= 40 && !maims; seed++) {
+    const t = mageSetup({ script: { 1: ['heavy'], 24: ['heavy'] }, foes: [[720, 420, 'butcher']] });
+    t.world.seed = seed;
+    t.world.events.on('maim', () => maims++);
+    t.run(60);
+  }
+  assert(maims > 0, 'the second strike took an arm in some fights');
+});
+
 test('mage: he can blink out of a jump, staying at that height, then drops', () => {
   const t = mageSetup({ script: { 1: ['jump'], 12: ['dodge'] }, hold: (n) => (n >= 12 && n < 14 ? { right: true } : {}) });
   t.run(13);

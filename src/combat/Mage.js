@@ -86,6 +86,7 @@ function strikeWithLightning(f, hit, K, charged, stage = 1) {
   const down = (charged && K.charge.knockdown) || C.knockdown[i];
   const move = {
     cut: 'shock', fx: 'lightning', noBlood: true, stage,
+    maims: stage >= 2 && hit.gen === 0, // (the heavier strikes can blow an arm off: a runner to finish)
     damage: hit.damage * C.damage[i],
     hitstun: K.hitstun + i * 6,
     hitstop: Math.round((hit.gen === 0 ? C.hitstop[i] : C.hitstop[i] * 0.5) + (charged ? 3 : 0)),

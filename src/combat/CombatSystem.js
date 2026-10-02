@@ -239,7 +239,7 @@ export class CombatSystem {
     // he's fought to the end)
     if (def.stats.art && !def.stats.boss) {
       const limb = chooseMaim({
-        cut: move.cut, damage, counter, maxHealth: def.stats.maxHealth, maimed: def.maimed,
+        cut: move.cut, damage, counter, maxHealth: def.stats.maxHealth, maimed: def.maimed, maims: !!move.maims,
       }, this.world.rngFor(def.id, 22));
       if (limb) {
         def.maimed = { ...def.maimed, [limb]: true };
