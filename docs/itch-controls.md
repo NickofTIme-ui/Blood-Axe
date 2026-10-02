@@ -16,8 +16,8 @@
 
 **Each hero uses the buttons differently**
 - Rurik: sword combo, cleave, Sparta kick, roll, Firebolt.
-- The Mage (Oryn): staff combo, K = Chain Lightning (hold to overcharge), O = Force Blast, dodge = Blink teleport, U = Arcane Barrier (tap for a fire wall, hold for a stone wall). Barriers only stop enemies.
-- The Rogue (Vexa): a 4-hit dagger combo, K = Viper Strike, O = crescent kick (down + O = sweep; nobody close = throwing knife), U = Widow Mine. Run at a teammate and jump to vault off him. In the air: U = Shuriken Fan, K = Falling Viper. Her precision hits Expose enemies: everyone hits them harder.
+- The Mage (Oryn): staff combo, K = Chain Lightning (press it up to three times: each strike hits harder and the third floors him), O = Force Blast (hold it to charge a stronger push), dodge = Blink teleport (in the air too), U = a stone wall that only stops enemies.
+- The Rogue (Vexa): a 4-hit dagger combo, K = Viper Strike, O = crescent kick (down + O = sweep; nobody close = throwing knife), U = Widow Mine. Run at a teammate and jump to vault off him. In the air: U = Shuriken Fan, K = Falling Viper (from a jump or a double jump). Her precision hits put the Mark of Death on an enemy: the next hit from another player is a super critical.
 - Kick a crate or a chest (O) and it skids down the lane and bursts on the first enemy it meets.
 - Hit a swinging blade with an attack, or the Mage's Force Blast, and it whips back the other way through your enemies. It can't hurt you while it does.
 - Finishers: get behind an enemy who's running away and press J, K or O. Each hero has their own three.
