@@ -19,6 +19,7 @@ import { SpriteFighterView } from '../view/SpriteFighterView.js';
 import { MageView } from '../view/MageView.js';
 import { StripHeroView } from '../view/StripHeroView.js';
 import { MageFX } from '../effects/MageFX.js';
+import { Parallax } from '../view/Parallax.js';
 import { RogueFX } from '../effects/RogueFX.js';
 import { ProjectileView } from '../view/ProjectileView.js';
 import { DebugDraw } from '../view/DebugDraw.js';
@@ -827,6 +828,7 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     for (const v of this.views.values()) v.update();
+    this.parallax.update(Math.min(delta, 100) / 1000 * (this.paused ? 0 : 1));
     this.mageFX.update();
     this.rogueFX.update();
     this.updateCamFocus();
@@ -1023,27 +1025,14 @@ export class ArenaScene extends Phaser.Scene {
     // (the camera is zoomed by renderScale around its centre, so the fixed / parallax
     //  layers are drawn extra wide to always cover the view)
     const pad = SETTINGS.width * 2;
-    if (this.registry.get('sky')) {
-      // painted sky panorama (view/envArt.js), slow parallax, bottom tucked under the floor
-      const par = 0.15;
-      const top = -60;
-      const bottom = W.floorTop - 20;
-      const tex = this.textures.get('sky').getSourceImage();
-      const s = (bottom - top) / tex.height;
-      this.add.tileSprite(-pad, top, W.width * par + SETTINGS.width + pad * 2, bottom - top, 'sky')
-        .setOrigin(0).setScrollFactor(par, 1).setDepth(DEPTH.sky).setTileScale(s, s);
-    } else {
+    // the layered backdrop: sky, distant ruins, fog and ash, each at its own depth
+    // (view/Parallax.js, data/parallax.js); the old flat sky only if there's no art at all
+    this.parallax?.destroy();
+    this.parallax = new Parallax(this);
+    if (!this.parallax.layers.length) {
       const sky = this.add.graphics().setDepth(DEPTH.sky).setScrollFactor(0, 1);
       sky.fillGradientStyle(0x2a0f14, 0x2a0f14, 0x5a2a1a, 0x5a2a1a, 1);
       sky.fillRect(-pad, -200, SETTINGS.width + pad * 2, W.floorTop + 200);
-
-      const far = this.add.graphics().setDepth(DEPTH.far).setScrollFactor(0.35, 1);
-      far.fillStyle(0x1a0b0e, 1);
-      const farWidth = W.width * 0.35 + SETTINGS.width + pad;
-      for (let x = -pad; x < farWidth; x += 180) {
-        const peak = 120 + ((x * 37) % 90);
-        far.fillTriangle(x, W.floorTop, x + 110, peak, x + 240, W.floorTop);
-      }
     }
 
     const floor = this.add.graphics().setDepth(DEPTH.floor);

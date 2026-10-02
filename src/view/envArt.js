@@ -135,3 +135,53 @@ export function buildGrounds(scene) {
   }
   return ready;
 }
+
+// ------------------------------------------------------------ parallax layers
+
+// A painted layer on a flat background colour: cut the colour away (soft edge) so only
+// the shapes remain. kind: 'black' | 'magenta'. Returns a canvas.
+export function keyLayer(img, kind) {
+  const w = img.width;
+  const h = img.height;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const data = ctx.getImageData(0, 0, w, h);
+  const px = data.data;
+  for (let i = 0; i < px.length; i += 4) {
+    const r = px[i]; const g = px[i + 1]; const b = px[i + 2];
+    let d;
+    if (kind === 'magenta') d = Math.abs(r - 255) + g + Math.abs(b - 255);
+    else d = r + g + b;
+    if (d < 70) px[i + 3] = 0;
+    else if (d < 170) px[i + 3] = Math.round(px[i + 3] * (d - 70) / 100);
+    // (the magenta fringe left on soft edges: pull it toward grey)
+    if (kind === 'magenta' && px[i + 3] && r > g + 40 && b > g + 40) { px[i] = px[i + 2] = Math.round((g + Math.min(r, b)) / 2); }
+  }
+  ctx.putImageData(data, 0, 0);
+  return c;
+}
+
+// Every painted layer in data/parallax.js that loaded: cut out (if keyed), its ends
+// blended so it repeats, as texture `plx-<name>`. Returns the names that are ready.
+export function buildParallax(scene, layers) {
+  const ready = [];
+  for (const L of layers) {
+    const src = `plxsrc-${L.name}`;
+    if (!scene.textures.exists(src)) continue;
+    try {
+      let key = src;
+      if (L.key !== 'opaque') {
+        const cut = `plxcut-${L.name}`;
+        if (scene.textures.exists(cut)) scene.textures.remove(cut);
+        scene.textures.addCanvas(cut, keyLayer(scene.textures.get(src).getSourceImage(), L.key));
+        key = cut;
+      }
+      if (makeSeamless(scene, key, `plx-${L.name}`, 0.08)) ready.push(L.name);
+    } catch (err) {
+      console.warn(`[boot] parallax layer ${L.name} failed`, err);
+    }
+  }
+  return ready;
+}

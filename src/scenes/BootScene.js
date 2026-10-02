@@ -14,7 +14,8 @@ import { HERO_STRIPS, HERO_ANIMS } from '../data/heroStrips.js';
 import { ENEMIES } from '../data/enemies.js';
 import { CHARACTERS } from '../data/characters.js';
 import { HUD_SRC, buildHudArt } from '../view/hudArt.js';
-import { preloadGrounds, buildGrounds, buildSky, buildPillars } from '../view/envArt.js';
+import { preloadGrounds, buildGrounds, buildSky, buildPillars, buildParallax } from '../view/envArt.js';
+import { PARALLAX_LAYERS } from '../data/parallax.js';
 import { warmGore } from '../effects/goreArt.js';
 
 export class BootScene extends Phaser.Scene {
@@ -49,7 +50,9 @@ export class BootScene extends Phaser.Scene {
     for (const id of Object.keys(CHARACTERS)) this.load.image(`hero-src-${id}`, `assets/ui/hero-${id}.png`);
     this.load.image('props-src', 'assets/env/props.png'); // painted props & traps (view/propSheet.js)
     preloadGrounds(this);
-    this.load.on('loaderror', (file) => console.warn(`[boot] Could not load ${file.src}`));
+    // the layered backdrop (data/parallax.js): any layer not painted yet simply isn't there
+    for (const L of PARALLAX_LAYERS) this.load.image(`plxsrc-${L.name}`, `assets/env/parallax/${L.file}`);
+    this.load.on('loaderror', (file) => { if (!file.key?.startsWith('plxsrc-')) console.warn(`[boot] Could not load ${file.src}`); }); // (unpainted backdrop layers are expected)
 
     const bar = this.add.rectangle(480 - 150, 270, 0, 6, 0xc0161c).setOrigin(0, 0.5);
     this.add.rectangle(480, 270, 304, 10).setStrokeStyle(1, 0x5a3030);
@@ -107,6 +110,7 @@ export class BootScene extends Phaser.Scene {
     this.registry.set('grounds', buildGrounds(this));    // high-res floor options (view/envArt.js)
     this.registry.set('sky', buildSky(this));
     this.registry.set('pillars', buildPillars(this));
+    this.registry.set('parallax', buildParallax(this, PARALLAX_LAYERS));
     this.buildHeroArt();
 
     this.scene.start('Title');
