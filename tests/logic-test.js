@@ -12,7 +12,7 @@ import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.j
 import { Stage } from '../src/stage/Stage.js';
 import { impalePin } from '../src/combat/Finisher.js';
 import { TickController, pressed } from '../src/core/TickInput.js';
-import { NetSession, NET, loopPair, snapshot, correct } from '../src/net/Session.js';
+import { NetSession, NET, loopPair, snapshot, correct, feedPlayers } from '../src/net/Session.js';
 
 // A controller driven by a script: { frameNumber: ['attack'] } presses,
 // plus `hold` for held buttons.
@@ -583,6 +583,32 @@ test('online co-op: if the other machine goes quiet the game waits, and carries 
   a.close(); // the link drops
   for (let i = 0; i < 60; i++) A.frame();
   assert(A.tick - t0 > 50, `A carries on alone (${A.tick - t0})`);
+});
+
+test('online co-op: the guest carries on alone after the host leaves, and his hero still answers his buttons', () => {
+  const [a, b] = loopPair(1, 1);
+  const walkRight = () => ({ held: { right: true }, presses: [], mx: 1, mz: 0 });
+  const A = machine(9, a, 0, masher(3));
+  const B = machine(9, b, 1, walkRight);
+  for (let i = 0; i < 60; i++) { A.frame(); B.frame(); }
+  // the host hangs up; the guest does what the arena's goAlone does: only his own hero is left
+  a.close();
+  assert(B.session.alone, 'the guest knows he is alone');
+  const mine = B.heroes[1];
+  B.heroes.forEach((h, i) => { h.seat = i; });
+  for (const f of B.world.fighters) if (f.team === 'enemy') f.removeMe = true; // (an empty road, so nothing knocks him about)
+  B.heroes[0].removeMe = true;
+  const players = [mine];
+  const x0 = mine.x;
+  for (let i = 0; i < 60; i++) {
+    b.flush();
+    B.session.pump(B.tick);
+    assert(B.session.ready(B.tick), 'never waits once alone');
+    feedPlayers(players, B.session.take(B.tick));
+    B.world.tick();
+    B.tick++;
+  }
+  assert(mine.x > x0 + 40, `the guest's hero walks on (moved ${(mine.x - x0).toFixed(1)})`);
 });
 
 test('co-op: a fallen hero rises beside his partner; both down = back to the checkpoint together', () => {

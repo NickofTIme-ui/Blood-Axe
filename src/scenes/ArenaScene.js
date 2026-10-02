@@ -10,7 +10,7 @@ import { SETTINGS } from '../config/settings.js';
 import { World } from '../core/World.js';
 import { InputManager } from '../core/InputManager.js';
 import { TickController, pressed } from '../core/TickInput.js';
-import { LocalSession, NetSession, snapshot, correct } from '../net/Session.js';
+import { LocalSession, NetSession, snapshot, correct, feedPlayers } from '../net/Session.js';
 import { CONTROLS, CONTROLS_P1_SHARED, CONTROLS_P2 } from '../config/controls.js';
 import { createPlayer } from '../entities/Player.js';
 import { createEnemy } from '../entities/Enemy.js';
@@ -231,6 +231,7 @@ export class ArenaScene extends Phaser.Scene {
     // The heroes, in player order. Each reads a TickController: the session hands it that
     // tick's button record (core/TickInput.js), whoever's fingers it came from.
     this.players = this.heroIds.map((id, i) => createPlayer(this.world, new TickController(), id, 220 - i * 46, 430 + i * 26));
+    this.players.forEach((p, i) => { p.seat = i; }); // whose button record drives him (stays put if a partner leaves)
     this.player = this.players[this.session.localIndex] ?? this.players[0]; // "my" hero on this machine
     // two of the same hero: the second wears a cold steel-blue cast so you can tell them apart
     this.players.forEach((p, i) => { if (i > 0 && this.heroIds[i] === this.heroIds[0]) p.tint = 0x9fc0ff; });
@@ -738,6 +739,8 @@ export class ArenaScene extends Phaser.Scene {
     if (!s.net || this.wentAlone) return;
     this.wentAlone = true;
     s.alone = true;
+    // (pressed R while the partner was silent: hang up, so his side learns at once too)
+    try { s.link.close?.(); } catch { /* already gone */ }
     for (const p of this.players) {
       if (p === this.player) continue;
       p.health = 0;
@@ -778,7 +781,7 @@ export class ArenaScene extends Phaser.Scene {
       // pause / restart / leave ride in the records, so both machines do them on the same tick
       if (this.systemKeys(recs)) return; // (the scene is changing)
       if (this.paused) continue;         // paused: ticks still pass (and buttons are read), the world holds still
-      this.players.forEach((p, i) => p.controller.feed(recs[i]));
+      feedPlayers(this.players, recs);
       this.world.tick();
       this.keepTogether();
       this.stage.update();

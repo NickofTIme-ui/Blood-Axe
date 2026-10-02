@@ -130,6 +130,13 @@ export class NetSession {
   }
 }
 
+// Hand each hero the record for his seat (host = 0, guest = 1). Heroes are matched by
+// seat, not by place in the list: after a partner leaves only my hero is left, and the
+// guest's hero must still get the guest's record, not the empty one at slot 0.
+export function feedPlayers(players, recs) {
+  players.forEach((p, i) => p.controller.feed(recs[p.seat ?? i] ?? EMPTY));
+}
+
 // A snapshot is a flat list per fighter: [id, x, z, health, alive(0/1)]. Positions are
 // rounded to the pixel, so harmless float fuzz doesn't count as drift.
 export function snapshot(world) {
