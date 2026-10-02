@@ -144,3 +144,13 @@ To do, in order:
 - **Bug fixed:** `BootScene.buildHeroStrips` used `cell`, which only exists in `buildEnemyStrips` (my slip when adding the boss's outsize frames). It threw, so no hero sheets were registered and the Mage and Rogue fell back to their stand-ins. Any build made from `36a5e96` has this fault.
 - **Added outside this session (by the user with another tool), committed here as found, not reviewed or run:** a studio intro video before the game starts (`assets/video/ufo-technologies-intro.mp4`, `src/core/StartupIntro.js`, changes to `index.html`, `src/main.js`) and two changes to `tools/build-release.ps1` (a path check, and copying `tools/sprite-pipeline/palette.png` into the staged build).
 - The user says an itch upload made with that other tool left the game "messed up". Not investigated here. Check the staged build (`release/stage`) boots past the intro video, shows the Mage and Rogue painted, and that `?mute=1` testing still works with the intro in the way.
+
+## Cloud session, 3 October 2026 (late): back to local
+
+On `main` now (all tests pass, 2-tab online test passes through a PeerJS stand-in):
+- **Online co-op fix:** input delay is measured from the round trip on the select screen (`delayFor` in `src/net/Session.js`); the old fixed 50 ms made both games crawl over real internet lag (62% speed at 100 ms). Time lost waiting is caught up.
+- **Version handshake:** on connecting, both games swap version + build time (`handshake` in `src/net/Link.js`); a mismatch stops the join and says who must refresh. `tools/build-release.ps1` stamps `window.BUILD_TIME` into the staged `index.html` (untested here: no PowerShell in the cloud — check the staged `index.html` has a number, not 0).
+- **Relay:** `SETTINGS.net.iceServers` (two STUN servers). If two players still can't connect, add a free TURN relay there (e.g. metered.ca).
+- **Mage:** turn left/right while a spell winds up; the stone wall holds everyone 12 px off its face (allies cross by roll/blink/vault/jump), every enemy batters it (hp 300, health bar), and it erupts from a glowing fissure in a wave of overshooting slabs. Painted slabs plug in via `assets/fx/earthwall-strip.png` (prompt: section 12 of `docs/mage-art-prompts.md`); not drawn yet.
+
+To do locally: paint the earth-wall slabs, build + upload to itch, then a real two-computer online test (report the exact message if it fails).
