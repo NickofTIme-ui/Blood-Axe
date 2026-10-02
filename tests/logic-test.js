@@ -1112,14 +1112,14 @@ test('rogue: ally vault — running at a teammate and jumping launches far above
 });
 
 test('rogue: shuriken fan from a jump; DEATH FROM ABOVE (wider, more) at the top of a vault', () => {
-  const t = rogueSetup({ script: { 1: ['jump'], 14: ['magic'] }, foes: [[700], [760, 460]] });
+  const t = rogueSetup({ script: { 1: ['jump'], 14: ['kick'] }, foes: [[700], [760, 460]] });
   t.run(60);
   const f = t.seen('fanThrow')[0]?.e;
   assert(f && !f.dfa && f.count === CHARACTERS.rogue.kit.fan.count, `fan ${f?.count}`);
   assert(t.es.some((e) => e.health < e.stats.maxHealth), 'a star struck home');
   const V = CHARACTERS.rogue.kit.vault;
   const apex = 6 + V.plant + Math.round(V.launch / CHARACTERS.rogue.gravity * 60);
-  const d = rogueSetup({ ally: ['warrior', 660], hold: (n) => (n < 12 ? { right: true } : {}), script: { 6: ['jump'], [apex]: ['magic'] }, foes: [[800], [840, 380], [880, 470]] });
+  const d = rogueSetup({ ally: ['warrior', 660], hold: (n) => (n < 12 ? { right: true } : {}), script: { 6: ['jump'], [apex]: ['kick'] }, foes: [[800], [840, 380], [880, 470]] });
   d.run(apex + 60);
   const g = d.seen('fanThrow')[0]?.e;
   assert(g && g.dfa && g.count === CHARACTERS.rogue.kit.fan.dfaCount, `death from above (${g?.dfa}, ${g?.count})`);
@@ -1197,7 +1197,7 @@ test('rogue: her jump is the highest of the three', () => {
 
 test('rogue: everything she does is the same on two machines (lockstep)', () => {
   const play = () => {
-    const t = rogueSetup({ ally: ['warrior', 680], hold: (n) => (n < 14 ? { right: true } : {}), script: { 2: ['magic'], 8: ['jump'], 40: ['magic'], 90: ['heavy'], 120: ['kick'], 150: ['attack'], 160: ['attack'] }, foes: [[800], [840, 440], [900, 380], [1000]] });
+    const t = rogueSetup({ ally: ['warrior', 680], hold: (n) => (n < 14 ? { right: true } : {}), script: { 2: ['magic'], 8: ['jump'], 40: ['kick'], 90: ['heavy'], 120: ['kick'], 150: ['attack'], 160: ['attack'] }, foes: [[800], [840, 440], [900, 380], [1000]] });
     t.run(360);
     return t.world.fighters.map((f) => `${f.x.toFixed(3)},${f.z.toFixed(3)},${f.health.toFixed(2)},${f.state}`).join('|');
   };

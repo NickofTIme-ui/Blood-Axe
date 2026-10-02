@@ -112,3 +112,10 @@ Not drawn (the user stopped the batch here): `rogue_runD`, `rogue_finPhantom`, `
 - Mage blink distance 210 -> 273.
 - Title menu: left/right + confirm work on keys and gamepad (`TitleScene.pick`); the online menu takes left/right, A, B from a pad. Typing a room code still needs the keyboard.
 - All of this is on itch as upload 19520444.
+
+## Local session, 3 October 2026: more fixes from the user's itch testing (not on itch yet)
+
+- "Grunts revert to old art": dismembering kills and arm-loss used to show the paper doll's parts. `Gore.cutSprite` now cuts the painted frame instead (effects/SpriteCut.js: neck, waist, steep diagonal, knees, blown in two); `Gore.onMaim` throws meat and blood for painted enemies, not the doll's arm. The doll path is only the fallback when no painted sprite is showing.
+- Mage: jump 470 -> 575 (about 130 px, just under the Rogue's: a test requires hers to be the highest). Air blink and air attack already worked; checked in the running game.
+- Rogue: Shuriken Fan moved from magic (LB) to kick (RT / O) in the air (`states.airKick`).
+- 89 logic tests pass.

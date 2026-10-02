@@ -89,6 +89,10 @@ export class Gore {
     const victim = e.defender;
     this.burst(e.x, e.z, e.h, e.dir, Math.round(70 * this.amount), 1.7);
 
+    // an enemy drawn with painted strips comes apart as that painting (effects/SpriteCut.js),
+    // never as the old paper doll underneath it
+    if (e.fatality && e.fatality !== 'none' && this.cutSprite(e.fatality, view, e)) return true;
+
     if (view?.snapshot && e.fatality && e.fatality !== 'none') {
       const snap = view.snapshot();
       view.hideAll();
@@ -114,6 +118,47 @@ export class Gore {
     return false;
   }
 
+  // A killing blow on a painted enemy (view/SpriteEnemyView.js): the frame on screen is
+  // divided along the cut and the pieces thrown. Returns false if this view can't be cut
+  // that way (no painted sprite showing), so the caller falls back to the doll.
+  //   decap / headPop  the head comes off at the neck (flung, or popped straight up)
+  //   halfH            cut through at the waist, the top half thrown clear
+  //   halfV            a steep diagonal from shoulder to hip, the halves sliding apart
+  //   limbs            the legs taken at the knee, the body dropping where it stood
+  //   explode          blown in two, both halves hurled, in a storm of meat
+  cutSprite(type, view, e) {
+    const cuts = this.scene.cuts;
+    if (!cuts || !view?.sheet || !view.sprite?.visible || view.cutAway) return false;
+    const dir = e.dir || view.f.facing;
+    const cut = { decap: 'neck', headPop: 'neck', halfH: 'waist', halfV: 'diagDown', limbs: 'legs', explode: 'waist' }[type];
+    if (!cut) return false;
+    const { upper, lower } = cuts.split(view, cut, dir);
+    view.cutAway = true;
+    view.hideAll();
+    const f = view.f;
+    const mid = f.h + f.stats.body.h * 0.5;
+    if (type === 'decap') cuts.launch(upper, dir * rand(180, 420), rand(380, 520), dir * rand(9, 16));
+    else if (type === 'headPop') cuts.launch(upper, dir * rand(-40, 60), rand(620, 760), dir * rand(4, 9));
+    else if (type === 'halfH') cuts.launch(upper, dir * rand(160, 320), rand(260, 380), dir * rand(5, 9));
+    else if (type === 'halfV') cuts.launch(upper, dir * rand(60, 130), rand(150, 220), dir * rand(1.5, 3));
+    else if (type === 'limbs') cuts.launch(upper, dir * rand(20, 70), rand(120, 180), dir * rand(1, 2.5));
+    else {
+      cuts.launch(upper, dir * rand(260, 520), rand(520, 700), dir * rand(10, 18));
+      cuts.launch(lower, -dir * rand(160, 360), rand(360, 520), -dir * rand(8, 14));
+      this.mist(e.x, e.z, mid, 14);
+      this.scorch(f.x, f.z);
+      for (let i = 0; i < Math.round(22 * this.amount); i++) {
+        this.spawn({
+          x: f.x + rand(-10, 10), z: f.z + rand(-6, 6), h: mid + rand(-20, 20), texture: 'px',
+          vx: rand(-420, 420), vz: rand(-90, 90), vh: rand(220, 640),
+          tint: pick([...BLOOD, f.stats.look.color, f.stats.look.skin ?? 0x8a0303]), scale: rand(1.6, 3.4), spin: rand(-14, 14),
+        });
+      }
+    }
+    this.burst(f.x, f.z, mid, dir, Math.round(60 * this.amount), 1.6);
+    return true;
+  }
+
   // Take a rigged body apart (see effects/Dismember.js).
   dismember(type, snap, e) {
     return this.dismemberer.run(type, snap, e);
@@ -122,6 +167,22 @@ export class Gore {
   // An arm cut off a living enemy.
   onMaim(e, view) {
     if (this.level === 0 || !view?.sever) return;
+    // a painted enemy: his scared one-armed art takes over; what flies off is meat and
+    // blood, not the doll's arm
+    if (view.sheet && view.sprite) {
+      const f = view.f;
+      const h = f.h + f.stats.body.h * 0.68;
+      const dir = e.dir || f.facing;
+      this.burst(f.x, f.z, h, dir, Math.round(46 * this.amount), 1.5);
+      for (let i = 0; i < Math.round(7 * this.amount); i++) {
+        this.spawn({
+          x: f.x, z: f.z + rand(-3, 3), h, texture: 'px',
+          vx: dir * rand(90, 360), vz: rand(-50, 50), vh: rand(180, 420),
+          tint: pick([...BLOOD, f.stats.look.skin ?? 0x8a0303, f.stats.look.color]), scale: rand(1.6, 3), spin: rand(-12, 12),
+        });
+      }
+      return;
+    }
     this.dismemberer.maim(view.sever(e.limb), e);
   }
 

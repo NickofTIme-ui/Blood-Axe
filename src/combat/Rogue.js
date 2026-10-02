@@ -5,7 +5,7 @@
 //   kick         -> rkick   crescent kick; down+kick = low sweep; nobody in reach = KNIFE throw
 //   magic        -> mine    drop a WIDOW MINE without breaking stride (combat/Mine.js)
 //   jump at an ally        VAULT off his shoulder, far higher than a jump
-//   in the air: magic -> fan   SHURIKEN FAN (DEATH FROM ABOVE near the top of a vault)
+//   in the air: kick -> fan    SHURIKEN FAN (DEATH FROM ABOVE near the top of a vault)
 //               heavy -> dive  FALLING VIPER onto a man below
 //
 // EXPOSED and the SHADOW WINDOW (perfect dodge) live in combat/CombatSystem.js, which reads

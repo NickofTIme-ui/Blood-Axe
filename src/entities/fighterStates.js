@@ -395,7 +395,9 @@ export const FIGHTER_STATES = {
       }
       // the Mage blinks out of a jump (once per time in the air)
       if (s.states?.dodge === 'blink' && !f.airBlinked && f.stamina >= s.dodge.cost && c.consume('dodge')) return f.fsm.change('blink');
-      // a hero kit's air moves (the Rogue: magic = shuriken fan, heavy = falling viper)
+      // a hero kit's air moves (the Rogue: kick = shuriken fan, heavy = falling viper)
+      const ak = s.states?.airKick;
+      if (ak && !f.fanUsed && !(f.cool[ak] > 0) && c.consume('kick')) return f.fsm.change(ak);
       const am = s.states?.airMagic;
       if (am && !f.fanUsed && !(f.cool[am] > 0) && c.consume('magic')) return f.fsm.change(am);
       const ah = s.states?.airHeavy;

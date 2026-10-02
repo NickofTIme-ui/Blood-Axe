@@ -191,8 +191,9 @@ export const CHARACTERS = {
     maxHealth: 110, maxStamina: 90, maxMana: 120,
     staminaRegen: 30, staminaRegenDelay: 36, manaRegen: 7,
     walkSpeed: 172, depthSpeed: 122,
-    // no jump: a levitation rise (lower launch, softer pull = slower up and down)
-    jumpStrength: 470, gravity: 1250, airControl: 0.2, airJumps: 0,
+    // no jump: a levitation rise (a softer pull = slower up and down; about 130 px high, just under the Rogue's).
+    // In the air he can blink once (dodge) and bring the staff down (attack).
+    jumpStrength: 575, gravity: 1250, airControl: 0.2, airJumps: 0,
     meleeMult: 0.85, magicMult: 1.4, // (spell damage below is before this x1.4)
     blockReduction: 0.72, guardEfficiency: 1.15,
     // the blink's timing (the dodge numbers the rest of the game reads): invulnerable for
@@ -351,9 +352,9 @@ export const CHARACTERS = {
     look: { color: 0x4a2a5e, accent: 0xb0b8c0, skin: 0xd2a07a },
     // the buttons her kit replaces (fighterStates.js stateFor):
     //   heavy = VIPER STRIKE, kick = crescent kick / knife throw at range / sweep (down),
-    //   magic = WIDOW MINE (dropped on the move), in the air: magic = SHURIKEN FAN,
+    //   magic = WIDOW MINE (dropped on the move), in the air: kick = SHURIKEN FAN,
     //   heavy = FALLING VIPER; jump at a teammate = ALLY VAULT
-    states: { heavy: 'viper', kick: 'rkick', cast: 'mine', airMagic: 'fan', airHeavy: 'dive' },
+    states: { heavy: 'viper', kick: 'rkick', cast: 'mine', airKick: 'fan', airHeavy: 'dive' },
 
     maxHealth: 105, maxStamina: 110, maxMana: 60,
     staminaRegen: 42, staminaRegenDelay: 26, manaRegen: 3,
