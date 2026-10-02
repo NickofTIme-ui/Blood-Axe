@@ -75,3 +75,22 @@ their character descriptions are out of date (use the reference images above ins
 
 - **Rogue size**: the 25% shrink went too far ("way too small"). She is "supposed to be a little smaller than grunts": size her strips and hurtbox just under the grunt's (compare on screen next to one).
 - Extra strips are being collected locally (idle, back/front views, finishers for both heroes) and committed one by one as `assets/sprites/strips/<hero>_<name>.png`; they are not wired in.
+
+## Extra strips collected locally (2 October 2026) - not wired in
+
+All in `assets/sprites/strips/`, one row on black, facing right unless noted.
+
+| File | Poses | What |
+|---|---|---|
+| `mage_idle.png` | 6 | hovering idle, subtle |
+| `mage_hoverU.png` | 8 | hover-glide seen from behind |
+| `mage_hoverD.png` | 8 | hover-glide seen from the front |
+| `mage_finStorm.png` | 8 | ready, plant, staff up, sparks, staff down, hold, lower, ready |
+| `mage_finRupture.png` | 8 | ready, hand out, curl, hold, closing, near fist, fist, lower |
+| `mage_finEmbers.png` | 8 | dissolving, re-forming, staff raised, slam, planted, robe blown up, still, turning away |
+| `rogue_idle.png` | 6 | low coiled guard; pose 4 is a dagger flourish |
+| `rogue_runU.png` | 8 | run seen from behind |
+
+**Style warning:** the three `mage_fin*` strips drifted: they are duller and less detailed than his other strips (yellow lanterns, flatter robe). Next to the hover and cast strips the change will show. Either leave his finishers on the cast poses or have them redrawn.
+
+Not drawn (the user stopped the batch here): `rogue_runD`, `rogue_finPhantom`, `rogue_finLotus`, `rogue_finScarlet`.
