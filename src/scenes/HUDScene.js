@@ -12,7 +12,7 @@
 
 import { SETTINGS } from '../config/settings.js';
 import { HUD_ART } from '../view/hudArt.js';
-import { FONT, epicFill, steelFill } from '../view/fonts.js';
+import { FONT, epicFill } from '../view/fonts.js';
 import { DeathScreen } from '../view/DeathScreen.js';
 
 const SERIF = FONT.ui;
@@ -92,7 +92,7 @@ export class HUDScene extends Phaser.Scene {
       .setOrigin(1, 0.5).setStroke('#000000', 6).setVisible(false);
     epicFill(this.go, ['#fff2b0', '#e0a530', '#6a3c08']);
     // section title card (big, centre, fades)
-    this.card = this.add.text(W / 2, H * 0.36, '', { fontFamily: FONT.title, fontSize: '48px', align: 'center' })
+    this.card = this.add.text(W / 2, H * 0.36, '', { fontFamily: FONT.display, fontSize: '46px', align: 'center' })
       .setOrigin(0.5).setStroke('#0a0000', 7).setAlpha(0).setDepth(50);
     this.card.setLetterSpacing?.(4);
     this.cardSub = this.add.text(W / 2, H * 0.36 + 42, '', { fontFamily: FONT.ui, fontSize: '16px', color: '#d8c8a8', align: 'center' })
@@ -110,7 +110,7 @@ export class HUDScene extends Phaser.Scene {
   sectionCard(index, section) {
     const roman = ['I', 'II', 'III', 'IV', 'V', 'VI'][index] ?? `${index + 1}`;
     this.card.setText(section.name);
-    steelFill(this.card, 7);
+    epicFill(this.card, ['#ff7a5a', '#d0101a', '#5a0006']);
     this.cardSub.setText(`${roman}  ·  ${section.objective}`);
     this.objective.setText(`▸ ${section.objective}`);
     this.showGo(false);
@@ -196,10 +196,10 @@ export class HUDScene extends Phaser.Scene {
       const W = SETTINGS.width;
       const H = SETTINGS.height;
       const dim = this.add.rectangle(0, 0, W, H, 0x050000, 0.72).setOrigin(0).setInteractive(); // swallows clicks
-      const title = this.add.text(W / 2, H * 0.24, 'PAUSED', { fontFamily: FONT.title, fontSize: '64px' })
+      const title = this.add.text(W / 2, H * 0.24, 'PAUSED', { fontFamily: FONT.display, fontSize: '60px' })
         .setOrigin(0.5).setStroke('#0a0000', 8);
       title.setLetterSpacing?.(6);
-      steelFill(title);
+      epicFill(title, ['#ff7a5a', '#d0101a', '#5a0006']);
       const menu = this.add.text(W / 2, H * 0.42,
         'P / ENTER  —  RESUME\nR  —  RESTART THE STAGE\nESC  —  CHARACTER SELECT',
         { fontFamily: FONT.ui, fontSize: '18px', color: '#f0e0c0', align: 'center', lineSpacing: 10 })

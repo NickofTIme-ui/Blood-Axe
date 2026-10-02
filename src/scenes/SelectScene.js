@@ -14,7 +14,7 @@ import { CHARACTERS } from '../data/characters.js';
 import { InputManager } from '../core/InputManager.js';
 import { playMusic, toggleMute } from '../core/Music.js';
 import { playSfx } from '../core/Sfx.js';
-import { FONT, epicFill, steelFill } from '../view/fonts.js';
+import { FONT, epicFill } from '../view/fonts.js';
 
 // Where the pedestal tops are in the background painting (share of the screen).
 const PEDESTALS = [
@@ -71,9 +71,10 @@ export class SelectScene extends Phaser.Scene {
     }
 
     // title
-    const title = this.add.text(W / 2, 38, 'BLOOD AXE', { fontFamily: FONT.title, fontSize: '58px' }).setOrigin(0.5);
-    title.setLetterSpacing?.(4);
-    steelFill(title);
+    const title = this.add.text(W / 2, 38, 'BLOOD AXE', { fontFamily: FONT.display, fontSize: '54px' })
+      .setOrigin(0.5).setStroke('#0a0000', 8);
+    title.setLetterSpacing?.(5);
+    epicFill(title, ['#ff7a5a', '#d0101a', '#6a0008', '#200002']);
     this.sub = this.add.text(W / 2, 76, '', { fontFamily: FONT.ui, fontSize: '16px' })
       .setOrigin(0.5).setStroke('#000000', 4);
     this.sub.setLetterSpacing?.(8);

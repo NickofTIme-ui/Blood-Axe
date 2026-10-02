@@ -22,8 +22,7 @@ Everything below is code work for the cloud session.
   Rogue's kick or the Mage's force blast sends one skidding; it bursts on the first enemy.
 - **Struck pendulum blades** (`Stage.strikeBlade`, `BLADE.driven`): any hero attack or
   the Mage's force blast hurls the blade back; it then only cuts enemies.
-- **Steel title lettering**: `FONT.title` (Metal Mania) and `steelFill()` in
-  `src/view/fonts.js`, used for BLOOD AXE, PAUSED, the section cards and ONLINE CO-OP.
+- The steel title lettering (Metal Mania) was tried and reverted at the user's request: titles use MedievalSharp again.
 - Logic tests: 82 pass (run in a browser: `import('/tests/logic-test.js')`).
 
 ## To do in the cloud
