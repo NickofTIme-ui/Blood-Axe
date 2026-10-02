@@ -243,7 +243,9 @@ export class Stage {
         if (!overlaps(hb, box, f.activeAttack ? (pr.kind === 'wall' ? 60 : 30) : ps.depth)) continue;
         pr.hitBy.add(info);
         // a kick doesn't break a crate or a chest: it sends it skidding off down the lane
-        if (f.activeAttack && info.move.bowl && KICKED.kinds.includes(pr.kind)) {
+        // (Rurik's Sparta kick, the Rogue's crescent kick, the Mage's force blast)
+        const shoves = f.activeAttack ? info.move.bowl || info.move.fx === 'rkick' : true;
+        if (shoves && KICKED.kinds.includes(pr.kind)) {
           if (!pr.fly) {
             pr.fly = { dir: f.facing, left: KICKED.range };
             this.world.events.emit('propKick', { prop: pr, dir: f.facing, by: f });

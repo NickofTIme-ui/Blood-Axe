@@ -10,7 +10,7 @@ import { SETTINGS } from '../config/settings.js';
 import { InputManager } from '../core/InputManager.js';
 import { playMusic, toggleMute } from '../core/Music.js';
 import { playSfx } from '../core/Sfx.js';
-import { FONT, epicFill } from '../view/fonts.js';
+import { FONT, epicFill, steelFill } from '../view/fonts.js';
 import { hostRoom, joinRoom, newCode } from '../net/Link.js';
 
 export class TitleScene extends Phaser.Scene {
@@ -49,9 +49,9 @@ export class TitleScene extends Phaser.Scene {
       }
     } else {
       // no cover art (it failed to load): the name on black, so the game still starts
-      const t = this.add.text(W / 2, H * 0.4, 'BLOOD AXE', { fontFamily: FONT.display, fontSize: '80px' })
+      const t = this.add.text(W / 2, H * 0.4, 'BLOOD AXE', { fontFamily: FONT.title, fontSize: '84px' })
         .setOrigin(0.5).setStroke('#0a0000', 9);
-      epicFill(t, ['#ff7a5a', '#d0101a', '#6a0008', '#200002']);
+      steelFill(t, 9);
     }
 
     // embers drifting up through it
@@ -128,8 +128,8 @@ export class TitleScene extends Phaser.Scene {
     const H = SETTINGS.height;
     const L = this.lobby = { state: 'menu', code: '', job: null };
     L.dim = this.add.rectangle(0, 0, W, H, 0x050000, 0.82).setOrigin(0).setDepth(100).setInteractive();
-    L.title = this.add.text(W / 2, H * 0.2, 'ONLINE CO-OP', { fontFamily: FONT.display, fontSize: '44px' }).setOrigin(0.5).setStroke('#0a0000', 7).setDepth(101);
-    epicFill(L.title, ['#ff7a5a', '#d0101a', '#5a0006']);
+    L.title = this.add.text(W / 2, H * 0.2, 'ONLINE CO-OP', { fontFamily: FONT.title, fontSize: '46px' }).setOrigin(0.5).setStroke('#0a0000', 7).setDepth(101);
+    steelFill(L.title, 7);
     L.body = this.add.text(W / 2, H * 0.47, '', { fontFamily: FONT.ui, fontSize: '20px', color: '#f0e0c0', align: 'center', lineSpacing: 12 }).setOrigin(0.5).setStroke('#000000', 4).setDepth(101);
     L.big = this.add.text(W / 2, H * 0.47, '', { fontFamily: FONT.display, fontSize: '72px' }).setOrigin(0.5).setStroke('#0a0000', 8).setDepth(101);
     L.note = this.add.text(W / 2, H * 0.78, '', { fontFamily: FONT.body, fontSize: '16px', color: '#cdb391', align: 'center', lineSpacing: 6 }).setOrigin(0.5).setStroke('#000000', 3).setDepth(101);
