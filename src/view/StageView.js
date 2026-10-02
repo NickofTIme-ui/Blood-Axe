@@ -9,7 +9,7 @@ import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { PICKUPS } from '../data/stage.js';
 import { playSfx } from '../core/Sfx.js';
-import { buildPropSheet } from './propSheet.js';
+import { buildPropSheet, PROP_HD } from './propSheet.js';
 import { FX } from './stripImporter.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -43,6 +43,7 @@ export class StageView {
     // the painted sheet first (view/propSheet.js); anything it doesn't supply is painted
     // here instead (canvasTex leaves an existing texture alone)
     this.painted = buildPropSheet(this.scene);
+    this.hd = buildPropSheet(this.scene, 'props-hd-src', PROP_HD, 3, 2, true); // (replaces the old breakables)
     // chest: iron-bound, brass lock (fallback)
     this.canvasTex('prop-chest', 92, 76, (c, w, h) => {
       c.fillStyle = '#4a2a14'; c.fillRect(2, 22, w - 4, h - 24);
@@ -230,7 +231,7 @@ export class StageView {
 
   makeProp(pr) {
     const key = `prop-${pr.kind}`;
-    const s = 0.5;
+    const s = this.hd.has(key) ? 0.25 : 0.5;
     if (pr.kind === 'wall') {
       // set into the back wall: the alcove waits behind it
       const y = SETTINGS.world.floorTop - 4;

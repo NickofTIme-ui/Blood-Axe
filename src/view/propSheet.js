@@ -11,8 +11,6 @@ export const PROP_SHEET = [
   ['grate', 60], ['grate-hot', 60], ['blade', 190], ['pk-shrine', 112],
   ['pk-meat', 36], ['pk-wine', 50], ['pk-mana', 44], ['pk-relic', 46],
 ];
-const COLS = 4;
-const ROWS = 4;
 
 // Everything black that is connected to the outside of a box is background.
 function clearBackground(img, w, h) {
@@ -36,7 +34,7 @@ function clearBackground(img, w, h) {
 
 // Where the objects are: boxes of connected non-black pixels (found on a coarse copy so
 // loose bits — shards, embers, a hanging chain — stay with their object), in sheet order.
-function findObjects(ctx, W, H) {
+function findObjects(ctx, W, H, COLS, ROWS) {
   const S = 6; // coarse cell, px
   const gw = Math.ceil(W / S);
   const gh = Math.ceil(H / S);
@@ -85,7 +83,14 @@ function findObjects(ctx, W, H) {
 }
 
 // Returns the set of texture keys it made.
-export function buildPropSheet(scene, srcKey = 'props-src') {
+// The breakables, repainted at four times the size they're drawn (assets/env/props-hd.png:
+// 3 x 2, intact on top, smashed below). Drawn at quarter scale, a little bigger than before.
+export const PROP_HD = [
+  ['prop-barrel', 232], ['prop-crate', 208], ['prop-urn', 184],
+  ['prop-barrel-broken', 160], ['prop-crate-broken', 144], ['prop-urn-broken', 108],
+];
+
+export function buildPropSheet(scene, srcKey = 'props-src', sheet = PROP_SHEET, COLS = 4, ROWS = 4, smooth = false) {
   const made = new Set();
   if (!scene.textures.exists(srcKey)) return made;
   try {
@@ -95,8 +100,8 @@ export function buildPropSheet(scene, srcKey = 'props-src') {
     full.width = W; full.height = H;
     const fctx = full.getContext('2d', { willReadFrequently: true });
     fctx.drawImage(src, 0, 0);
-    const cells = findObjects(fctx, W, H);
-    PROP_SHEET.forEach(([key, height], i) => {
+    const cells = findObjects(fctx, W, H, COLS, ROWS);
+    sheet.forEach(([key, height], i) => {
       const b = cells[i];
       if (!b) return;
       const pad = 3;
@@ -127,7 +132,7 @@ export function buildPropSheet(scene, srcKey = 'props-src') {
       for (let p = 0; p < od.data.length; p += 4) od.data[p + 3] = od.data[p + 3] > 110 ? 255 : 0;
       octx.putImageData(od, 0, 0);
       if (scene.textures.exists(key)) scene.textures.remove(key);
-      scene.textures.addCanvas(key, out).setFilter(Phaser.Textures.FilterMode.NEAREST);
+      scene.textures.addCanvas(key, out).setFilter(smooth ? Phaser.Textures.FilterMode.LINEAR : Phaser.Textures.FilterMode.NEAREST);
       made.add(key);
     });
   } catch (err) {
