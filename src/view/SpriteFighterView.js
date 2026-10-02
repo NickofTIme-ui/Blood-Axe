@@ -148,7 +148,10 @@ export class SpriteFighterView {
         // (view/Heading.js) — the step count carries over when the view changes
         const tick = f.world?.frame ?? 0;
         if (tick !== this.headTick) { this.headTick = tick; this.heading.update(f.vx, f.vz); }
-        return loop(headingAnim(a, this.heading.dir));
+        // sprinting (side on): the charge strip when drawn, else the walk played faster
+        if (f.sprinting && this.heading.dir === 'side' && a.sprint) return loop(a.sprint);
+        const w = headingAnim(a, this.heading.dir);
+        return loop(f.sprinting ? { ...w, fps: w.fps * 1.5 } : w);
       }
       case 'jump': return f.vh > 0 ? a.jump.rise[0] : a.jump.fall[0];
       case 'block':
@@ -302,7 +305,8 @@ export class SpriteFighterView {
     // Heavy, planted walk: dips on each footfall, slight shoulder roll.
     let bob = 0;
     let lean = 0;
-    if (st === 'walk' && this.meta.anims.walk?.heavyBob) {
+    if (st === 'walk' && f.sprinting) lean = this.meta.anims.sprint ? 0 : 6; // (no charge art yet: lean into it)
+    else if (st === 'walk' && this.meta.anims.walk?.heavyBob) {
       const n = this.meta.anims.walk.frames.length;
       const fps = this.meta.anims.walk.fps;
       const cyc = ((fr * fps) / 60) % n / n; // 0..1 through the cycle, two steps per cycle

@@ -82,6 +82,24 @@ test('input buffer: attack pressed during dodge recovery comes out right after',
   assert(t.p.state === 'light1', `expected light1, got ${t.p.state}`);
 });
 
+test('sprint: a click while moving speeds every hero up, carries into a jump, and ends when he stops', () => {
+  for (const who of ['warrior', 'mage', 'rogue']) {
+    const walk = setup({ player: who, hold: { right: true }, gap: 3000 });
+    const x0 = walk.p.x;
+    walk.run(60);
+    const run = setup({ player: who, hold: (n) => ({ right: n < 80 }), script: { 3: ['sprint'], 50: ['jump'] }, gap: 3000 });
+    run.run(45);
+    assert(run.p.sprinting && run.p.state === 'walk', `${who}: sprinting (${run.p.state})`);
+    const k = CHARACTERS[who].sprint.speed;
+    assert(Math.abs(run.p.vx - CHARACTERS[who].walkSpeed * k) < 1, `${who}: at sprint speed (${run.p.vx})`);
+    run.run(8);
+    assert(run.p.state === 'jump' && run.p.vx > CHARACTERS[who].walkSpeed * 1.2, `${who}: the jump keeps the speed (${run.p.state} ${run.p.vx})`);
+    run.run(120);
+    assert(!run.p.sprinting && run.p.state === 'idle', `${who}: stopped, sprint over (${run.p.state})`);
+    assert(walk.p.x - x0 > 0, 'walked');
+  }
+});
+
 test('roll cancels a swing: wind-up, mid-swing and recovery (but not the kick)', () => {
   for (const [move, at] of [['attack', 3], ['attack', 14], ['heavy', 6], ['heavy', 30]]) {
     const t = setup({ script: { 1: [move] }, gap: 300 });

@@ -68,6 +68,7 @@ export const CHARACTERS = {
     staminaRegen: 30, staminaRegenDelay: 40, manaRegen: 1.5,
     walkSpeed: 165, depthSpeed: 115,
     jumpStrength: 550, gravity: 1700, airControl: 0.14, airJumps: 0,
+    sprint: { speed: 1.55 }, // the hero's charge: head down, blade back, cape streaming
     meleeMult: 1.3, magicMult: 0.7,
     blockReduction: 0.85, guardEfficiency: 0.8,
     dodge: { iframes: 11, duration: 18, recovery: 9, speed: 785, cost: 16 },
@@ -194,6 +195,7 @@ export const CHARACTERS = {
     // no jump: a levitation rise (a softer pull = slower up and down; about 130 px high, just under the Rogue's).
     // In the air he can blink once (dodge) and bring the staff down (attack).
     jumpStrength: 575, gravity: 1250, airControl: 0.2, airJumps: 0,
+    sprint: { speed: 1.7 },  // he flies: laid forward along the staff, robes streaming
     meleeMult: 0.85, magicMult: 1.4, // (spell damage below is before this x1.4)
     blockReduction: 0.72, guardEfficiency: 1.15,
     // the blink's timing (the dodge numbers the rest of the game reads): invulnerable for
@@ -359,7 +361,8 @@ export const CHARACTERS = {
     maxHealth: 105, maxStamina: 110, maxMana: 60,
     staminaRegen: 42, staminaRegenDelay: 26, manaRegen: 3,
     walkSpeed: 235, depthSpeed: 165,
-    jumpStrength: 700, gravity: 1700, airControl: 0.34, airJumps: 1, // the highest jump of the three
+    jumpStrength: 700, gravity: 1700, airControl: 0.34, airJumps: 1,
+    sprint: { speed: 1.6 },  // low and flat out, arms swept back, daggers trailing // the highest jump of the three
     meleeMult: 0.9, magicMult: 1.0,
     blockReduction: 0.62, guardEfficiency: 1.4, // a light guard: heavy blows break it fast
     // the best dodge in the game: long, quick, invulnerable for most of it

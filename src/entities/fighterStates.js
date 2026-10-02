@@ -57,6 +57,9 @@ export function canJump(f) {
   return !f.jumpedSinceGrounded && f.framesSinceGrounded <= FEEL.coyoteFrames;
 }
 
+// How much faster than a walk he's moving (1 unless sprinting: stats.sprint.speed).
+export const sprintMult = (f) => (f.sprinting && f.stats.sprint ? f.stats.sprint.speed : 1);
+
 export function startJump(f, isAirJump = false) {
   const c = f.controller;
   f.vh = f.stats.jumpStrength * (isAirJump ? 0.9 : 1);
@@ -64,8 +67,9 @@ export function startJump(f, isAirJump = false) {
   f.jumpedSinceGrounded = true;
   f.flipFrom = isAirJump ? f.world?.frame ?? 0 : null; // (view: the second jump is an acrobatic flip)
   f.world?.events.emit('jump', { fighter: f, airJump: isAirJump });
-  f.vx = c.moveX * f.stats.walkSpeed;
-  f.vz = c.moveZ * f.stats.depthSpeed;
+  const k = isAirJump ? 1 : sprintMult(f); // (a running jump carries the sprint)
+  f.vx = c.moveX * f.stats.walkSpeed * k;
+  f.vz = c.moveZ * f.stats.depthSpeed * k;
   faceInput(f);
   f.fsm.change('jump');
 }
@@ -349,11 +353,13 @@ function runChain(f, ex, frame) {
 
 export const FIGHTER_STATES = {
   idle: {
-    enter(f) { stopMoving(f); },
+    // (a sprint survives a landing or a swing while he keeps a direction held)
+    enter(f) { stopMoving(f); if (!f.controller.moveX && !f.controller.moveZ) f.sprinting = false; },
     update(f) {
       if (!f.grounded) return f.fsm.change('jump');
       if (f.controller.facingHint) f.facing = f.controller.facingHint;
       if (tryActions(f)) return;
+      if (f.stats.sprint && f.controller.consume('sprint')) f.sprinting = !f.sprinting; // (armed: he sets off at a sprint)
       if (f.controller.moveX || f.controller.moveZ) f.fsm.change('walk');
     },
   },
@@ -364,8 +370,14 @@ export const FIGHTER_STATES = {
       if (!f.grounded) return f.fsm.change('jump');
       if (tryActions(f)) return;
       if (!c.moveX && !c.moveZ) return f.fsm.change('idle');
-      f.vx = c.moveX * f.stats.walkSpeed;
-      f.vz = c.moveZ * f.stats.depthSpeed;
+      // SPRINT: a click (left stick / C) switches it on or off; it lasts until he stops
+      if (f.stats.sprint && c.consume('sprint')) {
+        f.sprinting = !f.sprinting;
+        if (f.sprinting) f.world.events.emit('sprintStart', { fighter: f });
+      }
+      const k = sprintMult(f);
+      f.vx = c.moveX * f.stats.walkSpeed * k;
+      f.vz = c.moveZ * f.stats.depthSpeed * k;
       faceInput(f);
     },
   },
@@ -383,7 +395,7 @@ export const FIGHTER_STATES = {
       // Air steering: holding a direction pulls him that way (and turns him to face it), so
       // a jump can be bent back the way it came; hands off, he keeps the speed he left with
       if (c.moveX) {
-        f.vx += (c.moveX * s.walkSpeed - f.vx) * s.airControl;
+        f.vx += (c.moveX * s.walkSpeed * sprintMult(f) - f.vx) * s.airControl;
         f.facing = Math.sign(c.moveX);
       }
       if (c.moveZ) f.vz += (c.moveZ * s.depthSpeed - f.vz) * s.airControl;

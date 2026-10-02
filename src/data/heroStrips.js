@@ -34,6 +34,8 @@ export const HERO_STRIPS = {
       ward: strip('mage', 'ward', 6, { ground: 'drawn' }),  // ready, lift, top, slam, planted, pull up
       // block, light hit, heavy hit, flying, lying, rising flat, tilting up, hover
       react: strip('mage', 'react', 8, { ref: 7, ground: 'drawn' }),
+      // sprint (optional): flying flat out along the staff
+      dash: strip('mage', 'dash', 8, { align: 'median', ref: 0, target: 100 }),
     },
   },
   rogue: {
@@ -53,6 +55,8 @@ export const HERO_STRIPS = {
       air: strip('rogue', 'air', 8, { ground: 'drawn', ref: 7, target: 77 }),     // take-off, tuck, vault plant, launched, fan, dive, strike, landing
       // the double-jump flip (optional): kick off, tuck, inverted, layout, twist, coming round, soaring, gather
       flip: strip('rogue', 'flip', 8, { ground: 'drawn', ref: 0, target: 112, holes: [[1020, 370], [1050, 380]] }), // (holes: the gap under her cloak in pose 4)
+      // sprint (optional): low and flat out, arms swept back
+      sprint: strip('rogue', 'sprint', 8, { align: 'median', ground: 'drawn', target: 80 }),
       react: strip('rogue', 'react', 8, { ref: 7, ground: 'drawn' }),   // hit, stumble, flying, lying, roll up, kick-through, spring, stance
     },
   },
@@ -72,6 +76,7 @@ export const HERO_ANIMS = {
     walkU: { needs: ['hoverU'], frames: seq('hoverU', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 10, loop: true },
     walkD: { needs: ['hoverD'], frames: seq('hoverD', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 10, loop: true },
     idleStrip: { needs: ['idle'], frames: seq('idle', [0, 1, 2, 3, 4, 5]), fps: 5, loop: true },
+    sprint: { needs: ['dash'], frames: seq('dash', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 14, loop: true },
     jump: { frames: seq('hover', [3, 4]) },
     block: { frames: seq('react', [0]) },
     light1: swing(seq('combo1', [0, 1]), seq('combo1', [2]), seq('combo1', [3, 4])),
@@ -110,6 +115,7 @@ export const HERO_ANIMS = {
     dodge: { frames: seq('dodge', [0, 1, 2, 3]) },
     dodgeBack: { frames: seq('dodge', [4, 5, 6, 7]) },
     jump: { frames: seq('air', [0, 1]) },   // rising, falling
+    sprint: { needs: ['sprint'], frames: seq('sprint', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 18, loop: true },
     flip: { needs: ['flip'], frames: seq('flip', [0, 1, 2, 3, 4, 5, 6, 7]) }, // her second jump
     vault: { frames: seq('air', [2]) },
     launched: { frames: seq('air', [3]) },  // the long rise off a teammate's shoulder

@@ -52,7 +52,10 @@ export class StripHeroView {
     switch (st) {
       case 'walk': {
         if (tick !== this.headTick) { this.headTick = tick; this.heading.update(f.vx, f.vz); }
-        return loop(headingAnim(A, this.heading.dir));
+        // sprinting (side on): its own strip when drawn, else the run played faster
+        if (f.sprinting && this.heading.dir === 'side' && A.sprint) return loop(A.sprint);
+        const w = headingAnim(A, this.heading.dir);
+        return loop(f.sprinting ? { ...w, fps: w.fps * 1.5 } : w);
       }
       case 'block':
       case 'parry': return A.block.frames[0];
@@ -151,6 +154,7 @@ export class StripHeroView {
     // (his strips keep their drawn baseline, a hand below his boots: the lying poses sit on it)
     if (hover) bob -= hover.height + (downed ? 0 : Math.sin(tick * hover.driftRate) * hover.drift);
     if (st === 'walk' && hover) lean += clamp01(Math.hypot(f.vx, f.vz) / f.stats.walkSpeed) * 4;
+    if (st === 'walk' && f.sprinting && !this.A.sprint) lean += 5; // (no sprint art yet: lean into it)
 
     if (st === 'idle' && this.A.idle.breathe) {
       const b = Math.sin(tick * 0.06);

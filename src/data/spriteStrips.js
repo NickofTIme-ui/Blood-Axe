@@ -38,6 +38,8 @@ export const CHARACTER_STRIPS = {
     // stalking forward while fully coiled (played backwards when he backs off)
     // (every pose is the crouched, coiled stance: sized to match charge pose 4, ~89 px)
     chargeWalk: { file: 'assets/sprites/strips/ulric_chargewalk.png', frames: 8, ref: 0, target: 90, align: 'median', ground: 'drawn' },
+    // the hero's charge (sprint): head down, blade back, cape streaming
+    sprint:  { file: 'assets/sprites/strips/ulric_sprint.png', frames: 8, ref: 0, target: 104, align: 'median', ground: 'drawn' },
     // finishers (combat/Finisher.js), drawn on an invisible victim
     finThroat: { file: 'assets/sprites/strips/ulric_finthroat.png', frames: 8, ref: 0, target: 116, ground: 'drawn' },
     finImpale: { file: 'assets/sprites/strips/ulric_finimpale.png', frames: 8, ref: 7, target: 116, ground: 'drawn', wide: 70 },
@@ -58,6 +60,7 @@ export const ANIM_OVERRIDES = {
     walkD: { needs: ['walkD'], frames: seq('walkD', [0, 1, 1, 2, 3, 4, 5, 5, 6, 7]), fps: 11, loop: true, heavyBob: true },
     walkUD: { needs: ['walkUD'], frames: seq('walkUD', [0, 1, 1, 2, 3, 4, 5, 5, 6, 7]), fps: 11, loop: true, heavyBob: true },
     walkDD: { needs: ['walkDD'], frames: seq('walkDD', [0, 1, 1, 2, 3, 4, 5, 5, 6, 7]), fps: 11, loop: true, heavyBob: true },
+    sprint: { needs: ['sprint'], frames: seq('sprint', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 16, loop: true },
     dodgeUp: { needs: ['rollUp'], frames: seq('rollUp', [0, 1, 2, 3, 4, 5]) },
     dodgeDown: { needs: ['rollDown'], frames: seq('rollDown', [0, 1, 2, 3, 4, 5]) },
     // Sparta kick: short ready beat, a long coiled chamber (the recoil), then the drive

@@ -4,7 +4,7 @@
 //           'ONE' (the 1 key), 'NUMPAD_ZERO'. You can list several keys per action.
 // GAMEPAD:  button numbers in the "standard" layout (Xbox names shown):
 //           0=A 1=B 2=X 3=Y 4=LB 5=RB 6=LT 7=RT 8=Back/View 9=Start/Menu
-//           12=D-pad Up 13=D-pad Down 14=D-pad Left 15=D-pad Right
+//           10=left stick click 12=D-pad Up 13=D-pad Down 14=D-pad Left 15=D-pad Right
 //           The left analog stick always moves.
 
 export const CONTROLS = {
@@ -23,6 +23,7 @@ export const CONTROLS = {
     magic:  ['U'],          // cast spell
     kick:   ['O'],          // forward Sparta kick: breaks guards, sends people flying
     jump:   ['SPACE'],
+    sprint: ['C'],          // sprint on / off (while moving)
 
     // Menus / system
     confirm: ['ENTER', 'J', 'SPACE'],
@@ -43,6 +44,7 @@ export const CONTROLS = {
     block:  [5],     // RB
     kick:   [7],     // RT — Sparta kick
     magic:  [4, 6],  // LB or LT
+    sprint: [10],    // click the left stick: sprint on / off
     confirm: [0, 9],
     pause:   [9],    // Start
     restart: [3],    // Y — only acts when dead, paused or after winning (it's the heavy button in a fight)
@@ -63,7 +65,7 @@ export const CONTROLS_P2 = {
   keyboard: {
     left: ['LEFT'], right: ['RIGHT'], up: ['UP'], down: ['DOWN'],
     attack: ['NUMPAD_ONE'], heavy: ['NUMPAD_TWO'], block: ['NUMPAD_THREE'],
-    dodge: ['NUMPAD_ZERO'], kick: ['NUMPAD_FOUR'], magic: ['NUMPAD_FIVE'], jump: ['NUMPAD_SIX'],
+    dodge: ['NUMPAD_ZERO'], kick: ['NUMPAD_FOUR'], magic: ['NUMPAD_FIVE'], jump: ['NUMPAD_SIX'], sprint: ['NUMPAD_SEVEN'],
     confirm: ['NUMPAD_ONE', 'ENTER'], pause: ['ENTER'], restart: [], menu: [], debug: [], gore: [], mute: [],
   },
   gamepad: CONTROLS.gamepad,
