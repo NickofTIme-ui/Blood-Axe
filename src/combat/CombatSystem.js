@@ -106,6 +106,9 @@ export class CombatSystem {
     const fresh = !(def.exposed > 0);
     def.exposed = K.duration;
     def.exposedBonus = K.bonus;
+    def.exposedBy = by;
+    def.exposedCrit = K.crit ?? 1;
+    def.exposedConsumes = K.critConsumes !== false;
     def.exposeCoolFrames = K.cooldown ?? 0;
     this.world.events.emit('exposed', { defender: def, by, fresh });
   }
@@ -176,7 +179,11 @@ export class CombatSystem {
     if (shadow) attacker.shadowTarget = null;
     const counter = def.state === 'stagger' || def.state === 'guardBreak' || shadow;
     const mult = (melee ? attacker.stats.meleeMult : attacker.stats.magicMult) * armMult(attacker);
-    const exposed = def.exposed > 0 && attacker?.team === 'player' ? 1 + (def.exposedBonus ?? 0) : 1;
+    // the Rogue's mark: her own hits +bonus; ANOTHER player's hit is a SUPER CRITICAL
+    const marked = def.exposed > 0 && attacker?.team === 'player';
+    const superCrit = marked && attacker !== def.exposedBy && (def.exposedCrit ?? 1) > 1;
+    const exposed = !marked ? 1 : superCrit ? def.exposedCrit : 1 + (def.exposedBonus ?? 0);
+    if (superCrit && def.exposedConsumes) def.exposed = 0;
     const damage = move.damage * mult * (counter ? FEEL.counterMultiplier : 1) * exposed;
     const healthBefore = def.health;
     def.health = Math.max(0, def.health - damage);
@@ -186,11 +193,12 @@ export class CombatSystem {
     event.damage = damage;
     event.counter = counter;
     event.exposed = exposed > 1;
+    event.superCrit = superCrit;
     if ((move.expose || shadow) && !(def.health <= 0)) this.expose(attacker, def);
 
     const kb = move.knockback ?? { x: 0, y: 0 };
     const lethal = def.health <= 0;
-    let hitstop = Math.min(FEEL.maxHitstop, (move.hitstop ?? 4) + (counter ? 3 : 0));
+    let hitstop = Math.min(FEEL.maxHitstop, (move.hitstop ?? 4) + (counter ? 3 : 0) + (superCrit ? 8 : 0));
     if (lethal) hitstop = FEEL.killHitstop;
     def.hitstop = hitstop;
     // a piercing blade already buried in someone keeps driving: later victims only
@@ -207,7 +215,8 @@ export class CombatSystem {
 
     if (lethal) {
       // How do they come apart? (only rigged enemies can be dismembered)
-      if (def.stats.art) {
+      if (def.stats.art && superCrit) event.fatality = 'explode'; // heavy carnage
+      else if (def.stats.art) {
         event.fatality = chooseFatality({
           cut: move.cut,
           damage,

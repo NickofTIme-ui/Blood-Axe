@@ -750,17 +750,17 @@ test('mage: force blast throws men into one another', () => {
   assert(bowled || t.es[1].state === 'knockdown', 'the far man was bowled over by the near one');
 });
 
-test('mage: tap magic = fire wall, hold = earth wall; enemies cannot cross, allies can', () => {
+test('mage: the barrier button raises the earth wall (no fire wall); enemies cannot cross, allies can', () => {
   const tap = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 2 }) });
   tap.run(20);
   const up = tap.seen('barrierUp')[0]?.e.barrier;
-  assert(up && up.kind === 'fire', `tap -> fire (${up?.kind})`);
+  assert(up && up.kind === 'earth', `earth (${up?.kind})`);
   assert(Math.abs(up.x - (600 + CHARACTERS.mage.kit.barrier.distance)) < 2, `in front of him at the set distance (${up.x})`);
   const hold = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 30 }) });
   hold.run(40);
-  assert(hold.seen('barrierUp')[0]?.e.barrier.kind === 'earth', 'hold -> earth');
+  assert(hold.seen('barrierUp')[0]?.e.barrier.kind === 'earth', 'held: still earth');
   // a man walking at the mage from behind the wall is stopped at its face
-  const t = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 30 }), foes: [[900]] });
+  const t = mageSetup({ script: { 1: ['magic'] }, foes: [[900]] });
   t.es[0].controller.hold = { left: true };
   t.run(140);
   const wall = t.world.barriers.list[0];
@@ -780,25 +780,59 @@ test('mage: a man standing on the wall line is moved clean to the nearer side, n
   assert(t.es[0].x < b.x && t.es[2].x > b.x, 'each to the side he was nearer');
 });
 
-test('mage: the fire wall burns enemies against it; the earth wall lasts longer; collision ends when it starts to fall', () => {
-  const f = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 2 }), foes: [[900]] });
-  f.es[0].controller.hold = { left: true };
-  f.run(120);
-  assert(f.es[0].health < f.es[0].stats.maxHealth, 'scorched');
+test('mage: the wall lasts its time; collision ends the moment it starts to fall', () => {
   const K = CHARACTERS.mage.kit.barrier;
-  assert(K.earth.duration > K.fire.duration, 'earth outlasts fire');
-  const e = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 2 }), foes: [[900, 470]] });
+  const e = mageSetup({ script: { 1: ['magic'] }, foes: [[900, 470]] });
   e.es[0].controller.hold = { left: true };
-  e.es[0].health = 1e6; // (just walks at it, whatever it costs him)
-  e.run(10 + K.fire.duration);
+  e.es[0].health = 1e6;
+  e.run(K.castAt + K.earth.duration - 4);
   const wall = e.world.barriers.list[0];
   assert(wall.state === 'up' && e.es[0].x >= wall.x + wall.half - 0.01, 'held until the last moment');
-  e.run(8);
+  e.run(10);
   assert(e.seen('barrierDown').length === 1, 'it came down on time');
   e.run(40);
   assert(e.es[0].x < wall.x, `the moment it falls, the way is open (${e.es[0].x.toFixed(0)})`);
   e.run(K.collapse);
   assert(e.world.barriers.list.length === 0 && e.seen('barrierGone').length === 1, 'and then it is gone');
+});
+
+test('mage: lightning is a three-press combo, each strike harder; the third floors him', () => {
+  const t = mageSetup({ script: { 1: ['heavy'], 24: ['heavy'], 44: ['heavy'] }, foes: [[720]] });
+  const e = t.es[0];
+  e.health = 1e4; e.stats = { ...e.stats, maxHealth: 1e4 };
+  const dmg = [];
+  t.world.events.on('hit', (h) => { if (h.defender === e) dmg.push(h.damage); });
+  t.run(110);
+  assert(dmg.length === 3, `three strikes (${dmg.length})`);
+  assert(dmg[1] > dmg[0] && dmg[2] > dmg[1] * 1.4, `harder each time (${dmg.map((d) => d.toFixed(0))})`);
+  assert(dmg[0] > 25, `the first already bites (${dmg[0].toFixed(0)} — was ~20 before)`);
+  assert(['knockdown', 'getup'].includes(e.state), `floored (${e.state})`);
+  assert(t.p.mana === t.p.stats.maxMana - CHARACTERS.mage.moves.heavy.manaCost + 0 || t.p.mana < t.p.stats.maxMana, 'one cost');
+});
+
+test('mage: hold force push to charge it — the full charge hits harder and throws further', () => {
+  const run = (held) => {
+    const t = mageSetup({ script: { 1: ['kick'] }, hold: (n) => ({ kick: n <= held }), foes: [[700]] });
+    const e = t.es[0];
+    e.health = 1e4; e.stats = { ...e.stats, maxHealth: 1e4 };
+    t.run(held + 30);
+    return { dmg: 1e4 - e.health, vx: Math.abs(e.vx), level: t.seen('forceBlast')[0]?.e.level };
+  };
+  const tap = run(1); const full = run(60);
+  assert(tap.level === 0 && full.level === 1, `levels ${tap.level} / ${full.level}`);
+  assert(full.dmg > tap.dmg * 1.8, `harder (${tap.dmg.toFixed(0)} -> ${full.dmg.toFixed(0)})`);
+});
+
+test('mage: he can blink out of a jump, staying at that height, then drops', () => {
+  const t = mageSetup({ script: { 1: ['jump'], 12: ['dodge'] }, hold: (n) => (n >= 12 && n < 14 ? { right: true } : {}) });
+  t.run(13);
+  assert(t.p.state === 'blink' && t.p.h > 20, `blinking in the air (${t.p.state}, h ${t.p.h.toFixed(0)})`);
+  const h0 = t.p.h;
+  t.run(6);
+  assert(Math.abs(t.p.h - h0) < 1, 'held at height');
+  assert(t.p.x > 600 + CHARACTERS.mage.kit.blink.distance - 5, `moved (${t.p.x.toFixed(0)})`);
+  t.run(80);
+  assert(t.p.grounded && t.p.state === 'idle', `landed (${t.p.state})`);
 });
 
 test('mage: the barrier is never placed outside the stage, and is on cooldown after', () => {
@@ -1107,6 +1141,46 @@ for (const [button, kind] of [['attack', 'phantom'], ['heavy', 'lotus'], ['kick'
     }
   });
 }
+
+test('rogue: MARK OF DEATH — a teammate hitting her marked man lands a super critical (and spends the mark)', () => {
+  const hitWith = (expose) => {
+    const t = rogueSetup({ ally: ['warrior', 560], foes: [[620]] });
+    const e = t.es[0];
+    e.health = 1e4; e.stats = { ...e.stats, maxHealth: 1e4 };
+    if (expose) t.world.combat.expose(t.p, e);
+    let crit = false;
+    t.world.events.on('hit', (h) => { if (h.superCrit) crit = true; });
+    t.mate.controller.script = { 1: ['attack'] }; t.mate.controller.t = 0;
+    t.run(14);
+    return { dmg: 1e4 - e.health, crit, left: e.exposed };
+  };
+  const plain = hitWith(false); const m = hitWith(true);
+  assert(m.crit && m.dmg > plain.dmg * 2.2, `super critical (${plain.dmg.toFixed(0)} -> ${m.dmg.toFixed(0)})`);
+  assert(!(m.left > 0), 'the mark is spent');
+  assert(CHARACTERS.rogue.kit.expose.duration === 345, 'lasts ~15% longer');
+  // a lethal super crit tears him apart
+  const k = rogueSetup({ ally: ['warrior', 560], foes: [[620, 420, 'butcher']] });
+  k.world.combat.expose(k.p, k.es[0]);
+  k.es[0].health = 5;
+  const kills = [];
+  k.world.events.on('kill', (e) => kills.push(e));
+  k.mate.controller.script = { 1: ['attack'] }; k.mate.controller.t = 0;
+  k.run(14);
+  assert(kills[0]?.fatality === 'explode', `carnage (${kills[0]?.fatality})`);
+});
+
+test('rogue: she dives out of a plain jump and out of a double jump', () => {
+  for (const script of [{ 1: ['jump'], 10: ['heavy'] }, { 1: ['jump'], 14: ['jump'], 18: ['heavy'] }]) {
+    const t = rogueSetup({ script, foes: [[700]] });
+    t.run(60);
+    assert(t.seen('diveLand').length === 1, `dived (${JSON.stringify(script)})`);
+  }
+});
+
+test('rogue: her jump is the highest of the three', () => {
+  const top = (id) => { const w = new World(); const f = w.addFighter(new Fighter({ stats: CHARACTERS[id], team: 'player', x: 400, z: 420, controller: new Scripted({ 1: ['jump'] }) })); let m = 0; for (let i = 0; i < 90; i++) { w.tick(); m = Math.max(m, f.h); } return m; };
+  assert(top('rogue') > top('warrior') * 1.3 && top('rogue') > top('mage'), `${top('rogue').toFixed(0)} vs ${top('warrior').toFixed(0)}`);
+});
 
 test('rogue: everything she does is the same on two machines (lockstep)', () => {
   const play = () => {

@@ -80,8 +80,8 @@ export class StripHeroView {
       }
       case 'force': {
         const F = A.force.frames; const m = f.move;
-        if (fr <= m.startup) return spread(F.slice(0, 2), fr / m.startup);
-        const since = fr - m.startup;
+        if (!f.forceAt) return fr < m.startup ? spread(F.slice(0, 2), fr / m.startup) : F[1]; // coiled (held = charging)
+        const since = fr - f.forceAt;
         return since <= 4 ? F[2] : since <= 11 ? F[3] : F[4];
       }
       case 'ward': {
@@ -148,6 +148,8 @@ export class StripHeroView {
       sy *= 1 + b * 0.012; sx *= 1 - b * 0.005;
     }
     if (st === 'hitstun') lean -= 6 * Math.max(0, 1 - fr / 8);
+    // charging the force push: a tremble that builds as it fills
+    if (st === 'force' && !f.forceAt && f.forceCharge > 0) lean += (Math.random() - 0.5) * Math.min(1, f.forceCharge / 30) * 2.5;
 
     s.setPosition(f.x, f.z - f.h + bob).setDepth(f.z).setScale(sx * f.facing, sy);
     s.angle = lean * f.facing;

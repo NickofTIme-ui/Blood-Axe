@@ -388,6 +388,8 @@ export const FIGHTER_STATES = {
         f.airJumpsLeft--;
         return startJump(f, true);
       }
+      // the Mage blinks out of a jump (once per time in the air)
+      if (s.states?.dodge === 'blink' && !f.airBlinked && f.stamina >= s.dodge.cost && c.consume('dodge')) return f.fsm.change('blink');
       // a hero kit's air moves (the Rogue: magic = shuriken fan, heavy = falling viper)
       const am = s.states?.airMagic;
       if (am && !f.fanUsed && !(f.cool[am] > 0) && c.consume('magic')) return f.fsm.change(am);
@@ -409,6 +411,9 @@ export const FIGHTER_STATES = {
         return f.fsm.change('idle');
       }
       f.activeAttack = movePhase(m, frame) === 'active' ? f.attackInfo : null;
+      // the Rogue can still dive out of an air slash
+      const ah = f.stats.states?.airHeavy;
+      if (ah && f.h >= (f.stats.kit?.dive?.minHeight ?? 0) && f.controller.consume('heavy')) f.fsm.change(ah);
     },
     exit(f) {
       f.activeAttack = null;

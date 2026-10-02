@@ -58,3 +58,16 @@ Everything below is code work for the cloud session.
 Idle strips, back/front movement views, finisher strips and the Mage's jump strip for
 both heroes. Prompts are in `docs/mage-art-prompts.md` and `docs/rogue-art-prompts.md`;
 their character descriptions are out of date (use the reference images above instead).
+
+## Done in the cloud (2 October 2026, after the hand-off)
+
+- Mage: blinks out of a jump (once per jump, holds his height through it); the barrier
+  button only raises the Earthen Bulwark; Chain Lightning is a three-press combo
+  (`kit.bolt.combo`), each strike harder, the third floors him; hold kick to charge the
+  force push (`kit.force.charge`).
+- Rogue: 25% smaller (strips and hurtbox); higher jump (700, vault 1010); her mark is a
+  MARK OF DEATH: another player's hit on it is a super critical (x2.6, gore burst,
+  spends the mark; `kit.expose.crit`); the mark lasts 345 frames; she dives out of a
+  jump, a double jump or an air slash (`kit.dive.minHeight` 22).
+- Checked the Rogue on screen at her new size: consistent across strips.
+- Still open: Mage view polish (item 4); the itch upload.

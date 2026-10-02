@@ -67,6 +67,8 @@ export class MageFX {
     });
     ev.on('lightningArc', (a) => this.arc(a));
     ev.on('forceBlast', (b) => this.force(b));
+    ev.on('forceCharge', ({ fighter }) => this.sound('boltCharge', fighter));
+    ev.on('forceChargeFull', ({ fighter }) => { this.sound('magicBlock', fighter); this.flashAt({ x: fighter.x + fighter.facing * 20, y: fighter.z - 70 }, 0xeef0ff, 16); });
     ev.on('blinkOut', ({ fighter, x, z }) => { this.sound('blinkOut', fighter); this.blinkPuff(x, z, fighter, true); });
     ev.on('blinkIn', ({ fighter, x, z }) => { this.sound('blinkIn', fighter); this.blinkPuff(x, z, fighter, false); });
     ev.on('wardSlam', ({ fighter }) => this.sound('barrierCast', fighter));
@@ -161,25 +163,32 @@ export class MageFX {
   }
 
   // One jump of the chain: from the staff (or the last body) into this one.
-  arc({ caster, from, to, gen, charged }) {
+  arc({ caster, from, to, gen, charged, stage = 1 }) {
     const chest = (f) => ({ x: f.x, y: f.z - f.h - f.stats.body.h * 0.62 });
     const a = from ? chest(from) : this.staffTip(caster);
     const b = chest(to);
-    this.bolt(a, b, to.z, charged);
+    const big = stage === 3;
+    this.bolt(a, b, to.z, charged || big, 1 + (stage - 1) * 0.35);
+    if (big && gen === 0) this.bolt(a, b, to.z, true, 1.4); // the finale: a double bolt
     this.sound(gen === 0 ? 'boltImpact' : 'boltJump', caster);
-    this.flashAt(b, 0xffe0b0, gen === 0 ? 16 : 11);
-    this.scene.gore.spark(to.x, to.z, to.h + to.stats.body.h * 0.6, 0xffd890, gen === 0 ? 14 : 8);
+    if (gen === 0) this.sound(big ? 'storm' : 'staffImpact', caster); // a heavy crack under the zap: it BITES
+    this.flashAt(b, 0xffe0b0, (gen === 0 ? 16 : 11) + stage * 4);
+    this.scene.gore.spark(to.x, to.z, to.h + to.stats.body.h * 0.6, 0xffd890, (gen === 0 ? 14 : 8) + stage * 6);
+    if (gen === 0 && stage > 1) this.pulse(to.x, to.z, 2, 0xffd890, 40 + stage * 20);
+    if (big && gen === 0) { this.scene.cameras.main.flash(70, 255, 220, 170); this.scene.rumble(1, 0.9, 180); }
     // the light of it on the floor under him, and a curl of smoke
     this.pulse(to.x, to.z, 1, 0xff9040, 30);
     this.scene.burning?.puff?.(to.x, to.z, to.h + to.stats.body.h * 0.7, 0.4);
-    if (gen === 0) this.scene.fx.shake(charged ? 5 : 2.5, 6);
+    if (gen === 0) this.scene.fx.shake((charged ? 5 : 3) + stage * 3, 8 + stage * 2);
   }
 
   // The force blast: no glowing ball — pressure. Arcs of distorted air rolling out of the
   // palm through the cone, a sheet of dust blasted off the floor, a few runes at the hand.
-  force({ fighter: f, x, z, dir, radius, angle }) {
+  force({ fighter: f, x, z, dir, radius, angle, level = 0 }) {
     this.sound('force', f);
-    this.scene.fx.shake(5, 10);
+    if (level >= 1) this.sound('earthUp', f);
+    this.scene.fx.shake(5 + level * 6, 10 + level * 6);
+    if (level >= 1) this.scene.rumble(0.9, 0.6, 160);
     const half = (angle / 2) * Math.PI / 180;
     const hy = z - f.h - (f.stats.hover?.height ?? 0) - 62;
     for (let i = 0; i < 3; i++) {

@@ -110,7 +110,8 @@ export class ArenaScene extends Phaser.Scene {
       // (lightning, force and the fire wall leave no blood: the Mage's effects show them)
       if (!e.move.noBlood) this.gore.onHit(e);
       this.fx.shake(e.move.shake ?? 0, 8);
-      if (e.counter) this.popup(e.x, e.z - e.h - 30, 'COUNTER!', '#ffd24a');
+      if (e.superCrit) this.superCritFX(e);
+      else if (e.counter) this.popup(e.x, e.z - e.h - 30, 'COUNTER!', '#ffd24a');
       if (e.move.fx === 'kick') this.kickImpact(e.x, e.z, e.h, e.dir);
       if (e.move.cut === 'fire') this.fireImpact(e.x, e.z, e.h);
       if (e.move.impale) this.impaleFX(e);
@@ -375,6 +376,23 @@ export class ArenaScene extends Phaser.Scene {
         if (t >= hold + fade) { tip.destroy(); tick.remove(); }
       },
     });
+  }
+
+  // The Rogue's MARK OF DEATH paid off by a teammate: a super critical — carnage.
+  superCritFX(e) {
+    this.callout('SUPER CRITICAL!', '#ff3050', 30);
+    this.fx.shake(12, 18);
+    this.rumble(1, 1, 220);
+    this.slowmo(0.4, 260);
+    playSfx(this, 'kick', { volume: 1, pitch: -900, minGapMs: 0 });
+    playSfx(this, 'finisher', { volume: 0.9, pitch: -500, minGapMs: 0 });
+    const g = this.gore;
+    if (g.level > 0) {
+      g.burst(e.x, e.z, e.h, e.dir, Math.round(90 * g.amount), 2);
+      g.burst(e.x, e.z, e.h, -e.dir, Math.round(30 * g.amount), 1.2);
+      g.mist(e.x, e.z, e.h, 12);
+      for (let i = 0; i < 8; i++) g.splat(e.x + e.dir * (10 + Math.random() * 80), e.z + (Math.random() - 0.5) * 12, 1 + Math.random() * 2.5);
+    } else g.spark(e.x, e.z, e.h, 0xffffff, 30);
   }
 
   // Firebolt hit: burst of flame and embers.

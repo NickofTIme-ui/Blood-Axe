@@ -32,18 +32,18 @@ export const HERO_STRIPS = {
     },
   },
   rogue: {
-    target: 92, // her low guard stance
+    target: 69, // her low guard stance (25% smaller than first drawn, at the user's ask)
     needs: ['run', 'combo1', 'combo2', 'combo3', 'combo4', 'viper', 'moves', 'dodge', 'air', 'react'],
     strips: {
-      run: strip('rogue', 'run', 8, { align: 'median', ground: 'drawn', target: 90 }),
+      run: strip('rogue', 'run', 8, { align: 'median', ground: 'drawn', target: 68 }),
       combo1: strip('rogue', 'combo1', 4), // guard, cocked, slash, follow-through
       combo2: strip('rogue', 'combo2', 4),
       combo3: strip('rogue', 'combo3', 4),
-      combo4: strip('rogue', 'combo4', 4, { ground: 'drawn', ref: 1, target: 80 }), // low coil, turn, rising strike (airborne), landing
+      combo4: strip('rogue', 'combo4', 4, { ground: 'drawn', ref: 1, target: 60 }), // low coil, turn, rising strike (airborne), landing
       viper: strip('rogue', 'viper', 6, { ref: 5 }),   // crouch, burst, crossing cut, slide, low finish, guard
       moves: strip('rogue', 'moves', 8, { ref: 2 }),   // kick x3, block, knife draw, knife thrown, mine set, spring away
       dodge: strip('rogue', 'dodge', 8, { ground: 'drawn', ref: 7 }), // forward roll x4, handspring x4
-      air: strip('rogue', 'air', 8, { ground: 'drawn', ref: 7, target: 78 }),     // take-off, tuck, vault plant, launched, fan, dive, strike, landing
+      air: strip('rogue', 'air', 8, { ground: 'drawn', ref: 7, target: 59 }),     // take-off, tuck, vault plant, launched, fan, dive, strike, landing
       react: strip('rogue', 'react', 8, { ref: 7, ground: 'drawn' }),   // hit, stumble, flying, lying, roll up, kick-through, spring, stance
     },
   },

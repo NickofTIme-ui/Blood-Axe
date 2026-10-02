@@ -282,6 +282,16 @@ export const CHARACTERS = {
         jumpFrames: 3,               // frames between one generation of jumps and the next
                                      // (mana: moves.heavy.manaCost)
         hitstun: 30, knockback: 150,
+        // THREE-HIT COMBO: press heavy again after each bolt. Per strike 1, 2, 3:
+        combo: {
+          damage: [1.6, 1.9, 3.0],   // x damage / chainDamage
+          hitstop: [10, 12, 18],
+          shake: [6, 8, 14],
+          knockback: [1.2, 1.4, 2.6],
+          knockdown: [false, false, true],
+          startup: 6,                // a follow-up's wind-up (frames)
+          window: [4, 22],           // frames after a bolt when the next press counts
+        },
         charge: {                    // overcharge: heavy still held when the cast is ready
           maxFrames: 36,             // longest it can be held
           fullFrames: 28,            // held this long = fully charged
@@ -295,6 +305,8 @@ export const CHARACTERS = {
         heavyHealth: 160,                    // max health from which a man only staggers
         staggerFrames: 34, heavyKnockback: 260,
         cooldown: 75,                        // frames before it can be used again
+        // hold kick to build it: released (or full) it's this much stronger at full charge
+        charge: { maxFrames: 40, fullFrames: 34, damage: 2.2, knockback: 1.6, radius: 1.3, floorsBrutes: true },
       },
       // BLINK — teleport in place of the roll
       blink: {
@@ -304,10 +316,11 @@ export const CHARACTERS = {
         actFrom: 9,      // frame attacks may cut in
         cooldown: 0,     // optional extra lockout (frames) after a blink
       },
-      // ARCANE BARRIERS — tap magic = INFERNAL WALL, hold = EARTHEN BULWARK
+      // ARCANE BARRIER — the EARTHEN BULWARK. (The Infernal Wall is still in
+      // combat/Barrier.js: set kind: 'fire' to use it.)
       barrier: {
-        holdFrames: 14,  // magic held this long = earth
-        castAt: 12,      // frames after choosing until it erupts
+        kind: 'earth',
+        castAt: 12,      // frames from the press until it erupts
         recovery: 16,
         cooldown: 420,   // frames (7 s) before another barrier
         distance: 150,   // px ahead of him
@@ -334,7 +347,7 @@ export const CHARACTERS = {
     className: 'Rogue',
     description: 'The fastest killer alive. Slips every blow, mines the field, vaults off allies and rains steel from above. Light armour.',
     archetype: 'rogue',
-    body: { w: 36, h: 92 },
+    body: { w: 28, h: 70 }, // (her hurtbox matches the picture: 25% smaller than first drawn)
     look: { color: 0x4a2a5e, accent: 0xb0b8c0, skin: 0xd2a07a },
     // the buttons her kit replaces (fighterStates.js stateFor):
     //   heavy = VIPER STRIKE, kick = crescent kick / knife throw at range / sweep (down),
@@ -345,7 +358,7 @@ export const CHARACTERS = {
     maxHealth: 105, maxStamina: 110, maxMana: 60,
     staminaRegen: 42, staminaRegenDelay: 26, manaRegen: 3,
     walkSpeed: 235, depthSpeed: 165,
-    jumpStrength: 620, gravity: 1700, airControl: 0.16, airJumps: 1,
+    jumpStrength: 700, gravity: 1700, airControl: 0.16, airJumps: 1, // the highest jump of the three
     meleeMult: 0.9, magicMult: 1.0,
     blockReduction: 0.62, guardEfficiency: 1.4, // a light guard: heavy blows break it fast
     // the best dodge in the game: long, quick, invulnerable for most of it
@@ -440,8 +453,11 @@ export const CHARACTERS = {
     kit: {
       // EXPOSED: her precision hits open a weakness the whole team can exploit
       expose: {
-        duration: 300,      // frames (5 s)
-        bonus: 0.25,        // +25% damage from ALL players while exposed
+        duration: 345,      // frames (5.75 s)
+        bonus: 0.25,        // +25% damage from her own hits while marked
+        // MARK OF DEATH: another player's hit on a marked man is a SUPER CRITICAL —
+        // this many times the damage, the heaviest gore, and it spends the mark
+        crit: 2.6, critConsumes: true,
         refresh: true,      // a new trigger restarts the timer (it never stacks)
         cooldown: 0,        // frames before the same enemy can be exposed again after it ends
         minHealth: 0,       // only enemies with at least this much max health (0 = any)
@@ -483,7 +499,7 @@ export const CHARACTERS = {
         range: 80, depth: 30,  // how close the teammate must be
         approach: 0.4,         // she must be moving toward them at least this fast (share of run speed)
         plant: 6,              // frames on the shoulder
-        launch: 960,           // upward speed (a normal jump is jumpStrength)
+        launch: 1010,          // upward speed (a normal jump is jumpStrength)
         forward: 260,          // carried on over the ally
         cooldown: 50,          // frames before the same teammate can be vaulted again
         apex: 14,              // frames either side of the top of a vault that count as "the apex"
@@ -500,7 +516,7 @@ export const CHARACTERS = {
         },
       },
       // FALLING VIPER
-      dive: { minHeight: 60, range: 260, depth: 70, speed: 820, land: 14, stagger: 60, staggerFrames: 18 },
+      dive: { minHeight: 22, range: 260, depth: 70, speed: 820, land: 14, stagger: 60, staggerFrames: 18 },
       finisher: { reach: 160, depth: 34 },
     },
   },

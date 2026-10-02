@@ -76,27 +76,33 @@ export function planChainLightning(f, K, charged = false, level = 0) {
   return { hits, end };
 }
 
-function strikeWithLightning(f, hit, K, charged) {
+function strikeWithLightning(f, hit, K, charged, stage = 1) {
   const t = hit.t;
   if (!t.alive || t.removeMe || t.state === 'executed') return;
   const src = hit.from ?? f;
   const dir = Math.sign(t.x - src.x) || f.facing;
+  const C = K.combo;
+  const i = stage - 1;
+  const down = (charged && K.charge.knockdown) || C.knockdown[i];
   const move = {
-    cut: 'shock', fx: 'lightning', noBlood: true,
-    damage: hit.damage, hitstun: K.hitstun, hitstop: hit.gen === 0 ? (charged ? 10 : 7) : 5, shake: hit.gen === 0 ? (charged ? 6 : 3) : 1,
-    knockback: { x: K.knockback * (charged ? 1.4 : 1) * (hit.gen ? 0.6 : 1), y: charged ? 240 : 0 },
-    knockdown: charged && K.charge.knockdown,
-    breaksGuard: charged,
-    guardDamage: 26,
+    cut: 'shock', fx: 'lightning', noBlood: true, stage,
+    damage: hit.damage * C.damage[i],
+    hitstun: K.hitstun + i * 6,
+    hitstop: Math.round((hit.gen === 0 ? C.hitstop[i] : C.hitstop[i] * 0.5) + (charged ? 3 : 0)),
+    shake: hit.gen === 0 ? C.shake[i] + (charged ? 3 : 0) : Math.round(C.shake[i] * 0.3),
+    knockback: { x: K.knockback * C.knockback[i] * (charged ? 1.4 : 1) * (hit.gen ? 0.6 : 1), y: down ? 300 : 0 },
+    knockdown: down,
+    breaksGuard: charged || stage === 3,
+    guardDamage: 26 + i * 14,
   };
   const before = t.health;
   f.world.combat.resolve(f, t, move, {
     kind: 'magic', fromX: src.x, dir,
     contact: { x: t.x, h: t.h + t.stats.body.h * 0.62 },
   });
-  if (t.health < before || !t.alive) t.shock = charged ? 34 : 24; // he seizes (view)
+  if (t.health < before || !t.alive) t.shock = (charged ? 34 : 24) + i * 10; // he seizes (view)
   f.world.events.emit('lightningArc', {
-    caster: f, from: src === f ? null : src, to: t, gen: hit.gen, charged, index: hit.gen,
+    caster: f, from: src === f ? null : src, to: t, gen: hit.gen, charged, index: hit.gen, stage,
   });
 }
 
@@ -115,18 +121,22 @@ export function forceTargets(f, K) {
     .sort((a, b) => a.dist - b.dist || a.e.id - b.e.id);
 }
 
-function releaseForce(f) {
-  const K = kitOf(f).force;
+function releaseForce(f, level = 0) {
+  const K0 = kitOf(f).force;
+  const C = K0.charge;
+  const lerp = (a, b) => a + (b - a) * level;
+  // charged: harder, further, wider (level 0 = a tap, 1 = fully held)
+  const K = { ...K0, damage: K0.damage * lerp(1, C.damage), knockback: K0.knockback * lerp(1, C.knockback), radius: K0.radius * lerp(1, C.radius) };
   const w = f.world;
   const targets = forceTargets(f, K);
-  w.events.emit('forceBlast', { fighter: f, x: f.x, z: f.z, dir: f.facing, radius: K.radius, angle: K.angle, count: targets.length });
+  w.events.emit('forceBlast', { fighter: f, x: f.x, z: f.z, dir: f.facing, radius: K.radius, angle: K.angle, count: targets.length, level });
   for (const { e, dist } of targets) {
     const near = 1 - 0.45 * Math.min(1, dist / K.radius);
-    const heavy = e.stats.boss || e.stats.maxHealth >= K.heavyHealth;
+    const heavy = (e.stats.boss || e.stats.maxHealth >= K.heavyHealth) && !(level >= 1 && C.floorsBrutes && !e.stats.boss);
     const move = {
       cut: 'crush', fx: 'force', noBlood: true,
-      damage: K.damage, hitstun: heavy ? K.staggerFrames : 30, hitstop: 7, shake: 6,
-      knockback: { x: (heavy ? K.heavyKnockback : K.knockback) * near, y: heavy ? 0 : K.lift * near },
+      damage: K.damage, hitstun: heavy ? K.staggerFrames : 30, hitstop: Math.round(7 + level * 6), shake: Math.round(6 + level * 6),
+      knockback: { x: (heavy ? K.heavyKnockback : K.knockback) * near, y: heavy ? 0 : K.lift * near * lerp(1, 1.3) },
       knockdown: !heavy, bowl: !heavy, breaksGuard: true, guardDamage: 60,
     };
     w.combat.resolve(f, e, move, {
@@ -165,6 +175,7 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput }) {
         f.blinkTo = { x: clampX(f.world, f.x + ux * B.distance), z: clampZ(f.world, f.z + uz * B.distance * 0.6) };
         f.blinkDir = Math.abs(uz) > Math.abs(ux) * 1.2 ? (uz < 0 ? 'up' : 'down') : 'side';
         f.blinkGone = false;
+        f.blinkAir = !f.grounded; // blinked out of a jump: he stays at that height through it
         f.invincible = true;
         stopMoving(f);
         f.world.events.emit('blinkOut', { fighter: f, x: f.x, z: f.z, to: f.blinkTo });
@@ -173,6 +184,7 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput }) {
         const d = f.stats.dodge;
         const B = kitOf(f).blink;
         stopMoving(f);
+        if (f.blinkAir && f.h > 0) f.vh = f.stats.gravity / 60; // (held at that height: no fall while blinking)
         f.invincible = frame <= d.iframes;
         if (frame === B.vanishAt) f.blinkGone = true;
         if (frame === B.arriveAt) {
@@ -180,6 +192,12 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput }) {
           f.z = f.blinkTo.z;
           f.blinkGone = false;
           f.world.events.emit('blinkIn', { fighter: f, x: f.x, z: f.z, from: f.blinkFrom });
+        }
+        if (f.blinkAir && f.h > 0) {
+          // in the air: re-formed, he drops again (an air chop is the only thing he can do up there)
+          if (frame >= B.actFrom && f.controller.consume('attack') && f.stats.moves.air) { f.vh = 0; return f.fsm.change('airAttack'); }
+          if (frame >= d.duration + d.recovery) { f.vh = 0; f.airBlinked = true; f.fsm.change('jump'); }
+          return;
         }
         if (frame >= B.actFrom && tryActions(f, ['attack', 'heavy', 'kick', 'magic', 'block', 'jump'])) return;
         if (frame >= d.duration + d.recovery) f.fsm.change('idle');
@@ -199,12 +217,16 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput }) {
     // released or full. Then the bolt fires and leaps on through the crowd, one
     // generation of jumps every few frames.
     bolt: {
-      enter(f) {
+      enter(f, p) {
         stopMoving(f);
         faceInput(f);
-        const m = f.stats.moves.heavy;
+        const K = kitOf(f).bolt;
+        f.boltStage = p?.stage ?? 1;
+        const base = f.stats.moves.heavy;
+        // a follow-up strike comes out quicker (the staff is already up)
+        const m = f.boltStage > 1 ? { ...base, startup: K.combo.startup } : base;
         f.startMove(m);
-        f.mana = Math.max(0, f.mana - (m.manaCost ?? 0));
+        if (f.boltStage === 1) f.mana = Math.max(0, f.mana - (m.manaCost ?? 0)); // (one cost for the whole combo)
         f.boltHeld = true;
         f.boltCharge = 0;
         f.boltFired = 0;
@@ -234,17 +256,20 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput }) {
           const plan = planChainLightning(f, K, charged, level);
           f.bolt = { plan, charged, at: frame, done: new Set() };
           f.boltFired = frame;
-          f.world.events.emit('boltCast', { fighter: f, charged, level, plan, end: plan.end });
-          if (plan.hits.length) f.hitstop = charged ? 6 : 3; // the kick of the release
+          f.world.events.emit('boltCast', { fighter: f, charged, level, plan, end: plan.end, stage: f.boltStage });
+          if (plan.hits.length) f.hitstop = (charged ? 6 : 3) + f.boltStage; // the kick of the release
         }
         // each generation of jumps a few frames after the last
         const b = f.bolt;
         for (const h of b.plan.hits) {
           if (b.done.has(h) || frame < b.at + h.gen * K.jumpFrames) continue;
           b.done.add(h);
-          strikeWithLightning(f, h, K, b.charged);
+          strikeWithLightning(f, h, K, b.charged, f.boltStage);
         }
         const since = frame - f.boltFired;
+        // the next strike of the three
+        const W = K.combo.window;
+        if (f.boltStage < 3 && since >= W[0] && since <= W[1] && c.consume('heavy')) return f.fsm.change('bolt', { stage: f.boltStage + 1 });
         if (since >= m.recovery - 10 && tryActions(f, ['dodge'])) return;
         if (since >= m.recovery) f.fsm.change('idle');
       },
@@ -262,14 +287,28 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput }) {
       },
       update(f, frame) {
         const m = f.move;
+        const C = kitOf(f).force.charge;
         friction(f, 0.7);
         f.propStrike = null;
-        if (frame < m.startup) f.vx = -f.facing * 40; // settles back into the push
-        if (frame === m.startup + 1) releaseForce(f);
-        for (const win of m.cancels ?? []) {
-          if (frame >= win.from && frame <= win.to && tryActions(f, win.into)) return;
+        if (frame === 1) { f.forceHeld = true; f.forceCharge = 0; f.forceAt = 0; }
+        if (!f.controller.isDown('kick')) f.forceHeld = false;
+        if (!f.forceAt) {
+          if (frame < m.startup) { f.vx = -f.facing * 40; return; } // settles back into the push
+          // still holding: building it up (released, or full = it goes)
+          if (f.forceHeld && f.forceCharge < C.maxFrames) {
+            if (f.forceCharge === 0) f.world.events.emit('forceCharge', { fighter: f });
+            f.forceCharge++;
+            if (f.forceCharge === C.fullFrames) f.world.events.emit('forceChargeFull', { fighter: f });
+            return;
+          }
+          f.forceAt = frame;
+          releaseForce(f, Math.min(1, f.forceCharge / C.fullFrames));
         }
-        if (frame >= m.startup + m.active + m.recovery) f.fsm.change('idle');
+        const since = frame - f.forceAt + m.startup + 1; // (frame numbers as if it had gone at once)
+        for (const win of m.cancels ?? []) {
+          if (since >= win.from && since <= win.to && tryActions(f, win.into)) return;
+        }
+        if (since >= m.startup + m.active + m.recovery) f.fsm.change('idle');
       },
       exit(f) { f.propStrike = null; },
     },
@@ -290,9 +329,7 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput }) {
         const B = kitOf(f).barrier;
         friction(f, 0.7);
         if (!f.wardKind) {
-          if (!f.controller.isDown('magic')) f.wardKind = 'fire';
-          else if (frame >= B.holdFrames) f.wardKind = 'earth';
-          if (!f.wardKind) return;
+          f.wardKind = B.kind ?? 'earth';
           f.wardAt = frame;
           f.world.events.emit('wardChoose', { fighter: f, kind: f.wardKind });
         }
