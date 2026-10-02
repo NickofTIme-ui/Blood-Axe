@@ -37,20 +37,20 @@ export const HERO_STRIPS = {
     },
   },
   rogue: {
-    target: 84, // her low guard stance: a little under a grunt
+    target: 90, // her low guard stance: petite, under every other fighter
     needs: ['run', 'combo1', 'combo2', 'combo3', 'combo4', 'viper', 'moves', 'dodge', 'air', 'react'],
     strips: {
-      run: strip('rogue', 'run', 8, { align: 'median', ground: 'drawn', target: 83 }),
-      runU: strip('rogue', 'runU', 8, { align: 'median', ground: 'drawn', target: 83 }), // from behind (up the screen)
+      run: strip('rogue', 'run', 8, { align: 'median', ground: 'drawn', target: 89 }),
+      runU: strip('rogue', 'runU', 8, { align: 'median', ground: 'drawn', target: 89 }), // from behind (up the screen)
       idle: strip('rogue', 'idle', 6), // coiled guard; pose 4 is a dagger flourish (optional)
       combo1: strip('rogue', 'combo1', 4), // guard, cocked, slash, follow-through
       combo2: strip('rogue', 'combo2', 4),
       combo3: strip('rogue', 'combo3', 4),
-      combo4: strip('rogue', 'combo4', 4, { ground: 'drawn', ref: 1, target: 73 }), // low coil, turn, rising strike (airborne), landing
+      combo4: strip('rogue', 'combo4', 4, { ground: 'drawn', ref: 1, target: 78 }), // low coil, turn, rising strike (airborne), landing
       viper: strip('rogue', 'viper', 6, { ref: 5 }),   // crouch, burst, crossing cut, slide, low finish, guard
       moves: strip('rogue', 'moves', 8, { ref: 2 }),   // kick x3, block, knife draw, knife thrown, mine set, spring away
       dodge: strip('rogue', 'dodge', 8, { ground: 'drawn', ref: 7 }), // forward roll x4, handspring x4
-      air: strip('rogue', 'air', 8, { ground: 'drawn', ref: 7, target: 72 }),     // take-off, tuck, vault plant, launched, fan, dive, strike, landing
+      air: strip('rogue', 'air', 8, { ground: 'drawn', ref: 7, target: 77 }),     // take-off, tuck, vault plant, launched, fan, dive, strike, landing
       react: strip('rogue', 'react', 8, { ref: 7, ground: 'drawn' }),   // hit, stumble, flying, lying, roll up, kick-through, spring, stance
     },
   },
