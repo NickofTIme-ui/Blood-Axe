@@ -4,7 +4,8 @@
 // The painting is 4:3 and the screen 16:9, so it's shown whole in the middle, over a
 // blurred, darkened copy of itself that fills the sides. It fades up from black with a
 // slow push-in and embers drifting up; the button fades in a moment later.
-// Enter / J / Space / (A) or a click on the button continue. M toggles the music.
+// Left / right (keys, stick or D-pad) move between the buttons; Enter / J / Space / (A)
+// or a click chooses. M toggles the music.
 
 import { SETTINGS } from '../config/settings.js';
 import { InputManager } from '../core/InputManager.js';
@@ -95,8 +96,6 @@ export class TitleScene extends Phaser.Scene {
 
     // (a sized container's hit area is measured from its top-left corner)
     c.setInteractive({ hitArea: new Phaser.Geom.Rectangle(0, 0, w, h), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
-    c.on('pointerover', () => { plate.setStrokeStyle(2, 0xffd070); this.tweens.add({ targets: c, scale: 1.05, duration: 120 }); });
-    c.on('pointerout', () => { plate.setStrokeStyle(2, 0xb08a4a); this.tweens.add({ targets: c, scale: 1, duration: 120 }); });
     c.on('pointerdown', () => { if (c.alpha > 0.5 && !this.lobby) onClick(); });
     return btn;
   }
@@ -104,9 +103,34 @@ export class TitleScene extends Phaser.Scene {
   // The three ways to play.
   makeButtons(y) {
     const W = SETTINGS.width;
-    this.button = this.makeButton(W / 2 - 250, y, '1 PLAYER', 220, () => this.go('solo'));
-    this.makeButton(W / 2, y, '2 PLAYERS', 220, () => this.go('local'), 1650);
-    this.makeButton(W / 2 + 250, y, 'ONLINE CO-OP', 240, () => this.openLobby(), 1800);
+    const acts = [() => this.go('solo'), () => this.go('local'), () => this.openLobby()];
+    this.buttons = [
+      this.makeButton(W / 2 - 250, y, '1 PLAYER', 220, acts[0]),
+      this.makeButton(W / 2, y, '2 PLAYERS', 220, acts[1], 1650),
+      this.makeButton(W / 2 + 250, y, 'ONLINE CO-OP', 240, acts[2], 1800),
+    ];
+    this.buttons.forEach((b, i) => { b.act = acts[i]; b.c.on('pointerover', () => this.pick(i)); });
+    this.button = this.buttons[0];
+    this.pick(0);
+  }
+
+  // The button the keys and the gamepad are on (left / right to move, confirm to choose).
+  pick(i) {
+    const n = this.buttons.length;
+    this.picked = ((i % n) + n) % n;
+    this.buttons.forEach((b, k) => {
+      const on = k === this.picked;
+      b.plate.setStrokeStyle(on ? 3 : 2, on ? 0xffd070 : 0xb08a4a);
+      b.c.setScale(on ? 1.06 : 1);
+    });
+  }
+
+  // The same for the two choices of the online menu.
+  lobbyPick(i) {
+    const L = this.lobby;
+    L.picked = ((i % 2) + 2) % 2;
+    L.host.setAlpha(L.picked === 0 ? 1 : 0.6);
+    L.join.setAlpha(L.picked === 1 ? 1 : 0.6);
   }
 
   go(mode = 'solo', net = null) {
@@ -138,6 +162,7 @@ export class TitleScene extends Phaser.Scene {
     L.onKey = (e) => this.lobbyKey(e);
     this.input.keyboard.on('keydown', L.onKey);
     this.lobbyShow('menu');
+    this.lobbyPick(0);
   }
 
   lobbyButton(x, y, text, onClick) {
@@ -154,7 +179,7 @@ export class TitleScene extends Phaser.Scene {
     const menu = state === 'menu';
     L.host.setVisible(menu); L.join.setVisible(menu);
     L.big.setText(''); L.body.setText('');
-    if (menu) L.note.setText('One of you hosts and reads out the room code; the other joins with it.\nH  host      J  join      Esc  back');
+    if (menu) L.note.setText('One of you hosts and reads out the room code; the other joins with it.\nH  host      J  join      Esc  back      (gamepad: left / right, A, B)\nTyping a room code needs the keyboard.');
     else if (state === 'opening') { L.body.setText('Opening a room…'); L.note.setText('Esc  cancel'); }
     else if (state === 'hosting') {
       L.big.setText(L.code); epicFill(L.big, ['#fff6c8', '#f0c050', '#a06010']);
@@ -231,8 +256,24 @@ export class TitleScene extends Phaser.Scene {
     c.tick(false);
     if (c.consume('mute')) toggleMute();
     // (while the online menu is up the keys belong to it — J is "join" there)
-    if (this.lobby || this.time.now - (this.lobbyClosedAt ?? -999) < 300) { c.consume('confirm'); c.consume('attack'); }
-    else if (c.consume('confirm') || c.consume('attack')) this.go('solo');
+    const step = (c.consume('right') ? 1 : 0) - (c.consume('left') ? 1 : 0);
+    const L = this.lobby;
+    if (L) {
+      // the gamepad in the online menu: left / right, A to choose, B to go back (the
+      // keyboard has its own letters there, lobbyKey — J is "join", so no confirm keys)
+      const pad = (a) => !!c.padPrev[a]; // (held on a gamepad this frame)
+      if (L.state === 'menu' && step) this.lobbyPick((L.picked ?? 0) + step);
+      const ok = (c.consume('confirm') || c.consume('attack')) && (pad('confirm') || pad('attack'));
+      if (c.consume('dodge') && pad('dodge')) this.lobbyKey({ key: 'Escape' });
+      else if (ok) {
+        if (L.state === 'menu') { if (L.picked === 1) this.lobbyJoin(); else this.lobbyHost(); }
+        else if (L.state === 'error') this.lobbyShow('menu');
+      }
+    } else if (this.time.now - (this.lobbyClosedAt ?? -999) < 300) { c.consume('confirm'); c.consume('attack'); }
+    else {
+      if (step) this.pick(this.picked + step);
+      if (c.consume('confirm') || c.consume('attack')) this.buttons[this.picked].act();
+    }
     if (!this.sound.locked && this.soundHint.alpha > 0) this.soundHint.setAlpha(Math.max(0, this.soundHint.alpha - 0.05));
 
     // embers: slow, flickering, drifting

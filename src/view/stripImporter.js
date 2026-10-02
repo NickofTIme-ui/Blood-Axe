@@ -27,8 +27,10 @@ function loadPixels(img) {
   return { c, ctx, data: ctx.getImageData(0, 0, c.width, c.height), W: c.width, H: c.height };
 }
 
-// Background = transparent, or dark (black bg), reached from the image edges.
-function backgroundMask({ data, W, H }, bg = 'black') {
+// Background = transparent, or dark (black bg), reached from the image edges — and from
+// `holes`: [[x, y], ...] source-pixel points inside pockets of background that a figure
+// closes off (the gap between a cloak and an arm), which the edges can't reach.
+function backgroundMask({ data, W, H }, bg = 'black', holes = []) {
   const d = data.data;
   const isBgColour = (p) => {
     const i = p * 4;
@@ -41,6 +43,7 @@ function backgroundMask({ data, W, H }, bg = 'black') {
   const push = (p) => { if (!bgm[p] && isBgColour(p)) { bgm[p] = 1; stack.push(p); } };
   for (let x = 0; x < W; x++) { push(x); push((H - 1) * W + x); }
   for (let y = 0; y < H; y++) { push(y * W); push(y * W + W - 1); }
+  for (const [x, y] of holes) if (x >= 0 && x < W && y >= 0 && y < H) push(y * W + x);
   while (stack.length) {
     const p = stack.pop();
     const x = p % W;
@@ -292,7 +295,7 @@ function importStrip(img, spec, palette) {
   }
   // wounds: magenta marker patches become raw stumps (view/woundPaint.js)
   if (spec.wounds) paintMarkerWounds(data);
-  const fg = backgroundMask(px, spec.bg);
+  const fg = backgroundMask(px, spec.bg, spec.holes);
   const n = spec.frames;
   const owner = splitFigures(fg, W, H, n, spec.own);
 

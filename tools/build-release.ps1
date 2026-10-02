@@ -5,8 +5,9 @@
 # title screen is shrunk here: PNGs with no transparency (strips painted on black) are
 # re-encoded as high-quality JPEG *under the same file name* (browsers read the real
 # format from the data, so no code changes), the game cuts and scales them down at load
-# anyway. Left untouched: anything with transparency, and the flee/cower strips (their
-# flat magenta wound markers must stay exact).
+# anyway. Left untouched: anything with transparency, the flee/cower strips (their
+# flat magenta wound markers must stay exact) and the parallax layers painted on magenta
+# (JPEG smears the magenta into their edges and the cut-out leaves a purple fringe).
 
 param([int]$Quality = 93)
 $ErrorActionPreference = 'Stop'
@@ -55,7 +56,7 @@ public static class Shrink {
 $before = 0; $after = 0; $n = 0
 Get-ChildItem (Join-Path $stage 'assets') -Recurse -Filter *.png | ForEach-Object {
   $before += $_.Length
-  $skip = $_.Length -lt 200kb -or $_.Name -match '_(flee|cower)[BFN]\.png$'
+  $skip = $_.Length -lt 200kb -or $_.Name -match '_(flee|cower)[BFN]\.png$' -or $_.Name -match '^plx_(far|mid|near|fg)\.png$'
   if (-not $skip) { try { if ([Shrink]::Jpeg($_.FullName, $Quality)) { $n++ } } catch { Write-Host "  kept $($_.Name): $($_.Exception.Message)" } }
   $after += (Get-Item $_.FullName).Length
 }

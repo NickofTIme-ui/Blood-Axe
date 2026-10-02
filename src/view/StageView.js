@@ -10,6 +10,7 @@ import { DEPTH } from './depths.js';
 import { PICKUPS } from '../data/stage.js';
 import { playSfx } from '../core/Sfx.js';
 import { buildPropSheet } from './propSheet.js';
+import { FX } from './stripImporter.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -188,16 +189,39 @@ export class StageView {
           .setTileScale(s, s).setTint(Phaser.Display.Color.GetColor(b, b, b));
       }
       // darkness over the back wall and floor (not the fighters)
-      scene.add.rectangle(sec.x0, -40, width, H + 80, 0x000000, sec.mood ?? 0.15).setOrigin(0).setDepth(DEPTH.floor + 3);
+      // (it stops short of the next section: the two moods are blended across the join below,
+      // so no hard vertical edge shows against the sky)
+      const BLEND = 160;
+      const i = this.stage.sections.indexOf(sec);
+      const next = this.stage.sections[i + 1];
+      const mood = sec.mood ?? 0.15;
+      const from = sec.x0 + (i > 0 ? BLEND : 0);
+      const to = sec.x1 - (next ? BLEND : 0);
+      scene.add.rectangle(from, -40, to - from, H + 80, 0x000000, mood).setOrigin(0).setDepth(DEPTH.floor + 3);
+      if (next) {
+        const g = scene.add.graphics().setDepth(DEPTH.floor + 3);
+        const n = 40;
+        const w = (BLEND * 2) / n;
+        for (let k = 0; k < n; k++) {
+          const t = (k + 0.5) / n;
+          const e = t * t * (3 - 2 * t);
+          g.fillStyle(0x000000, mood + ((next.mood ?? 0.15) - mood) * e).fillRect(sec.x1 - BLEND + k * w, -40, w, H + 80);
+        }
+      }
       // the section's light: big soft pools along the back wall
       for (let x = sec.x0 + 160; x < sec.x1; x += 420) {
         scene.add.image(x, W.floorTop - 70, 'glow').setScale(7, 5).setTint(sec.light).setAlpha(0.22)
           .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 3.2);
       }
-      // a soot-dark seam where one place gives way to the next
+      // soot over the floor where one paving gives way to the next: darkest on the join,
+      // fading to nothing either side (floor only: over the sky it read as a grey bar)
       if (sec.x0 > 0) {
         const seam = scene.add.graphics().setDepth(DEPTH.floor + 3.1);
-        for (let i = 0; i < 40; i++) seam.fillStyle(0x000000, 0.5 * (1 - i / 40)).fillRect(sec.x0 - 40 + i * 2, -40, 2, H + 80).fillRect(sec.x0 + 40 - i * 2, -40, 2, H + 80);
+        const half = 110;
+        for (let k = -half; k < half; k += 2) {
+          const t = 1 - Math.abs(k + 1) / half;
+          seam.fillStyle(0x000000, 0.55 * t * t * (3 - 2 * t)).fillRect(sec.x0 + k, top, 2, H + 80 - top);
+        }
       }
     }
   }
@@ -330,6 +354,12 @@ export class StageView {
         .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 4.1);
       hz.flames = Array.from({ length: 7 }, () => this.scene.add.image(hz.x, hz.z, 'flame').setOrigin(0.5, 1)
         .setBlendMode(Phaser.BlendModes.ADD).setVisible(false));
+      // the painted blaze (FX.firepit), when its strip is in: three roaring columns, each
+      // drawn twice (solid, then a brighter additive pass so it glows)
+      if (FX.firepit) {
+        hz.blaze = [0, 1, 2].map(() => [0, 1].map((glow) => this.scene.add.image(hz.x, hz.z, FX.firepit.key, 'f0').setOrigin(0.5, 0.97)
+          .setBlendMode(glow ? Phaser.BlendModes.ADD : Phaser.BlendModes.NORMAL).setVisible(false)));
+      }
     }
     hz.view.setVisible(true);
     const phase = this.stage.firePhase(hz);
@@ -341,8 +371,25 @@ export class StageView {
     if (phase === 'warn' && t % 3 === 0) {
       this.scene.gore.spawn({ x: hz.x + rand(-hz.w / 2, hz.w / 2), z: hz.z + rand(-hz.d / 3, hz.d / 3), h: 2, vx: rand(-10, 10), vz: 0, vh: rand(60, 140), tint: 0xffa040, scale: rand(0.3, 0.6), decal: false, life: 30 });
     }
-    hz.flames.forEach((fl, i) => {
+    hz.blaze?.forEach((pair, i) => {
       const on = phase === 'burst';
+      for (const fl of pair) fl.setVisible(on);
+      if (!on) return;
+      const F = FX.firepit;
+      const age = t - 160;             // 0..50 through the eruption
+      // slams up in a few frames, roars, then gutters out
+      const rise = Math.min(1, age / 5);
+      const fall = Math.max(0, 1 - Math.max(0, age - 38) / 12);
+      const size = (0.5 + 0.5 * rise) * (0.35 + 0.65 * fall) * (i === 1 ? 1 : 0.78);
+      const frame = `f${(Math.floor((hz.t * F.fps) / 60) + i * 3) % F.count}`;
+      const fx = hz.x + (i - 1) * hz.w * 0.3;
+      const fz = hz.z + (i === 1 ? 0 : hz.d * 0.12);
+      const flick = 1 + Math.sin(hz.t * 0.9 + i * 2.1) * 0.04;
+      pair.forEach((fl, glow) => fl.setFrame(frame).setPosition(fx, fz).setScale(0.5 * size * (i === 2 ? -1 : 1), 0.5 * size * flick)
+        .setDepth(fz + 0.5 + glow * 0.01).setAlpha(glow ? 0.45 : 1));
+    });
+    hz.flames.forEach((fl, i) => {
+      const on = phase === 'burst' && !hz.blaze;
       fl.setVisible(on);
       if (!on) return;
       const u = (i + 0.5) / hz.flames.length;

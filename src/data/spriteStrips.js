@@ -87,4 +87,6 @@ export const ANIM_OVERRIDES = {
 // Effects strips: equal cells, trimmed and scaled to `height` px.
 export const FX_STRIPS = {
   firebolt: { file: 'assets/fx/firebolt-strip.png', frames: 8, height: 44, fps: 14 },
+  // the column of fire a floor grate throws up (view/StageView.js); drawn at half scale
+  firepit: { file: 'assets/fx/firepit-strip.png', frames: 8, height: 300, fps: 16 },
 };

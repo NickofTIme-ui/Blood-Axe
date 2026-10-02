@@ -51,6 +51,8 @@ export const HERO_STRIPS = {
       moves: strip('rogue', 'moves', 8, { ref: 2 }),   // kick x3, block, knife draw, knife thrown, mine set, spring away
       dodge: strip('rogue', 'dodge', 8, { ground: 'drawn', ref: 7 }), // forward roll x4, handspring x4
       air: strip('rogue', 'air', 8, { ground: 'drawn', ref: 7, target: 77 }),     // take-off, tuck, vault plant, launched, fan, dive, strike, landing
+      // the double-jump flip (optional): kick off, tuck, inverted, layout, twist, coming round, soaring, gather
+      flip: strip('rogue', 'flip', 8, { ground: 'drawn', ref: 0, target: 112, holes: [[1020, 370], [1050, 380]] }), // (holes: the gap under her cloak in pose 4)
       react: strip('rogue', 'react', 8, { ref: 7, ground: 'drawn' }),   // hit, stumble, flying, lying, roll up, kick-through, spring, stance
     },
   },
@@ -108,6 +110,7 @@ export const HERO_ANIMS = {
     dodge: { frames: seq('dodge', [0, 1, 2, 3]) },
     dodgeBack: { frames: seq('dodge', [4, 5, 6, 7]) },
     jump: { frames: seq('air', [0, 1]) },   // rising, falling
+    flip: { needs: ['flip'], frames: seq('flip', [0, 1, 2, 3, 4, 5, 6, 7]) }, // her second jump
     vault: { frames: seq('air', [2]) },
     launched: { frames: seq('air', [3]) },  // the long rise off a teammate's shoulder
     fan: { frames: seq('air', [4]) },

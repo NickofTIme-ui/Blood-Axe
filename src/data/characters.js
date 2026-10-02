@@ -67,7 +67,7 @@ export const CHARACTERS = {
     maxHealth: 170, maxStamina: 100, maxMana: 40,
     staminaRegen: 30, staminaRegenDelay: 40, manaRegen: 1.5,
     walkSpeed: 165, depthSpeed: 115,
-    jumpStrength: 550, gravity: 1700, airControl: 0.08, airJumps: 0,
+    jumpStrength: 550, gravity: 1700, airControl: 0.14, airJumps: 0,
     meleeMult: 1.3, magicMult: 0.7,
     blockReduction: 0.85, guardEfficiency: 0.8,
     dodge: { iframes: 11, duration: 18, recovery: 9, speed: 785, cost: 16 },
@@ -192,7 +192,7 @@ export const CHARACTERS = {
     staminaRegen: 30, staminaRegenDelay: 36, manaRegen: 7,
     walkSpeed: 172, depthSpeed: 122,
     // no jump: a levitation rise (lower launch, softer pull = slower up and down)
-    jumpStrength: 470, gravity: 1250, airControl: 0.16, airJumps: 0,
+    jumpStrength: 470, gravity: 1250, airControl: 0.2, airJumps: 0,
     meleeMult: 0.85, magicMult: 1.4, // (spell damage below is before this x1.4)
     blockReduction: 0.72, guardEfficiency: 1.15,
     // the blink's timing (the dodge numbers the rest of the game reads): invulnerable for
@@ -310,7 +310,7 @@ export const CHARACTERS = {
       },
       // BLINK — teleport in place of the roll
       blink: {
-        distance: 210,   // px in the input direction (the roll covered ~230)
+        distance: 273,   // px in the input direction (the roll covered ~230; +30% on the first 210)
         vanishAt: 3,     // frame the body is gone (the sparks have taken it)
         arriveAt: 5,     // frame he re-forms at the far end
         actFrom: 9,      // frame attacks may cut in
@@ -358,7 +358,7 @@ export const CHARACTERS = {
     maxHealth: 105, maxStamina: 110, maxMana: 60,
     staminaRegen: 42, staminaRegenDelay: 26, manaRegen: 3,
     walkSpeed: 235, depthSpeed: 165,
-    jumpStrength: 700, gravity: 1700, airControl: 0.16, airJumps: 1, // the highest jump of the three
+    jumpStrength: 700, gravity: 1700, airControl: 0.34, airJumps: 1, // the highest jump of the three
     meleeMult: 0.9, magicMult: 1.0,
     blockReduction: 0.62, guardEfficiency: 1.4, // a light guard: heavy blows break it fast
     // the best dodge in the game: long, quick, invulnerable for most of it

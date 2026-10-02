@@ -62,6 +62,7 @@ export function startJump(f, isAirJump = false) {
   f.vh = f.stats.jumpStrength * (isAirJump ? 0.9 : 1);
   f.h = Math.max(f.h, 0.01); // leave the ground
   f.jumpedSinceGrounded = true;
+  f.flipFrom = isAirJump ? f.world?.frame ?? 0 : null; // (view: the second jump is an acrobatic flip)
   f.world?.events.emit('jump', { fighter: f, airJump: isAirJump });
   f.vx = c.moveX * f.stats.walkSpeed;
   f.vz = c.moveZ * f.stats.depthSpeed;
@@ -379,9 +380,13 @@ export const FIGHTER_STATES = {
         return f.fsm.change('idle'); // landed (buffered jump fires from idle)
       }
 
-      // Air steering
-      f.vx += (c.moveX * s.walkSpeed - f.vx) * s.airControl;
-      f.vz += (c.moveZ * s.depthSpeed - f.vz) * s.airControl;
+      // Air steering: holding a direction pulls him that way (and turns him to face it), so
+      // a jump can be bent back the way it came; hands off, he keeps the speed he left with
+      if (c.moveX) {
+        f.vx += (c.moveX * s.walkSpeed - f.vx) * s.airControl;
+        f.facing = Math.sign(c.moveX);
+      }
+      if (c.moveZ) f.vz += (c.moveZ * s.depthSpeed - f.vz) * s.airControl;
 
       if (canJump(f) && c.consume('jump', FEEL.jumpBufferFrames)) return startJump(f); // coyote jump
       if (f.airJumpsLeft > 0 && c.consume('jump')) {                                   // double jump

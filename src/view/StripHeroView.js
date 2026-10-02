@@ -12,7 +12,8 @@ import { ROGUE_FINISHERS } from '../combat/Rogue.js';
 import { Heading, headingAnim } from './Heading.js';
 
 const spread = (list, t) => list[Math.min(list.length - 1, Math.max(0, Math.floor(t * list.length)))];
-const clamp01 = (t) => Math.max(0, Math.min(1, t));
+const FLIP_FRAMES = 40; // ticks the double-jump flip takes (about the time she's rising and turning over)
+const clamp01 =(t) => Math.max(0, Math.min(1, t));
 
 export class StripHeroView {
   constructor(scene, fighter, sheet) {
@@ -57,6 +58,8 @@ export class StripHeroView {
       case 'parry': return A.block.frames[0];
       case 'jump': {
         if (A.launched && f.vaultApexAt && tick < f.vaultApexAt) return A.launched.frames[0];
+        // the second jump: a flip with a twist, played once through as she soars
+        if (A.flip && f.flipFrom != null && tick - f.flipFrom < FLIP_FRAMES) return spread(A.flip.frames, (tick - f.flipFrom) / FLIP_FRAMES);
         return A.jump.frames[f.vh > 0 ? 0 : A.jump.frames.length - 1];
       }
       case 'dodge': {
