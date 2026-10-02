@@ -130,6 +130,7 @@ export class Stage {
     p.stamina = p.stats.maxStamina;
     p.dead = false;
     p.downFor = 0;
+    p.awe = 0;
     p.vx = p.vz = p.vh = 0;
     p.h = 0;
     p.fsm.change('idle');
@@ -177,7 +178,10 @@ export class Stage {
     const sec = this.section;
     const def = sec.boss;
     const base = ENEMIES[def.type];
-    const x = Math.min(sec.x1 - PAD - 40, this.player.x + 420);
+    const E = def.entrance;
+    // with an entrance he starts off the right edge of the room and walks in (the
+    // 'bossEntrance' state); otherwise he's simply there
+    const x = E ? sec.x1 + E.from : Math.min(sec.x1 - PAD - 40, this.player.x + 420);
     const boss = createEnemy(this.world, def.type, x, 430);
     // a boss is the same fighter, harder: more health, harder hits, never flinches from light blows
     boss.stats = {
@@ -189,7 +193,14 @@ export class Stage {
     boss.health = boss.stats.maxHealth;
     this.boss = boss;
     this.bossSpawned = true;
-    this.world.events.emit('bossSpawn', { boss });
+    if (E) {
+      const toX = Math.max(this.world.bounds.minX + 60, sec.x1 - E.to);
+      boss.fsm.change('bossEntrance', { toX, speed: E.speed, stepEvery: E.stepEvery });
+      // the heroes stand frozen while he comes (and a moment after)
+      const frames = Math.ceil(((x - toX) / E.speed) * 60) + E.awe;
+      for (const p of this.players) if (p.alive) p.awe = frames;
+    }
+    this.world.events.emit('bossSpawn', { boss, entrance: !!E });
   }
 
   // ------------------------------------------------------------ per frame

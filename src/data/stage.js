@@ -86,8 +86,11 @@ export const STAGE = {
     {
       id: 'throne', name: 'THRONE OF THE OATHBREAKER', x0: 4600, x1: 5600, ground: 'cathedral',
       light: 0xff3030, mood: 0.32,
-      objective: 'Kill Pitlord Kragg',
-      boss: { type: 'gladiator', name: 'Pitlord Kragg, the Oathbreaker', health: 4, damage: 1.25, adds: ['grunt', 'grunt', 'stalker'] }, // (the Warlord takes over once his strips are all drawn: see docs/cloud-handoff.md)
+      objective: 'Kill Warlord Malgor',
+      // he walks in slowly, the ground shaking, the heroes frozen (Stage.spawnBoss);
+      // at half health he calls Pitlord Kragg and his dogs (adds)
+      boss: { type: 'warlord', name: 'Warlord Malgor, the Oathbreaker', health: 6, damage: 1.15, adds: ['gladiator', 'grunt', 'grunt', 'stalker'],
+        entrance: { from: 140, to: 300, speed: 58, stepEvery: 34, awe: 30 } },
       waves: [],
       props: [{ kind: 'barrel', x: 4780, z: 501, drop: 'meat' }],
       hazards: [],

@@ -52,11 +52,38 @@ function backgroundMask({ data, W, H }, bg = 'black', holes = []) {
     if (p >= W) push(p - W);
     if (p < W * (H - 1)) push(p + W);
   }
-  // enclosed transparent holes are background too
-  for (let p = 0; p < W * H; p++) if (d[p * 4 + 3] < 24) bgm[p] = 1;
+  // enclosed transparent holes are background too — and on a magenta sheet every magenta
+  // pixel is (the art never uses it: pockets closed off by an arm or a weapon stay magenta
+  // otherwise)
+  for (let p = 0; p < W * H; p++) if (d[p * 4 + 3] < 24 || (bg === 'magenta' && isBgColour(p))) bgm[p] = 1;
   const fg = new Uint8Array(W * H);
   for (let p = 0; p < W * H; p++) fg[p] = bgm[p] ? 0 : 1;
   return fg;
+}
+
+// Edge pixels of a figure cut from magenta are part magenta (the soft edge blended into
+// the background): take the magenta cast back out of everything within 3px of the
+// background, so a black cape doesn't get a pink rim.
+function despillMagenta(d, fg, W, H) {
+  const near = new Uint8Array(W * H);
+  for (let p = 0; p < W * H; p++) {
+    if (fg[p]) continue;
+    const x = p % W; const y = (p / W) | 0;
+    for (let dy = -3; dy <= 3; dy++) {
+      const ny = y + dy;
+      if (ny < 0 || ny >= H) continue;
+      for (let dx = -3; dx <= 3; dx++) {
+        const nx = x + dx;
+        if (nx >= 0 && nx < W) near[ny * W + nx] = 1;
+      }
+    }
+  }
+  for (let p = 0; p < W * H; p++) {
+    if (!fg[p] || !near[p]) continue;
+    const i = p * 4;
+    const m = Math.min(d[i], d[i + 2]) - d[i + 1];
+    if (m > 0) { d[i] -= m; d[i + 2] -= m; }
+  }
 }
 
 // Connected shapes (8-way, bridging 2px gaps so a blade split by an outline stays whole).
@@ -296,6 +323,7 @@ function importStrip(img, spec, palette) {
   // wounds: magenta marker patches become raw stumps (view/woundPaint.js)
   if (spec.wounds) paintMarkerWounds(data);
   const fg = backgroundMask(px, spec.bg, spec.holes);
+  if (spec.bg === 'magenta') despillMagenta(d, fg, W, H);
   const n = spec.frames;
   const owner = splitFigures(fg, W, H, n, spec.own);
 

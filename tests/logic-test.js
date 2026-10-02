@@ -10,6 +10,7 @@ import { CHARACTERS } from '../src/data/characters.js';
 import { ENEMIES, WAVES } from '../src/data/enemies.js';
 import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.js';
 import { Stage } from '../src/stage/Stage.js';
+import { STAGE } from '../src/data/stage.js';
 import { impalePin } from '../src/combat/Finisher.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/Mage.js';
 import { ROGUE_FINISHERS } from '../src/combat/Rogue.js';
@@ -223,7 +224,8 @@ test('all characters have the required data', () => {
 
 test('every enemy has art, anims, specials that exist, and is in a wave', () => {
   const anims = ['slash', 'backslash', 'chop', 'stab', 'stabB', 'thrust', 'uppercut', 'swingChain', 'slamChain', 'spin', 'hook', 'bash', 'charge'];
-  const inWaves = new Set(WAVES.flat());
+  // (a wave, the stage's waves, or the stage boss and his adds)
+  const inWaves = new Set([...WAVES.flat(), ...STAGE.sections.flatMap((s) => [...(s.waves ?? []).flat(), ...(s.boss ? [s.boss.type, ...(s.boss.adds ?? [])] : [])])]);
   for (const e of Object.values(ENEMIES)) {
     assert(e.art, `${e.id} has no art`);
     assert(inWaves.has(e.id), `${e.id} never appears in a wave`);
@@ -1346,6 +1348,32 @@ test('stage: dying sends you back to the checkpoint, healed, the fight reset', (
   assert(t.stage.stats.deaths === 1 && t.stage.index === 0, 'at the first checkpoint');
   t.run(3);
   assert(t.world.fighters.filter((f) => f.team === 'enemy').length === 0, 'enemies cleared');
+});
+
+test('boss: the Warlord walks in from off-screen, stomping, heroes frozen; untouchable until he arrives; huge health', () => {
+  const t = stageSetup();
+  const sec = t.stage.sections.length - 1;
+  t.stage.enterSection(sec, true);
+  t.stage.waveIndex = 99; t.stage.waveDelay = 0;
+  let stomps = 0; let arrived = false;
+  t.world.events.on('bossStomp', () => stomps++);
+  t.world.events.on('bossArrived', () => { arrived = true; });
+  t.run(2);
+  const b = t.stage.boss;
+  assert(b && b.stats.id === 'warlord', `the Warlord (${b?.stats.id})`);
+  assert(b.x > t.world.bounds.maxX, `starts off the edge (${Math.round(b.x)} > ${t.world.bounds.maxX})`);
+  assert(b.stats.maxHealth >= 240 * 6, `hella hp (${b.stats.maxHealth})`);
+  const x0 = t.p.x;
+  t.p.controller.hold = { right: true };
+  t.run(60);
+  assert(Math.abs(t.p.x - x0) < 0.01 && t.p.awe > 0, 'the hero is frozen in place');
+  assert(b.invincible, 'untouchable while he comes');
+  t.run(400);
+  assert(arrived && stomps >= 5, `arrived, stomping (${stomps})`);
+  assert(b.x <= t.world.bounds.maxX && b.state !== 'bossEntrance', 'in the room, fighting');
+  t.run(40);
+  assert(Math.abs(t.p.x - x0) > 1, 'the hero can move again');
+  assert(t.stage.livingFoes().length === 1, 'no helpers yet (they come at half health)');
 });
 
 test('stage: the throne spawns the boss, he rages at half health, killing him wins', () => {

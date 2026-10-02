@@ -9,6 +9,7 @@ import { SETTINGS } from '../config/settings.js';
 export const MUSIC = {
   title: 'assets/audio/title-the-battle.mp3',       // title + character select
   battle: 'assets/audio/gameplay-battle-field.mp3', // arena
+  boss: 'assets/audio/boss-theme.mp3',              // the Warlord (until the file is added, the battle track plays on)
 };
 
 let current = null; // { key, sound }

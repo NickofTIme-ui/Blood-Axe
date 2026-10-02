@@ -97,11 +97,13 @@ export class Fighter {
 
   // One fixed 1/60 s step. Called by World.tick().
   update() {
-    const frozen = this.hitstop > 0;
+    // hitstop, or awe (frozen in place while a boss makes his entrance)
+    const frozen = this.hitstop > 0 || this.awe > 0;
     this.controller.tick(frozen);
     if (frozen) {
-      this.hitstop--;
-      return; // hitstop: fully frozen this frame
+      if (this.hitstop > 0) this.hitstop--;
+      else this.awe--;
+      return; // fully frozen this frame
     }
 
     this.invincible = false;
@@ -133,7 +135,7 @@ export class Fighter {
       }
     }
 
-    this.x = Math.max(b.minX, Math.min(b.maxX, this.x));
+    if (!this.unbounded) this.x = Math.max(b.minX, Math.min(b.maxX, this.x)); // (a boss walking in from off-screen)
     this.z = Math.max(b.minZ, Math.min(b.maxZ, this.z));
 
     if (this.grounded) {

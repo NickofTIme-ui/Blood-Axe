@@ -430,7 +430,19 @@ export class ArenaScene extends Phaser.Scene {
       this.callout('GO  →', '#ffd24a', 30);
       hud()?.showGo?.(true);
     });
+    // the boss walks in: every footfall a thud that shakes the whole screen
+    ev.on('bossStomp', ({ x, z }) => {
+      playSfx(this, 'kick', { volume: 0.9, pitch: -1600, spread: 60, minGapMs: 0 });
+      this.fx.shake(6, 12);
+      this.rumble(0.8, 0.2, 140);
+      for (let i = 0; i < 8; i++) this.gore.spawn({ x: x + (Math.random() - 0.5) * 60, z, h: 2, vx: (Math.random() - 0.5) * 160, vz: 0, vh: 40 + Math.random() * 90, tint: 0x8a7a60, scale: 0.5 + Math.random() * 0.5, decal: false, life: 20 });
+    });
+    ev.on('bossArrived', () => {
+      this.fx.shake(10, 20);
+      playSfx(this, 'kick', { volume: 1, pitch: -1900, minGapMs: 0 });
+    });
     ev.on('bossSpawn', ({ boss }) => {
+      playMusic(this, 'boss'); // (until the boss track is added, the battle music plays on)
       this.callout(boss.stats.name.toUpperCase(), '#ff2a1a', 26);
       this.fx.shake(6, 20);
       playSfx(this, 'kick', { volume: 1, pitch: -1200, minGapMs: 0 });
@@ -465,6 +477,7 @@ export class ArenaScene extends Phaser.Scene {
   // Fell: rise at the section's start, healed, with its fight reset.
   riseAtCheckpoint() {
     this.stage.respawn();
+    if (!this.stage.bossSpawned) playMusic(this, 'battle'); // (died to the boss: back to the battle track)
     this.cuts.clear();
     this.burning.clear();
     this.timeScale = 1;

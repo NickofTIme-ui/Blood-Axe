@@ -729,6 +729,31 @@ export const FIGHTER_STATES = {
     },
   },
 
+  // A boss walking into his arena from off-screen: slow, unstoppable, every footfall a
+  // 'bossStomp' (the arena shakes the screen). Can't be hit until he's arrived.
+  bossEntrance: {
+    enter(f, p) {
+      f.entrance = p;
+      f.unbounded = true;
+      f.facing = Math.sign(p.toX - f.x) || -1;
+    },
+    update(f, frame) {
+      const E = f.entrance;
+      f.invincible = true;
+      f.vz = 0;
+      f.vx = Math.sign(E.toX - f.x) * E.speed;
+      if (frame % E.stepEvery === 0) f.world.events.emit('bossStomp', { boss: f, x: f.x, z: f.z });
+      if (Math.abs(E.toX - f.x) <= E.speed / 60) {
+        f.x = E.toX;
+        f.vx = 0;
+        f.unbounded = false;
+        f.world.events.emit('bossArrived', { boss: f });
+        f.fsm.change('idle');
+      }
+    },
+    exit(f) { f.unbounded = false; },
+  },
+
   hitstun: makeStunState(),
   stagger: makeStunState(),    // after being parried: open to a counter-hit
   guardBreak: makeStunState(), // block broken: open to a counter-hit
