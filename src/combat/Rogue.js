@@ -60,6 +60,9 @@ export function vaultTarget(f) {
 
 // ---------------------------------------------------------------- the states
 
+// What one shuriken costs her in stamina: kit.knife.cost, or by default the same as her roll.
+const throwCost = (f) => kitOf(f).knife.cost ?? f.stats.dodge.cost;
+
 export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeAttackState }) {
   const kick = makeAttackState('kick');
   const sweep = makeAttackState('sweep');
@@ -103,7 +106,8 @@ export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeA
         const close = ahead.some((o) => o.dx > -10 && o.dx < K.kickReach && o.dz < 30);
         const far = ahead.filter((o) => o.dx >= K.kickReach && o.dx <= K.range && o.dz < 80).sort((a, b) => a.dx - b.dx)[0];
         // nobody in kicking distance: a shuriken (at the nearest man ahead, else straight on)
-        if (!close) return f.fsm.change('knife', { target: far?.e });
+        // (a throw costs stamina, as much as her roll: out of breath, she can only kick)
+        if (!close && f.stamina >= throwCost(f)) return f.fsm.change('knife', { target: far?.e });
         f.fsm.change('kick');
       },
     },
@@ -117,6 +121,7 @@ export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeA
         f.knifeTarget = p.target ?? null;
         if (f.knifeTarget) f.facing = Math.sign(f.knifeTarget.x - f.x) || f.facing;
         f.cool.knife = kitOf(f).knife.cooldown;
+        f.spendStamina(throwCost(f));
         f.world.events.emit('attackStart', { fighter: f, state: 'knife' });
       },
       update(f, frame) {

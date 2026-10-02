@@ -1188,6 +1188,14 @@ test('rogue: shuriken on the kick button can be spammed; a man in kicking distan
   t.world.events.on('knifeThrow', () => { thrown++; });
   t.run(40);
   assert(thrown === 4, `four presses, four shuriken (${thrown})`);
+  const cost = CHARACTERS.rogue.dodge.cost;
+  assert(t.p.stamina <= t.p.stats.maxStamina - cost * 2, `each throw costs as much stamina as her roll (${t.p.stamina})`);
+  const tired = rogueSetup({ script: { 2: ['kick'] }, foes: [[1000]] });
+  let none = 0;
+  tired.world.events.on('knifeThrow', () => { none++; });
+  tired.p.stamina = cost - 1;
+  tired.run(14);
+  assert(none === 0, 'out of stamina: no throw, she kicks');
   const e = rogueSetup({ script: { 1: ['kick'] }, foes: [] });
   let alone = 0;
   e.world.events.on('knifeThrow', () => { alone++; });

@@ -160,3 +160,7 @@ To do locally: paint the earth-wall slabs, build + upload to itch, then a real t
 - Earth-wall slabs painted: `assets/fx/earthwall-strip.png` (6 slabs on magenta). At the user's request they are raw rock and earth only (no masonry) in slate grey, moss green and **teal** magic seams. The wall's coded effects (the glowing fissure, sparks) may still be orange/gold: recolour them to teal to match.
 - **Standing instruction from the user:** new art and effects must stop defaulting to red and gold; give each spell, enemy and place its own colours.
 - Release build made from this state, checked locally (build time stamped, intro video skips, Mage and Rogue painted, boss sheet and music load) and uploaded to itch as upload 19525664.
+
+## Local, 2026-10-02 (after itch upload 19525664; NOT yet on itch)
+- Rogue: each ground shuriken now costs stamina, the same as her roll (`kit.knife.cost` overrides; default `dodge.cost`). Without the stamina the kick button gives the kick. Sim change: both players need the new build.
+- Boss kill: a longer slow moment of victory (slow-mo 0.18 for 4.2 s, shake, VICTORY callout) before the tally screen. Not watched in play yet.

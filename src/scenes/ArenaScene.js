@@ -456,9 +456,14 @@ export class ArenaScene extends Phaser.Scene {
       if (fighter === this.player) this.callout(kind === 'fire' ? 'BURNED!' : 'SLASHED!', '#ff9a30', 20);
     });
     ev.on('stageWon', ({ stats }) => {
-      this.slowmo(0.3, 1500);
+      // a long slow moment of victory: he falls at a crawl, the screen shudders, the
+      // word hangs there, and only then the tally comes up
+      this.slowmo(0.18, 4200);
+      this.fx.shake(10, 30);
+      this.rumble(1, 0.5, 600);
+      this.callout('VICTORY', '#bfe8ff', 40);
       // (the tally is read when it's shown: the killing blow's own kill lands a beat later)
-      this.time.delayedCall(1800, () => hud()?.showVictory?.({ ...stats, ...this.stage.stats }));
+      this.time.delayedCall(4800, () => hud()?.showVictory?.({ ...stats, ...this.stage.stats }));
     });
   }
 
