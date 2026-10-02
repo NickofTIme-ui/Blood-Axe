@@ -72,6 +72,10 @@ export class EnemyBrain extends Controller {
 
     const canAct = f.state === 'idle' || f.state === 'walk';
 
+    // 1b) A Mage's wall between him and his man: wait at it, don't grind into it.
+    const wall = this.world.barriers?.between(f, target.x);
+    if (wall) { if (canAct) this.atWall(wall, target); return; }
+
     // 2) React to the player starting an attack nearby (one roll per swing).
     const swinging = ATTACK_STATES.includes(target.state) && target.move &&
       target.fsm.frame <= target.move.startup;
@@ -160,7 +164,8 @@ export class EnemyBrain extends Controller {
     if (f.state !== 'idle' && f.state !== 'walk') return;
 
     const b = this.world.bounds;
-    const cornered = (away < 0 && f.x <= b.minX + 14) || (away > 0 && f.x >= b.maxX - 14);
+    const wall = this.world.barriers?.between(f, f.x + away * 40);
+    const cornered = (away < 0 && f.x <= b.minX + 14) || (away > 0 && f.x >= b.maxX - 14) || !!wall;
     const dist = Math.abs(dx);
     // too far to feel safe? no — too spent to keep running: cower until the killer comes
     if (this.cowering) this.cowering = dist > 170;
@@ -186,12 +191,48 @@ export class EnemyBrain extends Controller {
     }
   }
 
+  // Cut off by a barrier (combat/Barrier.js): stop a sensible way short of it — further
+  // from fire — and pace there along its face, eyes on the man behind it, spread out so
+  // the crowd doesn't stack. Brutes batter at a stone wall. The moment it's down his
+  // normal brain takes over again (between() finds no wall).
+  atWall(wall, target) {
+    const f = this.fighter;
+    const ai = this.ai;
+    const side = wall.sides.get(f.id) ?? (Math.sign(f.x - wall.x) || 1);
+    const fire = wall.kind === 'fire';
+    const spread = (f.id % 4) * 16;
+    const stand = wall.half + (fire ? 62 : 34) + spread;
+    const t = this.world.frame;
+    const pace = Math.sin(t * 0.025 + f.id * 1.7) * 12;
+    const wantX = wall.x + side * (stand + pace);
+    const wantZ = target.z + ((f.id % 5) - 2) * 26;
+    this.facingHint = -side; // facing the wall and whoever's behind it
+    this.comboLeft = 0;
+    // a strong man with a stone wall in reach: smash at it
+    const strong = f.stats.maxHealth >= 120 || f.stats.boss; // the named brutes, not the rabble
+    const reach = Math.abs(f.x - wall.x) - wall.half;
+    if (!fire && wall.maxHp > 0 && strong && reach <= ai.attackRange * 0.8) {
+      if (this.cooldown <= 0) {
+        this.registerPress(this.roll(30) < ai.heavyChance && this.canUse('heavy') ? 'heavy' : 'attack');
+        this.cooldown = this.randInt(ai.attackCooldown, 31);
+      }
+      return;
+    }
+    if (strong && !fire && wall.maxHp > 0 && this.cooldown <= 0) {
+      this.moveX = -side; // close in to batter it
+      return;
+    }
+    if (Math.abs(wantX - f.x) > 8) this.moveX = Math.sign(wantX - f.x) * 0.6;
+    if (Math.abs(wantZ - f.z) > 10) this.moveZ = Math.sign(wantZ - f.z) * 0.5;
+  }
+
   pickTarget() {
     const f = this.fighter;
     let best = null;
     let bestDist = Infinity;
     for (const p of this.world.livingPlayers()) {
-      const d = Math.abs(p.x - f.x) + Math.abs(p.z - f.z);
+      // (a hero he can actually reach comes before one behind a Mage's wall)
+      const d = Math.abs(p.x - f.x) + Math.abs(p.z - f.z) + (this.world.barriers?.between(f, p.x) ? 5000 : 0);
       if (d < bestDist) { best = p; bestDist = d; }
     }
     return best;

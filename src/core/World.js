@@ -6,6 +6,7 @@ import { SETTINGS } from '../config/settings.js';
 import { EventBus } from './EventBus.js';
 import { CombatSystem } from '../combat/CombatSystem.js';
 import { Projectile } from '../entities/Projectile.js';
+import { Barriers } from '../combat/Barrier.js';
 
 export class World {
   constructor({ seed } = {}) {
@@ -18,6 +19,7 @@ export class World {
     this.projectiles = [];
     this.events = new EventBus();
     this.combat = new CombatSystem(this);
+    this.barriers = new Barriers(this); // the Mage's walls (combat/Barrier.js)
     this.frame = 0;
     // Dice. Every roll the simulation makes comes from roll(): a number fixed by the
     // seed, the tick, who's asking and what about — never Math.random — so two machines
@@ -69,6 +71,7 @@ export class World {
     for (const p of this.projectiles) p.update(this.bounds);
     this.separate();
     this.bowling();
+    this.barriers.update(); // (last word on where people stand: nobody is shoved through a wall)
     this.combat.update();
 
     const gone = this.fighters.filter((f) => f.removeMe);
@@ -82,7 +85,7 @@ export class World {
   // Gently push standing fighters apart so they don't stack on top of each other.
   separate() {
     // (nobody gets shoved out of an execution: it places both of them itself)
-    const fs = this.fighters.filter((f) => f.alive && f.grounded && !['dodge', 'execute', 'executed'].includes(f.state));
+    const fs = this.fighters.filter((f) => f.alive && f.grounded && !['dodge', 'blink', 'execute', 'executed'].includes(f.state));
     for (let i = 0; i < fs.length; i++) {
       for (let j = i + 1; j < fs.length; j++) {
         const a = fs[i];

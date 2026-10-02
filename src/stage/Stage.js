@@ -105,6 +105,7 @@ export class Stage {
   respawn() {
     this.stats.deaths++;
     for (const f of this.world.fighters) if (f.team === 'enemy') f.removeMe = true;
+    this.world.barriers?.clear();
     for (const p of this.players) this.restore(p, 1);
     const won = this.cleared === this.checkpoint; // died (a trap) after the fight here was already won
     this.enterSection(this.checkpoint, true);
@@ -223,15 +224,17 @@ export class Stage {
 
   updateProps() {
     for (const f of this.world.fighters) {
-      const info = f.activeAttack;
+      // a swing's hitbox, or a blast of force (the Mage: f.propStrike, one tick)
+      const ps = f.propStrike;
+      const info = f.activeAttack ?? (ps ? (ps.key ?? (ps.key = { move: { breaksGuard: true } })) : null);
       if (f.team !== 'player' || !info) continue;
-      const hb = toWorldBox(f, info.hitbox ?? info.move.hitbox);
+      const hb = f.activeAttack ? toWorldBox(f, info.hitbox ?? info.move.hitbox) : ps.box;
       for (const pr of this.props) {
         if (pr.broken || pr.hitBy.has(info)) continue;
         const box = { left: pr.x - pr.w / 2, right: pr.x + pr.w / 2, bottom: 0, top: pr.h, z: pr.z };
-        if (!overlaps(hb, box, pr.kind === 'wall' ? 60 : 30)) continue;
+        if (!overlaps(hb, box, f.activeAttack ? (pr.kind === 'wall' ? 60 : 30) : ps.depth)) continue;
         pr.hitBy.add(info);
-        pr.hp -= info.move.breaksGuard || info.move.bowl ? 2 : 1; // heavies and kicks smash
+        pr.hp -= f.activeAttack ? (info.move.breaksGuard || info.move.bowl ? 2 : 1) : ps.smash; // heavies and kicks smash
         const dir = Math.sign(pr.x - f.x) || f.facing;
         if (pr.hp > 0) { this.world.events.emit('propHit', { prop: pr, dir }); continue; }
         pr.broken = true;

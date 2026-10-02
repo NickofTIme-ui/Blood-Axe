@@ -171,83 +171,154 @@ export const CHARACTERS = {
   },
 
   // =========================================================== MAGE
+  // A floating war mage: staff fighting up close, lightning and force at range, a blink
+  // instead of a roll, and arcane barriers that cut the battlefield in two. His kit
+  // replaces buttons through `states` (fighterStates.js stateFor) and all of its tuning
+  // lives in `kit` below — the logic is combat/Mage.js, the barriers combat/Barrier.js,
+  // the look view/MageView.js, the magic effects/MageFX.js.
   mage: {
     id: 'mage',
-    name: 'Mage',
-    description: 'Fragile, weak melee. Devastating spells and a deep mana pool.',
-    body: { w: 40, h: 92 },
-    look: { color: 0x3b3f8a, accent: 0x8b5a2b, skin: 0xe0bf9c },
+    name: 'Vael the Elder',
+    className: 'Mage',
+    description: 'War sorcerer. Floats, blinks, chains lightning through crowds and splits the field with barriers. Frail up close.',
+    archetype: 'mage', // (view, sounds and finishers pick his own versions by this)
+    body: { w: 40, h: 96 },
+    look: { color: 0x1c2550, accent: 0x6a4a2a, skin: 0xd8b494 },
+    // the buttons his kit replaces: dodge = BLINK, heavy = CHAIN LIGHTNING,
+    // kick = FORCE BLAST, magic = ARCANE BARRIER (tap fire, hold earth)
+    states: { dodge: 'blink', heavy: 'bolt', kick: 'force', cast: 'ward' },
 
-    maxHealth: 95, maxStamina: 80, maxMana: 120,
-    staminaRegen: 26, staminaRegenDelay: 40, manaRegen: 8,
-    walkSpeed: 165, depthSpeed: 115,
-    jumpStrength: 540, gravity: 1700, airControl: 0.1, airJumps: 0,
-    meleeMult: 0.7, magicMult: 1.6,
-    blockReduction: 0.7, guardEfficiency: 1.2,
-    dodge: { iframes: 12, duration: 18, recovery: 10, speed: 758, cost: 14 },
-    rollCancel: true,
-    parryWindow: 5, parryWhiffRecovery: 16,
-    knockdownFrames: 42, getupFrames: 18, staggerFrames: 48,
+    maxHealth: 110, maxStamina: 90, maxMana: 120,
+    staminaRegen: 30, staminaRegenDelay: 36, manaRegen: 7,
+    walkSpeed: 172, depthSpeed: 122,
+    // no jump: a levitation rise (lower launch, softer pull = slower up and down)
+    jumpStrength: 470, gravity: 1250, airControl: 0.16, airJumps: 0,
+    meleeMult: 0.85, magicMult: 1.0,
+    blockReduction: 0.72, guardEfficiency: 1.15,
+    // the blink's timing (the dodge numbers the rest of the game reads): invulnerable for
+    // `iframes`, gone for duration, then `recovery`
+    dodge: { iframes: 12, duration: 10, recovery: 8, speed: 0, cost: 14 },
+    rollCancel: true, // a blink cuts any staff swing short
+    parryWindow: 6, parryWhiffRecovery: 16,
+    knockdownFrames: 40, getupFrames: 26, staggerFrames: 50,
+
+    hover: { height: 9, drift: 2.2, driftRate: 0.05 }, // view only: he floats above his feet
 
     moves: {
-      light1: {
-        cut: 'blunt',
-        startup: 6, active: 3, recovery: 12,
-        damage: 7, hitstun: 22, hitstop: 4, shake: 0,
-        knockback: { x: 60, y: 0 }, guardDamage: 8, lunge: 40,
-        hitbox: { x: 8, y: 40, w: 56, h: 30 },
+      // the staff, as a real weapon: two-handed, long reach, blunt
+      light1: { // fast horizontal strike
+        cut: 'blunt', fx: 'staff',
+        startup: 5, active: 3, recovery: 11,
+        damage: 8, hitstun: 22, hitstop: 5, shake: 1,
+        knockback: { x: 110, y: 0 }, guardDamage: 9, lunge: 60,
+        hitbox: { x: 6, y: 34, w: 84, h: 44 },
         chains: [
-          { button: 'attack', next: 'light2', from: 7, to: 21 },
-          { button: 'heavy', next: 'heavy', from: 10, to: 21 },
+          { button: 'attack', next: 'light2', from: 6, to: 19 },
+          { button: 'heavy', next: 'heavy', from: 9, to: 19 },
         ],
-        cancels: [{ from: 10, to: 21, into: ['dodge', 'block', 'magic'] }],
+        cancels: [{ from: 9, to: 19, into: ['dodge', 'block', 'kick', 'magic'] }],
       },
-      light2: {
-        cut: 'blunt',
-        startup: 6, active: 3, recovery: 13,
-        damage: 7, hitstun: 22, hitstop: 4, shake: 0,
-        knockback: { x: 70, y: 0 }, guardDamage: 8, lunge: 40,
-        hitbox: { x: 8, y: 30, w: 58, h: 36 },
-        chains: [{ button: 'attack', next: 'light3', from: 7, to: 22 }],
-        cancels: [{ from: 10, to: 22, into: ['dodge', 'block', 'magic'] }],
+      light2: { // reverse sweep
+        cut: 'blunt', fx: 'staff',
+        startup: 5, active: 3, recovery: 12,
+        damage: 9, hitstun: 22, hitstop: 6, shake: 2,
+        knockback: { x: 130, y: 0 }, guardDamage: 10, lunge: 60,
+        hitbox: { x: 6, y: 26, w: 86, h: 52 },
+        chains: [
+          { button: 'attack', next: 'light3', from: 6, to: 20 },
+          { button: 'heavy', next: 'heavy', from: 9, to: 20 },
+        ],
+        cancels: [{ from: 9, to: 20, into: ['dodge', 'block', 'kick', 'magic'] }],
       },
-      light3: {
-        cut: 'blunt',
-        startup: 9, active: 4, recovery: 22,
-        damage: 11, hitstun: 24, hitstop: 6, shake: 2,
-        knockback: { x: 240, y: 260 }, knockdown: true, guardDamage: 14, lunge: 80,
-        hitbox: { x: 6, y: 25, w: 62, h: 50 },
-        cancels: [{ from: 14, to: 35, into: ['dodge', 'magic'] }],
+      light3: { // spinning slam that lets out a small pressure pulse
+        cut: 'blunt', fx: 'pulse',
+        startup: 10, active: 4, recovery: 20,
+        damage: 15, hitstun: 26, hitstop: 9, shake: 5,
+        knockback: { x: 300, y: 300 }, knockdown: true, guardDamage: 20, lunge: 90,
+        hitbox: { x: 0, y: 0, w: 100, h: 70, depth: 30 },
+        cancels: [{ from: 16, to: 34, into: ['dodge', 'kick', 'magic'] }],
       },
+      // CHAIN LIGHTNING (the 'bolt' state). The frame data of the cast; the bolt itself
+      // is `kit.bolt`.
       heavy: {
-        cut: 'blunt',
-        startup: 20, active: 4, recovery: 24,
-        damage: 18, hitstun: 28, hitstop: 9, shake: 5,
-        knockback: { x: 300, y: 300 }, knockdown: true, breaksGuard: true,
-        guardDamage: 30, staminaCost: 11, lunge: 60,
-        hitbox: { x: 4, y: 20, w: 76, h: 60 },
-        cancels: [{ from: 1, to: 10, into: ['dodge', 'block'] }],
+        cut: 'fire', fx: 'lightning', noBlood: true,
+        startup: 13, active: 1, recovery: 22,
+        damage: 0, hitstun: 30, hitstop: 8, shake: 4,
+        knockback: { x: 160, y: 0 }, guardDamage: 26, staminaCost: 0, manaCost: 12, lunge: 0,
+        hitbox: { x: 0, y: 0, w: 0, h: 0 },
+        cancels: [{ from: 1, to: 8, into: ['dodge', 'block'] }, { from: 26, to: 36, into: ['dodge'] }],
       },
-      kick: { ...SPARTA_KICK },
-      air: {
-        cut: 'blunt',
-        startup: 5, active: 12, recovery: 0,
-        damage: 8, hitstun: 18, hitstop: 4, shake: 0,
-        knockback: { x: 120, y: 0 }, guardDamage: 8,
-        hitbox: { x: 0, y: 0, w: 56, h: 46 },
+      // FORCE BLAST (the 'force' state); the blast itself is `kit.force`
+      kick: {
+        cut: 'crush', fx: 'force', noBlood: true,
+        startup: 10, active: 1, recovery: 20,
+        damage: 0, hitstun: 30, hitstop: 7, shake: 6,
+        knockback: { x: 0, y: 0 }, guardDamage: 60, lunge: 0,
+        hitbox: { x: 0, y: 0, w: 0, h: 0 },
+        cancels: [{ from: 18, to: 31, into: ['dodge', 'attack', 'block'] }],
+      },
+      air: { // a downward staff chop out of the levitation
+        cut: 'blunt', fx: 'staff',
+        startup: 4, active: 12, recovery: 0,
+        damage: 9, hitstun: 20, hitstop: 5, shake: 1,
+        knockback: { x: 130, y: 0 }, guardDamage: 9,
+        hitbox: { x: 0, y: -10, w: 70, h: 60 },
       },
     },
 
-    spell: {
-      name: 'Fireball', cost: 25, startup: 12, recovery: 16,
-      cancels: [{ from: 17, to: 28, into: ['dodge'] }],
-      projectile: {
-        cut: 'fire',
-        count: 1, speed: 560, lifetime: 70, y: 44, w: 26, h: 26,
-        damage: 22, hitstun: 24, hitstop: 7, shake: 4,
-        knockback: { x: 240, y: 280 }, knockdown: true, guardDamage: 25,
-        pierce: false, color: 0xff7a1a,
+    // magic = the barrier (`kit.barrier`); this only gates the button
+    spell: { name: 'Arcane Barrier', cost: 40, startup: 0, recovery: 0 },
+
+    kit: {
+      // CHAIN LIGHTNING — hold heavy for the overcharge
+      bolt: {
+        range: 380, depth: 40,       // how far ahead the first strike reaches
+        damage: 20, chainDamage: 14, // first target / each jump
+        falloff: 0.85,               // each generation of jumps x this
+        radius: 150,                 // how far a jump can reach from the last body
+        touch: 14,                   // gap that counts as "touching" (jumps there first)
+        close: 60,                   // "extremely close"
+        maxJumps: 4, branches: 2,    // total jumps; a body can fork into this many
+        jumpFrames: 3,               // frames between one generation of jumps and the next
+                                     // (mana: moves.heavy.manaCost)
+        hitstun: 30, knockback: 150,
+        charge: {                    // overcharge: heavy still held when the cast is ready
+          maxFrames: 36,             // longest it can be held
+          fullFrames: 28,            // held this long = fully charged
+          damage: 1.6, jumps: 3, branches: 3, knockdown: true,
+        },
       },
+      // FORCE BLAST — the cone of invisible force
+      force: {
+        damage: 10, radius: 190, angle: 70,  // degrees, full cone width
+        knockback: 640, lift: 260,           // launch speed of a normal man
+        heavyHealth: 160,                    // max health from which a man only staggers
+        staggerFrames: 34, heavyKnockback: 260,
+        cooldown: 75,                        // frames before it can be used again
+      },
+      // BLINK — teleport in place of the roll
+      blink: {
+        distance: 210,   // px in the input direction (the roll covered ~230)
+        vanishAt: 3,     // frame the body is gone (the sparks have taken it)
+        arriveAt: 5,     // frame he re-forms at the far end
+        actFrom: 9,      // frame attacks may cut in
+        cooldown: 0,     // optional extra lockout (frames) after a blink
+      },
+      // ARCANE BARRIERS — tap magic = INFERNAL WALL, hold = EARTHEN BULWARK
+      barrier: {
+        holdFrames: 14,  // magic held this long = earth
+        castAt: 12,      // frames after choosing until it erupts
+        recovery: 16,
+        cooldown: 420,   // frames (7 s) before another barrier
+        distance: 150,   // px ahead of him
+        edgeMargin: 70,  // never closer than this to the stage's ends
+        clearance: 26,   // a man on the line is pushed this far to the nearer side
+        collapse: 30,    // frames the wall takes to come down (no collision while it does)
+        fire: { duration: 300, thickness: 34, damage: 7, tickRate: 18, knockback: 220, heat: 0.3 },
+        earth: { duration: 600, thickness: 46, hp: 180 }, // hp: strong enemies can batter it down (0 = timed only)
+      },
+      // FINISHERS on runners (combat/Mage.js MAGE_FINISHERS)
+      finisher: { reach: 230, depth: 40 },
     },
   },
 

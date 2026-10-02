@@ -53,6 +53,10 @@ export class Fighter {
     this.airJumpsLeft = stats.airJumps ?? 0;
     this.justLanded = false;
 
+    // Cooldowns, frames left per state (the Mage's force blast, barrier...)
+    this.cool = {};
+    this.shock = 0;            // frames left seizing from lightning (visual; set by combat/Mage.js)
+
     this.fsm = new StateMachine(this, FIGHTER_STATES);
     this.fsm.change('idle');
   }
@@ -102,6 +106,8 @@ export class Fighter {
 
     this.invincible = false;
     this.guarding = false;
+    for (const k in this.cool) if (this.cool[k] > 0) this.cool[k]--;
+    if (this.shock > 0 && this.shock < 999) this.shock--;
     this.fsm.update();
     this.justLanded = false;
     this.integrate();

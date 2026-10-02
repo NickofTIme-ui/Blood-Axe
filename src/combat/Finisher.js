@@ -84,10 +84,13 @@ export function isFinishable(e) {
 }
 
 // Runners close behind the player, nearest first. "Behind" = he's facing away from you.
+// (A hero's kit can reach further: the Mage takes them from a distance.)
 export function finisherTargets(p, fighters) {
+  const reach = p.stats.kit?.finisher?.reach ?? FINISH.reach;
+  const depth = p.stats.kit?.finisher?.depth ?? FINISH.depth;
   return fighters
     .filter((e) => isFinishable(e) &&
-      Math.abs(e.x - p.x) <= FINISH.reach && Math.abs(e.z - p.z) <= FINISH.depth &&
+      Math.abs(e.x - p.x) <= reach && Math.abs(e.z - p.z) <= depth &&
       (Math.sign(e.x - p.x) || e.facing) === e.facing)
     .sort((a, b) => Math.abs(a.x - p.x) - Math.abs(b.x - p.x));
 }
@@ -105,6 +108,11 @@ export function planFinisher(p, fighters, button) {
       Math.abs(e.x - first.x) <= FINISH.chainReach && Math.abs(e.z - first.z) <= FINISH.chainDepth)
     .sort((a, b) => Math.hypot(a.x - first.x, a.z - first.z) - Math.hypot(b.x - first.x, b.z - first.z))
     .slice(0, FINISH.chainMax - 1);
+  // the Mage: his own three, each for one to three runners (combat/Mage.js)
+  //   attack = STORM JUDGMENT, heavy = ARCANE RUPTURE, kick = GATE OF EMBERS
+  if (p.stats.archetype === 'mage') {
+    return { kind: { attack: 'storm', heavy: 'rupture', kick: 'embers' }[button] ?? 'storm', targets: [first, ...others] };
+  }
   // kick behind a lone runner: the same swordplay for one — a single passing cut
   if (others.length || button === 'kick') return { kind: 'chain', targets: [first, ...others] };
   return { kind: button === 'heavy' ? 'halve' : 'pending', targets: [first] };

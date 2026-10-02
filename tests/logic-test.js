@@ -11,6 +11,7 @@ import { ENEMIES, WAVES } from '../src/data/enemies.js';
 import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.js';
 import { Stage } from '../src/stage/Stage.js';
 import { impalePin } from '../src/combat/Finisher.js';
+import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/Mage.js';
 import { TickController, pressed } from '../src/core/TickInput.js';
 import { NetSession, NET, loopPair, snapshot, correct, feedPlayers } from '../src/net/Session.js';
 
@@ -29,6 +30,7 @@ class Scripted extends Controller {
     for (const a of this.script[this.t] ?? []) this.registerPress(a);
     this.held = typeof this.hold === 'function' ? this.hold(this.t) : this.hold;
     this.moveX = this.held.right ? 1 : this.held.left ? -1 : 0;
+    this.moveZ = this.held.down ? 1 : this.held.up ? -1 : 0;
   }
 }
 
@@ -159,13 +161,6 @@ test('dodge i-frames avoid a hit', () => {
   const control = setup({ dummyScript: { 1: ['attack'] }, gap: 50 }); // same, no dodge
   control.run(20);
   assert(control.log.includes('hit'), 'control case should be hit');
-});
-
-test('mage fireball hits at range', () => {
-  const t = setup({ player: 'mage', script: { 1: ['magic'] }, gap: 300 });
-  t.run(60);
-  assert(t.log.includes('hit'), `log ${t.log}`);
-  assert(t.p.mana < t.p.stats.maxMana, 'mana spent');
 });
 
 test('rogue can double jump', () => {
@@ -632,6 +627,299 @@ test('co-op: a fallen hero rises beside his partner; both down = back to the che
   stage.respawn();
   assert(heroes.every((h) => h.alive && h.state === 'idle'), 'checkpoint brings both back');
   assert(stage.stats.deaths === 1, 'one death counted');
+});
+
+// ---------------------------------------------------------------- the Mage
+
+// A Mage on an empty floor with grunts where we put them (all standing still unless told).
+function mageSetup({ script = {}, hold = {}, foes = [] } = {}) {
+  const world = new World({ seed: 7 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.mage, team: 'player', x: 600, z: 420, controller: new Scripted(script, hold) }));
+  const es = foes.map(([x, z, type = 'grunt']) => {
+    const e = world.addFighter(new Fighter({ stats: ENEMIES[type], team: 'enemy', x, z: z ?? 420, controller: new Scripted() }));
+    e.facing = -1;
+    return e;
+  });
+  const ev = [];
+  for (const n of ['hit', 'kill', 'block', 'blinkOut', 'blinkIn', 'boltCast', 'lightningArc', 'forceBlast', 'barrierUp', 'barrierDown', 'barrierGone', 'finisherBeat']) world.events.on(n, (e) => ev.push({ n, e }));
+  return { world, p, es, ev, run: (n) => { for (let i = 0; i < n; i++) world.tick(); }, seen: (n) => ev.filter((x) => x.n === n) };
+}
+
+test('mage: the kit replaces the buttons (blink, lightning, force, barrier) — Ulric keeps his', () => {
+  const m = CHARACTERS.mage.states;
+  assert(m.dodge === 'blink' && m.heavy === 'bolt' && m.kick === 'force' && m.cast === 'ward', JSON.stringify(m));
+  assert(!CHARACTERS.warrior.states && !CHARACTERS.rogue.states, 'other heroes untouched');
+  const t = setup({ script: { 1: ['dodge'] }, gap: 400 });
+  t.run(2);
+  assert(t.p.state === 'dodge', `Ulric still rolls (${t.p.state})`);
+});
+
+test('mage: three-hit staff combo chains, connects, and the third knocks down', () => {
+  const t = mageSetup({ script: { 1: ['attack'], 12: ['attack'], 24: ['attack'] }, foes: [[660]] });
+  const states = new Set();
+  for (let i = 0; i < 80; i++) { t.world.tick(); states.add(t.p.state); }
+  assert(states.has('light2') && states.has('light3'), `states ${[...states]}`);
+  assert(t.seen('hit').length === 3, `hits ${t.seen('hit').length}`);
+  assert(['knockdown', 'getup', 'dead'].includes(t.es[0].state), `foe ${t.es[0].state}`);
+});
+
+test('mage: blink teleports the dodge distance in the input direction, invulnerable, then can attack at once', () => {
+  for (const [held, dx, dz] of [[{ right: true }, 1, 0], [{ left: true }, -1, 0], [{ up: true }, 0, -1], [{ down: true }, 0, 1], [{}, 1, 0]]) {
+    const t = mageSetup({ script: { 1: ['dodge'] }, hold: held });
+    t.p.z = 425;
+    t.run(2);
+    assert(t.p.state === 'blink' && t.p.invincible, `blinking (${t.p.state})`);
+    t.run(6);
+    const B = CHARACTERS.mage.kit.blink;
+    const movedX = (t.p.x - 600) * (dx || 1);
+    const movedZ = (t.p.z - 425) * (dz || 1);
+    if (dx) assert(Math.abs(movedX - B.distance) < 2, `x moved ${t.p.x - 600}`);
+    if (dz) assert(movedZ > 50, `z moved ${t.p.z - 425}`);
+    assert(t.seen('blinkOut').length === 1 && t.seen('blinkIn').length === 1, 'out and in');
+  }
+  // attack right out of the blink
+  const a = mageSetup({ script: { 1: ['dodge'], 9: ['attack'] }, hold: {} });
+  a.run(12);
+  assert(a.p.state === 'light1', `blink -> staff strike (${a.p.state})`);
+  // blink out of a staff swing's recovery
+  const b = mageSetup({ script: { 1: ['attack'], 12: ['dodge'] } });
+  b.run(14);
+  assert(b.p.state === 'blink', `staff -> blink (${b.p.state})`);
+});
+
+test('mage: chain lightning strikes the first man and every jump starts from the body before it', () => {
+  const t = mageSetup({ script: { 1: ['heavy'] }, foes: [[760], [790, 425], [840, 400], [1300]] });
+  t.run(45);
+  const arcs = t.seen('lightningArc').map((x) => x.e);
+  assert(arcs.length === 3, `3 arcs (the far man is out of reach): ${arcs.length}`);
+  assert(arcs[0].from === null && arcs[0].to === t.es[0], 'the bolt leaves the staff for the nearest man');
+  for (const a of arcs.slice(1)) assert(arcs.some((b) => b.to === a.from), 'each jump leaves a body already struck');
+  assert(t.es.slice(0, 3).every((e) => e.health < e.stats.maxHealth), 'all three hurt');
+  assert(t.es[3].health === t.es[3].stats.maxHealth, 'the far one untouched');
+  assert(t.p.mana < t.p.stats.maxMana, 'mana spent');
+});
+
+test('mage: chain targeting prefers a body touching the last one over a nearer-looking one further off', () => {
+  const t = mageSetup({ foes: [[700], [735, 420], [700, 470]] });
+  const K = { ...CHARACTERS.mage.kit.bolt, branches: 1, maxJumps: 1 };
+  const plan = planChainLightning(t.p, K);
+  assert(plan.hits[0].t === t.es[0], 'first: nearest ahead');
+  assert(plan.hits[1].t === t.es[1] && plan.hits[1].from === t.es[0], `jump to the touching man (got ${plan.hits[1]?.t.x})`);
+});
+
+test('mage: with nobody ahead the bolt fizzles out harmlessly; overcharged it hits harder and further', () => {
+  const t = mageSetup({ script: { 1: ['heavy'] }, foes: [[300]] });
+  t.run(50);
+  assert(t.seen('boltCast').length === 1 && t.seen('hit').length === 0, 'cast, no hit');
+  const tap = mageSetup({ script: { 1: ['heavy'] }, hold: (n) => ({ heavy: n < 3 }), foes: [[720], [760], [800], [840], [880], [920], [960], [1000]] });
+  tap.run(50);
+  const full = mageSetup({ script: { 1: ['heavy'] }, hold: (n) => ({ heavy: n < 50 }), foes: [[720], [760], [800], [840], [880], [920], [960], [1000]] });
+  full.run(90);
+  const c = full.seen('boltCast')[0].e;
+  assert(c.charged, 'held = charged');
+  assert(full.seen('lightningArc').length > tap.seen('lightningArc').length, `more jumps charged (${full.seen('lightningArc').length} vs ${tap.seen('lightningArc').length})`);
+  const dmg = (x) => x.es[0].stats.maxHealth - x.es[0].health;
+  assert(dmg(full) > dmg(tap), 'more damage charged');
+});
+
+test('mage: force blast hurls the cone in front, staggers a brute, misses what is behind or off to the side', () => {
+  const t = mageSetup({ script: { 1: ['kick'] }, foes: [[680], [720, 440], [520], [650, 335], [700, 470, 'gladiator']] });
+  const front = t.es[0];
+  t.run(14);
+  assert(t.seen('forceBlast').length === 1, 'blast');
+  t.run(4);
+  assert(front.state === 'knockdown' && front.vx > 200, `front man launched (${front.state}, vx ${front.vx.toFixed(0)})`);
+  assert(t.es[1].state === 'knockdown', 'the one beside him too');
+  assert(t.es[2].health === t.es[2].stats.maxHealth, 'nobody behind');
+  assert(t.es[3].health === t.es[3].stats.maxHealth, 'nobody far off to the side');
+  const brute = t.es[4];
+  assert(brute.health < brute.stats.maxHealth && brute.state !== 'knockdown', `brute staggers, not floored (${brute.state})`);
+  // cooldown: a second press straight away does nothing
+  const c = mageSetup({ script: { 1: ['kick'], 34: ['kick'] }, foes: [[680]] });
+  c.run(40);
+  assert(c.seen('forceBlast').length === 1, 'on cooldown');
+});
+
+test('mage: force blast throws men into one another', () => {
+  const t = mageSetup({ script: { 1: ['kick'] }, foes: [[680], [800]] });
+  let bowled = false;
+  t.world.events.on('bowl', () => { bowled = true; });
+  t.run(60);
+  assert(bowled || t.es[1].state === 'knockdown', 'the far man was bowled over by the near one');
+});
+
+test('mage: tap magic = fire wall, hold = earth wall; enemies cannot cross, allies can', () => {
+  const tap = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 2 }) });
+  tap.run(20);
+  const up = tap.seen('barrierUp')[0]?.e.barrier;
+  assert(up && up.kind === 'fire', `tap -> fire (${up?.kind})`);
+  assert(Math.abs(up.x - (600 + CHARACTERS.mage.kit.barrier.distance)) < 2, `in front of him at the set distance (${up.x})`);
+  const hold = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 30 }) });
+  hold.run(40);
+  assert(hold.seen('barrierUp')[0]?.e.barrier.kind === 'earth', 'hold -> earth');
+  // a man walking at the mage from behind the wall is stopped at its face
+  const t = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 30 }), foes: [[900]] });
+  t.es[0].controller.hold = { left: true };
+  t.run(140);
+  const wall = t.world.barriers.list[0];
+  assert(t.es[0].x >= wall.x + wall.half - 0.01, `held at the wall (${t.es[0].x.toFixed(0)} vs ${wall.x + wall.half})`);
+  // the mage walks through his own wall (down the lane, round the man pressed against it)
+  t.p.z = 490;
+  t.p.controller.hold = { right: true };
+  t.run(90);
+  assert(t.p.x > wall.x + wall.half, `ally passes (${t.p.x.toFixed(0)})`);
+});
+
+test('mage: a man standing on the wall line is moved clean to the nearer side, never left inside', () => {
+  const t = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 2 }), foes: [[745], [760], [775]] });
+  t.run(20);
+  const b = t.world.barriers.list[0];
+  for (const e of t.es) assert(Math.abs(e.x - b.x) >= b.half, `outside (${e.x} vs wall ${b.x}±${b.half})`);
+  assert(t.es[0].x < b.x && t.es[2].x > b.x, 'each to the side he was nearer');
+});
+
+test('mage: the fire wall burns enemies against it; the earth wall lasts longer; collision ends when it starts to fall', () => {
+  const f = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 2 }), foes: [[900]] });
+  f.es[0].controller.hold = { left: true };
+  f.run(120);
+  assert(f.es[0].health < f.es[0].stats.maxHealth, 'scorched');
+  const K = CHARACTERS.mage.kit.barrier;
+  assert(K.earth.duration > K.fire.duration, 'earth outlasts fire');
+  const e = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 2 }), foes: [[900, 470]] });
+  e.es[0].controller.hold = { left: true };
+  e.es[0].health = 1e6; // (just walks at it, whatever it costs him)
+  e.run(10 + K.fire.duration);
+  const wall = e.world.barriers.list[0];
+  assert(wall.state === 'up' && e.es[0].x >= wall.x + wall.half - 0.01, 'held until the last moment');
+  e.run(8);
+  assert(e.seen('barrierDown').length === 1, 'it came down on time');
+  e.run(40);
+  assert(e.es[0].x < wall.x, `the moment it falls, the way is open (${e.es[0].x.toFixed(0)})`);
+  e.run(K.collapse);
+  assert(e.world.barriers.list.length === 0 && e.seen('barrierGone').length === 1, 'and then it is gone');
+});
+
+test('mage: the barrier is never placed outside the stage, and is on cooldown after', () => {
+  const t = mageSetup({ script: { 1: ['magic'], 40: ['magic'] }, hold: (n) => ({ magic: n < 2 || (n >= 40 && n < 42) }) });
+  t.p.x = t.world.bounds.maxX - 20;
+  t.p.facing = 1;
+  t.run(80);
+  const b = t.seen('barrierUp')[0].e.barrier;
+  assert(b.x <= t.world.bounds.maxX - CHARACTERS.mage.kit.barrier.edgeMargin, `clamped (${b.x})`);
+  assert(t.seen('barrierUp').length === 1, 'second cast refused: cooling down');
+});
+
+test('mage: enemies cut off by a wall wait at it instead of grinding into it, then come on when it falls', () => {
+  const world = new World({ seed: 3 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.mage, team: 'player', x: 600, z: 420, controller: new Scripted({ 1: ['magic'] }, (n) => ({ magic: n < 30 })) }));
+  const foes = [0, 1, 2, 3].map((i) => createEnemy(world, 'grunt', 900 + i * 40, 360 + i * 40));
+  for (let i = 0; i < 60; i++) world.tick();
+  const wall = world.barriers.list[0];
+  const xs = [];
+  for (let i = 0; i < 240; i++) { world.tick(); xs.push(foes.map((f) => f.x)); }
+  for (const f of foes) {
+    assert(f.x >= wall.x + wall.half && f.x < wall.x + wall.half + 140, `waiting at a sensible distance (${(f.x - wall.x).toFixed(0)})`);
+  }
+  // not jittering against it: the last second is calm
+  const last = xs.slice(-60);
+  const jitter = foes.map((_, k) => last.reduce((s, r, i) => s + (i ? Math.abs(r[k] - last[i - 1][k]) : 0), 0));
+  assert(jitter.every((j) => j < 60), `calm (${jitter.map((j) => j.toFixed(0))})`);
+  assert(p.health === p.stats.maxHealth, 'nobody reached him');
+  for (let i = 0; i < 600; i++) world.tick();
+  assert(world.barriers.list.length === 0, 'the wall is gone');
+  for (let i = 0; i < 300; i++) world.tick();
+  assert(p.health < p.stats.maxHealth, 'then they came on');
+});
+
+test('mage: twelve stranded behind the wall, eight with him — the wall holds the twelve', () => {
+  const world = new World({ seed: 5 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.mage, team: 'player', x: 900, z: 420, controller: new Scripted({ 1: ['magic'] }, (n) => ({ magic: n < 30 })) }));
+  p.health = 1e6;
+  const near = Array.from({ length: 8 }, (_, i) => createEnemy(world, 'grunt', 700 - i * 20, 340 + (i % 4) * 50));
+  const far = Array.from({ length: 12 }, (_, i) => createEnemy(world, 'grunt', 1150 + i * 25, 340 + (i % 5) * 40));
+  for (let i = 0; i < 300; i++) world.tick();
+  const wall = world.barriers.list[0];
+  assert(wall, 'raised');
+  assert(far.every((f) => f.x > wall.x), 'all twelve still behind it');
+  assert(near.every((f) => f.x < wall.x), 'the eight on his side');
+});
+
+test('mage: an enemy that turns up behind a standing wall stays behind it', () => {
+  const t = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 30 }) });
+  t.run(40);
+  const wall = t.world.barriers.list[0];
+  const late = createEnemy(t.world, 'grunt', wall.x + 200, 420);
+  for (let i = 0; i < 200; i++) t.world.tick();
+  assert(late.x >= wall.x + wall.half, `stays his side (${late.x.toFixed(0)})`);
+});
+
+test('mage: an enemy blow cannot reach through the wall', () => {
+  const t = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 30 }), foes: [[900, 420, 'penitent']] });
+  t.p.x = 600;
+  t.run(30);
+  const wall = t.world.barriers.list[0];
+  t.p.x = wall.x - wall.half - 6; // right up against his own wall
+  const e = t.es[0];
+  e.x = wall.x + wall.half + 2;
+  e.controller.script = { [e.controller.t + 1]: ['attack'] };
+  t.run(60);
+  assert(t.p.health === t.p.stats.maxHealth, 'untouched');
+});
+
+test('mage: the earth wall can be battered down by a brute', () => {
+  const t = mageSetup({ script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 30 }) });
+  t.run(30);
+  const wall = t.world.barriers.list[0];
+  const brute = createEnemy(t.world, 'berserker', wall.x + 90, 420);
+  for (let i = 0; i < 60 * 9 && wall.state === 'up'; i++) t.world.tick();
+  assert(wall.hp < wall.maxHp, `damaged (${wall.hp}/${wall.maxHp})`);
+  assert(brute.x >= wall.x + wall.half - 0.01 || wall.state !== 'up', 'still held while it stood');
+});
+
+for (const [button, kind] of [['attack', 'storm'], ['heavy', 'rupture'], ['kick', 'embers']]) {
+  test(`mage finisher: ${button} behind runners = ${kind}, for 1, 2 and 3 runners — all die, nothing left held`, () => {
+    for (const n of [1, 2, 3]) {
+      const t = mageSetup({ script: { 1: [button] } });
+      const rs = [[740, 420], [820, 440], [880, 400]].slice(0, n).map(([x, z]) => {
+        const r = t.world.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x, z, controller: new Scripted() }));
+        r.controller.scared = true; r.maimed = { armB: true }; r.facing = 1; r.vx = 90;
+        return r;
+      });
+      const kills = [];
+      t.world.events.on('kill', (e) => kills.push(e));
+      t.run(3);
+      assert(t.p.state === 'execute' && t.p.exec.kind === kind && t.p.exec.targets.length === n, `${n}: ${t.p.state} ${t.p.exec?.kind} ${t.p.exec?.targets.length}`);
+      t.run(MAGE_FINISHERS[kind].total + 40); // (+ the hit-stops)
+      assert(kills.length === n && kills.every((k) => k.finisher === kind), `${n}: kills ${kills.map((k) => k.finisher)}`);
+      assert(rs.every((r) => !r.alive && r.state !== 'executed'), `${n}: ${rs.map((r) => r.state)}`);
+      assert(t.p.state === 'idle' && !t.p.blinkGone, `${n}: mage back (${t.p.state})`);
+      if (kind === 'rupture') assert(rs.every((r) => r.fatality === 'explode'), 'ruptured');
+      if (kind === 'embers') assert(t.seen('finisherBeat').some((b) => b.e.type === 'embersArrive'), 'blinked into the path');
+    }
+  });
+}
+
+test('mage finisher: rupture holds each runner apart in the air before the burst', () => {
+  const t = mageSetup({ script: { 1: ['heavy'] } });
+  const rs = [[740, 420], [800, 430], [860, 410]].map(([x, z]) => {
+    const r = t.world.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x, z, controller: new Scripted() }));
+    r.controller.scared = true; r.maimed = { armB: true }; r.facing = 1;
+    return r;
+  });
+  t.run(60);
+  for (const r of rs) assert(r.h > 30, `lifted (${r.h.toFixed(0)})`);
+  for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) {
+    assert(Math.hypot(rs[i].x - rs[j].x, rs[i].z - rs[j].z) > 30, 'clearly separated');
+  }
+});
+
+test('mage: everything he does is the same on two machines (lockstep)', () => {
+  const play = () => {
+    const t = mageSetup({ script: { 1: ['heavy'], 50: ['kick'], 90: ['magic'], 130: ['dodge'], 145: ['attack'], 160: ['attack'] }, hold: (n) => ({ heavy: n < 30, magic: n >= 90 && n < 92 }), foes: [[700], [740, 440], [780, 380], [900], [1000]] });
+    t.run(400);
+    return t.world.fighters.map((f) => `${f.x.toFixed(3)},${f.z.toFixed(3)},${f.health.toFixed(2)},${f.state}`).join('|');
+  };
+  assert(play() === play(), 'same fight both times');
 });
 
 // ---------------------------------------------------------------- the stage (THE OATH ROAD)

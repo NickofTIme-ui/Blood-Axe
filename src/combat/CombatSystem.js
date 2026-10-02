@@ -41,6 +41,7 @@ export class CombatSystem {
       const tol = hb.depth ?? FEEL.depthTolerance;
       for (const def of fighters) {
         if (def === atk || !this.canBeHit(def, atk.team, info.hitList)) continue;
+        if (this.world.barriers?.blocks(atk, def)) continue; // a Mage's wall between them
         const hurt = toWorldBox(def, def.hurtbox);
         if (!overlaps(hitbox, hurt, tol)) continue;
         info.hitList.add(def.id);

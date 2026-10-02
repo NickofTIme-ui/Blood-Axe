@@ -11,6 +11,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { movePhase, totalFrames, inWindow } from '../combat/MoveRunner.js';
 import { FINISH, FINISHERS, CHAIN, IMPALE, impalePin, impalePierce, planFinisher, chainTimes } from '../combat/Finisher.js';
+import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher } from '../combat/Mage.js';
 
 const FEEL = SETTINGS.feel;
 
@@ -72,6 +73,16 @@ export function usable(f, move) {
   return !!move && !(move.needs && f.maimed?.[move.needs]);
 }
 
+// The state a button starts for this fighter: a hero's kit can replace the usual ones
+// (stats.states — the Mage blinks instead of rolling, casts lightning as his heavy...).
+export const stateFor = (f, name) => f.stats.states?.[name] ?? name;
+
+// Enough stamina and mana for a move, and not cooling down (stats.states' kits use the
+// cooldowns: f.cool[state] frames left).
+export function ready(f, move, state) {
+  return f.stamina >= (move.staminaCost ?? 0) && f.mana >= (move.manaCost ?? 0) && !(f.cool?.[state] > 0);
+}
+
 // Try to start an action from the controller's (buffered) input.
 // `allowed` limits which actions may start — used for cancel windows.
 // Order = priority when several buttons are buffered at once.
@@ -80,18 +91,18 @@ export function tryActions(f, allowed = null) {
   const c = f.controller;
   const s = f.stats;
 
-  if (ok('dodge') && c.peek('dodge') && f.stamina >= s.dodge.cost) {
+  if (ok('dodge') && c.peek('dodge') && f.stamina >= s.dodge.cost && !(f.cool?.[stateFor(f, 'dodge')] > 0)) {
     c.consume('dodge');
-    f.fsm.change('dodge');
+    f.fsm.change(stateFor(f, 'dodge'));
     return true;
   }
   if (ok('block')) {
     if (c.consume('block')) { f.fsm.change('parry'); return true; } // fresh press = parry attempt
     if (c.isDown('block')) { f.fsm.change('block'); return true; }  // already held = plain block
   }
-  if (ok('magic') && s.spell && c.peek('magic') && f.mana >= s.spell.cost) {
+  if (ok('magic') && s.spell && c.peek('magic') && f.mana >= s.spell.cost && !(f.cool?.[stateFor(f, 'cast')] > 0)) {
     c.consume('magic');
-    f.fsm.change('cast');
+    f.fsm.change(stateFor(f, 'cast'));
     return true;
   }
   // Behind a runner who's lost the will to fight: attack / heavy executes him instead
@@ -106,13 +117,13 @@ export function tryActions(f, allowed = null) {
       return true;
     }
   }
-  if (ok('heavy') && usable(f, s.moves.heavy) && c.peek('heavy') && f.stamina >= (s.moves.heavy.staminaCost ?? 0)) {
+  if (ok('heavy') && usable(f, s.moves.heavy) && c.peek('heavy') && ready(f, s.moves.heavy, stateFor(f, 'heavy'))) {
     c.consume('heavy');
-    f.fsm.change('heavy');
+    f.fsm.change(stateFor(f, 'heavy'));
     return true;
   }
-  if (ok('kick') && usable(f, s.moves.kick) && c.consume('kick')) {
-    f.fsm.change('kick');
+  if (ok('kick') && usable(f, s.moves.kick) && ready(f, s.moves.kick, stateFor(f, 'kick')) && c.consume('kick')) {
+    f.fsm.change(stateFor(f, 'kick'));
     return true;
   }
   // Enemy-only extra moves (hooks, charges, spins). Players have no button for these.
@@ -184,8 +195,9 @@ function makeAttackState(moveKey) {
       for (const ch of m.chains ?? []) {
         if (!inWindow(ch, frame)) continue;
         const next = f.stats.moves[ch.next];
-        if (usable(f, next) && f.stamina >= (next.staminaCost ?? 0) && c.consume(ch.button)) {
-          f.fsm.change(ch.next);
+        const into = stateFor(f, ch.next);
+        if (usable(f, next) && ready(f, next, into) && c.consume(ch.button)) {
+          f.fsm.change(into);
           return;
         }
       }
@@ -482,6 +494,8 @@ export const FIGHTER_STATES = {
       if (ex.kind === 'chain') {
         ex.times = chainTimes(ex.targets.length);
         ex.total = ex.times.total;
+      } else if (isMageFinisher(ex.kind)) {
+        mageFinisherStart(f, ex); // (combat/Mage.js)
       } else {
         ex.total = FINISHERS[ex.kind === 'pending' ? 'throat' : ex.kind].total;
         f.facing = ex.targets[0].facing; // right behind him, looking the way he's running
@@ -497,6 +511,7 @@ export const FIGHTER_STATES = {
       f.invincible = true;
       f.vx = 0; f.vz = 0;
       if (ex.kind === 'chain') return runChain(f, ex, frame);
+      if (ex.mage) return runMageFinisher(f, ex, frame);
 
       // tapped or held? (decided while he closes in)
       if (ex.kind === 'pending') {
@@ -552,6 +567,7 @@ export const FIGHTER_STATES = {
         if (v.state === 'executed') v.execRelease = v.health > 0 ? { vx: 0, vh: 0, free: true } : { dead: true };
       }
       f.exec = null;
+      f.blinkGone = false;
     },
   },
 
@@ -570,6 +586,8 @@ export const FIGHTER_STATES = {
       f.liftH = 0;
       f.execRelease = null;
       f.execCut = null;
+      f.execFlinch = false;
+      f.ruptureCrush = 0;
       f.activeAttack = null;
     },
     update(f) {
@@ -582,13 +600,14 @@ export const FIGHTER_STATES = {
         f.execRelease = null;
         if (r.dead) return f.fsm.change('dead');
         if (r.free) return f.fsm.change('idle');
+        if (r.burn) return f.fsm.change('burning', { dir: r.dir ?? f.facing }); // (the Mage's Gate of Embers)
         f.fsm.change('knockdown', { vx: r.vx, vh: r.vh });
         if (r.bowl) f.bowl = { frames: 40, dir: Math.sign(r.vx), hit: new Set([f.id]) };
         return;
       }
       if (f.execBy?.state !== 'execute') f.fsm.change(f.health > 0 ? 'idle' : 'dead');
     },
-    exit(f) { f.liftH = 0; },
+    exit(f) { f.liftH = 0; f.shock = 0; },
   },
 
   // Holding block. Hits from the front deal reduced damage and drain stamina.
@@ -743,3 +762,6 @@ export const FIGHTER_STATES = {
     },
   },
 };
+
+// The Mage's own states (combat/Mage.js), handed the helpers they share with these.
+Object.assign(FIGHTER_STATES, mageStates({ tryActions, stopMoving, friction, faceInput }));
