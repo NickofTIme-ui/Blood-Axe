@@ -9,6 +9,7 @@
 
 import { DEPTH } from '../view/depths.js';
 import { playSfx } from '../core/Sfx.js';
+import { FX } from '../view/stripImporter.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const ADD = () => Phaser.BlendModes.ADD;
@@ -456,8 +457,13 @@ class FireWallView {
   destroy() { for (const f of this.flames) f.destroy(); this.glow.destroy(); }
 }
 
-// The Earthen Bulwark: slabs of broken rock thrust up along the whole lane, glowing seams
-// of magic between them, cracking as it's battered, then crumbling down into dust.
+// The Earthen Bulwark. A glowing fissure races across the lane from the Mage's staff,
+// then the stone tears up out of it in a wave — each slab punching up past its height and
+// settling, flinging rock and dust as it breaks the surface — and locks into a wall with
+// magic burning in its seams. Battered, it cracks in stages (a health bar shows how much it
+// has left), and when it fails the seams flare and it crumbles into a dust cloud.
+// Painted slabs (FX_STRIPS.earthwall: assets/fx/earthwall-strip.png) are used when they
+// exist; until then each slab is drawn as a jagged rock.
 class EarthWallView {
   constructor(scene, b) {
     this.scene = scene;
@@ -465,27 +471,41 @@ class EarthWallView {
     const bd = scene.world.bounds;
     this.z0 = bd.minZ - 12;
     this.z1 = bd.maxZ + 8;
+    this.zc = Math.max(this.z0, Math.min(this.z1, b.owner?.z ?? (this.z0 + this.z1) / 2)); // where the crack starts
+    this.art = FX.earthwall ?? null;
     this.slabs = [];
-    for (let z = this.z0; z < this.z1; z += rand(9, 15)) {
-      const h = rand(80, 125);
-      const w = b.half * rand(1.6, 2.4);
+    let k = 0;
+    for (let z = this.z0; z < this.z1; z += rand(9, 14)) {
+      const h = rand(88, 132);
+      const w = b.half * rand(1.7, 2.5);
       const pts = [];
       const n = 6;
       for (let i = 0; i <= n; i++) pts.push({ x: -w / 2 + (w * i) / n + rand(-2, 2), y: -h + Math.abs(Math.sin(i * 1.9 + z)) * 18 * (i % 2 ? 1 : 0.4) });
-      this.slabs.push({ z, h, w, pts, off: rand(-4, 4), tone: Math.floor(rand(0, 3)), delay: Math.floor(rand(0, 7)), crack: rand(0.2, 0.8) });
+      // erupts when the fissure reaches it
+      const delay = 6 + Math.round((Math.abs(z - this.zc) / Math.max(1, this.z1 - this.z0)) * 14) + Math.floor(rand(0, 3));
+      const slab = { z, h, w, pts, off: rand(-4, 4), tone: Math.floor(rand(0, 3)), delay, crack: rand(0.2, 0.8), lean: rand(-0.06, 0.06), burst: false };
+      if (this.art) {
+        slab.img = scene.add.image(0, 0, this.art.key, `f${k++ % this.art.count}`).setOrigin(0.5, 1).setVisible(false);
+        if (Math.random() < 0.5) slab.img.setFlipX(true);
+      }
+      this.slabs.push(slab);
     }
-    this.g = scene.add.graphics();
     this.parts = this.slabs.map(() => scene.add.graphics());
+    this.crackG = scene.add.graphics().setDepth(DEPTH.decals + 3).setBlendMode(ADD());
+    this.bar = scene.add.graphics().setDepth(DEPTH.popups - 6);
     this.t = 0;
     this.fall = -1;
     this.cracks = 0;
-    // the eruption: dust and stone flung up the whole length
-    for (let i = 0; i < 40; i++) {
-      scene.gore.spawn({ x: b.x + rand(-b.half, b.half), z: rand(this.z0, this.z1), h: rand(0, 40), vx: rand(-160, 160), vz: 0, vh: rand(150, 420), tint: Math.random() < 0.6 ? 0x6a5a48 : 0x9a8a72, scale: rand(0.5, 1.3), decal: false, life: Math.floor(rand(20, 40)), texture: Math.random() < 0.5 ? 'px' : 'dot' });
-    }
+    this.shown = 1;
   }
 
-  cracked() { this.cracks = Math.min(4, this.cracks + 1); }
+  cracked() {
+    this.cracks = Math.min(4, this.cracks + 1);
+    const b = this.b;
+    for (let i = 0; i < 5; i++) {
+      this.scene.gore.spawn({ x: b.x + rand(-b.half, b.half), z: rand(this.z0, this.z1), h: rand(40, 110), vx: rand(-90, 90), vz: 0, vh: rand(20, 160), tint: 0x6a5a48, scale: rand(0.6, 1.2), decal: false, life: 26, texture: 'px', spin: rand(-8, 8) });
+    }
+  }
 
   collapse() {
     this.fall = 0;
@@ -496,42 +516,108 @@ class EarthWallView {
     for (let i = 0; i < 10; i++) this.scene.burning?.puff?.(b.x + rand(-20, 20), rand(this.z0, this.z1), rand(10, 60), 0.5);
   }
 
+  // a slab breaking the surface: stone and dust thrown up round it
+  erupt(s) {
+    const b = this.b;
+    const x = b.x + s.off;
+    const gore = this.scene.gore;
+    for (let i = 0; i < 4; i++) {
+      gore.spawn({ x: x + rand(-s.w * 0.5, s.w * 0.5), z: s.z, h: rand(0, 20), vx: rand(-200, 200), vz: 0, vh: rand(220, 480), tint: Math.random() < 0.6 ? 0x6a5a48 : 0x9a8a72, scale: rand(0.6, 1.4), decal: false, life: Math.floor(rand(22, 40)), texture: 'px', spin: rand(-12, 12) });
+    }
+    for (let i = 0; i < 3; i++) gore.spawn({ x: x + rand(-s.w, s.w), z: s.z, h: 2, vx: rand(-260, 260), vz: rand(-20, 20), vh: rand(20, 80), tint: 0x8a7a60, scale: rand(0.8, 1.6), decal: false, life: 18 });
+    if (Math.random() < 0.3) this.scene.burning?.puff?.(x, s.z, rand(10, 40), 0.45);
+  }
+
   update() {
     const b = this.b;
     this.t++;
     if (this.fall >= 0) this.fall++;
     const tones = [[0x5a4c40, 0x7a6a58, 0x3a3028], [0x4e4438, 0x6e6050, 0x302820], [0x645444, 0x86745e, 0x40342a]];
+    const tints = [0xd8c8b8, 0xc0b0a0, 0xe8d8c4];
     const dmg = b.maxHp > 0 ? 1 - b.hp / b.maxHp : 0;
     const stage = Math.max(this.cracks, Math.floor(dmg * 4));
     const seam = 0.5 + 0.5 * Math.sin(this.t * 0.12);
+
+    // the fissure racing across the lane before the stone comes (and glowing under it)
+    const cg = this.crackG.clear();
+    const reach = Math.min(1, this.t / 10) * Math.max(this.zc - this.z0, this.z1 - this.zc);
+    const glow = this.fall >= 0 ? Math.max(0, 0.6 - this.fall / 20) : Math.max(0.25, 1 - this.t / 40);
+    if (glow > 0) {
+      for (const dir of [-1, 1]) {
+        let px = b.x; let pz = this.zc;
+        cg.lineStyle(3, 0xff9a40, 0.9 * glow);
+        cg.beginPath(); cg.moveTo(px, pz);
+        for (let d = 8; d <= reach; d += 8) {
+          const z = this.zc + dir * d;
+          if (z < this.z0 || z > this.z1) break;
+          px = b.x + Math.sin(d * 0.37 + dir) * 6;
+          pz = z;
+          cg.lineTo(px, pz);
+        }
+        cg.strokePath();
+        cg.lineStyle(1.2, 0xffe0a0, glow).beginPath(); cg.moveTo(b.x, this.zc); cg.lineTo(px, pz); cg.strokePath();
+      }
+    }
+
     this.slabs.forEach((s, i) => {
       const g = this.parts[i];
-      const up = Math.min(1, Math.max(0, (this.t - s.delay) / 6)); // thrust up, slab by slab
-      const down = this.fall >= 0 ? Math.min(1, Math.max(0, (this.fall - s.delay * 0.6) / (b.collapse * 0.7))) : 0;
-      const k = up * (1 - down);
+      const since = this.t - s.delay;
+      // up out of the ground with a punch past its height, then settling (ease out back)
+      const u = Math.min(1, Math.max(0, since / 8));
+      const up = u <= 0 ? 0 : 1 + 2.70158 * (u - 1) ** 3 + 1.70158 * (u - 1) ** 2;
+      if (since === 1 && !s.burst) { s.burst = true; this.erupt(s); }
+      const down = this.fall >= 0 ? Math.min(1, Math.max(0, (this.fall - s.delay * 0.4) / (b.collapse * 0.7))) : 0;
+      const k = Math.max(0, up) * (1 - down);
       g.clear().setDepth(s.z + 0.6);
+      if (s.img) s.img.setVisible(false);
       if (k <= 0) return;
-      const [base, light, dark] = tones[s.tone];
-      const x = b.x + s.off;
-      const y = s.z + (1 - k) * s.h * 0.9 + down * 6;
-      const P = s.pts.map((q) => ({ x: x + q.x, y: y + q.y * (0.4 + 0.6 * k) }));
-      const poly = [{ x: x - s.w / 2, y }, ...P, { x: x + s.w / 2, y }];
-      g.fillStyle(0x0a0806, 1);
-      g.beginPath(); g.moveTo(poly[0].x, poly[0].y); for (const q of poly) g.lineTo(q.x - 1, q.y - 1); g.closePath(); g.fillPath();
-      g.fillStyle(base, 1);
-      g.beginPath(); g.moveTo(poly[0].x, poly[0].y); for (const q of poly) g.lineTo(q.x, q.y); g.closePath(); g.fillPath();
-      g.fillStyle(light, 1).fillTriangle(P[0].x, P[0].y, P[2].x, P[2].y, x - s.w * 0.1, y - s.h * 0.3 * k);
-      g.fillStyle(dark, 0.6).fillRect(x + s.w * 0.15, y - s.h * 0.6 * k, s.w * 0.35, s.h * 0.6 * k);
-      // glowing seam of magic, brighter as it fails
-      const glow = (0.25 + seam * 0.25 + stage * 0.12 + down) * k;
-      g.lineStyle(1.4, 0xff9a40, Math.min(1, glow));
+      const x = b.x + s.off + (since < 8 ? rand(-1.5, 1.5) : 0) + (this.fall >= 0 ? rand(-1, 1) * down * 3 : 0);
+      const y = s.z + down * 6;
+      if (s.img) {
+        // painted slab: rises out of the floor (the part still underground is cut off by
+        // drawing it shorter from the bottom up)
+        const art = this.art;
+        const sc = s.h / art.fh;
+        s.img.setVisible(true).setPosition(x, y).setDepth(s.z + 0.6).setScale(Math.max(sc * 0.6, (s.w * 1.2) / art.fw), sc * k)
+          .setRotation(s.lean * (1 - u)).setTint(tints[s.tone]).setAlpha(1);
+      } else {
+        const [base, light, dark] = tones[s.tone];
+        const P = s.pts.map((q) => ({ x: x + q.x, y: y + q.y * k }));
+        const poly = [{ x: x - s.w / 2, y }, ...P, { x: x + s.w / 2, y }];
+        g.fillStyle(0x0a0806, 1);
+        g.beginPath(); g.moveTo(poly[0].x, poly[0].y); for (const q of poly) g.lineTo(q.x - 1, q.y - 1); g.closePath(); g.fillPath();
+        g.fillStyle(base, 1);
+        g.beginPath(); g.moveTo(poly[0].x, poly[0].y); for (const q of poly) g.lineTo(q.x, q.y); g.closePath(); g.fillPath();
+        g.fillStyle(light, 1).fillTriangle(P[0].x, P[0].y, P[2].x, P[2].y, x - s.w * 0.1, y - s.h * 0.3 * k);
+        g.fillStyle(dark, 0.6).fillRect(x + s.w * 0.15, y - s.h * 0.6 * k, s.w * 0.35, s.h * 0.6 * k);
+      }
+      // magic burning in the seams: hot as it rises, then a slow pulse, flaring as it fails
+      const hot = since < 14 ? 1 - since / 14 : 0;
+      const sg = Math.min(1, (0.25 + seam * 0.25 + stage * 0.12 + down + hot) * k);
+      g.lineStyle(1.6, 0xff9a40, sg);
       g.lineBetween(x - s.w * 0.1, y - 2, x + s.w * 0.05, y - s.h * 0.55 * k);
+      if (hot > 0) g.lineStyle(3, 0xffd890, hot * 0.6).lineBetween(x - s.w * 0.1, y - 2, x + s.w * 0.05, y - s.h * 0.55 * k);
       // cracks, by damage stage
-      if (stage >= 1) { g.lineStyle(1, 0x140e0a, 1); g.lineBetween(x - s.w * 0.3, y - s.h * s.crack * k, x + s.w * 0.2, y - s.h * (s.crack - 0.2) * k); }
-      if (stage >= 2) { g.lineStyle(1.5, 0x140e0a, 1); g.lineBetween(x + s.w * 0.25, y - s.h * 0.9 * k, x - s.w * 0.1, y - s.h * 0.2 * k); g.lineStyle(1, 0xff9a40, 0.6); g.lineBetween(x + s.w * 0.24, y - s.h * 0.88 * k, x - s.w * 0.09, y - s.h * 0.22 * k); }
-      if (stage >= 3 && i % 3 === 0) { g.fillStyle(0x0a0806, 1).fillTriangle(P[3].x - 6, P[3].y, P[3].x + 6, P[3].y, P[3].x, P[3].y + 14); }
+      if (stage >= 1) { g.lineStyle(1.2, 0x140e0a, 1); g.lineBetween(x - s.w * 0.3, y - s.h * s.crack * k, x + s.w * 0.2, y - s.h * (s.crack - 0.2) * k); }
+      if (stage >= 2) { g.lineStyle(1.6, 0x140e0a, 1); g.lineBetween(x + s.w * 0.25, y - s.h * 0.9 * k, x - s.w * 0.1, y - s.h * 0.2 * k); g.lineStyle(1, 0xff9a40, 0.6); g.lineBetween(x + s.w * 0.24, y - s.h * 0.88 * k, x - s.w * 0.09, y - s.h * 0.22 * k); }
+      if (stage >= 3 && i % 3 === 0) g.fillStyle(0x0a0806, 1).fillTriangle(x - 6, y - s.h * 0.8 * k, x + 6, y - s.h * 0.8 * k, x, y - s.h * 0.6 * k);
     });
+
+    // its health, over the top of the wall (only once it's been hit)
+    const bar = this.bar.clear();
+    this.shown += ((b.maxHp > 0 ? b.hp / b.maxHp : 1) - this.shown) * 0.15;
+    if (b.maxHp > 0 && b.hp < b.maxHp && this.fall < 0) {
+      const w = 64; const x = b.x - w / 2; const y = this.z0 - 128;
+      bar.fillStyle(0x000000, 0.7).fillRect(x - 2, y - 2, w + 4, 8);
+      bar.fillStyle(0x6a5a48, 1).fillRect(x, y, w * this.shown, 4);
+      bar.fillStyle(0xff9a40, 1).fillRect(x, y, w * Math.max(0, b.hp / b.maxHp), 4);
+    }
   }
 
-  destroy() { for (const g of this.parts) g.destroy(); this.g.destroy(); }
+  destroy() {
+    for (const g of this.parts) g.destroy();
+    for (const s of this.slabs) s.img?.destroy();
+    this.crackG.destroy();
+    this.bar.destroy();
+  }
 }

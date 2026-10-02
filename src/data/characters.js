@@ -328,10 +328,11 @@ export const CHARACTERS = {
         cooldown: 420,   // frames (7 s) before another barrier
         distance: 150,   // px ahead of him
         edgeMargin: 70,  // never closer than this to the stage's ends
-        clearance: 26,   // a man on the line is pushed this far to the nearer side
+        clearance: 30,   // a man on the line is pushed this far to the nearer side
+        standoff: 12,    // everyone is held this far off the wall's face (no sinking into it)
         collapse: 30,    // frames the wall takes to come down (no collision while it does)
         fire: { duration: 300, thickness: 34, damage: 5, tickRate: 18, knockback: 220, heat: 0.3 }, // (damage x magicMult)
-        earth: { duration: 600, thickness: 46, hp: 180 }, // hp: strong enemies can batter it down (0 = timed only)
+        earth: { duration: 600, thickness: 46, hp: 300 }, // hp: every enemy can batter it down (0 = timed only)
       },
       // FINISHERS on runners (combat/Mage.js MAGE_FINISHERS)
       finisher: { reach: 230, depth: 40 },

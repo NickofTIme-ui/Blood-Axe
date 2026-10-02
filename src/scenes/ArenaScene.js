@@ -760,7 +760,7 @@ export class ArenaScene extends Phaser.Scene {
         : [new InputManager(this, CONTROLS_P1_SHARED, { pad: null }), new InputManager(this, CONTROLS_P2, { pad: pads ? 0 : null })];
       this.session = new LocalSession(samplers);
     } else if (this.mode === 'net') {
-      this.session = old?.net ? old : new NetSession(this.netInfo.link, this.netInfo.index, null, this.netInfo.game ?? 0);
+      this.session = old?.net ? old : new NetSession(this.netInfo.link, this.netInfo.index, null, this.netInfo.game ?? 0, this.netInfo.delay);
       this.session.setSamplers([new InputManager(this)]);
       // the guest's safety net: pulled back into line with the host if it ever drifts
       this.session.onCorrect = (host, mine) => correct(this.world, host, mine);
@@ -813,7 +813,9 @@ export class ArenaScene extends Phaser.Scene {
     while (this.accumulator >= STEP_MS && steps < 5) {
       // online: no tick without both players' buttons for it — wait for the wire
       if (!s.ready(s.tick)) {
-        this.accumulator = Math.min(this.accumulator, STEP_MS);
+        // (keep a few ticks of time owed, so once the wire catches up the game does too,
+        // instead of running behind real time after every hiccup)
+        this.accumulator = Math.min(this.accumulator, STEP_MS * 4);
         // partner gone quiet (closed the tab, lost the line): after a few seconds
         // you may carry on by yourself with R
         if (s.stall > 240) { this.controls.read(); if (this.controls.consume('restart')) this.goAlone(); }

@@ -37,6 +37,12 @@ function faceInput(f) {
   else if (c.moveX) f.facing = Math.sign(c.moveX);
 }
 
+// While a spell is winding up (until it goes off), left/right turns the caster to aim it.
+export function aimTurn(f) {
+  const mx = f.controller.moveX;
+  if (Math.abs(mx) > 0.5) f.facing = Math.sign(mx);
+}
+
 // While guarding, a left/right press whips the guard round to face that way.
 // (Players only: enemies keep facing their target via facingHint.)
 function guardTurn(f) {
@@ -721,6 +727,7 @@ export const FIGHTER_STATES = {
     },
     update(f, frame) {
       const sp = f.stats.spell;
+      if (frame < sp.startup) aimTurn(f);
       if (frame === sp.startup) f.world.spawnSpell(f, sp);
       for (const win of sp.cancels ?? []) {
         if (inWindow(win, frame) && tryActions(f, win.into)) return;
@@ -827,6 +834,6 @@ export const FIGHTER_STATES = {
 };
 
 // The Mage's own states (combat/Mage.js), handed the helpers they share with these.
-Object.assign(FIGHTER_STATES, mageStates({ tryActions, stopMoving, friction, faceInput }));
+Object.assign(FIGHTER_STATES, mageStates({ tryActions, stopMoving, friction, faceInput, aimTurn }));
 // ...and the Rogue's (combat/Rogue.js)
 Object.assign(FIGHTER_STATES, rogueStates({ tryActions, stopMoving, friction, faceInput, makeAttackState }));

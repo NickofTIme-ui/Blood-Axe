@@ -190,3 +190,21 @@ When a strip is saved, check it with `tools/strip-check.html` like the Ulric str
 tell a session to wire it in: it gets an entry in `CHARACTER_STRIPS.mage` in
 `src/data/spriteStrips.js`, and `MageView` then uses the strip in place of the rig for
 that move.
+
+---
+
+## 12. The Earthen Bulwark slabs: `assets/fx/earthwall-strip.png`
+
+The wall is built from these slabs (`FX_STRIPS.earthwall`). The game makes each one burst
+up out of a glowing crack, stacks them across the whole lane, cracks them as enemies batter
+them, and crumbles them when the wall falls. Until the file exists, the slabs are code-drawn
+rock shapes.
+
+> For my 16-bit dark-fantasy beat 'em up (style of the attached Mage art): **6 separate
+> tall slabs of magical rock in one row**, each standing upright, side by side with WIDE
+> gaps, on a FLAT PURE MAGENTA (#FF00FF) background. Each slab is a different jagged shape:
+> broken stone and packed earth with chunks of old masonry embedded, sharp splintered tops,
+> and thin seams of glowing orange-gold magic running through the cracks. Dark grey-brown
+> stone, lit warm from the front, heavy and physical. All roughly the same height, about
+> three times taller than wide, bottoms flat and level on one baseline (they come out of
+> the ground). No dust, no motion lines, no text, nothing magenta in the art itself.

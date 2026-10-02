@@ -420,6 +420,7 @@ export function importFxStrip(img, spec) {
   const px = loadPixels(img);
   const { W, H } = px;
   const fg = backgroundMask(px, spec.bg);
+  if (spec.bg === 'magenta') despillMagenta(px.data.data, fg, W, H);
   const n = spec.frames;
   const cw = W / (spec.columns ?? n);
   const rows = spec.rows ?? 1;

@@ -208,19 +208,22 @@ export class EnemyBrain extends Controller {
     const wantZ = target.z + ((f.id % 5) - 2) * 26;
     this.facingHint = -side; // facing the wall and whoever's behind it
     this.comboLeft = 0;
-    // a strong man with a stone wall in reach: smash at it
-    const strong = f.stats.maxHealth >= 120 || f.stats.boss; // the named brutes, not the rabble
+    // a stone wall: everyone tries to smash it down (a few at a time, in turn — the rest
+    // wait their go, spread along it)
     const reach = Math.abs(f.x - wall.x) - wall.half;
-    if (!fire && wall.maxHp > 0 && strong && reach <= ai.attackRange * 0.8) {
-      if (this.cooldown <= 0) {
-        this.registerPress(this.roll(30) < ai.heavyChance && this.canUse('heavy') ? 'heavy' : 'attack');
-        this.cooldown = this.randInt(ai.attackCooldown, 31);
+    if (!fire && wall.maxHp > 0) {
+      const batterers = this.world.fighters.filter((o) => o.team === f.team && o.alive && o !== f &&
+        Math.abs(o.x - wall.x) - wall.half <= ai.attackRange * 0.9 && (wall.sides.get(o.id) ?? 0) === side).length;
+      const myTurn = batterers < 3 || reach <= ai.attackRange * 0.9;
+      if (myTurn && reach <= ai.attackRange * 0.8) {
+        if (Math.abs(target.z - f.z) > 40) this.moveZ = Math.sign(wantZ - f.z) * 0.3;
+        if (this.cooldown <= 0) {
+          this.registerPress(this.roll(30) < ai.heavyChance && this.canUse('heavy') ? 'heavy' : 'attack');
+          this.cooldown = this.randInt(ai.attackCooldown, 31);
+        }
+        return;
       }
-      return;
-    }
-    if (strong && !fire && wall.maxHp > 0 && this.cooldown <= 0) {
-      this.moveX = -side; // close in to batter it
-      return;
+      if (myTurn && this.cooldown <= 0) { this.moveX = -side; return; } // close in to batter it
     }
     if (Math.abs(wantX - f.x) > 8) this.moveX = Math.sign(wantX - f.x) * 0.6;
     if (Math.abs(wantZ - f.z) > 10) this.moveZ = Math.sign(wantZ - f.z) * 0.5;

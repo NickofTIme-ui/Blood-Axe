@@ -36,7 +36,8 @@ export class LocalSession {
 }
 
 export const NET = {
-  delay: 3,        // ticks between pressing a button and it taking effect (both machines)
+  delay: 3,        // ticks between pressing a button and it taking effect (both machines);
+                   // online, the host picks it from the measured round trip (delayFor)
   snapEvery: 60,   // ticks between the host's snapshots
   keep: 600,       // ticks of own snapshots a machine keeps to compare against
 };
@@ -44,8 +45,9 @@ export const NET = {
 export class NetSession {
   // link: { send(obj), onData(fn), onClose(fn) }   localIndex: 0 = host, 1 = guest
   // game: a number both machines agree on for this run (records from an earlier run are ignored)
-  constructor(link, localIndex, sampler = null, game = 0) {
+  constructor(link, localIndex, sampler = null, game = 0, delay = NET.delay) {
     this.game = game;
+    this.delay = delay;
     this.link = link;
     this.localIndex = localIndex;
     this.host = localIndex === 0;
@@ -54,7 +56,7 @@ export class NetSession {
     this.sampler = sampler;
     this.local = new Map();   // tick -> rec (mine)
     this.remote = new Map();  // tick -> rec (theirs)
-    this.sent = NET.delay - 1; // highest tick I've recorded input for
+    this.sent = delay - 1;    // highest tick I've recorded input for
     this.alone = false;       // the other side has gone: carry on by yourself
     this.stall = 0;           // render frames spent waiting on the other machine
     this.snaps = new Map();   // tick -> my snapshot at that tick
@@ -63,7 +65,7 @@ export class NetSession {
     this.onCorrect = null;    // (hostSnap, mySnapAtThatTick) => void — the arena fixes itself up
     this.onGone = null;
     // the first DELAY ticks happen before anyone's input can have arrived: nothing pressed
-    for (let t = 0; t < NET.delay; t++) { this.local.set(t, EMPTY); this.remote.set(t, EMPTY); }
+    for (let t = 0; t < delay; t++) { this.local.set(t, EMPTY); this.remote.set(t, EMPTY); }
     link.onData((m) => this.receive(m));
     link.onClose(() => { this.alone = true; this.onGone?.(); });
   }
@@ -80,7 +82,7 @@ export class NetSession {
   // (stamped DELAY ahead) and send them.
   pump(tick) {
     let first = true;
-    while (this.sent < tick + NET.delay) {
+    while (this.sent < tick + this.delay) {
       const t = ++this.sent;
       const rec = this.sampler ? capture(this.sampler, first) : EMPTY;
       first = false;
@@ -135,6 +137,15 @@ export class NetSession {
 // guest's hero must still get the guest's record, not the empty one at slot 0.
 export function feedPlayers(players, recs) {
   players.forEach((p, i) => p.controller.feed(recs[p.seat ?? i] ?? EMPTY));
+}
+
+// The input delay for a measured round trip (ms): enough ticks that a press reaches the
+// other machine before it's due there, with room for jitter. Over the internet a fixed 3
+// ticks (50 ms) is shorter than the trip itself: both games kept stopping to wait for
+// each other and crawled.
+export function delayFor(rttMs) {
+  const oneWay = (rttMs ?? 160) / 2;
+  return Math.max(NET.delay, Math.min(15, Math.ceil((oneWay + 30) / (1000 / 60))));
 }
 
 // A snapshot is a flat list per fighter: [id, x, z, health, alive(0/1)]. Positions are

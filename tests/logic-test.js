@@ -15,7 +15,7 @@ import { impalePin } from '../src/combat/Finisher.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/Mage.js';
 import { ROGUE_FINISHERS } from '../src/combat/Rogue.js';
 import { TickController, pressed } from '../src/core/TickInput.js';
-import { NetSession, NET, loopPair, snapshot, correct, feedPlayers } from '../src/net/Session.js';
+import { NetSession, NET, loopPair, snapshot, correct, feedPlayers, delayFor } from '../src/net/Session.js';
 
 // A controller driven by a script: { frameNumber: ['attack'] } presses,
 // plus `hold` for held buttons.
@@ -503,7 +503,7 @@ test('fire death: an enemy the flames kill burns on his feet, then drops dead (n
 // ---------------------------------------------------------------- co-op & online (net/Session.js)
 
 // One "machine": a world, the stage, two heroes driven by tick records.
-function machine(seed, link, index, script) {
+function machine(seed, link, index, script, delay) {
   const world = new World({ seed });
   const ctrls = [new TickController(), new TickController()];
   const heroes = ['warrior', 'rogue'].map((id, i) => world.addFighter(new Fighter({ stats: CHARACTERS[id], team: 'player', x: 200 - i * 46, z: 430 + i * 26, controller: ctrls[i] })));
@@ -512,7 +512,7 @@ function machine(seed, link, index, script) {
   // a fake device: plays this machine's own scripted buttons
   let n = 0;
   const sampler = { held: {}, lastPresses: [], moveX: 0, moveZ: 0, read() { const s = script(n++); this.held = s.held; this.lastPresses = s.presses; this.moveX = s.mx; this.moveZ = s.mz; } };
-  const session = link ? new NetSession(link, index, sampler) : null;
+  const session = link ? new NetSession(link, index, sampler, 0, delay) : null;
   if (session) session.onCorrect = (h, m) => correct(world, h, m);
   const m = { world, stage, heroes, ctrls, session, tick: 0, link };
   // one render frame: deliver the wire, record my buttons, run a tick if I may
@@ -569,6 +569,22 @@ test('online co-op: two machines over a laggy wire play the same fight, tick for
   assert(A.stage.stats.kills > 0 || A.world.fighters.some((f) => f.team === 'enemy'), 'there was a fight');
   // both heroes are driven by the right player: they did different things
   assert(Math.abs(A.heroes[0].x - A.heroes[1].x) > 1 || A.heroes[0].state !== A.heroes[1].state, 'two separately driven heroes');
+});
+
+test('online co-op: over a real-internet lag the measured input delay keeps the game at full speed (a fixed 3 ticks crawled)', () => {
+  const run = (delay) => {
+    const [a, b] = loopPair(6, 6); // 6 frames each way = 100 ms one way, 200 ms round trip
+    const A = machine(5, a, 0, masher(5), delay);
+    const B = machine(5, b, 1, masher(6), delay);
+    for (let i = 0; i < 600; i++) { A.frame(); B.frame(); }
+    assert(A.sum() === B.sum() || A.tick !== B.tick, 'still in step');
+    return Math.min(A.tick, B.tick);
+  };
+  const fixed = run(NET.delay);
+  const measured = run(delayFor(200));
+  assert(fixed < 400, `the old fixed delay crawls (${fixed} ticks in 600 frames)`);
+  assert(measured > 560, `the measured delay runs at full speed (${measured} ticks in 600 frames)`);
+  assert(delayFor(30) === NET.delay && delayFor(2000) === 15, 'clamped');
 });
 
 test('online co-op: a copy that has drifted is pulled back by the host snapshot', () => {
@@ -785,11 +801,19 @@ test('mage: the barrier button raises the earth wall (no fire wall); enemies can
   t.run(140);
   const wall = t.world.barriers.list[0];
   assert(t.es[0].x >= wall.x + wall.half - 0.01, `held at the wall (${t.es[0].x.toFixed(0)} vs ${wall.x + wall.half})`);
-  // the mage walks through his own wall (down the lane, round the man pressed against it)
+  // allies are held off it too (no sinking into the stone)...
   t.p.z = 490;
   t.p.controller.hold = { right: true };
   t.run(90);
-  assert(t.p.x > wall.x + wall.half, `ally passes (${t.p.x.toFixed(0)})`);
+  const off = wall.half + CHARACTERS.mage.kit.barrier.standoff;
+  assert(t.p.x <= wall.x - off + 0.01, `an ally walking into it is held off its face (${t.p.x.toFixed(0)})`);
+  // ...but can always get across: a blink (or roll, vault, jump) goes through
+  t.p.controller.script = { [t.p.controller.t + 1]: ['dodge'] };
+  t.run(40);
+  assert(t.p.x > wall.x + off, `a blink takes him across (${t.p.x.toFixed(0)})`);
+  t.p.controller.hold = { left: true };
+  t.run(60);
+  assert(t.p.x >= wall.x + off - 0.01, 'and then he is on that side of it');
 });
 
 test('mage: a man standing on the wall line is moved clean to the nearer side, never left inside', () => {

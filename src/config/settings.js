@@ -51,6 +51,18 @@ export const SETTINGS = {
   // Music volume 0..1. Press M in game to mute/unmute.
   audio: { music: 0.5, muted: false, sfx: 0.8 },
 
+  // Online co-op: the servers that help two browsers find a direct path to each other.
+  // STUN works for most home networks. Behind strict ones (some routers, offices, mobile
+  // carriers) a direct line is impossible and a TURN relay is needed: sign up for a free
+  // one (e.g. metered.ca, "Open Relay") and add it here, e.g.
+  //   { urls: 'turn:<host>:443?transport=tcp', username: '<user>', credential: '<pass>' }
+  net: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun.cloudflare.com:3478' },
+    ],
+  },
+
   // Debug overlay (hitboxes, hurtboxes, state names, frame counts). Toggle in game with F2 or `.
   debug: false,
 };

@@ -5,8 +5,10 @@
 //   EARTHEN BULWARK  rock. Longer. Pure blocking; strong enemies can batter it down.
 //
 // Pure logic on the World (no drawing: view/BarrierView.js draws them from the events),
-// so the tests can drive it. Only the caster's enemies are stopped — his own side walks,
-// blinks and casts straight through, so a teammate is never trapped.
+// so the tests can drive it. It stops everyone, held a little way off its face so nobody
+// sinks into the stone — but the caster's own side can still get across by rolling,
+// blinking, vaulting or jumping, so a teammate is never trapped. Every enemy can batter
+// a stone wall (it has hit points); fire just burns.
 //
 // Each enemy remembers which side of a wall he is on. When the wall goes up, anyone on
 // its line is moved cleanly to the nearer side (never left inside it), and from then on
@@ -19,6 +21,8 @@
 //   barrierDown { barrier, broken }   barrierGone { barrier }
 
 import { toWorldBox, overlaps } from './Boxes.js';
+
+const CROSSING = ['dodge', 'blink', 'vault', 'viper', 'execute'];
 
 export class Barriers {
   constructor(world) {
@@ -54,13 +58,15 @@ export class Barriers {
       life: k.duration, duration: k.duration,
       hp: k.hp ?? 0, maxHp: k.hp ?? 0,
       state: 'up', t: 0, collapse: cfg.collapse,
-      sides: new Map(), cool: new Map(), hitBy: new WeakSet(), cfg: k,
+      sides: new Map(), cool: new Map(), hitBy: new WeakSet(), cfg: k, standoff: cfg.standoff ?? 0,
     };
     // whoever is standing on the line goes to the nearer side, clear of the stone/flame
+    const mine = Math.sign(owner.x - x) || -owner.facing; // the caster's side
     for (const f of w.fighters) {
-      if (f.team === b.team || f.removeMe) continue;
-      let side = Math.sign(f.x - x) || -owner.facing;
-      if (Math.abs(f.x - x) < half + cfg.clearance) {
+      if (f.removeMe) continue;
+      // (an ally on the line goes to the caster's side; an enemy to the nearer one)
+      let side = f.team === b.team ? mine : (Math.sign(f.x - x) || -owner.facing);
+      if (Math.abs(f.x - x) < half + cfg.clearance && f !== owner) {
         let nx = x + side * (half + cfg.clearance);
         if (nx < bd.minX || nx > bd.maxX) { side = -side; nx = x + side * (half + cfg.clearance); }
         f.x = Math.max(bd.minX, Math.min(bd.maxX, nx));
@@ -108,8 +114,9 @@ export class Barriers {
       b.t++;
       b.life--;
       for (const [id, c] of b.cool) { if (c <= 1) b.cool.delete(id); else b.cool.set(id, c - 1); }
+      const hold = b.half + b.standoff; // (a little way off its face)
       for (const f of w.fighters) {
-        if (f.team === b.team || f.removeMe) continue;
+        if (f.removeMe) continue;
         // (a finisher places its victims itself)
         if (f.state === 'executed' || f.state === 'execute') continue;
         let side = b.sides.get(f.id);
@@ -117,12 +124,20 @@ export class Barriers {
           side = Math.sign(f.x - b.x) || 1;
           b.sides.set(f.id, side);
         }
-        if ((f.x - b.x) * side < b.half) {
-          f.x = b.x + side * b.half;
+        if (f.team === b.team) {
+          // an ally rolling, blinking, vaulting or high in a jump goes over or through;
+          // once he's clear on the far side, that's his side now
+          if (CROSSING.includes(f.state) || f.h > 50 || f.blinkGone) {
+            if ((f.x - b.x) * side < -hold) b.sides.set(f.id, -side);
+            continue;
+          }
+        }
+        if ((f.x - b.x) * side < hold) {
+          f.x = b.x + side * hold;
           if (f.vx * side < 0) f.vx = f.state === 'knockdown' ? -f.vx * 0.15 : 0; // slams into it and drops
           f.bowl = null;
         }
-        if (b.kind === 'fire') this.scorch(b, f, side);
+        if (b.kind === 'fire' && f.team !== b.team) this.scorch(b, f, side);
       }
       if (b.maxHp > 0) this.battered(b);
       if (b.life <= 0 || (b.maxHp > 0 && b.hp <= 0)) this.takeDown(b, b.hp <= 0 && b.maxHp > 0);

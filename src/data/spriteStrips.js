@@ -92,4 +92,7 @@ export const FX_STRIPS = {
   firebolt: { file: 'assets/fx/firebolt-strip.png', frames: 8, height: 44, fps: 14 },
   // the column of fire a floor grate throws up (view/StageView.js); drawn at half scale
   firepit: { file: 'assets/fx/firepit-strip.png', frames: 8, height: 300, fps: 16 },
+  // the Mage's stone wall: 6 jagged slab variants on magenta (effects/MageFX.js); until
+  // the file exists the slabs are drawn as rock shapes
+  earthwall: { file: 'assets/fx/earthwall-strip.png', frames: 6, height: 260, bg: 'magenta' },
 };

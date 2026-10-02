@@ -15,6 +15,10 @@
 // there the join simply fails with a message.
 
 import { simVersion } from './Version.js';
+import { SETTINGS } from '../config/settings.js';
+
+// (STUN, and a TURN relay if one is configured: config/settings.js net.iceServers)
+const peerOptions = () => ({ config: { iceServers: SETTINGS.net?.iceServers ?? [] } });
 
 const PEERJS_URL = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
 // (the room name carries the game's version, net/Version.js: a friend on a stale copy of
@@ -77,7 +81,7 @@ export function hostRoom(code, onReady) {
   let cancelled = false;
   const link = loadPeerJs().then(() => new Promise((resolve, reject) => {
     if (cancelled) return reject(new Error('cancelled'));
-    peer = new window.Peer(prefix() + code);
+    peer = new window.Peer(prefix() + code, peerOptions());
     peer.on('open', () => onReady?.());
     peer.on('error', (e) => reject(new Error(friendly(e))));
     peer.on('connection', (conn) => {
@@ -93,13 +97,13 @@ export function joinRoom(code) {
   let cancelled = false;
   const link = loadPeerJs().then(() => new Promise((resolve, reject) => {
     if (cancelled) return reject(new Error('cancelled'));
-    peer = new window.Peer();
+    peer = new window.Peer(peerOptions());
     peer.on('error', (e) => reject(new Error(friendly(e))));
     peer.on('open', () => {
       const conn = peer.connect(prefix() + code.toUpperCase(), { reliable: true, serialization: 'json' });
       conn.on('open', () => resolve(wrap(peer, conn)));
       conn.on('error', (e) => reject(new Error(friendly(e))));
-      setTimeout(() => reject(new Error('No answer from that room.')), 15000);
+      setTimeout(() => reject(new Error('No answer from that room.\nThe room was found but no direct line could be made:\none of your networks blocks it (a relay server is needed: see config/settings.js).')), 15000);
     });
   }));
   return { link, cancel() { cancelled = true; try { peer?.destroy(); } catch { /* */ } } };

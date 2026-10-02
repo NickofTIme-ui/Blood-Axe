@@ -155,7 +155,7 @@ function releaseForce(f, level = 0) {
 
 // api: helpers from entities/fighterStates.js (handed over, so neither file imports the
 // other). Returns the states to add to FIGHTER_STATES.
-export function mageStates({ tryActions, stopMoving, friction, faceInput }) {
+export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTurn }) {
   return {
     // BLINK: the body breaks into sparks, is gone, and re-forms the dodge distance away
     // in the input direction. Invulnerable for the dodge's i-frames.
@@ -240,6 +240,7 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput }) {
         const c = f.controller;
         friction(f, 0.7);
         if (!f.boltFired) {
+          aimTurn(f); // (turn to aim it until it goes off)
           if (!c.isDown('heavy')) f.boltHeld = false;
           for (const win of m.cancels ?? []) {
             if (frame <= m.startup && frame >= win.from && frame <= win.to && tryActions(f, win.into)) return;
@@ -292,6 +293,7 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput }) {
         friction(f, 0.7);
         f.propStrike = null;
         if (frame === 1) { f.forceHeld = true; f.forceCharge = 0; f.forceAt = 0; }
+        if (!f.forceAt) aimTurn(f); // (turn to aim it while it winds up and charges)
         if (!f.controller.isDown('kick')) f.forceHeld = false;
         if (!f.forceAt) {
           if (frame < m.startup) { f.vx = -f.facing * 40; return; } // settles back into the push
@@ -334,6 +336,7 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput }) {
           f.wardAt = frame;
           f.world.events.emit('wardChoose', { fighter: f, kind: f.wardKind });
         }
+        if (!f.wardPlaced) aimTurn(f); // (which side the wall goes up on, until it erupts)
         if (!f.wardPlaced && frame >= f.wardAt + B.castAt) {
           f.world.barriers.place(f, f.wardKind, B);
           f.cool.ward = B.cooldown;

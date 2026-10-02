@@ -11,6 +11,7 @@
 
 import { SETTINGS } from '../config/settings.js';
 import { CHARACTERS } from '../data/characters.js';
+import { delayFor } from '../net/Session.js';
 import { InputManager } from '../core/InputManager.js';
 import { playMusic, toggleMute } from '../core/Music.js';
 import { playSfx } from '../core/Sfx.js';
@@ -227,9 +228,14 @@ export class SelectScene extends Phaser.Scene {
   // ---- online: the two select screens talk over the link (net/Link.js)
   setupNet() {
     const { link, index } = this.net;
+    // measure the round trip while they choose (the host sets the input delay from it)
+    this.rtts = [];
+    this.pinger = this.time.addEvent({ delay: 300, loop: true, callback: () => link.send({ k: 'ping', t: performance.now() }) });
     this.setSub(index === 0 ? 'CONNECTED  —  CHOOSE YOUR CHAMPION' : 'JOINED  —  CHOOSE YOUR CHAMPION');
     link.onData((m) => {
       if (!this.sys.isActive()) return;
+      if (m.k === 'ping') { link.send({ k: 'pong', t: m.t }); return; }
+      if (m.k === 'pong') { this.rtts.push(performance.now() - m.t); if (this.rtts.length > 12) this.rtts.shift(); return; }
       if (m.k === 'pick') {
         this.picks[1 - index] = m.id;
         this.callPartner(m.id);
@@ -253,7 +259,9 @@ export class SelectScene extends Phaser.Scene {
   // Host: both have picked — choose the dice and say go.
   tryStartNet() {
     if (this.net.index !== 0 || !this.picks[0] || !this.picks[1] || this.leaving) return;
-    const msg = { k: 'start', seed: Math.floor(Math.random() * 0xffffffff), players: [this.picks[0], this.picks[1]], game: Math.floor(Math.random() * 1e9) };
+    // the slowest recent round trip sets the delay (a press must arrive before it's due)
+    const rtt = this.rtts.length ? Math.max(...this.rtts.slice(-8)) : null;
+    const msg = { k: 'start', seed: Math.floor(Math.random() * 0xffffffff), players: [this.picks[0], this.picks[1]], game: Math.floor(Math.random() * 1e9), delay: delayFor(rtt) };
     this.net.link.send(msg);
     this.startNet(msg);
   }
@@ -262,8 +270,9 @@ export class SelectScene extends Phaser.Scene {
     if (this.leaving) return;
     // (from here until the arena is up nobody is listening: the link keeps what arrives)
     this.net.link.onData(null);
+    this.pinger?.remove();
     this.setSub('TO BATTLE');
-    this.begin({ players: m.players, mode: 'net', seed: m.seed, net: { ...this.net, game: m.game } });
+    this.begin({ players: m.players, mode: 'net', seed: m.seed, net: { ...this.net, game: m.game, delay: m.delay } });
   }
 
   // ------------------------------------------------------------ the info panel
