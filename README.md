@@ -52,9 +52,9 @@ Rebind anything in `src/config/controls.js`.
 
 ### The three heroes play differently
 
-The table above is **Ulric's** kit. The Mage and the Rogue use the same buttons for their own moves:
+The table above is **Rurik's** kit. The Mage and the Rogue use the same buttons for their own moves:
 
-| Button | Ulric (Warrior) | Vael the Elder (Mage) | Rogue |
+| Button | Rurik (Warrior) | Oryn (Mage) | Vexa (Rogue) |
 |---|---|---|---|
 | Light (J) | 3-hit sword combo | 3-hit staff combo (the 3rd lets out a pressure pulse) | 4-hit dagger combo (the 4th **exposes** the target) |
 | Heavy (K) | Cleave | **Chain Lightning**: leaps from body to body; hold to overcharge | **Viper Strike**: bursts through up to 3 men; exposes |
@@ -66,7 +66,7 @@ The table above is **Ulric's** kit. The Mage and the Rogue use the same buttons 
 
 **Exposed** (violet-red mark over his head): every player does +25% damage to him for 5 seconds.
 **Barriers** stop only enemies: allies walk, blink and shoot straight through them. Enemies wait at a wall; brutes can batter the stone one down.
-**Finishers** behind a fleeing enemy: Ulric = throat (tap J), impale (hold J), halve (K), chain (O or 2+ runners).
+**Finishers** behind a fleeing enemy: Rurik = throat (tap J), impale (hold J), halve (K), chain (O or 2+ runners).
 The Mage = Storm Judgment (J), Arcane Rupture (K), Gate of Embers (O). The Rogue = Phantom Requiem (J), Black Lotus (K), Scarlet Sky (O).
 The Mage's and the Rogue's finishers take one, two or three runners at once.
 
@@ -101,9 +101,9 @@ Kills tear enemies apart based on **what hit them and how hard** (`combat/Fatali
 
 | Your attack | Cut type | What happens |
 |---|---|---|
-| Ulric light 1–2, Rogue attacks | slash | heads and limbs off; high hits decapitate |
-| Ulric light 3 | cleave | cut in half at the waist |
-| Ulric heavy / air attack | chop | split down the middle, or beheaded |
+| Rurik light 1–2, Rogue attacks | slash | heads and limbs off; high hits decapitate |
+| Rurik light 3 | cleave | cut in half at the waist |
+| Rurik heavy / air attack | chop | split down the middle, or beheaded |
 | Mage staff | blunt | skulls burst |
 | Fireball / Earth Shatter | fire / crush | blown to pieces |
 
@@ -147,7 +147,7 @@ blood-axe/
 ├── lib/phaser.min.js       game engine (downloaded on first start)
 ├── assets/sprites/         sprite sheets (ulric.png + ulric.json)
 ├── tools/serve.ps1         the tiny local web server
-├── tools/sprite-gen/       script that generates Ulric's pixel-art sheet
+├── tools/sprite-gen/       script that generates Rurik's pixel-art sheet
 ├── tests/logic-test.js     automated combat checks (optional, needs Node.js)
 └── src/
     ├── main.js             starts Phaser, lists the scenes
@@ -179,7 +179,7 @@ blood-axe/
     │   └── CameraFX.js     screen shake
     ├── view/               ALL the drawing
     │   ├── FighterView.js        placeholder shapes
-    │   ├── SpriteFighterView.js  real sprite sheets (Ulric)
+    │   ├── SpriteFighterView.js  real sprite sheets (Rurik)
     │   ├── ProjectileView.js
     │   ├── DebugDraw.js
     │   └── depths.js
@@ -225,7 +225,7 @@ guard breaks, dodging, spells, double jump, kills and enemy AI.
 ---
 
 ## Sprites
-Ulric Varr (the Warrior) uses a pixel-art sprite sheet: `assets/sprites/ulric.png`, with
+Rurik (the Warrior) uses a pixel-art sprite sheet: `assets/sprites/ulric.png`, with
 `assets/sprites/ulric.json` describing frame size and which frames make each animation.
 Attack animations follow the move's frame data, so the swing you see always lines up with
 the hitbox. To give another character a sprite, add a sheet to `src/data/sprites.js` and set

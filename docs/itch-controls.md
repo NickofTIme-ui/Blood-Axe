@@ -15,9 +15,9 @@
 - M: music on/off · G: change the gore level
 
 **Each hero uses the buttons differently**
-- Ulric: sword combo, cleave, Sparta kick, roll, Firebolt.
-- The Mage (Vael the Elder): staff combo, K = Chain Lightning (hold to overcharge), O = Force Blast, dodge = Blink teleport, U = Arcane Barrier (tap for a fire wall, hold for a stone wall). Barriers only stop enemies.
-- The Rogue: a 4-hit dagger combo, K = Viper Strike, O = crescent kick (down + O = sweep; nobody close = throwing knife), U = Widow Mine. Run at a teammate and jump to vault off him. In the air: U = Shuriken Fan, K = Falling Viper. Her precision hits Expose enemies: everyone hits them harder.
+- Rurik: sword combo, cleave, Sparta kick, roll, Firebolt.
+- The Mage (Oryn): staff combo, K = Chain Lightning (hold to overcharge), O = Force Blast, dodge = Blink teleport, U = Arcane Barrier (tap for a fire wall, hold for a stone wall). Barriers only stop enemies.
+- The Rogue (Vexa): a 4-hit dagger combo, K = Viper Strike, O = crescent kick (down + O = sweep; nobody close = throwing knife), U = Widow Mine. Run at a teammate and jump to vault off him. In the air: U = Shuriken Fan, K = Falling Viper. Her precision hits Expose enemies: everyone hits them harder.
 - Finishers: get behind an enemy who's running away and press J, K or O. Each hero has their own three.
 
 **Gamepad (Xbox layout)**

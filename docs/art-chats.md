@@ -18,6 +18,8 @@ Chat links: `https://chatgpt.com/g/g-p-6abc117dea488191879974e87ba0e0a7-bloody-a
 | BA · Enemy · Vorn (berserker) | 6abd0a5f-6d30-83e9-87b2-198b580edfc8 | `berserker_*.png` |
 | BA · Enemy · Grubb (ghoul) | 6abd1e67-6d6c-83ea-8179-a428001d092a | `ghoul_*.png` |
 | BA · Enemy · Kragg (gladiator) | 6abd1e8b-6200-83e9-bf8f-559c546fd70d | `gladiator_*.png` |
+| BA · Mage · Strips | 6abf21d9-5a14-83e9-8f0c-f8ca070e6b3c | `mage_*.png` (design: `docs/art-refs/mage_ref.png`) |
+| BA · Rogue · Strips | 6abf228c-72ec-83ea-a414-0cbe1cc3a990 | `rogue_*.png` (design: `docs/art-refs/rogue_ref.png`) |
 | BA · Env · Floor | 6abc877c | floor tiles |
 | BA · Env · Pillars | 6abc8c7a | pillars |
 
@@ -37,6 +39,12 @@ Chat links: `https://chatgpt.com/g/g-p-6abc117dea488191879974e87ba0e0a7-bloody-a
 | fleeN / cowerN | 8 / 6 | both arms lost |
 
 Ulric's strips live in `assets/sprites/strips/ulric_<name>.png` (see `src/data/spriteStrips.js`).
+The Mage's and the Rogue's are `mage_<name>.png` and `rogue_<name>.png` in the same folder
+(see `src/data/heroStrips.js`).
+
+ChatGPT refuses to load a chat ("Could not load this ChatGPT conversation") after a few
+page loads in a row. Keep one chat open in one tab and send every prompt from it; reloading
+or running two chats at once trips the limit for several minutes.
 
 ## Stumps: magenta markers
 

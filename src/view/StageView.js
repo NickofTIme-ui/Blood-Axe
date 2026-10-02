@@ -228,11 +228,19 @@ export class StageView {
     if (pr.kind === 'wall') v.img.setTint(0xffffff - 0x101010 * (5 - pr.hp));
   }
 
-  propBreak(pr, dir) {
+  propBreak(pr, dir, blast = false) {
     const v = this.propSprites.get(pr.id);
-    playSfx(this.scene, 'kick', { volume: 0.8, pitch: -400, minGapMs: 0 });
-    this.scene.fx?.shake(pr.kind === 'wall' ? 6 : 3, 10);
-    this.chips(pr, pr.kind === 'wall' ? 40 : 18, dir);
+    playSfx(this.scene, 'kick', { volume: blast ? 1 : 0.8, pitch: blast ? -700 : -400, minGapMs: 0 });
+    this.scene.fx?.shake(pr.kind === 'wall' || blast ? 6 : 3, blast ? 14 : 10);
+    this.chips(pr, pr.kind === 'wall' ? 40 : blast ? 46 : 18, dir);
+    v.img.setAngle(0);
+    if (blast) {
+      // burst on an enemy: splinters both ways, a ring of dust, a hard flash
+      this.chips(pr, 30, -dir);
+      this.scene.gore.spark(pr.x, pr.z - pr.h / 2, 26, 0xffd9a0, 22);
+      const ring = this.scene.add.ellipse(pr.x, pr.z, 30, 10).setStrokeStyle(3, 0xe8d8c0, 0.8).setDepth(DEPTH.shadows + 0.1);
+      this.scene.tweens.add({ targets: ring, scaleX: 6, scaleY: 6, alpha: 0, duration: 260, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+    }
     // what's left of it stays where it stood: the smashed barrel, the shards, the chest
     // thrown open (painted states from the prop sheet) — not just a vanished object
     const wreck = pr.kind === 'chest' ? 'prop-chest-open' : `prop-${pr.kind}-broken`;
@@ -397,7 +405,19 @@ export class StageView {
   listen() {
     const ev = this.scene.world.events;
     ev.on('propHit', ({ prop, dir }) => this.propHit(prop, dir));
-    ev.on('propBreak', ({ prop, dir }) => this.propBreak(prop, dir));
+    ev.on('propBreak', ({ prop, dir, blast }) => this.propBreak(prop, dir, blast));
+    ev.on('bladeStruck', ({ hazard, force }) => {
+      const s = this.stage.bladeState(hazard);
+      playSfx(this.scene, 'block', { volume: 1, pitch: force ? -900 : -300, minGapMs: 0 });
+      playSfx(this.scene, 'heavySwing', { volume: 0.6, pitch: -700, minGapMs: 0 });
+      this.scene.gore.spark(s.tipX, hazard.z - 30, 30, force ? 0xffb060 : 0xfff0c0, 26);
+      this.scene.fx?.shake(5, 12);
+      this.scene.callout(force ? 'BLADE HURLED BACK!' : 'BLADE STRUCK!', '#ffd24a', 22);
+    });
+    ev.on('propKick', ({ prop, dir }) => {
+      playSfx(this.scene, 'kick', { volume: 0.9, pitch: -100, minGapMs: 0 });
+      this.chips(prop, 8, dir);
+    });
     ev.on('pickup', (e) => this.pickup(e));
     ev.on('hazardFire', ({ hazard }) => {
       if (Math.abs(this.scene.player.x - hazard.x) < 600) playSfx(this.scene, 'fireWhoosh', { volume: 0.5, minGapMs: 0 });
@@ -405,7 +425,20 @@ export class StageView {
     ev.on('secretFound', ({ count, total }) => this.scene.callout(`SECRET FOUND  ${count}/${total}`, '#ffd24a', 26));
   }
 
+  // kicked crates and chests skidding down the lane: rattling, hopping, trailing splinters
+  syncKicked() {
+    for (const pr of this.stage.props) {
+      if (!pr.fly || pr.broken) continue;
+      const v = this.propSprites.get(pr.id);
+      const t = pr.fly.left;
+      v.img.setPosition(pr.x, pr.z - Math.abs(Math.sin(t * 0.045)) * 9).setAngle(Math.sin(t * 0.09) * 7 * pr.fly.dir);
+      v.shadow?.setPosition(pr.x, pr.z);
+      if (Math.floor(t / 40) !== Math.floor((t + 11) / 40)) this.chips(pr, 2, -pr.fly.dir);
+    }
+  }
+
   update() {
+    this.syncKicked();
     this.syncPickups();
     this.drawHazards();
   }

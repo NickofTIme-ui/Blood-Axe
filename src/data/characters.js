@@ -57,7 +57,7 @@ export const CHARACTERS = {
   // =========================================================== WARRIOR
   warrior: {
     id: 'warrior',
-    name: 'Ulric Varr',
+    name: 'Rurik',
     className: 'Warrior',
     description: 'The Ashen Oath. Slow, tanky, brutal heavy attacks. Weak magic.',
     sprite: 'ulric',          // pixel-art sheet (see data/sprites.js); remove to use placeholder shapes
@@ -178,7 +178,7 @@ export const CHARACTERS = {
   // the look view/MageView.js, the magic effects/MageFX.js.
   mage: {
     id: 'mage',
-    name: 'Vael the Elder',
+    name: 'Oryn',
     className: 'Mage',
     description: 'War sorcerer. Floats, blinks, chains lightning through crowds and splits the field with barriers. Frail up close.',
     archetype: 'mage', // (view, sounds and finishers pick his own versions by this)
@@ -330,7 +330,7 @@ export const CHARACTERS = {
   // combat/Mine.js; tuning: `kit` below.
   rogue: {
     id: 'rogue',
-    name: 'Rogue',
+    name: 'Vexa',
     className: 'Rogue',
     description: 'The fastest killer alive. Slips every blow, mines the field, vaults off allies and rains steel from above. Light armour.',
     archetype: 'rogue',

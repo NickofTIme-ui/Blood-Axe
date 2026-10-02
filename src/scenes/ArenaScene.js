@@ -17,6 +17,7 @@ import { createEnemy } from '../entities/Enemy.js';
 import { FighterView } from '../view/FighterView.js';
 import { SpriteFighterView } from '../view/SpriteFighterView.js';
 import { MageView } from '../view/MageView.js';
+import { StripHeroView } from '../view/StripHeroView.js';
 import { MageFX } from '../effects/MageFX.js';
 import { RogueFX } from '../effects/RogueFX.js';
 import { ProjectileView } from '../view/ProjectileView.js';
@@ -705,7 +706,10 @@ export class ArenaScene extends Phaser.Scene {
     const sheet = f.team === 'enemy' && !this.dollsOnly && this.registry.get('enemySprites')?.[f.stats.id];
     if (sheet && f.stats.art && ENEMY_ART[f.stats.art]) return new SpriteEnemyView(this, f, sheet);
     if (f.stats.art && ENEMY_ART[f.stats.art]) return new EnemyView(this, f);
-    if (f.stats.archetype === 'mage') return new MageView(this, f); // (his own puppet: view/MageView.js)
+    // the Mage and the Rogue, once their painted strips are all in (data/heroStrips.js)
+    const hero = f.team === 'player' && this.registry.get('heroSprites')?.[f.stats.id];
+    if (hero) return new StripHeroView(this, f, hero);
+    if (f.stats.archetype === 'mage') return new MageView(this, f); // (his stand-in puppet: view/MageView.js)
     const key = f.stats.sprite;
     if (key && this.textures.exists(key) && this.cache.json.exists(`${key}-data`)) {
       return new SpriteFighterView(this, f, key);

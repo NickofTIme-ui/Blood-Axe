@@ -5,7 +5,9 @@
 //
 // Events (on world.events):
 //   sectionStart { index, section }     sectionClear { index, section, last }
-//   propHit / propBreak { prop }        pickup { pickup, fighter }
+//   propKick { prop, dir, by }  (a crate or chest kicked off down the lane)
+//   bladeStruck { hazard, by, dir, force }  (a pendulum blade smashed back by a hero)
+//   propHit / propBreak { prop }      pickup { pickup, fighter }
 //   hazardWarn / hazardFire { hazard }  hazardHit { hazard, fighter }
 //   secretFound { prop, count, total }  bossSpawn { boss }  bossRage { boss }
 //   stageWon { stats }
@@ -23,7 +25,11 @@ const ADVANCE_AT = 300;  // px past the next section's start that locks you into
 // Fire grate: idle -> glowing warning -> eruption (frames)
 const FIRE = { period: 210, warn: 110, burst: 160, tick: 14, damage: 9 };
 // Pendulum blade
-const BLADE = { period: 150, length: 320, damage: 20 };
+// (driven: struck by a hero — how long it whips about, how much wider and faster, its damage)
+const BLADE = { period: 150, length: 320, damage: 20, driven: { frames: 150, wide: 2, haste: 1, damage: 60 } };
+// A kicked crate or chest: how fast and far it skids (px/s, px), how close to an enemy's
+// lane it must pass to strike him, and the burst (reach along the lane, across it, damage)
+const KICKED = { kinds: ['crate', 'chest'], speed: 620, range: 560, lane: 26, radius: 95, depth: 44, damage: 34 };
 
 export class Stage {
   constructor(world, data = STAGE) {
@@ -236,17 +242,54 @@ export class Stage {
         const box = { left: pr.x - pr.w / 2, right: pr.x + pr.w / 2, bottom: 0, top: pr.h, z: pr.z };
         if (!overlaps(hb, box, f.activeAttack ? (pr.kind === 'wall' ? 60 : 30) : ps.depth)) continue;
         pr.hitBy.add(info);
-        pr.hp -= f.activeAttack ? (info.move.breaksGuard || info.move.bowl ? 2 : 1) : ps.smash; // heavies and kicks smash
+        // a kick doesn't break a crate or a chest: it sends it skidding off down the lane
+        if (f.activeAttack && info.move.bowl && KICKED.kinds.includes(pr.kind)) {
+          if (!pr.fly) {
+            pr.fly = { dir: f.facing, left: KICKED.range };
+            this.world.events.emit('propKick', { prop: pr, dir: f.facing, by: f });
+          }
+          continue;
+        }
+        pr.hp -=f.activeAttack ? (info.move.breaksGuard || info.move.bowl ? 2 : 1) : ps.smash; // heavies and kicks smash
         const dir = Math.sign(pr.x - f.x) || f.facing;
         if (pr.hp > 0) { this.world.events.emit('propHit', { prop: pr, dir }); continue; }
-        pr.broken = true;
-        this.world.events.emit('propBreak', { prop: pr, dir });
-        if (pr.drop) {
-          // a wall's shrine sits in the alcove behind it; everything else rolls out in front
-          const z = pr.kind === 'wall' ? pr.z + 6 : Math.min(this.world.bounds.maxZ - 5, pr.z + 14);
-          this.pickups.push({ kind: pr.drop, x: pr.x, z, age: 0, taken: false, secret: !!pr.secret });
+        this.breakProp(pr, dir);
+      }
+    }
+    this.updateKicked();
+  }
+
+  breakProp(pr, dir, blast = false) {
+    pr.broken = true;
+    pr.fly = null;
+    this.world.events.emit('propBreak', { prop: pr, dir, blast });
+    if (pr.drop) {
+      // a wall's shrine sits in the alcove behind it; everything else rolls out in front
+      const z = pr.kind === 'wall' ? pr.z + 6 : Math.min(this.world.bounds.maxZ - 5, pr.z + 14);
+      this.pickups.push({ kind: pr.drop, x: pr.x, z, age: 0, taken: false, secret: !!pr.secret });
+    }
+  }
+
+  // Kicked crates and chests: they skid along the lane and burst on the first enemy they
+  // reach, hurting and flooring everyone close by. One that meets nobody breaks where it stops.
+  updateKicked() {
+    const end = this.sections[this.sections.length - 1].x1 - PAD;
+    for (const pr of this.props) {
+      const fl = pr.fly;
+      if (!fl || pr.broken) continue;
+      const step = KICKED.speed / 60;
+      pr.x += fl.dir * step;
+      fl.left -= step;
+      const near = (f, rx, rz) => f.team === 'enemy' && f.alive && Math.abs(f.x - pr.x) <= rx && Math.abs(f.z - pr.z) <= rz;
+      const struck = this.world.fighters.some((f) => near(f, pr.w / 2 + 16, KICKED.lane));
+      if (!struck && fl.left > 0 && pr.x > PAD && pr.x < end) continue;
+      if (struck) {
+        const hz = { cool: new Map(), x: pr.x, z: pr.z };
+        for (const f of this.world.fighters) {
+          if (near(f, KICKED.radius, KICKED.depth)) this.hurt(hz, f, KICKED.damage, Math.sign(f.x - pr.x) || fl.dir, 'crate');
         }
       }
+      this.breakProp(pr, fl.dir, struck);
     }
   }
 
@@ -306,18 +349,44 @@ export class Stage {
 
   // The blade's angle (radians) and tip position.
   bladeState(hz) {
-    const max = Math.asin(Math.min(0.95, hz.swing / BLADE.length));
+    const max = Math.asin(Math.min(0.95, hz.swing * (hz.driven ? BLADE.driven.wide : 1) / BLADE.length));
     const a = max * Math.sin((hz.t / BLADE.period) * Math.PI * 2);
     const speed = Math.cos((hz.t / BLADE.period) * Math.PI * 2); // + = swinging right
     return { a, tipX: hz.x + Math.sin(a) * BLADE.length, speed };
   }
 
   updateBlade(hz) {
+    const D = BLADE.driven;
+    if (hz.driven && --hz.driven <= 0) hz.driven = 0;
+    if (hz.driven) hz.t += D.haste; // (it whips through faster while it lasts)
+    else this.strikeBlade(hz);
     const s = this.bladeState(hz);
     if (Math.abs(s.speed) < 0.55) return; // only the fast bottom of the swing cuts
     for (const f of this.world.fighters) {
-      if (Math.abs(f.x - s.tipX) > 30 || Math.abs(f.z - hz.z) > 20 || f.h > 70) continue;
-      this.hurt(hz, f, BLADE.damage, Math.sign(s.speed), 'blade');
+      if (Math.abs(f.x - s.tipX) > (hz.driven ? 40 : 30) || Math.abs(f.z - hz.z) > (hz.driven ? 30 : 20) || f.h > 70) continue;
+      if (hz.driven && f.team === 'player') continue; // sent on its way by a hero: it's his blade now
+      this.hurt(hz, f, hz.driven ? D.damage : BLADE.damage, Math.sign(s.speed), 'blade');
+    }
+  }
+
+  // A hero's swing (Ulric's sword, the Rogue's daggers) or the Mage's force blast catching
+  // the blade smashes it back the other way: for a while it whips through twice as wide and
+  // fast, away from him first, and cuts down only his enemies.
+  strikeBlade(hz) {
+    const s = this.bladeState(hz);
+    for (const f of this.world.fighters) {
+      if (f.team !== 'player' || !f.alive) continue;
+      const ps = f.propStrike;
+      if (!f.activeAttack && !ps) continue;
+      const hb = f.activeAttack ? toWorldBox(f, f.activeAttack.hitbox ?? f.activeAttack.move.hitbox) : ps.box;
+      const reach = f.activeAttack ? 34 : ps.depth;
+      if (hb.right < s.tipX - 26 || hb.left > s.tipX + 26 || Math.abs(f.z - hz.z) > reach) continue;
+      hz.driven = BLADE.driven.frames;
+      hz.t = f.facing > 0 ? 0 : BLADE.period / 2; // at the bottom of its arc, flying away from him
+      hz.cool.clear();
+      hz.cool.set(f.id, 30);
+      this.world.events.emit('bladeStruck', { hazard: hz, by: f, dir: f.facing, force: !f.activeAttack });
+      return;
     }
   }
 
@@ -339,7 +408,7 @@ export class Stage {
     }
     const e = {
       attacker: null, defender: f, dir, kind: 'hazard', hazard: kind,
-      move: { cut: kind === 'fire' ? 'fire' : 'slash', damage: dmg, hitstop: 6 },
+      move: { cut: kind === 'fire' ? 'fire' : kind === 'crate' ? 'blunt' : 'slash', damage: dmg, hitstop: 6 },
       x: f.x, z: f.z, h: f.h + f.stats.body.h * 0.5, damage: dmg, fatality: 'none',
     };
     this.world.events.emit('hazardHit', { hazard: hz, fighter: f, kind });

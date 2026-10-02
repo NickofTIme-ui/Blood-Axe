@@ -1172,6 +1172,50 @@ test('stage: fire grates burn whoever stands on them when they erupt; blades cut
   assert(v.health < v.stats.maxHealth && v.state === 'knockdown', `cut by the blade (${v.health} ${v.state})`);
 });
 
+test('stage: a kicked crate skids down the lane and bursts on the first enemy, flooring him', () => {
+  const t = stageSetup();
+  const crate = t.stage.props.find((p) => p.kind === 'crate' && p.drop === 'meat');
+  const x0 = crate.x;
+  t.p.x = crate.x - 50; t.p.z = crate.z; t.p.facing = 1;
+  const g = t.world.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x: crate.x + 260, z: crate.z, controller: new Scripted() }));
+  const far = t.world.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x: crate.x + 260, z: crate.z + 120, controller: new Scripted() }));
+  t.p.controller.registerPress('kick'); t.run(30);
+  assert(crate.fly && !crate.broken && crate.x > x0, `sent skidding, not broken (x ${crate.x}, hp ${crate.hp})`);
+  t.run(60);
+  assert(crate.broken && crate.x > x0 + 150, `burst where it met him (x ${crate.x - x0})`);
+  assert(g.health < g.stats.maxHealth && g.state === 'knockdown', `the grunt took it (${g.health} ${g.state})`);
+  assert(far.health === far.stats.maxHealth, 'a man in another lane is untouched');
+  assert(t.stage.pickups.some((k) => Math.abs(k.x - crate.x) < 1), 'its food spills where it burst');
+  // nobody in the way: it breaks where it runs out of floor
+  const u = stageSetup();
+  const c2 = u.stage.props.find((p) => p.kind === 'crate' && p.drop === 'meat');
+  u.p.x = c2.x - 50; u.p.z = c2.z; u.p.facing = 1;
+  u.p.controller.registerPress('kick'); u.run(120);
+  assert(c2.broken && c2.x > x0 + 300, `broke at the end of its skid (${c2.x - x0})`);
+});
+
+test('stage: a hero striking a pendulum blade hurls it back through his enemies, not him', () => {
+  for (const who of ['warrior', 'mage']) {
+    const t = stageSetup();
+    const blade = t.stage.hazards.find((h) => h.type === 'blade');
+    t.stage.enterSection(blade.section, true);
+    if (who === 'mage') t.p.stats = CHARACTERS.mage;
+    t.p.x = blade.x - 60; t.p.z = blade.z + 26; t.p.facing = 1;
+    const v = t.world.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x: blade.x + 130, z: blade.z, controller: new Scripted() }));
+    let struck = null;
+    t.world.events.on('bladeStruck', (e) => { struck = e; });
+    blade.t = 60; // coming down toward the bottom of its arc
+    t.p.controller.registerPress(who === 'mage' ? 'kick' : 'attack');
+    const hp = t.p.health;
+    t.run(60);
+    assert(struck && struck.dir === 1 && struck.force === (who === 'mage'), `${who}: struck (${JSON.stringify(struck && { d: struck.dir, f: struck.force })})`);
+    assert(v.health <= v.stats.maxHealth - 60 || !v.alive, `${who}: it went through the grunt (${v.health})`);
+    assert(t.p.health === hp, `${who}: and spared the hero (${t.p.health})`);
+    t.run(200);
+    assert(!blade.driven, `${who}: then it settles back into its swing`);
+  }
+});
+
 test('stage: dying sends you back to the checkpoint, healed, the fight reset', () => {
   const t = stageSetup();
   t.run(60);

@@ -10,6 +10,7 @@ import { CHARACTER_STRIPS, ANIM_OVERRIDES, FX_STRIPS } from '../data/spriteStrip
 import { importFxStrip, paletteFrom, FX, FRAME } from '../view/stripImporter.js';
 import { cutStrip } from '../view/stripCache.js';
 import { ENEMY_STRIPS, ENEMY_ANIMS, scaredAnims } from '../data/enemyStrips.js';
+import { HERO_STRIPS, HERO_ANIMS } from '../data/heroStrips.js';
 import { ENEMIES } from '../data/enemies.js';
 import { CHARACTERS } from '../data/characters.js';
 import { HUD_SRC, buildHudArt } from '../view/hudArt.js';
@@ -36,6 +37,9 @@ export class BootScene extends Phaser.Scene {
     for (const [name, s] of Object.entries(FX_STRIPS)) this.load.image(`fxsrc-${name}`, s.file);
     for (const [id, strips] of Object.entries(ENEMY_STRIPS)) {
       for (const [name, s] of Object.entries(strips)) this.load.image(`estrip-${id}-${name}`, s.file);
+    }
+    for (const [id, h] of Object.entries(HERO_STRIPS)) {
+      for (const [name, s] of Object.entries(h.strips)) this.load.image(`hstrip-${id}-${name}`, s.file);
     }
     this.load.image('sprite-palette', 'tools/sprite-pipeline/palette.png');
     this.load.image('hud-src', HUD_SRC);
@@ -86,7 +90,7 @@ export class BootScene extends Phaser.Scene {
   // (view/stripCache.js), so it's only slow the first time.
   async finish() {
     const t0 = performance.now();
-    this.cutTotal = [...Object.values(CHARACTER_STRIPS), ...Object.values(ENEMY_STRIPS)].reduce((n, s) => n + Object.keys(s).length, 0);
+    this.cutTotal = [...Object.values(CHARACTER_STRIPS), ...Object.values(ENEMY_STRIPS), ...Object.values(HERO_STRIPS).map((h) => h.strips)].reduce((n, s) => n + Object.keys(s).length, 0);
     this.cutDone = 0;
     this.cutFresh = 0;
     this.add.rectangle(480, 300, 304, 10).setStrokeStyle(1, 0x5a3030);
@@ -178,6 +182,35 @@ export class BootScene extends Phaser.Scene {
     return sheets;
   }
 
+  // The strip-only heroes (data/heroStrips.js: the Mage, the Rogue), cut like the enemies.
+  // A hero gets a sheet once every strip he needs is in. Returns { id: { key, anims, ... } }.
+  async buildHeroStrips(src) {
+    const RES = 2;
+    const sheets = {};
+    for (const [id, h] of Object.entries(HERO_STRIPS)) {
+      const have = new Set();
+      let fw = 0; let fh = 0;
+      for (const [name, s] of Object.entries(h.strips)) {
+        const img = src(`hstrip-${id}-${name}`);
+        if (!img) continue;
+        try {
+          const out = await this.cut(img, { ref: 0, target: h.target, ...s, res: RES }, null);
+          const tk = `hero-${id}-${name}`;
+          if (this.textures.exists(tk)) this.textures.remove(tk);
+          const tex = this.textures.addCanvas(tk, out.canvas);
+          for (let i = 0; i < out.count; i++) tex.add(`f${i}`, 0, i * out.fw, 0, out.fw, out.fh);
+          fw = out.fw; fh = out.fh;
+          have.add(name);
+        } catch (err) {
+          console.warn(`[boot] hero strip ${id}/${name} failed`, err);
+        }
+      }
+      if (h.needs.some((n) => !have.has(n))) continue;
+      sheets[id] = { key: `hero-${id}`, anims: HERO_ANIMS[id], res: RES, fw, fh, ax: FRAME.AX * RES, ay: FRAME.AY * RES };
+    }
+    return sheets;
+  }
+
   // Cut the extra animation strips into frames (view/stripImporter.js) and switch the
   // animations that use them over (data/spriteStrips.js).
   async buildStrips() {
@@ -216,6 +249,7 @@ export class BootScene extends Phaser.Scene {
       }
     }
     this.registry.set('enemySprites', await this.buildEnemyStrips(src));
+    this.registry.set('heroSprites', await this.buildHeroStrips(src));
     for (const [name, s] of Object.entries(FX_STRIPS)) {
       const img = src(`fxsrc-${name}`);
       if (!img) continue;
