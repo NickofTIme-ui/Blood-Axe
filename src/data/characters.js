@@ -193,7 +193,7 @@ export const CHARACTERS = {
     walkSpeed: 172, depthSpeed: 122,
     // no jump: a levitation rise (lower launch, softer pull = slower up and down)
     jumpStrength: 470, gravity: 1250, airControl: 0.16, airJumps: 0,
-    meleeMult: 0.85, magicMult: 1.0,
+    meleeMult: 0.85, magicMult: 1.4, // (spell damage below is before this x1.4)
     blockReduction: 0.72, guardEfficiency: 1.15,
     // the blink's timing (the dodge numbers the rest of the game reads): invulnerable for
     // `iframes`, gone for duration, then `recovery`
@@ -273,7 +273,7 @@ export const CHARACTERS = {
       // CHAIN LIGHTNING — hold heavy for the overcharge
       bolt: {
         range: 380, depth: 40,       // how far ahead the first strike reaches
-        damage: 20, chainDamage: 14, // first target / each jump
+        damage: 14, chainDamage: 10, // first target / each jump (x magicMult)
         falloff: 0.85,               // each generation of jumps x this
         radius: 150,                 // how far a jump can reach from the last body
         touch: 14,                   // gap that counts as "touching" (jumps there first)
@@ -290,7 +290,7 @@ export const CHARACTERS = {
       },
       // FORCE BLAST — the cone of invisible force
       force: {
-        damage: 10, radius: 190, angle: 70,  // degrees, full cone width
+        damage: 7, radius: 190, angle: 70,   // degrees, full cone width (damage x magicMult)
         knockback: 640, lift: 260,           // launch speed of a normal man
         heavyHealth: 160,                    // max health from which a man only staggers
         staggerFrames: 34, heavyKnockback: 260,
@@ -314,7 +314,7 @@ export const CHARACTERS = {
         edgeMargin: 70,  // never closer than this to the stage's ends
         clearance: 26,   // a man on the line is pushed this far to the nearer side
         collapse: 30,    // frames the wall takes to come down (no collision while it does)
-        fire: { duration: 300, thickness: 34, damage: 7, tickRate: 18, knockback: 220, heat: 0.3 },
+        fire: { duration: 300, thickness: 34, damage: 5, tickRate: 18, knockback: 220, heat: 0.3 }, // (damage x magicMult)
         earth: { duration: 600, thickness: 46, hp: 180 }, // hp: strong enemies can batter it down (0 = timed only)
       },
       // FINISHERS on runners (combat/Mage.js MAGE_FINISHERS)

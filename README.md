@@ -50,6 +50,28 @@ from files opened directly, so the game needs that little server.
 
 Rebind anything in `src/config/controls.js`.
 
+### The three heroes play differently
+
+The table above is **Ulric's** kit. The Mage and the Rogue use the same buttons for their own moves:
+
+| Button | Ulric (Warrior) | Vael the Elder (Mage) | Rogue |
+|---|---|---|---|
+| Light (J) | 3-hit sword combo | 3-hit staff combo (the 3rd lets out a pressure pulse) | 4-hit dagger combo (the 4th **exposes** the target) |
+| Heavy (K) | Cleave | **Chain Lightning**: leaps from body to body; hold to overcharge | **Viper Strike**: bursts through up to 3 men; exposes |
+| Kick (O) | Sparta kick | **Force Blast**: a cone of force that hurls men back | Crescent kick; **down + O** = sweep; nobody close = **throwing knife** |
+| Dodge (Shift / I) | Roll | **Blink**: teleport | Acrobatic evade. Slip a blow at the last instant (**Shadow Window**) and your next hit exposes that man |
+| Magic (U) | Firebolt | **Arcane Barrier**: tap = Infernal Wall (fire), hold = Earthen Bulwark (stone) | **Widow Mine**: dropped without stopping (2 at once) |
+| Jump (Space) | Jump | Levitate | Jump / double jump. Run at a teammate and jump to **Ally Vault** off him |
+| In the air | J: air slash | J: staff chop | J: slash, **U: Shuriken Fan** (at the top of a vault: **Death From Above**), **K: Falling Viper** |
+
+**Exposed** (violet-red mark over his head): every player does +25% damage to him for 5 seconds.
+**Barriers** stop only enemies: allies walk, blink and shoot straight through them. Enemies wait at a wall; brutes can batter the stone one down.
+**Finishers** behind a fleeing enemy: Ulric = throat (tap J), impale (hold J), halve (K), chain (O or 2+ runners).
+The Mage = Storm Judgment (J), Arcane Rupture (K), Gate of Embers (O). The Rogue = Phantom Requiem (J), Black Lotus (K), Scarlet Sky (O).
+The Mage's and the Rogue's finishers take one, two or three runners at once.
+
+All their numbers are in `src/data/characters.js` (each hero's `kit` block).
+
 ### Combat tips
 - **Combos:** J, J, J. Press J again while the previous swing is still finishing — early presses are buffered.
 - **Light into heavy:** J then K chains into the heavy.
