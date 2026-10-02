@@ -1,4 +1,4 @@
-﻿// enemies.js â€” Enemy stats, moves and AI tuning. Same stat format as characters.js
+// enemies.js â€” Enemy stats, moves and AI tuning. Same stat format as characters.js
 // (see the guide at the top of that file), plus:
 //
 //   art              which pixel-art rig draws it (view/enemyArt.js)
@@ -487,6 +487,73 @@ export const ENEMIES = {
       blockChance: 0.55, blockHold: [40, 80],
       specialEvery: 36,
       specials: [{ press: 'special1', min: 150, max: 260, chance: 0.4 }],
+    },
+  },
+
+  // =========================================================== 7. THE WARLORD
+  // Warlord-General of the Ashen Legion, the boss at the end of the road: nearly twice a
+  // man's height, a spiked gauntlet the size of a shield and a cleaver-glaive. Slow, but
+  // everything he does reaches far and hits like a falling wall. (Painted strips only:
+  // data/enemyStrips.js; cell: 2 = his frames are cut twice the usual size.)
+  warlord: {
+    ...BASE,
+    id: 'warlord',
+    name: 'Warlord Malgor',
+    title: 'General of the Ashen Legion',
+    art: 'gladiator', // (the hidden doll underneath: never drawn)
+    cell: 2,
+    body: { w: 92, h: 184 },
+    look: { color: 0x2a2a30, accent: 0xb08a4a, skin: 0x8a6a58 },
+
+    maxHealth: 240, maxStamina: 200,
+    walkSpeed: 84, depthSpeed: 62,
+    meleeMult: 1.0,
+    blockReduction: 0.9, guardEfficiency: 0.45,
+    knockdownFrames: 46, getupFrames: 26, staggerFrames: 40,
+
+    moves: {
+      light1: { // Gauntlet Backhand
+        anim: 'slash', cut: 'blunt',
+        startup: 13, active: 4, recovery: 18,
+        damage: 13, hitstun: 24, hitstop: 7, shake: 3,
+        knockback: { x: 200, y: 0 }, guardDamage: 18, lunge: 60,
+        hitbox: { x: 16, y: 60, w: 104, h: 76 },
+        chains: [{ button: 'attack', next: 'light2', from: 12, to: 34 }],
+      },
+      light2: { // Glaive Sweep: wide and level, clears the lane
+        anim: 'slash', cut: 'cleave',
+        startup: 15, active: 4, recovery: 24,
+        damage: 16, hitstun: 26, hitstop: 8, shake: 5,
+        knockback: { x: 300, y: 260 }, knockdown: true, guardDamage: 24, lunge: 70,
+        hitbox: { x: 10, y: 50, w: 156, h: 70, depth: 26 },
+      },
+      heavy: { // Headsman's Fall: the glaive straight down
+        anim: 'chop', cut: 'chop',
+        startup: 38, active: 4, recovery: 34,
+        damage: 32, hitstun: 32, hitstop: 12, shake: 9,
+        knockback: { x: 340, y: 380 }, knockdown: true, breaksGuard: true,
+        guardDamage: 50, lunge: 90,
+        hitbox: { x: 8, y: 0, w: 138, h: 176 },
+      },
+      special1: { // Bull Charge: the spiked shoulder, the length of the room
+        anim: 'bash', cut: 'blunt',
+        startup: 26, active: 18, recovery: 30,
+        damage: 18, hitstun: 38, hitstop: 9, shake: 7,
+        knockback: { x: 460, y: 260 }, knockdown: true, breaksGuard: true,
+        guardDamage: 50, lunge: 430,
+        hitbox: { x: 20, y: 20, w: 74, h: 150 },
+      },
+    },
+
+    ai: {
+      attackRange: 124, minRange: 60, alignZ: 14,
+      waitRange: 260, maxCrowd: 2,
+      threatRange: 200,
+      attackCooldown: [40, 85],
+      heavyChance: 0.3, comboChance: 0.5, comboLength: 1,
+      blockChance: 0.3, blockHold: [30, 60],
+      specialEvery: 30,
+      specials: [{ press: 'special1', min: 200, max: 420, chance: 0.5 }],
     },
   },
 };

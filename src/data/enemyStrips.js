@@ -91,6 +91,9 @@ export const ENEMY_STRIPS = {
   }),
   penitent: set('penitent'),
   ghoul: set('ghoul'),
+  // the boss: painted on magenta (his black cape would vanish into a black background),
+  // and the standard six strips only (he can't be maimed, so no scared sets)
+  warlord: Object.fromEntries(['walk', 'react', 'atk1', 'atk2', 'heavy', 'special'].map((n) => [n, { ...set('warlord')[n], bg: 'magenta' }])),
 };
 
 const seq = (strip, ids) => ids.map((i) => `${strip}:${i}`);
@@ -150,6 +153,12 @@ export const ENEMY_ANIMS = {
     ...COMMON,
     light1: quick('atk1'), light2: quick('atk2'), heavy: big('heavy'),
     special1: { needs: ['special'], phases: { startup: seq('special', [0, 1]), active: seq('special', [2, 3, 4, 5, 2, 3, 4, 5]), recovery: seq('special', [1, 0]) } },
+  },
+  warlord: {
+    ...COMMON,
+    light1: quick('atk1'), light2: quick('atk2'), heavy: big('heavy'),
+    // Bull Charge: 0 ready, 1 crouch and roar, 2-4 charging, 5 the impact
+    special1: { needs: ['special'], phases: { startup: seq('special', [0, 1, 1]), active: seq('special', [2, 3, 4, 2, 3, 4, 5]), recovery: seq('special', [5, 5, 1]) } },
   },
   gladiator: {
     ...COMMON,

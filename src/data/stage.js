@@ -10,7 +10,7 @@
 //   3 THE BLOODY NAVE       swinging pendulum blades over their lanes;  (hazard 2)
 //                           maim-and-execute runners; a cracked wall hides a shrine (secret)
 //   4 THE OSSUARY           fire AND blades, elites; urns hide a relic   (combination)
-//   5 THRONE OF THE OATHBREAKER   the boss: Pitlord Kragg, the Oathbreaker
+//   5 THRONE OF THE OATHBREAKER   the boss: Warlord Malgor, the Oathbreaker (Pitlord Kragg comes when he rages)
 //
 // Positions are in world px. z = depth on the floor (282 back .. 520 front: SETTINGS.world).
 // waves: line-ups spawned one after another (the next when the last is dead).
@@ -87,7 +87,7 @@ export const STAGE = {
       id: 'throne', name: 'THRONE OF THE OATHBREAKER', x0: 4600, x1: 5600, ground: 'cathedral',
       light: 0xff3030, mood: 0.32,
       objective: 'Kill Pitlord Kragg',
-      boss: { type: 'gladiator', name: 'Pitlord Kragg, the Oathbreaker', health: 4, damage: 1.25, adds: ['grunt', 'grunt', 'stalker'] },
+      boss: { type: 'gladiator', name: 'Pitlord Kragg, the Oathbreaker', health: 4, damage: 1.25, adds: ['grunt', 'grunt', 'stalker'] }, // (the Warlord takes over once his strips are all drawn: see docs/cloud-handoff.md)
       waves: [],
       props: [{ kind: 'barrel', x: 4780, z: 501, drop: 'meat' }],
       hazards: [],

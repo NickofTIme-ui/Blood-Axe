@@ -153,13 +153,16 @@ export class BootScene extends Phaser.Scene {
     const sheets = {};
     for (const [id, strips] of Object.entries(ENEMY_STRIPS)) {
       const target = Math.round((ENEMIES[id]?.body.h ?? 110) * 1.07); // Ulric: 108 body -> 116 art
+      const cell = ENEMIES[id]?.cell ?? 1;
       const have = new Set();
       let fw = 0; let fh = 0;
       for (const [name, s] of Object.entries(strips)) {
         const img = src(`estrip-${id}-${name}`);
         if (!img) continue;
         try {
-          const out = await this.cut(img, { target, ...s, res: RES }, null);
+          // (cell: an outsize enemy's frames are cut that many times the usual size, at
+          //  the same detail per pixel, so he fits his frame and stays as sharp as the rest)
+          const out = await this.cut(img, { target: target / cell, ...s, res: RES * cell }, null);
           const tk = `enemy-${id}-${name}`;
           if (this.textures.exists(tk)) this.textures.remove(tk);
           const tex = this.textures.addCanvas(tk, out.canvas);
@@ -181,7 +184,7 @@ export class BootScene extends Phaser.Scene {
       for (const side of ['B', 'F', 'N']) {
         if (have.has(`flee${side}`) && have.has(`cower${side}`)) scared[side] = scaredAnims(side);
       }
-      sheets[id] = { key: `enemy-${id}`, anims, scared, res: RES, fw, fh, ax: FRAME.AX * RES, ay: FRAME.AY * RES };
+      sheets[id] = { key: `enemy-${id}`, anims, scared, res: RES, fw, fh, ax: FRAME.AX * RES * cell, ay: FRAME.AY * RES * cell };
     }
     return sheets;
   }
@@ -214,7 +217,7 @@ export class BootScene extends Phaser.Scene {
       const anims = {};
       for (const [k, a] of Object.entries(HERO_ANIMS[id])) if (!a.needs || a.needs.every((n) => have.has(n))) anims[k] = a;
       if (anims.idleStrip) { anims.idle = anims.idleStrip; delete anims.idleStrip; }
-      sheets[id] = { key: `hero-${id}`, anims, res: RES, fw, fh, ax: FRAME.AX * RES, ay: FRAME.AY * RES };
+      sheets[id] = { key: `hero-${id}`, anims, res: RES, fw, fh, ax: FRAME.AX * RES * cell, ay: FRAME.AY * RES * cell };
     }
     return sheets;
   }
