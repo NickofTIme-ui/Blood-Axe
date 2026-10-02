@@ -17,6 +17,20 @@ function resolveKeyCode(name) {
   return null;
 }
 
+// Connected pads straight from the browser, real controllers first (see getPads).
+// (Not through Phaser's gamepad wrappers: they skip a pad whose timestamp is older than
+// the wrapper, and some browsers — and embedded pages like itch.io's — report those
+// timestamps on another clock, so the buttons were silently never read.)
+export function realPads(list) {
+  let raw = list;
+  if (raw === undefined) {
+    try { raw = navigator.getGamepads?.() ?? []; } catch { raw = []; } // (a page may block them)
+  }
+  const pads = Array.from(raw ?? []).filter((p) => p && p.connected);
+  const real = (p) => p.mapping === 'standard' || (p.buttons?.length ?? 0) >= 10;
+  return [...pads.filter(real), ...pads.filter((p) => !real(p))];
+}
+
 export class InputManager extends Controller {
   // opts.pad: which gamepad this reads — 'any' (first connected, the default), a slot
   // number (0 = first connected pad, 1 = second...), or null for none.
@@ -53,11 +67,15 @@ export class InputManager extends Controller {
     scene.events.once('shutdown', () => kb.off('keydown', this.onKeyDown));
   }
 
-  getPad() {
-    const gp = this.scene.input.gamepad;
-    if (!gp || !gp.total || this.padSlot === null) return null;
-    const pads = gp.gamepads.filter((p) => p && p.connected);
-    return (this.padSlot === 'any' ? pads[0] : pads[this.padSlot]) ?? null;
+  // The pads this manager reads. Windows often lists other devices as "gamepads" too
+  // (headsets, wheels, Steam's virtual pads), sometimes FIRST — so real controllers
+  // (the browser's 'standard' layout, or plenty of buttons) come before them, and 'any'
+  // reads every one of them at once: whichever you pick up just works.
+  getPads() {
+    if (this.padSlot === null) return [];
+    const pads = realPads();
+    if (this.padSlot === 'any') return pads;
+    return pads[this.padSlot] ? [pads[this.padSlot]] : [];
   }
 
   // Read the devices now, as a plain sampler (core/TickInput.js capture()): ages this
@@ -82,17 +100,22 @@ export class InputManager extends Controller {
   }
 
   sample() {
-    const pad = this.getPad();
+    const pads = this.getPads();
     const dz = this.bindings.stickDeadzone;
-    const sx = pad?.axes[0]?.getValue() ?? 0;
-    const sy = pad?.axes[1]?.getValue() ?? 0;
+    // the stick: whichever pad's stick is pushed furthest
+    let sx = 0; let sy = 0;
+    for (const p of pads) {
+      const x = p.axes[0] ?? 0;
+      const y = p.axes[1] ?? 0;
+      if (Math.hypot(x, y) > Math.hypot(sx, sy)) { sx = x; sy = y; }
+    }
     const stick = { left: sx < -0.5, right: sx > 0.5, up: sy < -0.5, down: sy > 0.5 };
 
     for (const action of Object.keys(this.keys)) {
       const keyDown = this.keys[action].some((k) => k.isDown);
       let padDown = false;
-      if (pad) {
-        padDown = (this.bindings.gamepad[action] ?? []).some((i) => pad.buttons[i]?.pressed);
+      if (pads.length) {
+        padDown = pads.some((pad) => (this.bindings.gamepad[action] ?? []).some((i) => pad.buttons[i]?.pressed || (pad.buttons[i]?.value ?? 0) > 0.5));
         if (stick[action]) padDown = true;
       }
       if (padDown && !this.padPrev[action]) this.pending.add(action);

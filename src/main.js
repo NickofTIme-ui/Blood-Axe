@@ -33,6 +33,29 @@ const config = {
 };
 
 document.title = SETTINGS.title;
+
+// Controllers: say when one is picked up, and say plainly when the page won't let the
+// game see controllers at all (an embedding page can block them).
+function padNotice(text, ms = 3500) {
+  let el = document.getElementById('pad-notice');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'pad-notice';
+    el.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);padding:8px 16px;background:rgba(20,6,6,.88);color:#e8d0b0;font:15px Georgia,serif;border:1px solid #6a2a20;border-radius:4px;z-index:10;pointer-events:none;transition:opacity .4s';
+    document.body.appendChild(el);
+  }
+  el.textContent = text;
+  el.style.opacity = '1';
+  clearTimeout(el.hide);
+  if (ms) el.hide = setTimeout(() => { el.style.opacity = '0'; }, ms);
+}
+try {
+  navigator.getGamepads?.();
+  window.addEventListener('gamepadconnected', (e) => padNotice(`Controller connected: ${e.gamepad.id.replace(/\s*\(.*$/, '').slice(0, 40)}`));
+  window.addEventListener('gamepaddisconnected', () => padNotice('Controller disconnected'));
+} catch {
+  padNotice('This page is blocking controllers. Open the game full screen or in its own window to use one.', 0);
+}
 // fonts first (view/fonts.js), so no text is drawn in a fallback face and never redrawn
 loadFonts().then(() => {
   window.game = new Phaser.Game(config); // exposed for poking around in the browser console

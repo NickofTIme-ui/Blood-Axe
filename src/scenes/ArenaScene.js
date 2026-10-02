@@ -8,7 +8,7 @@
 
 import { SETTINGS } from '../config/settings.js';
 import { World } from '../core/World.js';
-import { InputManager } from '../core/InputManager.js';
+import { InputManager, realPads } from '../core/InputManager.js';
 import { TickController, pressed } from '../core/TickInput.js';
 import { LocalSession, NetSession, snapshot, correct, feedPlayers } from '../net/Session.js';
 import { CONTROLS, CONTROLS_P1_SHARED, CONTROLS_P2 } from '../config/controls.js';
@@ -740,7 +740,7 @@ export class ArenaScene extends Phaser.Scene {
     const old = this.keepSession ? this.registry.get('session') : null;
     if (this.mode === 'local') {
       // gamepads are handed out first: one pad = player 2 has it; two pads = one each
-      const pads = (this.input.gamepad?.gamepads ?? []).filter((g) => g && g.connected).length;
+      const pads = realPads().length;
       const samplers = pads >= 2
         ? [new InputManager(this, CONTROLS, { pad: 0 }), new InputManager(this, CONTROLS_P2, { pad: 1, keyboard: false })]
         : [new InputManager(this, CONTROLS_P1_SHARED, { pad: null }), new InputManager(this, CONTROLS_P2, { pad: pads ? 0 : null })];
