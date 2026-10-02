@@ -39,7 +39,7 @@ export const CHARACTER_STRIPS = {
     // (every pose is the crouched, coiled stance: sized to match charge pose 4, ~89 px)
     chargeWalk: { file: 'assets/sprites/strips/ulric_chargewalk.png', frames: 8, ref: 0, target: 90, align: 'median', ground: 'drawn' },
     // the hero's charge (sprint): head down, blade back, cape streaming
-    sprint:  { file: 'assets/sprites/strips/ulric_sprint.png', frames: 8, ref: 0, target: 104, align: 'median', ground: 'drawn' },
+    sprint:  { file: 'assets/sprites/strips/ulric_sprint.png', frames: 8, ref: 0, target: 94, align: 'median', ground: 'drawn' },
     // finishers (combat/Finisher.js), drawn on an invisible victim
     finThroat: { file: 'assets/sprites/strips/ulric_finthroat.png', frames: 8, ref: 0, target: 116, ground: 'drawn' },
     finImpale: { file: 'assets/sprites/strips/ulric_finimpale.png', frames: 8, ref: 7, target: 116, ground: 'drawn', wide: 70 },

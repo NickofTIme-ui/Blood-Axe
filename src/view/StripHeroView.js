@@ -63,6 +63,8 @@ export class StripHeroView {
         if (A.launched && f.vaultApexAt && tick < f.vaultApexAt) return A.launched.frames[0];
         // the second jump: a flip with a twist, played once through as she soars
         if (A.flip && f.flipFrom != null && tick - f.flipFrom < FLIP_FRAMES) return spread(A.flip.frames, (tick - f.flipFrom) / FLIP_FRAMES);
+        // (a three-pose jump strip: rising, the top, descending)
+        if (A.jumpStrip) return A.jumpStrip.frames[f.vh > 150 ? 0 : f.vh < -150 ? 2 : 1];
         return A.jump.frames[f.vh > 0 ? 0 : A.jump.frames.length - 1];
       }
       case 'dodge': {
@@ -78,7 +80,8 @@ export class StripHeroView {
       case 'burning': return A.lying.frames[0];
       case 'getup': return spread(A.getup.frames, fr / Math.max(1, f.stats.getupFrames));
       case 'execute': {
-        const fin = A.finisher?.[f.exec?.kind];
+        // his own finisher strip when it's drawn, else the borrowed poses
+        const fin = A[`fin_${f.exec?.kind}`]?.frames ?? A.finisher?.[f.exec?.kind];
         return fin ? spread(fin, fr / ({ ...MAGE_FINISHERS, ...ROGUE_FINISHERS }[f.exec.kind]?.total ?? 100)) : A.idle.frames[0];
       }
 

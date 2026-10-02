@@ -22,8 +22,11 @@ export const HERO_STRIPS = {
       idle: strip('mage', 'idle', 6, { align: 'median' }),   // hovering idle (optional: else the glide)
       hoverU: strip('mage', 'hoverU', 8, { align: 'median' }), // the glide from behind (up the screen)
       hoverD: strip('mage', 'hoverD', 8, { align: 'median' }), // ...and from the front (down the screen)
-      // (mage_fin*.png exist but drifted in style — duller, flatter — so his finishers
-      //  stay on his casting poses until they're redrawn)
+      // his finishers and his levitation jump (optional: else he borrows his casting poses)
+      finStorm: strip('mage', 'finStorm', 8, { ground: 'drawn' }),   // ready, plant, staff up, sparks, staff down, hold, lower, ready
+      finRupture: strip('mage', 'finRupture', 8, { ground: 'drawn' }), // ready, hand out, curl, hold, closing, near fist, fist, lower
+      finEmbers: strip('mage', 'finEmbers', 8, { ground: 'drawn', ref: 4, target: 138 }), // dissolving, re-forming, staff raised, slam, planted, robe blown up, still, turning away
+      levitate: strip('mage', 'levitate', 4, { ground: 'drawn', target: 124 }), // gather, rising, the top, descending
       // (their ready stance holds the staff across him, so it stands shorter than 132)
       combo1: strip('mage', 'combo1', 5, { target: 126 }),  // ready, wind-up, contact, follow-through, recover
       combo2: strip('mage', 'combo2', 5, { target: 117 }),
@@ -35,7 +38,7 @@ export const HERO_STRIPS = {
       // block, light hit, heavy hit, flying, lying, rising flat, tilting up, hover
       react: strip('mage', 'react', 8, { ref: 7, ground: 'drawn' }),
       // sprint (optional): flying flat out along the staff
-      dash: strip('mage', 'dash', 8, { align: 'median', ref: 0, target: 100 }),
+      dash: strip('mage', 'dash', 8, { align: 'median', ref: 0, target: 66 }),
     },
   },
   rogue: {
@@ -56,7 +59,12 @@ export const HERO_STRIPS = {
       // the double-jump flip (optional): kick off, tuck, inverted, layout, twist, coming round, soaring, gather
       flip: strip('rogue', 'flip', 8, { ground: 'drawn', ref: 0, target: 112, holes: [[1020, 370], [1050, 380]] }), // (holes: the gap under her cloak in pose 4)
       // sprint (optional): low and flat out, arms swept back
-      sprint: strip('rogue', 'sprint', 8, { align: 'median', ground: 'drawn', target: 80 }),
+      sprint: strip('rogue', 'sprint', 8, { align: 'median', ground: 'drawn', target: 70 }),
+      runD: strip('rogue', 'runD', 8, { align: 'median', ground: 'drawn', target: 92 }), // from the front (down the screen)
+      // her finishers (optional: else she borrows her attack poses)
+      finPhantom: strip('rogue', 'finPhantom', 8, { ground: 'drawn', target: 84 }), // deep stance, still, four slashes, crouch with her back turned, standing
+      finLotus: strip('rogue', 'finLotus', 8, { ground: 'drawn', ref: 7 }),          // throw, sprint, cut and shove, slide, dive flat, rising, look back, guard
+      finScarlet: strip('rogue', 'finScarlet', 8, { ground: 'drawn', ref: 7, target: 62 }), // sprint, take-off, rising, spin, turning over, dive, strike, low crouch
       react: strip('rogue', 'react', 8, { ref: 7, ground: 'drawn' }),   // hit, stumble, flying, lying, roll up, kick-through, spring, stance
     },
   },
@@ -77,6 +85,10 @@ export const HERO_ANIMS = {
     walkD: { needs: ['hoverD'], frames: seq('hoverD', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 10, loop: true },
     idleStrip: { needs: ['idle'], frames: seq('idle', [0, 1, 2, 3, 4, 5]), fps: 5, loop: true },
     sprint: { needs: ['dash'], frames: seq('dash', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 14, loop: true },
+    jumpStrip: { needs: ['levitate'], frames: seq('levitate', [1, 2, 3]) }, // rising, the top, descending
+    fin_storm: { needs: ['finStorm'], frames: seq('finStorm', [0, 1, 2, 3, 4, 5, 6, 7]) },
+    fin_rupture: { needs: ['finRupture'], frames: seq('finRupture', [0, 1, 2, 3, 4, 5, 6, 7]) },
+    fin_embers: { needs: ['finEmbers'], frames: seq('finEmbers', [0, 1, 2, 3, 4, 5, 6, 7]) },
     jump: { frames: seq('hover', [3, 4]) },
     block: { frames: seq('react', [0]) },
     light1: swing(seq('combo1', [0, 1]), seq('combo1', [2]), seq('combo1', [3, 4])),
@@ -116,6 +128,10 @@ export const HERO_ANIMS = {
     dodgeBack: { frames: seq('dodge', [4, 5, 6, 7]) },
     jump: { frames: seq('air', [0, 1]) },   // rising, falling
     sprint: { needs: ['sprint'], frames: seq('sprint', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 18, loop: true },
+    walkD: { needs: ['runD'], frames: seq('runD', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 15, loop: true },
+    fin_phantom: { needs: ['finPhantom'], frames: seq('finPhantom', [0, 1, 2, 3, 4, 5, 6, 7]) },
+    fin_lotus: { needs: ['finLotus'], frames: seq('finLotus', [0, 1, 2, 3, 4, 5, 6, 7]) },
+    fin_scarlet: { needs: ['finScarlet'], frames: seq('finScarlet', [0, 1, 2, 3, 4, 5, 6, 7]) },
     flip: { needs: ['flip'], frames: seq('flip', [0, 1, 2, 3, 4, 5, 6, 7]) }, // her second jump
     vault: { frames: seq('air', [2]) },
     launched: { frames: seq('air', [3]) },  // the long rise off a teammate's shoulder
