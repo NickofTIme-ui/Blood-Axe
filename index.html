@@ -34,6 +34,10 @@
     </div>
   </section>
 
+  <!-- When this copy of the game was built (tools/build-release.ps1 stamps it; 0 = not a
+       release). Online, two players' games compare it to say who needs to refresh. -->
+  <script>window.BUILD_TIME = 0;</script>
+
   <!-- Phaser 3: uses the local copy in lib/ (downloaded by the start script);
        falls back to the online copy if it's missing. -->
   <script src="lib/phaser.min.js"></script>

@@ -11,6 +11,7 @@ import { ENEMIES, WAVES } from '../src/data/enemies.js';
 import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.js';
 import { Stage } from '../src/stage/Stage.js';
 import { STAGE } from '../src/data/stage.js';
+import { handshake } from '../src/net/Link.js';
 import { impalePin } from '../src/combat/Finisher.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/Mage.js';
 import { ROGUE_FINISHERS } from '../src/combat/Rogue.js';
@@ -54,6 +55,10 @@ function test(name, fn) {
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
 
 console.log('Blood Axe — combat logic tests');
+
+// (async tests: run after the rest, results printed at the end)
+const later = [];
+function testAsync(name, fn) { later.push([name, fn]); }
 
 test('light attack hits and causes hitstun', () => {
   const t = setup({ script: { 1: ['attack'] } });
@@ -585,6 +590,28 @@ test('online co-op: over a real-internet lag the measured input delay keeps the 
   assert(fixed < 400, `the old fixed delay crawls (${fixed} ticks in 600 frames)`);
   assert(measured > 560, `the measured delay runs at full speed (${measured} ticks in 600 frames)`);
   assert(delayFor(30) === NET.delay && delayFor(2000) === 15, 'clamped');
+});
+
+testAsync('online: two games on the same version shake hands; on different versions the join fails saying who must refresh', async () => {
+  const pump = (a, b) => { const iv = setInterval(() => { a.flush(); b.flush(); }, 1); return () => clearInterval(iv); };
+  // a loopPair link has no close(); handshake calls it on a mismatch
+  const pair = () => { const [a, b] = loopPair(1, 1); a.close = b.close = () => {}; return [a, b]; };
+  let [a, b] = pair();
+  let stop = pump(a, b);
+  const ok = await Promise.all([handshake(a, 'V1'), handshake(b, 'V1')]);
+  stop();
+  assert(ok[0] === a && ok[1] === b, 'same version: connected');
+  [a, b] = pair();
+  stop = pump(a, b);
+  globalThis.BUILD_TIME = 2000;
+  const older = handshake(a, 'V1').catch((e) => e.message);
+  globalThis.BUILD_TIME = 1000; // (b's hello says built at 1000, a's at 2000 — both read at send time)
+  const newer = handshake(b, 'V2').catch((e) => e.message);
+  const [ma, mb] = await Promise.all([older, newer]);
+  stop();
+  globalThis.BUILD_TIME = 0;
+  assert(/different version/.test(ma) && /different version/.test(mb), `both told (${ma} | ${mb})`);
+  assert(/Yours is newer/.test(ma) && /Theirs is newer: refresh this page/.test(mb), `the older one is told to refresh (${ma} | ${mb})`);
 });
 
 test('online co-op: a copy that has drifted is pulled back by the host snapshot', () => {
@@ -1413,5 +1440,8 @@ test('stage: the throne spawns the boss, he rages at half health, killing him wi
   assert(t.ev.includes('stageWon') && t.stage.phase === 'won', `won (${t.stage.phase})`);
 });
 
+for (const [name, fn] of later) {
+  try { await fn(); console.log(`  ok   ${name}`); } catch (e) { failed++; console.log(`  FAIL ${name}\n       ${e.message}`); }
+}
 console.log(failed ? `\n${failed} test(s) FAILED` : '\nAll tests passed.');
 process.exit(failed ? 1 : 0);

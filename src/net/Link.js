@@ -21,9 +21,33 @@ import { SETTINGS } from '../config/settings.js';
 const peerOptions = () => ({ config: { iceServers: SETTINGS.net?.iceServers ?? [] } });
 
 const PEERJS_URL = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
-// (the room name carries the game's version, net/Version.js: a friend on a stale copy of
-// the page can't join a newer one — the two would drift apart)
-const prefix = () => `blood-axe-oath-${simVersion().toLowerCase()}-`;
+const prefix = () => 'blood-axe-oath-';
+
+// When the line is up, both say which game they're running (net/Version.js) and when it
+// was built (window.BUILD_TIME, stamped by tools/build-release.ps1). Different games
+// can't play together (the two would drift apart at once), so the join fails — with a
+// message saying who has to refresh — instead of a fight that falls apart.
+export const buildTime = () => Number(globalThis.BUILD_TIME) || 0;
+export function handshake(link, version = simVersion()) {
+  return new Promise((resolve, reject) => {
+    const mine = { k: 'hello', v: version, built: buildTime() };
+    link.onData((m) => {
+      if (m?.k !== 'hello') return;
+      link.onData(null); // (anything after this waits for the next listener)
+      if (m.v === mine.v) return resolve(link);
+      link.close();
+      let msg = `Your friend is running a different version of the game\n(yours ${mine.v}, theirs ${m.v}).`;
+      if (m.built && mine.built && m.built !== mine.built) {
+        msg += m.built > mine.built
+          ? '\nTheirs is newer: refresh this page (Ctrl+F5) and try again.'
+          : '\nYours is newer: they need to refresh their page (Ctrl+F5).';
+      } else msg += '\nBoth refresh the page (Ctrl+F5) and try again.';
+      reject(new Error(msg));
+    });
+    link.send(mine);
+    setTimeout(() => reject(new Error('Connected, but your friend\'s game did not answer.\nBoth refresh the page (Ctrl+F5) and try again.')), 8000);
+  });
+}
 
 let loading = null;
 function loadPeerJs() {
@@ -68,7 +92,7 @@ function wrap(peer, conn) {
 const friendly = (err) => {
   const t = err?.type ?? '';
   if (t === 'unavailable-id') return 'That room code is in use — try again.';
-  if (t === 'peer-unavailable') return 'No game found with that code.\nIf the code is right, you are on different versions:\nboth refresh the page (Ctrl+F5) and compare the version shown here.';
+  if (t === 'peer-unavailable') return 'No game found with that code.\nCheck the code, and that your friend is still on the HOST screen.';
   if (t === 'network' || t === 'server-error' || t === 'socket-error') return 'Could not reach the matchmaking service.';
   if (t === 'browser-incompatible') return 'This browser cannot do online play.';
   return err?.message ?? 'Connection failed.';
@@ -85,7 +109,7 @@ export function hostRoom(code, onReady) {
     peer.on('open', () => onReady?.());
     peer.on('error', (e) => reject(new Error(friendly(e))));
     peer.on('connection', (conn) => {
-      conn.on('open', () => resolve(wrap(peer, conn)));
+      conn.on('open', () => handshake(wrap(peer, conn)).then(resolve, reject));
     });
   }));
   return { link, cancel() { cancelled = true; try { peer?.destroy(); } catch { /* */ } } };
@@ -101,7 +125,7 @@ export function joinRoom(code) {
     peer.on('error', (e) => reject(new Error(friendly(e))));
     peer.on('open', () => {
       const conn = peer.connect(prefix() + code.toUpperCase(), { reliable: true, serialization: 'json' });
-      conn.on('open', () => resolve(wrap(peer, conn)));
+      conn.on('open', () => handshake(wrap(peer, conn)).then(resolve, reject));
       conn.on('error', (e) => reject(new Error(friendly(e))));
       setTimeout(() => reject(new Error('No answer from that room.\nThe room was found but no direct line could be made:\none of your networks blocks it (a relay server is needed: see config/settings.js).')), 15000);
     });

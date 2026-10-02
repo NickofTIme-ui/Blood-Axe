@@ -22,6 +22,10 @@ if ([IO.Path]::GetFullPath($stage) -ne (Join-Path $releaseRoot 'stage') -or [IO.
 if (Test-Path $stage) { [IO.Directory]::Delete($stage, $true) }
 [IO.Directory]::CreateDirectory($stage) | Out-Null
 Copy-Item (Join-Path $root 'index.html') $stage
+# stamp the build time (online play compares it: net/Link.js handshake)
+$indexPath = Join-Path $stage 'index.html'
+$stamp = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+[IO.File]::WriteAllText($indexPath, ([IO.File]::ReadAllText($indexPath) -replace 'window\.BUILD_TIME = 0;', "window.BUILD_TIME = $stamp;"))
 foreach ($d in 'src', 'lib', 'assets') {
   robocopy (Join-Path $root $d) (Join-Path $stage $d) /E /XD incoming /NFL /NDL /NJH /NJS /NP | Out-Null
 }
