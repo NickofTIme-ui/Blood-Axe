@@ -202,7 +202,7 @@ export const CHARACTERS = {
     parryWindow: 6, parryWhiffRecovery: 16,
     knockdownFrames: 40, getupFrames: 26, staggerFrames: 50,
 
-    hover: { height: 9, drift: 2.2, driftRate: 0.05 }, // view only: he floats above his feet
+    hover: { height: 12, drift: 2.4, driftRate: 0.05 }, // view only: he floats above his feet
 
     moves: {
       // the staff, as a real weapon: two-handed, long reach, blunt
