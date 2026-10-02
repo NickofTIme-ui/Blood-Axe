@@ -217,7 +217,7 @@ export class BootScene extends Phaser.Scene {
       const anims = {};
       for (const [k, a] of Object.entries(HERO_ANIMS[id])) if (!a.needs || a.needs.every((n) => have.has(n))) anims[k] = a;
       if (anims.idleStrip) { anims.idle = anims.idleStrip; delete anims.idleStrip; }
-      sheets[id] = { key: `hero-${id}`, anims, res: RES, fw, fh, ax: FRAME.AX * RES * cell, ay: FRAME.AY * RES * cell };
+      sheets[id] = { key: `hero-${id}`, anims, res: RES, fw, fh, ax: FRAME.AX * RES, ay: FRAME.AY * RES };
     }
     return sheets;
   }

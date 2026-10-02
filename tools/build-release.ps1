@@ -15,12 +15,20 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $stage = Join-Path $root 'release\stage'
 $zip = Join-Path $root 'release\blood-axe-web.zip'
 
+# Only clear the generated staging directory inside this project's release folder.
+$releaseRoot = [IO.Path]::GetFullPath((Join-Path $root 'release'))
+if ([IO.Path]::GetFullPath($stage) -ne (Join-Path $releaseRoot 'stage') -or [IO.Path]::GetFullPath($zip) -ne (Join-Path $releaseRoot 'blood-axe-web.zip')) { throw 'Unexpected release output path' }
+
 if (Test-Path $stage) { [IO.Directory]::Delete($stage, $true) }
 [IO.Directory]::CreateDirectory($stage) | Out-Null
 Copy-Item (Join-Path $root 'index.html') $stage
 foreach ($d in 'src', 'lib', 'assets') {
   robocopy (Join-Path $root $d) (Join-Path $stage $d) /E /XD incoming /NFL /NDL /NJH /NJS /NP | Out-Null
 }
+# BootScene reads this palette at runtime when it cuts the character strips.
+$paletteDir = Join-Path $stage 'tools\sprite-pipeline'
+[IO.Directory]::CreateDirectory($paletteDir) | Out-Null
+Copy-Item (Join-Path $root 'tools\sprite-pipeline\palette.png') $paletteDir
 
 Add-Type -AssemblyName System.Drawing
 Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'

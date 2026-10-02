@@ -138,3 +138,9 @@ To do, in order:
 1. Switch the throne boss to the warlord in `src/data/stage.js` (the line carries a comment) and boot the game: check the magenta cut-out leaves no fringe on his black cape, that `cell: 2` frames hold him (weapon overhead in `heavy`), and his size beside the heroes. The release script must not JPEG these (add `warlord_` to the PNG exceptions in `tools/build-release.ps1`, like the parallax layers).
 2. The entrance, music and health the user asked for (quoted in the section above).
 3. The music file is still only on the user's PC (see above); it has not been added to the repo.
+
+## Local session, 3 October 2026 (after the boss merge)
+
+- **Bug fixed:** `BootScene.buildHeroStrips` used `cell`, which only exists in `buildEnemyStrips` (my slip when adding the boss's outsize frames). It threw, so no hero sheets were registered and the Mage and Rogue fell back to their stand-ins. Any build made from `36a5e96` has this fault.
+- **Added outside this session (by the user with another tool), committed here as found, not reviewed or run:** a studio intro video before the game starts (`assets/video/ufo-technologies-intro.mp4`, `src/core/StartupIntro.js`, changes to `index.html`, `src/main.js`) and two changes to `tools/build-release.ps1` (a path check, and copying `tools/sprite-pipeline/palette.png` into the staged build).
+- The user says an itch upload made with that other tool left the game "messed up". Not investigated here. Check the staged build (`release/stage`) boots past the intro video, shows the Mage and Rogue painted, and that `?mute=1` testing still works with the intro in the way.

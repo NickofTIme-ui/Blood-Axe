@@ -12,11 +12,27 @@
     html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
     #game { width: 100%; height: 100%; }
     #error { color: #e0c0a0; font: 16px sans-serif; padding: 40px; display: none; }
+    #studio-intro { position: fixed; inset: 0; z-index: 100; background: #000; }
+    #studio-intro video { display: block; width: 100%; height: 100%; object-fit: contain; }
+    .intro-controls { position: absolute; right: max(20px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+    .intro-controls button { border: 1px solid #54e9ff; border-radius: 4px; background: rgba(0, 0, 0, .88); color: #e8fcff; padding: 10px 16px; font: 15px system-ui, sans-serif; cursor: pointer; }
+    .intro-controls button:focus-visible { outline: 3px solid #ffad52; outline-offset: 4px; }
+    .intro-controls button:hover { background: #10343c; }
+    #intro-status { position: absolute; left: 20px; bottom: 20px; max-width: 50%; color: #d5f9ff; font: 14px system-ui, sans-serif; }
+    [hidden] { display: none !important; }
   </style>
 </head>
 <body>
   <div id="game"></div>
   <div id="error"></div>
+  <section id="studio-intro" aria-label="UFO Technologies studio introduction">
+    <video id="intro-video" src="assets/video/ufo-technologies-intro.mp4" preload="auto" playsinline aria-hidden="true"></video>
+    <p id="intro-status" role="status" aria-live="polite"></p>
+    <div class="intro-controls">
+      <button id="intro-sound" type="button" hidden>Play with sound</button>
+      <button id="intro-skip" type="button" aria-label="Skip studio introduction (Escape or controller B)">Skip intro · Esc</button>
+    </div>
+  </section>
 
   <!-- Phaser 3: uses the local copy in lib/ (downloaded by the start script);
        falls back to the online copy if it's missing. -->

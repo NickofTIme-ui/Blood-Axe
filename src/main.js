@@ -1,5 +1,6 @@
 // main.js — Entry point. Creates the Phaser game and lists the scenes.
-// Scene order: Boot (make textures) -> Title (cover art) -> Select (pick a hero) -> Arena (+ HUD on top).
+// Launch: UFO Technologies video -> Boot (make textures) -> Title (cover art)
+// -> Select (pick a hero) -> Arena (+ HUD on top).
 //
 // The world is SETTINGS.width x SETTINGS.height units (960 x 540), but the canvas is
 // SETTINGS.renderScale times bigger (1920 x 1080) and every scene's camera zooms in by that
@@ -12,6 +13,7 @@ import { SelectScene } from './scenes/SelectScene.js';
 import { ArenaScene } from './scenes/ArenaScene.js';
 import { HUDScene } from './scenes/HUDScene.js';
 import { loadFonts } from './view/fonts.js';
+import { playStartupIntro } from './core/StartupIntro.js';
 
 const RS = SETTINGS.renderScale ?? 1;
 
@@ -57,7 +59,9 @@ try {
   padNotice('This page is blocking controllers. Open the game full screen or in its own window to use one.', 0);
 }
 // fonts first (view/fonts.js), so no text is drawn in a fallback face and never redrawn
-loadFonts().then(() => {
+// Fonts can load during the studio introduction. The engine starts only once it ends,
+// so title music and game inputs cannot run underneath the video.
+Promise.all([loadFonts(), playStartupIntro()]).then(() => {
   window.game = new Phaser.Game(config); // exposed for poking around in the browser console
   // ?mute=1 starts the game silent (used when testing, so nothing blares)
   if (new URLSearchParams(location.search).has('mute')) window.game.sound.mute = true;
