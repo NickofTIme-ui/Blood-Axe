@@ -164,3 +164,4 @@ To do locally: paint the earth-wall slabs, build + upload to itch, then a real t
 ## Local, 2026-10-02 (after itch upload 19525664; NOT yet on itch)
 - Rogue: each ground shuriken now costs stamina, the same as her roll (`kit.knife.cost` overrides; default `dodge.cost`). Without the stamina the kick button gives the kick. Sim change: both players need the new build.
 - Boss kill: a longer slow moment of victory (slow-mo 0.18 for 4.2 s, shake, VICTORY callout) before the tally screen. Not watched in play yet.
+- Rogue mines: U mid-roll leaves a mine without ending the roll; rolling through a man plants it ON him (`Mines.stick`, 34-frame fuse): ordinary soldiers are blown to bits 85% of the time, brutes (160+ hp) and bosses take 1.7x mine damage and live. Mine kills are now legs off or blown to bits (no halves: `Gore.cutSprite` mine branch), never a waist cut. Sim change. Logic tests pass; visuals not watched in play.

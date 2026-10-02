@@ -60,6 +60,18 @@ export function vaultTarget(f) {
 
 // ---------------------------------------------------------------- the states
 
+// A mine out of a roll: planted ON a man she is rolling through, else left on the floor
+// behind her. The roll goes on.
+export function rollMine(f) {
+  const K = kitOf(f).mine;
+  f.cool.mine = K.cooldown;
+  f.mineDropAt = f.world.frame;
+  const v = foes(f)
+    .filter((e) => e.h < 40 && e.state !== 'executed' && Math.abs(e.x - f.x) <= K.stickReach && Math.abs(e.z - f.z) <= 34)
+    .sort((a, b) => Math.abs(a.x - f.x) - Math.abs(b.x - f.x))[0];
+  return v ? f.world.mines.stick(f, v, K) : f.world.mines.drop(f, clampX(f.world, f.x), f.z, K);
+}
+
 // What one shuriken costs her in stamina: kit.knife.cost, or by default the same as her roll.
 const throwCost = (f) => kitOf(f).knife.cost ?? f.stats.dodge.cost;
 

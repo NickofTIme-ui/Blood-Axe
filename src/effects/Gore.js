@@ -132,11 +132,27 @@ export class Gore {
     const dir = e.dir || view.f.facing;
     const cut = { decap: 'neck', headPop: 'neck', halfH: 'waist', halfV: 'diagDown', limbs: 'legs', explode: 'waist' }[type];
     if (!cut) return false;
+    const f = view.f;
+    const mid = f.h + f.stats.body.h * 0.5;
+    // a mine doesn't cut a man in two: there are no halves, only what's left of him
+    if (type === 'explode' && e.move?.fx === 'mine') {
+      view.cutAway = true;
+      view.hideAll();
+      this.mist(e.x, e.z, mid, 22);
+      this.scorch(f.x, f.z);
+      for (let i = 0; i < Math.round(48 * this.amount); i++) {
+        this.spawn({
+          x: f.x + rand(-12, 12), z: f.z + rand(-6, 6), h: mid + rand(-30, 30), texture: 'px',
+          vx: rand(-520, 520), vz: rand(-120, 120), vh: rand(260, 760),
+          tint: pick([...BLOOD, ...BLOOD, f.stats.look.color, f.stats.look.skin ?? 0x8a0303]), scale: rand(1.8, 4.6), spin: rand(-16, 16),
+        });
+      }
+      this.burst(f.x, f.z, mid, dir, Math.round(90 * this.amount), 1.9);
+      return true;
+    }
     const { upper, lower } = cuts.split(view, cut, dir);
     view.cutAway = true;
     view.hideAll();
-    const f = view.f;
-    const mid = f.h + f.stats.body.h * 0.5;
     if (type === 'decap') cuts.launch(upper, dir * rand(180, 420), rand(380, 520), dir * rand(9, 16));
     else if (type === 'headPop') cuts.launch(upper, dir * rand(-40, 60), rand(620, 760), dir * rand(4, 9));
     else if (type === 'halfH') cuts.launch(upper, dir * rand(160, 320), rand(260, 380), dir * rand(5, 9));

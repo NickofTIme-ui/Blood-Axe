@@ -499,6 +499,12 @@ export const CHARACTERS = {
         heavyHealth: 160, heavyLaunch: 0.4, // brutes are thrown this much as far
         boss: 0.5,          // bosses take this share of damage and barely move
         hitCooldown: 30,    // frames before another blast can hurt the same man (no stacking)
+        bits: 0.5,          // a close kill blows him to bits this often; otherwise his legs come off
+        // STUCK: pressed mid-roll while rolling through a man, it's planted on him
+        stickReach: 46,     // how near (px) he must be to her as she rolls
+        stickFuse: 34,      // frames until it goes off on him
+        stuckKill: 0.85,    // an ordinary soldier is blown to bits this often...
+        stuckMult: 1.7,     // ...the rest, brutes and bosses take this much of a mine's damage
       },
       // ALLY VAULT
       vault: {

@@ -1182,6 +1182,32 @@ test('rogue: ally vault — running at a teammate and jumping launches far above
   assert(s.seen('vaultLaunch').length === 0, 'no approach, no vault');
 });
 
+test('rogue: a mine out of a roll; rolling through a man sticks it on him and it goes off on him', () => {
+  const t = rogueSetup({ script: { 1: ['dodge'], 4: ['magic'] }, hold: { right: true }, foes: [[650]] });
+  const hp = t.es[0].health;
+  let stuck = null; let rolling = false;
+  for (let i = 0; i < 70; i++) {
+    t.world.tick();
+    const m = t.world.mines.list.find((q) => q.stuck);
+    if (m && !stuck) { stuck = m; rolling = t.p.state === 'dodge'; }
+  }
+  assert(stuck && stuck.stuck === t.es[0], 'stuck on the man she rolled through');
+  assert(rolling, 'she kept rolling');
+  assert(t.seen('mineBlast').length === 1 && t.es[0].health < hp, `it went off on him (${t.es[0].health}/${hp})`);
+  const boss = rogueSetup({ script: { 1: ['dodge'], 4: ['magic'] }, hold: { right: true }, foes: [[650, 420, 'warlord']] });
+  boss.run(70);
+  assert(boss.es[0].alive, 'a boss lives through it');
+  const n = rogueSetup({ script: { 1: ['dodge'], 4: ['magic'] }, hold: { right: true }, foes: [] });
+  n.run(12);
+  assert(n.seen('mineDrop').length === 1 && !n.world.mines.list[0].stuck, 'nobody there: it goes on the floor');
+  // a mine never cuts a man in half: bits, or the legs
+  const k = rogueSetup({ script: { 1: ['magic'] }, foes: [[610]] });
+  k.es[0].health = 1;
+  k.run(80);
+  const kill = k.seen('kill')[0];
+  assert(kill && ['explode', 'limbs', 'none'].includes(kill.e.fatality), `mine kill: ${kill?.e.fatality}`);
+});
+
 test('rogue: shuriken on the kick button can be spammed; a man in kicking distance gets the kick', () => {
   const t = rogueSetup({ script: { 1: ['kick'], 9: ['kick'], 17: ['kick'], 25: ['kick'] }, foes: [[1000]] });
   let thrown = 0;

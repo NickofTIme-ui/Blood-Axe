@@ -216,6 +216,7 @@ export class CombatSystem {
     if (lethal) {
       // How do they come apart? (only rigged enemies can be dismembered)
       if (def.stats.art && superCrit) event.fatality = 'explode'; // heavy carnage
+      else if (def.stats.art && move.fatality) event.fatality = move.fatality; // (a mine says how)
       else if (def.stats.art) {
         event.fatality = chooseFatality({
           cut: move.cut,

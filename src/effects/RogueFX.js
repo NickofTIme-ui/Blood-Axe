@@ -283,11 +283,14 @@ class MineView {
   arm() { this.armed = true; }
 
   update() {
-    const m = this.m;
+    const src = this.m;
     const g = this.g;
     this.t++;
     if (this.armed) this.claw = Math.min(1, this.claw + 0.2);
-    g.clear().setDepth(m.z - 0.5);
+    // stuck to a man: it rides on his chest, drawn over him, the light already racing
+    const on = src.stuck;
+    const m = on ? { x: src.x, z: src.z - on.h - on.stats.body.h * 0.5, cue: 0 } : src;
+    g.clear().setDepth(on ? src.z + 1 : src.z - 0.5);
     // claws
     for (let i = 0; i < 4; i++) {
       const a = i * Math.PI / 2 + Math.PI / 4;

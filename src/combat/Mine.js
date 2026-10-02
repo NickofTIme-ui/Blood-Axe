@@ -43,6 +43,15 @@ export class Mines {
     return mine;
   }
 
+  // Stick one ON a man (she rolled through him): it rides him wherever he goes and goes
+  // off on a short fuse. An ordinary soldier is blown to bits most times; the very strong
+  // and bosses take a heavier blast than a floor mine's and live through it.
+  stick(owner, victim, cfg) {
+    const mine = this.drop(owner, victim.x, victim.z, cfg, { fastArm: cfg.stickFuse });
+    mine.stuck = victim;
+    return mine;
+  }
+
   fizzle(m) {
     m.done = true;
     this.list = this.list.filter((q) => q !== m);
@@ -54,6 +63,15 @@ export class Mines {
     for (const m of [...this.list]) {
       if (m.done) continue;
       m.t++;
+      if (m.stuck) {
+        const v = m.stuck;
+        if (!v.alive || v.removeMe) m.stuck = null; // he died first: it drops where he fell
+        else {
+          m.x = v.x; m.z = v.z;
+          if (m.t >= m.arm) this.blast(m);
+          continue;
+        }
+      }
       if (!m.armed && m.t >= m.arm) { m.armed = true; w.events.emit('mineArmed', { mine: m }); }
       if (!m.special && m.t >= m.cfg.life) { this.fizzle(m); continue; }
       if (m.armed && m.cue < 0 && !m.special) {
@@ -74,12 +92,13 @@ export class Mines {
     this.list = this.list.filter((q) => q !== m);
     const hits = [];
     for (const f of w.fighters) {
-      if (f.team === m.team || !f.alive || f.removeMe || f.invincible) continue;
+      const stuck = f === m.stuck;
+      if (f.team === m.team || !f.alive || f.removeMe || (f.invincible && !stuck)) continue;
       if (f.state === 'executed' && !(victims && victims.includes(f))) continue;
       const dx = f.x - m.x;
       const d = Math.hypot(dx, (f.z - m.z) * 1.4);
       if (d > K.outer) continue;
-      if (w.frame - (this.hurtAt.get(f.id) ?? -1e9) < K.hitCooldown) continue;
+      if (!stuck && w.frame - (this.hurtAt.get(f.id) ?? -1e9) < K.hitCooldown) continue;
       this.hurtAt.set(f.id, w.frame);
       const t = d <= K.inner ? 0 : (d - K.inner) / (K.outer - K.inner);
       const share = 1 - (1 - K.falloff) * t;
@@ -93,6 +112,14 @@ export class Mines {
         knockback: { x: K.launch * share * throwK, y: boss ? 0 : K.lift * share * (heavy ? 0.5 : 1) },
         knockdown: !boss, bowl: !boss && !heavy, breaksGuard: true, guardDamage: 80,
       };
+      // How a mine kills: never a clean cut. Close in it blows a man to bits about half
+      // the time, otherwise it takes his legs off; a man who lives is thrown down.
+      const rng = w.rngFor(f.id, 23);
+      move.fatality = rng() < (share >= 0.8 ? K.bits : K.bits * 0.3) ? 'explode' : 'limbs';
+      if (stuck) {
+        if (!boss && !heavy && rng() < K.stuckKill) { move.damage = f.health + 60; move.fatality = 'explode'; }
+        else move.damage = K.damage * K.stuckMult * (boss ? K.boss : 1);
+      }
       w.combat.resolve(m.owner, f, move, { kind: 'magic', fromX: m.x, dir, contact: { x: f.x - dir * 6, h: f.h + f.stats.body.h * 0.45 } });
       hits.push(f);
     }

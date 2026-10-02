@@ -12,7 +12,7 @@ import { SETTINGS } from '../config/settings.js';
 import { movePhase, totalFrames, inWindow } from '../combat/MoveRunner.js';
 import { FINISH, FINISHERS, CHAIN, IMPALE, impalePin, impalePierce, planFinisher, chainTimes } from '../combat/Finisher.js';
 import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher } from '../combat/Mage.js';
-import { rogueStates, isRogueFinisher, rogueFinisherStart, runRogueFinisher, vaultTarget } from '../combat/Rogue.js';
+import { rogueStates, rollMine,isRogueFinisher, rogueFinisherStart, runRogueFinisher, vaultTarget } from '../combat/Rogue.js';
 
 const FEEL = SETTINGS.feel;
 
@@ -714,6 +714,11 @@ export const FIGHTER_STATES = {
       const d = f.stats.dodge;
       f.invincible = frame <= d.iframes;
       if (frame === 4) f.world.events.emit('roll', { fighter: f }); // shoulder hits the floor
+      // the Rogue can plant a mine mid-roll (on a man she's rolling through: combat/Rogue.js)
+      if (f.stats.kit?.mine && frame <= d.duration && f.controller.peek('magic') && !(f.cool?.mine > 0)) {
+        f.controller.consume('magic');
+        rollMine(f);
+      }
       if (frame >= d.duration) stopMoving(f);
       if (frame >= d.duration + d.recovery) f.fsm.change('idle');
     },
