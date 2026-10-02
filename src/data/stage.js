@@ -30,7 +30,7 @@ export const STAGE = {
         { kind: 'barrel', x: 420, z: 320, drop: null },
         { kind: 'crate', x: 470, z: 310, drop: 'meat' },
         { kind: 'barrel', x: 860, z: 489, drop: 'wine' },
-        { kind: 'chest', x: 1040, z: 307, drop: 'meat' },
+        { kind: 'crate', x: 1040, z: 307, drop: 'meat' },
       ],
       hazards: [],
     },
@@ -55,7 +55,6 @@ export const STAGE = {
       objective: 'Break them — then finish them',
       waves: [['penitent', 'grunt'], ['stalker', 'ghoul', 'grunt']],
       props: [
-        { kind: 'wall', x: 3050, z: 290, drop: 'shrine', secret: true },
         { kind: 'urn', x: 2560, z: 501, drop: null },
         { kind: 'urn', x: 2600, z: 510, drop: 'wine' },
       ],
@@ -74,7 +73,7 @@ export const STAGE = {
         { kind: 'urn', x: 3735, z: 301, drop: null },
         { kind: 'urn', x: 3770, z: 292, drop: 'relic', secret: true },
         { kind: 'crate', x: 4480, z: 495, drop: 'meat' },
-        { kind: 'chest', x: 4130, z: 305, drop: 'relic' },
+        { kind: 'crate', x: 4130, z: 305, drop: 'relic' },
         { kind: 'barrel', x: 4530, z: 320, drop: 'mana' },
       ],
       hazards: [
