@@ -68,7 +68,7 @@ public static class Shrink {
 $before = 0; $after = 0; $n = 0
 Get-ChildItem (Join-Path $stage 'assets') -Recurse -Filter *.png | ForEach-Object {
   $before += $_.Length
-  $skip = $_.Length -lt 200kb -or $_.Name -match '_(flee|cower)[BFN]\.png$' -or $_.Name -match '^plx_(far|mid|near|fg)\.png$' -or $_.Name -match '^warlord_'
+  $skip = $_.Length -lt 200kb -or $_.Name -match '_(flee|cower)[BFN]\.png$' -or $_.Name -match '^plx_(far|mid|near|fg)\.png$' -or $_.Name -match '^warlord_' -or $_.Name -eq 'earthwall-strip.png'
   if (-not $skip) { try { if ([Shrink]::Jpeg($_.FullName, $Quality)) { $n++ } } catch { Write-Host "  kept $($_.Name): $($_.Exception.Message)" } }
   $after += (Get-Item $_.FullName).Length
 }
