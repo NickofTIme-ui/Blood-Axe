@@ -1,0 +1,224 @@
+// CombatSystem.js — Checks hitboxes against hurtboxes each frame and decides what
+// happens: parry, block, guard break or a clean hit (damage, hitstun, knockdown,
+// hitstop). It emits events ('hit', 'kill', 'block', 'parry', 'guardBreak') that
+// the effects/HUD layers listen to — this file never draws anything.
+
+import { SETTINGS } from '../config/settings.js';
+import { toWorldBox, overlaps, contactPoint } from './Boxes.js';
+import { movePhase } from './MoveRunner.js';
+import { chooseFatality, chooseMaim } from './Fatality.js';
+
+const FEEL = SETTINGS.feel;
+const ATTACK_STATES = ['light1', 'light2', 'light3', 'heavy', 'special1', 'special2'];
+
+// A fighter who lost their weapon arm hits with a bloody stump.
+const armMult = (f) => (f.maimed?.armF ? 0.4 : 1);
+
+// Moves with superArmor can't be interrupted during startup/active.
+function hasSuperArmor(f) {
+  return !!f.move?.superArmor && ATTACK_STATES.includes(f.state) &&
+    movePhase(f.move, f.fsm.frame) !== 'recovery';
+}
+
+export class CombatSystem {
+  constructor(world) {
+    this.world = world;
+  }
+
+  canBeHit(def, attackerTeam, hitList) {
+    return def.team !== attackerTeam && def.alive && !def.invincible && !hitList.has(def.id);
+  }
+
+  update() {
+    const fighters = this.world.fighters;
+
+    // Melee hitboxes
+    for (const atk of fighters) {
+      const info = atk.activeAttack;
+      if (!info) continue;
+      const hb = info.hitbox ?? info.move.hitbox; // a move can grow its hitbox (thrust)
+      const hitbox = toWorldBox(atk, hb);
+      const tol = hb.depth ?? FEEL.depthTolerance;
+      for (const def of fighters) {
+        if (def === atk || !this.canBeHit(def, atk.team, info.hitList)) continue;
+        const hurt = toWorldBox(def, def.hurtbox);
+        if (!overlaps(hitbox, hurt, tol)) continue;
+        info.hitList.add(def.id);
+        this.resolve(atk, def, info.move, {
+          kind: 'melee',
+          fromX: atk.x,
+          dir: Math.sign(def.x - atk.x) || atk.facing,
+          contact: contactPoint(hitbox, hurt),
+          nth: info.hitList.size, // 1 = first body the blade meets, 2+ = run through the next
+        });
+      }
+    }
+
+    // Projectiles
+    for (const p of this.world.projectiles) {
+      if (!p.alive) continue;
+      const box = p.box;
+      for (const def of fighters) {
+        if (!p.alive || !this.canBeHit(def, p.team, p.hitList)) continue;
+        const hurt = toWorldBox(def, def.hurtbox);
+        if (!overlaps(box, hurt, p.data.depth ?? FEEL.depthTolerance)) continue;
+        p.hitList.add(def.id);
+        this.resolve(p.owner, def, p.data, {
+          kind: 'magic',
+          fromX: p.x - p.dir * 10,
+          dir: p.dir,
+          contact: contactPoint(box, hurt),
+          projectile: p,
+        });
+        if (!p.data.pierce) p.alive = false;
+      }
+    }
+  }
+
+  // attacker: who is responsible; def: who got touched; move: frame data
+  resolve(attacker, def, move, ctx) {
+    const bus = this.world.events;
+    const dir = ctx.dir;
+    const facingSource = ctx.fromX === def.x || Math.sign(ctx.fromX - def.x) === def.facing;
+    const event = {
+      attacker, defender: def, move, kind: ctx.kind, dir,
+      x: ctx.contact.x, z: def.z, h: ctx.contact.h,
+    };
+    const melee = ctx.kind === 'melee';
+
+    // ---- PARRY: block tapped just in time, facing the attack
+    if (facingSource && def.parryActive) {
+      def.hitstop = FEEL.parryHitstop;
+      if (melee) {
+        attacker.hitstop = FEEL.parryHitstop;
+        attacker.fsm.change('stagger', { frames: attacker.stats.staggerFrames });
+        attacker.vx = -dir * 150;
+      } else if (ctx.projectile) {
+        ctx.projectile.alive = false;
+      }
+      def.stamina = Math.min(def.stats.maxStamina, def.stamina + 10);
+      def.fsm.change(def.controller.isDown('block') ? 'block' : 'idle');
+      bus.emit('parry', event);
+      return;
+    }
+
+    // ---- KICK INTO A GUARD: smashes the guard open and lands as a full hit (launch + bowl)
+    if (facingSource && def.state === 'block' && move.bowl) {
+      def.stamina = 0;
+      def.staminaDelay = def.stats.staminaRegenDelay;
+      bus.emit('guardBreak', event);
+      // fall through to the clean hit below
+    } else if (facingSource && def.state === 'block') {
+      // ---- BLOCK (or guard break)
+      const guardDamage = (move.guardDamage ?? 10) * def.stats.guardEfficiency;
+      const chip = move.damage * (melee ? attacker.stats.meleeMult : attacker.stats.magicMult) *
+        armMult(attacker) * (1 - def.stats.blockReduction);
+      def.health = Math.max(1, def.health - chip); // chip damage can't kill
+
+      if (move.breaksGuard || def.stamina - guardDamage <= 0) {
+        def.stamina = 0;
+        def.staminaDelay = def.stats.staminaRegenDelay;
+        def.fsm.change('guardBreak', { frames: FEEL.guardBreakFrames });
+        def.vx = dir * 120;
+        def.hitstop = Math.min(FEEL.maxHitstop, (move.hitstop ?? 4) + 2);
+        if (melee) attacker.hitstop = def.hitstop;
+        bus.emit('guardBreak', event);
+        return;
+      }
+
+      def.spendStamina(guardDamage);
+      def.blockstun = Math.round((move.hitstun ?? 20) * 0.6);
+      def.vx = dir * (move.knockback?.x ?? 60) * 0.5;
+      def.hitstop = Math.round((move.hitstop ?? 4) * 0.6);
+      if (melee) attacker.hitstop = def.hitstop;
+      bus.emit('block', event);
+      return;
+    }
+
+    // ---- CLEAN HIT
+    const counter = def.state === 'stagger' || def.state === 'guardBreak';
+    const mult = (melee ? attacker.stats.meleeMult : attacker.stats.magicMult) * armMult(attacker);
+    const damage = move.damage * mult * (counter ? FEEL.counterMultiplier : 1);
+    const healthBefore = def.health;
+    def.health = Math.max(0, def.health - damage);
+    def.flash = 6;
+    const armored = hasSuperArmor(def);
+    if (!armored) def.faceToward(ctx.fromX);
+    event.damage = damage;
+    event.counter = counter;
+
+    const kb = move.knockback ?? { x: 0, y: 0 };
+    const lethal = def.health <= 0;
+    let hitstop = Math.min(FEEL.maxHitstop, (move.hitstop ?? 4) + (counter ? 3 : 0));
+    if (lethal) hitstop = FEEL.killHitstop;
+    def.hitstop = hitstop;
+    // a piercing blade already buried in someone keeps driving: later victims only
+    // cost the attacker a short catch, so the thrust stays one continuous motion
+    if (melee) {
+      attacker.hitstop = move.pierce && (ctx.nth ?? 1) > 1
+        ? Math.max(attacker.hitstop, Math.round(hitstop * 0.35))
+        : hitstop;
+    }
+    event.nth = ctx.nth ?? 1;
+
+    // Kicked bodies go bowling into whoever is behind them (see World.bowling()).
+    if (move.bowl) def.bowl = { frames: 36, dir, hit: new Set([def.id]) };
+
+    if (lethal) {
+      // How do they come apart? (only rigged enemies can be dismembered)
+      if (def.stats.art) {
+        event.fatality = chooseFatality({
+          cut: move.cut,
+          damage,
+          overkill: damage - healthBefore,
+          counter,
+          rel: (ctx.contact.h - def.h) / def.stats.body.h,
+        }, this.world.rngFor(def.id, 21));
+      }
+      def.fatality = event.fatality ?? 'none';
+      // a runner skewered from behind crumples where he stood instead of flying off
+      if (move.impale && def.controller?.scared) def.fsm.change('knockdown', { vx: dir * 50, vh: 140 });
+      else def.fsm.change('knockdown', { vx: dir * Math.max(kb.x, 220), vh: Math.max(kb.y, 380) });
+      bus.emit('hit', event);
+      bus.emit('kill', event);
+      return;
+    }
+
+    // Hard blade hits can take an arm clean off.
+    // (not the boss: he doesn't lose an arm, lose his nerve and get executed like fodder —
+    // he's fought to the end)
+    if (def.stats.art && !def.stats.boss) {
+      const limb = chooseMaim({
+        cut: move.cut, damage, counter, maxHealth: def.stats.maxHealth, maimed: def.maimed,
+      }, this.world.rngFor(def.id, 22));
+      if (limb) {
+        def.maimed = { ...def.maimed, [limb]: true };
+        event.limb = limb;
+        bus.emit('maim', event);
+      }
+    }
+
+    // Super armor: takes the damage, keeps swinging.
+    if (armored) {
+      def.hitstop = Math.min(def.hitstop, 4);
+      bus.emit('hit', event);
+      return;
+    }
+    if (def.isDowned) {
+      // hitting a man who's down: he stays down (twitches from the blow), no juggling
+      def.vx = dir * 30;
+      def.hitstop = Math.min(def.hitstop, 6);
+    } else if (move.impale && def.controller?.scared && def.grounded) {
+      // the power thrust stops a fleeing man dead: pinned on the blade, going nowhere
+      def.fsm.change('hitstun', { frames: 48 });
+      def.vx = 0;
+      def.vz = 0;
+    } else if (move.knockdown || !def.grounded) {
+      def.fsm.change('knockdown', { vx: dir * kb.x, vh: kb.y || 250 });
+    } else {
+      def.fsm.change('hitstun', { frames: move.hitstun ?? 20 });
+      def.vx = dir * kb.x;
+    }
+    bus.emit('hit', event);
+  }
+}

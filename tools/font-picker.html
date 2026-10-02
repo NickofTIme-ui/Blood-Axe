@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Font Picker</title>
+<!-- Candidate display fonts for Blood Axe (all Google Fonts), each drawn with the same
+     blood gradient + bevel the YOU DIED screen uses. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Pirata+One&family=Grenze+Gotisch:wght@900&family=Metal+Mania&family=Nosifer&family=Butcherman&family=Cinzel:wght@900&family=New+Rocker&family=Eater&family=Germania+One&family=Bebas+Neue&family=MedievalSharp&display=block">
+<style>
+  body { margin: 0; background: #0b0606; color: #cdb391; font: 13px sans-serif; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 6px 12px; border-bottom: 1px solid #221414; }
+  .n { font: bold 18px sans-serif; color: #e0a030; }
+  canvas { background: #120808; width: 100%; max-width: 620px; height: auto; display: block; }
+</style>
+</head>
+<body>
+<div id="list"></div>
+<script>
+const FONTS = [
+  ['UnifrakturMaguntia', '400'], ['Pirata One', '400'], ['Grenze Gotisch', '900'],
+  ['Metal Mania', '400'], ['Nosifer', '400'], ['Butcherman', '400'], ['Cinzel', '900'],
+  ['New Rocker', '400'], ['Eater', '400'], ['Germania One', '400'], ['Bebas Neue', '400'], ['MedievalSharp', '400'],
+];
+(async () => {
+  await Promise.all(FONTS.map(([f, w]) => document.fonts.load(`${w} 60px '${f}'`)));
+  const list = document.getElementById('list');
+  FONTS.forEach(([f, w], i) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<div class="n">${i + 1}</div><div>${f}</div>`;
+    const c = document.createElement('canvas');
+    c.width = 620; c.height = 92;
+    const x = c.getContext('2d');
+    const size = 64;
+    x.font = `${w} ${size}px '${f}'`;
+    x.textAlign = 'center';
+    const base = 70;
+    const g = x.createLinearGradient(0, base - size * 0.8, 0, base + 6);
+    g.addColorStop(0, '#ff6a50'); g.addColorStop(0.18, '#e0141a'); g.addColorStop(0.55, '#8e0010'); g.addColorStop(1, '#2a0003');
+    x.lineJoin = 'round'; x.strokeStyle = '#0d0000'; x.lineWidth = 4;
+    x.shadowColor = 'rgba(0,0,0,0.9)'; x.shadowBlur = 10; x.shadowOffsetY = 3;
+    x.strokeText('YOU DIED', 310, base);
+    x.shadowColor = 'transparent';
+    x.fillStyle = g;
+    x.fillText('YOU DIED', 310, base);
+    row.appendChild(c);
+    list.appendChild(row);
+  });
+})();
+</script>
+</body>
+</html>

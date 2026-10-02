@@ -1,0 +1,344 @@
+// Stage.js — Runs THE OATH ROAD (data/stage.js): sections, waves, the locked camera
+// bounds, checkpoints, breakable props and their pickups, fire grates and pendulum
+// blades, the boss, and the end. Pure logic on top of the World (no drawing — the
+// views and ArenaScene listen to its events), so the tests can drive it.
+//
+// Events (on world.events):
+//   sectionStart { index, section }     sectionClear { index, section, last }
+//   propHit / propBreak { prop }        pickup { pickup, fighter }
+//   hazardWarn / hazardFire { hazard }  hazardHit { hazard, fighter }
+//   secretFound { prop, count, total }  bossSpawn { boss }  bossRage { boss }
+//   stageWon { stats }
+
+import { STAGE, PICKUPS, PROPS } from '../data/stage.js';
+import { ENEMIES } from '../data/enemies.js';
+import { createEnemy } from '../entities/Enemy.js';
+import { toWorldBox, overlaps } from '../combat/Boxes.js';
+
+const PAD = 30;           // keep everyone this far inside the section's ends
+const WAVE_GAP = 50;      // frames between one wave dying and the next arriving
+const REVIVE_AFTER = 360; // ticks a fallen hero lies there before he rises beside his partner (co-op)
+const ADVANCE_AT = 300;  // px past the next section's start that locks you into it
+
+// Fire grate: idle -> glowing warning -> eruption (frames)
+const FIRE = { period: 210, warn: 110, burst: 160, tick: 14, damage: 9 };
+// Pendulum blade
+const BLADE = { period: 150, length: 320, damage: 20 };
+
+export class Stage {
+  constructor(world, data = STAGE) {
+    this.world = world;
+    this.data = data;
+    this.sections = data.sections;
+    this.index = -1;
+    this.phase = 'idle';
+    this.props = [];
+    this.pickups = [];
+    this.hazards = [];
+    this.secretsTotal = 0;
+    this.stats = { kills: 0, finishers: 0, secrets: 0, deaths: 0, frames: 0 };
+    let id = 1;
+    for (const [si, sec] of this.sections.entries()) {
+      for (const p of sec.props ?? []) {
+        const def = PROPS[p.kind];
+        this.props.push({ id: id++, section: si, ...p, ...def, hp: def.hp, broken: false, hitBy: new Set() });
+        if (p.secret) this.secretsTotal++;
+      }
+      for (const h of sec.hazards ?? []) this.hazards.push({ id: id++, section: si, ...h, t: h.phase ?? 0, cool: new Map() });
+    }
+    world.events.on('kill', (e) => {
+      if (e.defender?.team !== 'enemy') return;
+      this.stats.kills++;
+      if (e.finisher) this.stats.finishers++;
+    });
+  }
+
+  get section() { return this.sections[this.index]; }
+  // The hero things are measured from (spawns, the way on): the first one still standing.
+  get player() { return this.players?.find((p) => p.alive) ?? this.players?.[0]; }
+
+  // players: the hero, or the heroes (co-op), in player order.
+  start(players) {
+    this.players = Array.isArray(players) ? players : [players];
+    this.enterSection(0, true);
+  }
+
+  // ------------------------------------------------------------ sections
+
+  enterSection(i, teleport = false) {
+    const sec = this.sections[i];
+    this.index = i;
+    this.checkpoint = i;
+    this.waveIndex = 0;
+    this.waveDelay = 40;
+    this.phase = 'fight';
+    this.bossSpawned = false;
+    this.boss = null;
+    this.lockBounds(sec.x0, sec.x1);
+    if (teleport) {
+      (this.players ?? []).forEach((p, i) => { p.x = sec.x0 + 140 - i * 46; p.z = 440 + i * 26; });
+    }
+    this.world.events.emit('sectionStart', { index: i, section: sec });
+  }
+
+  lockBounds(x0, x1) {
+    const b = this.world.bounds;
+    b.minX = x0 + PAD;
+    b.maxX = x1 - PAD;
+  }
+
+  // The fight in the current section is over: open the way on (or win).
+  clearSection() {
+    const last = this.index === this.sections.length - 1;
+    this.phase = last ? 'won' : 'clear';
+    this.cleared = this.index;
+    this.world.events.emit('sectionClear', { index: this.index, section: this.section, last });
+    if (last) {
+      this.world.events.emit('stageWon', { stats: { ...this.stats, secretsTotal: this.secretsTotal } });
+      return;
+    }
+    const next = this.sections[this.index + 1];
+    this.lockBounds(this.section.x0, next.x1);
+  }
+
+  // Died: back to the last checkpoint, healed, with the section's fight reset.
+  respawn() {
+    this.stats.deaths++;
+    for (const f of this.world.fighters) if (f.team === 'enemy') f.removeMe = true;
+    for (const p of this.players) this.restore(p, 1);
+    const won = this.cleared === this.checkpoint; // died (a trap) after the fight here was already won
+    this.enterSection(this.checkpoint, true);
+    if (won) {
+      // ...then it stays won: no fighting the same waves twice
+      this.waveIndex = (this.section.waves ?? []).length;
+      this.clearSection();
+    }
+  }
+
+  // Put a hero back on his feet with this share of his health.
+  restore(p, share) {
+    p.health = Math.max(1, p.stats.maxHealth * share);
+    p.mana = p.stats.maxMana;
+    p.stamina = p.stats.maxStamina;
+    p.dead = false;
+    p.downFor = 0;
+    p.vx = p.vz = p.vh = 0;
+    p.h = 0;
+    p.fsm.change('idle');
+  }
+
+  // Co-op: a fallen hero isn't out while his partner still stands — after a while he
+  // drags himself up at his partner's side on half health. Both down = the run is lost
+  // (back to the checkpoint, together).
+  updateDowned() {
+    if (this.players.length < 2) return;
+    const up = this.players.filter((p) => p.alive);
+    for (const p of this.players) {
+      if (p.alive || !up.length || p.state !== 'dead') { p.downFor = 0; continue; }
+      p.downFor = (p.downFor ?? 0) + 1;
+      if (p.downFor < REVIVE_AFTER) continue;
+      const mate = up[0];
+      const b = this.world.bounds;
+      this.restore(p, 0.5);
+      p.x = Math.max(b.minX, Math.min(b.maxX, mate.x - mate.facing * 50));
+      p.z = mate.z;
+      this.world.events.emit('revive', { fighter: p, by: mate });
+    }
+  }
+
+  livingFoes() {
+    return this.world.fighters.filter((f) => f.team === 'enemy' && f.alive);
+  }
+
+  spawnWave(roster) {
+    const sec = this.section;
+    const p = this.player;
+    roster.forEach((type, k) => {
+      // from just off-screen, alternating sides (inside the section)
+      const side = k % 2 === 0 ? 1 : -1;
+      let x = p.x + side * (500 + k * 40);
+      if (x < sec.x0 + PAD + 10 || x > sec.x1 - PAD - 10) x = p.x - side * (500 + k * 40);
+      x = Math.max(sec.x0 + PAD + 10, Math.min(sec.x1 - PAD - 10, x));
+      const z = 350 + ((k * 71) % 150);
+      createEnemy(this.world, type, x, z);
+    });
+  }
+
+  spawnBoss() {
+    const sec = this.section;
+    const def = sec.boss;
+    const base = ENEMIES[def.type];
+    const x = Math.min(sec.x1 - PAD - 40, this.player.x + 420);
+    const boss = createEnemy(this.world, def.type, x, 430);
+    // a boss is the same fighter, harder: more health, harder hits, never flinches from light blows
+    boss.stats = {
+      ...base, name: def.name, boss: true,
+      maxHealth: Math.round(base.maxHealth * def.health),
+      meleeMult: (base.meleeMult ?? 1) * def.damage,
+      knockdownFrames: Math.round((base.knockdownFrames ?? 40) * 0.6),
+    };
+    boss.health = boss.stats.maxHealth;
+    this.boss = boss;
+    this.bossSpawned = true;
+    this.world.events.emit('bossSpawn', { boss });
+  }
+
+  // ------------------------------------------------------------ per frame
+
+  update() {
+    if (!this.player || this.phase === 'idle') return;
+    this.stats.frames++;
+    const p = this.player;
+    this.updateHazards();
+    this.updateProps();
+    this.updatePickups();
+    this.updateDowned();
+
+    // boss rage: at half health he calls his dogs in
+    const b = this.boss;
+    if (b && b.alive && !b.raged && b.health < b.stats.maxHealth * 0.5) {
+      b.raged = true;
+      this.spawnWave(this.section.boss.adds);
+      this.world.events.emit('bossRage', { boss: b });
+    }
+
+    if (this.phase === 'fight') {
+      const sec = this.section;
+      if (this.livingFoes().length) return;
+      if (this.waveDelay > 0) { this.waveDelay--; return; }
+      if (this.waveIndex < sec.waves.length) {
+        this.spawnWave(sec.waves[this.waveIndex++]);
+        this.waveDelay = WAVE_GAP;
+        return;
+      }
+      if (sec.boss && !this.bossSpawned) { this.spawnBoss(); return; }
+      this.clearSection();
+    } else if (this.phase === 'clear') {
+      const next = this.sections[this.index + 1];
+      if (this.players.some((q) => q.alive && q.x > next.x0 + ADVANCE_AT)) this.enterSection(this.index + 1);
+    }
+  }
+
+  // ------------------------------------------------------------ props & pickups
+
+  updateProps() {
+    for (const f of this.world.fighters) {
+      const info = f.activeAttack;
+      if (f.team !== 'player' || !info) continue;
+      const hb = toWorldBox(f, info.hitbox ?? info.move.hitbox);
+      for (const pr of this.props) {
+        if (pr.broken || pr.hitBy.has(info)) continue;
+        const box = { left: pr.x - pr.w / 2, right: pr.x + pr.w / 2, bottom: 0, top: pr.h, z: pr.z };
+        if (!overlaps(hb, box, pr.kind === 'wall' ? 60 : 30)) continue;
+        pr.hitBy.add(info);
+        pr.hp -= info.move.breaksGuard || info.move.bowl ? 2 : 1; // heavies and kicks smash
+        const dir = Math.sign(pr.x - f.x) || f.facing;
+        if (pr.hp > 0) { this.world.events.emit('propHit', { prop: pr, dir }); continue; }
+        pr.broken = true;
+        this.world.events.emit('propBreak', { prop: pr, dir });
+        if (pr.drop) {
+          // a wall's shrine sits in the alcove behind it; everything else rolls out in front
+          const z = pr.kind === 'wall' ? pr.z + 6 : Math.min(515, pr.z + 14);
+          this.pickups.push({ kind: pr.drop, x: pr.x, z, age: 0, taken: false, secret: !!pr.secret });
+        }
+      }
+    }
+  }
+
+  updatePickups() {
+    for (const pk of this.pickups) {
+      pk.age++;
+      if (pk.taken || pk.age < 20) continue;
+      const p = this.players.find((q) => q.alive && Math.abs(q.x - pk.x) <= 30 && Math.abs(q.z - pk.z) <= 24);
+      if (!p) continue;
+      pk.taken = true;
+      const def = PICKUPS[pk.kind];
+      if (def.heal) p.health = Math.min(p.stats.maxHealth, p.health + p.stats.maxHealth * def.heal);
+      if (def.mana) p.mana = p.stats.maxMana;
+      if (pk.secret) {
+        this.stats.secrets++;
+        this.world.events.emit('secretFound', { pickup: pk, count: this.stats.secrets, total: this.secretsTotal });
+      }
+      this.world.events.emit('pickup', { pickup: pk, def, fighter: p });
+    }
+    this.pickups = this.pickups.filter((pk) => !pk.taken);
+  }
+
+  // ------------------------------------------------------------ hazards
+
+  updateHazards() {
+    for (const hz of this.hazards) {
+      // only the hazards near the action run (the rest wait, so their timing is fresh)
+      if (Math.abs(hz.section - this.index) > 1) continue;
+      hz.t++;
+      for (const [id, c] of hz.cool) { if (c <= 1) hz.cool.delete(id); else hz.cool.set(id, c - 1); }
+      if (hz.type === 'fire') this.updateFire(hz);
+      else this.updateBlade(hz);
+    }
+  }
+
+  // phase of a fire grate: 'idle' | 'warn' | 'burst'
+  firePhase(hz) {
+    const t = hz.t % FIRE.period;
+    return t < FIRE.warn ? 'idle' : t < FIRE.burst ? 'warn' : 'burst';
+  }
+
+  // The fire grates erupting right now, near the action (for effects/Burn.js).
+  activeFires() {
+    return this.hazards.filter((hz) => hz.type === 'fire' && Math.abs(hz.section - this.index) <= 1 && this.firePhase(hz) === 'burst');
+  }
+
+  updateFire(hz) {
+    const t = hz.t % FIRE.period;
+    if (t === FIRE.warn) this.world.events.emit('hazardWarn', { hazard: hz });
+    if (t === FIRE.burst) this.world.events.emit('hazardFire', { hazard: hz });
+    if (this.firePhase(hz) !== 'burst') return;
+    for (const f of this.world.fighters) {
+      if (Math.abs(f.x - hz.x) > hz.w / 2 || Math.abs(f.z - hz.z) > hz.d / 2 || f.h > 40) continue;
+      this.hurt(hz, f, FIRE.damage, Math.sign(f.x - hz.x) || 1, 'fire');
+    }
+  }
+
+  // The blade's angle (radians) and tip position.
+  bladeState(hz) {
+    const max = Math.asin(Math.min(0.95, hz.swing / BLADE.length));
+    const a = max * Math.sin((hz.t / BLADE.period) * Math.PI * 2);
+    const speed = Math.cos((hz.t / BLADE.period) * Math.PI * 2); // + = swinging right
+    return { a, tipX: hz.x + Math.sin(a) * BLADE.length, speed };
+  }
+
+  updateBlade(hz) {
+    const s = this.bladeState(hz);
+    if (Math.abs(s.speed) < 0.55) return; // only the fast bottom of the swing cuts
+    for (const f of this.world.fighters) {
+      if (Math.abs(f.x - s.tipX) > 30 || Math.abs(f.z - hz.z) > 20 || f.h > 70) continue;
+      this.hurt(hz, f, BLADE.damage, Math.sign(s.speed), 'blade');
+    }
+  }
+
+  // A hazard hurting anyone (players and enemies alike).
+  hurt(hz, f, dmg, dir, kind) {
+    if (!f.alive || f.invincible || f.state === 'executed' || f.state === 'execute' || hz.cool.has(f.id)) return;
+    if (kind === 'fire' && f.state === 'knockdown' && f.lyingSince === null) return; // already thrown clear
+    hz.cool.set(f.id, kind === 'fire' ? FIRE.tick * 3 : 50);
+    f.health = Math.max(0, f.health - dmg);
+    f.flash = 6;
+    const lethal = f.health <= 0;
+    // an enemy the fire kills doesn't get thrown clear: he burns where he stands, then
+    // drops (the 'burning' state; effects/Burn.js chars the body)
+    if (lethal && kind === 'fire' && f.team === 'enemy') f.fsm.change('burning', { dir });
+    else {
+      f.fsm.change('knockdown', kind === 'fire'
+        ? { vx: dir * 160, vh: 260 }
+        : { vx: dir * 420, vh: 320 });
+    }
+    const e = {
+      attacker: null, defender: f, dir, kind: 'hazard', hazard: kind,
+      move: { cut: kind === 'fire' ? 'fire' : 'slash', damage: dmg, hitstop: 6 },
+      x: f.x, z: f.z, h: f.h + f.stats.body.h * 0.5, damage: dmg, fatality: 'none',
+    };
+    this.world.events.emit('hazardHit', { hazard: hz, fighter: f, kind });
+    this.world.events.emit('hit', e);
+    if (lethal) { f.fatality = 'none'; this.world.events.emit('kill', e); }
+  }
+}

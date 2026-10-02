@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blood Axe: Oath of Vengeance</title>
+  <!-- Fonts (src/view/fonts.js). Offline, the game falls back to Georgia. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Cormorant+Garamond:wght@600;700&display=block">
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+    #game { width: 100%; height: 100%; }
+    #error { color: #e0c0a0; font: 16px sans-serif; padding: 40px; display: none; }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+  <div id="error"></div>
+
+  <!-- Phaser 3: uses the local copy in lib/ (downloaded by the start script);
+       falls back to the online copy if it's missing. -->
+  <script src="lib/phaser.min.js"></script>
+  <script>
+    if (!window.Phaser) {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"><\/script>');
+    }
+  </script>
+  <script>
+    if (!window.Phaser) {
+      var e = document.getElementById('error');
+      e.style.display = 'block';
+      e.textContent = 'Could not load Phaser. Connect to the internet once and restart with start-game.bat.';
+    }
+  </script>
+
+  <!-- The game itself (ES modules) -->
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

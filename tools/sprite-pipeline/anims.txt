@@ -1,0 +1,12 @@
+idle 6
+walk 8
+light1 6 330
+light2 6 330
+light3 6 330 air
+heavy 7 285
+jump 4 430
+air 4 480 air
+block 3 500
+dodge 6 5
+hurt 5 330
+cast 6 0

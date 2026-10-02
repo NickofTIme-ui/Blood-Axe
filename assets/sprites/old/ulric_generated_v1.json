@@ -1,0 +1,165 @@
+{
+ "name": "Ulric Varr",
+ "image": "assets/sprites/ulric.png",
+ "frameWidth": 112,
+ "frameHeight": 112,
+ "anchorX": 56,
+ "anchorY": 106,
+ "scale": 2,
+ "frameCount": 51,
+ "anims": {
+  "idle": {
+   "frames": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "fps": 5,
+   "loop": true
+  },
+  "walk": {
+   "frames": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "fps": 10,
+   "loop": true
+  },
+  "light1": {
+   "phases": {
+    "startup": [
+     10,
+     11
+    ],
+    "active": [
+     12
+    ],
+    "recovery": [
+     13,
+     14
+    ]
+   }
+  },
+  "light2": {
+   "phases": {
+    "startup": [
+     15,
+     16
+    ],
+    "active": [
+     17
+    ],
+    "recovery": [
+     18,
+     19
+    ]
+   }
+  },
+  "light3": {
+   "phases": {
+    "startup": [
+     20,
+     21
+    ],
+    "active": [
+     22
+    ],
+    "recovery": [
+     23,
+     24
+    ]
+   }
+  },
+  "heavy": {
+   "phases": {
+    "startup": [
+     25,
+     26,
+     27
+    ],
+    "active": [
+     28
+    ],
+    "recovery": [
+     29,
+     30,
+     31
+    ]
+   }
+  },
+  "airAttack": {
+   "phases": {
+    "startup": [
+     32
+    ],
+    "active": [
+     33
+    ]
+   }
+  },
+  "jump": {
+   "rise": [
+    34
+   ],
+   "fall": [
+    35
+   ]
+  },
+  "block": {
+   "frames": [
+    36
+   ],
+   "fps": 1,
+   "loop": true
+  },
+  "dodge": {
+   "frames": [
+    37,
+    38,
+    39,
+    40
+   ],
+   "fps": 14,
+   "loop": true
+  },
+  "cast": {
+   "frames": [
+    41,
+    42,
+    43,
+    44
+   ],
+   "fps": 1,
+   "spread": true
+  },
+  "hitstun": {
+   "frames": [
+    45,
+    46
+   ],
+   "fps": 8,
+   "loop": false
+  },
+  "knockdown": {
+   "air": [
+    47
+   ],
+   "lying": [
+    48
+   ]
+  },
+  "getup": {
+   "frames": [
+    49,
+    50
+   ],
+   "fps": 1,
+   "spread": true
+  }
+ }
+}

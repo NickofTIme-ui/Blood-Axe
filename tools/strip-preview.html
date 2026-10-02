@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Strip Preview</title>
+<style>
+  body { background: #222; color: #ddd; font: 14px sans-serif; margin: 12px; }
+  canvas { background: #3a3a3a; image-rendering: pixelated; display: block; margin: 8px 0; }
+  .row { display: flex; gap: 16px; align-items: flex-end; }
+</style>
+</head>
+<body>
+<!-- Cuts a strip exactly like the game does and plays it.
+     ?file=assets/enemies/strips/butcher_walk.png&frames=8&fps=10&target=120&res=2&order=0,1,2 -->
+<div id="info"></div>
+<canvas id="sheet"></canvas>
+<div class="row"><canvas id="anim"></canvas><canvas id="onion"></canvas></div>
+<script type="module">
+import { importCharacterStrip } from '../src/view/stripImporter.js';
+const q = new URLSearchParams(location.search);
+const file = q.get('file');
+const frames = +(q.get('frames') ?? 8);
+const fps = +(q.get('fps') ?? 10);
+const res = +(q.get('res') ?? 2);
+const spec = { frames, target: +(q.get('target') ?? 120), res };
+if (q.get('ref') != null) spec.ref = +q.get('ref');
+if (q.get('spec')) Object.assign(spec, JSON.parse(q.get('spec'))); // e.g. {"own":[[x0,y0,x1,y1,fig]]}
+const img = new Image();
+img.onload = () => {
+  const out = importCharacterStrip(img, spec, null);
+  const order = q.get('order') ? q.get('order').split(',').map(Number) : [...Array(out.count).keys()];
+  const sheet = document.getElementById('sheet');
+  sheet.width = out.canvas.width; sheet.height = out.canvas.height;
+  const sctx = sheet.getContext('2d');
+  sctx.drawImage(out.canvas, 0, 0);
+  sctx.strokeStyle = '#0f0';
+  for (let i = 0; i < out.count; i++) {
+    sctx.strokeRect(i * out.fw + 0.5, 0.5, out.fw - 1, out.fh - 1);
+    sctx.beginPath(); sctx.moveTo(i * out.fw + out.fw / 2, 0); sctx.lineTo(i * out.fw + out.fw / 2, out.fh); sctx.stroke();
+    sctx.fillStyle = '#ff0'; sctx.fillText(String(i), i * out.fw + 4, 14);
+  }
+  sctx.beginPath(); sctx.moveTo(0, 230 * res); sctx.lineTo(sheet.width, 230 * res); sctx.strokeStyle = '#f00'; sctx.stroke();
+  document.getElementById('info').textContent = `${file}  ${out.count} frames  ${out.fw}x${out.fh}  scale ${out.scale.toFixed(3)}`;
+  const anim = document.getElementById('anim');
+  anim.width = out.fw; anim.height = out.fh;
+  const actx = anim.getContext('2d');
+  const onion = document.getElementById('onion');
+  onion.width = out.fw; onion.height = out.fh;
+  const octx = onion.getContext('2d');
+  octx.globalAlpha = 0.25;
+  for (const i of order) octx.drawImage(out.canvas, i * out.fw, 0, out.fw, out.fh, 0, 0, out.fw, out.fh);
+  let k = 0;
+  setInterval(() => {
+    actx.clearRect(0, 0, anim.width, anim.height);
+    const i = order[k++ % order.length];
+    actx.drawImage(out.canvas, i * out.fw, 0, out.fw, out.fh, 0, 0, out.fw, out.fh);
+    actx.fillStyle = '#ff0'; actx.fillText(String(i), 4, 14);
+  }, 1000 / fps);
+};
+img.src = '../' + file;
+</script>
+</body>
+</html>

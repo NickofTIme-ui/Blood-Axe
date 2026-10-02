@@ -1,0 +1,10 @@
+{
+  "name": "blood-axe",
+  "version": "0.1.0",
+  "description": "Blood Axe: Oath of Vengeance - a Golden Axe-inspired beat 'em up (Phaser 3)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/logic-test.js"
+  }
+}

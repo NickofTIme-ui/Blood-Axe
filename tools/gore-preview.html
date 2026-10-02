@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Gore Preview</title>
+<style>
+  body { background: #2a2420; color: #ccc; font: 12px sans-serif; margin: 10px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 8px; }
+  figure { margin: 0; text-align: center; }
+  canvas { image-rendering: auto; background: #3a322c; }
+</style>
+</head>
+<body>
+<!-- Every painted gore piece from src/effects/goreArt.js, shown at 2x (?zoom=N). -->
+<div id="out"></div>
+<script type="module">
+import { paintWound, paintBoneStub, paintBand, tube } from '../src/effects/goreArt.js';
+const zoom = +(new URLSearchParams(location.search).get('zoom') ?? 2);
+const out = document.getElementById('out');
+const row = (title) => { const h = document.createElement('div'); h.textContent = title; out.appendChild(h); const r = document.createElement('div'); r.className = 'row'; out.appendChild(r); return r; };
+const show = (r, painted, label) => {
+  const c = document.createElement('canvas');
+  c.width = painted.canvas.width * zoom; c.height = painted.canvas.height * zoom;
+  const ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = true; ctx.drawImage(painted.canvas, 0, 0, c.width, c.height);
+  const f = document.createElement('figure'); f.appendChild(c); const cap = document.createElement('figcaption'); cap.textContent = label; f.appendChild(cap); r.appendChild(f);
+};
+for (const kind of ['clean', 'heavy', 'crush', 'char']) {
+  const r = row('wounds: ' + kind);
+  for (const [part, w] of [['upperArm', 14], ['forearm', 11], ['thigh', 18], ['lowerLeg', 13], ['neck', 14], ['torso', 30]]) {
+    show(r, paintWound({ widthU: w, part, kind, seed: 1 + part.length }), part);
+  }
+  show(r, paintBoneStub({ lenU: 6, widthU: 4, kind, seed: 3 }), 'bone');
+}
+const b = row('cut bands');
+show(b, paintBand({ lenU: 34, thickU: 7, kind: 'clean', seed: 2 }), 'waist clean');
+show(b, paintBand({ lenU: 34, thickU: 7, kind: 'crush', seed: 5 }), 'waist crush');
+</script>
+</body>
+</html>

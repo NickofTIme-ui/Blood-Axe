@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Strip Check</title>
+<style>
+  body { background: #222; color: #ccc; font: 12px sans-serif; margin: 8px; }
+  .row { display: flex; align-items: flex-end; gap: 2px; margin-bottom: 4px; }
+  .lab { width: 120px; }
+  canvas { background: #3a3a3a; }
+</style>
+</head>
+<body>
+<!-- Every enemy strip in data/enemyStrips.js, cut exactly as the game cuts them.
+     ?id=butcher shows one enemy. Missing strips are listed as missing. -->
+<div id="out"></div>
+<script type="module">
+const bust = `?t=${Date.now()}`; // always the latest code, never a cached copy
+const { importCharacterStrip } = await import('../src/view/stripImporter.js' + bust);
+const { ENEMY_STRIPS } = await import('../src/data/enemyStrips.js' + bust);
+const { ENEMIES } = await import('../src/data/enemies.js' + bust);
+const only = new URLSearchParams(location.search).get('id');
+const out = document.getElementById('out');
+const load = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
+for (const [id, strips] of Object.entries(ENEMY_STRIPS)) {
+  if (only && only !== id) continue;
+  const target = Math.round(ENEMIES[id].body.h * 1.07);
+  for (const [name, s] of Object.entries(strips)) {
+    const row = document.createElement('div'); row.className = 'row';
+    const lab = document.createElement('div'); lab.className = 'lab'; lab.textContent = `${id} ${name}`; row.appendChild(lab);
+    out.appendChild(row);
+    const img = await load('../' + s.file);
+    if (!img) { lab.textContent += ' (missing)'; continue; }
+    const r = importCharacterStrip(img, { target, ...s, res: 1 }, null);
+    for (let i = 0; i < r.count; i++) {
+      const c = document.createElement('canvas'); c.width = r.fw * 0.5; c.height = r.fh * 0.5;
+      c.getContext('2d').drawImage(r.canvas, i * r.fw, 0, r.fw, r.fh, 0, 0, c.width, c.height);
+      row.appendChild(c);
+    }
+  }
+}
+</script>
+</body>
+</html>
