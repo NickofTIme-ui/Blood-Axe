@@ -317,10 +317,28 @@ export class SpriteEnemyView {
     }
     if (st === 'getup') alpha = fr % 4 < 2 ? 0.7 : 1;
 
-    const face = P.visFacing; // flips back and forth during spins
+    let face = P.visFacing; // flips back and forth during spins
+    // a mine is stuck on him and he's just understood (combat/Mine.js): frozen, each man
+    // taking it his own way
+    let tall = 1;
+    const doom = f.doom && f.awe > 0 && f.alive ? f.doom : null;
+    if (doom) {
+      const t = (this.doomAge = (this.doomAge ?? 0) + dt);
+      this.setFrameRef((doom.kind === 1 ? A.idle : A.hit).frames[0]);
+      if (doom.kind === 0) {        // stiff as a board, eyes on his chest, rattling
+        tall = 1.07; dx = (Math.random() - 0.5) * 3; angle = 0;
+      } else if (doom.kind === 1) { // looks left, looks right: nobody's coming
+        if (Math.floor(t / 7) % 2) face = -face;
+        dy = 0; angle = 0;
+      } else if (doom.kind === 2) { // hops on the spot trying to shake it off
+        dy = -Math.abs(Math.sin(t * 0.45)) * 12; angle = Math.sin(t * 0.9) * 10;
+      } else {                      // leans further and further away from his own chest
+        angle = -Math.min(22, t * 0.9); dx = (Math.random() - 0.5) * 1.5; tall = 0.96;
+      }
+    } else this.doomAge = 0;
     const k = depthScale(f.z) / this.res;
     s.setPosition(f.x + dx * f.facing, f.z - f.h + dy).setDepth(f.z);
-    s.setScale(k * face * (1 - breathe * 0.006), k * (1 + breathe * 0.014));
+    s.setScale(k * face * (1 - breathe * 0.006), k * (1 + breathe * 0.014) * tall);
     s.angle = angle * face;
     s.setAlpha(alpha);
 

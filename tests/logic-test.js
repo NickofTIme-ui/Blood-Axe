@@ -1186,16 +1186,17 @@ test('rogue: a mine out of a roll; rolling through a man sticks it on him and it
   const t = rogueSetup({ script: { 1: ['dodge'], 4: ['magic'] }, hold: { right: true }, foes: [[650]] });
   const hp = t.es[0].health;
   let stuck = null; let rolling = false;
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < 95; i++) {
     t.world.tick();
     const m = t.world.mines.list.find((q) => q.stuck);
     if (m && !stuck) { stuck = m; rolling = t.p.state === 'dodge'; }
   }
   assert(stuck && stuck.stuck === t.es[0], 'stuck on the man she rolled through');
   assert(rolling, 'she kept rolling');
+  assert(t.seen('mineBlast').length === 1, 'it went off');
   assert(t.seen('mineBlast').length === 1 && t.es[0].health < hp, `it went off on him (${t.es[0].health}/${hp})`);
   const boss = rogueSetup({ script: { 1: ['dodge'], 4: ['magic'] }, hold: { right: true }, foes: [[650, 420, 'warlord']] });
-  boss.run(70);
+  boss.run(95);
   assert(boss.es[0].alive, 'a boss lives through it');
   const n = rogueSetup({ script: { 1: ['dodge'], 4: ['magic'] }, hold: { right: true }, foes: [] });
   n.run(12);

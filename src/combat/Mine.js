@@ -49,6 +49,8 @@ export class Mines {
   stick(owner, victim, cfg) {
     const mine = this.drop(owner, victim.x, victim.z, cfg, { fastArm: cfg.stickFuse });
     mine.stuck = victim;
+    // how he'll take it when he realises (view/SpriteEnemyView.js, effects/RogueFX.js)
+    victim.doom = { kind: Math.floor(this.world.rngFor(victim.id, 24)() * 4) };
     return mine;
   }
 
@@ -65,10 +67,12 @@ export class Mines {
       m.t++;
       if (m.stuck) {
         const v = m.stuck;
-        if (!v.alive || v.removeMe) m.stuck = null; // he died first: it drops where he fell
+        if (!v.alive || v.removeMe) { m.stuck = null; v.doom = null; } // he died first: it drops where he fell
         else {
           m.x = v.x; m.z = v.z;
-          if (m.t >= m.arm) this.blast(m);
+          // the last moments: he stops dead, looking at it (frozen like a hero in awe)
+          if (m.arm - m.t <= m.cfg.dread && !v.stats.boss) v.awe = Math.max(v.awe || 0, 2);
+          if (m.t >= m.arm) { this.blast(m); v.doom = null; v.awe = 0; }
           continue;
         }
       }
