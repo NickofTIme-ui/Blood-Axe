@@ -12,6 +12,7 @@ import { SETTINGS } from '../config/settings.js';
 import { movePhase, totalFrames, inWindow } from '../combat/MoveRunner.js';
 import { FINISH, FINISHERS, CHAIN, IMPALE, impalePin, impalePierce, planFinisher, chainTimes } from '../combat/Finisher.js';
 import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher } from '../combat/Mage.js';
+import { rogueStates, isRogueFinisher, rogueFinisherStart, runRogueFinisher, vaultTarget } from '../combat/Rogue.js';
 
 const FEEL = SETTINGS.feel;
 
@@ -140,7 +141,10 @@ export function tryActions(f, allowed = null) {
     return true;
   }
   if (ok('jump') && canJump(f) && c.consume('jump', FEEL.jumpBufferFrames)) {
-    startJump(f);
+    // the Rogue running at a teammate vaults off him instead (combat/Rogue.js)
+    const ally = f.stats.kit?.vault ? vaultTarget(f) : null;
+    if (ally) f.fsm.change('vault', { ally });
+    else startJump(f);
     return true;
   }
   return false;
@@ -384,6 +388,11 @@ export const FIGHTER_STATES = {
         f.airJumpsLeft--;
         return startJump(f, true);
       }
+      // a hero kit's air moves (the Rogue: magic = shuriken fan, heavy = falling viper)
+      const am = s.states?.airMagic;
+      if (am && !f.fanUsed && !(f.cool[am] > 0) && c.consume('magic')) return f.fsm.change(am);
+      const ah = s.states?.airHeavy;
+      if (ah && f.h >= (s.kit?.dive?.minHeight ?? 0) && c.consume('heavy')) return f.fsm.change(ah);
       if (!f.airAttackUsed && s.moves.air && c.consume('attack')) f.fsm.change('airAttack');
     },
   },
@@ -410,6 +419,7 @@ export const FIGHTER_STATES = {
   light1: makeAttackState('light1'),
   light2: makeAttackState('light2'),
   light3: makeAttackState('light3'),
+  light4: makeAttackState('light4'), // (the Rogue's fourth hit)
   heavy: makeAttackState('heavy'),
   kick: makeAttackState('kick'),
   special1: makeAttackState('special1'),
@@ -496,6 +506,8 @@ export const FIGHTER_STATES = {
         ex.total = ex.times.total;
       } else if (isMageFinisher(ex.kind)) {
         mageFinisherStart(f, ex); // (combat/Mage.js)
+      } else if (isRogueFinisher(ex.kind)) {
+        rogueFinisherStart(f, ex); // (combat/Rogue.js)
       } else {
         ex.total = FINISHERS[ex.kind === 'pending' ? 'throat' : ex.kind].total;
         f.facing = ex.targets[0].facing; // right behind him, looking the way he's running
@@ -512,6 +524,7 @@ export const FIGHTER_STATES = {
       f.vx = 0; f.vz = 0;
       if (ex.kind === 'chain') return runChain(f, ex, frame);
       if (ex.mage) return runMageFinisher(f, ex, frame);
+      if (ex.rogue) return runRogueFinisher(f, ex, frame);
 
       // tapped or held? (decided while he closes in)
       if (ex.kind === 'pending') {
@@ -587,6 +600,7 @@ export const FIGHTER_STATES = {
       f.execRelease = null;
       f.execCut = null;
       f.execFlinch = false;
+      f.execStopped = false;
       f.ruptureCrush = 0;
       f.activeAttack = null;
     },
@@ -765,3 +779,5 @@ export const FIGHTER_STATES = {
 
 // The Mage's own states (combat/Mage.js), handed the helpers they share with these.
 Object.assign(FIGHTER_STATES, mageStates({ tryActions, stopMoving, friction, faceInput }));
+// ...and the Rogue's (combat/Rogue.js)
+Object.assign(FIGHTER_STATES, rogueStates({ tryActions, stopMoving, friction, faceInput, makeAttackState }));

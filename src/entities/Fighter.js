@@ -108,6 +108,8 @@ export class Fighter {
     this.guarding = false;
     for (const k in this.cool) if (this.cool[k] > 0) this.cool[k]--;
     if (this.shock > 0 && this.shock < 999) this.shock--;
+    if (this.exposed > 0 && --this.exposed === 0) this.exposeCool = this.exposeCoolFrames ?? 0; // (the Rogue's EXPOSED)
+    else if (this.exposeCool > 0) this.exposeCool--;
     this.fsm.update();
     this.justLanded = false;
     this.integrate();
@@ -135,6 +137,7 @@ export class Fighter {
     this.z = Math.max(b.minZ, Math.min(b.maxZ, this.z));
 
     if (this.grounded) {
+      this.fanUsed = false; // (one shuriken fan per time in the air)
       this.framesSinceGrounded = 0;
       this.jumpedSinceGrounded = false;
       this.airJumpsLeft = this.stats.airJumps ?? 0;

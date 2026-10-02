@@ -11,6 +11,9 @@ export class Projectile {
     this.h = data.y ?? 40;     // height above ground
     this.dir = dir;
     this.vx = dir * data.speed;
+    this.vz = 0;                // (thrown at an angle: World.spawnProjectile sets these)
+    this.vh = 0;
+    this.grounded = false;
     this.life = data.lifetime;
     this.hitList = new Set();
     this.alive = true;
@@ -23,6 +26,9 @@ export class Projectile {
 
   update(bounds) {
     this.x += this.vx / 60;
+    this.z += this.vz / 60;
+    this.h += this.vh / 60;
+    if (this.vh < 0 && this.h <= 0) { this.h = 0; this.alive = false; this.grounded = true; return; } // stuck in the floor
     this.life--;
     if (this.life <= 0 || this.x < bounds.minX - 100 || this.x > bounds.maxX + 100) this.alive = false;
   }

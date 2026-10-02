@@ -113,6 +113,10 @@ export function planFinisher(p, fighters, button) {
   if (p.stats.archetype === 'mage') {
     return { kind: { attack: 'storm', heavy: 'rupture', kick: 'embers' }[button] ?? 'storm', targets: [first, ...others] };
   }
+  // the Rogue (combat/Rogue.js): attack = PHANTOM REQUIEM, heavy = BLACK LOTUS, kick = SCARLET SKY
+  if (p.stats.archetype === 'rogue') {
+    return { kind: { attack: 'phantom', heavy: 'lotus', kick: 'scarlet' }[button] ?? 'phantom', targets: [first, ...others] };
+  }
   // kick behind a lone runner: the same swordplay for one — a single passing cut
   if (others.length || button === 'kick') return { kind: 'chain', targets: [first, ...others] };
   return { kind: button === 'heavy' ? 'halve' : 'pending', targets: [first] };

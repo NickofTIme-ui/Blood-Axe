@@ -323,89 +323,185 @@ export const CHARACTERS = {
   },
 
   // =========================================================== ROGUE
+  // The fastest hero: four-hit dagger combo, Viper Strike lunge, the best dodge (with a
+  // perfect-dodge SHADOW WINDOW), EXPOSED (her precision hits open an enemy up to the
+  // whole team), WIDOW MINES, ALLY VAULT off a teammate, and from the air the SHURIKEN
+  // FAN / DEATH FROM ABOVE and the FALLING VIPER dive. Logic: combat/Rogue.js and
+  // combat/Mine.js; tuning: `kit` below.
   rogue: {
     id: 'rogue',
     name: 'Rogue',
-    description: 'Fast and slippery. Double jump, long dodge i-frames, cheap stamina.',
-    body: { w: 38, h: 90 },
-    look: { color: 0x3d3d3d, accent: 0xb0b8c0, skin: 0xc99a74 },
+    className: 'Rogue',
+    description: 'The fastest killer alive. Slips every blow, mines the field, vaults off allies and rains steel from above. Light armour.',
+    archetype: 'rogue',
+    body: { w: 36, h: 92 },
+    look: { color: 0x4a2a5e, accent: 0xb0b8c0, skin: 0xd2a07a },
+    // the buttons her kit replaces (fighterStates.js stateFor):
+    //   heavy = VIPER STRIKE, kick = crescent kick / knife throw at range / sweep (down),
+    //   magic = WIDOW MINE (dropped on the move), in the air: magic = SHURIKEN FAN,
+    //   heavy = FALLING VIPER; jump at a teammate = ALLY VAULT
+    states: { heavy: 'viper', kick: 'rkick', cast: 'mine', airMagic: 'fan', airHeavy: 'dive' },
 
-    maxHealth: 115, maxStamina: 110, maxMana: 60,
-    staminaRegen: 40, staminaRegenDelay: 30, manaRegen: 3,
-    walkSpeed: 215, depthSpeed: 150,
-    jumpStrength: 580, gravity: 1700, airControl: 0.14, airJumps: 1,
-    meleeMult: 0.85, magicMult: 1.0,
-    blockReduction: 0.75, guardEfficiency: 1.0,
-    dodge: { iframes: 18, duration: 18, recovery: 5, speed: 918, cost: 8 },
+    maxHealth: 105, maxStamina: 110, maxMana: 60,
+    staminaRegen: 42, staminaRegenDelay: 26, manaRegen: 3,
+    walkSpeed: 235, depthSpeed: 165,
+    jumpStrength: 620, gravity: 1700, airControl: 0.16, airJumps: 1,
+    meleeMult: 0.9, magicMult: 1.0,
+    blockReduction: 0.62, guardEfficiency: 1.4, // a light guard: heavy blows break it fast
+    // the best dodge in the game: long, quick, invulnerable for most of it
+    dodge: { iframes: 17, duration: 20, recovery: 4, speed: 980, cost: 10 },
     rollCancel: true,
-    parryWindow: 8, parryWhiffRecovery: 12,
-    knockdownFrames: 38, getupFrames: 14, staggerFrames: 44,
+    parryWindow: 7, parryWhiffRecovery: 12,
+    knockdownFrames: 26, getupFrames: 12, staggerFrames: 42, // springs straight back up
 
     moves: {
-      light1: {
-        cut: 'slash',
-        startup: 4, active: 2, recovery: 10,
-        damage: 6, hitstun: 20, hitstop: 3, shake: 0,
-        knockback: { x: 50, y: 0 }, guardDamage: 6, lunge: 60,
-        hitbox: { x: 8, y: 40, w: 50, h: 30 },
-        chains: [
-          { button: 'attack', next: 'light2', from: 5, to: 16 },
-          { button: 'heavy', next: 'heavy', from: 7, to: 16 },
-        ],
-        cancels: [{ from: 6, to: 16, into: ['dodge', 'block', 'jump'] }],
+      light1: { // fast diagonal slash, lead dagger
+        cut: 'slash', fx: 'dagger',
+        startup: 3, active: 2, recovery: 9,
+        damage: 6, hitstun: 18, hitstop: 3, shake: 0,
+        knockback: { x: 50, y: 0 }, guardDamage: 6, lunge: 80,
+        hitbox: { x: 8, y: 36, w: 56, h: 40 },
+        chains: [{ button: 'attack', next: 'light2', from: 4, to: 14 }, { button: 'heavy', next: 'heavy', from: 5, to: 14 }],
+        cancels: [{ from: 5, to: 14, into: ['dodge', 'block', 'kick', 'jump', 'magic'] }],
       },
-      light2: {
-        cut: 'slash',
-        startup: 4, active: 2, recovery: 10,
-        damage: 6, hitstun: 20, hitstop: 3, shake: 0,
-        knockback: { x: 60, y: 0 }, guardDamage: 6, lunge: 60,
-        hitbox: { x: 8, y: 30, w: 52, h: 36 },
-        chains: [
-          { button: 'attack', next: 'light3', from: 5, to: 16 },
-          { button: 'heavy', next: 'heavy', from: 7, to: 16 },
-        ],
-        cancels: [{ from: 6, to: 16, into: ['dodge', 'block', 'jump'] }],
+      light2: { // reverse slash, rear dagger
+        cut: 'slash', fx: 'dagger',
+        startup: 3, active: 2, recovery: 9,
+        damage: 6, hitstun: 18, hitstop: 3, shake: 0,
+        knockback: { x: 60, y: 0 }, guardDamage: 6, lunge: 80,
+        hitbox: { x: 8, y: 30, w: 58, h: 44 },
+        chains: [{ button: 'attack', next: 'light3', from: 4, to: 14 }, { button: 'heavy', next: 'heavy', from: 5, to: 14 }],
+        cancels: [{ from: 5, to: 14, into: ['dodge', 'block', 'kick', 'jump', 'magic'] }],
       },
-      light3: {
-        cut: 'slash',
-        startup: 6, active: 3, recovery: 18,
-        damage: 11, hitstun: 24, hitstop: 6, shake: 2,
-        knockback: { x: 240, y: 300 }, knockdown: true, guardDamage: 12, lunge: 140,
-        hitbox: { x: 6, y: 25, w: 60, h: 50 },
-        cancels: [{ from: 9, to: 27, into: ['dodge', 'jump'] }],
+      light3: { // spinning double-blade cross, stepping through
+        cut: 'slash', fx: 'dagger',
+        startup: 4, active: 3, recovery: 10,
+        damage: 8, hitstun: 20, hitstop: 4, shake: 1,
+        knockback: { x: 80, y: 0 }, guardDamage: 8, lunge: 150,
+        hitbox: { x: 0, y: 28, w: 66, h: 50 },
+        chains: [{ button: 'attack', next: 'light4', from: 5, to: 17 }, { button: 'heavy', next: 'heavy', from: 6, to: 17 }],
+        cancels: [{ from: 6, to: 17, into: ['dodge', 'block', 'kick', 'jump', 'magic'] }],
       },
+      light4: { // drop low, rotate, explode upward: rising double-dagger strike
+        cut: 'slash', fx: 'dagger', expose: true,
+        startup: 7, active: 3, recovery: 16,
+        damage: 14, hitstun: 26, hitstop: 8, shake: 4,
+        knockback: { x: 180, y: 360 }, knockdown: true, guardDamage: 18, lunge: 120,
+        hitbox: { x: 4, y: 20, w: 64, h: 74 },
+        cancels: [{ from: 11, to: 26, into: ['dodge', 'jump', 'magic'] }],
+      },
+      // VIPER STRIKE (the 'viper' state): crouch, burst through, strike in passing
       heavy: {
-        cut: 'slash',
-        startup: 13, active: 3, recovery: 20,
-        damage: 20, hitstun: 28, hitstop: 9, shake: 4,
-        knockback: { x: 300, y: 300 }, knockdown: true, breaksGuard: true,
-        guardDamage: 28, staminaCost: 7, lunge: 160,
-        hitbox: { x: 4, y: 25, w: 70, h: 55 },
-        cancels: [
-          { from: 1, to: 7, into: ['dodge', 'block'] },
-          { from: 17, to: 36, into: ['dodge', 'jump'] },
-        ],
+        cut: 'slash', fx: 'viper', expose: true, pierce: true,
+        startup: 5, active: 9, recovery: 12,
+        damage: 18, hitstun: 30, hitstop: 6, shake: 3,
+        knockback: { x: 120, y: 0 }, guardDamage: 26, breaksGuard: true, staminaCost: 10,
+        lunge: 1150,                     // px/s through the active frames (~170 px)
+        hitbox: { x: -10, y: 26, w: 70, h: 52 },
+        cancels: [{ from: 1, to: 4, into: ['dodge'] }, { from: 18, to: 26, into: ['dodge', 'jump', 'attack'] }],
       },
-      kick: { ...SPARTA_KICK },
+      // crescent heel kick: fast, interrupts, moderate push (the 'rkick' state picks it)
+      kick: {
+        cut: 'blunt', fx: 'rkick',
+        startup: 5, active: 4, recovery: 12,
+        damage: 6, hitstun: 26, hitstop: 5, shake: 2,
+        knockback: { x: 260, y: 0 }, guardDamage: 30, lunge: 90,
+        hitbox: { x: 6, y: 50, w: 64, h: 40 },
+        cancels: [{ from: 9, to: 21, into: ['dodge', 'attack', 'jump', 'magic'] }],
+      },
+      sweep: { // down + kick: a low spinning sweep that takes the legs
+        cut: 'blunt', fx: 'rkick',
+        startup: 6, active: 4, recovery: 14,
+        damage: 5, hitstun: 24, hitstop: 5, shake: 2,
+        knockback: { x: 90, y: 200 }, knockdown: true, guardDamage: 20, lunge: 60,
+        hitbox: { x: 0, y: 0, w: 70, h: 26 },
+        cancels: [{ from: 10, to: 24, into: ['dodge', 'attack', 'jump'] }],
+      },
       air: {
-        cut: 'slash',
+        cut: 'slash', fx: 'dagger',
         startup: 3, active: 12, recovery: 0,
-        damage: 8, hitstun: 18, hitstop: 4, shake: 0,
-        knockback: { x: 120, y: 0 }, guardDamage: 6,
-        hitbox: { x: 0, y: 0, w: 56, h: 46 },
+        damage: 7, hitstun: 18, hitstop: 3, shake: 0,
+        knockback: { x: 110, y: 0 }, guardDamage: 6,
+        hitbox: { x: 0, y: 0, w: 56, h: 48 },
+      },
+      // FALLING VIPER (the 'dive' state): the hitbox rides the dive
+      dive: {
+        cut: 'pierce', fx: 'dive', expose: true,
+        startup: 0, active: 60, recovery: 0,
+        damage: 22, hitstun: 34, hitstop: 8, shake: 5,
+        knockback: { x: 60, y: 0 }, guardDamage: 30, breaksGuard: true,
+        hitbox: { x: -6, y: -30, w: 60, h: 90, depth: 28 },
       },
     },
 
-    spell: {
-      name: 'Fan of Knives', cost: 20, startup: 8, recovery: 12,
-      cancels: [{ from: 10, to: 20, into: ['dodge', 'jump'] }],
-      projectile: {
-        cut: 'pierce',
-        count: 3, spreadZ: 22, speed: 760, lifetime: 40, y: 50, w: 22, h: 8,
-        damage: 7, hitstun: 18, hitstop: 3, shake: 0,
-        knockback: { x: 80, y: 0 }, guardDamage: 8,
-        pierce: false, color: 0xcfd8e0,
+    // magic gates the Widow Mine (the mine's own limits are kit.mine)
+    spell: { name: 'Widow Mine', cost: 0, startup: 0, recovery: 0 },
+
+    kit: {
+      // EXPOSED: her precision hits open a weakness the whole team can exploit
+      expose: {
+        duration: 300,      // frames (5 s)
+        bonus: 0.25,        // +25% damage from ALL players while exposed
+        refresh: true,      // a new trigger restarts the timer (it never stacks)
+        cooldown: 0,        // frames before the same enemy can be exposed again after it ends
+        minHealth: 0,       // only enemies with at least this much max health (0 = any)
+        bosses: true,       // bosses can be exposed
       },
+      // SHADOW WINDOW: a dodge that slips a blow in its first frames
+      shadow: { window: 9, counter: 45 }, // perfect-dodge frames; frames after the dodge to answer it (Exposed on the hit)
+      // VIPER STRIKE through a crowd
+      viper: { maxTargets: 3 },
+      // KNIFE (kick with nobody in reach)
+      knife: {
+        kickReach: 90,      // an enemy this close ahead gets kicked instead
+        range: 420, cooldown: 40,
+        startup: 6, recovery: 10,
+        projectile: {
+          cut: 'pierce', look: 'knife', fx: 'knife',
+          count: 1, speed: 900, lifetime: 34, y: 58, w: 18, h: 8,
+          damage: 7, hitstun: 22, hitstop: 3, shake: 0,
+          knockback: { x: 60, y: 0 }, guardDamage: 6, pierce: false, color: 0xd8dde4,
+        },
+      },
+      // WIDOW MINE
+      mine: {
+        maxActive: 2,       // a third one replaces the oldest
+        cooldown: 75,       // frames between drops
+        arm: 26,            // frames until it's live
+        life: 900,          // frames it waits (15 s) before it fizzles
+        trigger: 44,        // enemy this close (px) sets it off...
+        cue: 8,             // ...after this many frames of warning
+        inner: 45, outer: 135, // full damage inside `inner`, falling to `falloff` at `outer`
+        damage: 46, falloff: 0.3,
+        launch: 640, lift: 380,
+        heavyHealth: 160, heavyLaunch: 0.4, // brutes are thrown this much as far
+        boss: 0.5,          // bosses take this share of damage and barely move
+        hitCooldown: 30,    // frames before another blast can hurt the same man (no stacking)
+      },
+      // ALLY VAULT
+      vault: {
+        range: 80, depth: 30,  // how close the teammate must be
+        approach: 0.4,         // she must be moving toward them at least this fast (share of run speed)
+        plant: 6,              // frames on the shoulder
+        launch: 960,           // upward speed (a normal jump is jumpStrength)
+        forward: 260,          // carried on over the ally
+        cooldown: 50,          // frames before the same teammate can be vaulted again
+        apex: 14,              // frames either side of the top of a vault that count as "the apex"
+      },
+      // SHURIKEN FAN / DEATH FROM ABOVE
+      fan: {
+        count: 5, dfaCount: 10, spread: 70, dfaSpread: 150,
+        range: 300, startup: 4, recovery: 10, hang: 0.35, cooldown: 30,
+        projectile: {
+          cut: 'pierce', look: 'shuriken', fx: 'shuriken',
+          count: 1, speed: 760, lifetime: 50, y: 0, w: 14, h: 14,
+          damage: 6, hitstun: 20, hitstop: 2, shake: 0,
+          knockback: { x: 50, y: 0 }, guardDamage: 6, pierce: false, color: 0xcfd8e0,
+        },
+      },
+      // FALLING VIPER
+      dive: { minHeight: 60, range: 260, depth: 70, speed: 820, land: 14, stagger: 60, staggerFrames: 18 },
+      finisher: { reach: 160, depth: 34 },
     },
   },
 };

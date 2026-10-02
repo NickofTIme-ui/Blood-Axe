@@ -27,6 +27,25 @@ export class ProjectileView {
         playSfx(scene, 'fireWhoosh', { volume: 0.8 * loud, spread: 100, minGapMs: 30 });
         this.loop = startLoop(scene, 'fireLoop', { volume: 0.45 * loud });
       }
+    } else if (d.look === 'knife' || d.look === 'shuriken') {
+      // thrown steel (the Rogue): a spinning blade or star, no glow — just a glint
+      this.steel = d.look;
+      this.glow = scene.add.graphics();
+      this.core = scene.add.graphics();
+      const g = this.core;
+      if (d.look === 'shuriken') {
+        for (let i = 0; i < 4; i++) {
+          const a = i * Math.PI / 2;
+          g.fillStyle(0x2a2a30, 1).fillTriangle(Math.cos(a) * 7.5, Math.sin(a) * 7.5, Math.cos(a + 1.3) * 2.6, Math.sin(a + 1.3) * 2.6, Math.cos(a - 1.3) * 2.6, Math.sin(a - 1.3) * 2.6);
+          g.fillStyle(0xd8dde4, 1).fillTriangle(Math.cos(a) * 6.5, Math.sin(a) * 6.5, Math.cos(a + 1.1) * 2, Math.sin(a + 1.1) * 2, Math.cos(a) * 1.5, Math.sin(a) * 1.5);
+        }
+        g.fillStyle(0x1a1a1e, 1).fillCircle(0, 0, 1.6);
+      } else {
+        g.fillStyle(0x2a2a30, 1).fillRect(-9, -2, 18, 4);
+        g.fillStyle(0xd8dde4, 1).fillTriangle(-2, -1.6, -2, 1.6, 9, 0);
+        g.fillStyle(0x5c3519, 1).fillRect(-9, -1.4, 6, 2.8);
+        g.fillStyle(0xc9a24a, 1).fillRect(-3, -2.4, 1.4, 4.8);
+      }
     } else {
       this.glow = scene.add.rectangle(0, 0, d.w + 10, d.h + 10, d.color, 0.3).setOrigin(0.5, 1);
       this.core = scene.add.rectangle(0, 0, d.w, d.h, d.color).setOrigin(0.5, 1);
@@ -57,6 +76,14 @@ export class ProjectileView {
       return;
     }
     const y = p.z - p.h;
+    if (this.steel) {
+      // spinning end over end (knife) / flat spin (star), turned along its flight
+      const spin = this.steel === 'shuriken' ? 0.9 : 0.55;
+      this.core.setPosition(p.x, y - p.data.h / 2).setDepth(p.z + 0.2).setRotation(this.age * spin * p.dir);
+      this.core.setScale(p.dir, this.steel === 'shuriken' ? 0.6 + 0.4 * Math.abs(Math.cos(this.age * 0.4)) : 1);
+      this.shadow.setScale(0.5);
+      return;
+    }
     const flicker = 0.25 + Math.random() * 0.2;
     this.glow.setPosition(p.x, y + 5).setDepth(p.z).setAlpha(flicker);
     this.core.setPosition(p.x, y).setDepth(p.z + 0.1);

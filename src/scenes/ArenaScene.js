@@ -17,6 +17,8 @@ import { createEnemy } from '../entities/Enemy.js';
 import { FighterView } from '../view/FighterView.js';
 import { SpriteFighterView } from '../view/SpriteFighterView.js';
 import { MageView } from '../view/MageView.js';
+import { MageFX } from '../effects/MageFX.js';
+import { RogueFX } from '../effects/RogueFX.js';
 import { ProjectileView } from '../view/ProjectileView.js';
 import { DebugDraw } from '../view/DebugDraw.js';
 import { DEPTH } from '../view/depths.js';
@@ -104,7 +106,8 @@ export class ArenaScene extends Phaser.Scene {
 
     // Combat events -> effects
     ev.on('hit', (e) => {
-      this.gore.onHit(e);
+      // (lightning, force and the fire wall leave no blood: the Mage's effects show them)
+      if (!e.move.noBlood) this.gore.onHit(e);
       this.fx.shake(e.move.shake ?? 0, 8);
       if (e.counter) this.popup(e.x, e.z - e.h - 30, 'COUNTER!', '#ffd24a');
       if (e.move.fx === 'kick') this.kickImpact(e.x, e.z, e.h, e.dir);
@@ -140,14 +143,16 @@ export class ArenaScene extends Phaser.Scene {
       this.gore.spark(f.x + f.facing * 18, f.z, 70, 0xdfe8ff, 10);
     });
     this.setupFinishers(ev);
+    this.mageFX = new MageFX(this); // the Mage's spells and barriers (effects/MageFX.js)
+    this.rogueFX = new RogueFX(this); // the Rogue's mines, marks and steel (effects/RogueFX.js)
     ev.on('kill', (e) => {
       this.kills++;
       if (e.finisher) return; // executions do their own gore (setupFinishers)
       // killed by fire (a grate, or a fire spell that didn't blow him apart): no fountain
       // of blood — he burns (the 'burning' state, effects/Burn.js)
-      const byFire = e.move?.cut === 'fire' && (!e.fatality || e.fatality === 'none') && e.defender.team === 'enemy';
+      const byFire = ['fire', 'shock'].includes(e.move?.cut) && (!e.fatality || e.fatality === 'none') && e.defender.team === 'enemy';
       if (byFire) {
-        this.burning.ignite(e.defender, 'fighter', 0.3);
+        this.burning.ignite(e.defender, 'fighter', e.move.cut === 'shock' ? 0.7 : 0.3); // (lightning chars)
         this.fx.shake(3, 8);
         return;
       }
@@ -195,7 +200,7 @@ export class ArenaScene extends Phaser.Scene {
     };
     ev.on('attackStart', ({ fighter, state }) => {
       const key = SWING_SOUNDS[state];
-      if (!key) return;
+      if (!key || fighter.stats.archetype) return; // (heroes with their own kit sound their own swings)
       const loud = fighter.team === 'player' ? 1 : 0.4;
       const vol = state === 'heavy' || state === 'thrust' ? 0.8 : state === 'light3' ? 0.7 : 0.6;
       playSfx(this, key, { volume: vol * loud, spread: state === 'heavy' ? 100 : 150, minGapMs: 40 });
@@ -260,6 +265,8 @@ export class ArenaScene extends Phaser.Scene {
       this.scene.stop('HUD');
       // stop anything still roaring (e.g. a Firebolt's loop) when the arena closes
       for (const v of this.projectileViews.values()) v.loop?.stop(0);
+      this.mageFX?.destroy();
+      this.rogueFX?.destroy();
     });
 
     // Test keys — only with the debug overlay on (F2), so nobody breaks a run by accident:
@@ -791,13 +798,15 @@ export class ArenaScene extends Phaser.Scene {
       this.gore.update();
       for (const v of this.views.values()) v.applyCut?.(); // (bodies come apart on the tick, not on a screen refresh)
       this.cuts.update();
-      this.burning.update(this.stage.activeFires());
+      this.burning.update([...this.stage.activeFires(), ...this.world.barriers.fireRegions()]);
       this.tickJobs = this.tickJobs.filter((j) => j(++j.t) !== false && j.t < (j.n ?? 999));
       this.updateWaves();
       s.afterTick?.(tick, () => snapshot(this.world));
     }
 
     for (const v of this.views.values()) v.update();
+    this.mageFX.update();
+    this.rogueFX.update();
     this.updateCamFocus();
     this.updateFinisherMarker();
     this.stageView.update();

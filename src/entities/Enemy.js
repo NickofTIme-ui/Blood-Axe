@@ -13,7 +13,7 @@ import { Fighter } from './Fighter.js';
 import { ENEMIES } from '../data/enemies.js';
 import { usable } from './fighterStates.js';
 
-const ATTACK_STATES = ['light1', 'light2', 'light3', 'heavy', 'kick'];
+const ATTACK_STATES = ['light1', 'light2', 'light3', 'light4', 'heavy', 'kick', 'viper', 'sweep', 'bolt', 'force'];
 const COMBO_STATES = ['light1', 'light2'];
 
 export class EnemyBrain extends Controller {

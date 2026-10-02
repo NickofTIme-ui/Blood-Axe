@@ -12,6 +12,7 @@ import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.j
 import { Stage } from '../src/stage/Stage.js';
 import { impalePin } from '../src/combat/Finisher.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/Mage.js';
+import { ROGUE_FINISHERS } from '../src/combat/Rogue.js';
 import { TickController, pressed } from '../src/core/TickInput.js';
 import { NetSession, NET, loopPair, snapshot, correct, feedPlayers } from '../src/net/Session.js';
 
@@ -648,7 +649,8 @@ function mageSetup({ script = {}, hold = {}, foes = [] } = {}) {
 test('mage: the kit replaces the buttons (blink, lightning, force, barrier) — Ulric keeps his', () => {
   const m = CHARACTERS.mage.states;
   assert(m.dodge === 'blink' && m.heavy === 'bolt' && m.kick === 'force' && m.cast === 'ward', JSON.stringify(m));
-  assert(!CHARACTERS.warrior.states && !CHARACTERS.rogue.states, 'other heroes untouched');
+  assert(!CHARACTERS.warrior.states, 'Ulric untouched');
+  assert(CHARACTERS.rogue.states.heavy === 'viper', 'the Rogue has her own kit');
   const t = setup({ script: { 1: ['dodge'] }, gap: 400 });
   t.run(2);
   assert(t.p.state === 'dodge', `Ulric still rolls (${t.p.state})`);
@@ -917,6 +919,199 @@ test('mage: everything he does is the same on two machines (lockstep)', () => {
   const play = () => {
     const t = mageSetup({ script: { 1: ['heavy'], 50: ['kick'], 90: ['magic'], 130: ['dodge'], 145: ['attack'], 160: ['attack'] }, hold: (n) => ({ heavy: n < 30, magic: n >= 90 && n < 92 }), foes: [[700], [740, 440], [780, 380], [900], [1000]] });
     t.run(400);
+    return t.world.fighters.map((f) => `${f.x.toFixed(3)},${f.z.toFixed(3)},${f.health.toFixed(2)},${f.state}`).join('|');
+  };
+  assert(play() === play(), 'same fight both times');
+});
+
+// ---------------------------------------------------------------- the Rogue
+
+function rogueSetup({ script = {}, hold = {}, foes = [], ally = null } = {}) {
+  const world = new World({ seed: 11 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.rogue, team: 'player', x: 600, z: 420, controller: new Scripted(script, hold) }));
+  const mate = ally ? world.addFighter(new Fighter({ stats: CHARACTERS[ally[0]], team: 'player', x: ally[1], z: ally[2] ?? 420, controller: new Scripted() })) : null;
+  const es = foes.map(([x, z, type = 'grunt']) => {
+    const e = world.addFighter(new Fighter({ stats: ENEMIES[type], team: 'enemy', x, z: z ?? 420, controller: new Scripted() }));
+    e.facing = -1;
+    return e;
+  });
+  const ev = [];
+  for (const n of ['hit', 'kill', 'exposed', 'shadowWindow', 'mineDrop', 'mineArmed', 'mineCue', 'mineBlast', 'mineFizzle', 'vaultLaunch', 'fanThrow', 'diveLand', 'knifeThrow', 'finisherBeat']) world.events.on(n, (e) => ev.push({ n, e }));
+  return { world, p, mate, es, ev, run: (n) => { for (let i = 0; i < n; i++) world.tick(); }, seen: (n) => ev.filter((x) => x.n === n) };
+}
+
+test('rogue: fastest hero, best dodge, lighter guard and health than Ulric', () => {
+  const r = CHARACTERS.rogue; const u = CHARACTERS.warrior; const m = CHARACTERS.mage;
+  assert(r.walkSpeed > u.walkSpeed && r.walkSpeed > m.walkSpeed, 'fastest');
+  assert(r.dodge.iframes >= u.dodge.iframes && r.dodge.recovery < u.dodge.recovery, 'best dodge');
+  assert(r.maxHealth < u.maxHealth && r.blockReduction < u.blockReduction, 'frailer');
+});
+
+test('rogue: four-hit combo chains; the fourth knocks down and EXPOSES', () => {
+  const t = rogueSetup({ script: { 1: ['attack'], 9: ['attack'], 17: ['attack'], 27: ['attack'] }, foes: [[650]] });
+  t.es[0].health = 1e4; t.es[0].stats = { ...t.es[0].stats, maxHealth: 1e4 };
+  const states = new Set();
+  for (let i = 0; i < 70; i++) { t.world.tick(); states.add(t.p.state); }
+  assert(['light2', 'light3', 'light4'].every((s) => states.has(s)), `states ${[...states]}`);
+  assert(t.seen('hit').length === 4, `hits ${t.seen('hit').length}`);
+  assert(t.seen('exposed').length === 1 && t.es[0].exposed > 0, 'exposed');
+});
+
+test('rogue: an exposed enemy takes more damage from EVERY player (co-op), for a while only', () => {
+  const hitWith = (expose) => {
+    const t = rogueSetup({ ally: ['warrior', 560], foes: [[620]] });
+    const e = t.es[0];
+    e.health = 1e4; e.stats = { ...e.stats, maxHealth: 1e4 };
+    if (expose) t.world.combat.expose(t.p, e);
+    t.mate.x = 560; t.mate.controller.script = { 1: ['attack'] }; t.mate.controller.t = 0;
+    t.run(14);
+    return 1e4 - e.health;
+  };
+  const plain = hitWith(false); const exp = hitWith(true);
+  assert(exp > plain * 1.2, `Ulric hits an exposed man harder (${plain.toFixed(1)} -> ${exp.toFixed(1)})`);
+  const t = rogueSetup({ foes: [[700]] });
+  t.world.combat.expose(t.p, t.es[0]);
+  t.run(CHARACTERS.rogue.kit.expose.duration + 2);
+  assert(!(t.es[0].exposed > 0), 'it wears off');
+});
+
+test('rogue: viper strike bursts through a line, hits up to its limit, and exposes', () => {
+  const t = rogueSetup({ script: { 1: ['heavy'] }, foes: [[660], [690], [720], [750]] });
+  for (const e of t.es) { e.health = 1e4; e.stats = { ...e.stats, maxHealth: 1e4 }; }
+  t.run(30);
+  const hurt = t.es.filter((e) => e.health < 1e4).length;
+  assert(hurt === CHARACTERS.rogue.kit.viper.maxTargets, `hit ${hurt}`);
+  assert(t.p.x > 720, `she ends up past them (${t.p.x.toFixed(0)})`);
+  assert(t.seen('exposed').length >= 1, 'exposed');
+});
+
+test('rogue: kick in reach = crescent kick; nobody near = a knife; down = sweep', () => {
+  const k = rogueSetup({ script: { 1: ['kick'] }, foes: [[650]] });
+  k.run(2);
+  assert(k.p.state === 'kick', `kick (${k.p.state})`);
+  const n = rogueSetup({ script: { 1: ['kick'] }, foes: [[900]] });
+  n.run(30);
+  assert(n.seen('knifeThrow').length === 1 && n.es[0].health < n.es[0].stats.maxHealth, 'knife thrown and hit');
+  const s = rogueSetup({ script: { 1: ['kick'] }, hold: { down: true }, foes: [[650]] });
+  s.run(2);
+  assert(s.p.state === 'sweep', `sweep (${s.p.state})`);
+});
+
+test('rogue: shadow window — dodging a blow at the last instant, then hitting him, exposes him', () => {
+  const t = rogueSetup({ foes: [[650]] });
+  const e = t.es[0];
+  e.health = 1e4; e.stats = { ...e.stats, maxHealth: 1e4 };
+  e.controller.script = { 1: ['attack'] };
+  // dodge just as his swing comes out
+  t.p.controller.script = { 11: ['dodge'], 40: ['attack'] };
+  t.p.controller.hold = (n) => (n >= 11 && n < 13 ? { right: true } : n >= 38 && n < 42 ? { left: true } : {}); // (through him, then turn on him)
+  t.run(37);
+  t.p.x = e.x + 50; // (back within reach, as a sidestep past him would leave her)
+  t.run(23);
+  assert(t.seen('shadowWindow').length === 1, `perfect dodge (${t.seen('shadowWindow').length})`);
+  assert(t.p.health === t.p.stats.maxHealth, 'untouched');
+  assert(t.seen('exposed').length >= 1, 'the answer exposed him');
+});
+
+test('rogue: widow mine drops on the move, ignores allies, arms, then blasts enemies outward', () => {
+  const t = rogueSetup({ script: { 1: ['magic'] }, hold: { right: true }, ally: ['warrior', 600] });
+  t.run(3);
+  assert(t.seen('mineDrop').length === 1 && ['walk', 'idle'].includes(t.p.state), `kept moving (${t.p.state})`);
+  const m = t.seen('mineDrop')[0].e.mine;
+  t.mate.x = m.x; t.mate.z = m.z; // an ally standing right on it
+  t.run(60);
+  assert(t.seen('mineArmed').length === 1 && t.seen('mineBlast').length === 0, 'armed, allies ignored');
+  const a = createEnemy(t.world, 'grunt', m.x + 30, m.z);
+  const b = createEnemy(t.world, 'grunt', m.x - 30, m.z);
+  const x0 = [a.x, b.x];
+  t.run(14);
+  assert(t.seen('mineBlast').length === 1, 'blew');
+  t.run(10);
+  assert(a.x > x0[0] && b.x < x0[1], 'thrown away from the centre');
+  assert(t.mate.health === t.mate.stats.maxHealth && t.p.health === t.p.stats.maxHealth, 'no friendly fire');
+});
+
+test('rogue: mines are limited — a third replaces the oldest; stacked blasts hurt once', () => {
+  const t = rogueSetup({ script: { 1: ['magic'], 90: ['magic'], 180: ['magic'] }, hold: { right: true } });
+  t.run(200);
+  assert(t.world.mines.list.length === CHARACTERS.rogue.kit.mine.maxActive, `active ${t.world.mines.list.length}`);
+  assert(t.seen('mineFizzle').length === 1, 'oldest gone');
+  // ten mines under one brute: one blast's worth of damage
+  const s = rogueSetup({});
+  const boss = createEnemy(s.world, 'gladiator', 900, 420);
+  boss.health = 1e4; boss.stats = { ...boss.stats, maxHealth: 1e4 };
+  const K = CHARACTERS.rogue.kit.mine;
+  for (let i = 0; i < 10; i++) s.world.mines.drop(s.p, 900 + i, 420, { ...K, maxActive: 99, arm: 1 });
+  s.run(20);
+  const dmg = 1e4 - boss.health;
+  assert(dmg > 0 && dmg <= K.damage * 1.01, `one blast (${dmg.toFixed(1)})`);
+});
+
+test('rogue: ally vault — running at a teammate and jumping launches far above a jump; the ally is untouched', () => {
+  const t = rogueSetup({ ally: ['warrior', 660], hold: { right: true }, script: { 6: ['jump'] } });
+  const before = { x: t.mate.x, z: t.mate.z, hp: t.mate.health, st: t.mate.state };
+  let top = 0;
+  for (let i = 0; i < 90; i++) { t.world.tick(); top = Math.max(top, t.p.h); }
+  assert(t.seen('vaultLaunch').length === 1, 'vaulted');
+  const j = rogueSetup({ script: { 1: ['jump'] } });
+  let jt = 0;
+  for (let i = 0; i < 90; i++) { j.world.tick(); jt = Math.max(jt, j.p.h); }
+  assert(top > jt * 1.8, `much higher (${top.toFixed(0)} vs ${jt.toFixed(0)})`);
+  assert(t.mate.health === before.hp && Math.abs(t.mate.x - before.x) < 0.01 && t.mate.state === before.st, 'ally not moved, hurt or interrupted');
+  // standing still next to him: just a jump; and not off the same man again at once
+  const s = rogueSetup({ ally: ['warrior', 640], script: { 1: ['jump'] } });
+  s.run(3);
+  assert(s.seen('vaultLaunch').length === 0, 'no approach, no vault');
+});
+
+test('rogue: shuriken fan from a jump; DEATH FROM ABOVE (wider, more) at the top of a vault', () => {
+  const t = rogueSetup({ script: { 1: ['jump'], 14: ['magic'] }, foes: [[700], [760, 460]] });
+  t.run(60);
+  const f = t.seen('fanThrow')[0]?.e;
+  assert(f && !f.dfa && f.count === CHARACTERS.rogue.kit.fan.count, `fan ${f?.count}`);
+  assert(t.es.some((e) => e.health < e.stats.maxHealth), 'a star struck home');
+  const V = CHARACTERS.rogue.kit.vault;
+  const apex = 6 + V.plant + Math.round(V.launch / CHARACTERS.rogue.gravity * 60);
+  const d = rogueSetup({ ally: ['warrior', 660], hold: (n) => (n < 12 ? { right: true } : {}), script: { 6: ['jump'], [apex]: ['magic'] }, foes: [[800], [840, 380], [880, 470]] });
+  d.run(apex + 60);
+  const g = d.seen('fanThrow')[0]?.e;
+  assert(g && g.dfa && g.count === CHARACTERS.rogue.kit.fan.dfaCount, `death from above (${g?.dfa}, ${g?.count})`);
+});
+
+test('rogue: falling viper dives onto the man below, hurts him, exposes him, staggers those round him', () => {
+  const t = rogueSetup({ ally: ['warrior', 660], hold: (n) => (n < 12 ? { right: true } : {}), script: { 6: ['jump'], 40: ['heavy'] }, foes: [[800], [830, 440]] });
+  t.es[0].health = 1e4; t.es[0].stats = { ...t.es[0].stats, maxHealth: 1e4 };
+  t.run(120);
+  assert(t.seen('diveLand').length === 1, 'landed');
+  assert(t.es[0].health < 1e4 && t.es[0].exposed > 0, 'struck and exposed');
+  assert(t.p.state === 'idle' || t.p.state === 'walk', `back on her feet (${t.p.state})`);
+});
+
+for (const [button, kind] of [['attack', 'phantom'], ['heavy', 'lotus'], ['kick', 'scarlet']]) {
+  test(`rogue finisher: ${button} behind runners = ${kind}, for 1, 2 and 3 runners — all die`, () => {
+    for (const n of [1, 2, 3]) {
+      const t = rogueSetup({ script: { 1: [button] } });
+      const rs = [[700, 420], [780, 440], [850, 400]].slice(0, n).map(([x, z]) => {
+        const r = t.world.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x, z, controller: new Scripted() }));
+        r.controller.scared = true; r.maimed = { armB: true }; r.facing = 1; r.vx = 90;
+        return r;
+      });
+      const kills = [];
+      t.world.events.on('kill', (e) => kills.push(e));
+      t.run(3);
+      assert(t.p.state === 'execute' && t.p.exec.kind === kind && t.p.exec.targets.length === n, `${n}: ${t.p.state} ${t.p.exec?.kind}`);
+      t.run(ROGUE_FINISHERS[kind].total + 40);
+      assert(kills.length === n && kills.every((k) => k.finisher === kind), `${n}: kills ${kills.map((k) => k.finisher)}`);
+      assert(rs.every((r) => !r.alive && r.state !== 'executed'), `${n}: ${rs.map((r) => r.state)}`);
+      assert(t.p.state === 'idle' && t.p.h === 0, `${n}: back down (${t.p.state}, h ${t.p.h})`);
+    }
+  });
+}
+
+test('rogue: everything she does is the same on two machines (lockstep)', () => {
+  const play = () => {
+    const t = rogueSetup({ ally: ['warrior', 680], hold: (n) => (n < 14 ? { right: true } : {}), script: { 2: ['magic'], 8: ['jump'], 40: ['magic'], 90: ['heavy'], 120: ['kick'], 150: ['attack'], 160: ['attack'] }, foes: [[800], [840, 440], [900, 380], [1000]] });
+    t.run(360);
     return t.world.fighters.map((f) => `${f.x.toFixed(3)},${f.z.toFixed(3)},${f.health.toFixed(2)},${f.state}`).join('|');
   };
   assert(play() === play(), 'same fight both times');

@@ -321,7 +321,7 @@ export class Dismember {
     this.scene = gore.scene;
     this.chunks = [];
     this.ropes = [];
-    this.minZ = 330;
+    this.minZ = 282; // (Gore sets these from SETTINGS.world)
     this.maxZ = 520;
     this.minX = 20;
     this.maxX = 3180;

@@ -17,7 +17,7 @@ export const SETTINGS = {
   // The test arena. The "floor lane" is the band of ground you can walk up/down in.
   world: {
     width: 5600,       // total stage width in pixels (camera scrolls across it; data/stage.js)
-    floorTop: 330,     // highest (furthest back) point you can walk to
+    floorTop: 282,     // highest (furthest back) point you can walk to (238 px of lane: was 330, +25%)
     floorBottom: 520,  // lowest (closest to camera) point you can walk to
     edgePadding: 30,   // keep fighters this far from the arena's left/right edges
   },

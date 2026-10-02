@@ -106,6 +106,7 @@ export class Stage {
     this.stats.deaths++;
     for (const f of this.world.fighters) if (f.team === 'enemy') f.removeMe = true;
     this.world.barriers?.clear();
+    this.world.mines?.clear();
     for (const p of this.players) this.restore(p, 1);
     const won = this.cleared === this.checkpoint; // died (a trap) after the fight here was already won
     this.enterSection(this.checkpoint, true);
@@ -160,7 +161,8 @@ export class Stage {
       let x = p.x + side * (500 + k * 40);
       if (x < sec.x0 + PAD + 10 || x > sec.x1 - PAD - 10) x = p.x - side * (500 + k * 40);
       x = Math.max(sec.x0 + PAD + 10, Math.min(sec.x1 - PAD - 10, x));
-      const z = 350 + ((k * 71) % 150);
+      const b = this.world.bounds;
+      const z = b.minZ + 20 + ((k * 71) % Math.max(1, b.maxZ - b.minZ - 40)); // spread over the lane
       createEnemy(this.world, type, x, z);
     });
   }
@@ -241,7 +243,7 @@ export class Stage {
         this.world.events.emit('propBreak', { prop: pr, dir });
         if (pr.drop) {
           // a wall's shrine sits in the alcove behind it; everything else rolls out in front
-          const z = pr.kind === 'wall' ? pr.z + 6 : Math.min(515, pr.z + 14);
+          const z = pr.kind === 'wall' ? pr.z + 6 : Math.min(this.world.bounds.maxZ - 5, pr.z + 14);
           this.pickups.push({ kind: pr.drop, x: pr.x, z, age: 0, taken: false, secret: !!pr.secret });
         }
       }

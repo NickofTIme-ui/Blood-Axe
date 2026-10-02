@@ -40,7 +40,10 @@ export class CombatSystem {
       const hitbox = toWorldBox(atk, hb);
       const tol = hb.depth ?? FEEL.depthTolerance;
       for (const def of fighters) {
-        if (def === atk || !this.canBeHit(def, atk.team, info.hitList)) continue;
+        if (def === atk) continue;
+        if (info.move.maxTargets && info.hitList.size >= info.move.maxTargets) break; // (a lunge's limit)
+        if (this.shadowCheck(atk, def, info, hitbox, tol)) continue;
+        if (!this.canBeHit(def, atk.team, info.hitList)) continue;
         if (this.world.barriers?.blocks(atk, def)) continue; // a Mage's wall between them
         const hurt = toWorldBox(def, def.hurtbox);
         if (!overlaps(hitbox, hurt, tol)) continue;
@@ -74,6 +77,37 @@ export class CombatSystem {
         if (!p.data.pierce) p.alive = false;
       }
     }
+  }
+
+  // SHADOW WINDOW (the Rogue's perfect dodge): a blow that would have landed in the first
+  // frames of her dodge. She gets a moment to answer it — her next hit on that man
+  // EXPOSES him (see resolve). Returns true if this was one (the blow is spent on air).
+  shadowCheck(atk, def, info, hitbox, tol) {
+    const K = def.stats.kit?.shadow;
+    if (!K || def.state !== 'dodge' || def.fsm.frame > K.window || def.team === atk.team || info.hitList.has(def.id)) return false;
+    if (!overlaps(hitbox, toWorldBox(def, def.hurtbox), tol)) return false;
+    info.hitList.add(def.id);
+    def.shadowTarget = atk;
+    // (her window to answer starts once the dodge is over)
+    const d = def.stats.dodge;
+    def.shadowUntil = this.world.frame + Math.max(0, d.duration + d.recovery - def.fsm.frame) + K.counter;
+    this.world.events.emit('shadowWindow', { fighter: def, attacker: atk });
+    return true;
+  }
+
+  // EXPOSED: the Rogue's precision opens a man up; every player hits him harder for a while.
+  expose(by, def) {
+    const K = by.stats.kit?.expose;
+    if (!K || !def.alive || def.team === by.team) return;
+    if (def.stats.boss && !K.bosses) return;
+    if (def.stats.maxHealth < (K.minHealth ?? 0)) return;
+    if (def.exposeCool > 0) return;
+    if (def.exposed > 0 && !K.refresh) return;
+    const fresh = !(def.exposed > 0);
+    def.exposed = K.duration;
+    def.exposedBonus = K.bonus;
+    def.exposeCoolFrames = K.cooldown ?? 0;
+    this.world.events.emit('exposed', { defender: def, by, fresh });
   }
 
   // attacker: who is responsible; def: who got touched; move: frame data
@@ -137,9 +171,13 @@ export class CombatSystem {
     }
 
     // ---- CLEAN HIT
-    const counter = def.state === 'stagger' || def.state === 'guardBreak';
+    // answering a perfect dodge (the Rogue's shadow window): a counter, and it EXPOSES him
+    const shadow = attacker?.shadowTarget === def && this.world.frame <= (attacker.shadowUntil ?? -1);
+    if (shadow) attacker.shadowTarget = null;
+    const counter = def.state === 'stagger' || def.state === 'guardBreak' || shadow;
     const mult = (melee ? attacker.stats.meleeMult : attacker.stats.magicMult) * armMult(attacker);
-    const damage = move.damage * mult * (counter ? FEEL.counterMultiplier : 1);
+    const exposed = def.exposed > 0 && attacker?.team === 'player' ? 1 + (def.exposedBonus ?? 0) : 1;
+    const damage = move.damage * mult * (counter ? FEEL.counterMultiplier : 1) * exposed;
     const healthBefore = def.health;
     def.health = Math.max(0, def.health - damage);
     def.flash = 6;
@@ -147,6 +185,8 @@ export class CombatSystem {
     if (!armored) def.faceToward(ctx.fromX);
     event.damage = damage;
     event.counter = counter;
+    event.exposed = exposed > 1;
+    if ((move.expose || shadow) && !(def.health <= 0)) this.expose(attacker, def);
 
     const kb = move.knockback ?? { x: 0, y: 0 };
     const lethal = def.health <= 0;

@@ -12,7 +12,7 @@
 //   4 THE OSSUARY           fire AND blades, elites; urns hide a relic   (combination)
 //   5 THRONE OF THE OATHBREAKER   the boss: Pitlord Kragg, the Oathbreaker
 //
-// Positions are in world px. z = depth on the floor (330 back .. 520 front).
+// Positions are in world px. z = depth on the floor (282 back .. 520 front: SETTINGS.world).
 // waves: line-ups spawned one after another (the next when the last is dead).
 // props: breakables — kind: barrel | crate | urn | wall (secret wall) ; drop: meat (health),
 //        wine (half health), mana, relic (secret, score)
@@ -27,10 +27,10 @@ export const STAGE = {
       objective: 'Cut through the gate guard',
       waves: [['grunt', 'grunt'], ['grunt', 'grunt', 'grunt']],
       props: [
-        { kind: 'barrel', x: 420, z: 360, drop: null },
-        { kind: 'crate', x: 470, z: 352, drop: 'meat' },
-        { kind: 'barrel', x: 860, z: 495, drop: 'wine' },
-        { kind: 'chest', x: 1040, z: 350, drop: 'meat' },
+        { kind: 'barrel', x: 420, z: 320, drop: null },
+        { kind: 'crate', x: 470, z: 310, drop: 'meat' },
+        { kind: 'barrel', x: 860, z: 489, drop: 'wine' },
+        { kind: 'chest', x: 1040, z: 307, drop: 'meat' },
       ],
       hazards: [],
     },
@@ -40,13 +40,13 @@ export const STAGE = {
       objective: 'Cross the bridge — mind the grates',
       waves: [['grunt', 'butcher'], ['grunt', 'grunt', 'stalker']],
       props: [
-        { kind: 'crate', x: 1320, z: 500, drop: 'mana' },
-        { kind: 'barrel', x: 2200, z: 350, drop: 'meat' },
+        { kind: 'crate', x: 1320, z: 495, drop: 'mana' },
+        { kind: 'barrel', x: 2200, z: 307, drop: 'meat' },
       ],
       hazards: [
-        { type: 'fire', x: 1560, z: 420, w: 120, d: 60, phase: 0 },
-        { type: 'fire', x: 1900, z: 470, w: 120, d: 60, phase: 100 },
-        { type: 'fire', x: 1980, z: 360, w: 120, d: 50, phase: 40 },
+        { type: 'fire', x: 1560, z: 395, w: 120, d: 75, phase: 0 },
+        { type: 'fire', x: 1900, z: 457, w: 120, d: 75, phase: 100 },
+        { type: 'fire', x: 1980, z: 320, w: 120, d: 63, phase: 40 },
       ],
     },
     {
@@ -55,13 +55,13 @@ export const STAGE = {
       objective: 'Break them — then finish them',
       waves: [['penitent', 'grunt'], ['stalker', 'ghoul', 'grunt']],
       props: [
-        { kind: 'wall', x: 3050, z: 336, drop: 'shrine', secret: true },
-        { kind: 'urn', x: 2560, z: 505, drop: null },
-        { kind: 'urn', x: 2600, z: 512, drop: 'wine' },
+        { kind: 'wall', x: 3050, z: 290, drop: 'shrine', secret: true },
+        { kind: 'urn', x: 2560, z: 501, drop: null },
+        { kind: 'urn', x: 2600, z: 510, drop: 'wine' },
       ],
       hazards: [
-        { type: 'blade', x: 2780, z: 430, swing: 90, phase: 0 },
-        { type: 'blade', x: 3300, z: 470, swing: 90, phase: 60 },
+        { type: 'blade', x: 2780, z: 407, swing: 90, phase: 0 },
+        { type: 'blade', x: 3300, z: 457, swing: 90, phase: 60 },
       ],
     },
     {
@@ -70,17 +70,17 @@ export const STAGE = {
       objective: 'Survive the bone-pits',
       waves: [['berserker', 'grunt', 'grunt'], ['ghoul', 'penitent', 'butcher']],
       props: [
-        { kind: 'urn', x: 3700, z: 340, drop: null },
-        { kind: 'urn', x: 3735, z: 345, drop: null },
-        { kind: 'urn', x: 3770, z: 338, drop: 'relic', secret: true },
-        { kind: 'crate', x: 4480, z: 500, drop: 'meat' },
-        { kind: 'chest', x: 4130, z: 348, drop: 'relic' },
-        { kind: 'barrel', x: 4530, z: 360, drop: 'mana' },
+        { kind: 'urn', x: 3700, z: 295, drop: null },
+        { kind: 'urn', x: 3735, z: 301, drop: null },
+        { kind: 'urn', x: 3770, z: 292, drop: 'relic', secret: true },
+        { kind: 'crate', x: 4480, z: 495, drop: 'meat' },
+        { kind: 'chest', x: 4130, z: 305, drop: 'relic' },
+        { kind: 'barrel', x: 4530, z: 320, drop: 'mana' },
       ],
       hazards: [
-        { type: 'fire', x: 3950, z: 430, w: 130, d: 70, phase: 0 },
-        { type: 'blade', x: 4200, z: 380, swing: 90, phase: 30 },
-        { type: 'fire', x: 4380, z: 480, w: 120, d: 60, phase: 80 },
+        { type: 'fire', x: 3950, z: 407, w: 130, d: 88, phase: 0 },
+        { type: 'blade', x: 4200, z: 345, swing: 90, phase: 30 },
+        { type: 'fire', x: 4380, z: 470, w: 120, d: 75, phase: 80 },
       ],
     },
     {
@@ -89,7 +89,7 @@ export const STAGE = {
       objective: 'Kill Pitlord Kragg',
       boss: { type: 'gladiator', name: 'Pitlord Kragg, the Oathbreaker', health: 4, damage: 1.25, adds: ['grunt', 'grunt', 'stalker'] },
       waves: [],
-      props: [{ kind: 'barrel', x: 4780, z: 505, drop: 'meat' }],
+      props: [{ kind: 'barrel', x: 4780, z: 501, drop: 'meat' }],
       hazards: [],
     },
   ],
