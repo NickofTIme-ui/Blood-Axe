@@ -347,7 +347,7 @@ export const CHARACTERS = {
     className: 'Rogue',
     description: 'The fastest killer alive. Slips every blow, mines the field, vaults off allies and rains steel from above. Light armour.',
     archetype: 'rogue',
-    body: { w: 28, h: 70 }, // (her hurtbox matches the picture: 25% smaller than first drawn)
+    body: { w: 34, h: 86 }, // (her hurtbox matches the picture: a little under a grunt's 96)
     look: { color: 0x4a2a5e, accent: 0xb0b8c0, skin: 0xd2a07a },
     // the buttons her kit replaces (fighterStates.js stateFor):
     //   heavy = VIPER STRIKE, kick = crescent kick / knife throw at range / sweep (down),

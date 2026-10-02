@@ -9,6 +9,7 @@ import { DEPTH, depthScale } from './depths.js';
 import { movePhase } from '../combat/MoveRunner.js';
 import { MAGE_FINISHERS } from '../combat/Mage.js';
 import { ROGUE_FINISHERS } from '../combat/Rogue.js';
+import { Heading, headingAnim } from './Heading.js';
 
 const spread = (list, t) => list[Math.min(list.length - 1, Math.max(0, Math.floor(t * list.length)))];
 const clamp01 = (t) => Math.max(0, Math.min(1, t));
@@ -19,6 +20,7 @@ export class StripHeroView {
     this.f = fighter;
     this.sheet = sheet;
     this.A = sheet.anims;
+    this.heading = new Heading(); // which way he's seen from on the move (back / front views)
     const first = this.A.idle.frames[0].split(':');
     this.shadow = scene.add.ellipse(fighter.x, fighter.z, fighter.stats.body.w * 1.4, 13, 0x000000, 0.35).setDepth(DEPTH.shadows);
     this.sprite = scene.add.image(fighter.x, fighter.z, `${sheet.key}-${first[0]}`, `f${first[1]}`)
@@ -47,7 +49,10 @@ export class StripHeroView {
     }
 
     switch (st) {
-      case 'walk': return loop(A.walk);
+      case 'walk': {
+        if (tick !== this.headTick) { this.headTick = tick; this.heading.update(f.vx, f.vz); }
+        return loop(headingAnim(A, this.heading.dir));
+      }
       case 'block':
       case 'parry': return A.block.frames[0];
       case 'jump': {
@@ -125,6 +130,7 @@ export class StripHeroView {
     const s = this.sprite;
     const tick = f.world?.frame ?? 0;
 
+    if (st !== 'walk' && this.heading.dir !== 'side') this.heading.reset();
     const ref = this.frameFor();
     s.setVisible(ref !== null);
     if (ref !== null && ref !== this.last) {

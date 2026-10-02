@@ -206,7 +206,11 @@ export class BootScene extends Phaser.Scene {
         }
       }
       if (h.needs.some((n) => !have.has(n))) continue;
-      sheets[id] = { key: `hero-${id}`, anims: HERO_ANIMS[id], res: RES, fw, fh, ax: FRAME.AX * RES, ay: FRAME.AY * RES };
+      // optional animations (back/front views, a real idle) only if their strips loaded
+      const anims = {};
+      for (const [k, a] of Object.entries(HERO_ANIMS[id])) if (!a.needs || a.needs.every((n) => have.has(n))) anims[k] = a;
+      if (anims.idleStrip) { anims.idle = anims.idleStrip; delete anims.idleStrip; }
+      sheets[id] = { key: `hero-${id}`, anims, res: RES, fw, fh, ax: FRAME.AX * RES, ay: FRAME.AY * RES };
     }
     return sheets;
   }
