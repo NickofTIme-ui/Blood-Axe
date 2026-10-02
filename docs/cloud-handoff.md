@@ -159,4 +159,4 @@ To do locally: paint the earth-wall slabs, build + upload to itch, then a real t
 
 - Earth-wall slabs painted: `assets/fx/earthwall-strip.png` (6 slabs on magenta). At the user's request they are raw rock and earth only (no masonry) in slate grey, moss green and **teal** magic seams. The wall's coded effects (the glowing fissure, sparks) may still be orange/gold: recolour them to teal to match.
 - **Standing instruction from the user:** new art and effects must stop defaulting to red and gold; give each spell, enemy and place its own colours.
-- Release build made from this state and checked locally: build time is stamped, the intro video skips, Mage and Rogue are painted, boss sheet and boss music load. Not uploaded to itch yet.
+- Release build made from this state, checked locally (build time stamped, intro video skips, Mage and Rogue painted, boss sheet and music load) and uploaded to itch as upload 19525664.
