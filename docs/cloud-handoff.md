@@ -111,4 +111,4 @@ Not drawn (the user stopped the batch here): `rogue_runD`, `rogue_finPhantom`, `
 - Air steering: holding a direction in a jump turns the fighter and pulls him that way (`airControl` warrior 0.14, mage 0.2, rogue 0.34); with no direction held he keeps his speed.
 - Mage blink distance 210 -> 273.
 - Title menu: left/right + confirm work on keys and gamepad (`TitleScene.pick`); the online menu takes left/right, A, B from a pad. Typing a room code still needs the keyboard.
-- Not on itch yet: everything in this section except the first bullet.
+- All of this is on itch as upload 19520444.
