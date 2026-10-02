@@ -154,3 +154,9 @@ On `main` now (all tests pass, 2-tab online test passes through a PeerJS stand-i
 - **Mage:** turn left/right while a spell winds up; the stone wall holds everyone 12 px off its face (allies cross by roll/blink/vault/jump), every enemy batters it (hp 300, health bar), and it erupts from a glowing fissure in a wave of overshooting slabs. Painted slabs plug in via `assets/fx/earthwall-strip.png` (prompt: section 12 of `docs/mage-art-prompts.md`); not drawn yet.
 
 To do locally: paint the earth-wall slabs, build + upload to itch, then a real two-computer online test (report the exact message if it fails).
+
+## Local session, 3 October 2026 (night)
+
+- Earth-wall slabs painted: `assets/fx/earthwall-strip.png` (6 slabs on magenta). At the user's request they are raw rock and earth only (no masonry) in slate grey, moss green and **teal** magic seams. The wall's coded effects (the glowing fissure, sparks) may still be orange/gold: recolour them to teal to match.
+- **Standing instruction from the user:** new art and effects must stop defaulting to red and gold; give each spell, enemy and place its own colours.
+- Release build made from this state and checked locally: build time is stamped, the intro video skips, Mage and Rogue are painted, boss sheet and boss music load. Not uploaded to itch yet.
