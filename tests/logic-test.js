@@ -1129,6 +1129,22 @@ test('rogue: ally vault — running at a teammate and jumping launches far above
   assert(s.seen('vaultLaunch').length === 0, 'no approach, no vault');
 });
 
+test('rogue: shuriken on the kick button can be spammed; a man in kicking distance gets the kick', () => {
+  const t = rogueSetup({ script: { 1: ['kick'], 9: ['kick'], 17: ['kick'], 25: ['kick'] }, foes: [[1000]] });
+  let thrown = 0;
+  t.world.events.on('knifeThrow', () => { thrown++; });
+  t.run(40);
+  assert(thrown === 4, `four presses, four shuriken (${thrown})`);
+  const e = rogueSetup({ script: { 1: ['kick'] }, foes: [] });
+  let alone = 0;
+  e.world.events.on('knifeThrow', () => { alone++; });
+  e.run(12);
+  assert(alone === 1, 'with nobody about she still throws');
+  const k = rogueSetup({ script: { 1: ['kick'] }, foes: [[650]] });
+  k.run(3);
+  assert(k.p.state === 'kick', `in reach: the kick (${k.p.state})`);
+});
+
 test('rogue: shuriken fan from a jump; DEATH FROM ABOVE (wider, more) at the top of a vault', () => {
   const t = rogueSetup({ script: { 1: ['jump'], 14: ['kick'] }, foes: [[700], [760, 460]] });
   t.run(60);

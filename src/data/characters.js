@@ -471,15 +471,16 @@ export const CHARACTERS = {
       shadow: { window: 9, counter: 45 }, // perfect-dodge frames; frames after the dodge to answer it (Exposed on the hit)
       // VIPER STRIKE through a crowd
       viper: { maxTargets: 3 },
-      // KNIFE (kick with nobody in reach)
+      // SHURIKEN (the kick button with nobody in kicking distance): thrown as fast as the
+      // button is pressed; an enemy within kickReach gets the crescent kick instead
       knife: {
         kickReach: 90,      // an enemy this close ahead gets kicked instead
-        range: 420, cooldown: 40,
-        startup: 6, recovery: 10,
+        range: 520, cooldown: 0,
+        startup: 3, recovery: 6, again: 4, // (again: frames after the throw before the next press takes)
         projectile: {
-          cut: 'pierce', look: 'knife', fx: 'knife',
-          count: 1, speed: 900, lifetime: 34, y: 58, w: 18, h: 8,
-          damage: 7, hitstun: 22, hitstop: 3, shake: 0,
+          cut: 'pierce', look: 'shuriken', fx: 'shuriken',
+          count: 1, speed: 940, lifetime: 40, y: 58, w: 14, h: 14,
+          damage: 4, hitstun: 16, hitstop: 2, shake: 0,
           knockback: { x: 60, y: 0 }, guardDamage: 6, pierce: false, color: 0xd8dde4,
         },
       },

@@ -102,7 +102,8 @@ export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeA
         const ahead = foes(f).map((e) => ({ e, dx: (e.x - f.x) * f.facing, dz: Math.abs(e.z - f.z) }));
         const close = ahead.some((o) => o.dx > -10 && o.dx < K.kickReach && o.dz < 30);
         const far = ahead.filter((o) => o.dx >= K.kickReach && o.dx <= K.range && o.dz < 80).sort((a, b) => a.dx - b.dx)[0];
-        if (!close && far && !(f.cool.knife > 0)) return f.fsm.change('knife', { target: far.e });
+        // nobody in kicking distance: a shuriken (at the nearest man ahead, else straight on)
+        if (!close) return f.fsm.change('knife', { target: far?.e });
         f.fsm.change('kick');
       },
     },
@@ -129,6 +130,8 @@ export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeA
           f.world.events.emit('knifeThrow', { fighter: f });
         }
         if (frame > K.startup && tryActions(f, ['dodge', 'jump'])) return;
+        // spam: the next press throws again (or kicks, if someone has closed in)
+        if (frame >= K.startup + (K.again ?? K.recovery) && f.controller.consume('kick')) return f.fsm.change('rkick');
         if (frame >= K.startup + K.recovery) f.fsm.change('idle');
       },
     },
