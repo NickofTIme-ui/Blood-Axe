@@ -291,14 +291,6 @@ class MineView {
     const on = src.stuck;
     const m = on ? { x: src.x, z: src.z - on.h - on.stats.body.h * 0.5, cue: 0 } : src;
     g.clear().setDepth(on ? src.z + 1 : src.z - 0.5);
-    // ...and when he understands, a word over his head
-    if (on?.doom && on.awe > 0 && !this.word) {
-      const [txt, col] = DOOM_WORDS[on.doom.kind][Math.floor(Math.random() * 2)];
-      this.word = this.scene.add.text(on.x, on.z - on.h - on.stats.body.h - 14, txt, { fontFamily: 'monospace', fontSize: '26px', fontStyle: 'bold', color: col })
-        .setOrigin(0.5, 1).setStroke('#000000', 6).setDepth(DEPTH.popups).setScale(0.2);
-      this.scene.tweens.add({ targets: this.word, scale: 1, duration: 160, ease: 'Back.easeOut' });
-    }
-    if (this.word && on) this.word.setPosition(on.x + (Math.random() - 0.5) * 1.5, on.z - on.h - on.stats.body.h - 14);
     // claws
     for (let i = 0; i < 4; i++) {
       const a = i * Math.PI / 2 + Math.PI / 4;
@@ -317,13 +309,5 @@ class MineView {
     g.fillStyle(fast ? CRIMSON : VIOLET, 0.18 * pulse).fillCircle(m.x, m.z - 2.5, 6);
   }
 
-  destroy() { this.g.destroy(); this.word?.destroy(); }
+  destroy() { this.g.destroy(); }
 }
-
-// What a man with a mine on his chest has to say, by how he takes it (doom.kind).
-const DOOM_WORDS = [
-  [['. . .', '#bfe8ff'], ['oh.', '#e8e8f0']],
-  [['HELP?!', '#9af0c0'], ['ANYONE?', '#ffe27a']],
-  [['GET IT OFF!', '#ff9ad8'], ['OFF OFF OFF', '#c8a0ff']],
-  [['MOTHER...', '#a0d8ff'], ['not like this', '#d0f0a0']],
-];
