@@ -197,3 +197,6 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 - The mine blast (`RogueFX.blast`) is a fireball with a white-hot core, floor glow, shock ring, dust skirt, embers, gravel and rising smoke, replacing the pink flash circles. A small violet flash keeps it reading as the Rogue's.
 - Mist uses a new soft round texture (`softTex` in `Gore.js`), so red mist no longer shows as hard discs.
 - Visual only, no sim change. Before/after captures: project files `explosion/`. Not watched at full speed in a real fight.
+
+## Cloud, 2026-10-03: real chain on the pendulum blades (not on itch)
+- The swinging blades used to hang from a dotted line of grey squares. `StageView.drawChain` now draws real interlocking links in rusted iron matched to the painted blade's own chain: open oval rings seen face-on alternating with links seen edge-on that cross in front of them, a highlight on the lit side and rust on the shadow side, a slow twist along the chain, and an iron ceiling plate with rivets and an eye at the pivot. Sizes and colours are in `CHAIN` at the top of `StageView.js`. Visual only, no sim change. Before/after captures: project files `trap-chain/`.

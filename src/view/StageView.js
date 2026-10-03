@@ -14,6 +14,14 @@ import { FX } from './stripImporter.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 
+// The pendulum blades' chain (world px): one link's outer length and width, the round
+// bar it's forged from, the spacing of the links (a link's length less the two bars that
+// interlock), and its rusted-iron colours (matched to the painted blade's own chain).
+const CHAIN = {
+  length: 12, width: 7.5, wire: 2, pitch: 8,
+  dark: 0x16100d, iron: 0x5a4a40, light: 0xb4927a, rust: 0x8a4424,
+};
+
 export class StageView {
   constructor(scene, stage) {
     this.scene = scene;
@@ -417,14 +425,7 @@ export class StageView {
     g.fillStyle(0x000000, 0.25).fillRect(hz.x - 110, hz.z - 2, 220, 4);
     g.fillStyle(0x6a0a0a, 0.35).fillRect(hz.x - 110, hz.z - 1, 220, 1);
     g.fillStyle(0x000000, 0.4 + 0.25 * Math.abs(s.speed)).fillEllipse(tx, hz.z, 50, 8);
-    // chain
-    const n = 18;
-    for (let i = 0; i <= n; i++) {
-      const u = i / n;
-      const x = px + (tx - px) * u;
-      const y = pivotY + (ty - pivotY) * u;
-      g.fillStyle(i % 2 ? 0x8a8a92 : 0x4a4a52, 1).fillRect(x - 2, y - 3, 4, 6);
-    }
+    this.drawChain(g, px, pivotY, tx, ty, hz);
     // the crescent blade, turned with the swing
     const ang = s.a;
     const c = Math.cos(ang);
@@ -449,6 +450,74 @@ export class StageView {
       playSfx(this.scene, 'heavySwing', { volume: 0.25, pitch: -500, minGapMs: 0 });
     }
     g.setDepth(hz.z + 1);
+  }
+
+  // A hanging iron chain from (x0, y0) down to (x1, y1): real interlocking links, each one
+  // turned a quarter from the last, so they alternate between open rings seen face-on and
+  // thin bars seen edge-on, in the same rusted iron as the painted blade. The chain twists
+  // a little along its length (and slowly over time), so the rings widen and narrow.
+  drawChain(g, x0, y0, x1, y1, hz) {
+    const C = CHAIN;
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    const ux = (x1 - x0) / len;
+    const uy = (y1 - y0) / len;
+    const vx = -uy;
+    const vy = ux;
+    // an ellipse around (cx, cy), a along the chain and b across it, from angle t0 to t1
+    const ring = (cx, cy, a, b, t0 = 0, t1 = Math.PI * 2, n = 16) => {
+      const pts = [];
+      for (let i = 0; i <= n; i++) {
+        const t = t0 + ((t1 - t0) * i) / n;
+        const la = Math.cos(t) * a;
+        const lb = Math.sin(t) * b;
+        pts.push({ x: cx + ux * la + vx * lb, y: cy + uy * la + vy * lb });
+      }
+      return pts;
+    };
+    // (the side of each link facing the light: up and to the left)
+    const lit = Math.atan2(-0.6 * vx - 0.8 * vy, -0.6 * ux - 0.8 * uy);
+
+    // the ceiling mount: an iron plate with two rivets, and the eye the chain hangs from
+    g.fillStyle(C.dark, 1).fillRect(x0 - 13, y0 - 7, 26, 9);
+    g.fillStyle(C.iron, 1).fillRect(x0 - 12, y0 - 6, 24, 7);
+    g.fillStyle(C.light, 0.7).fillRect(x0 - 12, y0 - 6, 24, 1.5);
+    g.fillStyle(C.rust, 0.6).fillRect(x0 - 12, y0 - 1, 24, 2);
+    for (const s of [-8, 8]) g.fillStyle(C.dark, 1).fillCircle(x0 + s, y0 - 2.5, 1.6).fillStyle(C.light, 0.8).fillCircle(x0 + s - 0.4, y0 - 3, 0.6);
+    g.lineStyle(2.6, C.dark, 1).strokeCircle(x0, y0 + 3, 2.6);
+    g.lineStyle(1.6, C.iron, 1).strokeCircle(x0, y0 + 3, 2.6);
+
+    const count = Math.max(2, Math.round((len - 4) / C.pitch));
+    const pitch = (len - 4) / count;
+    const links = [];
+    for (let k = 0; k <= count; k++) {
+      const d = 4 + k * pitch;
+      const twist = Math.sin(k * 0.45 + (hz?.t ?? 0) * 0.015) * 0.45;
+      links.push({ cx: x0 + ux * d, cy: y0 + uy * d, face: k % 2 === 0, twist, k });
+    }
+    const a = C.length / 2;
+    // the face-on rings: an open loop of round bar, dark rim, iron, a highlight on the lit
+    // side and rust on the shadowed one (the stone behind shows through the middle)
+    for (const l of links) {
+      if (!l.face) continue;
+      const b = Math.max(C.wire * 0.7, (C.width / 2) * Math.cos(l.twist)) - C.wire / 2;
+      const ra = a - C.wire / 2;
+      const loop = ring(l.cx, l.cy, ra, b);
+      g.lineStyle(C.wire + 1.2, C.dark, 1).strokePoints(loop, true);
+      g.lineStyle(C.wire, C.iron, 1).strokePoints(loop, true);
+      g.lineStyle(C.wire * 0.45, C.light, 0.85).strokePoints(ring(l.cx, l.cy, ra, b, lit - 0.9, lit + 0.9, 8), false);
+      g.lineStyle(C.wire * 0.5, C.rust, 0.65).strokePoints(ring(l.cx, l.cy, ra, b, lit + Math.PI - 0.7, lit + Math.PI + 0.7, 8), false);
+    }
+    // then the edge-on links over them: each one's near bar crosses in front of the rings it
+    // threads through, which is what makes them read as linked rather than stacked
+    for (const l of links) {
+      if (l.face) continue;
+      const b = Math.max(C.wire * 0.7, (C.width / 2) * Math.abs(Math.sin(l.twist)));
+      g.fillStyle(C.dark, 1).fillPoints(ring(l.cx, l.cy, a + 0.6, b + 0.7), true);
+      g.fillStyle(C.iron, 1).fillPoints(ring(l.cx, l.cy, a, b), true);
+      g.lineStyle(0.8, C.light, 0.75).lineBetween(l.cx - ux * (a - 1.5) + vx * b * 0.5, l.cy - uy * (a - 1.5) + vy * b * 0.5,
+        l.cx + ux * (a - 1.5) + vx * b * 0.5, l.cy + uy * (a - 1.5) + vy * b * 0.5);
+      if (l.k % 3 === 1) g.fillStyle(C.rust, 0.7).fillCircle(l.cx + ux * 1.5, l.cy + uy * 1.5, 1);
+    }
   }
 
   // ------------------------------------------------------------ events
