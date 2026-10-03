@@ -3,7 +3,8 @@
 //
 //   heavy        -> viper   VIPER STRIKE: tiny crouch, burst through the enemy, strike in passing
 //   kick         -> rkick   crescent kick; down+kick = low sweep; nobody in reach = KNIFE throw
-//   magic        -> mine    drop a WIDOW MINE without breaking stride (combat/Mine.js)
+//   magic        -> mine    drop a WIDOW MINE without breaking stride (combat/Mine.js);
+//                           a man in kicking distance ahead gets it planted ON him by hand
 //   jump at an ally        VAULT off his shoulder, far higher than a jump
 //   in the air: kick -> fan    SHURIKEN FAN (DEATH FROM ABOVE near the top of a vault)
 //               heavy -> dive  FALLING VIPER onto a man below
@@ -70,6 +71,16 @@ export function rollMine(f) {
     .filter((e) => e.h < 40 && e.state !== 'executed' && Math.abs(e.x - f.x) <= K.stickReach && Math.abs(e.z - f.z) <= 34)
     .sort((a, b) => Math.abs(a.x - f.x) - Math.abs(b.x - f.x))[0];
   return v ? f.world.mines.stick(f, v, K) : f.world.mines.drop(f, clampX(f.world, f.x), f.z, K);
+}
+
+// The man she plants a mine on by hand: the nearest one ahead, in kicking distance
+// (the same reach as her crescent kick), on his feet. Null: it goes on the floor.
+export function plantTarget(f) {
+  const reach = kitOf(f).knife.kickReach;
+  return foes(f)
+    .map((e) => ({ e, dx: (e.x - f.x) * f.facing }))
+    .filter((o) => o.e.h < 40 && o.dx > -10 && o.dx < reach && Math.abs(o.e.z - f.z) < 30)
+    .sort((a, b) => Math.abs(a.dx) - Math.abs(b.dx))[0]?.e ?? null;
 }
 
 // What one shuriken costs her in stamina: kit.knife.cost, or by default the same as her roll.
@@ -153,14 +164,18 @@ export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeA
       },
     },
 
-    // WIDOW MINE: dropped at her feet on the move — she never stops. (One tick in this
-    // state, then straight back to running or standing.)
+    // WIDOW MINE: dropped at her feet on the move — she never stops. A man in kicking
+    // distance ahead gets it slapped onto him instead, as if she'd rolled through him.
+    // (One tick in this state, then straight back to running or standing.)
     mine: {
       enter(f) {
         const K = kitOf(f).mine;
         f.cool.mine = K.cooldown;
         f.mineDropAt = f.world.frame;
-        f.world.mines.drop(f, clampX(f.world, f.x - f.facing * 6), f.z, K);
+        faceInput(f);
+        const v = plantTarget(f);
+        if (v) f.world.mines.stick(f, v, K);
+        else f.world.mines.drop(f, clampX(f.world, f.x - f.facing * 6), f.z, K);
       },
       update(f) {
         f.fsm.change(f.controller.moveX || f.controller.moveZ ? 'walk' : 'idle');

@@ -174,3 +174,9 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 
 ## Cloud, 2026-10-03
 - Earth wall recoloured to match the painted slabs: the fissure, seam glow, crack glow and health bar are teal (no orange/gold left in `EarthWallView`); rock debris, dust, hit sparks, painted-slab tints and the fallback drawn slabs are slate grey instead of brown. Tests pass; not looked at on screen.
+
+## Cloud, 2026-10-03: Vexa plants mines by hand (not on itch)
+- Magic (LT / LB / U) with an enemy in kicking distance ahead (`kit.knife.kickReach`, 90 px, same test as her crescent kick) now sticks the mine ON him (`plantTarget` in `src/combat/Rogue.js`, then `Mines.stick`), so the frozen stuck-mine reaction plays. Nobody in reach: the floor mine as before. No new animation: she plants it without breaking stride. Sim change. New logic test covers it; not watched in play.
+
+## Cloud, 2026-10-03: Malgor walks in (not on itch)
+- Boss: Warlord Malgor no longer glides in on his standing pose. His entrance (`bossEntrance` state) now plays his existing walk strip (`warlord_walk.png`), with the lumbering sink and sway, one step per `bossStomp` so each screen shake lands on a planted foot (`SpriteEnemyView.walkFrame`). View-only change, no sim change. Checked in a headless browser frame strip; not watched in a real playthrough.

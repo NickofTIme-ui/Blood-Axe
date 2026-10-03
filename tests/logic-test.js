@@ -1209,6 +1209,23 @@ test('rogue: a mine out of a roll; rolling through a man sticks it on him and it
   assert(kill && ['explode', 'limbs', 'none'].includes(kill.e.fatality), `mine kill: ${kill?.e.fatality}`);
 });
 
+test('rogue: the mine button in kicking distance plants it on him by hand; out of reach it goes on the floor', () => {
+  const t = rogueSetup({ script: { 1: ['magic'] }, foes: [[670]] });
+  t.run(3);
+  const m = t.world.mines.list[0];
+  assert(m && m.stuck === t.es[0] && t.es[0].doom, 'planted on the man in front of her');
+  assert(['walk', 'idle'].includes(t.p.state), `no break in stride (${t.p.state})`);
+  const hp = t.es[0].health;
+  t.run(80);
+  assert(t.seen('mineBlast').length === 1 && t.es[0].health < hp, 'it went off on him');
+  const behind = rogueSetup({ script: { 1: ['magic'] }, foes: [[530]] });
+  behind.run(3);
+  assert(!behind.world.mines.list[0].stuck, 'a man behind her: on the floor');
+  const far = rogueSetup({ script: { 1: ['magic'] }, foes: [[600 + CHARACTERS.rogue.kit.knife.kickReach + 20]] });
+  far.run(3);
+  assert(!far.world.mines.list[0].stuck, 'out of kicking distance: on the floor');
+});
+
 test('rogue: shuriken on the kick button can be spammed; a man in kicking distance gets the kick', () => {
   const t = rogueSetup({ script: { 1: ['kick'], 9: ['kick'], 17: ['kick'], 25: ['kick'] }, foes: [[1000]] });
   let thrown = 0;
