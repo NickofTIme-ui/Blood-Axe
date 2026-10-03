@@ -38,6 +38,7 @@ import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
 import { playMusic, toggleMute } from '../core/Music.js';
 import { playSfx } from '../core/Sfx.js';
+import { runTickJobs } from '../core/TickJobs.js';
 
 // Number keys spawn a specific enemy next to you (for testing the roster).
 const SPAWN_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'];
@@ -854,7 +855,7 @@ export class ArenaScene extends Phaser.Scene {
       for (const v of this.views.values()) v.applyCut?.(); // (bodies come apart on the tick, not on a screen refresh)
       this.cuts.update();
       this.burning.update([...this.stage.activeFires(), ...this.world.barriers.fireRegions()]);
-      this.tickJobs = this.tickJobs.filter((j) => j(++j.t) !== false && j.t < (j.n ?? 999));
+      runTickJobs(this);
       this.updateWaves();
       s.afterTick?.(tick, () => snapshot(this.world));
     }

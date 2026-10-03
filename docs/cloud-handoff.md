@@ -198,6 +198,25 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 - Mist uses a new soft round texture (`softTex` in `Gore.js`), so red mist no longer shows as hard discs.
 - Visual only, no sim change. Before/after captures: project files `explosion/`. Not watched at full speed in a real fight.
 
+## Cloud, 2026-10-03: Storm Judgment lightning no longer sticks (not on itch)
+
+- The Mage's STORM JUDGMENT left a cluster of lightning frozen over his staff after the
+  finisher. Its gather beat throws a new bolt every few ticks from inside a tick job, and
+  the scene's job loop rebuilt its list with `filter`, dropping any job added while it
+  ran. Those bolts were drawn once and never cleared. The loop now lives in
+  `src/core/TickJobs.js` (`runTickJobs`) and keeps jobs started mid-run. Test added.
+- Nick asked for the finisher's lightning to come out of the staff's tip, the source of
+  its power. The seize bolts, the gather's crackle and the killing bolt now all start
+  at the lantern (they used to fall from the top of the screen). `finStorm` in
+  `src/data/heroStrips.js` marks the lantern in each pose (`tips`);
+  `StripHeroView.staffTip()` turns that into a screen point and `MageFX.staffTip` uses
+  it, falling back to the old fixed offset. Other strips can get `tips` the same way.
+  Filmed in the cloud: project files `mage-storm/`.
+
+## Cloud, 2026-10-03: Mage blocks with his staff (not on itch)
+- His block (and parry) used `react` pose 0, which holds the staff trailing behind him and reads as a flinch. It now shows `combo2` pose 3: both hands on the staff, raised diagonally across the front of him (`HERO_ANIMS.mage.block` in `src/data/heroStrips.js`). Reuses existing art, no new strip needed. Before/after: project files `mage-block/`.
+- If Nick wants a purpose-made guard (staff held level in front, both hands, a little shield glow), that would be one new pose to paint; not requested yet.
+
 ## Cloud, 2026-10-03: critical hits for every hero (not on itch)
 - Nick asked for critical hits for all good guys. Before this the only crit was Vexa's mark of death (the SUPER CRITICAL a teammate lands on her marked man).
 - Now any hero's clean hit (not blocked or parried) has a 12% chance to be a CRITICAL for 1.75x damage: `SETTINGS.feel.critChance` / `critMultiplier`; a hero can override with `stats.critChance`. Enemies never crit. A super critical never also rolls a normal crit.
