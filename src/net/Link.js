@@ -111,6 +111,7 @@ const friendly = (err) => {
 };
 
 export const NO_LINE = 'Found your friend\'s room, but could not connect to it.\nOne of your networks is blocking the connection\nand the relay server could not get through either.\nTry again; if it keeps failing, try another network\n(e.g. not a phone hotspot or work/school network).';
+export const NO_LINE_HOST = 'Your friend found this room, but could not connect to it:\none of your networks blocked the line and the relay didn\'t get through.';
 const NO_BROKER = 'Could not reach the matchmaking service.\nCheck your internet connection and try again.';
 
 // Watch a connection that is being set up: calls fail(msg) if the browsers give up on
@@ -148,13 +149,13 @@ export function hostRoom(code, onReady, onTrouble) {
     peer.on('disconnected', () => { if (!cancelled && !peer.destroyed) { try { peer.reconnect(); } catch { /* */ } } });
     peer.on('connection', (conn) => {
       let done = false;
-      const stop = watchLine(conn, (msg) => {
+      const stop = watchLine(conn, () => {
         if (done) return;
         done = true; stop();
         try { conn.close(); } catch { /* */ }
-        onTrouble?.(msg);
+        onTrouble?.(NO_LINE_HOST);
       });
-      conn.on('error', () => { if (!done) { done = true; stop(); onTrouble?.(NO_LINE); } });
+      conn.on('error', () => { if (!done) { done = true; stop(); onTrouble?.(NO_LINE_HOST); } });
       conn.on('open', () => {
         if (done) return;
         done = true; stop();

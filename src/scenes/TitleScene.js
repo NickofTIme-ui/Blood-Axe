@@ -186,7 +186,7 @@ export class TitleScene extends Phaser.Scene {
     else if (state === 'hosting') {
       L.big.setText(L.code); epicFill(L.big, ['#fff6c8', '#f0c050', '#a06010']);
       L.note.setText(L.trouble
-        ? `${L.trouble}\nThe room is still open: your friend can try again.      Esc  cancel`
+        ? `${L.trouble}\nThe room is still open, so they can try again.      Esc  cancel`
         : `ROOM CODE — tell your friend, then wait here.\nThey choose ONLINE CO-OP → JOIN A GAME and type it in.\nversion ${simVersion()}      Esc  cancel`);
       L.note.setColor(L.trouble ? '#ff9a7a' : '#cdb391');
     } else if (state === 'typing') {
