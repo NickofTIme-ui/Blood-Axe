@@ -248,3 +248,11 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 - Nick: "always have the bad guys walk onto the screen, not spawning visibly in". Waves used to spawn about 500 px from the hero but clamped inside the section, so near a wall, or in a room narrower than a screen, they popped into view.
 - `offscreenX` in `src/entities/Enemy.js` places each man past the edge of anything a hero's screen can show (centred on the hero, held inside the camera bounds, never narrower than a screen), plus a margin. It reads only sim state, so both online machines agree. `createEnemy(..., { entering: true })` lets him stand outside the bounds (`unbounded`) and his brain only walks him in until he's inside the bounds and within 400 px of a hero; then he fights as normal. Hazards skip him while he's entering. Stage waves, boss adds and the test-arena waves (key 9) all use it; Malgor's own entrance is unchanged; the debug spawn-near key still drops a man beside you.
 - Checked in a headless browser: every enemy spawned outside the view and first showed up at the screen edge, walking. Logic test added (hero at the start, at the right wall, mid-room). Sim change: both online players need the new build.
+
+## Cloud, 2026-10-03: Mage lightning sounds (not on itch)
+The Mage's lightning has its own electric sounds now: a rising hum while the bolt charges, a
+zap when it leaves the staff, a stuttering shock buzz when it hits, a short snap for each fork,
+and a thunderclap on the third chain hit and Storm Judgment. They are five WAVs in
+`assets/audio/sfx/elec-*.wav`, made in code by `tools/sfx-gen/electric.js` (no samples, so no
+licence question). Wired in through `MAGE_SOUNDS` in `src/effects/MageFX.js`. To tweak one, edit
+the generator and run `node tools/sfx-gen/electric.js`.

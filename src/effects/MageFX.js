@@ -4,8 +4,9 @@
 // it may use Math.random freely.
 //
 // Built from code-drawn shapes and the shared particle/flame systems (effects/Gore.js,
-// effects/Burn.js). Sounds reuse the game's samples, pitched and layered, until the
-// Mage gets his own recordings (MAGE_SOUNDS below is the one place to swap them).
+// effects/Burn.js). Sounds reuse the game's samples, pitched and layered; the lightning
+// has its own code-made crackle and thunder (elec* in core/Sfx.js). MAGE_SOUNDS below is the
+// one place to swap them.
 
 import { DEPTH } from '../view/depths.js';
 import { playSfx } from '../core/Sfx.js';
@@ -20,10 +21,12 @@ export const MAGE_SOUNDS = {
   staffImpact: [['kick', { volume: 0.55, pitch: 250 }]],
   staffBlock: [['block', { volume: 0.7, pitch: -450 }]],
   magicBlock: [['block', { volume: 0.5, pitch: 900 }]],
-  boltCharge: [['fireWhoosh', { volume: 0.25, pitch: 900 }]],
-  boltCast: [['block', { volume: 0.7, pitch: 1400 }], ['kick', { volume: 0.5, pitch: -300 }]],
-  boltImpact: [['block', { volume: 0.55, pitch: 1700, minGapMs: 30 }]],
-  boltJump: [['block', { volume: 0.35, pitch: 2000, minGapMs: 25 }]],
+  boltCharge: [['fireWhoosh', { volume: 0.25, pitch: 900 }]], // force blast / rupture build-up (not electric)
+  elecCharge: [['elecCharge', { volume: 0.55, spread: 80, minGapMs: 200 }]],
+  elecFull: [['magicBlock', { volume: 0.5, pitch: 900 }], ['elecJump', { volume: 0.5, pitch: -200 }]],
+  boltCast: [['elecZap', { volume: 0.85 }], ['kick', { volume: 0.4, pitch: -300 }]],
+  boltImpact: [['elecShock', { volume: 0.9, minGapMs: 30 }], ['block', { volume: 0.25, pitch: 1700, minGapMs: 30 }]],
+  boltJump: [['elecJump', { volume: 0.6, minGapMs: 25 }]],
   force: [['kick', { volume: 1, pitch: -800 }], ['fireWhoosh', { volume: 0.6, pitch: -600 }]],
   blinkOut: [['swingAlt', { volume: 0.4, pitch: 1000 }]],
   blinkIn: [['block', { volume: 0.3, pitch: 1500 }]],
@@ -33,7 +36,7 @@ export const MAGE_SOUNDS = {
   earthDown: [['kick', { volume: 0.7, pitch: -1500 }]],
   earthHit: [['block', { volume: 0.45, pitch: -900, minGapMs: 60 }], ['kick', { volume: 0.7, pitch: -1100, minGapMs: 60 }]],
   earthBreak: [['kick', { volume: 1, pitch: -1600 }], ['heavySwing', { volume: 0.5, pitch: -900 }], ['block', { volume: 0.4, pitch: -1300 }]],
-  storm: [['kick', { volume: 1, pitch: -1400 }], ['block', { volume: 0.8, pitch: 1200 }]],
+  storm: [['elecThunder', { volume: 1, spread: 80 }], ['kick', { volume: 0.8, pitch: -1400 }]],
   rupture: [['kick', { volume: 1, pitch: -600 }], ['finisher', { volume: 0.6, pitch: -800 }]],
   embers: [['fireWhoosh', { volume: 1, pitch: -500 }], ['kick', { volume: 0.7, pitch: -1100 }]],
 };
@@ -61,8 +64,8 @@ export class MageFX {
     ev.on('block', (e) => { if (isMage(e.defender)) this.ward(e.defender, false); });
     ev.on('parry', (e) => { if (isMage(e.defender)) this.ward(e.defender, true); });
 
-    ev.on('boltCharge', ({ fighter }) => this.sound('boltCharge', fighter));
-    ev.on('boltChargeFull', ({ fighter }) => { this.sound('magicBlock', fighter); this.flashAt(this.staffTip(fighter), 0xffd890, 18); });
+    ev.on('boltCharge', ({ fighter }) => this.sound('elecCharge', fighter));
+    ev.on('boltChargeFull', ({ fighter }) => { this.sound('elecFull', fighter); this.flashAt(this.staffTip(fighter), 0xffd890, 18); });
     ev.on('boltCast', ({ fighter, plan, charged }) => {
       this.sound('boltCast', fighter);
       if (!plan.hits.length) this.bolt(this.staffTip(fighter), { x: plan.end.x, y: plan.end.z - plan.end.h }, fighter.z, charged, 0.6);
@@ -270,6 +273,7 @@ export class MageFX {
       case 'stormLock':
         for (const t of b.targets) this.bolt(this.staffTip(f), chest(t), t.z, false, 0.7);
         this.sound('boltCast', f);
+        this.sound('boltImpact', f); // the current seizes them
         s.slowmo(0.6, 300);
         break;
       case 'stormGather': {
@@ -284,7 +288,7 @@ export class MageFX {
           if (t % 9 === 0) this.flashAt(tip, 0xffd890, 10);
           return true;
         });
-        this.sound('boltCharge', f);
+        this.sound('elecCharge', f);
         break;
       }
       case 'stormStrike': {

@@ -18,6 +18,12 @@ export const SFX = {
   second: 'assets/audio/sfx/combo-second.mp3',     // 2nd swing of the light combo (the return)
   finisher: 'assets/audio/sfx/combo-finisher.mp3', // 3rd swing of the light combo (the overhand)
   heavySwing: 'assets/audio/sfx/heavy-swing.mp3',  // heavy two-handed swing (on the button press)
+  // the Mage's lightning: made in code by tools/sfx-gen/electric.js (ours outright, no licence)
+  elecCharge: 'assets/audio/sfx/elec-charge.wav',   // hum and sparks building in the lantern
+  elecZap: 'assets/audio/sfx/elec-zap.wav',         // a bolt leaving the staff
+  elecShock: 'assets/audio/sfx/elec-shock.wav',     // a bolt biting into a body: stuttering buzz
+  elecJump: 'assets/audio/sfx/elec-jump.wav',       // a fork jumping on to the next body
+  elecThunder: 'assets/audio/sfx/elec-thunder.wav', // thunderclap: 3rd chain hit, Storm Judgment
 };
 
 const lastPlayed = {};
