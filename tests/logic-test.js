@@ -3,6 +3,7 @@
 // Each test builds a tiny World, scripts button presses, and checks the outcome.
 
 import { World } from '../src/core/World.js';
+import { SETTINGS } from '../src/config/settings.js';
 import { Controller } from '../src/core/Controller.js';
 import { Fighter } from '../src/entities/Fighter.js';
 import { createEnemy } from '../src/entities/Enemy.js';
@@ -17,6 +18,7 @@ import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/
 import { ROGUE_FINISHERS } from '../src/combat/Rogue.js';
 import { TickController, pressed } from '../src/core/TickInput.js';
 import { NetSession, NET, loopPair, snapshot, correct, feedPlayers, delayFor } from '../src/net/Session.js';
+import { runTickJobs } from '../src/core/TickJobs.js';
 
 // A controller driven by a script: { frameNumber: ['attack'] } presses,
 // plus `hold` for held buttons.
@@ -56,6 +58,10 @@ function assert(cond, msg) { if (!cond) throw new Error(msg); }
 
 console.log('Blood Axe — combat logic tests');
 
+// Random critical hits would make damage comparisons flaky: off unless a test turns them on.
+const CRIT_CHANCE = SETTINGS.feel.critChance;
+SETTINGS.feel.critChance = 0;
+
 // (async tests: run after the rest, results printed at the end)
 const later = [];
 function testAsync(name, fn) { later.push([name, fn]); }
@@ -68,6 +74,34 @@ test('light attack hits and causes hitstun', () => {
   assert(t.d.state === 'hitstun' || t.d.hitstop > 0, `dummy state ${t.d.state}`);
 });
 
+test('critical hits: every hero can land one (more damage, flagged on the hit); enemies never do', () => {
+  assert(CRIT_CHANCE > 0 && SETTINGS.feel.critMultiplier > 1, 'crits are on in the game');
+  const hitOnce = (player, chance) => {
+    SETTINGS.feel.critChance = chance;
+    const t = setup({ player, script: { 1: ['attack'] } });
+    t.d.health = 1e4; t.d.stats = { ...t.d.stats, maxHealth: 1e4 };
+    const hits = [];
+    t.world.events.on('hit', (h) => hits.push(h));
+    t.run(40);
+    SETTINGS.feel.critChance = 0;
+    return { dmg: 1e4 - t.d.health, crit: hits.some((h) => h.crit) };
+  };
+  for (const hero of Object.keys(CHARACTERS)) {
+    const plain = hitOnce(hero, 0); const crit = hitOnce(hero, 1);
+    assert(plain.dmg > 0 && !plain.crit, `${hero}: plain hit lands (${plain.dmg})`);
+    assert(crit.crit && Math.abs(crit.dmg - plain.dmg * SETTINGS.feel.critMultiplier) < 0.01,
+      `${hero}: critical hit (${plain.dmg.toFixed(1)} -> ${crit.dmg.toFixed(1)})`);
+  }
+  // an enemy swinging at a hero never crits
+  SETTINGS.feel.critChance = 1;
+  const t = setup({ dummyScript: { 1: ['attack'] }, gap: 50 });
+  const hits = [];
+  t.world.events.on('hit', (h) => hits.push(h));
+  t.run(60);
+  SETTINGS.feel.critChance = 0;
+  assert(hits.some((h) => h.defender === t.p) && !hits.some((h) => h.crit), 'enemy hits are never critical');
+});
+
 test('3-hit combo chains and the finisher knocks down', () => {
   const t = setup({ script: { 1: ['attack'], 12: ['attack'], 25: ['attack'] } });
   const states = new Set();
@@ -75,6 +109,18 @@ test('3-hit combo chains and the finisher knocks down', () => {
   assert(states.has('light2') && states.has('light3'), `states seen: ${[...states]}`);
   assert(t.log.filter((e) => e === 'hit').length === 3, `hits: ${t.log}`);
   assert(['knockdown', 'getup', 'dead'].includes(t.d.state), `dummy ${t.d.state}`);
+});
+
+test('tick jobs: a job started by another job runs to its end (Storm Judgment bolts clear)', () => {
+  const owner = { tickJobs: [] };
+  const every = (n, fn) => { const j = (t) => fn(t); j.t = 0; j.n = n; owner.tickJobs.push(j); };
+  let live = 0;
+  // like MageFX.bolt: on screen when made, gone once its job reaches its last tick
+  const bolt = () => { live++; let on = true; every(4, (t) => { if (on && t >= 3) { on = false; live--; } return true; }); };
+  every(30, (t) => { if (t % 3 === 0) bolt(); return true; }); // like the storm's gather
+  for (let i = 0; i < 60; i++) runTickJobs(owner);
+  assert(live === 0, `${live} bolt(s) left on screen`);
+  assert(owner.tickJobs.length === 0, 'every job finished');
 });
 
 test('input buffer: attack pressed during dodge recovery comes out right after', () => {

@@ -93,7 +93,11 @@ export class MageFX {
     for (const [key, o] of MAGE_SOUNDS[name] ?? []) playSfx(this.scene, key, { spread: 120, minGapMs: 40, ...o, volume: (o.volume ?? 1) * loud });
   }
 
+  // the lantern on his staff: where his painted pose has it marked, else about where it
+  // sits when he thrusts the staff out to cast
   staffTip(f) {
+    const p = this.scene.views?.get(f.id)?.staffTip?.();
+    if (p) return p;
     return { x: f.x + f.facing * 30, y: f.z - f.h - (f.stats.hover?.height ?? 0) - 86 };
   }
 
@@ -269,10 +273,15 @@ export class MageFX {
         s.slowmo(0.6, 300);
         break;
       case 'stormGather': {
-        // the storm gathering on the staff: a ring of crackling light drawing inward
-        const tip = this.staffTip(f);
+        // the storm building in the lantern: arcs crackling out of the staff's tip
+        // (re-measured each time: the staff rises while it builds)
         s.everyTick(30, (t) => {
-          if (t % 3 === 0) this.bolt({ x: tip.x + rand(-60, 60), y: tip.y + rand(-70, -20) }, tip, f.z, false, 0.35);
+          if (t % 3 !== 0) return true;
+          const tip = this.staffTip(f);
+          const a = rand(-Math.PI, 0);
+          const l = rand(30, 60);
+          this.bolt(tip, { x: tip.x + Math.cos(a) * l, y: tip.y + Math.sin(a) * l * 0.8 }, f.z, false, 0.35);
+          if (t % 9 === 0) this.flashAt(tip, 0xffd890, 10);
           return true;
         });
         this.sound('boltCharge', f);
@@ -281,10 +290,11 @@ export class MageFX {
       case 'stormStrike': {
         const c = chest(v);
         if (b.main) {
-          // the colossal bolt out of the sky
-          const top = { x: v.x + rand(-20, 20), y: s.cameras.main.worldView.y - 20 };
-          this.bolt(top, { x: v.x, y: v.z - v.h - 4 }, v.z, true, 1.6);
-          this.bolt({ x: top.x + 30, y: top.y }, c, v.z, true, 1.2);
+          // the colossal bolt, loosed from the staff's tip: the lantern is the source
+          const tip = this.staffTip(f);
+          this.bolt(tip, c, v.z, true, 1.6);
+          this.bolt(tip, { x: v.x, y: v.z - v.h - 4 }, v.z, true, 1.2);
+          this.flashAt(tip, 0xffe0b0, 22);
           s.cameras.main.flash(90, 255, 230, 190);
           s.fx.shake(10, 18);
           s.rumble(1, 1, 220);
