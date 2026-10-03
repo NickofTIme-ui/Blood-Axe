@@ -177,3 +177,8 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 
 ## Cloud, 2026-10-03: Malgor walks in (not on itch)
 - Boss: Warlord Malgor no longer glides in on his standing pose. His entrance (`bossEntrance` state) now plays his existing walk strip (`warlord_walk.png`), with the lumbering sink and sway, one step per `bossStomp` so each screen shake lands on a planted foot (`SpriteEnemyView.walkFrame`). View-only change, no sim change. Checked in a headless browser frame strip; not watched in a real playthrough.
+
+## Cloud, 2026-10-03: release build made in the cloud (not on itch)
+- `tools/build-release.py` is a Linux/macOS twin of `build-release.ps1` (same PNG->JPEG rules and exceptions, BUILD_TIME stamp, palette copy, forward-slash zip). Needs Pillow.
+- Built from `main` at a64e248 (Vexa hand-planted mines + Malgor's walk-in): 291 files, zip 132 MB. Booted the staged build headless: title, Rurik, Oryn and Vexa all painted, parallax loads, no errors beyond the sandbox blocking Google Fonts.
+- Not uploaded: the cloud environment cannot reach itch.io and has no butler API key. Open PRs #1 (teal earth wall) and #2 (doom poses wired) are not in this build.
