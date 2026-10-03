@@ -10,6 +10,7 @@ import { movePhase } from '../combat/MoveRunner.js';
 import { MAGE_FINISHERS } from '../combat/Mage.js';
 import { ROGUE_FINISHERS } from '../combat/Rogue.js';
 import { Heading, headingAnim } from './Heading.js';
+import { MageHover } from '../effects/MageHover.js';
 
 const spread = (list, t) => list[Math.min(list.length - 1, Math.max(0, Math.floor(t * list.length)))];
 const FLIP_FRAMES = 40; // ticks the double-jump flip takes (about the time she's rising and turning over)
@@ -27,6 +28,8 @@ export class StripHeroView {
     this.sprite = scene.add.image(fighter.x, fighter.z, `${sheet.key}-${first[0]}`, `f${first[1]}`)
       .setOrigin(sheet.ax / sheet.fw, sheet.ay / sheet.fh);
     this.last = null;
+    // the Mage's hover: cloth ripple, the float, the floor circle and motes (effects/MageHover.js)
+    this.hover = fighter.stats.hover ? new MageHover(scene, this) : null;
   }
 
   // The pose for this tick: a 'strip:index' reference (null = not drawn at all).
@@ -155,7 +158,9 @@ export class StripHeroView {
     const hover = f.stats.hover;
     const downed = st === 'knockdown' || st === 'dead' || st === 'burning' || (st === 'getup' && fr < f.stats.getupFrames * 0.4);
     // (his strips keep their drawn baseline, a hand below his boots: the lying poses sit on it)
-    if (hover) bob -= hover.height + (downed ? 0 : Math.sin(tick * hover.driftRate) * hover.drift);
+    const float = this.hover?.motion(downed);
+    if (hover) bob -= hover.height + (float?.lift ?? 0);
+    if (float) lean += float.sway;
     if (st === 'walk' && hover) lean += clamp01(Math.hypot(f.vx, f.vz) / f.stats.walkSpeed) * 4;
     if (st === 'walk' && f.sprinting && !this.A.sprint) lean += 5; // (no sprint art yet: lean into it)
 
@@ -182,11 +187,13 @@ export class StripHeroView {
     if (st === 'dead') alpha = Math.max(0, 1 - Math.max(0, fr - 90) / 60);
     s.setAlpha(alpha);
 
-    const lift = f.h + (hover && !downed ? hover.height : 0);
+    const lift = f.h + (hover && !downed ? hover.height + (float?.lift ?? 0) : 0);
     this.shadow.setPosition(f.x, f.z).setScale(1 - Math.min(lift / 300, 0.5)).setAlpha(0.35 * alpha);
+    this.hover?.update(s, ref, downed);
   }
 
   destroy() {
+    this.hover?.destroy();
     this.sprite.destroy();
     this.shadow.destroy();
   }

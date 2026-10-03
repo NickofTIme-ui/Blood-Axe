@@ -197,3 +197,10 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 - The mine blast (`RogueFX.blast`) is a fireball with a white-hot core, floor glow, shock ring, dust skirt, embers, gravel and rising smoke, replacing the pink flash circles. A small violet flash keeps it reading as the Rogue's.
 - Mist uses a new soft round texture (`softTex` in `Gore.js`), so red mist no longer shows as hard discs.
 - Visual only, no sim change. Before/after captures: project files `explosion/`. Not watched at full speed in a real fight.
+
+## Cloud, 2026-10-03: Mage hover upgrade (not on itch)
+- Nick asked for a higher-grade hover: "perhaps effects, his cape moving better". New `src/effects/MageHover.js`, hooked into `StripHeroView` for any hero with `stats.hover` (only the Mage). It only runs while he hovers (idle / gliding, not sprinting) and is visual only, no sim change.
+- Cloth: a WebGL pipeline (`MageCloth`, a `SinglePipeline` with its own fragment shader) ripples the painted cape and robe from the waist down, most along the trailing back edge, with extra streaming while he glides. Each frame is scanned once for the figure box, the staff column and the lantern, so the staff, boots and lantern stay still. It switches off at once for every other state. On the canvas renderer the shader is skipped.
+- Float: the single sine bob is now a slow swell under a quicker bob, with a slight sway; the floor shadow shrinks and grows with the height.
+- Magic: a slow-turning rune circle on the floor under him, a glow at his boots, motes rising under the hem, and the lantern breathing light (halo behind him) and shedding sparks.
+- Finisher code untouched. Checked in a headless browser (idle, glide, combo, spells, sprint, knockdown): no errors. Before/after GIFs: project files `mage-hover/`. Not watched at full speed on a real GPU.
