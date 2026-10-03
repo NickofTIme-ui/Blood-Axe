@@ -13,7 +13,7 @@ import { TickController, pressed } from '../core/TickInput.js';
 import { LocalSession, NetSession, snapshot, correct, feedPlayers } from '../net/Session.js';
 import { CONTROLS, CONTROLS_P1_SHARED, CONTROLS_P2 } from '../config/controls.js';
 import { createPlayer } from '../entities/Player.js';
-import { createEnemy } from '../entities/Enemy.js';
+import { createEnemy, offscreenX } from '../entities/Enemy.js';
 import { FighterView } from '../view/FighterView.js';
 import { SpriteFighterView } from '../view/SpriteFighterView.js';
 import { MageView } from '../view/MageView.js';
@@ -991,18 +991,13 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   spawnWave(roster) {
-    const b = this.world.bounds;
     const W = SETTINGS.world;
+    const heroes = this.players.filter((p) => p.alive);
     for (let i = 0; i < roster.length; i++) {
-      let side = i % 2 === 0 ? 1 : -1;
-      let x = this.player.x + side * (560 + i * 50);
-      if (x < b.minX + 20 || x > b.maxX - 20) {
-        side = -side;
-        x = this.player.x + side * (560 + i * 50);
-      }
-      x = Math.max(b.minX, Math.min(b.maxX, x));
+      // from off-screen, alternating sides; they walk on (Enemy.js offscreenX)
+      const x = offscreenX(this.world, heroes, i % 2 === 0 ? 1 : -1, i >> 1);
       const z = W.floorTop + 20 + Math.random() * (W.floorBottom - W.floorTop - 40);
-      createEnemy(this.world, roster[i], x, z);
+      createEnemy(this.world, roster[i], x, z, { entering: true });
     }
   }
 

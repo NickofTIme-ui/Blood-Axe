@@ -6,7 +6,7 @@ import { World } from '../src/core/World.js';
 import { SETTINGS } from '../src/config/settings.js';
 import { Controller } from '../src/core/Controller.js';
 import { Fighter } from '../src/entities/Fighter.js';
-import { createEnemy } from '../src/entities/Enemy.js';
+import { createEnemy, ENTER } from '../src/entities/Enemy.js';
 import { CHARACTERS } from '../src/data/characters.js';
 import { ENEMIES, WAVES } from '../src/data/enemies.js';
 import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.js';
@@ -737,6 +737,38 @@ test('co-op: a fallen hero rises beside his partner; both down = back to the che
   stage.respawn();
   assert(heroes.every((h) => h.alive && h.state === 'idle'), 'checkpoint brings both back');
   assert(stage.stats.deaths === 1, 'one death counted');
+});
+
+test('waves: every enemy starts off every screen and walks on (no popping in)', () => {
+  // a hero at the start (the camera pinned to the left wall), hugging the right wall, mid-room
+  for (const at of ['start', 'wall', 'middle']) {
+    const world = new World({ seed: 3 });
+    const hero = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 300, z: 430, controller: new TickController() }));
+    const stage = new Stage(world);
+    stage.start([hero]);
+    for (const f of world.fighters) if (f.team === 'enemy') f.removeMe = true;
+    world.tick();
+    const b = world.bounds;
+    if (at !== 'start') hero.x = at === 'wall' ? b.maxX : (b.minX + b.maxX) / 2;
+    stage.spawnWave(['grunt', 'grunt', 'grunt', 'grunt', 'grunt']);
+    const foes = stage.livingFoes();
+    assert(foes.length === 5, `five came (${foes.length})`);
+    // what the screen shows: 960 wide, centred on the hero but held inside the camera's
+    // bounds (the section +30 each side, never narrower than a screen)
+    const camL = b.minX - 30;
+    const camR = Math.max(b.maxX + 30, camL + SETTINGS.width);
+    const viewL = Math.max(camL, Math.min(camR - SETTINGS.width, hero.x - SETTINGS.width / 2));
+    const viewR = viewL + SETTINGS.width;
+    for (const f of foes) {
+      assert(f.x < viewL - 100 || f.x > viewR + 100, `${at}: spawned off-screen (x ${f.x.toFixed(0)}, view ${viewL.toFixed(0)}..${viewR.toFixed(0)})`);
+      assert(f.entering, 'and is walking on');
+    }
+    for (let i = 0; i < 60 * 15; i++) { hero.health = hero.stats.maxHealth; world.tick(); }
+    for (const f of foes) {
+      assert(!f.entering && f.x >= b.minX && f.x <= b.maxX, `${at}: walked into the room (x ${f.x.toFixed(0)}, ${b.minX}..${b.maxX})`);
+      assert(Math.abs(f.x - hero.x) < 300, `${at}: and came for the hero (${Math.abs(f.x - hero.x).toFixed(0)} away)`);
+    }
+  }
 });
 
 // ---------------------------------------------------------------- the Mage

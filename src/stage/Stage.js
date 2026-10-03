@@ -14,7 +14,7 @@
 
 import { STAGE, PICKUPS, PROPS } from '../data/stage.js';
 import { ENEMIES } from '../data/enemies.js';
-import { createEnemy } from '../entities/Enemy.js';
+import { createEnemy, offscreenX } from '../entities/Enemy.js';
 import { toWorldBox, overlaps } from '../combat/Boxes.js';
 
 const PAD = 30;           // keep everyone this far inside the section's ends
@@ -160,17 +160,14 @@ export class Stage {
   }
 
   spawnWave(roster) {
-    const sec = this.section;
-    const p = this.player;
+    const b = this.world.bounds;
+    const heroes = this.players.filter((p) => p.alive);
     roster.forEach((type, k) => {
-      // from just off-screen, alternating sides (inside the section)
+      // from off-screen, alternating sides; they walk on (Enemy.js offscreenX)
       const side = k % 2 === 0 ? 1 : -1;
-      let x = p.x + side * (500 + k * 40);
-      if (x < sec.x0 + PAD + 10 || x > sec.x1 - PAD - 10) x = p.x - side * (500 + k * 40);
-      x = Math.max(sec.x0 + PAD + 10, Math.min(sec.x1 - PAD - 10, x));
-      const b = this.world.bounds;
+      const x = offscreenX(this.world, heroes, side, k >> 1);
       const z = b.minZ + 20 + ((k * 71) % Math.max(1, b.maxZ - b.minZ - 40)); // spread over the lane
-      createEnemy(this.world, type, x, z);
+      createEnemy(this.world, type, x, z, { entering: true });
     });
   }
 
@@ -405,7 +402,7 @@ export class Stage {
 
   // A hazard hurting anyone (players and enemies alike).
   hurt(hz, f, dmg, dir, kind) {
-    if (!f.alive || f.invincible || f.state === 'executed' || f.state === 'execute' || hz.cool.has(f.id)) return;
+    if (!f.alive || f.invincible || f.entering || f.state === 'executed' || f.state === 'execute' || hz.cool.has(f.id)) return;
     if (kind === 'fire' && f.state === 'knockdown' && f.lyingSince === null) return; // already thrown clear
     hz.cool.set(f.id, kind === 'fire' ? FIRE.tick * 3 : 50);
     f.health = Math.max(0, f.health - dmg);
