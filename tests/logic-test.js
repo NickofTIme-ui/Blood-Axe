@@ -17,6 +17,7 @@ import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/
 import { ROGUE_FINISHERS } from '../src/combat/Rogue.js';
 import { TickController, pressed } from '../src/core/TickInput.js';
 import { NetSession, NET, loopPair, snapshot, correct, feedPlayers, delayFor } from '../src/net/Session.js';
+import { runTickJobs } from '../src/core/TickJobs.js';
 
 // A controller driven by a script: { frameNumber: ['attack'] } presses,
 // plus `hold` for held buttons.
@@ -75,6 +76,18 @@ test('3-hit combo chains and the finisher knocks down', () => {
   assert(states.has('light2') && states.has('light3'), `states seen: ${[...states]}`);
   assert(t.log.filter((e) => e === 'hit').length === 3, `hits: ${t.log}`);
   assert(['knockdown', 'getup', 'dead'].includes(t.d.state), `dummy ${t.d.state}`);
+});
+
+test('tick jobs: a job started by another job runs to its end (Storm Judgment bolts clear)', () => {
+  const owner = { tickJobs: [] };
+  const every = (n, fn) => { const j = (t) => fn(t); j.t = 0; j.n = n; owner.tickJobs.push(j); };
+  let live = 0;
+  // like MageFX.bolt: on screen when made, gone once its job reaches its last tick
+  const bolt = () => { live++; let on = true; every(4, (t) => { if (on && t >= 3) { on = false; live--; } return true; }); };
+  every(30, (t) => { if (t % 3 === 0) bolt(); return true; }); // like the storm's gather
+  for (let i = 0; i < 60; i++) runTickJobs(owner);
+  assert(live === 0, `${live} bolt(s) left on screen`);
+  assert(owner.tickJobs.length === 0, 'every job finished');
 });
 
 test('input buffer: attack pressed during dodge recovery comes out right after', () => {

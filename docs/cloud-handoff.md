@@ -197,3 +197,11 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 - The mine blast (`RogueFX.blast`) is a fireball with a white-hot core, floor glow, shock ring, dust skirt, embers, gravel and rising smoke, replacing the pink flash circles. A small violet flash keeps it reading as the Rogue's.
 - Mist uses a new soft round texture (`softTex` in `Gore.js`), so red mist no longer shows as hard discs.
 - Visual only, no sim change. Before/after captures: project files `explosion/`. Not watched at full speed in a real fight.
+
+## Cloud, 2026-10-03: Storm Judgment lightning no longer sticks (not on itch)
+
+- The Mage's STORM JUDGMENT left a cluster of lightning frozen over his staff after the
+  finisher. Its gather beat throws a new bolt every few ticks from inside a tick job, and
+  the scene's job loop rebuilt its list with `filter`, dropping any job added while it
+  ran. Those bolts were drawn once and never cleared. The loop now lives in
+  `src/core/TickJobs.js` (`runTickJobs`) and keeps jobs started mid-run. Test added.
