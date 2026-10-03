@@ -188,5 +188,5 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 
 ## Cloud, 2026-10-03: release build made in the cloud (not on itch)
 - `tools/build-release.py` is a Linux/macOS twin of `build-release.ps1` (same PNG->JPEG rules and exceptions, BUILD_TIME stamp, palette copy, forward-slash zip). Needs Pillow.
-- Built from `main` at a64e248 (Vexa hand-planted mines + Malgor's walk-in): 291 files, zip 132 MB. Booted the staged build headless: title, Rurik, Oryn and Vexa all painted, parallax loads, no errors beyond the sandbox blocking Google Fonts.
-- Not uploaded: the cloud environment cannot reach itch.io and has no butler API key. Open PRs #1 (teal earth wall) and #2 (doom poses wired) are not in this build.
+- Merged PRs #1 (teal earth wall) and #2 (doom poses wired) into `main` (only the hand-off notes conflicted). Built from `main` at cd257fb: 298 files, zip 134 MB, all logic tests pass. Booted the staged build headless: title, Rurik, Oryn and Vexa painted, parallax and all seven doom sheets load, no errors beyond the sandbox blocking Google Fonts.
+- Not uploaded: the cloud environment cannot reach itch.io and has no butler API key. To upload from the PC: pull `main`, run `tools/build-release.ps1`, upload `release/blood-axe-web.zip`.
