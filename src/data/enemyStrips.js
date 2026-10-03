@@ -51,6 +51,10 @@ const set = (id) => ({
   // N = both arms gone
   fleeN: { file: `${DIR}/${id}_fleeN.png`, frames: 8, align: 'median', ground: 'drawn', optional: true, wounds: true },
   cowerN: { file: `${DIR}/${id}_cowerN.png`, frames: 6, ref: 0, optional: true, wounds: true },
+  // a Rogue's mine is stuck on his chest (combat/Mine.js): 4 poses, one per way of taking
+  // it (f.doom.kind): 0 rigid, staring at it / 1 looking back, pleading / 2 hopping,
+  // pulling at it / 3 leaning away from it. Optional: without it the hit/idle poses stand in.
+  doom: { file: `${DIR}/${id}_doom.png`, frames: 4, ref: 0, ground: 'drawn', optional: true },
 });
 
 // The scared set of animations for a one-armed enemy (side = 'B' or 'F').
@@ -77,7 +81,9 @@ const fix = (strips, extra) => {
 export const ENEMY_STRIPS = {
   // the fodder: no special move, so no special strip
   grunt: (({ special, ...rest }) => rest)(set('grunt')),
-  butcher: set('butcher'),
+  butcher: fix(set('butcher'), {
+    doom: { holes: [[182, 279]] }, // the gap between the hook's chain and his leg
+  }),
   berserker: fix(set('berserker'), {
     heavy: { erase: [[1452, 540, 1492, 670]] }, // rubble touching the previous pose's axe head
   }),
@@ -89,7 +95,13 @@ export const ENEMY_STRIPS = {
     react: { erase: [[1690, 210, 1800, 320]] }, // dagger flung from the knocked-down pose
     special: { own: [[280, 150, 420, 330, 1]] },  // the swung sickle belongs to pose 2
   }),
-  penitent: set('penitent'),
+  penitent: fix(set('penitent'), {
+    // the little surprise ticks drawn round his helmet (no marks over heads: body language
+    // only), and the gaps closed off by the flail's chain
+    doom: { holes: [[721, 280], [1244, 276], [1781, 326], [210, 283], [1404, 283]], erase: [[737, 96, 757, 130], [712, 118, 736, 136], [767, 113, 788, 141], [751, 134, 759, 145], [739, 142, 751, 154], [711, 147, 738, 160], [732, 165, 748, 174],
+      [1306, 107, 1345, 147], [1441, 125, 1467, 154], [1449, 159, 1484, 175],
+      [1744, 121, 1764, 153], [1726, 144, 1743, 165], [1766, 148, 1783, 167], [1796, 147, 1820, 169], [1801, 172, 1818, 183], [1677, 203, 1701, 217], [1692, 225, 1708, 237]] },
+  }),
   ghoul: set('ghoul'),
   // the boss: painted on magenta (his black cape would vanish into a black background),
   // and the standard six strips only (he can't be maimed, so no scared sets)
@@ -117,6 +129,8 @@ const COMMON = {
   air: { needs: ['react'], frames: seq('react', [4]) },
   lying: { needs: ['react'], frames: seq('react', [5]) },
   getup: { needs: ['react'], frames: seq('react', [5, 4, 0]) },
+  // stuck with a mine: one pose per f.doom.kind (picked in SpriteEnemyView)
+  doom: { needs: ['doom'], frames: seq('doom', [0, 1, 2, 3]) },
 };
 
 export const ENEMY_ANIMS = {
