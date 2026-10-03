@@ -171,3 +171,6 @@ To do locally: paint the earth-wall slabs, build + upload to itch, then a real t
 
 ## itch upload 19527803 (2026-10-02) = main at ac4b517
 Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions (procedural, doom art not wired), chests->crates, no cracked wall, HD props. Zip hash checked in-page; public page points at 19527803. Not played on itch.
+
+## Cloud, 2026-10-03
+- Earth wall recoloured to match the painted slabs: the fissure, seam glow, crack glow and health bar are teal (no orange/gold left in `EarthWallView`); rock debris, dust, hit sparks, painted-slab tints and the fallback drawn slabs are slate grey instead of brown. Tests pass; not looked at on screen.
