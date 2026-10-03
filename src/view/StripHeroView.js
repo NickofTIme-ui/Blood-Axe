@@ -11,6 +11,7 @@ import { MAGE_FINISHERS } from '../combat/Mage.js';
 import { ROGUE_FINISHERS } from '../combat/Rogue.js';
 import { Heading, headingAnim } from './Heading.js';
 import { MageHover } from '../effects/MageHover.js';
+import { HERO_STRIPS } from '../data/heroStrips.js';
 
 const spread = (list, t) => list[Math.min(list.length - 1, Math.max(0, Math.floor(t * list.length)))];
 const FLIP_FRAMES = 40; // ticks the double-jump flip takes (about the time she's rising and turning over)
@@ -30,6 +31,19 @@ export class StripHeroView {
     this.last = null;
     // the Mage's hover: cloth ripple, the float, the floor circle and motes (effects/MageHover.js)
     this.hover = fighter.stats.hover ? new MageHover(scene, this) : null;
+  }
+
+  // Where the staff's tip is drawn right now (screen point), for poses whose strip marks
+  // it (`tips` in data/heroStrips.js); null otherwise.
+  staffTip() {
+    const ref = this.frameFor();
+    if (!ref) return null;
+    const [strip, i] = ref.split(':');
+    const t = HERO_STRIPS[this.f.stats.id]?.strips[strip]?.tips?.[i];
+    if (!t) return null;
+    const s = this.sprite;
+    const k = depthScale(this.f.z) / this.sheet.res;
+    return { x: s.x + (t[0] - this.sheet.ax) * k * this.f.facing, y: s.y + (t[1] - this.sheet.ay) * k };
   }
 
   // The pose for this tick: a 'strip:index' reference (null = not drawn at all).

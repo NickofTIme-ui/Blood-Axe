@@ -23,7 +23,10 @@ export const HERO_STRIPS = {
       hoverU: strip('mage', 'hoverU', 8, { align: 'median' }), // the glide from behind (up the screen)
       hoverD: strip('mage', 'hoverD', 8, { align: 'median' }), // ...and from the front (down the screen)
       // his finishers and his levitation jump (optional: else he borrows his casting poses)
-      finStorm: strip('mage', 'finStorm', 8, { ground: 'drawn' }),   // ready, plant, staff up, sparks, staff down, hold, lower, ready
+      // (tips: where the staff's lantern is in each pose, in cut-frame pixels (the boots'
+      // anchor is at 208, 460); null where it can't be seen. The finisher's lightning comes
+      // out of it: view/StripHeroView.staffTip, effects/MageFX.js)
+      finStorm: strip('mage', 'finStorm', 8, { ground: 'drawn', tips: [[185, 223], [186, 225], [191, 154], [193, 152], null, [142, 368], [185, 223], [185, 224]] }), // ready, plant, staff up, sparks, staff down, hold, lower, ready
       finRupture: strip('mage', 'finRupture', 8, { ground: 'drawn' }), // ready, hand out, curl, hold, closing, near fist, fist, lower
       finEmbers: strip('mage', 'finEmbers', 8, { ground: 'drawn', ref: 4, target: 138 }), // dissolving, re-forming, staff raised, slam, planted, robe blown up, still, turning away
       levitate: strip('mage', 'levitate', 4, { ground: 'drawn', target: 124 }), // gather, rising, the top, descending
@@ -90,7 +93,9 @@ export const HERO_ANIMS = {
     fin_rupture: { needs: ['finRupture'], frames: seq('finRupture', [0, 1, 2, 3, 4, 5, 6, 7]) },
     fin_embers: { needs: ['finEmbers'], frames: seq('finEmbers', [0, 1, 2, 3, 4, 5, 6, 7]) },
     jump: { frames: seq('hover', [3, 4]) },
-    block: { frames: seq('react', [0]) },
+    // block: the staff braced up across him in both hands (combo2's follow-through pose;
+    // react pose 0, used before, holds it trailing behind him like a flinch)
+    block: { frames: seq('combo2', [3]) },
     light1: swing(seq('combo1', [0, 1]), seq('combo1', [2]), seq('combo1', [3, 4])),
     light2: swing(seq('combo2', [0, 1]), seq('combo2', [2]), seq('combo2', [3, 4])),
     light3: swing(seq('combo3', [0, 1, 2]), seq('combo3', [3]), seq('combo3', [3, 3, 4])),

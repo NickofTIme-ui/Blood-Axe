@@ -33,6 +33,8 @@ export const SETTINGS = {
     parryHitstop: 12,       // freeze when a parry lands
     guardBreakFrames: 55,   // how long a guard-broken fighter is stunned
     counterMultiplier: 1.5, // damage bonus when hitting a staggered / guard-broken enemy
+    critChance: 0.12,       // chance a hero's clean hit is a CRITICAL (a hero can set stats.critChance)
+    critMultiplier: 1.75,   // damage on a critical hit
   },
 
   // Gore: 0 = OFF, 1 = LOW, 2 = FULL. Press G in game to cycle.
