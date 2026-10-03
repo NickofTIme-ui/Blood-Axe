@@ -172,6 +172,14 @@ To do locally: paint the earth-wall slabs, build + upload to itch, then a real t
 ## itch upload 19527803 (2026-10-02) = main at ac4b517
 Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions (procedural, doom art not wired), chests->crates, no cracked wall, HD props. Zip hash checked in-page; public page points at 19527803. Not played on itch.
 
+## Cloud, 3 October 2026: mine-doom poses wired in
+- The seven `<enemy>_doom.png` strips moved from `docs/art-refs/doom` to `assets/enemies/strips/` and load as the optional `doom` strip (`data/enemyStrips.js`, 4 poses = `f.doom.kind` 0-3). `SpriteEnemyView` shows the pose while a mine is stuck on him, with gentler procedural motion on top (rattle / turning to look each way / hop / edging back). An enemy without the strip, a one-armed one, or the boss still gets the old hit/idle stand-ins.
+- Penitent: the surprise ticks are erased at load (`erase` boxes) and the pockets closed off by his flail chain are cut out (`holes`); same for the Butcher's hook chain. No text or marks over anyone's head.
+- Checked: every cut pose in the browser (sizes match the react poses, feet on the baseline), and two grunts posed in a live arena with no errors. Not watched through a real mine fuse yet; not on itch.
+
+## Cloud, 2026-10-03
+- Earth wall recoloured to match the painted slabs: the fissure, seam glow, crack glow and health bar are teal (no orange/gold left in `EarthWallView`); rock debris, dust, hit sparks, painted-slab tints and the fallback drawn slabs are slate grey instead of brown. Tests pass; not looked at on screen.
+
 ## Cloud, 2026-10-03: Vexa plants mines by hand (not on itch)
 - Magic (LT / LB / U) with an enemy in kicking distance ahead (`kit.knife.kickReach`, 90 px, same test as her crescent kick) now sticks the mine ON him (`plantTarget` in `src/combat/Rogue.js`, then `Mines.stick`), so the frozen stuck-mine reaction plays. Nobody in reach: the floor mine as before. No new animation: she plants it without breaking stride. Sim change. New logic test covers it; not watched in play.
 

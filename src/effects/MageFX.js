@@ -79,7 +79,7 @@ export class MageFX {
     ev.on('barrierGone', ({ barrier }) => { this.walls.get(barrier)?.destroy(); this.walls.delete(barrier); });
     ev.on('barrierHit', (e) => {
       this.sound('earthHit', e.by);
-      this.scene.gore.spark(e.x, e.z, e.h, 0x9a8a70, 8);
+      this.scene.gore.spark(e.x, e.z, e.h, 0x7a8a88, 8);
       this.walls.get(e.barrier)?.cracked();
     });
 
@@ -503,7 +503,7 @@ class EarthWallView {
     this.cracks = Math.min(4, this.cracks + 1);
     const b = this.b;
     for (let i = 0; i < 5; i++) {
-      this.scene.gore.spawn({ x: b.x + rand(-b.half, b.half), z: rand(this.z0, this.z1), h: rand(40, 110), vx: rand(-90, 90), vz: 0, vh: rand(20, 160), tint: 0x6a5a48, scale: rand(0.6, 1.2), decal: false, life: 26, texture: 'px', spin: rand(-8, 8) });
+      this.scene.gore.spawn({ x: b.x + rand(-b.half, b.half), z: rand(this.z0, this.z1), h: rand(40, 110), vx: rand(-90, 90), vz: 0, vh: rand(20, 160), tint: 0x4a5258, scale: rand(0.6, 1.2), decal: false, life: 26, texture: 'px', spin: rand(-8, 8) });
     }
   }
 
@@ -511,7 +511,7 @@ class EarthWallView {
     this.fall = 0;
     const b = this.b;
     for (let i = 0; i < 46; i++) {
-      this.scene.gore.spawn({ x: b.x + rand(-b.half * 1.5, b.half * 1.5), z: rand(this.z0, this.z1), h: rand(10, 100), vx: rand(-120, 120), vz: 0, vh: rand(0, 200), tint: Math.random() < 0.6 ? 0x5a4a3a : 0x8a7a62, scale: rand(0.6, 1.5), decal: false, life: Math.floor(rand(20, 40)), texture: 'px', spin: rand(-8, 8) });
+      this.scene.gore.spawn({ x: b.x + rand(-b.half * 1.5, b.half * 1.5), z: rand(this.z0, this.z1), h: rand(10, 100), vx: rand(-120, 120), vz: 0, vh: rand(0, 200), tint: Math.random() < 0.6 ? 0x3c4448 : 0x6a7470, scale: rand(0.6, 1.5), decal: false, life: Math.floor(rand(20, 40)), texture: 'px', spin: rand(-8, 8) });
     }
     for (let i = 0; i < 10; i++) this.scene.burning?.puff?.(b.x + rand(-20, 20), rand(this.z0, this.z1), rand(10, 60), 0.5);
   }
@@ -522,9 +522,9 @@ class EarthWallView {
     const x = b.x + s.off;
     const gore = this.scene.gore;
     for (let i = 0; i < 4; i++) {
-      gore.spawn({ x: x + rand(-s.w * 0.5, s.w * 0.5), z: s.z, h: rand(0, 20), vx: rand(-200, 200), vz: 0, vh: rand(220, 480), tint: Math.random() < 0.6 ? 0x6a5a48 : 0x9a8a72, scale: rand(0.6, 1.4), decal: false, life: Math.floor(rand(22, 40)), texture: 'px', spin: rand(-12, 12) });
+      gore.spawn({ x: x + rand(-s.w * 0.5, s.w * 0.5), z: s.z, h: rand(0, 20), vx: rand(-200, 200), vz: 0, vh: rand(220, 480), tint: Math.random() < 0.6 ? 0x4a5258 : 0x7a8288, scale: rand(0.6, 1.4), decal: false, life: Math.floor(rand(22, 40)), texture: 'px', spin: rand(-12, 12) });
     }
-    for (let i = 0; i < 3; i++) gore.spawn({ x: x + rand(-s.w, s.w), z: s.z, h: 2, vx: rand(-260, 260), vz: rand(-20, 20), vh: rand(20, 80), tint: 0x8a7a60, scale: rand(0.8, 1.6), decal: false, life: 18 });
+    for (let i = 0; i < 3; i++) gore.spawn({ x: x + rand(-s.w, s.w), z: s.z, h: 2, vx: rand(-260, 260), vz: rand(-20, 20), vh: rand(20, 80), tint: 0x6e7672, scale: rand(0.8, 1.6), decal: false, life: 18 });
     if (Math.random() < 0.3) this.scene.burning?.puff?.(x, s.z, rand(10, 40), 0.45);
   }
 
@@ -532,8 +532,8 @@ class EarthWallView {
     const b = this.b;
     this.t++;
     if (this.fall >= 0) this.fall++;
-    const tones = [[0x5a4c40, 0x7a6a58, 0x3a3028], [0x4e4438, 0x6e6050, 0x302820], [0x645444, 0x86745e, 0x40342a]];
-    const tints = [0xd8c8b8, 0xc0b0a0, 0xe8d8c4];
+    const tones = [[0x485058, 0x68727a, 0x2c3236], [0x40484c, 0x5e686c, 0x262c2e], [0x4e5650, 0x707a72, 0x30362f]];
+    const tints = [0xc8d0d0, 0xb0b8b8, 0xd8e0e0];
     const dmg = b.maxHp > 0 ? 1 - b.hp / b.maxHp : 0;
     const stage = Math.max(this.cracks, Math.floor(dmg * 4));
     const seam = 0.5 + 0.5 * Math.sin(this.t * 0.12);
@@ -545,7 +545,7 @@ class EarthWallView {
     if (glow > 0) {
       for (const dir of [-1, 1]) {
         let px = b.x; let pz = this.zc;
-        cg.lineStyle(3, 0xff9a40, 0.9 * glow);
+        cg.lineStyle(3, 0x30d8c0, 0.9 * glow);
         cg.beginPath(); cg.moveTo(px, pz);
         for (let d = 8; d <= reach; d += 8) {
           const z = this.zc + dir * d;
@@ -555,7 +555,7 @@ class EarthWallView {
           cg.lineTo(px, pz);
         }
         cg.strokePath();
-        cg.lineStyle(1.2, 0xffe0a0, glow).beginPath(); cg.moveTo(b.x, this.zc); cg.lineTo(px, pz); cg.strokePath();
+        cg.lineStyle(1.2, 0xb0fff0, glow).beginPath(); cg.moveTo(b.x, this.zc); cg.lineTo(px, pz); cg.strokePath();
       }
     }
 
@@ -584,7 +584,7 @@ class EarthWallView {
         const [base, light, dark] = tones[s.tone];
         const P = s.pts.map((q) => ({ x: x + q.x, y: y + q.y * k }));
         const poly = [{ x: x - s.w / 2, y }, ...P, { x: x + s.w / 2, y }];
-        g.fillStyle(0x0a0806, 1);
+        g.fillStyle(0x080a0c, 1);
         g.beginPath(); g.moveTo(poly[0].x, poly[0].y); for (const q of poly) g.lineTo(q.x - 1, q.y - 1); g.closePath(); g.fillPath();
         g.fillStyle(base, 1);
         g.beginPath(); g.moveTo(poly[0].x, poly[0].y); for (const q of poly) g.lineTo(q.x, q.y); g.closePath(); g.fillPath();
@@ -594,13 +594,13 @@ class EarthWallView {
       // magic burning in the seams: hot as it rises, then a slow pulse, flaring as it fails
       const hot = since < 14 ? 1 - since / 14 : 0;
       const sg = Math.min(1, (0.25 + seam * 0.25 + stage * 0.12 + down + hot) * k);
-      g.lineStyle(1.6, 0xff9a40, sg);
+      g.lineStyle(1.6, 0x30d8c0, sg);
       g.lineBetween(x - s.w * 0.1, y - 2, x + s.w * 0.05, y - s.h * 0.55 * k);
-      if (hot > 0) g.lineStyle(3, 0xffd890, hot * 0.6).lineBetween(x - s.w * 0.1, y - 2, x + s.w * 0.05, y - s.h * 0.55 * k);
+      if (hot > 0) g.lineStyle(3, 0x90ffe8, hot * 0.6).lineBetween(x - s.w * 0.1, y - 2, x + s.w * 0.05, y - s.h * 0.55 * k);
       // cracks, by damage stage
-      if (stage >= 1) { g.lineStyle(1.2, 0x140e0a, 1); g.lineBetween(x - s.w * 0.3, y - s.h * s.crack * k, x + s.w * 0.2, y - s.h * (s.crack - 0.2) * k); }
-      if (stage >= 2) { g.lineStyle(1.6, 0x140e0a, 1); g.lineBetween(x + s.w * 0.25, y - s.h * 0.9 * k, x - s.w * 0.1, y - s.h * 0.2 * k); g.lineStyle(1, 0xff9a40, 0.6); g.lineBetween(x + s.w * 0.24, y - s.h * 0.88 * k, x - s.w * 0.09, y - s.h * 0.22 * k); }
-      if (stage >= 3 && i % 3 === 0) g.fillStyle(0x0a0806, 1).fillTriangle(x - 6, y - s.h * 0.8 * k, x + 6, y - s.h * 0.8 * k, x, y - s.h * 0.6 * k);
+      if (stage >= 1) { g.lineStyle(1.2, 0x0e1214, 1); g.lineBetween(x - s.w * 0.3, y - s.h * s.crack * k, x + s.w * 0.2, y - s.h * (s.crack - 0.2) * k); }
+      if (stage >= 2) { g.lineStyle(1.6, 0x0e1214, 1); g.lineBetween(x + s.w * 0.25, y - s.h * 0.9 * k, x - s.w * 0.1, y - s.h * 0.2 * k); g.lineStyle(1, 0x30d8c0, 0.6); g.lineBetween(x + s.w * 0.24, y - s.h * 0.88 * k, x - s.w * 0.09, y - s.h * 0.22 * k); }
+      if (stage >= 3 && i % 3 === 0) g.fillStyle(0x080a0c, 1).fillTriangle(x - 6, y - s.h * 0.8 * k, x + 6, y - s.h * 0.8 * k, x, y - s.h * 0.6 * k);
     });
 
     // its health, over the top of the wall (only once it's been hit)
@@ -609,8 +609,8 @@ class EarthWallView {
     if (b.maxHp > 0 && b.hp < b.maxHp && this.fall < 0) {
       const w = 64; const x = b.x - w / 2; const y = this.z0 - 128;
       bar.fillStyle(0x000000, 0.7).fillRect(x - 2, y - 2, w + 4, 8);
-      bar.fillStyle(0x6a5a48, 1).fillRect(x, y, w * this.shown, 4);
-      bar.fillStyle(0xff9a40, 1).fillRect(x, y, w * Math.max(0, b.hp / b.maxHp), 4);
+      bar.fillStyle(0x4a5258, 1).fillRect(x, y, w * this.shown, 4);
+      bar.fillStyle(0x30d8c0, 1).fillRect(x, y, w * Math.max(0, b.hp / b.maxHp), 4);
     }
   }
 
