@@ -212,3 +212,7 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
   `StripHeroView.staffTip()` turns that into a screen point and `MageFX.staffTip` uses
   it, falling back to the old fixed offset. Other strips can get `tips` the same way.
   Filmed in the cloud: project files `mage-storm/`.
+
+## Cloud, 2026-10-03: Mage blocks with his staff (not on itch)
+- His block (and parry) used `react` pose 0, which holds the staff trailing behind him and reads as a flinch. It now shows `combo2` pose 3: both hands on the staff, raised diagonally across the front of him (`HERO_ANIMS.mage.block` in `src/data/heroStrips.js`). Reuses existing art, no new strip needed. Before/after: project files `mage-block/`.
+- If Nick wants a purpose-made guard (staff held level in front, both hands, a little shield glow), that would be one new pose to paint; not requested yet.

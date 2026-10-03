@@ -93,7 +93,9 @@ export const HERO_ANIMS = {
     fin_rupture: { needs: ['finRupture'], frames: seq('finRupture', [0, 1, 2, 3, 4, 5, 6, 7]) },
     fin_embers: { needs: ['finEmbers'], frames: seq('finEmbers', [0, 1, 2, 3, 4, 5, 6, 7]) },
     jump: { frames: seq('hover', [3, 4]) },
-    block: { frames: seq('react', [0]) },
+    // block: the staff braced up across him in both hands (combo2's follow-through pose;
+    // react pose 0, used before, holds it trailing behind him like a flinch)
+    block: { frames: seq('combo2', [3]) },
     light1: swing(seq('combo1', [0, 1]), seq('combo1', [2]), seq('combo1', [3, 4])),
     light2: swing(seq('combo2', [0, 1]), seq('combo2', [2]), seq('combo2', [3, 4])),
     light3: swing(seq('combo3', [0, 1, 2]), seq('combo3', [3]), seq('combo3', [3, 3, 4])),
