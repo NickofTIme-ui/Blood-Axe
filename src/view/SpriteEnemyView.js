@@ -330,19 +330,23 @@ export class SpriteEnemyView {
 
     let face = P.visFacing; // flips back and forth during spins
     // a mine is stuck on him and he's just understood (combat/Mine.js): frozen, each man
-    // taking it his own way
+    // taking it his own way — in his painted doom pose when he has one (data/enemyStrips.js),
+    // which already carries most of the body language, so the motion on top is gentler
     let tall = 1;
     const doom = f.doom && f.awe > 0 && f.alive ? f.doom : null;
     if (doom) {
       const t = (this.doomAge = (this.doomAge ?? 0) + dt);
-      this.setFrameRef((doom.kind === 1 ? A.idle : A.hit).frames[0]);
+      const posed = !!A.doom;
+      this.setFrameRef(posed ? A.doom.frames[doom.kind] : (doom.kind === 1 ? A.idle : A.hit).frames[0]);
       if (doom.kind === 0) {        // stiff as a board, eyes on his chest, rattling
-        tall = 1.07; dx = (Math.random() - 0.5) * 3; angle = 0;
+        tall = posed ? 1 : 1.07; dx = (Math.random() - 0.5) * (posed ? 2 : 3); angle = 0;
       } else if (doom.kind === 1) { // looks left, looks right: nobody's coming
-        if (Math.floor(t / 7) % 2) face = -face;
+        if (Math.floor(t / (posed ? 10 : 7)) % 2) face = -face;
         dy = 0; angle = 0;
       } else if (doom.kind === 2) { // hops on the spot trying to shake it off
-        dy = -Math.abs(Math.sin(t * 0.45)) * 12; angle = Math.sin(t * 0.9) * 10;
+        dy = -Math.abs(Math.sin(t * 0.45)) * 12; angle = Math.sin(t * 0.9) * (posed ? 4 : 10);
+      } else if (posed) {           // the pose leans away already: he keeps edging back, shaking
+        angle = -Math.min(6, t * 0.25); dx = (Math.random() - 0.5) * 1.5;
       } else {                      // leans further and further away from his own chest
         angle = -Math.min(22, t * 0.9); dx = (Math.random() - 0.5) * 1.5; tall = 0.96;
       }
