@@ -499,7 +499,10 @@ export class StageView {
     const rnd = (k, salt) => { const v = Math.sin(k * 127.1 + salt * 311.7) * 43758.5453; return v - Math.floor(v); };
 
     // the ceiling mount: a bolted iron plate, a forged lug under it, and a shackle with its pin
-    const { x: x0, y: y0 } = pts[0];
+    // (shaken by a blow coming up the chain)
+    const jolt = hz.chain?.jolt ?? 0;
+    const x0 = pts[0].x + Math.sin((hz.t ?? 0) * 2.7) * jolt * 1.6;
+    const y0 = pts[0].y + Math.cos((hz.t ?? 0) * 3.1) * jolt * 0.8;
     g.fillStyle(C.dark, 1).fillRect(x0 - 17, y0 - 12, 34, 10);
     g.fillStyle(C.iron, 1).fillRect(x0 - 16, y0 - 11, 32, 8);
     g.fillStyle(C.shade, 1).fillRect(x0 - 16, y0 - 5, 32, 2);
@@ -598,6 +601,10 @@ export class StageView {
     ev.on('bladeStruck', ({ hazard, dir, force }) => {
       const s = this.stage.bladeState(hazard);
       hazard.chain?.kick(dir, force ? 1.4 : 1); // the blow shakes the chain as well as turning the swing
+      // and the jolt up the chain shakes grit loose from round the ceiling mount
+      for (let i = 0; i < 10; i++) {
+        this.scene.gore.spawn({ x: hazard.x + rand(-14, 14), z: hazard.z, h: 330 + rand(0, 12), vx: rand(-20, 20), vz: 0, vh: rand(-30, 10), tint: 0x8a8070, scale: rand(0.15, 0.35), decal: false, life: 70 });
+      }
       playSfx(this.scene, 'block', { volume: 1, pitch: force ? -900 : -300, minGapMs: 0 });
       playSfx(this.scene, 'heavySwing', { volume: 0.6, pitch: -700, minGapMs: 0 });
       this.scene.gore.spark(s.tipX, hazard.z - 30, 30, force ? 0xffb060 : 0xfff0c0, 26);
