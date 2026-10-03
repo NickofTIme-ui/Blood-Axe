@@ -23,7 +23,10 @@ export const HERO_STRIPS = {
       hoverU: strip('mage', 'hoverU', 8, { align: 'median' }), // the glide from behind (up the screen)
       hoverD: strip('mage', 'hoverD', 8, { align: 'median' }), // ...and from the front (down the screen)
       // his finishers and his levitation jump (optional: else he borrows his casting poses)
-      finStorm: strip('mage', 'finStorm', 8, { ground: 'drawn' }),   // ready, plant, staff up, sparks, staff down, hold, lower, ready
+      // (tips: where the staff's lantern is in each pose, in cut-frame pixels (the boots'
+      // anchor is at 208, 460); null where it can't be seen. The finisher's lightning comes
+      // out of it: view/StripHeroView.staffTip, effects/MageFX.js)
+      finStorm: strip('mage', 'finStorm', 8, { ground: 'drawn', tips: [[185, 223], [186, 225], [191, 154], [193, 152], null, [142, 368], [185, 223], [185, 224]] }), // ready, plant, staff up, sparks, staff down, hold, lower, ready
       finRupture: strip('mage', 'finRupture', 8, { ground: 'drawn' }), // ready, hand out, curl, hold, closing, near fist, fist, lower
       finEmbers: strip('mage', 'finEmbers', 8, { ground: 'drawn', ref: 4, target: 138 }), // dissolving, re-forming, staff raised, slam, planted, robe blown up, still, turning away
       levitate: strip('mage', 'levitate', 4, { ground: 'drawn', target: 124 }), // gather, rising, the top, descending

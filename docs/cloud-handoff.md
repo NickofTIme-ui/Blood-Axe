@@ -205,3 +205,10 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
   the scene's job loop rebuilt its list with `filter`, dropping any job added while it
   ran. Those bolts were drawn once and never cleared. The loop now lives in
   `src/core/TickJobs.js` (`runTickJobs`) and keeps jobs started mid-run. Test added.
+- Nick asked for the finisher's lightning to come out of the staff's tip, the source of
+  its power. The seize bolts, the gather's crackle and the killing bolt now all start
+  at the lantern (they used to fall from the top of the screen). `finStorm` in
+  `src/data/heroStrips.js` marks the lantern in each pose (`tips`);
+  `StripHeroView.staffTip()` turns that into a screen point and `MageFX.staffTip` uses
+  it, falling back to the old fixed offset. Other strips can get `tips` the same way.
+  Filmed in the cloud: project files `mage-storm/`.
