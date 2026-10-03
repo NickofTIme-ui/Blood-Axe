@@ -171,3 +171,6 @@ To do locally: paint the earth-wall slabs, build + upload to itch, then a real t
 
 ## itch upload 19527803 (2026-10-02) = main at ac4b517
 Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions (procedural, doom art not wired), chests->crates, no cracked wall, HD props. Zip hash checked in-page; public page points at 19527803. Not played on itch.
+
+## Cloud, 2026-10-03: Vexa plants mines by hand (not on itch)
+- Magic (LT / LB / U) with an enemy in kicking distance ahead (`kit.knife.kickReach`, 90 px, same test as her crescent kick) now sticks the mine ON him (`plantTarget` in `src/combat/Rogue.js`, then `Mines.stick`), so the frozen stuck-mine reaction plays. Nobody in reach: the floor mine as before. No new animation: she plants it without breaking stride. Sim change. New logic test covers it; not watched in play.
