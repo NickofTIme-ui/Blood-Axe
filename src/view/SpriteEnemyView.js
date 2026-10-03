@@ -109,7 +109,9 @@ export class SpriteEnemyView {
     // just stopped walking: finish the step instead of snapping to the idle pose
     if (st === 'idle' && this.walkHold > 0 && this.lastWalkRef) return this.lastWalkRef;
     switch (st) {
-      case 'walk': {
+      case 'walk':
+      // a boss striding into his arena: the same walk, footfalls on his stomps
+      case 'bossEntrance': {
         this.lastWalkRef = this.walkFrame();
         this.walkHold = 7;
         return this.lastWalkRef;
@@ -145,11 +147,19 @@ export class SpriteEnemyView {
     // back / front / three-quarter view by where he's heading (view/Heading.js)
     if (steps > 0) this.heading.update(f.vx, f.vz);
     const a = headingAnim(this.A, this.heading.dir);
+    const n = a.frames.length;
+    // walking in from off-screen: one step (half the cycle) per 'bossStomp', timed so
+    // each stomp's screen shake lands on a planted foot (refs 1-2 and 6-7 of the cycle)
+    const E = f.state === 'bossEntrance' ? f.entrance : null;
+    if (E?.stepEvery) {
+      this.walkT = 1.5 + (f.fsm.frame * n) / (2 * E.stepEvery);
+      this.walkIdx = ((Math.floor(this.walkT) % n) + n) % n;
+      return a.frames[this.walkIdx];
+    }
     const speed = Math.hypot(f.vx, f.vz) / Math.max(1, f.stats.walkSpeed);
     this.walkRate = lerp(this.walkRate ?? 0.6, Math.max(0.35, Math.min(1.15, speed)), 0.12);
     const back = f.vx * f.facing < -5 ? -1 : 1;
     this.walkT = (this.walkT ?? 0) + steps * (a.fps / 60) * this.walkRate * back;
-    const n = a.frames.length;
     this.walkIdx = ((Math.floor(this.walkT) % n) + n) % n;
     return a.frames[this.walkIdx];
   }
@@ -201,8 +211,9 @@ export class SpriteEnemyView {
     const tick = f.world?.frame ?? 0;
     const dt = Math.max(0, tick - (this.lastTick ?? tick));
     this.lastTick = tick;
-    if (st !== 'walk' && this.walkHold > 0) this.walkHold -= dt;
-    if (st !== 'walk' && st !== 'idle') this.walkHold = 0;
+    const striding = st === 'walk' || st === 'bossEntrance';
+    if (!striding && this.walkHold > 0) this.walkHold -= dt;
+    if (!striding && st !== 'idle') this.walkHold = 0;
     this.setFrameRef(this.frameFor());
 
     // run through and hoisted on the blade: he hangs from it in pieces (view/ImpaledRig.js)
@@ -241,7 +252,7 @@ export class SpriteEnemyView {
     let angle = 0;
     // lumbering weight: the body sinks onto each planted foot and rises through the
     // passing pose, with a slow side-to-side roll of the shoulders (bigger brutes more)
-    const walking = st === 'walk' || (st === 'idle' && this.walkHold > 0);
+    const walking = striding || (st === 'idle' && this.walkHold > 0);
     if (walking && A.walk?.lumber) {
       const n = A.walk.frames.length;
       const c = ((((this.walkT ?? 0) % n) + n) % n) / n; // 0..1 through the cycle (2 steps)
