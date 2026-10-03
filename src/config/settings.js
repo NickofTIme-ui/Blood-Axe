@@ -51,16 +51,22 @@ export const SETTINGS = {
   // Music volume 0..1. Press M in game to mute/unmute.
   audio: { music: 0.5, muted: false, sfx: 0.8 },
 
-  // Online co-op: the servers that help two browsers find a direct path to each other.
-  // STUN works for most home networks. Behind strict ones (some routers, offices, mobile
-  // carriers) a direct line is impossible and a TURN relay is needed: sign up for a free
-  // one (e.g. metered.ca, "Open Relay") and add it here, e.g.
+  // Online co-op: the servers that help two browsers find a path to each other.
+  // STUN finds a direct line, which works for many home networks. When the two networks
+  // won't allow one (most mobile hotspots and carriers, many routers, offices) the only way
+  // through is a TURN relay that passes the game's messages along. PeerJS runs a free one
+  // (turn.peerjs.com): it must stay in this list, since giving PeerJS our own list replaces
+  // its built-in one. A paid or self-hosted relay can be added beside it, e.g.
   //   { urls: 'turn:<host>:443?transport=tcp', username: '<user>', credential: '<pass>' }
+  // broker: the matchmaking server (null = PeerJS's free public one, 0.peerjs.com), or
+  //   { host, port, path, secure } for a self-hosted PeerJS server.
   net: {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun.cloudflare.com:3478' },
+      { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' },
     ],
+    broker: null,
   },
 
   // Debug overlay (hitboxes, hurtboxes, state names, frame counts). Toggle in game with F2 or `.

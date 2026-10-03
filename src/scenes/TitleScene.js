@@ -185,19 +185,29 @@ export class TitleScene extends Phaser.Scene {
     else if (state === 'opening') { L.body.setText('Opening a room…'); L.note.setText('Esc  cancel'); }
     else if (state === 'hosting') {
       L.big.setText(L.code); epicFill(L.big, ['#fff6c8', '#f0c050', '#a06010']);
-      L.note.setText(`ROOM CODE — tell your friend, then wait here.\nThey choose ONLINE CO-OP → JOIN A GAME and type it in.\nversion ${simVersion()}      Esc  cancel`);
+      L.note.setText(L.trouble
+        ? `${L.trouble}\nThe room is still open: your friend can try again.      Esc  cancel`
+        : `ROOM CODE — tell your friend, then wait here.\nThey choose ONLINE CO-OP → JOIN A GAME and type it in.\nversion ${simVersion()}      Esc  cancel`);
+      L.note.setColor(L.trouble ? '#ff9a7a' : '#cdb391');
     } else if (state === 'typing') {
       L.big.setText((L.code + '____').slice(0, 4).split('').join(' ')); epicFill(L.big, ['#fff6c8', '#f0c050', '#a06010']);
       L.note.setText('Type the 4-letter room code your friend gave you.\nBackspace  correct      Esc  back');
     } else if (state === 'joining') { L.body.setText(`Joining ${L.code}…`); L.note.setText('Esc  cancel'); }
     else if (state === 'error') { L.body.setText(text); L.note.setText('Enter / Esc  back'); }
+    if (state !== 'hosting') L.note.setColor('#cdb391');
   }
 
   lobbyHost() {
     const L = this.lobby;
     L.code = newCode();
     this.lobbyShow('opening');
-    L.job = hostRoom(L.code, () => { if (this.lobby === L && L.state === 'opening') this.lobbyShow('hosting'); });
+    L.trouble = '';
+    L.job = hostRoom(
+      L.code,
+      () => { if (this.lobby === L && L.state === 'opening') this.lobbyShow('hosting'); },
+      // (a friend found the room but couldn't connect: say so, and keep the room open)
+      (msg) => { if (this.lobby === L && L.state === 'hosting') { L.trouble = msg; this.lobbyShow('hosting'); } },
+    );
     L.job.link.then((link) => this.lobbyConnected(L, link, 0), (err) => this.lobbyFailed(L, err));
   }
 
