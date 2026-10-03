@@ -11,6 +11,7 @@ import { PICKUPS } from '../data/stage.js';
 import { playSfx } from '../core/Sfx.js';
 import { buildPropSheet, PROP_HD } from './propSheet.js';
 import { FX } from './stripImporter.js';
+import { BladeChain } from './BladeChain.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -19,7 +20,7 @@ const rand = (a, b) => a + Math.random() * (b - a);
 // interlock), and its rusted-iron colours (matched to the painted blade's own chain).
 const CHAIN = {
   length: 12, width: 7.5, wire: 2, pitch: 8,
-  dark: 0x16100d, iron: 0x5a4a40, light: 0xb4927a, rust: 0x8a4424,
+  dark: 0x140e0b, shade: 0x3a2e28, iron: 0x5e4d42, light: 0xc09c80, glint: 0xf0dcc8, rust: 0x8a4424, rustDark: 0x5a2814,
 };
 
 export class StageView {
@@ -425,9 +426,16 @@ export class StageView {
     g.fillStyle(0x000000, 0.25).fillRect(hz.x - 110, hz.z - 2, 220, 4);
     g.fillStyle(0x6a0a0a, 0.35).fillRect(hz.x - 110, hz.z - 1, 220, 1);
     g.fillStyle(0x000000, 0.4 + 0.25 * Math.abs(s.speed)).fillEllipse(tx, hz.z, 50, 8);
-    this.drawChain(g, px, pivotY, tx, ty, hz);
-    // the crescent blade, turned with the swing
-    const ang = s.a;
+    // the chain's physics (view/BladeChain.js), stepped once per sim frame
+    hz.chain = hz.chain ?? new BladeChain();
+    const frame = this.scene.world.frame;
+    hz.chain.step(frame - (hz.chainFrame ?? frame), len, s.omega);
+    hz.chainFrame = frame;
+    this.drawChain(g, hz.chain.points(px, pivotY, tx, ty), hz, s);
+    // the crescent blade, turned with the swing (and kicked off its line by the chain)
+    // (the angle is negated: the chain hangs at +a, toward +x, so the blade's own down
+    // axis, (-sin, cos) after a turn of ang, has to turn the other way to line up with it)
+    const ang = -(s.a + hz.chain.bladeTilt(len));
     const c = Math.cos(ang);
     const sn = Math.sin(ang);
     const P = (lx, ly) => ({ x: tx + lx * c - ly * sn, y: ty + lx * sn + ly * c });
@@ -452,71 +460,132 @@ export class StageView {
     g.setDepth(hz.z + 1);
   }
 
-  // A hanging iron chain from (x0, y0) down to (x1, y1): real interlocking links, each one
-  // turned a quarter from the last, so they alternate between open rings seen face-on and
-  // thin bars seen edge-on, in the same rusted iron as the painted blade. The chain twists
-  // a little along its length (and slowly over time), so the rings widen and narrow.
-  drawChain(g, x0, y0, x1, y1, hz) {
+
+  // The hanging chain along pts (pivot first, blade last; see view/BladeChain.js): real
+  // interlocking links forged from round iron bar, each turned a quarter from the last, so
+  // they alternate between open rings seen face-on and links seen edge-on that cross in
+  // front of them. Each link is shaded as a rounded bar (dark rim, shadowed side, inner
+  // edge, highlight and a glint on the side facing the light), with its weld seam, its own
+  // rust and pitting, and a smudge of shadow where the next link bears on it. The chain
+  // twists a little along its length, more while it swings fast, so the rings widen and
+  // narrow. At the top: an iron ceiling plate, bolted, with a shackle the chain hangs from.
+  drawChain(g, pts, hz, s) {
     const C = CHAIN;
-    const len = Math.hypot(x1 - x0, y1 - y0);
-    const ux = (x1 - x0) / len;
-    const uy = (y1 - y0) / len;
-    const vx = -uy;
-    const vy = ux;
-    // an ellipse around (cx, cy), a along the chain and b across it, from angle t0 to t1
-    const ring = (cx, cy, a, b, t0 = 0, t1 = Math.PI * 2, n = 16) => {
-      const pts = [];
+    // arc length along the bent chain, and a point + direction at any distance down it
+    const cum = [0];
+    for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+    const len = cum[cum.length - 1];
+    const at = (d) => {
+      let i = 1;
+      while (i < pts.length - 1 && cum[i] < d) i++;
+      const p = pts[i - 1];
+      const q = pts[i];
+      const sl = cum[i] - cum[i - 1] || 1;
+      const u = Math.max(0, Math.min(1, (d - cum[i - 1]) / sl));
+      return { x: p.x + (q.x - p.x) * u, y: p.y + (q.y - p.y) * u, ux: (q.x - p.x) / sl, uy: (q.y - p.y) / sl };
+    };
+    // an ellipse around (cx, cy) on the axes (ux, uy) / its normal, a along and b across,
+    // from angle t0 to t1
+    const ring = (cx, cy, ux, uy, a, b, t0 = 0, t1 = Math.PI * 2, n = 16) => {
+      const out = [];
       for (let i = 0; i <= n; i++) {
         const t = t0 + ((t1 - t0) * i) / n;
         const la = Math.cos(t) * a;
         const lb = Math.sin(t) * b;
-        pts.push({ x: cx + ux * la + vx * lb, y: cy + uy * la + vy * lb });
+        out.push({ x: cx + ux * la - uy * lb, y: cy + uy * la + ux * lb });
       }
-      return pts;
+      return out;
     };
-    // (the side of each link facing the light: up and to the left)
-    const lit = Math.atan2(-0.6 * vx - 0.8 * vy, -0.6 * ux - 0.8 * uy);
+    const rnd = (k, salt) => { const v = Math.sin(k * 127.1 + salt * 311.7) * 43758.5453; return v - Math.floor(v); };
 
-    // the ceiling mount: an iron plate with two rivets, and the eye the chain hangs from
-    g.fillStyle(C.dark, 1).fillRect(x0 - 13, y0 - 7, 26, 9);
-    g.fillStyle(C.iron, 1).fillRect(x0 - 12, y0 - 6, 24, 7);
-    g.fillStyle(C.light, 0.7).fillRect(x0 - 12, y0 - 6, 24, 1.5);
-    g.fillStyle(C.rust, 0.6).fillRect(x0 - 12, y0 - 1, 24, 2);
-    for (const s of [-8, 8]) g.fillStyle(C.dark, 1).fillCircle(x0 + s, y0 - 2.5, 1.6).fillStyle(C.light, 0.8).fillCircle(x0 + s - 0.4, y0 - 3, 0.6);
-    g.lineStyle(2.6, C.dark, 1).strokeCircle(x0, y0 + 3, 2.6);
-    g.lineStyle(1.6, C.iron, 1).strokeCircle(x0, y0 + 3, 2.6);
+    // the ceiling mount: a bolted iron plate, a forged lug under it, and a shackle with its pin
+    const { x: x0, y: y0 } = pts[0];
+    g.fillStyle(C.dark, 1).fillRect(x0 - 17, y0 - 12, 34, 10);
+    g.fillStyle(C.iron, 1).fillRect(x0 - 16, y0 - 11, 32, 8);
+    g.fillStyle(C.shade, 1).fillRect(x0 - 16, y0 - 5, 32, 2);
+    g.fillStyle(C.light, 0.6).fillRect(x0 - 16, y0 - 11, 32, 1.2);
+    g.fillStyle(C.rust, 0.55).fillRect(x0 - 9, y0 - 6, 7, 2).fillRect(x0 + 6, y0 - 10, 5, 3);
+    for (const bx of [-12, -5, 5, 12]) {
+      g.fillStyle(C.dark, 1).fillCircle(x0 + bx, y0 - 7, 1.7);
+      g.fillStyle(C.iron, 1).fillCircle(x0 + bx, y0 - 7, 1.1);
+      g.fillStyle(C.glint, 0.8).fillCircle(x0 + bx - 0.4, y0 - 7.5, 0.45);
+    }
+    g.fillStyle(C.dark, 1).fillRect(x0 - 3.5, y0 - 3, 7, 5);
+    g.fillStyle(C.iron, 1).fillRect(x0 - 2.5, y0 - 3, 5, 4);
+    g.fillStyle(C.light, 0.5).fillRect(x0 - 2.5, y0 - 3, 1, 4);
+    const d0 = at(4);
+    const sh = ring(x0 + d0.ux * 1.5, y0 + d0.uy * 1.5, d0.ux, d0.uy, 4.5, 4, -Math.PI / 2, Math.PI / 2, 12);
+    g.lineStyle(C.wire + 1.6, C.dark, 1).strokePoints(sh, false);
+    g.lineStyle(C.wire + 0.4, C.iron, 1).strokePoints(sh, false);
+    g.lineStyle(0.8, C.light, 0.7).strokePoints(sh.slice(0, 7), false);
+    g.fillStyle(C.dark, 1).fillRect(x0 - 6, y0 - 1.2, 12, 2.6);
+    g.fillStyle(C.iron, 1).fillRect(x0 - 5.5, y0 - 0.8, 11, 1.8);
+    for (const e of [-6, 6]) g.fillStyle(C.dark, 1).fillCircle(x0 + e, y0, 1.6).fillStyle(C.shade, 1).fillCircle(x0 + e, y0, 1);
 
-    const count = Math.max(2, Math.round((len - 4) / C.pitch));
-    const pitch = (len - 4) / count;
+    const start = 9;
+    const count = Math.max(2, Math.round((len - start) / C.pitch));
+    const pitch = (len - start) / count;
+    // the twist: a slow wind along the chain, wound tighter the faster it's swinging
+    hz.twist = (hz.twist ?? 0) + (s?.omega ?? 0) * 2;
+    const spin = 0.15 + 0.3 * Math.min(1, Math.abs(s?.omega ?? 0) / 0.02);
     const links = [];
     for (let k = 0; k <= count; k++) {
-      const d = 4 + k * pitch;
-      const twist = Math.sin(k * 0.45 + (hz?.t ?? 0) * 0.015) * 0.45;
-      links.push({ cx: x0 + ux * d, cy: y0 + uy * d, face: k % 2 === 0, twist, k });
+      const p = at(start + k * pitch);
+      const twist = Math.sin(k * 0.45 + hz.twist) * spin;
+      links.push({ ...p, face: k % 2 === 0, twist, k });
     }
     const a = C.length / 2;
-    // the face-on rings: an open loop of round bar, dark rim, iron, a highlight on the lit
-    // side and rust on the shadowed one (the stone behind shows through the middle)
+
+    // the face-on rings
     for (const l of links) {
       if (!l.face) continue;
-      const b = Math.max(C.wire * 0.7, (C.width / 2) * Math.cos(l.twist)) - C.wire / 2;
+      const { x, y, ux, uy, k } = l;
+      const lit = Math.atan2(-0.6 * -uy - 0.8 * ux, -0.6 * ux - 0.8 * uy); // light from up and to the left
+      const b = Math.max(C.wire * 0.8, (C.width / 2) * Math.cos(l.twist)) - C.wire / 2;
       const ra = a - C.wire / 2;
-      const loop = ring(l.cx, l.cy, ra, b);
-      g.lineStyle(C.wire + 1.2, C.dark, 1).strokePoints(loop, true);
+      const loop = ring(x, y, ux, uy, ra, b);
+      g.lineStyle(C.wire + 1.4, C.dark, 1).strokePoints(loop, true);
       g.lineStyle(C.wire, C.iron, 1).strokePoints(loop, true);
-      g.lineStyle(C.wire * 0.45, C.light, 0.85).strokePoints(ring(l.cx, l.cy, ra, b, lit - 0.9, lit + 0.9, 8), false);
-      g.lineStyle(C.wire * 0.5, C.rust, 0.65).strokePoints(ring(l.cx, l.cy, ra, b, lit + Math.PI - 0.7, lit + Math.PI + 0.7, 8), false);
+      // the shadowed half, and the dark line where the bar curves away into the hole
+      g.lineStyle(C.wire * 0.55, C.shade, 1).strokePoints(ring(x, y, ux, uy, ra + 0.25, b + 0.25, lit + Math.PI - 1.5, lit + Math.PI + 1.5, 10), false);
+      g.lineStyle(0.6, C.dark, 0.7).strokePoints(ring(x, y, ux, uy, ra - C.wire * 0.42, Math.max(0.3, b - C.wire * 0.42)), true);
+      // the bar's highlight and one glint
+      g.lineStyle(C.wire * 0.38, C.light, 0.9).strokePoints(ring(x, y, ux, uy, ra + 0.15, b + 0.15, lit - 0.85, lit + 0.85, 8), false);
+      const gl = ring(x, y, ux, uy, ra + 0.2, b + 0.2, lit, lit, 1)[0];
+      g.fillStyle(C.glint, 0.9).fillCircle(gl.x, gl.y, 0.55);
+      // rust: a patch or two eaten into the bar, and a pit
+      const patches = 1 + Math.floor(rnd(k, 1) * 2);
+      for (let r = 0; r < patches; r++) {
+        const t0 = rnd(k, 2 + r) * Math.PI * 2;
+        g.lineStyle(C.wire * (0.4 + rnd(k, 5 + r) * 0.3), r ? C.rustDark : C.rust, 0.6).strokePoints(ring(x, y, ux, uy, ra, b, t0, t0 + 0.5 + rnd(k, 8 + r) * 0.9, 5), false);
+      }
+      const pit = ring(x, y, ux, uy, ra, b, rnd(k, 11) * 6.28, 0, 1)[0];
+      g.fillStyle(C.rustDark, 0.9).fillCircle(pit.x, pit.y, 0.45);
+      // the weld seam, across the bar on one long side
+      const sm = ring(x, y, ux, uy, ra, b, Math.PI / 2, 0, 1)[0];
+      g.lineStyle(0.6, C.dark, 0.8).lineBetween(sm.x - ux * 0.8, sm.y - uy * 0.8, sm.x + ux * 0.8, sm.y + uy * 0.8);
+      // shadow where the links above and below bear on it, inside each end
+      for (const e of [-1, 1]) g.fillStyle(C.dark, 0.55).fillCircle(x + ux * e * (ra - C.wire * 0.9), y + uy * e * (ra - C.wire * 0.9), 1.1);
     }
     // then the edge-on links over them: each one's near bar crosses in front of the rings it
     // threads through, which is what makes them read as linked rather than stacked
     for (const l of links) {
       if (l.face) continue;
-      const b = Math.max(C.wire * 0.7, (C.width / 2) * Math.abs(Math.sin(l.twist)));
-      g.fillStyle(C.dark, 1).fillPoints(ring(l.cx, l.cy, a + 0.6, b + 0.7), true);
-      g.fillStyle(C.iron, 1).fillPoints(ring(l.cx, l.cy, a, b), true);
-      g.lineStyle(0.8, C.light, 0.75).lineBetween(l.cx - ux * (a - 1.5) + vx * b * 0.5, l.cy - uy * (a - 1.5) + vy * b * 0.5,
-        l.cx + ux * (a - 1.5) + vx * b * 0.5, l.cy + uy * (a - 1.5) + vy * b * 0.5);
-      if (l.k % 3 === 1) g.fillStyle(C.rust, 0.7).fillCircle(l.cx + ux * 1.5, l.cy + uy * 1.5, 1);
+      const { x, y, ux, uy, k } = l;
+      const b = Math.max(C.wire * 0.6, (C.width / 2) * Math.abs(Math.sin(l.twist)));
+      const side = -0.6 * -uy - 0.8 * ux >= 0 ? 1 : -1; // which side of it faces the light
+      g.fillStyle(C.dark, 1).fillPoints(ring(x, y, ux, uy, a + 0.7, b + 0.7), true);
+      g.fillStyle(C.iron, 1).fillPoints(ring(x, y, ux, uy, a, b), true);
+      g.fillStyle(C.shade, 1).fillPoints(ring(x - uy * -side * b * 0.45, y + ux * -side * b * 0.45, ux, uy, a - 0.6, b * 0.5), true);
+      if (b - C.wire > 0.45) g.fillStyle(C.dark, 0.95).fillPoints(ring(x, y, ux, uy, a - C.wire, b - C.wire), true); // turned far enough to see into
+      const hx = -uy * side * b * 0.5;
+      const hy = ux * side * b * 0.5;
+      g.lineStyle(0.8, C.light, 0.85).lineBetween(x - ux * (a - 1.6) + hx, y - uy * (a - 1.6) + hy, x + ux * (a - 1.6) + hx, y + uy * (a - 1.6) + hy);
+      g.fillStyle(C.glint, 0.9).fillCircle(x - ux * (a - 2.2) + hx, y - uy * (a - 2.2) + hy, 0.55);
+      // the weld bulge in its middle, and rust
+      g.lineStyle(0.6, C.dark, 0.7).lineBetween(x + uy * b, y - ux * b, x - uy * b, y + ux * b);
+      const ro = (rnd(k, 3) - 0.5) * (a * 1.4);
+      g.fillStyle(rnd(k, 4) < 0.5 ? C.rust : C.rustDark, 0.8).fillCircle(x + ux * ro, y + uy * ro, 0.6 + rnd(k, 6) * 0.6);
     }
   }
 
@@ -526,8 +595,9 @@ export class StageView {
     const ev = this.scene.world.events;
     ev.on('propHit', ({ prop, dir }) => this.propHit(prop, dir));
     ev.on('propBreak', ({ prop, dir, blast }) => this.propBreak(prop, dir, blast));
-    ev.on('bladeStruck', ({ hazard, force }) => {
+    ev.on('bladeStruck', ({ hazard, dir, force }) => {
       const s = this.stage.bladeState(hazard);
+      hazard.chain?.kick(dir, force ? 1.4 : 1); // the blow shakes the chain as well as turning the swing
       playSfx(this.scene, 'block', { volume: 1, pitch: force ? -900 : -300, minGapMs: 0 });
       playSfx(this.scene, 'heavySwing', { volume: 0.6, pitch: -700, minGapMs: 0 });
       this.scene.gore.spark(s.tipX, hazard.z - 30, 30, force ? 0xffb060 : 0xfff0c0, 26);

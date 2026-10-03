@@ -365,7 +365,9 @@ export class Stage {
     const max = Math.asin(Math.min(0.95, hz.swing * (hz.driven ? BLADE.driven.wide : 1) / BLADE.length));
     const a = max * Math.sin((hz.t / BLADE.period) * Math.PI * 2);
     const speed = Math.cos((hz.t / BLADE.period) * Math.PI * 2); // + = swinging right
-    return { a, tipX: hz.x + Math.sin(a) * BLADE.length, speed };
+    // (omega: radians per frame, for the view's chain; it runs 1 + haste times fast while driven)
+    const omega = max * speed * ((Math.PI * 2) / BLADE.period) * (hz.driven ? 1 + BLADE.driven.haste : 1);
+    return { a, tipX: hz.x + Math.sin(a) * BLADE.length, speed, omega };
   }
 
   updateBlade(hz) {

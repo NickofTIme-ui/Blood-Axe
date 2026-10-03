@@ -11,6 +11,7 @@ import { ENEMIES, WAVES } from '../src/data/enemies.js';
 import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.js';
 import { Stage } from '../src/stage/Stage.js';
 import { STAGE } from '../src/data/stage.js';
+import { BladeChain, CHAIN_PHYS } from '../src/view/BladeChain.js';
 import { handshake } from '../src/net/Link.js';
 import { impalePin } from '../src/combat/Finisher.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/Mage.js';
@@ -1490,6 +1491,24 @@ test('stage: the throne spawns the boss, he rages at half health, killing him wi
   assert(t.ev.includes('bossRage'), 'rage');
   t.killAll(); t.run(5);
   assert(t.ev.includes('stageWon') && t.stage.phase === 'won', `won (${t.stage.phase})`);
+});
+
+test('blade chain: hangs nearly straight through a swing, whips when the blade is struck, then rings out', () => {
+  const t = stageSetup();
+  const hz = t.stage.hazards.find((h) => h.type === 'blade');
+  const chain = new BladeChain();
+  const bend = () => Math.max(...chain.w.map(Math.abs));
+  let calm = 0;
+  for (let i = 0; i < 300; i++) { hz.t++; chain.step(1, 320, t.stage.bladeState(hz).omega); calm = Math.max(calm, bend()); }
+  assert(calm < 4, `a plain swing only bows it a little (${calm.toFixed(1)} px)`);
+  // struck as Stage.strikeBlade does it: thrown back through the bottom, driven
+  hz.t = 0; hz.driven = 150; chain.kick(-1, 1.4);
+  let whip = 0;
+  for (let i = 0; i < 20; i++) { hz.t += 2; chain.step(1, 320, t.stage.bladeState(hz).omega); whip = Math.max(whip, bend()); }
+  assert(whip > 6 && whip <= CHAIN_PHYS.maxBend, `the strike whips it (${whip.toFixed(1)} px)`);
+  hz.driven = 0;
+  for (let i = 0; i < 400; i++) { hz.t++; chain.step(1, 320, t.stage.bladeState(hz).omega); }
+  assert(bend() < 4 && Number.isFinite(chain.bladeTilt(320)), `settles again (${bend().toFixed(1)} px)`);
 });
 
 for (const [name, fn] of later) {
