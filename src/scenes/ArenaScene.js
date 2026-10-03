@@ -39,6 +39,7 @@ import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
 import { playMusic, toggleMute } from '../core/Music.js';
 import { playSfx } from '../core/Sfx.js';
+import { runTickJobs } from '../core/TickJobs.js';
 
 // Number keys spawn a specific enemy next to you (for testing the roster).
 const SPAWN_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'];
@@ -113,6 +114,7 @@ export class ArenaScene extends Phaser.Scene {
       if (!e.move.noBlood) this.gore.onHit(e);
       this.fx.shake(e.move.shake ?? 0, 8);
       if (e.superCrit) this.superCritFX(e);
+      else if (e.crit) this.critFX(e);
       else if (e.counter) this.popup(e.x, e.z - e.h - 30, 'COUNTER!', '#ffd24a');
       if (e.move.fx === 'kick') this.kickImpact(e.x, e.z, e.h, e.dir);
       if (e.move.cut === 'fire') this.fireImpact(e.x, e.z, e.h);
@@ -396,6 +398,17 @@ export class ArenaScene extends Phaser.Scene {
       g.mist(e.x, e.z, e.h, 12);
       for (let i = 0; i < 8; i++) g.splat(e.x + e.dir * (10 + Math.random() * 80), e.z + (Math.random() - 0.5) * 12, 1 + Math.random() * 2.5);
     } else g.spark(e.x, e.z, e.h, 0xffffff, 30);
+  }
+
+  // A hero's random critical hit: a sharp callout, a hard thump, an extra spray.
+  critFX(e) {
+    this.callout(e.counter ? 'CRITICAL COUNTER!' : 'CRITICAL!', '#ff8a2a', 26);
+    this.fx.shake(6, 10);
+    this.rumble(0.6, 0.6, 120);
+    playSfx(this, 'kick', { volume: 0.8, pitch: -400, spread: 80 });
+    const g = this.gore;
+    if (g.level > 0 && !e.move.noBlood) g.burst(e.x, e.z, e.h, e.dir, Math.round(30 * g.amount), 1.4);
+    else g.spark(e.x, e.z, e.h, 0xffd080, 14);
   }
 
   // Firebolt hit: burst of flame and embers.
@@ -844,7 +857,7 @@ export class ArenaScene extends Phaser.Scene {
       for (const v of this.views.values()) v.applyCut?.(); // (bodies come apart on the tick, not on a screen refresh)
       this.cuts.update();
       this.burning.update([...this.stage.activeFires(), ...this.world.barriers.fireRegions()]);
-      this.tickJobs = this.tickJobs.filter((j) => j(++j.t) !== false && j.t < (j.n ?? 999));
+      runTickJobs(this);
       this.updateWaves();
       s.afterTick?.(tick, () => snapshot(this.world));
     }

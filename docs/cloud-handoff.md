@@ -198,6 +198,45 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 - Mist uses a new soft round texture (`softTex` in `Gore.js`), so red mist no longer shows as hard discs.
 - Visual only, no sim change. Before/after captures: project files `explosion/`. Not watched at full speed in a real fight.
 
+## Cloud, 2026-10-03: earth wall polish (not on itch)
+- The Mage's Earthen Bulwark (`EarthWallView` in `src/effects/MageFX.js`) no longer has teal lines drawn over it: the teal zigzag fissure, the seam lines on every slab and the teal health bar are gone. The magic is only the glowing veins already painted into `assets/fx/earthwall-strip.png`.
+- Going up: a dark jagged crack runs across the floor with grit kicked up at its tip; each slab throws real rock chips (new `rockchip` texture) and a skirt of brown dust, and flares briefly as it locks in. No more white dot puffs.
+- Hit: the wall jolts away from the blow, slabs near the impact flash, a burst of stone chips and dust comes off the struck face, grit trickles off the top, a small camera shake, and a heavier thud (`earthHit`). The stone near each hit gets knocked a little shorter and the whole wall darkens as it loses health. Health bar is bone on red.
+- Broken: slabs topple and sink in a dust cloud with rubble and a bigger shake (`earthBreak` sound; `barrierDown`'s `broken` flag is now passed to the view). Timed out: it just sinks back with a little dust.
+- View only, no sim change. Before/after captures: project files `earth-wall/polish/`. Not watched at full speed in a real fight.
+
+## Cloud, 2026-10-03: Storm Judgment lightning no longer sticks (not on itch)
+
+- The Mage's STORM JUDGMENT left a cluster of lightning frozen over his staff after the
+  finisher. Its gather beat throws a new bolt every few ticks from inside a tick job, and
+  the scene's job loop rebuilt its list with `filter`, dropping any job added while it
+  ran. Those bolts were drawn once and never cleared. The loop now lives in
+  `src/core/TickJobs.js` (`runTickJobs`) and keeps jobs started mid-run. Test added.
+- Nick asked for the finisher's lightning to come out of the staff's tip, the source of
+  its power. The seize bolts, the gather's crackle and the killing bolt now all start
+  at the lantern (they used to fall from the top of the screen). `finStorm` in
+  `src/data/heroStrips.js` marks the lantern in each pose (`tips`);
+  `StripHeroView.staffTip()` turns that into a screen point and `MageFX.staffTip` uses
+  it, falling back to the old fixed offset. Other strips can get `tips` the same way.
+  Filmed in the cloud: project files `mage-storm/`.
+
+## Cloud, 2026-10-03: Mage blocks with his staff (not on itch)
+- His block (and parry) used `react` pose 0, which holds the staff trailing behind him and reads as a flinch. It now shows `combo2` pose 3: both hands on the staff, raised diagonally across the front of him (`HERO_ANIMS.mage.block` in `src/data/heroStrips.js`). Reuses existing art, no new strip needed. Before/after: project files `mage-block/`.
+- If Nick wants a purpose-made guard (staff held level in front, both hands, a little shield glow), that would be one new pose to paint; not requested yet.
+
+## Cloud, 2026-10-03: critical hits for every hero (not on itch)
+- Nick asked for critical hits for all good guys. Before this the only crit was Vexa's mark of death (the SUPER CRITICAL a teammate lands on her marked man).
+- Now any hero's clean hit (not blocked or parried) has a 12% chance to be a CRITICAL for 1.75x damage: `SETTINGS.feel.critChance` / `critMultiplier`; a hero can override with `stats.critChance`. Enemies never crit. A super critical never also rolls a normal crit.
+- Rolled with `world.roll()` in `CombatSystem.resolve`, so online co-op stays in step. The hit event carries `crit`; `ArenaScene.critFX` shows "CRITICAL!" (or "CRITICAL COUNTER!"), a small shake, a thump and an extra spray.
+- `tests/logic-test.js` turns crits off by default (they'd make damage comparisons flaky) and has its own crit test for all three heroes.
+
+## Cloud, 2026-10-03: Mage hover upgrade (not on itch)
+- Nick asked for a higher-grade hover: "perhaps effects, his cape moving better". New `src/effects/MageHover.js`, hooked into `StripHeroView` for any hero with `stats.hover` (only the Mage). It only runs while he hovers (idle / gliding, not sprinting) and is visual only, no sim change.
+- Cloth: a WebGL pipeline (`MageCloth`, a `SinglePipeline` with its own fragment shader) ripples the painted cape and robe from the waist down, most along the trailing back edge, with extra streaming while he glides. Each frame is scanned once for the figure box, the staff column and the lantern, so the staff, boots and lantern stay still. It switches off at once for every other state. On the canvas renderer the shader is skipped.
+- Float: the single sine bob is now a slow swell under a quicker bob, with a slight sway; the floor shadow shrinks and grows with the height.
+- Magic: a slow-turning rune circle on the floor under him, a glow at his boots, motes rising under the hem, and the lantern breathing light (halo behind him) and shedding sparks.
+- Finisher code untouched. Checked in a headless browser (idle, glide, combo, spells, sprint, knockdown): no errors. Before/after GIFs: project files `mage-hover/`. Not watched at full speed on a real GPU.
+
 ## Cloud, 2026-10-03: Malgor's Earthbreaker slam (not on itch)
 - New boss move `ENEMIES.warlord.moves.special2` (Earthbreaker): a long tell (glaive up, the ground trembles, "JUMP!" banner), then the glaive goes into the floor. It can't be blocked or parried (`unblockable`, checked in `CombatSystem.resolve`), has super armor, and gives the hardest screen shake in the game plus pad rumble.
 - The slam splits the floor and sends a shockwave out both ways across the whole depth of the lane (`src/combat/Quake.js`, `world.quakes`). Anyone on the ground when the front reaches him is knocked down (also unblockable); a hero whose feet are more than 26 px up lets it roll under. It rolls 620 px each way at 420 px/s. One blow per man between the glaive and the two waves; the boss's own men are never hurt.
