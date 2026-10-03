@@ -31,7 +31,8 @@ export const MAGE_SOUNDS = {
   fireWall: [['fireWhoosh', { volume: 0.9, pitch: -300 }], ['kick', { volume: 0.6, pitch: -900 }]],
   earthUp: [['kick', { volume: 1, pitch: -1300 }], ['block', { volume: 0.5, pitch: -1100 }]],
   earthDown: [['kick', { volume: 0.7, pitch: -1500 }]],
-  earthHit: [['block', { volume: 0.5, pitch: -800, minGapMs: 60 }]],
+  earthHit: [['block', { volume: 0.45, pitch: -900, minGapMs: 60 }], ['kick', { volume: 0.7, pitch: -1100, minGapMs: 60 }]],
+  earthBreak: [['kick', { volume: 1, pitch: -1600 }], ['heavySwing', { volume: 0.5, pitch: -900 }], ['block', { volume: 0.4, pitch: -1300 }]],
   storm: [['kick', { volume: 1, pitch: -1400 }], ['block', { volume: 0.8, pitch: 1200 }]],
   rupture: [['kick', { volume: 1, pitch: -600 }], ['finisher', { volume: 0.6, pitch: -800 }]],
   embers: [['fireWhoosh', { volume: 1, pitch: -500 }], ['kick', { volume: 0.7, pitch: -1100 }]],
@@ -75,12 +76,11 @@ export class MageFX {
     ev.on('wardSlam', ({ fighter }) => this.sound('barrierCast', fighter));
 
     ev.on('barrierUp', ({ barrier }) => this.wallUp(barrier));
-    ev.on('barrierDown', ({ barrier }) => this.wallDown(barrier));
+    ev.on('barrierDown', ({ barrier, broken }) => this.wallDown(barrier, broken));
     ev.on('barrierGone', ({ barrier }) => { this.walls.get(barrier)?.destroy(); this.walls.delete(barrier); });
     ev.on('barrierHit', (e) => {
       this.sound('earthHit', e.by);
-      this.scene.gore.spark(e.x, e.z, e.h, 0x7a8a88, 8);
-      this.walls.get(e.barrier)?.cracked();
+      this.walls.get(e.barrier)?.cracked(e);
     });
 
     ev.on('finisherBeat', (b) => this.finisher(b));
@@ -251,9 +251,9 @@ export class MageFX {
     this.walls.set(b, v);
   }
 
-  wallDown(b) {
-    if (b.kind === 'earth') this.sound('earthDown', b.owner);
-    this.walls.get(b)?.collapse();
+  wallDown(b, broken) {
+    if (b.kind === 'earth') this.sound(broken ? 'earthBreak' : 'earthDown', b.owner);
+    this.walls.get(b)?.collapse(broken);
   }
 
   update() {
@@ -467,17 +467,45 @@ class FireWallView {
   destroy() { for (const f of this.flames) f.destroy(); this.glow.destroy(); }
 }
 
-// The Earthen Bulwark. A glowing fissure races across the lane from the Mage's staff,
-// then the stone tears up out of it in a wave — each slab punching up past its height and
-// settling, flinging rock and dust as it breaks the surface — and locks into a wall with
-// magic burning in its seams. Battered, it cracks in stages (a health bar shows how much it
-// has left), and when it fails the seams flare and it crumbles into a dust cloud.
+// The Earthen Bulwark. A crack tears across the floor from the Mage's staff, then the
+// stone punches up out of it in a wave — each slab overshooting its height and settling,
+// throwing rock and a skirt of dust as it breaks the surface — and locks into a wall. The
+// magic is in the painted stone itself (its glowing veins): nothing is drawn over it.
+// Struck, the wall jolts away from the blow, the stone round the impact flashes, chips of
+// rock and a puff of grit burst out of the struck face, and the slabs there are knocked
+// shorter; the weaker it gets the darker it goes (a health bar shows how much is left).
+// Broken, its slabs topple and sink in a cloud of dust and rubble; run out of time, it
+// sinks back into the floor.
 // Painted slabs (FX_STRIPS.earthwall: assets/fx/earthwall-strip.png) are used when they
 // exist; until then each slab is drawn as a jagged rock.
+
+const DUST = 0x4e463e;      // grit and dust clouds
+const CHIPS = [0xffffff, 0xe0dcd4, 0xc8ccce]; // tints over the grey 'rockchip'
+const WORN = 0x5e6264;      // what the stone darkens towards as it is battered
+
+const mix = (a, b, t) => {
+  const c = (s) => Math.round(((a >> s) & 255) + (((b >> s) & 255) - ((a >> s) & 255)) * t);
+  return (c(16) << 16) | (c(8) << 8) | c(0);
+};
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+// a flake of grey stone (tinted per chip), drawn once
+function rockChipTex(scene) {
+  if (scene.textures.exists('rockchip')) return;
+  const g = scene.make.graphics({ add: false });
+  g.fillStyle(0x121416, 1).fillPoints([{ x: 0, y: 6 }, { x: 5, y: 0 }, { x: 13, y: 2 }, { x: 15, y: 7 }, { x: 9, y: 11 }, { x: 2, y: 10 }], true);
+  g.fillStyle(0x3e4448, 1).fillPoints([{ x: 1, y: 6 }, { x: 5, y: 1 }, { x: 12, y: 3 }, { x: 14, y: 7 }, { x: 9, y: 10 }, { x: 3, y: 9 }], true);
+  g.fillStyle(0x6a7276, 1).fillPoints([{ x: 2, y: 6 }, { x: 5, y: 2 }, { x: 11, y: 3 }, { x: 8, y: 6 }], true);
+  g.fillStyle(0x262a2c, 1).fillPoints([{ x: 8, y: 6 }, { x: 11, y: 3 }, { x: 14, y: 7 }, { x: 9, y: 10 }], true);
+  g.generateTexture('rockchip', 16, 12);
+  g.destroy();
+}
+
 class EarthWallView {
   constructor(scene, b) {
     this.scene = scene;
     this.b = b;
+    rockChipTex(scene);
     const bd = scene.world.bounds;
     this.z0 = bd.minZ - 12;
     this.z1 = bd.maxZ + 8;
@@ -491,9 +519,12 @@ class EarthWallView {
       const pts = [];
       const n = 6;
       for (let i = 0; i <= n; i++) pts.push({ x: -w / 2 + (w * i) / n + rand(-2, 2), y: -h + Math.abs(Math.sin(i * 1.9 + z)) * 18 * (i % 2 ? 1 : 0.4) });
-      // erupts when the fissure reaches it
+      // erupts when the crack reaches it
       const delay = 6 + Math.round((Math.abs(z - this.zc) / Math.max(1, this.z1 - this.z0)) * 14) + Math.floor(rand(0, 3));
-      const slab = { z, h, w, pts, off: rand(-4, 4), tone: Math.floor(rand(0, 3)), delay, crack: rand(0.2, 0.8), lean: rand(-0.06, 0.06), burst: false };
+      const slab = {
+        z, h, w, pts, off: rand(-4, 4), tone: Math.floor(rand(0, 3)), delay, crack: rand(0.2, 0.8), lean: rand(-0.06, 0.06),
+        burst: false, chip: 0, flash: 0, topple: 0,
+      };
       if (this.art) {
         slab.img = scene.add.image(0, 0, this.art.key, `f${k++ % this.art.count}`).setOrigin(0.5, 1).setVisible(false);
         if (Math.random() < 0.5) slab.img.setFlipX(true);
@@ -501,71 +532,120 @@ class EarthWallView {
       this.slabs.push(slab);
     }
     this.parts = this.slabs.map(() => scene.add.graphics());
-    this.crackG = scene.add.graphics().setDepth(DEPTH.decals + 3).setBlendMode(ADD());
+    // the crack in the floor: a jagged line each way from where the stone starts
+    this.fissure = [-1, 1].map((dir) => {
+      const pts = [];
+      let dx = 0;
+      for (let d = 0; ; d += 7) {
+        const z = this.zc + dir * d;
+        if (z < this.z0 - 4 || z > this.z1 + 4) break;
+        dx = Math.max(-7, Math.min(7, dx + rand(-4, 4)));
+        pts.push({ x: b.x + dx, z, d, w: rand(2, 4.5) });
+      }
+      return pts;
+    });
+    this.crackG = scene.add.graphics().setDepth(DEPTH.decals + 3);
     this.bar = scene.add.graphics().setDepth(DEPTH.popups - 6);
     this.t = 0;
     this.fall = -1;
-    this.cracks = 0;
+    this.broken = false;
+    this.jolt = { t: 99, dir: 1, power: 0, z: 0 };
     this.shown = 1;
   }
 
-  cracked() {
-    this.cracks = Math.min(4, this.cracks + 1);
-    const b = this.b;
-    for (let i = 0; i < 5; i++) {
-      this.scene.gore.spawn({ x: b.x + rand(-b.half, b.half), z: rand(this.z0, this.z1), h: rand(40, 110), vx: rand(-90, 90), vz: 0, vh: rand(20, 160), tint: 0x4a5258, scale: rand(0.6, 1.2), decal: false, life: 26, texture: 'px', spin: rand(-8, 8) });
-    }
+  // a cloud of dust or grit that swells, drifts and thins out
+  dust(x, z, h, size, { vx = 0, rise = 16, alpha = 0.5, life = 650 } = {}) {
+    const img = this.scene.add.image(x, z - h, 'soft').setTint(DUST).setAlpha(alpha)
+      .setScale(size / 64).setDepth(z + 1.5);
+    this.scene.tweens.add({
+      targets: img, x: x + vx, y: z - h - rise, scale: (size * rand(2, 2.6)) / 64, alpha: 0,
+      duration: life * rand(0.85, 1.15), ease: 'Cubic.easeOut', onComplete: () => img.destroy(),
+    });
   }
 
-  collapse() {
-    this.fall = 0;
+  // a chip of stone flung off the wall
+  chip(x, z, h, vx, vh, scale = 1, life = 40) {
+    this.scene.gore.spawn({ x, z, h, vx, vz: rand(-30, 30), vh, tint: pick(CHIPS), scale: scale * rand(0.6, 1.3), decal: false, life: Math.floor(life * rand(0.8, 1.2)), texture: 'rockchip', spin: rand(-14, 14) });
+  }
+
+  // Struck: e = the barrierHit event (x = the struck face, z = the striker's lane).
+  cracked(e) {
     const b = this.b;
-    for (let i = 0; i < 46; i++) {
-      this.scene.gore.spawn({ x: b.x + rand(-b.half * 1.5, b.half * 1.5), z: rand(this.z0, this.z1), h: rand(10, 100), vx: rand(-120, 120), vz: 0, vh: rand(0, 200), tint: Math.random() < 0.6 ? 0x3c4448 : 0x6a7470, scale: rand(0.6, 1.5), decal: false, life: Math.floor(rand(20, 40)), texture: 'px', spin: rand(-8, 8) });
+    const out = Math.sign(e.x - b.x) || 1; // towards whoever struck it
+    const power = Math.max(0.5, Math.min(2, (e.damage ?? 10) / 18));
+    this.jolt = { t: 0, dir: -out, power, z: e.z };
+    for (const s of this.slabs) {
+      const near = 1 - Math.abs(s.z - e.z) / 44;
+      if (near <= 0) continue;
+      s.flash = Math.max(s.flash, 0.5 + 0.5 * near);
+      s.chip = Math.min(0.3, s.chip + rand(0.02, 0.05) * power * near);
     }
-    for (let i = 0; i < 10; i++) this.scene.burning?.puff?.(b.x + rand(-20, 20), rand(this.z0, this.z1), rand(10, 60), 0.5);
+    // a hard white crack of light where it landed
+    const fl = this.scene.add.image(e.x, e.z - e.h, 'soft').setTint(0xfff0d8).setBlendMode(ADD())
+      .setScale(0.5 * power).setDepth(e.z + 2);
+    this.scene.tweens.add({ targets: fl, scale: 1.1 * power, alpha: 0, duration: 120, onComplete: () => fl.destroy() });
+    // stone bursts back off the struck face, grit puffs out and trickles down from the top
+    const n = Math.round(6 + 7 * power);
+    for (let i = 0; i < n; i++) this.chip(e.x, e.z + rand(-6, 6), e.h + rand(-20, 30), out * rand(60, 320) * power, rand(40, 340), 0.8 + power * 0.3);
+    if (power > 1.1) for (let i = 0; i < 2; i++) this.chip(e.x, e.z, e.h + rand(-10, 20), out * rand(80, 200), rand(120, 260), 2.2, 55);
+    for (let i = 0; i < 3; i++) this.dust(e.x + out * rand(0, 10), e.z + rand(-4, 4), e.h + rand(-20, 25), rand(26, 40) * power, { vx: out * rand(14, 40), rise: rand(4, 18), alpha: 0.55 });
+    for (let i = 0; i < 4; i++) this.chip(b.x + rand(-b.half, b.half), e.z + rand(-10, 10), rand(95, 125), rand(-30, 30), rand(0, 60), 0.5, 45);
+    this.scene.fx.shake(1.5 * power, 6);
+  }
+
+  collapse(broken) {
+    this.fall = 0;
+    this.broken = !!broken;
+    const b = this.b;
+    if (broken) {
+      // it gives way: slabs keel over and go down in a cloud of rubble
+      for (const s of this.slabs) { s.topple = (Math.random() < 0.5 ? -1 : 1) * rand(0.25, 0.7); s.flash = 0.8; }
+      for (let i = 0; i < 40; i++) this.chip(b.x + rand(-b.half, b.half), rand(this.z0, this.z1), rand(20, 120), rand(-260, 260), rand(60, 380), rand(0.9, 1.8), 50);
+      for (let i = 0; i < 14; i++) this.dust(b.x + rand(-b.half, b.half), rand(this.z0, this.z1), rand(10, 70), rand(50, 80), { vx: rand(-40, 40), rise: rand(10, 30), alpha: 0.6, life: 1100 });
+      this.scene.fx.shake(6, 16);
+    } else {
+      // its time is up: it settles back into the floor
+      for (let i = 0; i < 16; i++) this.chip(b.x + rand(-b.half, b.half), rand(this.z0, this.z1), rand(10, 60), rand(-120, 120), rand(30, 200), rand(0.6, 1.2), 30);
+      for (let i = 0; i < 10; i++) this.dust(b.x + rand(-b.half * 1.4, b.half * 1.4), rand(this.z0, this.z1), rand(0, 20), rand(36, 56), { vx: rand(-30, 30), rise: rand(4, 14), alpha: 0.45, life: 900 });
+    }
   }
 
   // a slab breaking the surface: stone and dust thrown up round it
   erupt(s) {
-    const b = this.b;
-    const x = b.x + s.off;
-    const gore = this.scene.gore;
-    for (let i = 0; i < 4; i++) {
-      gore.spawn({ x: x + rand(-s.w * 0.5, s.w * 0.5), z: s.z, h: rand(0, 20), vx: rand(-200, 200), vz: 0, vh: rand(220, 480), tint: Math.random() < 0.6 ? 0x4a5258 : 0x7a8288, scale: rand(0.6, 1.4), decal: false, life: Math.floor(rand(22, 40)), texture: 'px', spin: rand(-12, 12) });
-    }
-    for (let i = 0; i < 3; i++) gore.spawn({ x: x + rand(-s.w, s.w), z: s.z, h: 2, vx: rand(-260, 260), vz: rand(-20, 20), vh: rand(20, 80), tint: 0x6e7672, scale: rand(0.8, 1.6), decal: false, life: 18 });
-    if (Math.random() < 0.3) this.scene.burning?.puff?.(x, s.z, rand(10, 40), 0.45);
+    const x = this.b.x + s.off;
+    for (let i = 0; i < 5; i++) this.chip(x + rand(-s.w * 0.4, s.w * 0.4), s.z, rand(0, 20), rand(-200, 200), rand(220, 460), rand(0.8, 1.4), 38);
+    for (const dir of [-1, 1]) this.dust(x + dir * s.w * 0.4, s.z, 4, rand(30, 44), { vx: dir * rand(20, 46), rise: rand(6, 16), alpha: 0.5 });
   }
 
   update() {
     const b = this.b;
     this.t++;
+    this.jolt.t++;
     if (this.fall >= 0) this.fall++;
     const tones = [[0x485058, 0x68727a, 0x2c3236], [0x40484c, 0x5e686c, 0x262c2e], [0x4e5650, 0x707a72, 0x30362f]];
     const tints = [0xc8d0d0, 0xb0b8b8, 0xd8e0e0];
     const dmg = b.maxHp > 0 ? 1 - b.hp / b.maxHp : 0;
-    const stage = Math.max(this.cracks, Math.floor(dmg * 4));
-    const seam = 0.5 + 0.5 * Math.sin(this.t * 0.12);
+    const J = this.jolt;
+    const shove = J.t < 24 ? J.dir * 5 * J.power * Math.exp(-J.t / 5) * Math.cos(J.t * 1.3) : 0;
 
-    // the fissure racing across the lane before the stone comes (and glowing under it)
+    // the crack in the floor, torn open ahead of the stone, closing as the wall goes
     const cg = this.crackG.clear();
-    const reach = Math.min(1, this.t / 10) * Math.max(this.zc - this.z0, this.z1 - this.zc);
-    const glow = this.fall >= 0 ? Math.max(0, 0.6 - this.fall / 20) : Math.max(0.25, 1 - this.t / 40);
-    if (glow > 0) {
-      for (const dir of [-1, 1]) {
-        let px = b.x; let pz = this.zc;
-        cg.lineStyle(3, 0x30d8c0, 0.9 * glow);
-        cg.beginPath(); cg.moveTo(px, pz);
-        for (let d = 8; d <= reach; d += 8) {
-          const z = this.zc + dir * d;
-          if (z < this.z0 || z > this.z1) break;
-          px = b.x + Math.sin(d * 0.37 + dir) * 6;
-          pz = z;
-          cg.lineTo(px, pz);
-        }
+    const reach = Math.min(1, this.t / 10) * (this.z1 - this.z0);
+    const open = this.fall >= 0 ? Math.max(0, 1 - this.fall / 24) : 1;
+    if (open > 0) {
+      for (const pts of this.fissure) {
+        const shown = pts.filter((q) => q.d <= reach);
+        if (shown.length < 2) continue;
+        cg.lineStyle(5, 0x14100c, 0.55 * open).beginPath(); cg.moveTo(shown[0].x, shown[0].z);
+        for (const q of shown) cg.lineTo(q.x, q.z);
         cg.strokePath();
-        cg.lineStyle(1.2, 0xb0fff0, glow).beginPath(); cg.moveTo(b.x, this.zc); cg.lineTo(px, pz); cg.strokePath();
+        for (let i = 1; i < shown.length; i++) {
+          const p = shown[i - 1]; const q = shown[i];
+          cg.lineStyle(q.w, 0x030202, 0.9 * open).lineBetween(p.x, p.z, q.x, q.z);
+        }
+        // grit kicked up at its tip as it runs
+        const tip = shown[shown.length - 1];
+        if (this.t <= 10 && this.t % 2 === 0) this.dust(tip.x, tip.z, 2, rand(20, 30), { vx: rand(-14, 14), rise: rand(6, 14), alpha: 0.45, life: 500 });
       }
     }
 
@@ -576,22 +656,33 @@ class EarthWallView {
       const u = Math.min(1, Math.max(0, since / 8));
       const up = u <= 0 ? 0 : 1 + 2.70158 * (u - 1) ** 3 + 1.70158 * (u - 1) ** 2;
       if (since === 1 && !s.burst) { s.burst = true; this.erupt(s); }
+      if (since === 8) s.flash = Math.max(s.flash, 0.45); // the magic flares as it locks in
       const down = this.fall >= 0 ? Math.min(1, Math.max(0, (this.fall - s.delay * 0.4) / (b.collapse * 0.7))) : 0;
-      const k = Math.max(0, up) * (1 - down);
+      const k = Math.max(0, up) * (1 - down) * (1 - s.chip);
+      s.flash *= 0.82;
       g.clear().setDepth(s.z + 0.6);
       if (s.img) s.img.setVisible(false);
+      if (s.fl) s.fl.setVisible(false);
       if (k <= 0) return;
-      const x = b.x + s.off + (since < 8 ? rand(-1.5, 1.5) : 0) + (this.fall >= 0 ? rand(-1, 1) * down * 3 : 0);
-      const y = s.z + down * 6;
+      const near = Math.max(0.35, 1 - Math.abs(s.z - J.z) / 60);
+      const x = b.x + s.off + shove * near + (since < 8 ? rand(-1.5, 1.5) : 0) + (this.fall >= 0 ? rand(-1, 1) * down * 3 : 0);
+      const y = s.z + down * (this.broken ? 14 : 6);
+      const tilt = s.lean * (1 - u) + s.topple * down + shove * near * 0.004;
       if (s.img) {
         // painted slab: rises out of the floor (the part still underground is cut off by
         // drawing it shorter from the bottom up)
         const art = this.art;
         const sc = s.h / art.fh;
-        s.img.setVisible(true).setPosition(x, y).setDepth(s.z + 0.6).setScale(Math.max(sc * 0.6, (s.w * 1.2) / art.fw), sc * k)
-          .setRotation(s.lean * (1 - u)).setTint(tints[s.tone]).setAlpha(1);
+        const sx = Math.max(sc * 0.6, (s.w * 1.2) / art.fw);
+        s.img.setVisible(true).setPosition(x, y).setDepth(s.z + 0.6).setScale(sx, sc * k)
+          .setRotation(tilt).setTint(mix(tints[s.tone], WORN, dmg * 0.75)).setAlpha(1);
+        if (s.flash > 0.03) {
+          s.fl ??= this.scene.add.image(0, 0, art.key, s.img.frame.name).setOrigin(0.5, 1).setBlendMode(ADD()).setFlipX(s.img.flipX);
+          s.fl.setVisible(true).setPosition(x, y).setDepth(s.z + 0.62).setScale(sx, sc * k).setRotation(tilt)
+            .setTint(0xffeedd).setAlpha(s.flash * 0.6);
+        }
       } else {
-        const [base, light, dark] = tones[s.tone];
+        const [base, light, dark] = tones[s.tone].map((c) => mix(c, 0x24282a, dmg * 0.5));
         const P = s.pts.map((q) => ({ x: x + q.x, y: y + q.y * k }));
         const poly = [{ x: x - s.w / 2, y }, ...P, { x: x + s.w / 2, y }];
         g.fillStyle(0x080a0c, 1);
@@ -600,17 +691,14 @@ class EarthWallView {
         g.beginPath(); g.moveTo(poly[0].x, poly[0].y); for (const q of poly) g.lineTo(q.x, q.y); g.closePath(); g.fillPath();
         g.fillStyle(light, 1).fillTriangle(P[0].x, P[0].y, P[2].x, P[2].y, x - s.w * 0.1, y - s.h * 0.3 * k);
         g.fillStyle(dark, 0.6).fillRect(x + s.w * 0.15, y - s.h * 0.6 * k, s.w * 0.35, s.h * 0.6 * k);
+        if (s.flash > 0.03) {
+          g.fillStyle(0xfff0e0, s.flash * 0.45);
+          g.beginPath(); g.moveTo(poly[0].x, poly[0].y); for (const q of poly) g.lineTo(q.x, q.y); g.closePath(); g.fillPath();
+        }
+        // cracks, as it is battered
+        if (dmg >= 0.25) { g.lineStyle(1.2, 0x0e1214, 1); g.lineBetween(x - s.w * 0.3, y - s.h * s.crack * k, x + s.w * 0.2, y - s.h * (s.crack - 0.2) * k); }
+        if (dmg >= 0.5) { g.lineStyle(1.6, 0x0e1214, 1); g.lineBetween(x + s.w * 0.25, y - s.h * 0.9 * k, x - s.w * 0.1, y - s.h * 0.2 * k); }
       }
-      // magic burning in the seams: hot as it rises, then a slow pulse, flaring as it fails
-      const hot = since < 14 ? 1 - since / 14 : 0;
-      const sg = Math.min(1, (0.25 + seam * 0.25 + stage * 0.12 + down + hot) * k);
-      g.lineStyle(1.6, 0x30d8c0, sg);
-      g.lineBetween(x - s.w * 0.1, y - 2, x + s.w * 0.05, y - s.h * 0.55 * k);
-      if (hot > 0) g.lineStyle(3, 0x90ffe8, hot * 0.6).lineBetween(x - s.w * 0.1, y - 2, x + s.w * 0.05, y - s.h * 0.55 * k);
-      // cracks, by damage stage
-      if (stage >= 1) { g.lineStyle(1.2, 0x0e1214, 1); g.lineBetween(x - s.w * 0.3, y - s.h * s.crack * k, x + s.w * 0.2, y - s.h * (s.crack - 0.2) * k); }
-      if (stage >= 2) { g.lineStyle(1.6, 0x0e1214, 1); g.lineBetween(x + s.w * 0.25, y - s.h * 0.9 * k, x - s.w * 0.1, y - s.h * 0.2 * k); g.lineStyle(1, 0x30d8c0, 0.6); g.lineBetween(x + s.w * 0.24, y - s.h * 0.88 * k, x - s.w * 0.09, y - s.h * 0.22 * k); }
-      if (stage >= 3 && i % 3 === 0) g.fillStyle(0x080a0c, 1).fillTriangle(x - 6, y - s.h * 0.8 * k, x + 6, y - s.h * 0.8 * k, x, y - s.h * 0.6 * k);
     });
 
     // its health, over the top of the wall (only once it's been hit)
@@ -619,14 +707,14 @@ class EarthWallView {
     if (b.maxHp > 0 && b.hp < b.maxHp && this.fall < 0) {
       const w = 64; const x = b.x - w / 2; const y = this.z0 - 128;
       bar.fillStyle(0x000000, 0.7).fillRect(x - 2, y - 2, w + 4, 8);
-      bar.fillStyle(0x4a5258, 1).fillRect(x, y, w * this.shown, 4);
-      bar.fillStyle(0x30d8c0, 1).fillRect(x, y, w * Math.max(0, b.hp / b.maxHp), 4);
+      bar.fillStyle(0x7a3a24, 1).fillRect(x, y, w * this.shown, 4);
+      bar.fillStyle(0xc8b896, 1).fillRect(x, y, w * Math.max(0, b.hp / b.maxHp), 4);
     }
   }
 
   destroy() {
     for (const g of this.parts) g.destroy();
-    for (const s of this.slabs) s.img?.destroy();
+    for (const s of this.slabs) { s.img?.destroy(); s.fl?.destroy(); }
     this.crackG.destroy();
     this.bar.destroy();
   }
