@@ -197,3 +197,10 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 - The mine blast (`RogueFX.blast`) is a fireball with a white-hot core, floor glow, shock ring, dust skirt, embers, gravel and rising smoke, replacing the pink flash circles. A small violet flash keeps it reading as the Rogue's.
 - Mist uses a new soft round texture (`softTex` in `Gore.js`), so red mist no longer shows as hard discs.
 - Visual only, no sim change. Before/after captures: project files `explosion/`. Not watched at full speed in a real fight.
+
+## Cloud, 2026-10-03: earth wall polish (not on itch)
+- The Mage's Earthen Bulwark (`EarthWallView` in `src/effects/MageFX.js`) no longer has teal lines drawn over it: the teal zigzag fissure, the seam lines on every slab and the teal health bar are gone. The magic is only the glowing veins already painted into `assets/fx/earthwall-strip.png`.
+- Going up: a dark jagged crack runs across the floor with grit kicked up at its tip; each slab throws real rock chips (new `rockchip` texture) and a skirt of brown dust, and flares briefly as it locks in. No more white dot puffs.
+- Hit: the wall jolts away from the blow, slabs near the impact flash, a burst of stone chips and dust comes off the struck face, grit trickles off the top, a small camera shake, and a heavier thud (`earthHit`). The stone near each hit gets knocked a little shorter and the whole wall darkens as it loses health. Health bar is bone on red.
+- Broken: slabs topple and sink in a dust cloud with rubble and a bigger shake (`earthBreak` sound; `barrierDown`'s `broken` flag is now passed to the view). Timed out: it just sinks back with a little dust.
+- View only, no sim change. Before/after captures: project files `earth-wall/polish/`. Not watched at full speed in a real fight.
