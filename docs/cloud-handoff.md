@@ -197,3 +197,9 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 - The mine blast (`RogueFX.blast`) is a fireball with a white-hot core, floor glow, shock ring, dust skirt, embers, gravel and rising smoke, replacing the pink flash circles. A small violet flash keeps it reading as the Rogue's.
 - Mist uses a new soft round texture (`softTex` in `Gore.js`), so red mist no longer shows as hard discs.
 - Visual only, no sim change. Before/after captures: project files `explosion/`. Not watched at full speed in a real fight.
+
+## Cloud, 2026-10-03: critical hits for every hero (not on itch)
+- Nick asked for critical hits for all good guys. Before this the only crit was Vexa's mark of death (the SUPER CRITICAL a teammate lands on her marked man).
+- Now any hero's clean hit (not blocked or parried) has a 12% chance to be a CRITICAL for 1.75x damage: `SETTINGS.feel.critChance` / `critMultiplier`; a hero can override with `stats.critChance`. Enemies never crit. A super critical never also rolls a normal crit.
+- Rolled with `world.roll()` in `CombatSystem.resolve`, so online co-op stays in step. The hit event carries `crit`; `ArenaScene.critFX` shows "CRITICAL!" (or "CRITICAL COUNTER!"), a small shake, a thump and an extra spray.
+- `tests/logic-test.js` turns crits off by default (they'd make damage comparisons flaky) and has its own crit test for all three heroes.
