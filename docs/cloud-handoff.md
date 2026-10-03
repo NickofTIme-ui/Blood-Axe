@@ -185,3 +185,9 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 
 ## Cloud, 2026-10-03: Malgor walks in (not on itch)
 - Boss: Warlord Malgor no longer glides in on his standing pose. His entrance (`bossEntrance` state) now plays his existing walk strip (`warlord_walk.png`), with the lumbering sink and sway, one step per `bossStomp` so each screen shake lands on a planted foot (`SpriteEnemyView.walkFrame`). View-only change, no sim change. Checked in a headless browser frame strip; not watched in a real playthrough.
+
+## Cloud, 2026-10-03: better explosion chunks (not on itch)
+- A painted enemy blown up (stuck or floor mine, lotus, rupture, crushing crit) is now torn into 9-15 jagged pieces of his own sprite frame (`SpriteCuts.shatter` / `tear` in `src/effects/SpriteCut.js`): head, boots, hands, weapon, torso chunks, each with raw meat on its torn edges, blood soaked in and soot. Painted meat, organs, gut, bone, skull and an eye fly with them (`Gore.blowApart`). The old flat coloured squares are gone. Non-mine explodes used to split him in two halves; they now shatter too (fewer, bigger pieces, thrown the way the blow went).
+- The mine blast (`RogueFX.blast`) is a fireball with a white-hot core, floor glow, shock ring, dust skirt, embers, gravel and rising smoke, replacing the pink flash circles. A small violet flash keeps it reading as the Rogue's.
+- Mist uses a new soft round texture (`softTex` in `Gore.js`), so red mist no longer shows as hard discs.
+- Visual only, no sim change. Before/after captures: project files `explosion/`. Not watched at full speed in a real fight.

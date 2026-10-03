@@ -9,9 +9,11 @@
 // recordings (ROGUE_SOUNDS is the one place to swap them).
 
 import { DEPTH } from '../view/depths.js';
+import { softTex } from './Gore.js';
 import { playSfx } from '../core/Sfx.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const ADD = () => Phaser.BlendModes.ADD;
 const VIOLET = 0xb050ff;
 const CRIMSON = 0xff3050;
@@ -145,26 +147,67 @@ export class RogueFX {
     this.scene.tweens.add({ targets: g, alpha: 0, delay: 1500, duration: 400, onComplete: () => g.destroy() });
   }
 
-  // The widow mine going off: a white-violet flash, a shock ring over the floor, smoke,
-  // sparks, stone and dust thrown out, a scorch mark, a hard kick of the camera.
+  // The widow mine going off: a white-hot core, a rolling fireball, a ground-light and
+  // a shock ring over the floor, a dust skirt, embers and gravel thrown out, black smoke
+  // billowing up after it, a scorch mark, a hard kick of the camera. (A hint of her
+  // violet stays in the flash, so it still reads as hers.)
   blast(x, z, r, owner) {
     const s = this.scene;
     this.sound('mineBlast', owner);
     s.fx.shake(10, 18);
     s.rumble(1, 0.8, 220);
-    const flash = s.add.circle(x, z - 26, 30, 0xffffff, 0.9).setDepth(DEPTH.popups - 4).setBlendMode(ADD());
-    s.tweens.add({ targets: flash, scale: 2.4, alpha: 0, duration: 140, onComplete: () => flash.destroy() });
-    const tint = s.add.circle(x, z - 26, 40, VIOLET, 0.5).setDepth(DEPTH.popups - 5).setBlendMode(ADD());
-    s.tweens.add({ targets: tint, scale: 2, alpha: 0, duration: 260, onComplete: () => tint.destroy() });
-    const ring = s.add.ellipse(x, z, 20, 8).setStrokeStyle(4, 0xffe0c0, 0.9).setDepth(z + 0.5).setBlendMode(ADD());
-    s.tweens.add({ targets: ring, scaleX: r / 9, scaleY: r / 14, alpha: 0, duration: 320, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
-    s.gore.spark(x, z, 20, 0xffd0a0, 26);
-    s.gore.spark(x, z, 20, CRIMSON, 12);
-    for (let i = 0; i < 24; i++) {
+    softTex(s);
+    const puff = (px, py, depth, tint, sc, alpha, add) => {
+      const img = s.add.image(px, py, 'soft').setTint(tint).setScale(sc).setAlpha(alpha).setDepth(depth);
+      if (add) img.setBlendMode(ADD());
+      return img;
+    };
+    const cy = z - 22;
+    // the light it throws on the floor, and the white-hot core
+    const glow = puff(x, z - 2, z - 0.5, 0xff9a40, 1, 0.9, true).setScale(r / 18, r / 52);
+    s.tweens.add({ targets: glow, alpha: 0, duration: 420, ease: 'Quad.easeIn', onComplete: () => glow.destroy() });
+    const core = puff(x, cy, DEPTH.popups - 4, 0xfff6e0, 0.8, 1, true);
+    s.tweens.add({ targets: core, scale: 2.6, alpha: 0, duration: 160, ease: 'Cubic.easeOut', onComplete: () => core.destroy() });
+    const tint = puff(x, cy, DEPTH.popups - 5, VIOLET, 1.4, 0.35, true);
+    s.tweens.add({ targets: tint, scale: 3, alpha: 0, duration: 240, onComplete: () => tint.destroy() });
+    // the fireball: billows of flame that swell, climb and burn out yellow -> orange -> red
+    for (let i = 0; i < 14; i++) {
       const a = rand(0, Math.PI * 2);
-      s.gore.spawn({ x, z: z + Math.sin(a) * 4, h: rand(2, 20), vx: Math.cos(a) * rand(150, 420), vz: Math.sin(a) * rand(40, 120), vh: rand(150, 450), tint: Math.random() < 0.5 ? 0x5a4a3a : 0x8a7a62, scale: rand(0.5, 1.2), decal: false, life: Math.floor(rand(20, 36)), texture: 'px', spin: rand(-10, 10) });
+      const d = rand(0, 22);
+      const f = puff(x + Math.cos(a) * d, cy + Math.sin(a) * d * 0.7, z + 3, [0xffd060, 0xffa030, 0xff7018][i % 3], rand(0.5, 0.9), 0.95, true);
+      s.tweens.add({
+        targets: f, scale: rand(1.4, 2.3), x: f.x + Math.cos(a) * rand(14, 34), y: f.y + Math.sin(a) * rand(6, 18) - rand(10, 34),
+        alpha: 0, duration: rand(260, 480), ease: 'Cubic.easeOut', onComplete: () => f.destroy(),
+      });
+      s.tweens.addCounter({ from: 0, to: 1, duration: 300, onUpdate: (tw) => f.active && f.setTint(Phaser.Display.Color.GetColor(255, Math.round(200 - 150 * tw.getValue()), Math.round(80 - 70 * tw.getValue()))) });
     }
-    for (let i = 0; i < 12; i++) s.burning?.puff?.(x + rand(-r * 0.4, r * 0.4), z + rand(-6, 6), rand(10, 60), 0.6);
+    // the shock ring, and the dust it drives out low along the floor
+    const ring = s.add.ellipse(x, z, 20, 8).setStrokeStyle(3, 0xffd8a8, 0.8).setDepth(z + 0.5).setBlendMode(ADD());
+    s.tweens.add({ targets: ring, scaleX: r / 9, scaleY: r / 14, alpha: 0, duration: 300, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2 + rand(-0.2, 0.2);
+      const dd = puff(x, z - 4, z + 1, 0x6a5a48, 0.5, 0.5, false);
+      s.tweens.add({ targets: dd, x: x + Math.cos(a) * r * rand(0.6, 0.95), y: z - 6 + Math.sin(a) * r * 0.22, scale: rand(1.1, 1.7), alpha: 0, duration: rand(500, 800), ease: 'Cubic.easeOut', onComplete: () => dd.destroy() });
+    }
+    // black smoke rolls up out of the fire and hangs a moment
+    for (let i = 0; i < 9; i++) {
+      const sm = puff(x + rand(-34, 34), cy + rand(-20, 8), z + 2, pick([0x1e1a18, 0x2a2420, 0x3a322a]), rand(0.6, 1), 0, false);
+      const peak = rand(0.1, 0.18);
+      const life = rand(900, 1300);
+      s.tweens.add({ targets: sm, alpha: peak, duration: 140, delay: rand(60, 160) });
+      s.tweens.add({ targets: sm, y: sm.y - rand(40, 90), x: sm.x + rand(-34, 34), scale: rand(2, 3), duration: life, delay: 80, ease: 'Sine.easeOut' });
+      s.tweens.add({ targets: sm, alpha: 0, duration: life * 0.6, delay: 80 + life * 0.45, onComplete: () => sm.destroy() });
+    }
+    // embers and gravel
+    for (let i = 0; i < 26; i++) {
+      const a = rand(-Math.PI, 0);
+      const sp = rand(160, 520);
+      s.gore.spawn({ x, z: z + rand(-6, 6), h: rand(10, 40), vx: Math.cos(a) * sp, vz: rand(-60, 60), vh: -Math.sin(a) * sp, tint: pick([0xffe080, 0xffa040, 0xff6a20]), scale: rand(0.18, 0.34), decal: false, life: Math.floor(rand(22, 46)) });
+    }
+    for (let i = 0; i < 16; i++) {
+      const a = rand(0, Math.PI * 2);
+      s.gore.spawn({ x, z: z + Math.sin(a) * 4, h: rand(2, 16), vx: Math.cos(a) * rand(150, 400), vz: Math.sin(a) * rand(40, 120), vh: rand(150, 420), tint: pick([0x4a3e32, 0x6a5a48, 0x7e6e58]), scale: rand(0.35, 0.7), decal: false, life: Math.floor(rand(20, 36)), texture: 'px', spin: rand(-10, 10) });
+    }
     s.gore.scorch?.(x, z, true);
   }
 
