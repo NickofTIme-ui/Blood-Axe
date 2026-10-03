@@ -1492,6 +1492,90 @@ test('stage: the throne spawns the boss, he rages at half health, killing him wi
   assert(t.ev.includes('stageWon') && t.stage.phase === 'won', `won (${t.stage.phase})`);
 });
 
+// The Warlord's Earthbreaker: a scripted Malgor and up to three heroes standing about.
+function quakeSetup({ heroes = [[520, 420, {}]], boss = { 1: ['special2'] } } = {}) {
+  const world = new World();
+  const b = world.addFighter(new Fighter({ stats: ENEMIES.warlord, team: 'enemy', x: 400, z: 420, controller: new Scripted(boss) }));
+  b.facing = 1;
+  const ps = heroes.map(([x, z, hold, script]) => {
+    const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x, z, controller: new Scripted(script ?? {}, hold) }));
+    p.facing = -1;
+    return p;
+  });
+  const ev = [];
+  for (const n of ['hit', 'block', 'parry', 'guardBreak', 'quakeSlam', 'quakeWave', 'quakeHit', 'quakeEnd']) world.events.on(n, (e) => ev.push([n, e]));
+  return { world, b, ps, ev, run: (n) => { for (let i = 0; i < n; i++) world.tick(); } };
+}
+
+test('Earthbreaker: the boss\'s slam goes through a guard, shakes the screen and floors you', () => {
+  const t = quakeSetup({ heroes: [[520, 420, { block: true }]] });
+  const m = ENEMIES.warlord.moves.special2;
+  t.run(3);
+  assert(t.ps[0].state === 'block', `hero blocking (${t.ps[0].state})`);
+  t.run(m.startup + 4);
+  const names = t.ev.map(([n]) => n);
+  assert(!names.includes('block') && !names.includes('guardBreak'), `no guard against it (${names})`);
+  assert(names.includes('quakeSlam'), 'the floor is struck');
+  const hit = t.ev.find(([n, e]) => n === 'hit' && e.defender === t.ps[0]);
+  assert(hit && hit[1].move.shake >= 12, 'a hard hit with a big screen shake');
+  assert(t.ps[0].state === 'knockdown', `knocked down (${t.ps[0].state})`);
+});
+
+test('Earthbreaker: a parry can\'t stop it either', () => {
+  const m = ENEMIES.warlord.moves.special2;
+  const t = quakeSetup({ heroes: [[520, 420, {}, { [m.startup - 2]: ['block'] }]] });
+  t.run(m.startup + 4);
+  assert(!t.ev.some(([n]) => n === 'parry'), 'no parry');
+  assert(t.ps[0].state === 'knockdown', `knocked down (${t.ps[0].state})`);
+});
+
+test('Earthbreaker: the shockwave rolls both ways across the whole lane; on the ground = knocked down, in the air = it rolls under', () => {
+  const m = ENEMIES.warlord.moves.special2;
+  const K = m.shockwave;
+  // far right, standing / far left, at the other edge of the lane / far right, jumping just as it arrives
+  const impact = 400 + (m.hitbox.x + m.hitbox.w) * 0.8;
+  const jumpAt = m.startup + 1 + Math.round(((800 - impact) - 110) / K.speed * 60); // (a beat before it arrives)
+  const t = quakeSetup({ heroes: [[750, 300, {}], [100, 510, {}], [800, 420, {}, { [jumpAt]: ['jump'] }]] });
+  const [stand, behind, jumper] = t.ps;
+  t.run(m.startup + 2);
+  assert(t.ev.filter(([n]) => n === 'quakeWave').length === 2, 'one wave each way');
+  let jumperCleared = false;
+  for (let i = 0; i < 120; i++) {
+    t.run(1);
+    if (jumper.h > K.clear && t.world.quakes.list.some((w) => w.dir > 0 && Math.abs(w.x - jumper.x) < 40)) jumperCleared = true;
+  }
+  const hitBy = new Set(t.ev.filter(([n]) => n === 'quakeHit').map(([, e]) => e.fighter));
+  assert(hitBy.has(stand) && hitBy.has(behind), 'both heroes on the ground went down, in front and behind, near and far in the lane');
+  assert(jumperCleared, 'the jumper was in the air as it passed');
+  assert(!hitBy.has(jumper), 'the jumper cleared it');
+  assert(jumper.health === jumper.stats.maxHealth, 'and took no damage');
+  assert(t.ev.some(([n]) => n === 'quakeEnd') && t.world.quakes.list.length === 0, 'the waves die out');
+});
+
+test('Earthbreaker: a blocking hero is still floored by the wave, and his own side is never hurt', () => {
+  const t = quakeSetup({ heroes: [[800, 420, { block: true }]] });
+  const grunt = createEnemy(t.world, 'grunt', 700, 420);
+  t.run(150);
+  const hitBy = t.ev.filter(([n]) => n === 'quakeHit').map(([, e]) => e.fighter);
+  assert(hitBy.includes(t.ps[0]), 'blocking doesn\'t stop the wave');
+  assert(!hitBy.includes(grunt) && grunt.health === grunt.stats.maxHealth, 'the boss\'s men are untouched');
+});
+
+test('Earthbreaker: not twice in a row (cooldown), and the boss\'s brain does use it', () => {
+  const m = ENEMIES.warlord.moves.special2;
+  const t = quakeSetup({ heroes: [[900, 420, {}]], boss: { 1: ['special2'], [m.startup + m.active + m.recovery + 5]: ['special2'] } });
+  t.run(m.startup + m.active + m.recovery + 10);
+  assert(t.ev.filter(([n]) => n === 'quakeSlam').length === 1, 'the second press is refused while cooling down');
+  // the real AI, left to fight a hero who just stands there
+  const world = new World({ seed: 7 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 300, z: 420, controller: new Scripted() }));
+  createEnemy(world, 'warlord', 600, 420);
+  let slams = 0;
+  world.events.on('quakeSlam', () => slams++);
+  for (let i = 0; i < 60 * 40 && !slams; i++) { p.health = p.stats.maxHealth; world.tick(); }
+  assert(slams > 0, 'he slams the ground in a fight');
+});
+
 for (const [name, fn] of later) {
   try { await fn(); console.log(`  ok   ${name}`); } catch (e) { failed++; console.log(`  FAIL ${name}\n       ${e.message}`); }
 }

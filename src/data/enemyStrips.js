@@ -173,6 +173,9 @@ export const ENEMY_ANIMS = {
     light1: quick('atk1'), light2: quick('atk2'), heavy: big('heavy'),
     // Bull Charge: 0 ready, 1 crouch and roar, 2-4 charging, 5 the impact
     special1: { needs: ['special'], phases: { startup: seq('special', [0, 1, 1]), active: seq('special', [2, 3, 4, 2, 3, 4, 5]), recovery: seq('special', [5, 5, 1]) } },
+    // Earthbreaker: the Headsman's Fall poses, held long at the top of the lift (the
+    // tell), then down into the floor and a long, heavy pull back out
+    special2: { needs: ['heavy'], phases: { startup: seq('heavy', [0, 1, 2, 2, 2, 2, 2]), active: seq('heavy', [3]), recovery: seq('heavy', [4, 4, 4, 4, 5]) } },
   },
   gladiator: {
     ...COMMON,

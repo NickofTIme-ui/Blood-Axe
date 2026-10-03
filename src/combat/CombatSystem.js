@@ -2,6 +2,7 @@
 // happens: parry, block, guard break or a clean hit (damage, hitstun, knockdown,
 // hitstop). It emits events ('hit', 'kill', 'block', 'parry', 'guardBreak') that
 // the effects/HUD layers listen to — this file never draws anything.
+// A move marked `unblockable` skips parry and block and always lands as a clean hit.
 
 import { SETTINGS } from '../config/settings.js';
 import { toWorldBox, overlaps, contactPoint } from './Boxes.js';
@@ -123,9 +124,11 @@ export class CombatSystem {
       x: ctx.contact.x, z: def.z, h: ctx.contact.h,
     };
     const melee = ctx.kind === 'melee';
+    // an unblockable blow (the Warlord's Earthbreaker): no parry, no guard — it lands
+    const guarded = !move.unblockable;
 
     // ---- PARRY: block tapped just in time, facing the attack
-    if (facingSource && def.parryActive) {
+    if (guarded && facingSource && def.parryActive) {
       def.hitstop = FEEL.parryHitstop;
       if (melee) {
         attacker.hitstop = FEEL.parryHitstop;
@@ -141,12 +144,12 @@ export class CombatSystem {
     }
 
     // ---- KICK INTO A GUARD: smashes the guard open and lands as a full hit (launch + bowl)
-    if (facingSource && def.state === 'block' && move.bowl) {
+    if (guarded && facingSource && def.state === 'block' && move.bowl) {
       def.stamina = 0;
       def.staminaDelay = def.stats.staminaRegenDelay;
       bus.emit('guardBreak', event);
       // fall through to the clean hit below
-    } else if (facingSource && def.state === 'block') {
+    } else if (guarded && facingSource && def.state === 'block') {
       // ---- BLOCK (or guard break)
       const guardDamage = (move.guardDamage ?? 10) * def.stats.guardEfficiency;
       const chip = move.damage * (melee ? attacker.stats.meleeMult : attacker.stats.magicMult) *

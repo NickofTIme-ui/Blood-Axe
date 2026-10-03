@@ -40,7 +40,7 @@ export class EnemyBrain extends Controller {
     const moves = f.stats.moves;
     if (press === 'heavy') return usable(f, moves.heavy);
     if (press === 'magic') return !!f.stats.spell && usable(f, f.stats.spell) && f.mana >= f.stats.spell.cost;
-    return usable(f, moves[press]);
+    return usable(f, moves[press]) && !(f.cool[press] > 0);
   }
 
   sample(frozen) {

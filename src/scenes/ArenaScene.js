@@ -21,6 +21,7 @@ import { StripHeroView } from '../view/StripHeroView.js';
 import { MageFX } from '../effects/MageFX.js';
 import { Parallax } from '../view/Parallax.js';
 import { RogueFX } from '../effects/RogueFX.js';
+import { QuakeFX } from '../effects/QuakeFX.js';
 import { ProjectileView } from '../view/ProjectileView.js';
 import { DebugDraw } from '../view/DebugDraw.js';
 import { DEPTH } from '../view/depths.js';
@@ -148,6 +149,7 @@ export class ArenaScene extends Phaser.Scene {
     this.setupFinishers(ev);
     this.mageFX = new MageFX(this); // the Mage's spells and barriers (effects/MageFX.js)
     this.rogueFX = new RogueFX(this); // the Rogue's mines, marks and steel (effects/RogueFX.js)
+    this.quakeFX = new QuakeFX(this); // the Warlord's Earthbreaker slam and its shockwave (effects/QuakeFX.js)
     ev.on('kill', (e) => {
       this.kills++;
       if (e.finisher) return; // executions do their own gore (setupFinishers)
@@ -851,6 +853,7 @@ export class ArenaScene extends Phaser.Scene {
     this.parallax.update(Math.min(delta, 100) / 1000 * (this.paused ? 0 : 1));
     this.mageFX.update();
     this.rogueFX.update();
+    this.quakeFX.update();
     this.updateCamFocus();
     this.updateFinisherMarker();
     this.stageView.update();

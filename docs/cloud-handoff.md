@@ -197,3 +197,10 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 - The mine blast (`RogueFX.blast`) is a fireball with a white-hot core, floor glow, shock ring, dust skirt, embers, gravel and rising smoke, replacing the pink flash circles. A small violet flash keeps it reading as the Rogue's.
 - Mist uses a new soft round texture (`softTex` in `Gore.js`), so red mist no longer shows as hard discs.
 - Visual only, no sim change. Before/after captures: project files `explosion/`. Not watched at full speed in a real fight.
+
+## Cloud, 2026-10-03: Malgor's Earthbreaker slam (not on itch)
+- New boss move `ENEMIES.warlord.moves.special2` (Earthbreaker): a long tell (glaive up, the ground trembles, "JUMP!" banner), then the glaive goes into the floor. It can't be blocked or parried (`unblockable`, checked in `CombatSystem.resolve`), has super armor, and gives the hardest screen shake in the game plus pad rumble.
+- The slam splits the floor and sends a shockwave out both ways across the whole depth of the lane (`src/combat/Quake.js`, `world.quakes`). Anyone on the ground when the front reaches him is knocked down (also unblockable); a hero whose feet are more than 26 px up lets it roll under. It rolls 620 px each way at 420 px/s. One blow per man between the glaive and the two waves; the boss's own men are never hurt.
+- `cooldown` on a move (frames before it can be used again, via `f.cool`) keeps him to one slam every 7 s at most. His AI rolls it within 380 px.
+- Visuals in `src/effects/QuakeFX.js`: dust during the tell, flung floor chunks, a crack decal that fades, and stone and dust thrown up along each wave's front. No new art: it reuses his `heavy` strip with a longer hold at the top. If it should get its own strip, ask for `warlord_slam.png` (6 poses on magenta, same 2172x724 as his others: ready, glaive lifting, glaive high over his head, driving down, blade buried in the floor, pulling it free).
+- Sim change: both online players need the new build. Logic tests cover the guard, parry, jump, wave both ways, cooldown and that his AI uses it.

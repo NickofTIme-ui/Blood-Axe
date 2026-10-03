@@ -140,7 +140,7 @@ export function tryActions(f, allowed = null) {
   }
   // Enemy-only extra moves (hooks, charges, spins). Players have no button for these.
   for (const sp of ['special1', 'special2']) {
-    if (ok(sp) && usable(f, s.moves[sp]) && c.peek(sp)) {
+    if (ok(sp) && usable(f, s.moves[sp]) && ready(f, s.moves[sp], sp) && c.peek(sp)) {
       c.consume(sp);
       f.fsm.change(sp);
       return true;
@@ -169,6 +169,7 @@ function makeAttackState(moveKey) {
       faceInput(f);
       f.chargeHeld = 0;
       f.startMove(f.stats.moves[moveKey]);
+      if (f.move.cooldown) f.cool[moveKey] = f.move.cooldown; // (a boss's big moves: not twice in a row)
       f.world.events.emit('attackStart', { fighter: f, state: moveKey, move: f.move }); // sound on the button press
     },
     update(f, frame) {
@@ -201,6 +202,7 @@ function makeAttackState(moveKey) {
       // The hitbox only exists during active frames.
       f.activeAttack = phase === 'active' ? f.attackInfo : null;
       if (frame === m.startup + 1) f.world.events.emit('swing', { fighter: f, move: m });
+      if (frame === m.startup + 1 && m.shockwave) f.world.quakes.slam(f, m); // (combat/Quake.js)
       // swung and hit nothing
       if (frame === m.startup + m.active + 1 && f.attackInfo.hitList.size === 0) {
         f.world.events.emit('whiff', { fighter: f, move: m, state: f.state });

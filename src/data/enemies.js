@@ -12,6 +12,12 @@
 //   chain            true = the weapon is on a chain; the view flings it out to the hitbox
 //   fx               'quake' = dust + shake when the move's active frames begin
 //   special1         an extra move the AI can press (players have no button for it)
+//   special2         a second one
+//   unblockable      true = no parry or guard stops it; it always lands as a clean hit
+//   cooldown         frames before the same move can be used again
+//   shockwave        { speed, range, width, clear, damage, launch, lift }: on the first
+//                    active frame the floor splits and a wave rolls out both ways
+//                    (combat/Quake.js); feet above `clear` px let it pass under
 //
 // AI GUIDE
 //   attackRange     distance (px) at which it starts swinging
@@ -543,6 +549,23 @@ export const ENEMIES = {
         guardDamage: 50, lunge: 430,
         hitbox: { x: 20, y: 20, w: 74, h: 150 },
       },
+      special2: { // Earthbreaker: the glaive raised high and brought down into the floor.
+        // No guard stops it and the whole screen shakes; the floor splits and a wave of
+        // stone rolls out both ways across the lane (combat/Quake.js): jump it or go down.
+        anim: 'chop', cut: 'chop', unblockable: true, superArmor: true,
+        startup: 50, active: 5, recovery: 44,
+        damage: 30, hitstun: 34, hitstop: 12, shake: 16,
+        knockback: { x: 360, y: 400 }, knockdown: true, lunge: 30,
+        hitbox: { x: 10, y: 0, w: 140, h: 176 },
+        cooldown: 420, // (seven seconds before he can do it again)
+        shockwave: {
+          speed: 420,  // px/s along the floor
+          range: 620,  // how far each wave rolls from the impact
+          width: 34,   // the front of broken stone
+          clear: 26,   // feet higher than this off the floor and it rolls under you
+          damage: 14, launch: 220, lift: 300,
+        },
+      },
     },
 
     ai: {
@@ -553,7 +576,10 @@ export const ENEMIES = {
       heavyChance: 0.3, comboChance: 0.5, comboLength: 1,
       blockChance: 0.3, blockHold: [30, 60],
       specialEvery: 30,
-      specials: [{ press: 'special1', min: 200, max: 420, chance: 0.5 }],
+      specials: [
+        { press: 'special2', min: 0, max: 380, chance: 0.3 },
+        { press: 'special1', min: 200, max: 420, chance: 0.5 },
+      ],
     },
   },
 };
