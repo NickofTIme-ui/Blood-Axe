@@ -29,7 +29,7 @@ const peerOptions = () => ({
 // How long each step may take before the player is told it failed.
 export const WAIT = {
   broker: 12000,  // reaching the matchmaker
-  line: 25000,    // from the room being found to the line being open (relays can be slow)
+  line: 30000,    // from the room being found to the line being open (relays can be slow)
 };
 
 const PEERJS_URL = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
