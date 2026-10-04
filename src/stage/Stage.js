@@ -26,7 +26,8 @@ const ADVANCE_AT = 300;  // px past the next section's start that locks you into
 const FIRE = { period: 210, warn: 110, burst: 160, tick: 14, damage: 9 };
 // Pendulum blade
 // (driven: struck by a hero — how long it whips about, how much wider and faster, its damage)
-const BLADE = { period: 150, length: 320, damage: 20, driven: { frames: 150, wide: 2, haste: 1, damage: 60 } };
+// (bleed: how much of the extra swing a struck blade keeps each frame once it's no longer driven)
+const BLADE = { period: 150, length: 320, damage: 20, bleed: 0.985, driven: { frames: 150, wide: 2, haste: 1, damage: 60 } };
 // A kicked crate or chest: how fast and far it skids (px/s, px), how close to an enemy's
 // lane it must pass to strike him, and the burst (reach along the lane, across it, damage)
 const KICKED = { kinds: ['crate', 'chest'], speed: 620, range: 560, lane: 26, radius: 95, depth: 44, damage: 34 };
@@ -357,19 +358,27 @@ export class Stage {
     }
   }
 
-  // The blade's angle (radians) and tip position.
+  // The blade's angle (radians) and tip position. amp / rate: how much wider and faster
+  // than its resting swing it is going (both 1 at rest; raised when a hero strikes it).
   bladeState(hz) {
-    const max = Math.asin(Math.min(0.95, hz.swing * (hz.driven ? BLADE.driven.wide : 1) / BLADE.length));
+    const max = Math.asin(Math.min(0.95, (hz.swing * (hz.amp ?? 1)) / BLADE.length));
     const a = max * Math.sin((hz.t / BLADE.period) * Math.PI * 2);
     const speed = Math.cos((hz.t / BLADE.period) * Math.PI * 2); // + = swinging right
-    return { a, tipX: hz.x + Math.sin(a) * BLADE.length, speed };
+    // (omega: radians per frame, for the view's chain)
+    const omega = max * speed * ((Math.PI * 2) / BLADE.period) * (hz.rate ?? 1);
+    return { a, tipX: hz.x + Math.sin(a) * BLADE.length, speed, omega };
   }
 
   updateBlade(hz) {
     const D = BLADE.driven;
     if (hz.driven && --hz.driven <= 0) hz.driven = 0;
-    if (hz.driven) hz.t += D.haste; // (it whips through faster while it lasts)
-    else this.strikeBlade(hz);
+    // It's heavy: while driven it holds the wide, fast swing a hero's blow gave it; after
+    // that the extra bleeds away over a few swings (never a jump in where it is).
+    const bleed = (v, rest) => rest + (v - rest) * BLADE.bleed;
+    hz.amp = hz.driven ? D.wide : bleed(hz.amp ?? 1, 1);
+    hz.rate = hz.driven ? 1 + D.haste : bleed(hz.rate ?? 1, 1);
+    hz.t += hz.rate - 1; // (on top of the frame's own step)
+    if (!hz.driven) this.strikeBlade(hz);
     const s = this.bladeState(hz);
     if (Math.abs(s.speed) < 0.55) return; // only the fast bottom of the swing cuts
     for (const f of this.world.fighters) {
@@ -391,8 +400,14 @@ export class Stage {
       const hb = f.activeAttack ? toWorldBox(f, f.activeAttack.hitbox ?? f.activeAttack.move.hitbox) : ps.box;
       const reach = f.activeAttack ? 34 : ps.depth;
       if (hb.right < s.tipX - 26 || hb.left > s.tipX + 26 || Math.abs(f.z - hz.z) > reach) continue;
+      // The blow reverses it where it is, flying away from him, with the wide swing's
+      // energy: the point of its new arc that is here and heading his way out.
       hz.driven = BLADE.driven.frames;
-      hz.t = f.facing > 0 ? 0 : BLADE.period / 2; // at the bottom of its arc, flying away from him
+      hz.amp = BLADE.driven.wide;
+      hz.rate = 1 + BLADE.driven.haste;
+      const max = Math.asin(Math.min(0.95, (hz.swing * hz.amp) / BLADE.length));
+      const phase = Math.asin(Math.max(-1, Math.min(1, s.a / max)));
+      hz.t = ((f.facing > 0 ? phase : Math.PI - phase) / (Math.PI * 2)) * BLADE.period;
       hz.cool.clear();
       hz.cool.set(f.id, 30);
       this.world.events.emit('bladeStruck', { hazard: hz, by: f, dir: f.facing, force: !f.activeAttack });

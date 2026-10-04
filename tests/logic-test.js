@@ -12,6 +12,7 @@ import { ENEMIES, WAVES } from '../src/data/enemies.js';
 import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.js';
 import { Stage } from '../src/stage/Stage.js';
 import { STAGE } from '../src/data/stage.js';
+import { BladeChain, CHAIN_PHYS } from '../src/view/BladeChain.js';
 import { handshake } from '../src/net/Link.js';
 import { impalePin } from '../src/combat/Finisher.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/Mage.js';
@@ -1568,6 +1569,36 @@ test('stage: the throne spawns the boss, he rages at half health, killing him wi
   assert(t.ev.includes('bossRage'), 'rage');
   t.killAll(); t.run(5);
   assert(t.ev.includes('stageWon') && t.stage.phase === 'won', `won (${t.stage.phase})`);
+});
+
+test('blade: a struck blade reverses where it is (no jump); its chain snaps and the heavy blade swings, then all settles', () => {
+  const t = stageSetup();
+  const blade = t.stage.hazards.find((h) => h.type === 'blade');
+  t.stage.enterSection(blade.section, true);
+  t.p.x = blade.x - 60; t.p.z = blade.z + 26; t.p.facing = 1;
+  const chain = new BladeChain();
+  let struckAt = -1;
+  t.world.events.on('bladeStruck', (e) => { struckAt = t.world.frame; chain.kick(e.dir, 1); });
+  const bend = () => Math.max(...chain.w.map(Math.abs));
+  blade.t = 60;
+  let last = t.stage.bladeState(blade).a;
+  let jump = 0; let calm = 0; let whip = 0; let swing = 0;
+  for (let i = 0; i < 700; i++) {
+    if (i === 30) t.p.controller.registerPress('attack');
+    t.run(1);
+    const s = t.stage.bladeState(blade);
+    jump = Math.max(jump, Math.abs(s.a - last));
+    last = s.a;
+    chain.step(1, 320, s.omega);
+    if (struckAt < 0) calm = Math.max(calm, bend(), Math.abs(chain.bladeTilt(320)) * 10);
+    else if (t.world.frame - struckAt < 40) { whip = Math.max(whip, bend()); swing = Math.max(swing, Math.abs(chain.bladeTilt(320))); }
+  }
+  assert(struckAt >= 0, 'struck');
+  assert(jump < 0.08, `the blade never jumps (${jump.toFixed(3)} rad in one frame)`);
+  assert(calm < 1, `a plain swing leaves the chain straight and the blade in line (${calm.toFixed(2)})`);
+  assert(whip > 3 && whip <= CHAIN_PHYS.maxBend, `the blow snaps the chain (${whip.toFixed(1)} px)`);
+  assert(swing > 0.08 && swing <= CHAIN_PHYS.bladeMax + 0.1, `and swings the blade on its end (${swing.toFixed(2)} rad)`);
+  assert(bend() < 1 && Math.abs(chain.bladeTilt(320)) < 0.05 && Math.abs((blade.amp ?? 1) - 1) < 0.01, 'then everything settles back');
 });
 
 // The Warlord's Earthbreaker: a scripted Malgor and up to three heroes standing about.
