@@ -34,7 +34,7 @@ export class SkillScene extends Phaser.Scene {
     const W = SETTINGS.width;
     const H = SETTINGS.height;
     this.cameras.main.setOrigin(0, 0).setZoom(SETTINGS.renderScale ?? 1); // full resolution
-    this.add.rectangle(0, 0, W, H, 0x000000, 0.82).setOrigin(0);
+    this.add.rectangle(0, 0, W, H, 0x000000, 0.9).setOrigin(0);
     this.controls = new InputManager(this);
     this.openedAt = this.time.now;
     const name = this.arena.player.stats.name ?? this.heroId;
@@ -121,7 +121,9 @@ export class SkillScene extends Phaser.Scene {
     const c = this.controls;
     c.tick(false);
     if (this.time.now - this.openedAt < 250) { c.read?.(); return; } // (the press that got you here doesn't count)
-    if (c.consume('menu') || c.consume('dodge') || c.consume('pause')) return this.close();
+    // (Enter is pause in a fight AND confirm: here it takes a skill, so only Esc / B leave)
+    c.consume('pause');
+    if (c.consume('menu') || c.consume('dodge')) return this.close();
     if (!this.tree) { if (c.consume('confirm') || c.consume('attack')) this.close(); return; }
     const dx = (c.consume('right') ? 1 : 0) - (c.consume('left') ? 1 : 0);
     const dy = (c.consume('down') ? 1 : 0) - (c.consume('up') ? 1 : 0);
