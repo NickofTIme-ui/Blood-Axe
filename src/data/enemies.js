@@ -37,7 +37,7 @@
 const BASE = {
   maxMana: 0, manaRegen: 0,
   staminaRegen: 20, staminaRegenDelay: 50,
-  jumpStrength: 480, gravity: 1700, airControl: 0.08, airJumps: 0,
+  jumpStrength: 560, gravity: 1700, airControl: 0.08, airJumps: 0, // (hops ~92 px: up ledges after you)
   magicMult: 1.0,
   dodge: { iframes: 8, duration: 18, recovery: 10, speed: 480, cost: 30 },
   parryWindow: 4, parryWhiffRecovery: 16,

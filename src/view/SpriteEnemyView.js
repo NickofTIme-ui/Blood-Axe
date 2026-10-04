@@ -106,6 +106,9 @@ export class SpriteEnemyView {
       }
       return A.idle.frames[0];
     }
+    // ledges (stage/Terrain.js): crouch, jump, hop down, land
+    this.ledge = this.ledgePose();
+    if (this.ledge) return this.ledge.ref;
     // just stopped walking: finish the step instead of snapping to the idle pose
     if (st === 'idle' && this.walkHold > 0 && this.lastWalkRef) return this.lastWalkRef;
     switch (st) {
@@ -134,6 +137,48 @@ export class SpriteEnemyView {
         return f.execBy?.exec?.kind === 'chain' && f.health > 0 ? A.idle.frames[0] : A.hit.frames[0];
       default: return loop(A.idle);
     }
+  }
+
+  // Jumping and hopping down off ledges (entities/Enemy.js terrainSteer sets f.jumpPrep
+  // while he crouches and f.airKind 'jump' | 'drop' in the air). The painted jump / drop
+  // strips when they exist; until then his own walk frames, squashed and stretched into
+  // the shapes: crouch (squat, sinks) -> push-off (stretched up, leaning in) -> top (tucked)
+  // -> fall (legs reaching) -> landing (squashed, springing back). Null: not on a ledge move.
+  ledgePose() {
+    const f = this.f;
+    const A = this.A;
+    const st = f.state;
+    const W = A.walk?.frames;
+    if (!W) return null;
+    const J = A.jump?.frames;
+    const D = A.drop?.frames;
+    const now = f.world?.frame ?? 0;
+    const grounded = st === 'idle' || st === 'walk';
+    if (st === 'jump') this.airKind = f.airKind ?? 'fall';
+    if (f.jumpPrep > 0 && grounded) {
+      const drop = f.prepKind === 'drop';
+      return drop
+        ? { ref: D?.[0] ?? W[0], sy: D ? 1 : 0.94, sx: 1, dy: D ? 0 : 2, angle: D ? 0 : 7 } // leaning out, looking down
+        : { ref: J?.[0] ?? W[0], sy: J ? 1 : 0.84, sx: J ? 1 : 1.07, dy: J ? 0 : 5, angle: 0 }; // the squat
+    }
+    if (st === 'jump') {
+      if (f.airKind === 'drop') {
+        const falling = f.vh < 0;
+        return { ref: D ? D[falling ? 1 : 0] : W[falling ? 2 : 5], sy: D ? 1 : falling ? 1.06 : 0.97, sx: 1, dy: 0, angle: D ? 0 : falling ? -3 : 6 };
+      }
+      if (f.vh > 160) return { ref: J?.[1] ?? W[3], sy: J ? 1 : 1.09, sx: J ? 1 : 0.93, dy: 0, angle: J ? 0 : -5 };
+      if (f.vh > -160) return { ref: J?.[2] ?? W[1], sy: J ? 1 : 0.9, sx: J ? 1 : 1.05, dy: 0, angle: 0 };
+      return { ref: J?.[2] ?? W[5], sy: J ? 1 : 1.05, sx: J ? 1 : 0.96, dy: 0, angle: J ? 0 : 3 };
+    }
+    // landed a moment ago (from a jump, a hop down or a fall): squashed, springing back
+    if (grounded && f.landFrame && now - f.landFrame < 8 && this.airKind) {
+      const t = (now - f.landFrame) / 8;
+      const ref = this.airKind === 'drop' ? D?.[2] : J?.[3];
+      const painted = !!ref;
+      return { ref: ref ?? W[0], sy: painted ? 1 : 0.84 + 0.16 * t, sx: painted ? 1 : 1.08 - 0.08 * t, dy: painted ? 0 : 5 * (1 - t), angle: 0 };
+    }
+    if (grounded && f.landFrame && now - f.landFrame >= 8) this.airKind = null;
+    return null;
   }
 
   // Walk cycle, advanced once per GAME tick (not per screen refresh) at a rate that
@@ -351,9 +396,13 @@ export class SpriteEnemyView {
         angle = -Math.min(22, t * 0.9); dx = (Math.random() - 0.5) * 1.5; tall = 0.96;
       }
     } else this.doomAge = 0;
+    // a ledge move's squash and stretch (ledgePose)
+    let wide = 1;
+    const L = this.ledge;
+    if (L) { dy += L.dy; angle += L.angle; tall *= L.sy; wide = L.sx; }
     const k = depthScale(f.z) / this.res;
     s.setPosition(f.x + dx * f.facing, f.z - f.h + dy).setDepth(f.z);
-    s.setScale(k * face * (1 - breathe * 0.006), k * (1 + breathe * 0.014) * tall);
+    s.setScale(k * face * (1 - breathe * 0.006) * wide, k * (1 + breathe * 0.014) * tall);
     s.angle = angle * face;
     s.setAlpha(alpha);
 

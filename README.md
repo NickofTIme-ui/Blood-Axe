@@ -29,7 +29,8 @@ from files opened directly, so the game needs that little server.
 
 | Action | Keyboard | Gamepad (Xbox layout) |
 |---|---|---|
-| Move (left/right + up/down on the floor) | WASD or Arrow keys | Left stick / D-pad |
+| Move (left/right + up/down on the floor) | WASD or Arrow keys | Left stick (the D-pad no longer moves you: it's for moves) |
+| Rurik's **Whirlwind Cleave** (360 swing; skill: Executioner's Arc) | H | D-pad Down |
 | Light attack (tap 3× for combo) | J | X |
 | Heavy attack (breaks guard) | K | Y |
 | **Sparta kick** (breaks blocks & shields, sends them bowling into others) | O | RT |
@@ -92,7 +93,8 @@ moving gibbet cage, rotten planks that give way, a secret ledge and an optional 
   kick them in.
 - Kills give **blood** (experience): levels and milestones give **skill points**.
 - At a **blood altar** (rest shrine) you're healed; **stand still** at it to kneel and open
-  the skill tree (arrows / D-pad, J / A take, R / Y respec for free, Esc / B back).
+  the skill tree (arrows / D-pad, J / Enter / A take, R / Y respec for free; Esc, B or Backspace — or B / Back / Start on a pad,
+  or click the button — goes back to the fight).
   Rurik's tree is in; Oryn's and Vexa's come next.
 
 Design, who-can-reach-what and the playtest checklist: `docs/gallows-ascent.md`. The rules

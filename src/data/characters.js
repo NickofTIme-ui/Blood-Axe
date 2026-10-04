@@ -67,7 +67,8 @@ export const CHARACTERS = {
     maxHealth: 170, maxStamina: 100, maxMana: 40,
     staminaRegen: 30, staminaRegenDelay: 40, manaRegen: 1.5,
     walkSpeed: 165, depthSpeed: 115,
-    jumpStrength: 550, gravity: 1700, airControl: 0.14, airJumps: 0,
+    // (higher for platforming: rises ~122 px, a little heavier pull so it stays snappy)
+    jumpStrength: 680, gravity: 1900, airControl: 0.14, airJumps: 0,
     sprint: { speed: 1.55 }, // the hero's charge: head down, blade back, cape streaming
     meleeMult: 1.3, magicMult: 0.7,
     blockReduction: 0.85, guardEfficiency: 0.8,
@@ -194,7 +195,7 @@ export const CHARACTERS = {
     walkSpeed: 172, depthSpeed: 122,
     // no jump: a levitation rise (a softer pull = slower up and down; about 130 px high, just under the Rogue's).
     // In the air he can blink once (dodge) and bring the staff down (attack).
-    jumpStrength: 575, gravity: 1250, airControl: 0.2, airJumps: 0,
+    jumpStrength: 650, gravity: 1300, airControl: 0.2, airJumps: 0, // (rises ~162 px: just under Vexa)
     sprint: { speed: 1.7 },  // he flies: laid forward along the staff, robes streaming
     meleeMult: 0.85, magicMult: 1.25, // (spell damage below is before this x1.25)
     blockReduction: 0.72, guardEfficiency: 1.15,
@@ -363,7 +364,7 @@ export const CHARACTERS = {
     maxHealth: 105, maxStamina: 110, maxMana: 60,
     staminaRegen: 42, staminaRegenDelay: 26, manaRegen: 2.5,
     walkSpeed: 235, depthSpeed: 165,
-    jumpStrength: 700, gravity: 1700, airControl: 0.34, airJumps: 1,
+    jumpStrength: 800, gravity: 1900, airControl: 0.34, airJumps: 1, // (rises ~168 px: the highest)
     sprint: { speed: 1.6 },  // low and flat out, arms swept back, daggers trailing // the highest jump of the three
     meleeMult: 0.9, magicMult: 1.0,
     blockReduction: 0.62, guardEfficiency: 1.4, // a light guard: heavy blows break it fast

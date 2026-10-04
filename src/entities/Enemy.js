@@ -199,41 +199,67 @@ export class EnemyBrain extends Controller {
   terrainSteer(target) {
     const T = this.world.terrain;
     const f = this.fighter;
-    if (!T || !f.grounded) return;
+    if (!T) return;
+    // in the air after a deliberate hop: keep heading where he jumped
+    if (!f.grounded) {
+      if (f.airKind && this.hopDir) this.moveX = this.hopDir;
+      return;
+    }
+    // ...landed: the hop is over
+    if (f.airKind && f.state !== 'jump') f.airKind = null;
+    // crouched, about to go (the wind-up you can read: view/SpriteEnemyView.js)
+    if (f.jumpPrep > 0) {
+      this.moveX = 0; this.moveZ = 0;
+      if (--f.jumpPrep === 0) {
+        this.moveX = this.hopDir;
+        this.registerPress('jump');
+        f.airKind = this.hopKind;
+      }
+      return;
+    }
     const look = 26;
     const s = f.stats;
     const apex = (s.jumpStrength ** 2) / (2 * s.gravity);
     const reach = s.walkSpeed * (2 * s.jumpStrength / s.gravity) * 0.9; // a running jump's length
     const pit = (x, z) => T.groundAt(x, z) < -1;
+    const wantsDown = target.floor < f.floor - 30; // the man he wants is down there
     const risky = (x, z) => {
       if (pit(x, z)) return true;
       const drop = f.floor - T.groundAt(x, z);
-      return drop > 45 && !(target.floor < f.floor - 30); // a drop he has no reason for (the man he wants is not down there)
+      return drop > 45 && !wantsDown; // a drop he has no reason for
+    };
+    // a crouch, then the jump (prep: frames crouched)
+    const hop = (dir, kind, prep) => {
+      this.hopDir = dir;
+      this.hopKind = kind;
+      f.prepKind = kind; // (the view crouches for a jump, leans out for a drop)
+      f.jumpPrep = prep;
+      this.hopCool = 40;
+      this.moveX = 0; this.moveZ = 0;
     };
     const dir = this.moveX || Math.sign(target.x - f.x);
+    if (this.hopCool > 0) this.hopCool--;
     // a gap he can clear, with the man beyond it: he jumps it
     if (this.moveX && pit(f.x + dir * look, f.z) && !(this.hopCool > 0) && Math.sign(target.x - f.x) === dir) {
       for (let d = 30; d <= reach; d += 10) {
         const g = T.groundAt(f.x + dir * d, f.z);
         if (g < -1) continue;
-        if (Math.abs(g - f.floor) <= 20 && d <= reach) {
-          this.registerPress('jump');
-          this.hopCool = 40;
-          return;
-        }
+        // (the far side a little higher or lower is fine, if he can get up there)
+        if (g - f.floor <= apex * 0.45 && g - f.floor >= -70) return hop(dir, 'jump', 6);
         break;
       }
     }
+    // a drop down to the man below: not a stumble off the edge, a hop down
+    const down = f.floor - T.groundAt(f.x + dir * look, f.z);
+    if (this.moveX && down > 12 && down < 400 && !pit(f.x + dir * look, f.z) && wantsDown && !(this.hopCool > 0)) {
+      return hop(dir, 'drop', 5);
+    }
     if (this.moveX && risky(f.x + this.moveX * look, f.z)) this.moveX = 0;
     if (this.moveZ && risky(f.x, f.z + this.moveZ * look * 0.6)) this.moveZ = 0;
-    if (this.hopCool > 0) { this.hopCool--; return; }
+    if (this.hopCool > 0) return;
     const wall = T.wallAt(f.x + dir * 14, f.z, f.h);
     const wantsUp = target.floor > f.floor + 12 || (wall && Math.abs(target.x - f.x) > 40);
-    if (wall && wantsUp && wall.top - f.h < apex * 0.92 && !risky(f.x + dir * 50, f.z)) {
-      this.moveX = dir;
-      this.registerPress('jump');
-      this.hopCool = 40;
-    }
+    if (wall && wantsUp && wall.top - f.h < apex * 0.92 && !risky(f.x + dir * 50, f.z)) hop(dir, 'jump', 7);
   }
 
 

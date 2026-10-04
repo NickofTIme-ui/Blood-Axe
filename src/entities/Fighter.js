@@ -165,6 +165,7 @@ export class Fighter {
         this.h = this.floor;
         this.vh = 0;
         this.justLanded = true;
+        this.landFrame = this.world.frame; // (the view's landing squash)
         this.peakH = undefined;
       } else if (this.peakH === undefined || this.h > this.peakH) this.peakH = this.h;
     }

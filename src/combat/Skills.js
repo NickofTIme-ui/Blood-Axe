@@ -16,9 +16,40 @@ export function furyArmor(f) {
   return !!F && f.alive && f.health < f.stats.maxHealth * F.below;
 }
 
+// WHIRLWIND CLEAVE (Executioner's Arc): one full turn of the blade. The first half of the
+// active frames it cuts in front of him, the second half behind him (the same swing:
+// nobody is hit twice). The view turns him round with it (view/SpriteFighterView.js).
+export function spinSide(f, frame) {
+  const m = f.move;
+  return frame <= m.startup + Math.ceil(m.active / 2) ? 1 : -1;
+}
+
 // The states the skills add (merged into FIGHTER_STATES by fighterStates.js).
-export function skillStates() {
+export function skillStates({ tryActions, stopMoving, friction, movePhase } = {}) {
   return {
+    spin: {
+      enter(f) {
+        stopMoving?.(f);
+        f.startMove(f.stats.moves.spin);
+        f.world.events.emit('attackStart', { fighter: f, state: 'spin', move: f.move });
+      },
+      update(f, frame) {
+        const m = f.move;
+        const phase = movePhase(m, frame);
+        friction?.(f, 0.7);
+        if (phase === 'active') {
+          const side = spinSide(f, frame);
+          const hb = m.hitbox;
+          // (behind him: the same reach, mirrored)
+          f.attackInfo.hitbox = side > 0 ? hb : { ...hb, x: -hb.x - hb.w };
+          f.activeAttack = f.attackInfo;
+        } else f.activeAttack = null;
+        if (frame === m.startup + 1) f.world.events.emit('swing', { fighter: f, move: m });
+        if (phase === 'recovery' && frame > m.startup + m.active + 6 && tryActions?.(f, ['dodge', 'attack', 'jump'])) return;
+        if (frame >= m.startup + m.active + m.recovery) f.fsm.change('idle');
+      },
+      exit(f) { f.activeAttack = null; },
+    },
     plunge: {
       enter(f) {
         const K = f.stats.kit.plunge;

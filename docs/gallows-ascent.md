@@ -39,14 +39,17 @@ fall into a pit puts you back on the last firm ground: never more than a few sec
 
 ## Who can go where
 
-The main route is built for the weakest jumper, Rurik (rises 89 px, carries 107 px on the
-flat): steps of at most 40 px, gaps of at most 64 px. A test plays it with every hero,
+Jumps are higher now (Rurik rises 122 px, Oryn 162, Vexa 168; a TAPPED jump is a 54-70 px hop)
+and the route asks for them: steps of 80-90 px only a HELD jump clears, gaps of 60-90 px over
+pits taken late off the edge, planks that drop 0.5 s after you land, a cage to time. A fall
+costs a fifth of your health. Built for the weakest jumper, Rurik (118 px on the flat, 101 px
+while climbing 60), walking, no upgrades. A test plays it with every hero,
 no upgrades, no falls (`gallows: every hero finishes the main route...`).
 
 | | Rurik | Oryn | Vexa |
 |---|---|---|---|
 | Main route | yes | yes (his jump is floatier: tap it on the planks) | yes |
-| The roost (secret: relic + skill point) | with **Wind Step** (his tree) | yes: jump against its face, he rises over | yes: double jump |
+| The roost (secret: relic + skill point; 150 px over its ledge) | with **Wind Step** (now the first Skybreaker skill) | yes: jump against its face, he rises over | yes: double jump |
 | Enemies into pits | Sparta kick | Force blast | crescent kick |
 
 ## What to playtest

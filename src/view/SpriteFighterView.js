@@ -17,7 +17,7 @@ import { drawSmear, smearSparks } from './Smear.js';
 import { IMPALE, CHAIN } from '../combat/Finisher.js';
 import { Heading, headingAnim } from './Heading.js';
 
-const ATTACKS = ['light1', 'light2', 'light3', 'heavy', 'airAttack', 'kick', 'thrust'];
+const ATTACKS = ['light1', 'light2', 'light3', 'heavy', 'airAttack', 'kick', 'thrust', 'spin'];
 
 // How hard each swing reads in the body (view only — gameplay timing is untouched):
 //   k      overall amplitude of the anticipation / drive / settle
@@ -28,6 +28,7 @@ const SWING_FEEL = {
   light2: { k: 0.62, arc: 0.88, w: 0.88 },
   light3: { k: 1.0, arc: 1, w: 1 },
   heavy: { k: 1.35, arc: 1, w: 1 },
+  spin: { k: 1.1, arc: 1, w: 1.1 }, // (the Whirlwind Cleave: its arc is the full circle)
   airAttack: { k: 0.6, arc: 1, w: 1 },
 };
 const COMBO = ['light1', 'light2', 'light3', 'heavy'];
@@ -86,6 +87,7 @@ export class SpriteFighterView {
     const a = this.meta.anims;
     if (a[st]) return a[st];
     if (st === 'kick') return a.light1; // no kick strip yet
+    if (st === 'spin') return a.heavy;  // the Whirlwind Cleave: the cleave's poses, turned round (no strip yet)
     return null;
   }
 
@@ -325,6 +327,19 @@ export class SpriteFighterView {
       if (Math.abs(sx) < 0.18 * scale) sx = 0.18 * scale * Math.sign(sx || f.facing);
       sy = scale * (1 + 0.06 * Math.sin(t * Math.PI));
       bob -= Math.sin(t * Math.PI) * 5;
+    }
+
+    // WHIRLWIND CLEAVE (combat/Skills.js): wound up like the cleave, then one full turn of
+    // the body through the active frames (edge-on, like the guard swap), sinking into it
+    if (st === 'spin' && f.move) {
+      const m = f.move;
+      const t = Math.max(0, Math.min(1, (fr - m.startup) / m.active));
+      if (t > 0 && t < 1) {
+        const e = t * t * (3 - 2 * t);
+        const c = Math.cos(e * Math.PI * 2);
+        sx = scale * f.facing * (Math.abs(c) < 0.15 ? 0.15 * Math.sign(c || 1) : c);
+        bob += Math.sin(t * Math.PI) * 3;
+      }
     }
 
     // Chain execution: a full 360 spin out of each cut into the next man (edge-on flip,

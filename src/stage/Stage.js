@@ -28,9 +28,9 @@ const FIRE = { period: 210, warn: 110, burst: 160, tick: 14, damage: 9 };
 // A rest shrine: stand at it (no fight on) and you're healed; stand still this long and
 // you kneel to rest (the skill tree opens: ArenaScene)
 const REST = { reach: 46, depth: 34, kneel: 50 };
-// A fall into a pit: a hero loses this share of his health (never the last of it) and is
+// A fall into a pit: a hero loses this share of his health (a fifth; never the last of it) and is
 // back on the last safe ground he stood on, untouchable for a moment
-const PIT = { damage: 0.12, guard: 60 };
+const PIT = { damage: 0.2, guard: 60 };
 // Pendulum blade
 // (driven: struck by a hero — how long it whips about, how much wider and faster, its damage)
 // (bleed: how much of the extra swing a struck blade keeps each frame once it's no longer driven)

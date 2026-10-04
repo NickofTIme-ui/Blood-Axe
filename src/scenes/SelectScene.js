@@ -58,7 +58,7 @@ export class SelectScene extends Phaser.Scene {
     this.cameras.main.fadeIn(400, 0, 0, 0);
     const W = SETTINGS.width;
     const H = SETTINGS.height;
-    this.controls = new InputManager(this);
+    this.controls = new InputManager(this, undefined, { menu: true }); // (the D-pad moves the cursor here)
     this.ids = Object.keys(CHARACTERS);
     this.index = -1;
     this.leaving = false;
