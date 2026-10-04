@@ -417,7 +417,7 @@ export const FIGHTER_STATES = {
       if (s.states?.dodge === 'blink' && !f.airBlinked && f.stamina >= s.dodge.cost && c.consume('dodge')) return f.fsm.change('blink');
       // a hero kit's air moves (the Rogue: kick = shuriken fan, heavy = falling viper)
       const ak = s.states?.airKick;
-      if (ak && !f.fanUsed && !(f.cool[ak] > 0) && c.consume('kick')) return f.fsm.change(ak);
+      if (ak && !f.fanUsed && !(f.cool[ak] > 0) && f.stamina >= (s.kit?.[ak]?.stamina ?? 0) && c.consume('kick')) return f.fsm.change(ak);
       const am = s.states?.airMagic;
       if (am && !f.fanUsed && !(f.cool[am] > 0) && c.consume('magic')) return f.fsm.change(am);
       const ah = s.states?.airHeavy;
@@ -717,7 +717,7 @@ export const FIGHTER_STATES = {
       f.invincible = frame <= d.iframes;
       if (frame === 4) f.world.events.emit('roll', { fighter: f }); // shoulder hits the floor
       // the Rogue can plant a mine mid-roll (on a man she's rolling through: combat/Rogue.js)
-      if (f.stats.kit?.mine && frame <= d.duration && f.controller.peek('magic') && !(f.cool?.mine > 0)) {
+      if (f.stats.kit?.mine && frame <= d.duration && f.controller.peek('magic') && !(f.cool?.mine > 0) && f.mana >= (f.stats.spell?.cost ?? 0)) {
         f.controller.consume('magic');
         rollMine(f);
       }

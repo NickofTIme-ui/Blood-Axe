@@ -1685,6 +1685,55 @@ test('Earthbreaker: not twice in a row (cooldown), and the boss\'s brain does us
   assert(slams > 0, 'he slams the ground in a fight');
 });
 
+test('balance: the Mage and Rogue pay for their spells', () => {
+  // Chain Lightning: the cast and each follow-up strike cost mana; no mana, no follow-up
+  const M = CHARACTERS.mage;
+  const combo = mageSetup({ script: { 1: ['heavy'], 24: ['heavy'], 44: ['heavy'] }, foes: [[720]] });
+  combo.es[0].health = 1e4; combo.es[0].stats = { ...combo.es[0].stats, maxHealth: 1e4 };
+  combo.run(70);
+  const paid = M.moves.heavy.manaCost + M.kit.bolt.combo.manaCost[1] + M.kit.bolt.combo.manaCost[2];
+  assert(combo.p.mana <= M.maxMana - paid + M.manaRegen * 2, `three strikes cost ${paid} (left ${combo.p.mana.toFixed(0)})`);
+  const dry = mageSetup({ script: { 1: ['heavy'], 24: ['heavy'] }, foes: [[720]] });
+  dry.es[0].health = 1e4; dry.es[0].stats = { ...dry.es[0].stats, maxHealth: 1e4 };
+  let strikes = 0;
+  dry.world.events.on('boltCast', () => { strikes++; });
+  dry.p.mana = M.moves.heavy.manaCost; dry.p.stats = { ...dry.p.stats, manaRegen: 0 };
+  dry.run(60);
+  assert(strikes === 1, `no mana left: no follow-up (${strikes})`);
+  // Force Blast costs mana and can't go off without it
+  const force = mageSetup({ script: { 1: ['kick'] }, foes: [[700]] });
+  force.p.stats = { ...force.p.stats, manaRegen: 0 };
+  force.run(4);
+  assert(force.p.mana === M.maxMana - M.moves.kick.manaCost, `force blast costs ${M.moves.kick.manaCost} (left ${force.p.mana})`);
+  const noForce = mageSetup({ script: { 1: ['kick'] }, foes: [[700]] });
+  noForce.p.mana = M.moves.kick.manaCost - 1;
+  noForce.run(4);
+  assert(noForce.p.state !== 'force', `no mana: no force blast (${noForce.p.state})`);
+  // Widow Mine: mana per mine, none without it
+  const R = CHARACTERS.rogue;
+  const mine = rogueSetup({ script: { 1: ['magic'] }, foes: [] });
+  mine.p.stats = { ...mine.p.stats, manaRegen: 0 };
+  mine.run(3);
+  assert(mine.world.mines.list.length === 1 && mine.p.mana === R.maxMana - R.spell.cost, `a mine costs ${R.spell.cost} mana (left ${mine.p.mana})`);
+  const noMine = rogueSetup({ script: { 1: ['magic'] }, foes: [] });
+  noMine.p.mana = R.spell.cost - 1;
+  noMine.run(3);
+  assert(noMine.world.mines.list.length === 0, 'no mana: no mine');
+  // Shuriken Fan costs stamina
+  const fan = rogueSetup({ script: { 1: ['jump'], 12: ['kick'] }, foes: [[900]] });
+  let fans = 0;
+  fan.world.events.on('attackStart', (e) => { if (e.state === 'fan') fans++; });
+  fan.run(16);
+  assert(fans === 1 && fan.p.stamina <= R.maxStamina - R.kit.fan.stamina + 1, `the fan costs ${R.kit.fan.stamina} stamina (left ${fan.p.stamina.toFixed(0)})`);
+});
+
+test('balance: every stage fight is twice the size it was', () => {
+  const sizes = STAGE.sections.flatMap((s) => s.waves).map((w) => w.length);
+  assert(sizes.every((n) => n >= 4), `every wave at least four strong (${sizes})`);
+  const adds = STAGE.sections.find((s) => s.boss).boss.adds;
+  assert(adds.length >= 8, `the boss calls eight men (${adds.length})`);
+});
+
 for (const [name, fn] of later) {
   try { await fn(); console.log(`  ok   ${name}`); } catch (e) { failed++; console.log(`  FAIL ${name}\n       ${e.message}`); }
 }

@@ -189,18 +189,18 @@ export const CHARACTERS = {
     // kick = FORCE BLAST, magic = ARCANE BARRIER (tap fire, hold earth)
     states: { dodge: 'blink', heavy: 'bolt', kick: 'force', cast: 'ward' },
 
-    maxHealth: 110, maxStamina: 90, maxMana: 120,
-    staminaRegen: 30, staminaRegenDelay: 36, manaRegen: 7,
+    maxHealth: 100, maxStamina: 90, maxMana: 120,
+    staminaRegen: 30, staminaRegenDelay: 36, manaRegen: 5,
     walkSpeed: 172, depthSpeed: 122,
     // no jump: a levitation rise (a softer pull = slower up and down; about 130 px high, just under the Rogue's).
     // In the air he can blink once (dodge) and bring the staff down (attack).
     jumpStrength: 575, gravity: 1250, airControl: 0.2, airJumps: 0,
     sprint: { speed: 1.7 },  // he flies: laid forward along the staff, robes streaming
-    meleeMult: 0.85, magicMult: 1.4, // (spell damage below is before this x1.4)
+    meleeMult: 0.85, magicMult: 1.25, // (spell damage below is before this x1.25)
     blockReduction: 0.72, guardEfficiency: 1.15,
     // the blink's timing (the dodge numbers the rest of the game reads): invulnerable for
     // `iframes`, gone for duration, then `recovery`
-    dodge: { iframes: 12, duration: 10, recovery: 8, speed: 0, cost: 14 },
+    dodge: { iframes: 12, duration: 10, recovery: 8, speed: 0, cost: 18 },
     rollCancel: true, // a blink cuts any staff swing short
     parryWindow: 6, parryWhiffRecovery: 16,
     knockdownFrames: 40, getupFrames: 26, staggerFrames: 50,
@@ -247,7 +247,7 @@ export const CHARACTERS = {
         cut: 'fire', fx: 'lightning', noBlood: true,
         startup: 13, active: 1, recovery: 22,
         damage: 0, hitstun: 30, hitstop: 8, shake: 4,
-        knockback: { x: 160, y: 0 }, guardDamage: 26, staminaCost: 0, manaCost: 12, lunge: 0,
+        knockback: { x: 160, y: 0 }, guardDamage: 26, staminaCost: 0, manaCost: 16, lunge: 0,
         hitbox: { x: 0, y: 0, w: 0, h: 0 },
         cancels: [{ from: 1, to: 8, into: ['dodge', 'block'] }, { from: 26, to: 36, into: ['dodge'] }],
       },
@@ -256,7 +256,7 @@ export const CHARACTERS = {
         cut: 'crush', fx: 'force', noBlood: true,
         startup: 10, active: 1, recovery: 20,
         damage: 0, hitstun: 30, hitstop: 7, shake: 6,
-        knockback: { x: 0, y: 0 }, guardDamage: 60, lunge: 0,
+        knockback: { x: 0, y: 0 }, guardDamage: 60, manaCost: 12, lunge: 0,
         hitbox: { x: 0, y: 0, w: 0, h: 0 },
         cancels: [{ from: 18, to: 31, into: ['dodge', 'attack', 'block'] }],
       },
@@ -270,7 +270,7 @@ export const CHARACTERS = {
     },
 
     // magic = the barrier (`kit.barrier`); this only gates the button
-    spell: { name: 'Arcane Barrier', cost: 40, startup: 0, recovery: 0 },
+    spell: { name: 'Arcane Barrier', cost: 50, startup: 0, recovery: 0 },
 
     kit: {
       // CHAIN LIGHTNING — hold heavy for the overcharge
@@ -292,6 +292,7 @@ export const CHARACTERS = {
           shake: [6, 8, 14],
           knockback: [1.2, 1.4, 2.6],
           knockdown: [false, false, true],
+          manaCost: [0, 8, 10],      // the 2nd and 3rd strikes cost this on top of the cast
           startup: 6,                // a follow-up's wind-up (frames)
           window: [4, 22],           // frames after a bolt when the next press counts
         },
@@ -307,7 +308,7 @@ export const CHARACTERS = {
         knockback: 640, lift: 260,           // launch speed of a normal man
         heavyHealth: 160,                    // max health from which a man only staggers
         staggerFrames: 34, heavyKnockback: 260,
-        cooldown: 75,                        // frames before it can be used again
+        cooldown: 90,                        // frames before it can be used again (mana: moves.kick.manaCost)
         // hold kick to build it: released (or full) it's this much stronger at full charge
         charge: { maxFrames: 40, fullFrames: 34, damage: 2.2, knockback: 1.6, radius: 1.3, floorsBrutes: true },
       },
@@ -325,7 +326,7 @@ export const CHARACTERS = {
         kind: 'earth',
         castAt: 12,      // frames from the press until it erupts
         recovery: 16,
-        cooldown: 420,   // frames (7 s) before another barrier
+        cooldown: 540,   // frames (9 s) before another barrier
         distance: 150,   // px ahead of him
         edgeMargin: 70,  // never closer than this to the stage's ends
         clearance: 30,   // a man on the line is pushed this far to the nearer side
@@ -360,7 +361,7 @@ export const CHARACTERS = {
     states: { heavy: 'viper', kick: 'rkick', cast: 'mine', airKick: 'fan', airHeavy: 'dive' },
 
     maxHealth: 105, maxStamina: 110, maxMana: 60,
-    staminaRegen: 42, staminaRegenDelay: 26, manaRegen: 3,
+    staminaRegen: 42, staminaRegenDelay: 26, manaRegen: 2.5,
     walkSpeed: 235, depthSpeed: 165,
     jumpStrength: 700, gravity: 1700, airControl: 0.34, airJumps: 1,
     sprint: { speed: 1.6 },  // low and flat out, arms swept back, daggers trailing // the highest jump of the three
@@ -413,7 +414,7 @@ export const CHARACTERS = {
         cut: 'slash', fx: 'viper', expose: true, pierce: true,
         startup: 5, active: 9, recovery: 12,
         damage: 18, hitstun: 30, hitstop: 6, shake: 3,
-        knockback: { x: 120, y: 0 }, guardDamage: 26, breaksGuard: true, staminaCost: 10,
+        knockback: { x: 120, y: 0 }, guardDamage: 26, breaksGuard: true, staminaCost: 14,
         lunge: 1150,                     // px/s through the active frames (~170 px)
         hitbox: { x: -10, y: 26, w: 70, h: 52 },
         cancels: [{ from: 1, to: 4, into: ['dodge'] }, { from: 18, to: 26, into: ['dodge', 'jump', 'attack'] }],
@@ -453,7 +454,7 @@ export const CHARACTERS = {
     },
 
     // magic gates the Widow Mine (the mine's own limits are kit.mine)
-    spell: { name: 'Widow Mine', cost: 0, startup: 0, recovery: 0 },
+    spell: { name: 'Widow Mine', cost: 20, startup: 0, recovery: 0 }, // mana per mine (dropped, planted or out of a roll)
 
     kit: {
       // EXPOSED: her precision hits open a weakness the whole team can exploit
@@ -462,7 +463,7 @@ export const CHARACTERS = {
         bonus: 0.25,        // +25% damage from her own hits while marked
         // MARK OF DEATH: another player's hit on a marked man is a SUPER CRITICAL —
         // this many times the damage, the heaviest gore, and it spends the mark
-        crit: 2.6, critConsumes: true,
+        crit: 2.3, critConsumes: true,
         refresh: true,      // a new trigger restarts the timer (it never stacks)
         cooldown: 0,        // frames before the same enemy can be exposed again after it ends
         minHealth: 0,       // only enemies with at least this much max health (0 = any)
@@ -494,7 +495,7 @@ export const CHARACTERS = {
         trigger: 44,        // enemy this close (px) sets it off...
         cue: 8,             // ...after this many frames of warning
         inner: 45, outer: 135, // full damage inside `inner`, falling to `falloff` at `outer`
-        damage: 46, falloff: 0.3,
+        damage: 40, falloff: 0.3,
         launch: 640, lift: 380,
         heavyHealth: 160, heavyLaunch: 0.4, // brutes are thrown this much as far
         boss: 0.5,          // bosses take this share of damage and barely move
@@ -520,7 +521,7 @@ export const CHARACTERS = {
       // SHURIKEN FAN / DEATH FROM ABOVE
       fan: {
         count: 5, dfaCount: 10, spread: 70, dfaSpread: 150,
-        range: 300, startup: 4, recovery: 10, hang: 0.35, cooldown: 30,
+        range: 300, startup: 4, recovery: 10, hang: 0.35, cooldown: 30, stamina: 20,
         projectile: {
           cut: 'pierce', look: 'shuriken', fx: 'shuriken',
           count: 1, speed: 760, lifetime: 50, y: 0, w: 14, h: 14,

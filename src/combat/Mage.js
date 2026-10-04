@@ -227,7 +227,9 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
         // a follow-up strike comes out quicker (the staff is already up)
         const m = f.boltStage > 1 ? { ...base, startup: K.combo.startup } : base;
         f.startMove(m);
-        if (f.boltStage === 1) f.mana = Math.max(0, f.mana - (m.manaCost ?? 0)); // (one cost for the whole combo)
+        // the cast pays the full cost; each follow-up strike pays its combo cost
+        const cost = f.boltStage === 1 ? (m.manaCost ?? 0) : (K.combo.manaCost?.[f.boltStage - 1] ?? 0);
+        f.mana = Math.max(0, f.mana - cost);
         f.boltHeld = true;
         f.boltCharge = 0;
         f.boltFired = 0;
@@ -271,7 +273,7 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
         const since = frame - f.boltFired;
         // the next strike of the three
         const W = K.combo.window;
-        if (f.boltStage < 3 && since >= W[0] && since <= W[1] && c.consume('heavy')) return f.fsm.change('bolt', { stage: f.boltStage + 1 });
+        if (f.boltStage < 3 && since >= W[0] && since <= W[1] && f.mana >= (K.combo.manaCost?.[f.boltStage] ?? 0) && c.consume('heavy')) return f.fsm.change('bolt', { stage: f.boltStage + 1 });
         if (since >= m.recovery - 10 && tryActions(f, ['dodge'])) return;
         if (since >= m.recovery) f.fsm.change('idle');
       },
@@ -284,6 +286,7 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
         stopMoving(f);
         faceInput(f);
         f.startMove(f.stats.moves.kick);
+        f.mana = Math.max(0, f.mana - (f.move.manaCost ?? 0));
         f.cool.force = kitOf(f).force.cooldown;
         f.world.events.emit('attackStart', { fighter: f, state: 'force', move: f.move });
       },

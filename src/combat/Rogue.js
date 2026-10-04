@@ -66,6 +66,7 @@ export function vaultTarget(f) {
 export function rollMine(f) {
   const K = kitOf(f).mine;
   f.cool.mine = K.cooldown;
+  f.mana = Math.max(0, f.mana - (f.stats.spell?.cost ?? 0));
   f.mineDropAt = f.world.frame;
   const v = foes(f)
     .filter((e) => e.h < 40 && e.state !== 'executed' && Math.abs(e.x - f.x) <= K.stickReach && Math.abs(e.z - f.z) <= 34)
@@ -171,6 +172,7 @@ export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeA
       enter(f) {
         const K = kitOf(f).mine;
         f.cool.mine = K.cooldown;
+        f.mana = Math.max(0, f.mana - (f.stats.spell?.cost ?? 0));
         f.mineDropAt = f.world.frame;
         faceInput(f);
         const v = plantTarget(f);
@@ -225,6 +227,7 @@ export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeA
         const K = kitOf(f).fan;
         const V = kitOf(f).vault;
         f.cool.fan = K.cooldown;
+        f.spendStamina(K.stamina ?? 0);
         f.fanUsed = true;
         f.fanDFA = !!f.vaultApexAt && Math.abs(f.world.frame - f.vaultApexAt) <= V.apex;
         f.vh = f.fanDFA ? 140 : Math.max(f.vh * K.hang, 60); // hang in the air
