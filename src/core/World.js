@@ -8,6 +8,7 @@ import { CombatSystem } from '../combat/CombatSystem.js';
 import { Projectile } from '../entities/Projectile.js';
 import { Barriers } from '../combat/Barrier.js';
 import { Mines } from '../combat/Mine.js';
+import { Quakes } from '../combat/Quake.js';
 
 export class World {
   constructor({ seed } = {}) {
@@ -22,6 +23,7 @@ export class World {
     this.combat = new CombatSystem(this);
     this.barriers = new Barriers(this); // the Mage's walls (combat/Barrier.js)
     this.mines = new Mines(this);       // the Rogue's widow mines (combat/Mine.js)
+    this.quakes = new Quakes(this);     // a boss's ground shockwaves (combat/Quake.js)
     this.frame = 0;
     // Dice. Every roll the simulation makes comes from roll(): a number fixed by the
     // seed, the tick, who's asking and what about — never Math.random — so two machines
@@ -87,6 +89,7 @@ export class World {
     this.barriers.update(); // (last word on where people stand: nobody is shoved through a wall)
     this.mines.update();
     this.combat.update();
+    this.quakes.update(); // (after the melee: whoever the slam itself hit, the wave passes by)
 
     const gone = this.fighters.filter((f) => f.removeMe);
     if (gone.length) {
