@@ -95,7 +95,8 @@ export class NpcView {
     const t = this.scene.time.now / 16.7;
     this.drawPrompt(n, v);
     if (n.pose === 'noose' || n.pose === 'cage') { this.drawCaptive(n, v, t); return; }
-    const show = !['safe', 'gone'].includes(n.state) && !(n.pose === 'group' && n.state === 'trapped');
+    // (the horses are drawn in their stable, view/VillageView.js; the group is inside the barn)
+    const show = !['safe', 'gone'].includes(n.state) && !(n.pose === 'group' && n.state === 'trapped') && n.pose !== 'horses';
     const fadeOut = n.state === 'free' && !n.flee ? Math.max(0, 1 - n.t / 50) : 1; // (he slips away)
     g.setVisible(show).setAlpha(fadeOut);
     v.shadow.setVisible(show);
@@ -255,12 +256,32 @@ export class NpcView {
       let target = null;
       if (st.phase === 'won' || st.story.done.has(C.farewell)) target = { x: gx + 260, z: 380 + c.i * 50, leave: true };
       else if (st.index >= st.sections.length - 1 || this.scene.player.x > C.meet) target = { x: gx - 260 + c.i * 70, z: 340 + c.i * 90, face: -1 };
-      else if (st.story.done.has(C.leaveAfter)) target = { x: cam.right + 160, z: f.z, leave: true };
-      if (target?.face === -1 && c.mode !== 'gate') { c.mode = 'gate'; f.x = target.x; f.z = target.z; } // (they were waiting there)
+      else if (st.story.done.has(C.leaveAfter)) {
+        // they split off down the lanes between the houses: away up the street into the
+        // dark at the back, fading as they go, not running on ahead along the road
+        c.away ??= { x: f.x + 60 + c.i * 90, z: st.world.bounds.minZ - 50 };
+        target = { ...c.away, leave: true, away: true };
+      }
+      // (picked up from a checkpoint past the start: they went ahead long ago)
+      if (c.mode === 'start' && !c.ticked && st.index > 0) c.mode = 'gone';
+      c.ticked = true;
+      // gone ahead to search: once out of sight they stay out of sight (no catching them up
+      // on the road), until the meeting place
+      if (c.mode === 'gone' && !target?.face && target?.leave && !(st.phase === 'won' || st.story.done.has(C.farewell))) {
+        c.view.sprite?.setVisible(false);
+        c.view.shadow?.setVisible(false);
+        continue;
+      }
+      if (target?.face === -1 && c.mode !== 'gate') {
+        // (they were waiting there; if that spot is already in view they walk in from ahead,
+        // they don't appear out of thin air)
+        c.mode = 'gate';
+        f.x = Math.max(target.x, cam.right + 80 + c.i * 60); f.z = target.z;
+      }
       if (target) {
         const dx = target.x - f.x; const dz = target.z - f.z;
         const d = Math.hypot(dx, dz);
-        const sp = (f.stats.walkSpeed ?? 160) / 60;
+        const sp = (f.stats.walkSpeed ?? 160) / 60 * (c.mode === 'start' && target.leave ? 2 : 1); // (they run off to search)
         if (d > sp) {
           if (f.state !== 'walk') f.fsm.change('walk');
           f.vx = (dx / d) * sp * 60; f.vz = (dz / d) * sp * 60;
@@ -274,10 +295,15 @@ export class NpcView {
       }
       f.fsm.frame++;
       // gone off-screen to search: hidden until the gate
-      const hidden = target?.leave && (f.x > cam.right + 120);
+      let hidden = target?.leave && (f.x > cam.right + 120);
+      // (fading into the dark at the back as they go)
+      const fade = target?.away ? Math.max(0, Math.min(1, (f.z - target.z) / 70)) : 1;
+      if (fade <= 0.04) hidden = true;
+      if (hidden && c.mode === 'start') c.mode = 'gone';
       c.view.sprite?.setVisible(!hidden);
       c.view.shadow?.setVisible(!hidden);
       if (!hidden) c.view.update();
+      if (target?.away) { c.view.sprite?.setAlpha(fade); c.view.shadow?.setAlpha?.(fade * 0.35); }
     }
   }
 

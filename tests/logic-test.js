@@ -2216,7 +2216,7 @@ test('village: the barn: smashing the burning beam off its door frees the people
   for (let i = 0; i < 3; i++) { world.tick(); st.update(); }
   assert(barn.state === 'free' && freed.includes('barn'), `freed (${barn.state})`);
   for (let i = 0; i < 60 * 20; i++) { world.tick(); st.update(); }
-  assert(barn.state === 'gathered' && barn.x === 7260, `they wait at the gate (${barn.state})`);
+  assert(barn.state === 'gathered' && barn.x === 8660, `they wait at the gate (${barn.state})`);
   assert(freed.filter((id) => id === 'barn').length === 1, 'reported once');
 });
 
@@ -2261,16 +2261,17 @@ test('village: the burning beam comes down after its warning, on heroes and enem
   assert(p.health < hp[0] && e.health < hp[1], `both hurt (${p.health}/${hp[0]}, ${e.health}/${hp[1]})`);
 });
 
+const HALL = STAGE_VILLAGE.sections.findIndex((q) => q.id === 'hall');
 test("village: the longhall's beams only fall once the Ash Captain rages", () => {
   const world = new World({ seed: 7 });
-  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 6000, z: 440, controller: new Scripted() }));
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 7400, z: 440, controller: new Scripted() }));
   const st = new Stage(world, STAGE_VILLAGE);
   st.start(p);
-  st.enterSection(4);
+  st.enterSection(HALL);
   hush(st);
-  p.x = 6050;
+  p.x = 7450;
   let crashes = 0;
-  world.events.on('beamCrash', (ev) => { if (ev.hazard.section === 4) crashes++; });
+  world.events.on('beamCrash', (ev) => { if (ev.hazard.section === HALL) crashes++; });
   for (let i = 0; i < 900; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; p.awe = 0; }
   assert(st.boss && st.boss.stats.name.includes('Ash Captain'), 'he is here');
   assert(crashes === 0, `no beams before his rage (${crashes})`);
@@ -2508,16 +2509,16 @@ test('boss phases: the Houndmaster calls his pack, then rages; each phase once, 
 
 test('boss phases: a boss without phases still rages at half health and calls his dogs (the village captain)', () => {
   const world = new World({ seed: 7 });
-  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 6050, z: 440, controller: new Scripted() }));
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 7450, z: 440, controller: new Scripted() }));
   const st = new Stage(world, STAGE_VILLAGE);
-  st.start(p, { section: 4 });
+  st.start(p, { section: HALL });
   hush(st);
-  p.x = 6050;
+  p.x = 7450;
   for (let i = 0; i < 900; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; p.awe = 0; }
   const n = st.livingFoes().length;
   st.boss.health = st.boss.stats.maxHealth * 0.45;
   world.tick(); st.update();
-  assert(st.boss.raged && st.livingFoes().length === n + STAGE_VILLAGE.sections[4].boss.adds.length, 'raged, his dogs came');
+  assert(st.boss.raged && st.livingFoes().length === n + STAGE_VILLAGE.sections[HALL].boss.adds.length, 'raged, his dogs came');
 });
 
 // a tiny stage to drive the ending framework with (the judgment uses it in Stage 3)
@@ -2658,6 +2659,50 @@ test('campaign: no section\'s fight is held open by a man stuck off-screen (the 
       assert(st.phase !== 'fight', `${data.id} ${sec.id}: still fighting after ${f} frames: ${left.join(', ')}`);
     }
   }
+});
+
+test('village: the stables: smashing the gate bar frees the horses; they stampede the yard in lanes, trampling both sides, a few times, then they are gone', () => {
+  const world = new World({ seed: 4 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 6300, z: 300, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_VILLAGE);
+  const k = STAGE_VILLAGE.sections.findIndex((q) => q.id === 'stables');
+  st.start(p, { section: k });
+  hush(st);
+  p.x = 6300; p.z = 300; p.invincible = true;
+  st.fightOn = true; st.waveIndex = 99; // (no waves: this is about the horses)
+  const lanes = st.hazards.filter((h) => h.type === 'stampede');
+  assert(lanes.length === 3, 'three lanes');
+  for (let i = 0; i < 400; i++) { world.tick(); st.update(); }
+  assert(lanes.every((h) => !h.live), 'nothing runs while they are shut in');
+  st.breakProp(st.props.find((pr) => pr.tag === 'stables'), 1);
+  for (let i = 0; i < 3; i++) { world.tick(); st.update(); }
+  assert(st.story.rescued.has('horses'), 'the horses are freed');
+  // an Ashen man standing in the middle lane, and the hero (no longer invincible) in the first
+  const e = createEnemy(world, 'grunt', 6700, 420);
+  e.entering = false; e.controller = new Controller();
+  p.invincible = false; p.x = 6800; p.z = 330;
+  const trampled = new Set();
+  world.events.on('hazardHit', (ev) => { if (ev.kind === 'trample') trampled.add(ev.fighter === p ? 'hero' : 'grunt'); });
+  let warns = 0;
+  world.events.on('stampedeWarn', () => warns++);
+  for (let i = 0; i < 400; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; if (e.alive) { e.x = 6700; e.z = 420; } if (p.state === 'idle') { p.x = 6800; p.z = 330; } }
+  assert(trampled.has('grunt') && trampled.has('hero'), `the horses run down anyone in their lane (${[...trampled]})`);
+  assert(warns >= 2, `each run is warned first (${warns})`);
+  for (let i = 0; i < 1400; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; }
+  assert(lanes.every((h) => st.stampedeState(h).phase === 'idle'), 'after their runs they are gone');
+});
+
+test('village: two of them wait up on the second roof (standing on it, not inside it)', () => {
+  const world = new World({ seed: 4 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 3000, z: 440, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_VILLAGE);
+  const k = STAGE_VILLAGE.sections.findIndex((q) => q.id === 'roofs');
+  st.start(p, { section: k });
+  hush(st);
+  p.x = 3430; p.z = 410; p.floor = p.h = 120; p.invincible = true;
+  for (let i = 0; i < 200 && !st.livingFoes().length; i++) { world.tick(); st.update(); }
+  const foes = st.livingFoes();
+  assert(foes.length === 2 && foes.every((f) => f.floor === 140 && f.h >= 139), foes.map((f) => `${f.stats.name} ${Math.round(f.x)} h${f.h}/${f.floor}`).join(', '));
 });
 
 for (const [name, fn] of later) {

@@ -66,6 +66,9 @@ const KICKED = { kinds: ['crate', 'chest'], speed: 620, range: 560, lane: 26, ra
 // A burning beam falling (hazard 'beam'): it creaks and sheds embers for `warn` frames,
 // its shadow growing on the ground, then comes down on whoever is under it, either side
 // (enemies too). `when: 'rage'` beams only fall while the section's boss is raging.
+// The stables' stampede: px a frame, the space between horses, how close a horse must be
+// to run you down (each side of him), the damage
+const STAMPEDE = { period: 330, warn: 80, speed: 13, gap: 120, reach: 46, damage: 26 };
 const BEAM = { period: 230, warn: 80, damage: 22, lethalH: 60 };
 
 export class Stage {
@@ -602,6 +605,7 @@ export class Stage {
       for (const [id, c] of hz.cool) { if (c <= 1) hz.cool.delete(id); else hz.cool.set(id, c - 1); }
       if (hz.type === 'fire') this.updateFire(hz);
       else if (hz.type === 'beam') this.updateBeam(hz);
+      else if (hz.type === 'stampede') this.updateStampede(hz);
       else this.updateBlade(hz);
     }
   }
@@ -632,6 +636,7 @@ export class Stage {
   // 'phase:<id>': only once he has reached that phase)
   beamLive(hz) {
     if (!hz.when) return true;
+    if (hz.when.startsWith('freed:')) return !!this.story?.rescued.has(hz.when.slice(6));
     const b = this.boss;
     if (!b || !b.alive || hz.section !== this.index) return false;
     if (hz.when === 'rage') return !!b.raged;
@@ -658,6 +663,51 @@ export class Stage {
     for (const f of this.world.fighters) {
       if (Math.abs(f.x - hz.x) > hz.w / 2 || Math.abs(f.z - hz.z) > hz.d / 2 || f.h - y > BEAM.lethalH) continue;
       this.hurt(hz, f, BEAM.damage, Math.sign(f.x - hz.x) || 1, 'beam');
+    }
+  }
+
+  // A stampede lane (the village stables): `count` horses burst out at x0 and run the lane
+  // to x1 (or back, dir -1), every `period` frames, `runs` times, then they're gone.
+  // Whoever is in the lane when they pass is trampled: knocked flat and thrown along it.
+  // Its state for the view: stampedeState(hz) -> { phase: 'idle'|'warn'|'run', warnT, heads }
+  stampedeState(hz) {
+    const P = hz.period ?? STAMPEDE.period;
+    const W = hz.warn ?? STAMPEDE.warn;
+    if (!hz.live || hz.lt < 0) return { phase: 'idle', warnT: 0, heads: [] };
+    const k = hz.lt % P;
+    if (hz.lt >= P * (hz.runs ?? Infinity)) return { phase: 'idle', warnT: 0, heads: [] };
+    if (k < W) return { phase: 'warn', warnT: k / W, heads: [] };
+    const dir = hz.dir ?? 1;
+    const start = dir > 0 ? hz.x0 : hz.x1;
+    const end = dir > 0 ? hz.x1 : hz.x0;
+    const head = start + dir * (k - W) * STAMPEDE.speed;
+    const heads = [];
+    for (let i = 0; i < (hz.count ?? 3); i++) {
+      const x = head - dir * i * STAMPEDE.gap;
+      // (a little out of line, so they read as a herd, not a train)
+      const z = hz.z + ((i * 37) % 3 - 1) * hz.d * 0.22;
+      if ((x - start) * dir >= 0 && (end - x) * dir >= -STAMPEDE.gap) heads.push({ x, z, i });
+    }
+    return { phase: heads.length ? 'run' : 'idle', warnT: 0, heads, dir };
+  }
+
+  updateStampede(hz) {
+    if (!hz.live) {
+      if (!this.beamLive(hz)) return;
+      hz.live = true;
+      hz.lt = -(hz.phase ?? 0); // (the lanes go in turn)
+    }
+    hz.lt++;
+    if (hz.lt < 0) return;
+    const S = this.stampedeState(hz);
+    if (S.phase === 'warn' && hz.lt % (hz.period ?? STAMPEDE.period) === 0) this.world.events.emit('stampedeWarn', { hazard: hz });
+    if (S.phase !== 'run') return;
+    for (const f of this.world.fighters) {
+      if (f.h > 70) continue; // (jumped clear)
+      const hit = S.heads.find((hd) => Math.abs(f.x - hd.x) <= STAMPEDE.reach && Math.abs(f.z - hd.z) <= hz.d / 2);
+      if (!hit) continue;
+      if (hz.cool.has(f.id)) continue;
+      this.hurt(hz, f, STAMPEDE.damage, S.dir, 'trample');
     }
   }
 
@@ -733,11 +783,11 @@ export class Stage {
     else {
       f.fsm.change('knockdown', kind === 'fire' || kind === 'beam'
         ? { vx: dir * 160, vh: 260 }
-        : { vx: dir * 420, vh: 320 });
+        : kind === 'trample' ? { vx: dir * 620, vh: 380 } : { vx: dir * 420, vh: 320 });
     }
     const e = {
       attacker: null, defender: f, dir, kind: 'hazard', hazard: kind,
-      move: { cut: kind === 'fire' ? 'fire' : kind === 'crate' || kind === 'beam' ? 'blunt' : 'slash', damage: dmg, hitstop: 6 },
+      move: { cut: kind === 'fire' ? 'fire' : kind === 'crate' || kind === 'beam' || kind === 'trample' ? 'blunt' : 'slash', damage: dmg, hitstop: 6 },
       x: f.x, z: f.z, h: f.h + f.stats.body.h * 0.5, damage: dmg, fatality: 'none',
     };
     this.world.events.emit('hazardHit', { hazard: hz, fighter: f, kind });

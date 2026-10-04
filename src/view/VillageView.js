@@ -145,9 +145,14 @@ export class VillageBackdrop {
     const special = (x) => this.data.sections.find((sec) => x >= sec.x0 && x < sec.x1)?.id;
     for (let x = 0; x < this.width;) {
       const id = special(x);
-      if (id === 'gate' && x >= 7000) { this.drawGate(g, 7000, this.width, top); x = this.width; continue; }
-      if (id === 'hall' && x >= 5900 && x < 6900) { this.drawLonghall(g, 5900, 6900, top); x = 6900; continue; }
-      if (id === 'mill' && x >= 5200 && x < 5480) { this.drawBarn(g, 5200, 5480, top); x = 5480; continue; }
+      const sec = this.data.sections.find((q) => q.id === id);
+      const prop = (tag) => sec?.props?.find((pr) => pr.tag === tag);
+      if (id === 'gate') { this.drawGate(g, sec.x0, this.width, top); x = this.width; continue; }
+      if (id === 'hall' && x >= sec.x0 + 200 && x < sec.x0 + 1200) { this.drawLonghall(g, sec.x0 + 200, sec.x0 + 1200, top); x = sec.x0 + 1200; continue; }
+      const barn = id === 'mill' && prop('barn');
+      if (barn && x >= barn.x - 130 && x < barn.x + 150) { this.drawBarn(g, barn.x - 130, barn.x + 150, top); x = barn.x + 150; continue; }
+      const stab = id === 'stables' && prop('stables');
+      if (stab && x >= stab.x - 260 && x < stab.x + 260) { this.drawStables(g, stab.x - 260, stab.x + 260, top, stab.x); x = stab.x + 260; continue; }
       const w = 150 + Math.floor(r() * 90);
       const h = 86 + r() * 30;
       const burnt = r() < 0.3;
@@ -205,6 +210,50 @@ export class VillageBackdrop {
     g.fillStyle(0x140c08, 1).fillRect(x0 + w / 2 - 60, top - 110, 120, 110);
     g.lineStyle(4, 0x3a2414, 1).lineBetween(x0 + w / 2 - 60, top - 110, x0 + w / 2 + 60, top).lineBetween(x0 + w / 2 + 60, top - 110, x0 + w / 2 - 60, top);
     this.flame(x0 + 40, top - 150, 1.4);
+  }
+
+  // the stables: a long burning stable block, a barred gate in the middle (the wreckage prop
+  // is the bar); the horses rear inside until it's smashed, then the doorway is empty
+  drawStables(g, x0, x1, top, gx) {
+    g.fillStyle(0x2a1c14, 1).fillRect(x0, top - 120, x1 - x0, 120);
+    g.fillStyle(0x16100c, 1).fillRect(x0 - 14, top - 136, x1 - x0 + 28, 18); // the eaves
+    g.fillStyle(COL.timber, 1);
+    for (let x = x0 + 8; x < x1; x += 52) g.fillRect(x, top - 120, 6, 120);
+    // the stalls' half-doors either side, lit from within
+    for (let x = x0 + 30; x < x1 - 40; x += 104) {
+      if (Math.abs(x + 22 - gx) < 90) continue;
+      g.fillStyle(0x0c0806, 1).fillRect(x, top - 96, 44, 56);
+      g.fillStyle(COL.fire, 0.55).fillRect(x + 4, top - 92, 36, 22);
+    }
+    for (let x = x0 + 40; x < x1; x += 120) this.flame(x, top - 136, 1.2);
+    // the gate: dark, with the horses inside it (drawn each frame: updateStables)
+    g.fillStyle(0x0a0605, 1).fillRect(gx - 80, top - 110, 160, 110);
+    this.stables = { gx, top, g: this.scene.add.graphics().setDepth(DEPTH.floor - 0.95) };
+  }
+
+  updateStables(t) {
+    const S = this.stables;
+    if (!S) return;
+    const n = this.stage.story?.npcs.find((q) => q.id === 'horses');
+    const inside = !n || n.state === 'trapped';
+    const g = S.g.clear();
+    if (!inside) {
+      // the gate hangs open on an empty, burning stall
+      g.fillStyle(COL.fire, 0.35 + 0.1 * Math.sin(t * 0.2)).fillRect(S.gx - 70, S.top - 100, 140, 100);
+      g.fillStyle(0x2a1e16, 1).fillRect(S.gx - 96, S.top - 110, 18, 110).fillRect(S.gx + 78, S.top - 110, 18, 110);
+      return;
+    }
+    // three heads rearing and tossing in the dark, the firelight behind them
+    g.fillStyle(COL.fire, 0.25 + 0.15 * Math.sin(t * 0.3)).fillRect(S.gx - 76, S.top - 106, 152, 60);
+    for (let i = 0; i < 3; i++) {
+      const hx = S.gx - 46 + i * 46; const rear = Math.sin(t * 0.18 + i * 2.1) * 10;
+      g.fillStyle(0x1e140e, 1).fillTriangle(hx - 12, S.top - 30, hx + 12, S.top - 30, hx + 4, S.top - 86 - rear);
+      g.fillEllipse(hx + 10, S.top - 88 - rear, 30, 15);
+      g.fillStyle(0xffd0a0, 0.9).fillRect(hx + 12, S.top - 92 - rear, 3, 3); // a white eye
+    }
+    // the gate's bars
+    g.fillStyle(0x3a2616, 1);
+    for (let x = S.gx - 76; x <= S.gx + 70; x += 24) g.fillRect(x, S.top - 110, 7, 110);
   }
 
   // the longhall: the village's great hall, its roof on fire end to end
@@ -285,6 +334,7 @@ export class VillageBackdrop {
 
   update() {
     const t = this.scene.time.now / 16.7;
+    this.updateStables(t);
     for (const f of this.flickers) f.img.setAlpha(f.base + Math.sin(t * f.rate + f.base * 40) * f.amp + (Math.random() - 0.5) * f.amp * 0.4);
     const wv = this.scene.cameras.main.worldView;
     for (const e of this.embers) {

@@ -373,6 +373,7 @@ export class StageView {
   drawHazards() {
     const cam = this.scene.cameras.main.worldView;
     for (const hz of this.stage.hazards) {
+      if (hz.type === 'stampede') { this.drawStampede(hz, cam); continue; }
       if (hz.x < cam.x - 200 || hz.x > cam.right + 200) {
         hz.view?.setVisible(false);
         hz.hot?.setVisible(false);
@@ -480,6 +481,87 @@ export class StageView {
       g.fillStyle(0x2a1a10, a).fillRect(hz.x - hz.w / 2 - 8, gy - 10, hz.w + 16, 12);
       g.fillStyle(0xff7a2a, a * 0.9).fillRect(hz.x - hz.w / 2, gy - 7, hz.w, 3);
     }
+  }
+
+  // The stables' stampede (Stage 'stampede'): first dust boiling out of the stable door and
+  // hoofprints flashing along the lane it will take, then the horses themselves, flat out,
+  // manes streaming, embers on their backs. Painted gallop frames (assets/fx/horse_gallop.png)
+  // when they exist; drawn here until then.
+  drawStampede(hz, cam) {
+    const g = hz.g = hz.g ?? this.scene.add.graphics();
+    g.clear();
+    const S = this.stage.stampedeState(hz);
+    const on = S.phase !== 'idle' && hz.x1 > cam.x - 200 && hz.x0 < cam.right + 200;
+    g.setVisible(on);
+    for (const sp of hz.horseImgs ?? []) sp.setVisible(false);
+    if (!on) return;
+    const y = hz.z;
+    const t = this.scene.time.now / 16.7;
+    if (S.phase === 'warn') {
+      const w = S.warnT;
+      g.setDepth(hz.z - hz.d / 2);
+      // the lane: a band of churned ground, and arrows of hoofprints pulsing along it
+      g.fillStyle(0x000000, 0.12 + 0.18 * w).fillRect(hz.x0, y - hz.d / 2, hz.x1 - hz.x0, hz.d);
+      const dir = hz.dir ?? 1;
+      for (let x = hz.x0 + 40; x < hz.x1; x += 90) {
+        const a = 0.15 + 0.5 * w * (0.5 + 0.5 * Math.sin(t * 0.3 - x * 0.02 * dir));
+        g.fillStyle(0xffb070, a);
+        g.fillTriangle(x, y - 10, x, y + 10, x + 16 * dir, y);
+      }
+      // dust boiling out at the start
+      const sx = dir > 0 ? hz.x0 : hz.x1;
+      if (Math.floor(t) % 3 === 0) {
+        this.scene.gore.spawn({ x: sx + rand(-20, 40) * dir, z: y + rand(-hz.d / 2, hz.d / 2), h: rand(0, 30), vx: dir * rand(20, 90), vz: 0, vh: rand(10, 50), tint: 0x8a7a64, scale: rand(0.6, 1.2) * (0.5 + w), decal: false, life: 40 });
+      }
+      return;
+    }
+    const tex = this.scene.textures.exists('horse-gallop-0');
+    hz.horseImgs ??= [];
+    S.heads.forEach((hd, i) => {
+      const k = 1 + (hd.z - 400) / 900;
+      if (tex) {
+        const sp = hz.horseImgs[i] ??= this.scene.add.image(0, 0, 'horse-gallop-0').setOrigin(0.5, 1);
+        sp.setTexture(`horse-gallop-${Math.floor(t * 0.35 + i * 2) % 6}`).setPosition(hd.x, hd.z).setFlipX(S.dir < 0)
+          .setDisplaySize(170 * k, 120 * k).setDepth(hd.z).setVisible(true);
+      } else this.horse(g, hd.x, hd.z, k, S.dir, t * 0.45 + i * 1.7);
+      g.fillStyle(0x000000, 0.35).fillEllipse(hd.x, hd.z, 150 * k, 18 * k);
+      if (Math.floor(t + i) % 2 === 0) {
+        this.scene.gore.spawn({ x: hd.x - S.dir * 50, z: hd.z + rand(-8, 8), h: rand(0, 14), vx: -S.dir * rand(40, 120), vz: 0, vh: rand(30, 90), tint: 0x7a6a54, scale: rand(0.5, 1), decal: false, life: 30 });
+      }
+    });
+    g.setDepth(S.heads.length ? Math.max(...S.heads.map((h) => h.z)) + 0.5 : hz.z);
+  }
+
+  // a galloping horse, side on (feet at x, z), phase p: a heavy draught horse, flat out
+  horse(g, x, z, k, dir, p) {
+    const c = 0x24180f; const hi = 0x3a2818; const rim = 0xff8a3a;
+    const bob = Math.abs(Math.sin(p)) * 6 * k;
+    const by = z - 52 * k - bob; // the belly line
+    const X = (dx) => x + dx * dir * k;
+    // legs: thigh and cannon, the far pair darker; front pair reaching, back pair driving
+    const leg = (hx, ph, col, w) => {
+      const sw = Math.sin(p + ph);
+      const kx = X(hx + sw * 14); const ky = by + 26 * k - Math.max(0, sw) * 6 * k;
+      const fx = X(hx + sw * 26 - Math.max(0, -sw) * 10); const fy = z - Math.max(0, Math.cos(p + ph)) * 14 * k;
+      g.lineStyle(w * k, col, 1).lineBetween(X(hx), by - 4 * k, kx, ky).lineBetween(kx, ky, fx, fy);
+      g.fillStyle(0x0e0a06, 1).fillRect(fx - 5 * k, fy - 5 * k, 10 * k, 6 * k); // the hoof
+    };
+    leg(38, Math.PI, 0x170f09, 9); leg(-40, Math.PI * 1.5, 0x170f09, 11);
+    // the barrel of the body, the haunch and the chest
+    g.fillStyle(c, 1).fillEllipse(x, by - 22 * k, 130 * k, 56 * k);
+    g.fillCircle(X(-42), by - 28 * k, 30 * k).fillCircle(X(40), by - 26 * k, 27 * k);
+    // neck: a thick wedge stretched forward, and the head
+    g.fillTriangle(X(26), by - 50 * k, X(52), by - 6 * k, X(92), by - 70 * k);
+    g.fillTriangle(X(26), by - 50 * k, X(80), by - 80 * k, X(92), by - 70 * k);
+    g.fillEllipse(X(98), by - 70 * k, 44 * k, 22 * k);
+    g.fillTriangle(X(80), by - 82 * k, X(86), by - 98 * k, X(90), by - 80 * k); // an ear laid back
+    g.fillStyle(0xffd0a0, 1).fillRect(X(100) - 2 * k, by - 76 * k, 4 * k, 3 * k); // the white of an eye
+    leg(30, 0, c, 10); leg(-34, Math.PI * 0.5, c, 12);
+    // firelight along the back, the mane and the tail streaming behind
+    g.lineStyle(3 * k, rim, 0.7).lineBetween(X(-60), by - 46 * k, X(20), by - 50 * k);
+    g.lineStyle(6 * k, 0x120c08, 1).lineBetween(X(84), by - 84 * k, X(30), by - 54 * k + Math.sin(p * 2) * 4 * k);
+    g.lineStyle(7 * k, 0x120c08, 1).lineBetween(X(-64), by - 36 * k, X(-104), by - 42 * k + Math.sin(p * 2 + 1) * 8 * k);
+    g.lineStyle(2 * k, hi, 1).lineBetween(X(-30), by - 4 * k, X(30), by - 2 * k);
   }
 
   drawBlade(g, hz) {
@@ -697,6 +779,12 @@ export class StageView {
       this.scene.gore.spark(hz.x, hz.z, y + 10, 0xffa040, 26);
       for (let i = 0; i < 18; i++) {
         this.scene.gore.spawn({ x: hz.x + rand(-hz.w / 2, hz.w / 2), z: hz.z + rand(-6, 6), h: y + 4, vx: rand(-160, 160), vz: rand(-30, 30), vh: rand(80, 260), tint: i % 3 ? 0x3a2414 : 0xff8a30, texture: 'px', scale: rand(0.8, 1.8), decal: false, life: rand(30, 60) });
+      }
+    });
+    ev.on('stampedeWarn', ({ hazard: hz }) => {
+      if (this.scene.player.x > hz.x0 - 700 && this.scene.player.x < hz.x1 + 700) {
+        playSfx(this.scene, 'kick', { volume: 0.7, pitch: -2000, minGapMs: 0 });
+        this.scene.fx?.shake(3, 40);
       }
     });
     ev.on('secretFound', ({ count, total }) => this.scene.callout(`SECRET FOUND  ${count}/${total}`, '#ffd24a', 26));
