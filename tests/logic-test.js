@@ -11,7 +11,7 @@ import { CHARACTERS } from '../src/data/characters.js';
 import { ENEMIES, WAVES } from '../src/data/enemies.js';
 import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.js';
 import { Stage } from '../src/stage/Stage.js';
-import { STAGE } from '../src/data/stage.js';
+import { STAGE, PROPS } from '../src/data/stage.js';
 import { Terrain, STEP, PIT_LOST } from '../src/stage/Terrain.js';
 import { STAGE_GALLOWS } from '../src/data/stageGallows.js';
 import { STAGE_VILLAGE } from '../src/data/stageVillage.js';
@@ -285,11 +285,13 @@ test('all characters have the required data', () => {
 test('every enemy has art, anims, specials that exist, and is in a wave', () => {
   const anims = ['slash', 'backslash', 'chop', 'stab', 'stabB', 'thrust', 'uppercut', 'swingChain', 'slamChain', 'spin', 'hook', 'bash', 'charge'];
   // (a wave, the stage's waves, or the stage boss and his adds)
-  const inWaves = new Set([...WAVES.flat(), ...STAGE.sections.flatMap((s) => [...(s.waves ?? []).flat(), ...(s.boss ? [s.boss.type, ...(s.boss.adds ?? [])] : [])])]);
+  const boss = (b) => (b ? [b.type, ...(b.adds ?? []), ...(b.escort ?? []), ...(b.phases ?? []).flatMap((ph) => ph.adds ?? [])] : []);
+  const inWaves = new Set([...WAVES.flat(), ...[STAGE, STAGE_WOOD].flatMap((S) => S.sections.flatMap((s) => [...(s.waves ?? []).flat(), ...boss(s.boss)]))]);
   for (const e of Object.values(ENEMIES)) {
-    assert(e.art, `${e.id} has no art`);
+    assert(e.art || e.view, `${e.id} has no art`);
     assert(inWaves.has(e.id), `${e.id} never appears in a wave`);
-    for (const [k, m] of Object.entries(e.moves)) assert(anims.includes(m.anim), `${e.id}.${k} anim ${m.anim}`);
+    // (one with its own view, the hound, has its own poses)
+    for (const [k, m] of Object.entries(e.moves)) assert(e.view || anims.includes(m.anim), `${e.id}.${k} anim ${m.anim}`);
     for (const sp of e.ai.specials ?? []) {
       const move = sp.press === 'heavy' ? e.moves.heavy : e.moves[sp.press];
       assert(move, `${e.id} special presses ${sp.press} but has no such move`);
@@ -298,7 +300,7 @@ test('every enemy has art, anims, specials that exist, and is in a wave', () => 
 });
 
 test('each bad guy fights and lands hits (specials included)', () => {
-  for (const id of ['butcher', 'stalker', 'penitent', 'berserker', 'ghoul', 'gladiator']) {
+  for (const id of ['hound', 'butcher', 'stalker', 'penitent', 'berserker', 'ghoul', 'gladiator']) {
     const world = new World();
     const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 300, z: 420, controller: new Scripted() }));
     createEnemy(world, id, 600, 420);
@@ -2466,9 +2468,10 @@ test('wood: an escort follows the hero, freezes and loses his nerve with enemies
   }
 });
 
+const WOOD_SEC = (id) => STAGE_WOOD.sections.findIndex((q) => q.id === id);
 test('wood: the pilgrim talks only when a hero near him presses INTERACT', () => {
   const pg = STAGE_WOOD.npcs.find((n) => n.id === 'pilgrim');
-  const { st, c, run } = woodSetup(5, { x: pg.x - 30, z: pg.z });
+  const { st, c, run } = woodSetup(WOOD_SEC('pass'), { x: pg.x - 30, z: pg.z });
   for (const b of st.story.beats) if (b.id === 'pilgrim') b.fired = false;
   run(60);
   assert(!st.story.npc('pilgrim').talked && st.story.prompts.some((q) => q.kind === 'talk'), 'a prompt, no words yet');
@@ -2478,7 +2481,7 @@ test('wood: the pilgrim talks only when a hero near him presses INTERACT', () =>
 });
 
 test('boss phases: the Houndmaster calls his pack, then rages; each phase once, in order, even past two at a blow', () => {
-  const { world, p, st, run } = woodSetup(4, { x: 6100, z: 440 });
+  const { world, p, st, run } = woodSetup(WOOD_SEC('kennels'), { x: 7700, z: 440 });
   const phases = []; let rages = 0;
   world.events.on('bossPhase', (e) => phases.push(e.phase.id));
   world.events.on('bossRage', () => rages++);
@@ -2486,9 +2489,11 @@ test('boss phases: the Houndmaster calls his pack, then rages; each phase once, 
   const b = st.boss;
   assert(b?.stats.name === 'The Houndmaster', 'he is here');
   const cd0 = b.controller.ai.attackCooldown[0];
+  const up = st.livingFoes().length;
+  assert(st.livingFoes().filter((e) => e.stats.id === 'hound').length === 2, 'two hounds come in with him');
   b.health = b.stats.maxHealth * 0.6;
   run(2, () => { p.health = p.stats.maxHealth; });
-  assert(phases.join() === 'pack' && st.livingFoes().length === 3, `his pack (${phases}, ${st.livingFoes().length} up)`);
+  assert(phases.join() === 'pack' && st.livingFoes().length === up + 3, `his pack (${phases}, ${st.livingFoes().length} up)`);
   assert(b.controller.ai.attackCooldown[0] < cd0 && ENEMIES.stalker.ai.attackCooldown[0] === cd0, 'he quickens (his own brain, not the shared data)');
   assert(st.bossInPhase('pack') && !st.bossInPhase('frenzy'), 'in the pack phase');
   const walk = b.stats.walkSpeed;
@@ -2498,7 +2503,7 @@ test('boss phases: the Houndmaster calls his pack, then rages; each phase once, 
   run(30);
   assert(phases.length === 2, 'each once');
   // two thresholds at one blow: both phases, in order
-  const t2 = woodSetup(4, { x: 6100, z: 440 });
+  const t2 = woodSetup(WOOD_SEC('kennels'), { x: 7700, z: 440 });
   const ph2 = []; t2.world.events.on('bossPhase', (e) => ph2.push(e.phase.id));
   t2.run(700, () => { t2.p.health = t2.p.stats.maxHealth; t2.p.awe = 0; });
   t2.st.boss.health = 5;
@@ -2703,6 +2708,46 @@ test('village: two of them wait up on the second roof (standing on it, not insid
   for (let i = 0; i < 200 && !st.livingFoes().length; i++) { world.tick(); st.update(); }
   const foes = st.livingFoes();
   assert(foes.length === 2 && foes.every((f) => f.floor === 140 && f.h >= 139), foes.map((f) => `${f.stats.name} ${Math.round(f.x)} h${f.h}/${f.floor}`).join(', '));
+});
+
+test('wood: the convoy: the wagon rolls once the fight is on; wrecked, its prisoners run free and wait at the pass; left alone, it gets away with them', () => {
+  const k = WOOD_SEC('convoy');
+  // smashed in time
+  {
+    const { world, p, st, run } = woodSetup(k, { x: 5900, z: 440 });
+    p.invincible = true;
+    const wagon = st.props.find((pr) => pr.tag === 'convoy');
+    const n = st.story.npc('convoy');
+    const x0 = wagon.x;
+    run(240, () => killFoes(world));
+    assert(wagon.x > x0 + 50 && n.x === wagon.x && n.state === 'trapped', `it rolls, with them inside (${Math.round(x0)} -> ${Math.round(wagon.x)})`);
+    st.breakProp(wagon, 1);
+    run(3);
+    assert(st.story.rescued.has('convoy'), 'freed when it is wrecked');
+    const at = wagon.x;
+    run(300, () => killFoes(world));
+    assert(wagon.x === at, 'a wreck rolls no further');
+  }
+  // too slow
+  {
+    const { world, p, st, run } = woodSetup(k, { x: 5900, z: 440 });
+    p.invincible = true;
+    const lost = [];
+    world.events.on('npcLost', (e) => lost.push(e.npc.id));
+    const wagon = st.props.find((pr) => pr.tag === 'convoy');
+    const secs = (wagon.roll.to - wagon.x) / wagon.roll.speed;
+    assert(secs > 35 && secs < 60, `time enough to fight through, not to dawdle (${secs.toFixed(0)} s)`);
+    run(60 * 70, () => killFoes(world));
+    assert(wagon.escaped && lost.includes('convoy') && st.story.npc('convoy').state === 'lost', 'it gets away, and them with it');
+    // dying here puts it back where it started, them still inside
+    st.respawn();
+    run(2);
+    assert(!wagon.escaped && wagon.x === wagon.roll.from && st.story.npc('convoy').state === 'trapped', `the checkpoint resets it (${st.story.npc('convoy').state})`);
+  }
+});
+
+test('wood: the wagon is no pushover: a few heavy blows will not wreck it', () => {
+  assert(PROPS.wagon.hp >= 12, `it takes a real beating (hp ${PROPS.wagon.hp})`);
 });
 
 for (const [name, fn] of later) {

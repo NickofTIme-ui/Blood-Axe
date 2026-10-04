@@ -97,6 +97,56 @@ export const ENEMIES = {
     },
   },
 
+  // =========================================================== WAR HOUND (Gallows Wood)
+  // The Houndmaster's pack: a huge black mastiff in spiked plates. Low, fast, never blocks;
+  // a snapping bite and a leaping pounce that floors you. Few hits put one down. No painted
+  // strips yet (assets/enemies/strips/hound_*.png, docs/campaign/art-levels-1-2.md):
+  // drawn in code by view/HoundView.js. Not rigged, so it doesn't come apart.
+  hound: {
+    ...BASE,
+    id: 'hound',
+    name: 'War Hound',
+    title: 'Fed on the fallen',
+    view: 'hound',
+    body: { w: 70, h: 52 },
+    look: { color: 0x1a1614, accent: 0x5a5660, skin: 0x2a2220 },
+
+    maxHealth: 42, maxStamina: 60,
+    walkSpeed: 235, depthSpeed: 160,
+    meleeMult: 1.0,
+    blockReduction: 0, guardEfficiency: 1.0,
+    knockdownFrames: 34, getupFrames: 12, staggerFrames: 36,
+    jumpStrength: 600,
+
+    moves: {
+      light1: { // the snap: a short lunge, jaws first
+        anim: 'bite', cut: 'pierce',
+        startup: 9, active: 3, recovery: 18,
+        damage: 7, hitstun: 18, hitstop: 4, shake: 1,
+        knockback: { x: 60, y: 0 }, guardDamage: 10, lunge: 110,
+        hitbox: { x: 20, y: 14, w: 52, h: 30 },
+      },
+      heavy: { // the pounce: a long leap that bowls you over
+        anim: 'pounce', cut: 'pierce',
+        startup: 20, active: 7, recovery: 26,
+        damage: 13, hitstun: 26, hitstop: 7, shake: 3,
+        knockback: { x: 240, y: 240 }, knockdown: true,
+        guardDamage: 26, lunge: 340,
+        hitbox: { x: 16, y: 10, w: 64, h: 44 },
+      },
+    },
+
+    ai: {
+      attackRange: 80, minRange: 30, alignZ: 12,
+      waitRange: 230, maxCrowd: 3,
+      threatRange: 0,
+      attackCooldown: [26, 64],
+      heavyChance: 0.3, comboChance: 0,
+      blockChance: 0, blockHold: [0, 0],
+      specials: [],
+    },
+  },
+
   // =========================================================== 1. GORRAK THE FLAYER
   // Wild-haired butcher. Cleaver in the right hand, a chained meat hook in the left.
   // Hooks you in from range, then hacks. Kill the left arm and the hook is gone.

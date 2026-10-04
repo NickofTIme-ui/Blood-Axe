@@ -96,7 +96,8 @@ export class NpcView {
     this.drawPrompt(n, v);
     if (n.pose === 'noose' || n.pose === 'cage') { this.drawCaptive(n, v, t); return; }
     // (the horses are drawn in their stable, view/VillageView.js; the group is inside the barn)
-    const show = !['safe', 'gone'].includes(n.state) && !(n.pose === 'group' && n.state === 'trapped') && n.pose !== 'horses';
+    const show = !['safe', 'gone'].includes(n.state) && !(n.pose === 'group' && n.state === 'trapped') && n.pose !== 'horses'
+      && !(n.pose === 'convoy' && (n.state === 'trapped' || n.state === 'lost')); // (inside the wagon, or carried off in it)
     const fadeOut = n.state === 'free' && !n.flee ? Math.max(0, 1 - n.t / 50) : 1; // (he slips away)
     g.setVisible(show).setAlpha(fadeOut);
     v.shadow.setVisible(show);
@@ -126,7 +127,7 @@ export class NpcView {
       this.figure(g, n.x + 22 * dir * -1, y + 4, k * 0.68, pose, t + 7, tun(3), dir);
       return;
     }
-    if (n.pose === 'group') {
+    if (n.pose === 'group' || n.pose === 'convoy') {
       for (let i = 0; i < 3; i++) this.figure(g, n.x - 30 + i * 28, y + (i % 2) * 6, k * (i === 1 ? 0.75 : 1), pose, t + i * 5, tun(i + 4), dir);
       return;
     }

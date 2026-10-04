@@ -2,8 +2,7 @@
 // Keepers follow the prisoner convoy up the north road through a wet black pine wood.
 // GRAYBOX, built in Stage 2 to put the campaign's new systems to work: the level
 // transition from the village, an execution, cages, an escort, and a boss with phases.
-// Still to come (Stage 3): the convoy itself on the move (the set piece), real hounds,
-// its own art. Everything here is drawn in code (view/WoodView.js, view/NpcView.js).
+// Its painted art is requested in docs/campaign/art-levels-1-2.md. Everything here is drawn in code (view/WoodView.js, view/NpcView.js).
 //
 // Same format as data/stageVillage.js (a terrain block's `mat: 'log'` draws it as a fallen
 // tree). Built for the weakest jumper (Rurik, walking, no
@@ -18,8 +17,11 @@
 //                          two cages to open once the guards are dead (cage)
 //   IV  THE OLD FORD       Ansel the wheelwright, lame, walks out with you; an ambush on
 //                          the road: keep them off him (escort)
-//   V   THE KENNELS        a shrine; THE HOUNDMASTER (boss phases: his pack, then his frenzy)
-//   VI  THE BLOCKED ROAD   the pass buried by a rockslide; the convoy's tracks turn into the
+//   V   THE CONVOY         the convoy's last wagon rolling away with prisoners in it: smash
+//                          it before it gets up the road, through its guards
+//   VI  THE KENNELS        a shrine; THE HOUNDMASTER and his war hounds (boss phases: his
+//                          pack, then his frenzy)
+//   VII THE BLOCKED ROAD   the pass buried by a rockslide; the convoy's tracks turn into the
 //                          mountain. Out by the old mine road: on to Hollow Mountain
 
 const FULL = { z0: 282, z1: 520 };
@@ -30,13 +32,13 @@ export const STAGE_WOOD = {
   chapter: 'II',
   next: { id: 'hollowMountain', name: 'HOLLOW MOUNTAIN', chapter: 'III' }, // (not built yet: Stage 3 of the plan)
   doneTitle: 'THE CONVOY IS BROKEN', // (the tally's title)
-  width: 7600,
+  width: 9200,
   theme: 'wood',
   tall: true,
   castle: { x: 760, scale: 0.6, detail: 0.5 }, // nearer now: a silhouette over the wood
   // the other two Oath Keepers (view/NpcView.js): with you at the start, then scouting
   // ahead; they wait at the blocked road, and leave with you after the last words
-  companions: { leaveAfter: 'opening', meet: 6900, farewell: 'turn' },
+  companions: { leaveAfter: 'opening', meet: 8500, farewell: 'turn' },
 
   sections: [
     {
@@ -89,29 +91,47 @@ export const STAGE_WOOD = {
       hazards: [],
     },
     {
-      id: 'kennels', name: 'THE KENNELS', x0: 5600, x1: 6800,
+      // the convoy's last wagon, still rolling: armoured, its prisoners inside, guards round
+      // it. Smash it before it gets away up the road, or they're gone (Stage.updateRolling)
+      id: 'convoy', name: 'THE CONVOY', x0: 5600, x1: 7200,
       spawn: { x: 5660, z: 440 },
-      objective: 'Kill the Houndmaster',
-      hint: 'He calls his pack when he is hurt',
-      fightAt: 5960,
-      waves: [],
-      props: [{ kind: 'crate', x: 6700, z: 480, drop: 'meat' }],
+      objective: 'Stop the prisoner wagon',
+      hint: 'Smash the wagon before it gets away up the road',
+      fightAt: 5860,
+      waves: [['grunt', 'butcher', 'grunt'], ['stalker', 'grunt', 'berserker'], ['grunt', 'butcher', 'stalker']],
+      props: [
+        { kind: 'wagon', tag: 'convoy', x: 6080, z: 320, roll: { to: 7110, speed: 22 } },
+        { kind: 'barrel', x: 5700, z: 480, drop: 'wine' },
+      ],
       hazards: [],
-      rest: { x: 5720, z: 320, kind: 'oath' },
-      // THE HOUNDMASTER: the Stalker's kind, grown into the convoy's master. (TEMPORARY: no
-      // hounds yet; his "pack" are kennel men.) Two phases: his pack, then his frenzy.
+    },
+    {
+      id: 'kennels', name: 'THE KENNELS', x0: 7200, x1: 8400,
+      spawn: { x: 7260, z: 440 },
+      objective: 'Kill the Houndmaster',
+      hint: 'Kill the hounds fast: he calls more when he is hurt',
+      fightAt: 7560,
+      waves: [],
+      props: [{ kind: 'crate', x: 8300, z: 480, drop: 'meat' }],
+      hazards: [],
+      rest: { x: 7320, z: 320, kind: 'oath' },
+      // THE HOUNDMASTER: the Stalker's kind, grown into the convoy's master, with his war
+      // hounds (data/enemies.js `hound`). Two of them come in with him; he blows his horn
+      // for the pack at two thirds, and at one third he goes into a frenzy with the last of
+      // them. (His own painted strips: docs/campaign/art-levels-1-2.md; until then he wears
+      // the Stalker's.)
       boss: {
-        type: 'stalker', name: 'The Houndmaster', health: 3.4, damage: 1.1, adds: [],
+        type: 'stalker', name: 'The Houndmaster', health: 3.6, damage: 1.1, escort: ['hound', 'hound'],
         entrance: { from: 140, to: 330, speed: 72, stepEvery: 28, awe: 30 },
         phases: [
-          { id: 'pack', at: 0.66, adds: ['stalker', 'stalker'], ai: { attackCooldown: [24, 56] } },
-          { id: 'frenzy', at: 0.33, rage: true, adds: ['grunt', 'stalker'], damage: 1.25, speed: 1.2, ai: { attackCooldown: [16, 40], comboChance: 0.8 } },
+          { id: 'pack', at: 0.66, adds: ['hound', 'hound', 'hound'], ai: { attackCooldown: [24, 56] } },
+          { id: 'frenzy', at: 0.33, rage: true, adds: ['hound', 'hound', 'stalker'], damage: 1.25, speed: 1.2, ai: { attackCooldown: [16, 40], comboChance: 0.8 } },
         ],
       },
     },
     {
-      id: 'pass', name: 'THE BLOCKED ROAD', x0: 6800, x1: 7600,
-      spawn: { x: 6860, z: 440 },
+      id: 'pass', name: 'THE BLOCKED ROAD', x0: 8400, x1: 9200,
+      spawn: { x: 8460, z: 440 },
       objective: 'The mine road',
       hint: '',
       waves: [],
@@ -121,7 +141,7 @@ export const STAGE_WOOD = {
   ],
 
   // the pass is buried: the way on is the old mine road, once the last words are said
-  exit: { x: 7340, after: 'turn' },
+  exit: { x: 8940, after: 'turn' },
 
   terrain: [
     // ---- I THE WOOD ROAD: a fallen pine to hop, a stream with a log across it
@@ -140,13 +160,13 @@ export const STAGE_WOOD = {
     { kind: 'block', x0: 5140, x1: 5260, z0: 380, z1: 470, top: 10, mat: 'log' },
 
     // ---- VI THE BLOCKED ROAD: the rockslide across the pass (nobody climbs it)
-    { kind: 'block', x0: 7440, x1: 7600, ...FULL, top: 320 },
+    { kind: 'block', x0: 9040, x1: 9200, ...FULL, top: 320 },
   ],
 
-  lanterns: [{ x: 780, z: 290 }, { x: 2050, z: 290 }, { x: 3080, z: 290 }, { x: 5140, z: 290 }, { x: 5800, z: 290 }, { x: 7000, z: 290 }],
+  lanterns: [{ x: 780, z: 290 }, { x: 2050, z: 290 }, { x: 3080, z: 290 }, { x: 5140, z: 290 }, { x: 7400, z: 290 }, { x: 8600, z: 290 }],
 
   // the dead (view only): prisoners who fell on the road and were left there
-  bodies: [{ x: 300, z: 480, pose: 1 }, { x: 1250, z: 330, pose: 0 }, { x: 3500, z: 500, pose: 2 }, { x: 6300, z: 480, pose: 1 }],
+  bodies: [{ x: 300, z: 480, pose: 1 }, { x: 1250, z: 330, pose: 0 }, { x: 3500, z: 500, pose: 2 }, { x: 7900, z: 480, pose: 1 }],
 
   // the convoy's broken carts (view only)
   carts: [{ x: 3750, z: 300 }, { x: 4140, z: 450 }],
@@ -155,21 +175,25 @@ export const STAGE_WOOD = {
   npcs: [
     {
       id: 'joren', name: 'Joren', x: 2250, z: 302, pose: 'noose', rescue: 'execution', section: 'tree', wave: 1, time: 1500,
-      flee: { x: 1600, z: 300 }, gather: { x: 7060, z: 300 },
+      flee: { x: 1600, z: 300 }, gather: { x: 8660, z: 300 },
     },
     {
       id: 'tanners', name: 'the tanner\'s boys', x: 3750, z: 340, pose: 'cage', group: true, rescue: 'cage',
-      lock: { x: 3750, z: 372 }, flee: { x: 3000, z: 500 }, gather: { x: 7120, z: 470 },
+      lock: { x: 3750, z: 372 }, flee: { x: 3000, z: 500 }, gather: { x: 8720, z: 470 },
     },
     {
       id: 'wenna', name: 'Old Wenna', x: 4140, z: 450, pose: 'cage', rescue: 'cage',
-      lock: { x: 4140, z: 482 }, flee: { x: 3000, z: 400 }, gather: { x: 7000, z: 380 },
+      lock: { x: 4140, z: 482 }, flee: { x: 3000, z: 400 }, gather: { x: 8600, z: 380 },
     },
     {
       id: 'ansel', name: 'Ansel the wheelwright', x: 4560, z: 440, pose: 'lame', rescue: 'escort', section: 'ford',
-      to: { x: 5440 }, flee: null, gather: { x: 7180, z: 340 },
+      to: { x: 5440 }, flee: null, gather: { x: 8780, z: 340 },
     },
-    { id: 'pilgrim', name: 'a pilgrim', x: 6950, z: 470, pose: 'wounded', talk: 'pilgrim', ask: true },
+    {
+      id: 'convoy', name: 'the prisoners in the wagon', x: 6080, z: 320, pose: 'convoy', rescue: 'convoy', tag: 'convoy',
+      flee: { x: 5700, z: 500 }, gather: { x: 8520, z: 480 },
+    },
+    { id: 'pilgrim', name: 'a pilgrim', x: 8550, z: 470, pose: 'wounded', talk: 'pilgrim', ask: true },
   ],
 
   story: [
@@ -191,14 +215,17 @@ export const STAGE_WOOD = {
     { id: 'ansel', on: 'follow:ansel', lines: [['ANSEL', 'My leg is broken... Stay close. I cannot fight them.']] },
     { id: 'ansel-safe', on: 'rescued:ansel', lines: [['ANSEL', 'The far bank. I can hide here. Go on.']] },
     { id: 'ansel-lost', on: 'lost:ansel', lines: [['ANSEL', 'No... no, leave me... Run!']] },
-    { id: 'kennels', at: 5700, calm: true, lines: [['ORYN', '(from the trees) The Houndmaster runs the convoy. Kneel at the shrine, then end him.']] },
+    { id: 'wagonCry', at: 5720, lines: [['PRISONER', 'Help us! They are taking us to the Keep!']] },
+    { id: 'wagon', on: 'rescued:convoy', lines: [['PRISONER', 'The wagon is broken! Out, all of you! Run!']] },
+    { id: 'wagon-lost', on: 'lost:convoy', calm: true, lines: [['RURIK', 'Gone... We will find you at the Keep. I swear it.']] },
+    { id: 'kennels', at: 7300, calm: true, lines: [['ORYN', '(from the trees) The Houndmaster runs the convoy. Kneel at the shrine, then end him.']] },
     { id: 'houndmaster', on: 'boss:kennels', lines: [['HOUNDMASTER', 'The Oath Keepers. My dogs have not eaten in days.']] },
     { id: 'pack', on: 'phase:kennels:pack', lines: [['HOUNDMASTER', 'Up, my pack! Up! Pull them down!']] },
     { id: 'frenzy', on: 'phase:kennels:frenzy', lines: [['HOUNDMASTER', 'Then I will feed you to them myself!']] },
-    { id: 'gathered', at: 6980, calm: true, if: 'rescued:joren', lines: [['JOREN', 'We followed you. Where the Oath Keepers walk, the road is safe.']] },
+    { id: 'gathered', at: 8580, calm: true, if: 'rescued:joren', lines: [['JOREN', 'We followed you. Where the Oath Keepers walk, the road is safe.']] },
     { id: 'pilgrim', calm: true, lines: [['PILGRIM', 'The rocks came down at dawn. Their own men did it, to close the pass behind them.'], ['PILGRIM', 'The carts went into the old mine. Under the mountain.']] },
     {
-      id: 'turn', at: 7180, calm: true, hold: true,
+      id: 'turn', at: 8780, calm: true, hold: true,
       lines: [
         ['VEXA', 'The pass is buried. Their own men brought it down.'],
         ['ORYN', 'The tracks turn into the mountain. The old mine road.'],

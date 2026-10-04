@@ -19,6 +19,7 @@
 //   exit: { x, after }  the level ends when a hero walks out here, once the last section
 //                       is won and the beat `after` has played (not the moment it's won)
 //   boss.entrance.freeze: false   he walks in without freezing the heroes (a sub-boss)
+//   boss.escort: [types]          brought on with him (the Houndmaster's two hounds)
 //   boss.phases: [{ id, at, adds?, ai?, damage?, speed?, rage? }]   BOSS PHASES: under `at`
 //                       of his health he moves on to the next phase (in order, each once):
 //                       new men (`adds`), his brain's numbers changed (`ai`: e.g. a shorter
@@ -190,6 +191,12 @@ export class Stage {
     for (const p of this.players) this.restore(p, 1);
     const won = this.cleared === this.checkpoint; // died (a trap) after the fight here was already won
     this.story?.resetSection(this.checkpoint);
+    // (a wagon still rolling here goes back to where it started, its people still in it)
+    for (const pr of this.props) {
+      if (pr.roll?.from == null || pr.section !== this.checkpoint || pr.broken) continue;
+      pr.x = pr.roll.from; pr.escaped = false;
+      this.world.events.emit('propReset', { prop: pr });
+    }
     this.enterSection(this.checkpoint, true);
     if (won) {
       // ...then it stays won: no fighting the same waves twice
@@ -426,6 +433,7 @@ export class Stage {
       const frames = Math.ceil(((x - toX) / E.speed) * 60) + (E.awe ?? 0);
       if (E.freeze !== false) for (const p of this.players) if (p.alive) p.awe = frames;
     }
+    if (def.escort?.length) this.spawnWave(def.escort); // (the men or dogs he brings with him)
     this.world.events.emit('bossSpawn', { boss, entrance: !!E });
   }
 
@@ -537,6 +545,24 @@ export class Stage {
       }
     }
     this.updateKicked();
+    this.updateRolling();
+  }
+
+  // A prop with `roll: { to, speed }` (the convoy's wagon) rolls away once its section's
+  // fight is on, at speed px/s; reaching `to` it's gone up the road (escaped), and whoever
+  // was in it with it (Story: rescue 'convoy').
+  updateRolling() {
+    for (const pr of this.props) {
+      const R = pr.roll;
+      if (!R || pr.broken || pr.escaped) continue;
+      R.from ??= pr.x;
+      if (pr.section !== this.index || !this.fightOn) continue;
+      pr.x = Math.min(R.to, pr.x + R.speed / 60);
+      if (pr.x >= R.to) {
+        pr.escaped = true;
+        this.world.events.emit('propEscaped', { prop: pr });
+      }
+    }
   }
 
   breakProp(pr, dir, blast = false) {

@@ -197,6 +197,39 @@ export class StageView {
       beam(10, 30, w - 14, h - 14, 22);
       c.fillStyle = '#1a120c'; c.fillRect(0, h - 14, w, 14);
     });
+    // (the wood) the convoy's prisoner wagon: black iron plates, barred windows with faces
+    // at them, the king's black and crimson banner; and the same wrecked (PROPS.wagon)
+    const wagon = (c, w, h, wrecked) => {
+      c.save();
+      if (wrecked) { c.translate(w / 2, h); c.rotate(-0.12); c.translate(-w / 2, -h); }
+      const bed = h - 70;
+      c.fillStyle = '#18161a'; c.fillRect(22, 40, w - 44, bed - 40); // the box
+      c.fillStyle = '#26232a'; for (let x = 30; x < w - 40; x += 58) c.fillRect(x, 46, 50, bed - 52); // plates
+      c.fillStyle = '#0c0b0e'; for (let x = 30; x < w - 40; x += 58) for (const y of [52, bed - 18]) c.fillRect(x + 4, y, 3, 3); // rivets
+      // barred windows: dark, faces pressed to them while it rolls
+      for (let x = 70; x < w - 90; x += 110) {
+        c.fillStyle = wrecked ? '#000000' : '#2a1a14'; c.fillRect(x, 70, 54, 40);
+        if (!wrecked) { c.fillStyle = '#8a6a50'; c.beginPath(); c.arc(x + 18, 92, 9, 0, 7); c.fill(); c.beginPath(); c.arc(x + 38, 94, 8, 0, 7); c.fill(); }
+        c.fillStyle = '#4a4650'; for (let b = x + 6; b < x + 54; b += 12) c.fillRect(b, 70, 4, 40);
+      }
+      c.fillStyle = '#100e12'; c.fillRect(12, 30, w - 24, 14); c.fillRect(12, bed - 6, w - 24, 14); // roof rim and bed
+      // the banner on its pole at the front
+      c.fillStyle = '#2a1a10'; c.fillRect(w - 40, 0, 6, bed);
+      c.fillStyle = '#5a0a12'; c.fillRect(w - 76, 6, 36, 50); c.fillStyle = '#0a0808'; c.fillRect(w - 76, 22, 36, 10);
+      c.restore();
+      // the wheels (one smashed when wrecked)
+      const wheel = (x, broken) => {
+        c.strokeStyle = '#2a1e14'; c.lineWidth = 9; c.beginPath();
+        if (broken) c.arc(x, h - 30, 28, 0.6, 3.6); else c.arc(x, h - 30, 28, 0, 7);
+        c.stroke();
+        c.lineWidth = 4; for (let a = 0; a < (broken ? 3 : 8); a++) { c.beginPath(); c.moveTo(x, h - 30); c.lineTo(x + Math.cos(a * 0.8) * 26, h - 30 + Math.sin(a * 0.8) * 26); c.stroke(); }
+        c.fillStyle = '#4a4650'; c.beginPath(); c.arc(x, h - 30, 7, 0, 7); c.fill();
+      };
+      wheel(70, false); wheel(w - 80, wrecked);
+      if (wrecked) { c.fillStyle = '#000000'; c.fillRect(24, 48, 40, bed - 56); } // the back door hanging open
+    };
+    this.canvasTex('prop-wagon', 420, 240, (c, w, h) => wagon(c, w, h, false));
+    this.canvasTex('prop-wagon-broken', 420, 240, (c, w, h) => wagon(c, w, h, true));
     this.canvasTex('flame', 32, 64, (c, w, h) => {
       const g = c.createLinearGradient(0, h, 0, 0);
       g.addColorStop(0, 'rgba(255,240,180,1)'); g.addColorStop(0.35, 'rgba(255,150,40,0.95)'); g.addColorStop(0.75, 'rgba(220,40,10,0.6)'); g.addColorStop(1, 'rgba(120,10,0,0)');
@@ -802,7 +835,30 @@ export class StageView {
     }
   }
 
+  // the convoy's wagon rolling up the road (Stage.updateRolling): it rocks on its wheels and
+  // throws up mud; gone round the bend once it escapes
+  syncRolling() {
+    for (const pr of this.stage.props) {
+      if (!pr.roll || pr.broken) continue;
+      const v = this.propSprites.get(pr.id);
+      if (!v?.img?.active) continue;
+      if (pr.escaped) {
+        if (!v.gone) { v.gone = true; this.scene.tweens.add({ targets: [v.img, v.shadow], alpha: 0, duration: 900 }); }
+        continue;
+      }
+      if (v.gone) { v.gone = false; v.img.setAlpha(1); v.shadow?.setAlpha(0.35); } // (back where it started: the checkpoint)
+      const moving = pr.x > (pr.roll.from ?? pr.x);
+      const t = this.scene.time.now / 16.7;
+      v.img.setPosition(pr.x, pr.z - (pr.y ?? 0) - (moving ? Math.abs(Math.sin(t * 0.25)) * 2 : 0)).setAngle(moving ? Math.sin(t * 0.13) * 0.8 : 0);
+      v.shadow?.setPosition(pr.x, pr.z - (pr.y ?? 0));
+      if (moving && Math.floor(t) % 6 === 0) {
+        this.scene.gore.spawn({ x: pr.x - pr.w / 2 + 10, z: pr.z + 4, h: 4, vx: -rand(20, 70), vz: 0, vh: rand(20, 60), tint: 0x3a2e22, scale: rand(0.4, 0.8), decal: false, life: 30 });
+      }
+    }
+  }
+
   update() {
+    this.syncRolling();
     this.syncKicked();
     this.syncPickups();
     this.drawHazards();

@@ -35,6 +35,8 @@
 //           'escort'    a hero walks up to him and he follows (state 'escort') until he
 //                       reaches `to.x`. Enemies close to him wear his nerve down (`hp`,
 //                       default NPC.nerve): he cowers and won't move; at 0 he's lost
+//           'convoy'    inside a rolling prop (`tag`: the convoy's wagon, Stage.updateRolling):
+//                       carried along with it; out when it's wrecked, LOST if it gets away
 //   (no rescue: a survivor who only talks, `talk`: a beat id fired when a hero comes near
 //    him; with `ask: true` only when a hero near him presses INTERACT)
 //   flee: { x, z }      where he runs once free (null: he slips away out of sight)
@@ -208,6 +210,13 @@ export class Story {
         else if (n.rescue === 'reach' && heroes.some((p) => p.grounded && Math.abs(p.x - n.x) <= NPC.reach
           && Math.abs(p.z - n.z) <= NPC.depth && Math.abs(p.floor - n.h) <= NPC.height)) this.free(n);
         else if (n.rescue === 'cage') this.pickLock(n, heroes);
+        else if (n.rescue === 'convoy') {
+          // inside the wagon: they go where it goes; out when it's wrecked, gone if it escapes
+          const pr = st.props.find((q) => q.tag === n.tag);
+          if (pr?.broken) this.free(n);
+          else if (pr?.escaped) this.lose(n);
+          else if (pr) n.x = pr.x;
+        }
         else if (n.rescue === 'escort' && heroes.some((p) => Math.abs(p.x - n.x) <= NPC.askReach && Math.abs(p.z - n.z) <= NPC.askDepth)) {
           n.state = 'escort'; n.t = 0;
           this.world.events.emit('npcFollow', { npc: n });
@@ -370,7 +379,7 @@ export class Story {
   resetSection(k) {
     for (const n of this.npcs) {
       if (this.sectionOf(n) !== k || this.rescued.has(n.id)) continue;
-      if (!['execution', 'escort'].includes(n.rescue)) continue;
+      if (!['execution', 'escort', 'convoy'].includes(n.rescue)) continue;
       this.lost.delete(n.id);
       n.state = n.rescue === 'execution' ? 'threatened' : 'trapped';
       n.x = n.home.x; n.z = n.home.z; n.clock = 0; n.nerve = n.hp ?? NPC.nerve; n.cower = false; n.t = 0;

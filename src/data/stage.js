@@ -116,4 +116,5 @@ export const PROPS = {
   wall: { hp: 5, w: 90, h: 130 }, // a cracked section of the back wall
   bell: { hp: 1, w: 34, h: 70 }, // an iron bell on a post: ring it to call an optional fight (stage.challenge)
   wreckage: { hp: 4, w: 84, h: 56 }, // a burning beam pinning a door shut: smash it and whoever is inside gets out
+  wagon: { hp: 16, w: 200, h: 110 }, // the convoy's prisoner wagon: rolls away (`roll`); wreck it and they're out
 };
