@@ -147,6 +147,58 @@ export const ENEMIES = {
     },
   },
 
+  // =========================================================== THE ORE CRUSHER (Hollow Mountain)
+  // A war machine: an iron hulk on rollers, a spiked drum in front and a pile-driver arm
+  // over it, a furnace in its belly; its crew stokes it. Slow, and iron doesn't flinch
+  // (`machine`: never staggered or knocked down, never blocks), so you hit it between its
+  // blows. The drum grinds whoever is in front of it; the arm comes down hard in front.
+  // Drawn in code by view/CrusherView.js until its art exists.
+  crusher: {
+    ...BASE,
+    id: 'crusher',
+    name: 'The Ore Crusher',
+    title: 'A war machine of the Ashen King',
+    view: 'crusher',
+    machine: true,
+    body: { w: 150, h: 170 },
+    look: { color: 0x2a2826, accent: 0x8a5a2a, skin: 0x3a3634 },
+
+    maxHealth: 220, maxStamina: 200,
+    walkSpeed: 52, depthSpeed: 40,
+    meleeMult: 1.0,
+    blockReduction: 0, guardEfficiency: 1.0,
+    knockdownFrames: 10, getupFrames: 10, staggerFrames: 10,
+    jumpStrength: 0,
+
+    moves: {
+      light1: { // the drum grinds forward
+        anim: 'grind', cut: 'crush',
+        startup: 16, active: 14, recovery: 22,
+        damage: 9, hitstun: 22, hitstop: 4, shake: 3,
+        knockback: { x: 220, y: 120 }, knockdown: true, guardDamage: 20, lunge: 60,
+        hitbox: { x: 40, y: 0, w: 90, h: 90 },
+      },
+      heavy: { // the pile-driver comes down in front of it
+        anim: 'slam', cut: 'crush',
+        startup: 44, active: 5, recovery: 36,
+        damage: 30, hitstun: 30, hitstop: 12, shake: 10,
+        knockback: { x: 260, y: 380 }, knockdown: true, breaksGuard: true,
+        guardDamage: 60, lunge: 0,
+        hitbox: { x: 60, y: 0, w: 150, h: 120, depth: 34 },
+      },
+    },
+
+    ai: {
+      attackRange: 150, minRange: 60, alignZ: 24,
+      waitRange: 260, maxCrowd: 1,
+      threatRange: 0,
+      attackCooldown: [40, 90],
+      heavyChance: 0.45, comboChance: 0,
+      blockChance: 0, blockHold: [0, 0],
+      specials: [],
+    },
+  },
+
   // =========================================================== 1. GORRAK THE FLAYER
   // Wild-haired butcher. Cleaver in the right hand, a chained meat hook in the left.
   // Hooks you in from range, then hacks. Kill the left arm and the hook is gone.

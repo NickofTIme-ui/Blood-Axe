@@ -21,6 +21,7 @@ import { StripHeroView } from '../view/StripHeroView.js';
 import { MageFX } from '../effects/MageFX.js';
 import { Parallax } from '../view/Parallax.js';
 import { HoundView } from '../view/HoundView.js';
+import { CrusherView } from '../view/CrusherView.js';
 import { RogueFX } from '../effects/RogueFX.js';
 import { QuakeFX } from '../effects/QuakeFX.js';
 import { ProjectileView } from '../view/ProjectileView.js';
@@ -941,6 +942,7 @@ export class ArenaScene extends Phaser.Scene {
   // Rigged enemies get the paper-doll view; heroes use their sprite (or placeholder shapes).
   makeView(f) {
     if (f.stats.view === 'hound') return new HoundView(this, f); // (code-drawn until its strips exist)
+    if (f.stats.view === 'crusher') return new CrusherView(this, f);
     // named enemies with hand-animated strips (data/enemyStrips.js); the doll runs underneath
     const sheet = f.team === 'enemy' && !this.dollsOnly && this.registry.get('enemySprites')?.[f.stats.id];
     if (sheet && f.stats.art && ENEMY_ART[f.stats.art]) return new SpriteEnemyView(this, f, sheet);

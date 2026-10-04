@@ -116,5 +116,8 @@ export const PROPS = {
   wall: { hp: 5, w: 90, h: 130 }, // a cracked section of the back wall
   bell: { hp: 1, w: 34, h: 70 }, // an iron bell on a post: ring it to call an optional fight (stage.challenge)
   wreckage: { hp: 4, w: 84, h: 56 }, // a burning beam pinning a door shut: smash it and whoever is inside gets out
+  shackle: { hp: 3, w: 30, h: 84 }, // (the mine) a post a captive is chained to: break it and he's free
+  counterweight: { hp: 5, w: 70, h: 120 }, // (the mine) the stone that holds a gate down: break its chain and the gate rises (`opens`)
+  rubble: { hp: 6, w: 110, h: 90 }, // (the mine) loose fall in a passage: dig it out (`opens`: the rock wall behind it)
   wagon: { hp: 16, w: 200, h: 110 }, // the convoy's prisoner wagon: rolls away (`roll`); wreck it and they're out
 };

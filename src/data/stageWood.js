@@ -30,7 +30,7 @@ export const STAGE_WOOD = {
   id: 'gallowsWood',
   name: 'GALLOWS WOOD',
   chapter: 'II',
-  next: { id: 'hollowMountain', name: 'HOLLOW MOUNTAIN', chapter: 'III' }, // (not built yet: Stage 3 of the plan)
+  next: { id: 'hollowMountain', name: 'HOLLOW MOUNTAIN', chapter: 'III' },
   doneTitle: 'THE CONVOY IS BROKEN', // (the tally's title)
   width: 9200,
   theme: 'wood',

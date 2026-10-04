@@ -70,6 +70,8 @@ const KICKED = { kinds: ['crate', 'chest'], speed: 620, range: 560, lane: 26, ra
 // The stables' stampede: px a frame, the space between horses, how close a horse must be
 // to run you down (each side of him), the damage
 const STAMPEDE = { period: 330, warn: 80, speed: 13, gap: 120, reach: 46, damage: 26 };
+// The mine's collapse: how far ahead of the falling rock it still hits you, the damage
+const COLLAPSE = { reach: 30, damage: 24 };
 const BEAM = { period: 230, warn: 80, damage: 22, lethalH: 60 };
 
 export class Stage {
@@ -191,6 +193,7 @@ export class Stage {
     for (const p of this.players) this.restore(p, 1);
     const won = this.cleared === this.checkpoint; // died (a trap) after the fight here was already won
     this.story?.resetSection(this.checkpoint);
+    for (const hz of this.hazards) if (hz.type === 'collapse' && hz.section === this.checkpoint) hz.front = null; // (the rock starts again behind you)
     // (a wagon still rolling here goes back to where it started, its people still in it)
     for (const pr of this.props) {
       if (pr.roll?.from == null || pr.section !== this.checkpoint || pr.broken) continue;
@@ -548,6 +551,17 @@ export class Stage {
     this.updateRolling();
   }
 
+  // A terrain block with this `tag` stops being there (a portcullis raised by its
+  // counterweight, a fall of rock dug out): the way on is open.
+  openWay(tag) {
+    for (const b of this.terrain?.blocks ?? []) {
+      if (b.tag !== tag || b.gone) continue;
+      b.solid = false;
+      b.gone = true;
+      this.world.events.emit('wayOpen', { block: b, tag });
+    }
+  }
+
   // A prop with `roll: { to, speed }` (the convoy's wagon) rolls away once its section's
   // fight is on, at speed px/s; reaching `to` it's gone up the road (escaped), and whoever
   // was in it with it (Story: rescue 'convoy').
@@ -569,6 +583,7 @@ export class Stage {
     pr.broken = true;
     pr.fly = null;
     this.world.events.emit('propBreak', { prop: pr, dir, blast });
+    if (pr.opens) this.openWay(pr.opens);
     if (pr.challenge) this.ringBell(pr);
     if (pr.drop) {
       // a wall's shrine sits in the alcove behind it; everything else rolls out in front
@@ -632,6 +647,7 @@ export class Stage {
       if (hz.type === 'fire') this.updateFire(hz);
       else if (hz.type === 'beam') this.updateBeam(hz);
       else if (hz.type === 'stampede') this.updateStampede(hz);
+      else if (hz.type === 'collapse') this.updateCollapse(hz);
       else this.updateBlade(hz);
     }
   }
@@ -648,6 +664,7 @@ export class Stage {
   }
 
   updateFire(hz) {
+    if (!this.beamLive(hz)) { hz.t = hz.phase ?? 0; return; } // (a `when` not met yet: it stays cold)
     const t = hz.t % FIRE.period;
     if (t === FIRE.warn) this.world.events.emit('hazardWarn', { hazard: hz });
     if (t === FIRE.burst) this.world.events.emit('hazardFire', { hazard: hz });
@@ -658,7 +675,7 @@ export class Stage {
     }
   }
 
-  // Is a falling-beam hazard live right now? ('rage': only while its boss rages;
+  // Is a falling-beam (or fire-grate) hazard live right now? ('rage': only while its boss rages;
   // 'phase:<id>': only once he has reached that phase)
   beamLive(hz) {
     if (!hz.when) return true;
@@ -734,6 +751,21 @@ export class Stage {
       if (!hit) continue;
       if (hz.cool.has(f.id)) continue;
       this.hurt(hz, f, STAMPEDE.damage, S.dir, 'trample');
+    }
+  }
+
+  // The mine coming down behind you (Hollow Mountain): once its section starts, a front of
+  // falling rock runs from x0 toward `to` at `speed` px/s. Anyone it catches is battered
+  // and thrown on ahead of it; it stops at `to` (the way on is up to you from there).
+  updateCollapse(hz) {
+    if (hz.section !== this.index) { if (hz.section > this.index) hz.front = null; return; }
+    if (hz.front == null) { hz.front = hz.x0; this.world.events.emit('collapseStart', { hazard: hz }); }
+    if (this.story?.holding) return; // (not while a held scene plays)
+    hz.front = Math.min(hz.to, hz.front + hz.speed / 60);
+    for (const f of this.world.fighters) {
+      if (!f.alive || f.x > hz.front + COLLAPSE.reach) continue;
+      this.hurt(hz, f, hz.damage ?? COLLAPSE.damage, 1, 'beam');
+      f.x = Math.max(f.x, hz.front + COLLAPSE.reach + 4);
     }
   }
 

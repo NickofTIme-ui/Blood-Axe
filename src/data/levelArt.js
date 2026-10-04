@@ -41,6 +41,21 @@ export const LEVEL_ART = {
     pieces: ['hanging_tree', 'kennels', 'rockslide'],
     props: { wagon: { file: 'convoy_wagon.png', pair: true }, cagecart: { file: 'cage_cart.png', pair: true, texture: 'cagecart' } },
   },
+  mine: {
+    dir: 'assets/env/mine/',
+    layers: [
+      { name: 'sky', key: 'opaque', scroll: 0.04, bottom: -40, height: 420 },
+      { name: 'far', key: 'magenta', scroll: 0.12, bottom: -10, height: 260 },
+      { name: 'mid', key: 'magenta', scroll: 0.45, bottom: -20, height: 300 },
+    ],
+    wall: { height: 340 },
+    ground: true,
+    pieces: ['furnace'],
+    props: {
+      shackle: { file: 'prop_shackle.png', pair: true }, counterweight: { file: 'prop_counterweight.png', pair: true },
+      rubble: { file: 'prop_rubble.png', pair: true },
+    },
+  },
   fx: {
     dir: 'assets/fx/',
     strips: { 'horse-gallop': { file: 'horse_gallop.png', frames: 6, key: 'black' } },

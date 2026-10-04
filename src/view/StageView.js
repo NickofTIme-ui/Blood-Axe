@@ -228,6 +228,41 @@ export class StageView {
       wheel(70, false); wheel(w - 80, wrecked);
       if (wrecked) { c.fillStyle = '#000000'; c.fillRect(24, 48, 40, bed - 56); } // the back door hanging open
     };
+    // (the mine) a post with a captive's chain on it; the stump once broken (PROPS.shackle)
+    this.canvasTex('prop-shackle', 80, 180, (c, w, h) => {
+      c.fillStyle = '#3a2616'; c.fillRect(w / 2 - 10, 10, 20, h - 10);
+      c.fillStyle = '#5a3c22'; c.fillRect(w / 2 + 4, 10, 4, h - 10);
+      c.fillStyle = '#6a6a72'; c.fillRect(w / 2 - 14, h - 70, 28, 10); // the iron band
+      c.strokeStyle = '#8a8a92'; c.lineWidth = 3; for (let i = 0; i < 4; i++) { c.beginPath(); c.ellipse(w / 2 + 14 + i * 8, h - 60 + i * 9, 5, 3, 0.6, 0, 7); c.stroke(); }
+    });
+    this.canvasTex('prop-shackle-broken', 80, 180, (c, w, h) => {
+      c.fillStyle = '#3a2616'; c.beginPath(); c.moveTo(w / 2 - 10, h); c.lineTo(w / 2 - 10, h - 50); c.lineTo(w / 2, h - 40); c.lineTo(w / 2 + 10, h - 58); c.lineTo(w / 2 + 10, h); c.fill();
+      c.fillStyle = '#6a6a72'; c.fillRect(w / 2 + 14, h - 8, 26, 6);
+    });
+    // (the mine) the counterweight: a dressed stone hung on a chain that runs up over a
+    // wheel to the portcullis; broken: the chain snapped, the stone dropped and split
+    this.canvasTex('prop-counterweight', 160, 260, (c, w, h) => {
+      c.fillStyle = '#7a7a82'; c.fillRect(w / 2 - 3, 0, 6, h - 120);
+      c.fillStyle = '#45464c'; c.fillRect(20, h - 130, w - 40, 120);
+      c.fillStyle = '#5a5b62'; c.fillRect(24, h - 126, w - 48, 10);
+      c.fillStyle = '#2a2b30'; for (let y = h - 100; y < h - 14; y += 30) c.fillRect(20, y, w - 40, 3);
+      c.fillStyle = '#8a8a92'; c.fillRect(w / 2 - 14, h - 140, 28, 14);
+    });
+    this.canvasTex('prop-counterweight-broken', 160, 260, (c, w, h) => {
+      c.fillStyle = '#45464c'; c.fillRect(10, h - 60, w / 2 - 14, 60); c.fillRect(w / 2 + 4, h - 50, w / 2 - 14, 50);
+      c.fillStyle = '#7a7a82'; c.fillRect(w / 2 - 2, h - 90, 4, 40);
+    });
+    // (the mine) a fall of rock in front of a passage; dug out: a few stones left
+    const rubble = (c, w, h, n, hi) => {
+      let k = 77; const r = () => { k = (k * 9301 + 49297) % 233280; return k / 233280; };
+      for (let i = 0; i < n; i++) {
+        const x = 20 + r() * (w - 40); const y = h - r() * hi; const rad = 12 + r() * 26;
+        c.fillStyle = r() < 0.5 ? '#3a3c42' : '#55565c'; c.beginPath(); c.arc(x, y, rad, 0, 7); c.fill();
+        c.fillStyle = 'rgba(255,255,255,0.08)'; c.beginPath(); c.arc(x - rad * 0.3, y - rad * 0.3, rad * 0.4, 0, 7); c.fill();
+      }
+    };
+    this.canvasTex('prop-rubble', 240, 190, (c, w, h) => rubble(c, w, h, 26, 150));
+    this.canvasTex('prop-rubble-broken', 240, 190, (c, w, h) => rubble(c, w, h, 8, 30));
     this.canvasTex('prop-wagon', 420, 240, (c, w, h) => wagon(c, w, h, false));
     this.canvasTex('prop-wagon-broken', 420, 240, (c, w, h) => wagon(c, w, h, true));
     this.canvasTex('flame', 32, 64, (c, w, h) => {
@@ -409,6 +444,7 @@ export class StageView {
     const cam = this.scene.cameras.main.worldView;
     for (const hz of this.stage.hazards) {
       if (hz.type === 'stampede') { this.drawStampede(hz, cam); continue; }
+      if (hz.type === 'collapse') { this.drawCollapse(hz, cam); continue; }
       if (hz.x < cam.x - 200 || hz.x > cam.right + 200) {
         hz.view?.setVisible(false);
         hz.hot?.setVisible(false);
@@ -498,6 +534,7 @@ export class StageView {
     g.setDepth(hz.z - 1);
     if (!live) return;
     const { phase, warnT, since } = this.stage.beamPhase(hz);
+    if (hz.look === 'rock') { this.drawRockfall(g, hz, gy, y, phase, warnT, since); return; }
     if (phase === 'warn') {
       // the shadow and the reach, growing and darkening
       g.fillStyle(0x000000, 0.2 + 0.45 * warnT).fillEllipse(hz.x, gy, hz.w * (0.6 + 0.6 * warnT), hz.d * 0.5 * (0.6 + 0.6 * warnT));
@@ -516,6 +553,75 @@ export class StageView {
       g.fillStyle(0x2a1a10, a).fillRect(hz.x - hz.w / 2 - 8, gy - 10, hz.w + 16, 12);
       g.fillStyle(0xff7a2a, a * 0.9).fillRect(hz.x - hz.w / 2, gy - 7, hz.w, 3);
     }
+  }
+
+  // The mine's version of a falling beam (look 'rock'): grit trickling from a crack in the
+  // roof and a shadow spreading under it, then a slab of rock that shatters where it lands.
+  drawRockfall(g, hz, gy, y, phase, warnT, since) {
+    if (phase === 'warn') {
+      g.fillStyle(0x000000, 0.2 + 0.5 * warnT).fillEllipse(hz.x, gy, hz.w * (0.6 + 0.6 * warnT), hz.d * 0.5 * (0.6 + 0.6 * warnT));
+      g.lineStyle(2, 0xc8b8a0, 0.3 + 0.5 * warnT).strokeEllipse(hz.x, gy, hz.w * 1.2, hz.d * 0.6);
+      // the slab working loose overhead
+      const shake = Math.sin(hz.t * 1.7) * 3 * warnT;
+      const by = gy - 250 + warnT * 26;
+      g.fillStyle(0x2a2a30, 1).fillTriangle(hz.x - hz.w / 2 + shake, by, hz.x + hz.w / 2 + shake, by - 6, hz.x + shake + 8, by + 34);
+      g.fillStyle(0x4a4650, 1).fillTriangle(hz.x - hz.w / 2 + shake, by, hz.x + shake, by - 4, hz.x + shake - 6, by + 18);
+      if (hz.t % 3 === 0) {
+        this.scene.gore.spawn({ x: hz.x + rand(-hz.w / 3, hz.w / 3), z: hz.z, h: y + 230, vx: rand(-6, 6), vz: 0, vh: -rand(20, 80), tint: 0x8a8070, texture: 'px', scale: rand(0.5, 1), decal: false, life: 50 });
+      }
+    } else if (since < 80) {
+      // down: broken rock in a heap, the dust settling
+      const a = 1 - since / 80;
+      g.fillStyle(0x2a2a30, a);
+      for (let i = 0; i < 5; i++) {
+        const rx = hz.x - hz.w / 2 + (i + 0.5) * (hz.w / 5);
+        const rh = 10 + ((i * 7) % 4) * 5;
+        g.fillTriangle(rx - 16, gy, rx + 16, gy, rx + (i % 2 ? 4 : -4), gy - rh);
+      }
+      g.fillStyle(0x8a8070, a * 0.25).fillEllipse(hz.x, gy - 14, hz.w * 1.4, 40);
+    }
+  }
+
+  // The mine coming down behind you (Stage 'collapse'): a wall of falling rock at the front,
+  // boulders tumbling out of the roof, a fog of dust, and nothing but black behind it.
+  drawCollapse(hz, cam) {
+    const g = hz.g = hz.g ?? this.scene.add.graphics();
+    g.clear();
+    const on = hz.front != null && hz.front > cam.x - 300;
+    g.setVisible(on);
+    if (!on) return;
+    const t = this.scene.time.now / 16.7;
+    const fx = hz.front;
+    const moving = fx < hz.to;
+    g.setDepth(DEPTH.floor + 900); // (in front of the lane: it's the mountain falling)
+    const top = cam.y - 50; const bot = cam.bottom + 50;
+    // behind the front: dark, filled with rubble
+    g.fillStyle(0x050506, 0.96).fillRect(Math.min(cam.x - 50, fx - 2000), top, fx - 40 - Math.min(cam.x - 50, fx - 2000), bot - top);
+    // the ragged face of the fall
+    g.fillStyle(0x1a1a1e, 1);
+    for (let y = top; y < bot; y += 36) {
+      const j = Math.sin(y * 0.13 + t * (moving ? 0.4 : 0.05)) * 18;
+      g.fillTriangle(fx - 60, y, fx + j, y + 18, fx - 60, y + 40);
+    }
+    // boulders falling through the front
+    if (moving) {
+      for (let i = 0; i < 6; i++) {
+        const ph = ((t * 0.02 + i * 0.37) % 1);
+        const bx = fx - 30 + Math.sin(i * 4.1) * 30;
+        const byy = top + ph * (bot - top);
+        const r = 10 + (i % 3) * 7;
+        g.fillStyle(0x3a3640, 1).fillCircle(bx, byy, r);
+        g.fillStyle(0x56505a, 1).fillCircle(bx - r * 0.3, byy - r * 0.3, r * 0.45);
+      }
+      if (Math.floor(t) % 2 === 0) {
+        const z = rand(SETTINGS.world.floorTop, SETTINGS.world.floorBottom);
+        this.scene.gore.spawn({ x: fx + rand(0, 30), z, h: rand(0, 60), vx: rand(40, 160), vz: 0, vh: rand(20, 120), tint: 0x6a6258, scale: rand(0.8, 1.6), decal: false, life: 40 });
+      }
+      if (Math.floor(t) % 20 === 0 && Math.abs(this.scene.player.x - fx) < 800) this.scene.fx?.shake(2, 10);
+    }
+    // the dust cloud rolling ahead of it
+    g.fillStyle(0x8a8070, 0.18).fillRect(fx - 20, top, 90, bot - top);
+    g.fillStyle(0x8a8070, 0.08).fillRect(fx + 70, top, 90, bot - top);
   }
 
   // The stables' stampede (Stage 'stampede'): first dust boiling out of the stable door and
@@ -820,6 +926,18 @@ export class StageView {
       if (this.scene.player.x > hz.x0 - 700 && this.scene.player.x < hz.x1 + 700) {
         playSfx(this.scene, 'kick', { volume: 0.7, pitch: -2000, minGapMs: 0 });
         this.scene.fx?.shake(3, 40);
+      }
+    });
+    ev.on('collapseStart', () => {
+      playSfx(this.scene, 'kick', { volume: 1, pitch: -2200, minGapMs: 0 });
+      this.scene.fx?.shake(10, 40);
+      this.scene.callout('RUN!', '#ffb070', 30);
+    });
+    ev.on('wayOpen', ({ block: b }) => {
+      playSfx(this.scene, 'block', { volume: 0.9, pitch: -900, minGapMs: 0 });
+      this.scene.fx?.shake(5, 16);
+      for (let i = 0; i < 16; i++) {
+        this.scene.gore.spawn({ x: rand(b.x0, b.x1), z: rand(b.z0 ?? 300, b.z1 ?? 500), h: rand(10, 120), vx: rand(-80, 80), vz: 0, vh: rand(40, 160), tint: 0x6a6258, texture: 'px', scale: rand(0.8, 1.6), decal: false, life: rand(30, 60) });
       }
     });
     ev.on('secretFound', ({ count, total }) => this.scene.callout(`SECRET FOUND  ${count}/${total}`, '#ffd24a', 26));

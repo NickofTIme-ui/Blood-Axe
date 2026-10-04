@@ -127,6 +127,18 @@ export class NpcView {
       this.figure(g, n.x + 22 * dir * -1, y + 4, k * 0.68, pose, t + 7, tun(3), dir);
       return;
     }
+    if (n.pose === 'chained') {
+      // at the ore face, chained by the ankle to a post (the shackle prop): bent over a
+      // pick until a hero comes, then pulling at the chain
+      const many = n.group ? 3 : 1;
+      for (let i = 0; i < many; i++) {
+        const fx = n.x + 26 + i * 24; const fy = y + (i % 2) * 5;
+        const p = n.state === 'trapped' ? (i === 0 ? 'wave' : 'cower') : pose;
+        this.figure(g, fx, fy, k * (i === 1 ? 0.9 : 1), p, t + i * 6, tun(i + 2), n.state === 'trapped' ? -1 : dir);
+        if (n.state === 'trapped') g.lineStyle(2 * k, 0x8a8a90, 0.9).lineBetween(fx - 3 * k, fy - 2 * k, n.x + 4, y - 30 * k);
+      }
+      return;
+    }
     if (n.pose === 'group' || n.pose === 'convoy') {
       for (let i = 0; i < 3; i++) this.figure(g, n.x - 30 + i * 28, y + (i % 2) * 6, k * (i === 1 ? 0.75 : 1), pose, t + i * 5, tun(i + 4), dir);
       return;

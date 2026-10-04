@@ -21,6 +21,7 @@ import { DEPTH } from './depths.js';
 import { playSfx } from '../core/Sfx.js';
 import { VillageBackdrop } from './VillageView.js';
 import { WoodBackdrop } from './WoodView.js';
+import { MineBackdrop } from './MineView.js';
 
 const COL = {
   skyTop: 0x05070d, skyLow: 0x1c2733, mist: 0x8aa4b8,
@@ -55,6 +56,11 @@ export class TerrainView {
     // fallen logs for bridges, stone for the rest
     this.wood = data.theme === 'wood';
     if (this.wood) this.backdrop = new WoodBackdrop(scene, stage);
+    // HOLLOW MOUNTAIN (theme 'mine'): rock and torches (view/MineView.js); its pits are the
+    // underground river's cold black water, like the wood's streams
+    this.mine = data.theme === 'mine';
+    if (this.mine) this.backdrop = new MineBackdrop(scene, stage);
+    this.water = this.wood || this.mine;
     this.drawFloor();
     this.drawPits();
     this.blockGfx = new Map();
@@ -141,10 +147,10 @@ export class TerrainView {
     const s = this.scene;
     for (const p of this.terrain?.pits ?? []) {
       const g = s.add.graphics().setDepth(DEPTH.floor + 4);
-      g.fillStyle(this.wood ? 0x0c1820 : 0x000000, 1).fillRect(p.x0, p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0), p.x1 - p.x0, p.z1 - p.z0 + (p.z0 <= SETTINGS.world.floorTop ? 50 : 0) + 40);
+      g.fillStyle(this.water ? 0x0c1820 : 0x000000, 1).fillRect(p.x0, p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0), p.x1 - p.x0, p.z1 - p.z0 + (p.z0 <= SETTINGS.world.floorTop ? 50 : 0) + 40);
       // a cold glow at the lip so the edge reads (in the village: a burning cellar, its fire far
       // down; in the wood: a stream, black water running fast)
-      if (this.wood) {
+      if (this.water) {
         // (it runs down out of the trees at the back and on toward the camera)
         g.lineStyle(1, 0x3a5a70, 0.5);
         for (let y = p.z0 - 40; y < p.z1 + 30; y += 18) g.lineBetween(p.x0 + 6, y, p.x1 - 6, y + 4);
@@ -187,7 +193,9 @@ export class TerrainView {
       return;
     }
     v.top.setVisible(true); v.front.setVisible(true);
-    if (this.village || (this.wood && b.mat === 'log')) { this.drawVillageBlock(v, x0, x1, w, yTop0, yTop1); return; } // (the wood's fallen trees: as the village's beams)
+    if (b.mat === 'iron' && b.kind === 'block') { this.drawPortcullis(v, x0, x1, yTop0, yTop1); return; }
+    if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
+    if (this.village || (this.water && b.mat === 'log')) { this.drawVillageBlock(v, x0, x1, w, yTop0, yTop1); return; } // (the wood's fallen trees: as the village's beams)
     const mat = b.kind === 'crumble' ? 'plank' : b.kind === 'lift' ? 'iron' : 'rock';
     const C = mat === 'plank' ? [COL.plankTop, COL.plankRim, COL.plankFront]
       : mat === 'iron' ? [COL.iron, COL.ironRim, COL.ironDark] : [COL.rockTop, COL.rockRim, COL.rockFront];
@@ -230,6 +238,39 @@ export class TerrainView {
       front.fillStyle(0x8a7a5a, 0.9).fillRect(x0 + 6, yTop1 - 400, 2, 400).fillRect(x1 - 8, yTop1 - 400, 2, 400);
     }
     top.setDepth(b.z0 - 0.5);
+    front.setDepth(b.z1 + 0.5);
+  }
+
+  // A portcullis (the mine): a tall iron grille across the lane, its chain running up out
+  // of sight to the counterweight; gone (raised) once that's broken (Stage.openWay).
+  drawPortcullis(v, x0, x1, yTop0, yTop1) {
+    const { top, front, b } = v;
+    const fy = b.z1; const h = b.top;
+    // seen side on it's a thin wall of bars down the whole lane, back to front
+    for (let z = b.z0; z <= b.z1; z += 26) {
+      front.fillStyle(COL.ironDark, 1).fillRect(x0, z - h, x1 - x0, 6);
+      front.fillStyle(COL.ironRim, 0.8).fillRect(x0 + 4, z - h, 4, h);
+      front.fillStyle(COL.iron, 1).fillRect(x0 + 12, z - h, 6, h);
+    }
+    front.fillStyle(COL.iron, 1).fillRect(x0, fy - h, x1 - x0, h * 0.04);
+    for (let y = fy - h + 30; y < fy; y += 46) front.fillStyle(COL.ironDark, 1).fillRect(x0 - 2, y, x1 - x0 + 4, 7);
+    front.fillStyle(0x8a7a5a, 0.9).fillRect((x0 + x1) / 2, fy - h - 500, 3, 500); // the chain
+    top.setDepth(b.z0 - 0.5);
+    front.setDepth(b.z1 + 0.5);
+  }
+
+  // A fall of rock choking a passage (the mine): boulders heaped to the roof; dug out
+  // (gone) once its rubble prop in front is broken.
+  drawRubble(v, x0, x1, yTop0, yTop1) {
+    const { front, b } = v;
+    let k = b.id * 97;
+    const r = () => { k = (k * 9301 + 49297) % 233280; return k / 233280; };
+    for (let i = 0; i < 46; i++) {
+      const z = b.z0 + r() * (b.z1 - b.z0);
+      const y = z - r() * b.top;
+      const rad = 14 + r() * 26;
+      front.fillStyle(r() < 0.5 ? COL.rockFront : COL.rockTop, 1).fillCircle(x0 + r() * (x1 - x0 + 40) - 20, y, rad);
+    }
     front.setDepth(b.z1 + 0.5);
   }
 
@@ -383,6 +424,6 @@ export class TerrainView {
 
   update() {
     this.backdrop?.update();
-    for (const v of this.blockGfx.values()) if (v.b.kind !== 'block') this.drawBlock(v);
+    for (const v of this.blockGfx.values()) if (v.b.kind !== 'block' || v.b.tag) this.drawBlock(v);
   }
 }

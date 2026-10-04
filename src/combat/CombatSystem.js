@@ -19,6 +19,7 @@ const armMult = (f) => (f.maimed?.armF ? 0.4 : 1);
 // Moves with superArmor can't be interrupted during startup/active.
 function hasSuperArmor(f) {
   if (furyArmor(f)) return true; // (Rurik's OATH OF FURY, low on health: combat/Skills.js)
+  if (f.stats.machine) return true; // (a war machine: iron doesn't flinch; the Ore Crusher)
   return !!f.move?.superArmor && ATTACK_STATES.includes(f.state) &&
     movePhase(f.move, f.fsm.frame) !== 'recovery';
 }

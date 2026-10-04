@@ -340,3 +340,10 @@ the generator and run `node tools/sfx-gen/electric.js`.
 - **Gallows Wood**: new section THE CONVOY (the rolling prisoner wagon), war hounds with the Houndmaster. 9200 wide.
 - The other two heroes now slip away up a lane at the start and stay hidden until the meeting place.
 - Fixed Nick's playtest softlock in the mill yard (an enemy spawned inside the roof behind).
+
+## Cloud, 2026-10-04 (night): level 3, HOLLOW MOUNTAIN (branch claude/project-thread-l70xhx, not on main, not on itch)
+- Nick asked to keep building level 3 alongside the polish. It's in, with code art: `src/data/stageMine.js`, `src/view/MineView.js`, `src/view/CrusherView.js`. Gallows Wood now leads into it.
+- New systems: terrain blocks with a `tag` that a prop's `opens` removes (`Stage.openWay`: the portcullis and the fallen rock), the collapse chase (hazard `collapse`), rock-falls (beam hazards with `look: 'rock'`), war machines (`machine: true`: never flinch), fire grates can now wait on a boss phase (`when`).
+- The third king cutaway ('collapse': frustration, the war map hurled).
+- Art prompts: items 18-25 in `docs/campaign/art-levels-1-2.md` (the mine and the Ore Crusher). Crusher strips are not wired yet.
+- Checked: logic tests (every hero walks it, the gate, the collapse, both bosses) and headless screenshots. Not played by a person.

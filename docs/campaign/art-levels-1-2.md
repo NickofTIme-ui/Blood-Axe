@@ -202,3 +202,69 @@ Palette: wet black pines, blue-grey mist, mud, and the warm lanterns of the conv
   > crack forward. atk2: a backhand whip. heavy: the whip wrapped and yanked back. special:
   > he blows the war horn. react: hit and staggering. doom: falling dead. No text.
 
+
+---
+
+## LEVEL 3: HOLLOW MOUNTAIN
+
+Chat: **BA · Level 3 · Hollow Mountain**. Attach the same reference pictures plus a
+screenshot of the mine in the game. The look: black rock lit warm by torches, timber
+props, ore-cart rails, cold blue water and blue ore glinting in the walls; at the very end,
+grey daylight and the Black Keep across a gorge.
+
+### 18. `assets/env/mine/sky.png` (opaque, the furthest layer)
+> Same style. A very wide seamless picture of the deep dark inside a mountain: a rock
+> ceiling hung with stalactites, almost black, a faint warm haze low down. Left and right
+> edges join seamlessly. 3:1 or wider.
+
+### 19. `assets/env/mine/far.png` (on magenta)
+> Same style. A very wide seamless strip of far mine galleries: dark tunnel mouths framed
+> in old timber at different heights, ladders, a few distant torches. Everything sits in
+> the middle band of the picture; above and below is FLAT PURE MAGENTA. Edges join
+> seamlessly. 3:1 or wider.
+
+### 20. `assets/env/mine/mid.png` (on magenta)
+> Same style. A very wide seamless strip of huge rock pillars left standing by miners,
+> braced with timber, flecks of blue ore, chains hanging between them. FLAT PURE MAGENTA
+> between and above the pillars. Edges join seamlessly. 3:1 or wider.
+
+### 21. `assets/env/mine/wall.png` (on magenta, the rock wall behind the lane, repeats)
+> Same style. A very wide seamless strip of a mine tunnel's back wall seen straight on:
+> rough black rock, timber frames (two posts and a beam) every so often, veins of glowing
+> blue ore, picks and buckets left leaning, a torch bracket or two. The wall fills the
+> bottom 85% of the picture; above it is FLAT PURE MAGENTA. Edges join seamlessly.
+
+### 22. `assets/env/mine/ground.png` (opaque, the tunnel floor)
+> Same style. A very wide seamless picture of a mine tunnel floor seen from a low
+> three-quarter angle (the far edge at the top, the near edge at the bottom): packed grit
+> and rock, ore-cart rails on wooden sleepers running along it, puddles, chips of ore.
+> Nothing taller than a stone. Left and right edges join seamlessly. 3:1.
+
+### 23. Set piece (on magenta, about 1536 x 1024)
+- `assets/env/mine/furnace.png`
+  > Same style. A great iron ore furnace built into a rock wall: a glowing open mouth,
+  > riveted iron hood, chains and bellows, heaps of ore and coal before it. FLAT PURE
+  > MAGENTA background. No people.
+
+### 24. Props (on magenta, two pictures side by side: whole, then broken)
+- `assets/env/mine/prop_shackle.png`
+  > Same style. Left: a thick wooden post with an iron ring and a heavy chain hanging from
+  > it. Right: the same post split, the chain snapped and lying loose. FLAT PURE MAGENTA.
+- `assets/env/mine/prop_counterweight.png`
+  > Same style. Left: a huge iron counterweight block hanging on a chain from a timber
+  > frame. Right: the frame broken, the weight fallen and cracked on the ground. FLAT PURE
+  > MAGENTA.
+- `assets/env/mine/prop_rubble.png`
+  > Same style. Left: a heap of fallen rock choking a tunnel. Right: the same rock dug out
+  > and scattered low. FLAT PURE MAGENTA.
+
+### 25. The Ore Crusher (on black, same rules as every enemy strip, about twice a man's size)
+- `assets/enemies/strips/crusher_walk.png` (6), `crusher_atk1.png` (4), `crusher_heavy.png` (5),
+  `crusher_doom.png` (5)
+  > A sprite strip of THE ORE CRUSHER, a war machine of the Ashen King: a boxy riveted
+  > iron hulk on two great iron wheels, a spiked grinding drum on arms at the front, a
+  > pile-driver arm with a huge iron hammer on top, a furnace grate glowing in its belly
+  > and a chimney trailing smoke at the back, rust streaks. One row on plain black, facing
+  > right. walk: a 6-frame roll forward, the drum turning. atk1: the drum shoved forward,
+  > spinning, sparks. heavy: 1-3 the hammer hauled up high while the furnace flares, 4-5 it
+  > slams down in front. doom: 1-5 it tips, the furnace goes out, smoke pours out. No text.

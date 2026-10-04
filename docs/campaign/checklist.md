@@ -45,11 +45,11 @@ checked (says how), `[ ]` not started. Graybox means code-drawn temporary art.
 ## Stage 3 — Continuous campaign (graybox)
 
 - [~] 2 Gallows Wood: built in Stage 2 (road, hanging tree, cage carts, ford, kennels, blocked road); still to add: the convoy on the move (the set piece), real hounds, its art
-- [ ] 3 Hollow Mountain: lifts, counterweights, rivers, Chain Warden, the war machine, the collapse
+- [~] 3 Hollow Mountain: built (4 October 2026) in code art: chained captives (shackle posts), the lift shaft and the portcullis on its counterweight, the underground river and the Chain Warden, THE ORE CRUSHER (a war machine: `crusher`, `view/CrusherView.js`, iron armour, furnace and overdrive phases), the collapse chase (hazard `collapse`), the escape passage dug out, daylight and the Keep. Tests: every hero walks it. Still to do: a person playing it; its painted art (items 18-25 in `art-levels-1-2.md`)
 - [ ] 4 Shattered Ascent: rockfall timing, bombardment, the shelter, the siege commander
 - [ ] 5 Iron Gates: siege weapons, the gate from inside, Gate Twins, the Iron Marshal (Malgor), returning villagers
 - [ ] 6 Black Keep: courtyard, prison wing, great hall, the Executioner, King Vaurath (three phases)
-- [~] The king's cutaways: 1 (confidence) and 2 (irritation) built; 3-6 to come; enemy reactions (horns, retreats)
+- [~] The king's cutaways: 1 (confidence), 2 (irritation) and 3 (frustration: the war map hurled) built; 4-6 to come; enemy reactions (horns, retreats)
 - [ ] Rurik's judgment and execution (on the Stage 2 framework); the village epilogue
 - [~] The castle growing level by level (bigger over the wood)
 

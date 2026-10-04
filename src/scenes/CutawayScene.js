@@ -9,7 +9,9 @@
 // changes nothing: the scene is only shown, and its outcome is the level's (already saved).
 //
 // Scenes (CUTAWAYS): 'learns' (after the village: he hears they survived; confidence),
-// 'convoy' (after Gallows Wood: the convoy lost; irritation — he strikes the throne).
+// 'convoy' (after Gallows Wood: the convoy lost; irritation — he strikes the throne),
+// 'collapse' (after Hollow Mountain: the mine brought down on them and they walked out of
+// it; frustration — he hurls the war map off its table).
 
 import { SETTINGS } from '../config/settings.js';
 import { FONT, epicFill } from '../view/fonts.js';
@@ -36,6 +38,17 @@ export const CUTAWAYS = {
       { who: 'MALGOR', text: 'Give me the mountain road, my king. They will not pass me.' },
       { who: 'VAURATH', text: 'The pass is already buried. Let them crawl into the mine after their people.' },
       { who: 'VAURATH', text: 'Work the captives harder. If the Oath Keepers want them, they can dig for them.' },
+    ],
+  },
+  collapse: {
+    caption: 'THE BLACK KEEP',
+    beats: [
+      { who: 'MESSENGER', text: 'My king... we brought the mountain down on them. They came out the far side. With the miners.' },
+      { who: 'VAURATH', text: 'With the miners.' },
+      { who: 'MALGOR', text: 'The Crusher is scrap. The Chain Warden is in the river.' },
+      { act: 'hurl' }, // frustration: the war map and its markers flung off the table across the hall
+      { who: 'VAURATH', text: 'Every road I close, they open. Every wall I build, they climb.' },
+      { who: 'VAURATH', text: 'Send for the Siege Commander. Burn the ascent behind them. Leave them nothing to stand on.' },
     ],
   },
 };
@@ -151,6 +164,7 @@ export class CutawayScene extends Phaser.Scene {
     if (!b) { this.finish(); return; }
     if (b.act === 'ember') { this.ember(); return; }
     if (b.act === 'strike') { this.strike(); return; }
+    if (b.act === 'hurl') { this.hurl(); return; }
     this.who.setText(b.who).setColor(SPEAKER[b.who] ?? '#d8d0c0');
     this.line.setText(b.text).setAlpha(0);
     this.tweens.add({ targets: this.line, alpha: 1, duration: 250 });
@@ -211,6 +225,33 @@ export class CutawayScene extends Phaser.Scene {
       this.eyes.setAlpha(1).setFillStyle(0xffd080);
     });
     this.time.delayedCall(1600, () => { this.busy = false; this.next(); });
+  }
+
+  // his frustration, shown: he rises, sweeps the war map off its stand, and the markers
+  // scatter down the hall past the messenger
+  hurl() {
+    this.busy = true;
+    this.auto?.remove();
+    this.who.setText(''); this.line.setText('');
+    const W = SETTINGS.width; const H = SETTINGS.height;
+    const tx = W * 0.62; const ty = H - 200;
+    const table = this.add.graphics();
+    table.fillStyle(0x2a1c12, 1).fillRect(tx - 50, ty, 100, 8).fillRect(tx - 44, ty + 8, 6, 40).fillRect(tx + 38, ty + 8, 6, 40);
+    const map = this.add.rectangle(tx, ty - 3, 92, 6, 0xb8a078);
+    this.root.add([table, map]);
+    this.time.delayedCall(600, () => {
+      this.cameras.main.shake(250, 0.008);
+      playSfx(this, 'kick', { volume: 0.9, pitch: -1200, minGapMs: 0 });
+      this.tweens.add({ targets: map, x: tx - 260, y: ty + 70, angle: -160, alpha: 0.6, duration: 650, ease: 'Quad.easeOut' });
+      for (let i = 0; i < 9; i++) {
+        const m = this.add.rectangle(tx + (i - 4) * 9, ty - 8, 6, 8, i % 3 ? 0x8a2a20 : 0x3a3a48);
+        this.root.add(m);
+        this.tweens.add({ targets: m, x: tx - 120 - Math.random() * 300, y: H - 70 - Math.random() * 40, angle: Math.random() * 720, duration: 500 + Math.random() * 400, ease: 'Quad.easeOut' });
+      }
+      this.tweens.add({ targets: this.messenger, x: -20, duration: 200, ease: 'Quad.easeOut' });
+      this.eyes.setAlpha(1).setFillStyle(0xffd080);
+    });
+    this.time.delayedCall(2000, () => { this.busy = false; this.next(); });
   }
 
   finish() {

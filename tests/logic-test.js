@@ -16,6 +16,7 @@ import { Terrain, STEP, PIT_LOST } from '../src/stage/Terrain.js';
 import { STAGE_GALLOWS } from '../src/data/stageGallows.js';
 import { STAGE_VILLAGE } from '../src/data/stageVillage.js';
 import { STAGE_WOOD } from '../src/data/stageWood.js';
+import { STAGE_MINE } from '../src/data/stageMine.js';
 import { LINE, NPC } from '../src/stage/Story.js';
 import { Progress, PROGRESS } from '../src/progression/Progress.js';
 import { SKILL_TREES } from '../src/data/skills.js';
@@ -286,7 +287,7 @@ test('every enemy has art, anims, specials that exist, and is in a wave', () => 
   const anims = ['slash', 'backslash', 'chop', 'stab', 'stabB', 'thrust', 'uppercut', 'swingChain', 'slamChain', 'spin', 'hook', 'bash', 'charge'];
   // (a wave, the stage's waves, or the stage boss and his adds)
   const boss = (b) => (b ? [b.type, ...(b.adds ?? []), ...(b.escort ?? []), ...(b.phases ?? []).flatMap((ph) => ph.adds ?? [])] : []);
-  const inWaves = new Set([...WAVES.flat(), ...[STAGE, STAGE_WOOD].flatMap((S) => S.sections.flatMap((s) => [...(s.waves ?? []).flat(), ...boss(s.boss)]))]);
+  const inWaves = new Set([...WAVES.flat(), ...[STAGE, STAGE_WOOD, STAGE_MINE].flatMap((S) => S.sections.flatMap((s) => [...(s.waves ?? []).flat(), ...boss(s.boss)]))]);
   for (const e of Object.values(ENEMIES)) {
     assert(e.art || e.view, `${e.id} has no art`);
     assert(inWaves.has(e.id), `${e.id} never appears in a wave`);
@@ -2615,7 +2616,7 @@ test('checkpoints: starting a level at a saved section skips what came before; t
   assert(st.story.npc('barn').state === 'gone', 'the barn people were never freed: gone');
   assert(!st.story.done.has('vow') && !st.story.beats.find((b) => b.id === 'gathered').fired, 'what is ahead is still to come');
   // every section of every campaign level starts on firm, safe ground
-  for (const D of [STAGE_VILLAGE, STAGE_WOOD]) {
+  for (const D of [STAGE_VILLAGE, STAGE_WOOD, STAGE_MINE]) {
     const T = new Terrain(new World(), D.terrain);
     for (const s of D.sections) {
       const at = s.spawn ?? { x: s.x0 + 140, z: 440 };
@@ -2644,7 +2645,7 @@ test('campaign save: CONTINUE points at the last checkpoint; a level done points
 });
 
 test('campaign: no section\'s fight is held open by a man stuck off-screen (the mill yard: one buried in the roof behind)', () => {
-  for (const data of [STAGE_VILLAGE, STAGE_WOOD, STAGE_GALLOWS]) {
+  for (const data of [STAGE_VILLAGE, STAGE_WOOD, STAGE_GALLOWS, STAGE_MINE]) {
     for (let k = 0; k < data.sections.length; k++) {
       const world = new World({ seed: 5 });
       const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 150, z: 440, controller: new Controller() }));
@@ -2748,6 +2749,110 @@ test('wood: the convoy: the wagon rolls once the fight is on; wrecked, its priso
 
 test('wood: the wagon is no pushover: a few heavy blows will not wreck it', () => {
   assert(PROPS.wagon.hp >= 12, `it takes a real beating (hp ${PROPS.wagon.hp})`);
+});
+
+
+// ------------------------------------------------------------ Hollow Mountain (level 3)
+
+const MINE_SEC = (id) => STAGE_MINE.sections.findIndex((q) => q.id === id);
+function mineSetup(section, { x, z, hero = 'warrior' } = {}) {
+  const world = new World({ seed: 13 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: x ?? 200, z: z ?? 440, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_MINE);
+  st.start(p, { section });
+  hush(st);
+  if (x != null) { p.x = x; p.z = z; st.placeOnGround(p); }
+  const run = (n, each) => { for (let i = 0; i < n; i++) { world.tick(); st.update(); each?.(i); } };
+  return { world, p, st, run };
+}
+// (the walker breaks what a player would: the shackles, the counterweight, the fallen rock)
+// (clear the waves until the boss walks in and is done with his entrance)
+const bossUp = (st, run, p) => {
+  for (let i = 0; i < 60 * 60 && !(st.boss && st.boss.state !== 'bossEntrance' && !st.boss.entering); i++) {
+    run(1, () => { p.health = p.stats.maxHealth; p.awe = 0; });
+    for (const e of st.livingFoes()) if (e !== st.boss) { e.health = 0; e.removeMe = true; }
+  }
+  run(30, () => { p.health = p.stats.maxHealth; p.awe = 0; });
+};
+const mineBreaker = (w, st, p) => { for (const pr of st.props) if (!pr.broken && (pr.opens || pr.kind === 'shackle') && Math.abs(pr.x - p.x) < 120) st.breakProp(pr, 1); };
+
+test('mine: every hero walks Hollow Mountain (no upgrades), without a fall, frees the chained and digs out the passage', () => {
+  for (const hero of ['warrior', 'mage', 'rogue']) {
+    const r = campaignRun(STAGE_MINE, hero, { frames: 60 * 400, onTick: (w, st, p) => { mineBreaker(w, st, p); p.health = p.stats.maxHealth; } });
+    assert(r.won === 1 && r.falls === 0, `${hero}: ${r.won ? 'out' : `stuck at x ${Math.round(r.x)} (${r.stage.section.id}, ${r.stage.phase})`} in ${r.secs.toFixed(0)} s, ${r.falls} falls`);
+    for (const id of ['tobin', 'hilde', 'miners', 'passage']) assert(r.rescued.includes(id), `${hero}: ${id} freed (${r.rescued})`);
+    for (const id of ['opening', 'warden', 'crusher', 'collapse', 'daylight']) assert(r.beats.includes(id), `${hero}: ${id} played (${r.beats})`);
+  }
+});
+
+test('mine: the portcullis holds until its counterweight is broken; then the way is open', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('shaft'), { x: 4120, z: 420 });
+  killFoes(world); st.fightOn = true; st.waveIndex = 99;
+  const gate = st.terrain.blocks.find((b) => b.tag === 'portcullis');
+  let opened = 0; world.events.on('wayOpen', (e) => { if (e.tag === 'portcullis') opened++; });
+  p.controller.sample = function () { this.held = {}; this.moveX = 1; this.moveZ = 0; };
+  run(120);
+  assert(gate.solid && p.x < gate.x0, `the gate stops him (x ${Math.round(p.x)})`);
+  st.breakProp(st.props.find((pr) => pr.opens === 'portcullis'), 1);
+  run(120);
+  assert(opened === 1 && !gate.solid, 'the counterweight drops; the gate goes up');
+  assert(p.x > gate.x1, `he walks on through (x ${Math.round(p.x)})`);
+});
+
+test('mine: the collapse chases you: it hurts and throws on whoever it catches, stops short of the passage, and starts again behind you on a respawn', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('collapse'), { x: 7400, z: 440 });
+  const hz = st.hazards.find((h) => h.type === 'collapse');
+  let started = 0; world.events.on('collapseStart', () => started++);
+  let hits = 0; world.events.on('hazardHit', (e) => { if (e.fighter === p) hits++; });
+  p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  run(2);
+  assert(hz.front != null && hz.front < 7300, `the rock starts behind him (${hz.front})`);
+  run(200, () => { p.health = p.stats.maxHealth; });
+  assert(hits >= 1 && p.x > hz.front, `caught, hurt and thrown ahead of it (${hits} hits, x ${Math.round(p.x)} front ${Math.round(hz.front)})`);
+  run(60 * 20, () => { p.health = p.stats.maxHealth; });
+  assert(hz.front === hz.to, `it stops at ${hz.to} (${hz.front})`);
+  const rubble = st.props.find((pr) => pr.opens === 'passage');
+  assert(hz.to + 30 < rubble.x - rubble.w / 2, 'the fallen rock can be dug out in front of it');
+  st.respawn();
+  run(2);
+  assert(hz.front < 7300, `back behind the start after a respawn (${hz.front})`);
+});
+
+test('mine: the Ore Crusher is iron: no blow staggers it or knocks it down; it vents its furnace, then brings the roof down', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('crusher'), { x: 6200, z: 440 });
+  const phases = []; world.events.on('bossPhase', (e) => phases.push(e.phase.id));
+  bossUp(st, run, p);
+  const b = st.boss;
+  assert(b?.stats.id === 'crusher' && b.stats.machine, 'the Crusher is here');
+  // the warrior's heavy, point blank
+  b.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  p.x = b.x - 90; p.z = b.z; p.facing = 1;
+  let struck = 0; world.events.on('hit', (ev) => { if (ev.defender === b) struck++; });
+  p.controller.script = { [p.controller.t + 2]: ['heavy'] };
+  const seen = new Set();
+  run(60, () => { p.health = p.stats.maxHealth; seen.add(b.state); });
+  assert(struck >= 1, 'the blow lands');
+  assert(!seen.has('knockdown') && !seen.has('hitstun') && !seen.has('stagger'), `it shrugs it off (${[...seen]})`);
+  const fires = st.hazards.filter((h) => h.section === MINE_SEC('crusher') && h.type === 'fire');
+  const rocks = st.hazards.filter((h) => h.section === MINE_SEC('crusher') && h.type === 'beam');
+  assert(fires.every((h) => st.firePhase(h) === 'idle'), 'the vents are cold at first');
+  b.health = b.stats.maxHealth * 0.6;
+  run(2, () => { p.health = p.stats.maxHealth; });
+  assert(phases.join() === 'furnace', `the furnace (${phases})`);
+  b.health = b.stats.maxHealth * 0.2;
+  run(2, () => { p.health = p.stats.maxHealth; });
+  assert(phases.join() === 'furnace,overdrive' && b.raged, `overdrive (${phases})`);
+  assert(rocks.every((h) => st.beamLive(h)), 'the roof starts coming down');
+});
+
+test('mine: the Chain Warden calls up his ghouls at half health', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('river'), { x: 5400, z: 440 });
+  const phases = []; world.events.on('bossPhase', (e) => phases.push(e.phase.id));
+  bossUp(st, run, p);
+  assert(st.boss, 'the Warden is here');
+  st.boss.health = st.boss.stats.maxHealth * 0.4;
+  run(2, () => { p.health = p.stats.maxHealth; });
+  assert(phases.join() === 'chains' && st.boss.raged, `his chains (${phases})`);
 });
 
 for (const [name, fn] of later) {

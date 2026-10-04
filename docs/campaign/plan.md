@@ -109,6 +109,21 @@ Keepers survived (confidence).
 
 Then the second cutaway (irritation). Its painted art: docs/campaign/art-levels-1-2.md.
 
+### Level 3 — Hollow Mountain (built 4 October 2026, code art)
+
+| § | Section | Content |
+|---|---|---|
+| I | THE MINE MOUTH | The tracks lead in; an ore cart to hop; the first Ashen guards. |
+| II | THE WORKINGS | Captives chained to posts (Old Tobin, Hilde, a group of miners): strike the shackles. A shrine. |
+| III | THE LIFT SHAFT | Up onto the gallery, rotten planks over the shaft; a lift to a high ledge where Pip was left (optional); the portcullis held down by a counterweight: break its chain. |
+| IV | THE UNDERGROUND RIVER | Stepping stones and a log over cold water; **the Chain Warden** (a ghoul) calls up more at half health. |
+| V | THE CRUSHER HALL | A shrine, then **the Ore Crusher**: a war machine that never flinches. At two thirds its furnace vents through the floor grates; at one third it goes into overdrive and the roof starts falling. |
+| VI | THE COLLAPSE | The mountain comes down behind you: run ahead of the falling rock, over a chasm, and dig out the passage where the last miners are trapped. |
+| VII | THE FAR SIDE | Daylight; the Black Keep across the gorge; the freed miners gather. |
+
+Then the third cutaway (frustration: he hurls the war map, sends for the Siege Commander).
+Its painted art: items 18-25 in docs/campaign/art-levels-1-2.md.
+
 ### The king's arc (cutaways at milestones only)
 
 | After | His mood | Scene |
