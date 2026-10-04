@@ -59,6 +59,17 @@ checked (says how), `[ ]` not started. Graybox means code-drawn temporary art.
 - [ ] Vexa's tree (Widowmaker, Deathmark, Skydancer)
 - [ ] Point pacing across six levels; balance against the bosses
 
+## Polish pass on levels 1 and 2 (Nick, 4 October 2026: art, longer, more set pieces and fights; Stage 3 waits)
+
+- [x] Art prompts for both levels (`docs/campaign/art-levels-1-2.md`); painted art plugs in by file name (`src/data/levelArt.js`), code art stays until then
+- [x] Village: THE BURNING STABLES (the stampede set piece: hazard `stampede`, `when: 'freed:<npc>'`), two men on the second roof
+- [x] Wood: THE CONVOY (a rolling wagon prop, rescue 'convoy'), war hounds (`hound`, `view/HoundView.js`), the Houndmaster's escort and pack
+- [x] The other two Oath Keepers slip away up the lanes and stay hidden until the meeting place (Nick: seeing them by accident broke the immersion)
+- [x] Fix: enemies brought on from off-screen stood inside raised ground (the mill yard softlock); a stuck latecomer is brought round
+- [~] Checked: logic tests and headless screenshots; not played by a person
+- [ ] The art itself (generated on Nick's PC), wired in and checked on screen
+- [ ] Painted strips for the villagers, the hounds and the Houndmaster (their loaders come with the art)
+
 ## Stage 5 — Presentation and polish
 
 - [ ] Painted backdrops, houses, props and villagers (requests in `docs/cloud-handoff.md`)

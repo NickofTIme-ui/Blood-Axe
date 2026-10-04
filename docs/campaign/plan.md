@@ -80,21 +80,22 @@ Each level: 5-7 sections, a checkpoint at every section, 1-2 oath shrines, at le
 optional route (a character-specific shortcut or a secret), and a quiet stretch after a
 big fight.
 
-### Level 1 — Burning Village (Stage 1: built in graybox)
+### Level 1 — Burning Village (built in Stage 1; extended in the polish pass, 4 October 2026)
 
 | § | Section | Content |
 |---|---|---|
 | I | THE ASHEN ROAD | Arrival. The three see the smoke (opening lines); the other two split off to search. A fallen cart and a beam to hop. Dead villagers along the road. Hale the smith, wounded, tells what happened. Looters at the end. |
 | II | THE MARKET SQUARE | Ashen men are harassing a mother and child at the well (defend rescue). Burning carts erupt like fire grates. An oath shrine at the far side. |
-| III | THE BURNING ROOFS | No fight: up a cart onto the roofs, along a fallen beam, over burning cellars on charred boards that give way, a beam crashing down (taught alone, on safe ground). Optional: a high roof where a boy is trapped. |
+| III | THE BURNING ROOFS | Up a cart onto the roofs, along a fallen beam, over burning cellars on charred boards that give way, a beam crashing down (taught alone, on safe ground). Two men waiting on the second roof: a fight on a ledge over the fire. Optional: a high roof where a boy is trapped. |
 | IV | THE MILL YARD | A brawl round a raised mill floor; the barn door is pinned by a burning beam (break it: the villagers inside run free). Then the rear guard, Brother Cinder, walks in. |
-| V | THE LONGHALL | A shrine, then the Ash Captain, who directed the attack. At half health he calls his men and the burning longhall starts dropping its beams on everyone. |
-| VI | THE NORTH GATE | Quiet. The saved villagers are gathered here. The elder tells them where the prisoners were taken. The vow (held scene). Walk out of the gate: the pursuit begins. |
+| V | THE BURNING STABLES | Three waves round the burning stables. Smash the bar off the stable gate and the horses bolt across the yard in three lanes, each warned by dust and hoofprints, trampling Ashen men and heroes alike. |
+| VI | THE LONGHALL | A shrine, then the Ash Captain, who directed the attack. At half health he calls his men and the burning longhall starts dropping its beams on everyone. |
+| VII | THE NORTH GATE | Quiet. The saved villagers are gathered here. The elder tells them where the prisoners were taken. The vow (held scene). Walk out of the gate: the pursuit begins. |
 
 Then the first **castle cutaway**: King Vaurath, Malgor at his side, learns the Oath
 Keepers survived (confidence).
 
-### Level 2 — Gallows Wood (built in graybox in Stage 2, to put the shared systems to work)
+### Level 2 — Gallows Wood (built in Stage 2; extended in the polish pass, 4 October 2026)
 
 | § | Section | Content |
 |---|---|---|
@@ -102,11 +103,11 @@ Keepers survived (confidence).
 | II | THE HANGING TREE | Joren (Mira's husband) on the rope: kill the hangmen before it runs out (execution; too slow and he's lost). A shrine. |
 | III | THE CAGE CARTS | Stepping stones over a ravine stream. The broken carts: two cages to open once the guards are dead (cage). |
 | IV | THE OLD FORD | Ansel the wheelwright, lame, follows you across; an ambush on the road (escort). |
-| V | THE KENNELS | A shrine; **the Houndmaster**: his pack at two thirds, his frenzy at one third (boss phases). |
-| VI | THE BLOCKED ROAD | The pass buried by their own men; a pilgrim (ask him); the tracks turn into the old mine. |
+| V | THE CONVOY | The convoy's last prisoner wagon rolls up the road once the fight starts. Wreck it through three waves of guards and the prisoners run free (they wait at the pass); too slow and it gets away with them (rescue 'convoy'). |
+| VI | THE KENNELS | A shrine; **the Houndmaster** comes in with two war hounds; three more at two thirds, his frenzy (and two more) at one third (boss phases). |
+| VII | THE BLOCKED ROAD | The pass buried by their own men; a pilgrim (ask him); the tracks turn into the old mine. |
 
-Then the second cutaway (irritation). Still to come in Stage 3: the convoy itself on the
-move (the set piece), real hounds, its art.
+Then the second cutaway (irritation). Its painted art: docs/campaign/art-levels-1-2.md.
 
 ### The king's arc (cutaways at milestones only)
 
