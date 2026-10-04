@@ -38,6 +38,8 @@ import { StageView } from '../view/StageView.js';
 import { TerrainView } from '../view/TerrainView.js';
 import { STAGE } from '../data/stage.js';
 import { STAGE_GALLOWS } from '../data/stageGallows.js';
+import { STAGE_VILLAGE } from '../data/stageVillage.js';
+import { NpcView } from '../view/NpcView.js';
 import { Progress } from '../progression/Progress.js';
 import { CHARACTERS } from '../data/characters.js';
 import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
@@ -53,7 +55,8 @@ const SPAWN_ORDER = [...BAD_GUYS, 'grunt'];
 const STEP_MS = 1000 / 60;
 
 // The stages a run can be (data.stage): THE OATH ROAD, and the platforming slice.
-export const STAGES = { oath: STAGE, gallows: STAGE_GALLOWS };
+// The campaign's levels (docs/campaign/plan.md) are stages too: 'village' is level 1.
+export const STAGES = { oath: STAGE, gallows: STAGE_GALLOWS, village: STAGE_VILLAGE };
 // How far above the floor a tall stage's camera can climb (px)
 const CAM_CLIMB = 360;
 
@@ -96,7 +99,7 @@ export class ArenaScene extends Phaser.Scene {
     this.ground = null;
     this.paused = false;
     this.slowUntil = 0;
-    if (this.stageData.theme !== 'gallows') this.drawBackground(); // (the gallows draws its own: view/TerrainView.js)
+    if (!this.stageData.theme) this.drawBackground(); // (a themed stage draws its own: view/TerrainView.js)
     else { this.parallax?.destroy(); this.parallax = { update() {}, destroy() {}, layers: [] }; }
 
     this.world = new World({ seed: this.seed });
@@ -298,6 +301,10 @@ export class ArenaScene extends Phaser.Scene {
     this.stageView = new StageView(this, this.stage);
     // (after the StageView: it makes the 'glow' texture the terrain's lanterns use)
     this.terrainView = this.stage.terrain || this.stageData.theme ? new TerrainView(this, this.stage) : null;
+    // a campaign level's villagers, its dead and the other Oath Keepers (view/NpcView.js)
+    this.npcView = this.stage.story ? new NpcView(this, this.stage) : null;
+    this.cutawayOn = false;
+    this.scene.stop('Cutaway');
     this.setupStageEvents(ev);
     this.setupProgressEvents(ev);
     this.stage.start(this.players);
@@ -510,10 +517,16 @@ export class ArenaScene extends Phaser.Scene {
       this.callout('HE CALLS HIS DOGS!', '#ff9a30', 24);
       this.fx.shake(5, 14);
     });
+    ev.on('npcRescued', ({ npc }) => {
+      this.callout(`${npc.name.toUpperCase()}  ·  SAVED`, '#e8f0ff', 24);
+      playSfx(this, 'block', { volume: 0.5, pitch: 400, minGapMs: 0 });
+      this.gore.spark(npc.x, npc.z, Math.max(0, npc.h) + 40, 0xe8f0ff, 16);
+    });
     ev.on('hazardHit', ({ fighter, kind }) => {
-      if (fighter === this.player) this.callout(kind === 'fire' ? 'BURNED!' : 'SLASHED!', '#ff9a30', 20);
+      if (fighter === this.player) this.callout(kind === 'fire' ? 'BURNED!' : kind === 'beam' ? 'CRUSHED!' : 'SLASHED!', '#ff9a30', 20);
     });
     ev.on('stageWon', ({ stats }) => {
+      if (this.stageData.exit) { this.campaignLevelDone(stats, hud); return; }
       // a long slow moment of victory: he falls at a crawl, the screen shudders, the
       // word hangs there, and only then the tally comes up
       this.slowmo(0.18, 4200);
@@ -522,6 +535,26 @@ export class ArenaScene extends Phaser.Scene {
       this.callout('VICTORY', '#bfe8ff', 40);
       // (the tally is read when it's shown: the killing blow's own kill lands a beat later)
       this.time.delayedCall(4800, () => hud()?.showVictory?.({ ...stats, ...this.stage.stats }));
+    });
+  }
+
+  // A campaign level walked out of: the level is saved as done (once), the king's scene
+  // plays (skippable), then the tally with who was saved and where the road goes next.
+  campaignLevelDone(stats, hud) {
+    const D = this.stageData;
+    this.callout('THE PURSUIT BEGINS', '#bfe8ff', 34);
+    this.progress?.finishLevel(D.id);
+    const story = this.stage.story;
+    const saved = (story?.npcs ?? []).filter((n) => story.isRescued(n.id)).map((n) => n.name);
+    const tally = () => hud()?.showVictory?.({
+      ...stats, ...this.stage.stats,
+      campaign: { title: 'THE PURSUIT BEGINS', saved, next: D.next ? `NEXT  ·  II  ${D.next.name}  (not built yet)` : '' },
+    });
+    if (!D.cutaway) { this.time.delayedCall(1600, tally); return; }
+    this.time.delayedCall(1800, () => {
+      if (!this.sys.isActive()) return;
+      this.cutawayOn = true;
+      this.scene.launch('Cutaway', { kind: D.cutaway, onDone: () => { this.cutawayOn = false; tally(); } });
     });
   }
 
@@ -566,6 +599,10 @@ export class ArenaScene extends Phaser.Scene {
       playSfx(this, 'block', { volume: 0.4, pitch: 500, minGapMs: 0 });
     });
     ev.on('restKneel', ({ fighter }) => { if (fighter === this.player) this.openSkills(); });
+    // a villager saved: kept in the campaign save (they show up later), a little blood
+    ev.on('npcRescued', ({ npc }) => {
+      if (P.rescue(npc.id)) P.addBlood(30);
+    });
   }
 
   openSkills() {
@@ -965,6 +1002,7 @@ export class ArenaScene extends Phaser.Scene {
     for (const v of this.views.values()) v.update();
     this.liftShadows();
     this.terrainView?.update();
+    this.npcView?.update();
     this.parallax.update(Math.min(delta, 100) / 1000 * (this.paused ? 0 : 1));
     this.mageFX.update();
     this.rogueFX.update();
@@ -991,6 +1029,7 @@ export class ArenaScene extends Phaser.Scene {
   // Pause, restart and leave, from this tick's records (any player may press them).
   // Returns true if the scene is ending.
   systemKeys(recs) {
+    if (this.cutawayOn) return false; // (the king's scene has the keys: Esc there skips it, not the run)
     const any = (a) => recs.some((r) => pressed(r, a));
     const dead = this.allDead;
     const won = this.stage?.phase === 'won';

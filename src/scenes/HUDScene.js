@@ -27,6 +27,12 @@ function calloutStops(color) {
 }
 const MAX_ENEMY_BARS = 4;
 
+// who's speaking: each voice its own colour (the Oath Keepers as their kits; enemies hot; the king cold)
+const SPEAKER = {
+  RURIK: '#f0d0a0', ORYN: '#8ad8e8', VEXA: '#d49aff',
+  VAREK: '#ff8a6a', CINDER: '#ff8a6a', MALGOR: '#b8a0ff',
+};
+
 export class HUDScene extends Phaser.Scene {
   constructor() {
     super('HUD');
@@ -103,11 +109,50 @@ export class HUDScene extends Phaser.Scene {
     this.cardSub.setLetterSpacing?.(3);
     // boss bar (top centre, under the call-out banner)
     this.bossUi = null;
+    this.makeDialogue();
     // the stage may already be under way (the HUD starts a frame after the arena)
     const st = this.arena.stage;
     if (st?.section) this.sectionCard(st.index, st.section);
     if (st?.boss?.alive) this.showBoss(st.boss);
     if (this.arena.paused) this.showPause(true);
+  }
+
+  // ------------------------------------------------------------ story lines (stage/Story.js)
+
+  makeDialogue() {
+    const W = SETTINGS.width;
+    const H = SETTINGS.height;
+    // letterbox bars for a held scene
+    this.bars2 = [
+      // (under the bars and the text: they stay readable)
+      this.add.rectangle(0, 0, W, 30, 0x000000).setOrigin(0).setAlpha(0).setDepth(-1),
+      this.add.rectangle(0, H, W, 30, 0x000000).setOrigin(0, 1).setAlpha(0).setDepth(-1),
+    ];
+    // up in the sky over the street, clear of the fight on the floor
+    const y = 184;
+    const panel = this.add.rectangle(W / 2, y, 640, 66, 0x050304, 0.78).setStrokeStyle(1, 0x6a5a48);
+    const who = this.add.text(W / 2 - 304, y - 26, '', { fontFamily: FONT.display, fontSize: '15px', color: '#e8c890' }).setStroke('#000000', 4);
+    const text = this.add.text(W / 2 - 304, y - 6, '', { fontFamily: FONT.body, fontSize: '16px', color: '#f0e6d6', wordWrap: { width: 600 } })
+      .setStroke('#000000', 3);
+    const next = this.add.text(W / 2 + 312, y + 26, 'SPACE / J  —  next', { fontFamily: FONT.ui, fontSize: '10px', color: '#a89880' })
+      .setOrigin(1, 1).setStroke('#000000', 3);
+    this.dialogue = { box: this.add.container(0, 0, [panel, who, text, next]).setDepth(61).setAlpha(0), who, text, next, key: null };
+  }
+
+  updateDialogue() {
+    const D = this.dialogue;
+    const line = this.arena.stage?.story?.line;
+    const hold = !!this.arena.stage?.story?.holding;
+    for (const b of this.bars2) b.setAlpha(Phaser.Math.Linear(b.alpha, hold ? 1 : 0, 0.12));
+    if (!line) { D.box.setAlpha(Math.max(0, D.box.alpha - 0.08)); D.key = null; return; }
+    const key = `${line.beat}:${line.index}`;
+    if (key !== D.key) {
+      D.key = key;
+      D.who.setText(line.who).setColor(SPEAKER[line.who] ?? '#d8d0c0');
+      D.text.setText(line.text);
+      D.next.setVisible(line.hold);
+    }
+    D.box.setAlpha(Math.min(1, D.box.alpha + 0.15));
   }
 
   sectionCard(index, section) {
@@ -172,7 +217,8 @@ export class HUDScene extends Phaser.Scene {
     const bot = this.add.rectangle(0, H, W, barH, 0x000000).setOrigin(0, 0).setDepth(D + 5);
     this.tweens.add({ targets: top, y: barH, duration: 900, ease: 'Cubic.easeOut' });
     this.tweens.add({ targets: bot, y: H - barH, duration: 900, ease: 'Cubic.easeOut' });
-    const title = this.add.text(W / 2, H * 0.34, 'OATH  FULFILLED', { fontFamily: FONT.display, fontSize: '64px' })
+    const C = stats.campaign; // (a campaign level: its own title, who was saved, the road on)
+    const title = this.add.text(W / 2, H * 0.34, C?.title ?? 'OATH  FULFILLED', { fontFamily: FONT.display, fontSize: '64px' })
       .setOrigin(0.5).setStroke('#0a0500', 8).setAlpha(0).setScale(1.1).setDepth(D + 3);
     title.setLetterSpacing?.(5);
     epicFill(title, ['#fff6c8', '#f0c050', '#a06010', '#3a1a00']);
@@ -183,10 +229,14 @@ export class HUDScene extends Phaser.Scene {
       `KILLS  ${stats.kills}      EXECUTIONS  ${stats.finishers}`,
       `SECRETS  ${stats.secrets} / ${stats.secretsTotal}      DEATHS  ${stats.deaths}`,
     ];
-    const tally = this.add.text(W / 2, H * 0.52, lines.join('\n'), { fontFamily: FONT.ui, fontSize: '18px', color: '#f0e0c0', align: 'center', lineSpacing: 10 })
-      .setOrigin(0.5).setStroke('#000000', 4).setAlpha(0).setDepth(D + 3);
+    if (C) {
+      if (C.saved?.length) lines.push(`SAVED:  ${C.saved.join(',  ')}`);
+      if (C.next) lines.push('', C.next);
+    }
+    const tally = this.add.text(W / 2, H * 0.44, lines.join('\n'), { fontFamily: FONT.ui, fontSize: C ? '16px' : '18px', color: '#f0e0c0', align: 'center', lineSpacing: C ? 6 : 10 })
+      .setOrigin(0.5, 0).setStroke('#000000', 4).setAlpha(0).setDepth(D + 3);
     this.tweens.add({ targets: tally, alpha: 1, delay: 1200, duration: 900 });
-    const prompt = this.add.text(W / 2, H * 0.74, 'R  —  RIDE AGAIN      ESC  —  CHOOSE ANOTHER', { fontFamily: FONT.ui, fontSize: '15px', color: '#cdb391' })
+    const prompt = this.add.text(W / 2, H * (C ? 0.8 : 0.74), 'R  —  RIDE AGAIN      ESC  —  CHOOSE ANOTHER', { fontFamily: FONT.ui, fontSize: '15px', color: '#cdb391' })
       .setOrigin(0.5).setStroke('#000000', 3).setAlpha(0).setDepth(D + 3);
     this.tweens.add({ targets: prompt, alpha: 0.9, delay: 2400, duration: 900 });
     this.objective.setText('');
@@ -372,6 +422,7 @@ export class HUDScene extends Phaser.Scene {
 
     this.updateEnemyStrip();
     this.updateBoss();
+    this.updateDialogue();
     if (this.go.visible) this.go.setAlpha(0.55 + 0.45 * Math.sin(this.time.now * 0.008)).setX(SETTINGS.width - 24 + Math.sin(this.time.now * 0.008) * 6);
 
     const st = this.arena.stage;

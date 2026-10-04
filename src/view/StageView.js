@@ -174,6 +174,29 @@ export class StageView {
       c.lineWidth = 3; for (let x = 18; x < w - 12; x += 13) { c.beginPath(); c.moveTo(x, 8); c.lineTo(x, h - 8); c.stroke(); }
       c.fillStyle = 'rgba(255,90,20,0.35)'; c.beginPath(); c.ellipse(w / 2, h / 2, w / 2 - 14, h / 2 - 12, 0, 0, 7); c.fill();
     });
+    // (the village) a burning cart: what its fires erupt from, instead of an iron grate
+    this.canvasTex('cartwreck', 128, 64, (c, w, h) => {
+      c.fillStyle = '#140c08'; c.beginPath(); c.ellipse(w / 2, h / 2 + 6, w / 2 - 4, h / 2 - 10, 0, 0, 7); c.fill();
+      c.fillStyle = '#3a2416'; c.fillRect(12, 18, w - 24, 22);
+      c.fillStyle = '#1a100a'; for (let x = 16; x < w - 16; x += 14) c.fillRect(x, 18, 3, 22);
+      c.strokeStyle = '#2a1a10'; c.lineWidth = 5; c.beginPath(); c.arc(28, 44, 14, 0, 7); c.stroke(); c.beginPath(); c.arc(w - 28, 44, 14, 0, 7); c.stroke();
+      c.fillStyle = 'rgba(255,110,30,0.45)'; c.fillRect(16, 22, w - 32, 4);
+    });
+    // (the village) a fallen burning beam across a door: smash it (PROPS.wreckage)
+    this.canvasTex('prop-wreckage', 176, 112, (c, w, h) => {
+      const beam = (x0, y0, x1, y1, t) => {
+        c.save(); c.translate(x0, y0); c.rotate(Math.atan2(y1 - y0, x1 - x0));
+        const L = Math.hypot(x1 - x0, y1 - y0);
+        c.fillStyle = '#2a1a10'; c.fillRect(0, -t / 2, L, t);
+        c.fillStyle = '#120a06'; c.fillRect(0, -t / 2, L, 4);
+        c.fillStyle = 'rgba(255,120,40,0.85)'; for (let x = 10; x < L - 6; x += 23) c.fillRect(x, -t / 2 + 6, 9, 3);
+        c.fillStyle = 'rgba(255,200,120,0.7)'; for (let x = 22; x < L - 6; x += 37) c.fillRect(x, 1, 5, 2);
+        c.restore();
+      };
+      beam(4, h - 20, w - 6, 26, 26);
+      beam(10, 30, w - 14, h - 14, 22);
+      c.fillStyle = '#1a120c'; c.fillRect(0, h - 14, w, 14);
+    });
     this.canvasTex('flame', 32, 64, (c, w, h) => {
       const g = c.createLinearGradient(0, h, 0, 0);
       g.addColorStop(0, 'rgba(255,240,180,1)'); g.addColorStop(0.35, 'rgba(255,150,40,0.95)'); g.addColorStop(0.75, 'rgba(220,40,10,0.6)'); g.addColorStop(1, 'rgba(120,10,0,0)');
@@ -359,6 +382,7 @@ export class StageView {
         continue;
       }
       if (hz.type === 'fire') this.drawFire(hz);
+      else if (hz.type === 'beam') this.drawBeam(hz);
       else {
         hz.g = hz.g ?? this.scene.add.graphics();
         this.drawBlade(hz.g.clear().setVisible(true), hz);
@@ -368,9 +392,10 @@ export class StageView {
 
   drawFire(hz) {
     if (!hz.view) {
-      hz.view = this.scene.add.image(hz.x, hz.z, 'grate').setDisplaySize(hz.w, hz.d * 0.75).setDepth(DEPTH.floor + 4);
+      const cart = hz.look === 'cart';
+      hz.view = this.scene.add.image(hz.x, hz.z, cart ? 'cartwreck' : 'grate').setDisplaySize(hz.w, hz.d * (cart ? 1 : 0.75)).setDepth(DEPTH.floor + 4);
       // (painted sheet: the same grate red-hot, faded in over the cold one as it heats)
-      if (this.painted.has('grate-hot')) hz.hot = this.scene.add.image(hz.x, hz.z, 'grate-hot').setDisplaySize(hz.w, hz.d * 0.75).setDepth(DEPTH.floor + 4.05).setAlpha(0);
+      if (!cart && this.painted.has('grate-hot')) hz.hot = this.scene.add.image(hz.x, hz.z, 'grate-hot').setDisplaySize(hz.w, hz.d * 0.75).setDepth(DEPTH.floor + 4.05).setAlpha(0);
       hz.glow = this.scene.add.image(hz.x, hz.z, 'glow').setDisplaySize(hz.w * 1.6, hz.d * 1.4).setTint(0xff6020)
         .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 4.1);
       hz.flames = Array.from({ length: 7 }, () => this.scene.add.image(hz.x, hz.z, 'flame').setOrigin(0.5, 1)
@@ -423,6 +448,38 @@ export class StageView {
       const hgt = (1 - life * 0.6) * (60 + Math.sin(t * 0.7 + i * 1.3) * 16);
       fl.setPosition(fx, fz).setDisplaySize(26 + Math.sin(t * 0.9 + i) * 6, hgt).setDepth(fz + 0.5).setAlpha(0.95);
     });
+  }
+
+  // A burning beam about to fall (Stage 'beam'): while it creaks, its shadow grows on the
+  // ground under it, embers fall, and a ring marks how far it reaches; then it crashes
+  // and lies there burning for a moment. Readable well before it lands.
+  drawBeam(hz) {
+    const g = hz.g = hz.g ?? this.scene.add.graphics();
+    g.clear().setVisible(true);
+    const live = this.stage.beamLive(hz);
+    const y = Math.max(0, this.stage.terrain?.groundAt(hz.x, hz.z) ?? 0);
+    const gy = hz.z - y;
+    g.setDepth(hz.z - 1);
+    if (!live) return;
+    const { phase, warnT, since } = this.stage.beamPhase(hz);
+    if (phase === 'warn') {
+      // the shadow and the reach, growing and darkening
+      g.fillStyle(0x000000, 0.2 + 0.45 * warnT).fillEllipse(hz.x, gy, hz.w * (0.6 + 0.6 * warnT), hz.d * 0.5 * (0.6 + 0.6 * warnT));
+      g.lineStyle(2, 0xffa050, 0.35 + 0.5 * warnT).strokeEllipse(hz.x, gy, hz.w * 1.2, hz.d * 0.6);
+      // the beam itself, high up and shaking loose
+      const shake = Math.sin(hz.t * 1.3) * 3 * warnT;
+      const by = gy - 230 + warnT * 30;
+      g.fillStyle(0x2a1a10, 1).fillRect(hz.x - hz.w / 2 + shake, by, hz.w, 14);
+      g.fillStyle(0xff7a2a, 0.9).fillRect(hz.x - hz.w / 2 + 6 + shake, by + 4, hz.w - 12, 3);
+      if (hz.t % 4 === 0) {
+        this.scene.gore.spawn({ x: hz.x + rand(-hz.w / 2, hz.w / 2), z: hz.z, h: y + 220, vx: rand(-10, 10), vz: 0, vh: -rand(10, 60), tint: 0xffa040, scale: rand(0.25, 0.5), decal: false, life: 50 });
+      }
+    } else if (since < 70) {
+      // down: it lies across the ground, burning out
+      const a = 1 - since / 70;
+      g.fillStyle(0x2a1a10, a).fillRect(hz.x - hz.w / 2 - 8, gy - 10, hz.w + 16, 12);
+      g.fillStyle(0xff7a2a, a * 0.9).fillRect(hz.x - hz.w / 2, gy - 7, hz.w, 3);
+    }
   }
 
   drawBlade(g, hz) {
@@ -629,6 +686,18 @@ export class StageView {
     ev.on('pickup', (e) => this.pickup(e));
     ev.on('hazardFire', ({ hazard }) => {
       if (Math.abs(this.scene.player.x - hazard.x) < 600) playSfx(this.scene, 'fireWhoosh', { volume: 0.5, minGapMs: 0 });
+    });
+    ev.on('beamCrash', ({ hazard: hz }) => {
+      const y = hz.y ?? 0;
+      if (Math.abs(this.scene.player.x - hz.x) < 700) {
+        playSfx(this.scene, 'kick', { volume: 0.9, pitch: -1500, minGapMs: 0 });
+        playSfx(this.scene, 'fireWhoosh', { volume: 0.4, minGapMs: 0 });
+        this.scene.fx?.shake(6, 14);
+      }
+      this.scene.gore.spark(hz.x, hz.z, y + 10, 0xffa040, 26);
+      for (let i = 0; i < 18; i++) {
+        this.scene.gore.spawn({ x: hz.x + rand(-hz.w / 2, hz.w / 2), z: hz.z + rand(-6, 6), h: y + 4, vx: rand(-160, 160), vz: rand(-30, 30), vh: rand(80, 260), tint: i % 3 ? 0x3a2414 : 0xff8a30, texture: 'px', scale: rand(0.8, 1.8), decal: false, life: rand(30, 60) });
+      }
     });
     ev.on('secretFound', ({ count, total }) => this.scene.callout(`SECRET FOUND  ${count}/${total}`, '#ffd24a', 26));
   }

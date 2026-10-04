@@ -83,6 +83,24 @@ All their numbers are in `src/data/characters.js` (each hero's `kit` block).
 
 ---
 
+## THE CAMPAIGN: THE OATH KEEPERS (new, level 1 of 6)
+
+Pick **CAMPAIGN: THE BURNING VILLAGE** on the title screen. Rurik, Oryn and Vexa come home
+from the ford to find their village burning. Save who you can (the family at the well, the
+people in the barn, a boy on a burning roof), break the rear guard, kill the Ash Captain,
+make the vow at the north gate, and walk out after the prisoners. Then a first look at
+King Vaurath in the Black Keep.
+
+- Lines of dialogue play at the top of the screen. During a held scene (the opening, the
+  vow) everyone stands still: **Space / J** moves to the next line.
+- Burning carts flare up after they glow; burning beams fall where their shadow grows.
+- The saved villagers are kept in your save: they wait at the north gate, and later levels
+  will remember them.
+- Everything new in this level is temporary art (drawn in code).
+
+The whole plan (six levels, the king, the final battle, Rurik's judgment):
+`docs/campaign/plan.md`; what's built so far: `docs/campaign/checklist.md`.
+
 ## THE GALLOWS ASCENT (new: platforming and skill trees)
 
 Pick **THE GALLOWS ASCENT (NEW)** on the title screen. A night climb with ledges, pits, a

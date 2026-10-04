@@ -14,6 +14,8 @@ import { Stage } from '../src/stage/Stage.js';
 import { STAGE } from '../src/data/stage.js';
 import { Terrain, STEP, PIT_LOST } from '../src/stage/Terrain.js';
 import { STAGE_GALLOWS } from '../src/data/stageGallows.js';
+import { STAGE_VILLAGE } from '../src/data/stageVillage.js';
+import { LINE } from '../src/stage/Story.js';
 import { Progress, PROGRESS } from '../src/progression/Progress.js';
 import { SKILL_TREES } from '../src/data/skills.js';
 import { BladeChain, CHAIN_PHYS } from '../src/view/BladeChain.js';
@@ -2088,6 +2090,223 @@ test("gallows: the roost is Vexa's and Oryn's to reach, and Rurik's only with Wi
   assert(reach(CHARACTERS.mage, false) === ROOST, 'Oryn: his higher rise');
   assert(reach(CHARACTERS.warrior, true) < ROOST, 'Rurik: not on his own');
   assert(reach(rurikWith('windStep'), true) === ROOST, 'Rurik with Wind Step');
+});
+
+// ------------------------------------------------------------ the campaign: THE BURNING VILLAGE
+
+// Story off: no beats fire (for tests that check something else)
+const hush = (st) => { st.story.started = true; st.story.current = null; st.story.queue = []; for (const b of st.story.beats) b.fired = true; };
+// A controller whose presses land even while the hero is frozen (like the real one)
+class Pressing extends Controller {
+  constructor(script = {}, hold = {}) { super(); this.script = script; this.hold = hold; this.t = 0; }
+  sample() {
+    this.t++;
+    for (const a of this.script[this.t] ?? []) this.registerPress(a);
+    this.held = this.hold;
+    this.moveX = this.held.right ? 1 : this.held.left ? -1 : 0;
+    this.moveZ = 0;
+  }
+}
+
+// A bot that walks the village (no fighting: enemies are cleared as they come), jumping
+// walls and gaps like the gallows bot. Reports the stage's end, falls and the story.
+function villageRun(hero, { kill = true, frames = 60 * 300, onTick = null } = {}) {
+  class Bot extends Controller {
+    sample(frozen) {
+      if (frozen) return;
+      const p = this.me; const T = this.world.terrain;
+      const lane = 415;
+      this.held = {}; this.moveX = 1; this.moveZ = Math.abs(p.z - lane) > 6 ? Math.sign(lane - p.z) : 0;
+      if (this.jumpFor > 0) { this.jumpFor--; this.held.jump = p.h < this.jumpTo + 34; }
+      if (!p.grounded) {
+        // coming down: over ground with the dark ahead, pull back onto it (like a player)
+        if (p.vh < 0 && T.groundAt(p.x, lane) > -1 && T.groundAt(p.x + 25, lane) < -1) this.moveX = -1;
+        else if (p.vh < 0 && T.groundAt(p.x, lane) < -1 && T.groundAt(p.x - 35, lane) > -1 && T.groundAt(p.x + 40, lane) < -1) this.moveX = -1;
+        return;
+      }
+      const jump = (to) => { this.jumpTo = to; this.registerPress('jump'); this.held.jump = true; this.jumpFor = 20; };
+      if (T.groundAt(p.x + 14, lane) < -1) {
+        for (let d = 15; d <= this.reach; d += 5) {
+          const g = T.groundAt(p.x + d, lane);
+          if (g > -1) { if (g - p.floor <= 95) return jump(g + (d > 50 ? 60 : 0)); break; }
+        }
+        this.moveX = 0;
+        return;
+      }
+      const wall = T.wallAt(p.x + 22, p.z, p.h);
+      if (wall) jump(wall.top);
+    }
+  }
+  const world = new World({ seed: 5 });
+  const bot = new Bot();
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: 150, z: 440, controller: bot }));
+  const s = CHARACTERS[hero];
+  Object.assign(bot, { me: p, world, reach: Math.round(s.walkSpeed * 2 * s.jumpStrength / s.gravity * 0.95) });
+  const stage = new Stage(world, STAGE_VILLAGE);
+  stage.start(p);
+  let falls = 0; let won = 0; const beats = []; const rescued = [];
+  world.events.on('pitFall', (e) => { if (e.fighter === p) falls++; });
+  world.events.on('stageWon', () => won++);
+  world.events.on('storyBeat', (e) => beats.push(e.beat.id));
+  world.events.on('npcRescued', (e) => rescued.push(e.npc.id));
+  let f = 0;
+  for (; f < frames && !won; f++) {
+    if (kill) for (const e of world.fighters) if (e.team === 'enemy') { e.health = 0; e.removeMe = true; }
+    world.tick(); stage.update();
+    onTick?.(world, stage, p, f);
+  }
+  return { won, secs: f / 60, falls, beats, rescued, stage, world, p, x: p.x };
+}
+
+test('village: every hero walks the whole level on his own legs (no upgrades), without a fall, and out of the gate', () => {
+  for (const hero of ['warrior', 'mage', 'rogue']) {
+    const r = villageRun(hero);
+    assert(r.won === 1 && r.falls === 0, `${hero}: ${r.won ? 'out' : `stuck at x ${Math.round(r.x)} (${r.stage.section.id}, ${r.stage.phase})`} in ${r.secs.toFixed(0)} s, ${r.falls} falls`);
+  }
+});
+
+test('village: the story plays in order: the opening, Hale, the family, the vow; the level ends only after the vow', () => {
+  let wonBeforeVow = false;
+  const r = villageRun('warrior', { onTick: (w, st) => { if (st.phase === 'won' && !st.story.done.has('vow')) wonBeforeVow = true; } });
+  const at = (id) => r.beats.indexOf(id);
+  assert(at('opening') === 0, `opening first (${r.beats.join(',')})`);
+  for (const id of ['hale', 'mira', 'captain', 'elder', 'vow']) assert(at(id) > 0, `${id} played (${r.beats.join(',')})`);
+  assert(at('hale') < at('mira') && at('mira') < at('elder') && at('elder') < at('vow'), r.beats.join(','));
+  assert(!wonBeforeVow, 'won before the vow was made');
+  assert(r.rescued.includes('mira'), 'clearing the square frees the family');
+  assert(!r.rescued.includes('barn') && !r.rescued.includes('tam'), 'the barn and the boy need you to do something');
+  assert(r.beats.includes('gathered'), 'the family is at the gate');
+});
+
+test('village: a held scene stops the heroes; a press of jump skips to the next line', () => {
+  const world = new World({ seed: 2 });
+  const first = STAGE_VILLAGE.story[0].delay ?? LINE.gap;
+  const c = new Pressing({ [first + 30]: ['jump'] }, { right: true });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 150, z: 440, controller: c }));
+  const st = new Stage(world, STAGE_VILLAGE);
+  st.start(p);
+  for (let i = 0; i < first + 25; i++) { world.tick(); st.update(); }
+  assert(st.story.holding && st.story.line.index === 0, 'the opening is playing');
+  assert(Math.abs(p.x - 150) < 1, `he holds still (x ${p.x})`);
+  for (let i = 0; i < 10; i++) { world.tick(); st.update(); }
+  assert(st.story.line.index === 1, `jump moved it on (line ${st.story.line?.index})`);
+  for (let i = 0; i < 1200 && st.story.busy; i++) { world.tick(); st.update(); }
+  assert(!st.story.busy && st.story.done.has('opening'), 'the opening ends by itself');
+  for (let i = 0; i < 30; i++) { world.tick(); st.update(); }
+  assert(p.x > 160, 'and he walks on');
+  assert(p.state !== 'jump' || p.grounded, 'the skip press did not also make him jump');
+});
+
+test('village: the barn: smashing the burning beam off its door frees the people inside', () => {
+  const world = new World({ seed: 3 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 5260, z: 300, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_VILLAGE);
+  st.start(p);
+  st.enterSection(3);
+  p.x = 5260; p.z = 300;
+  const barn = st.story.npc('barn');
+  const door = st.props.find((pr) => pr.tag === 'barn');
+  assert(barn.state === 'trapped' && door && !door.broken, 'trapped behind the door');
+  const freed = [];
+  world.events.on('npcRescued', (e) => freed.push(e.npc.id));
+  st.breakProp(door, 1);
+  for (let i = 0; i < 3; i++) { world.tick(); st.update(); }
+  assert(barn.state === 'free' && freed.includes('barn'), `freed (${barn.state})`);
+  for (let i = 0; i < 60 * 20; i++) { world.tick(); st.update(); }
+  assert(barn.state === 'gathered' && barn.x === 7260, `they wait at the gate (${barn.state})`);
+  assert(freed.filter((id) => id === 'barn').length === 1, 'reported once');
+});
+
+test('village: the boy on the high roof is saved by reaching him; every hero can climb to him', () => {
+  // from the second roof, up the back: a held jump onto the high roof (+85)
+  for (const hero of ['warrior', 'mage', 'rogue']) {
+    const world = new World({ seed: 4 });
+    // (steers onto it like a player: right until over the roof, then stop)
+    const c = new Scripted({ 5: ['jump'] }, (t) => ({ jump: t < 40, right: t > 5 && c.p.x < 3575, left: c.p.x > 3620 }));
+    const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: 3500, z: 312, controller: c }));
+    c.p = p;
+    const st = new Stage(world, STAGE_VILLAGE);
+    st.start(p);
+    st.enterSection(2);
+    hush(st);
+    p.x = 3500; p.z = 312; st.placeOnGround(p);
+    for (let i = 0; i < 160; i++) { world.tick(); st.update(); }
+    assert(st.story.isRescued('tam'), `${hero}: reached him (on ${p.floor} at x ${Math.round(p.x)})`);
+  }
+});
+
+test('village: the burning beam comes down after its warning, on heroes and enemies alike', () => {
+  const world = new World({ seed: 6 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 3160, z: 410, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_VILLAGE);
+  st.start(p);
+  st.enterSection(2);
+  hush(st);
+  p.x = 3160; p.z = 410; st.placeOnGround(p);
+  const e = createEnemy(world, 'grunt', 3180, 420);
+  e.floor = st.terrain.groundAt(e.x, e.z); e.h = e.floor; e.controller.sample = () => {};
+  const hz = st.hazards.find((h) => h.type === 'beam' && h.section === 2);
+  let warned = false; const crashes = [];
+  world.events.on('beamCrash', (ev) => { if (ev.hazard === hz) crashes.push(world.frame); });
+  const hp = [p.health, e.health];
+  for (let i = 0; i < 260 && !crashes.length; i++) {
+    world.tick(); st.update();
+    if (st.beamPhase(hz).phase === 'warn') warned = true;
+    if (!crashes.length) { p.x = 3160; e.x = 3180; }
+  }
+  assert(warned && crashes.length === 1, 'warned, then fell');
+  assert(p.health < hp[0] && e.health < hp[1], `both hurt (${p.health}/${hp[0]}, ${e.health}/${hp[1]})`);
+});
+
+test("village: the longhall's beams only fall once the Ash Captain rages", () => {
+  const world = new World({ seed: 7 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 6000, z: 440, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_VILLAGE);
+  st.start(p);
+  st.enterSection(4);
+  hush(st);
+  p.x = 6050;
+  let crashes = 0;
+  world.events.on('beamCrash', (ev) => { if (ev.hazard.section === 4) crashes++; });
+  for (let i = 0; i < 900; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; p.awe = 0; }
+  assert(st.boss && st.boss.stats.name.includes('Ash Captain'), 'he is here');
+  assert(crashes === 0, `no beams before his rage (${crashes})`);
+  st.boss.health = st.boss.stats.maxHealth * 0.4;
+  for (let i = 0; i < 700; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; }
+  assert(st.boss.raged && crashes >= 2, `the hall comes down (${crashes})`);
+});
+
+test('village: a sub-boss walks in without freezing the heroes; the captain freezes them', () => {
+  const world = new World({ seed: 8 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 4600, z: 440, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_VILLAGE);
+  st.start(p);
+  st.enterSection(3);
+  hush(st); p.awe = 0;
+  p.x = 4600; st.fightOn = true; st.waveIndex = st.section.waves.length; st.waveDelay = 0;
+  for (let i = 0; i < 5; i++) { world.tick(); st.update(); }
+  assert(st.boss?.stats.name.includes('Cinder') && !(p.awe > 2), `Cinder in, hero free (awe ${p.awe})`);
+  assert(st.boss.x > world.bounds.maxX, 'he starts off-screen and walks in');
+});
+
+test('village: rescues and the level are saved once (the campaign save)', () => {
+  const P = new Progress(memStore());
+  assert(P.rescue('mira') && !P.rescue('mira') && P.isRescued('mira'), 'rescued once');
+  assert(P.finishLevel('village') && !P.finishLevel('village'), 'level done once');
+  const store = memStore();
+  const a = new Progress(store); a.rescue('tam');
+  const b = new Progress(store);
+  assert(b.isRescued('tam') && b.campaign.levels, 'it survives a reload');
+});
+
+test('village: story lines are timed in game frames (both online machines agree)', () => {
+  const t = (s) => Math.min(LINE.max, Math.round(LINE.base + s.length * LINE.perChar));
+  const w1 = new World({ seed: 9 }); const w2 = new World({ seed: 9 });
+  const mk = (w) => { const p = w.addFighter(new Fighter({ stats: CHARACTERS.rogue, team: 'player', x: 150, z: 440, controller: new Scripted({}, { right: true }) })); const s = new Stage(w, STAGE_VILLAGE); s.start(p); return s; };
+  const a = mk(w1); const b = mk(w2);
+  for (let i = 0; i < 400; i++) { w1.tick(); a.update(); w2.tick(); b.update(); }
+  assert(JSON.stringify(a.story.line) === JSON.stringify(b.story.line), 'same line, same age');
+  assert(t('abc') > 0, 'timing');
 });
 
 for (const [name, fn] of later) {

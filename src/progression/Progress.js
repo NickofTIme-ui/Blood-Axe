@@ -24,7 +24,10 @@ export const PROGRESS = {
   bloodPer: 1 / 6,    // blood for a kill = the man's max health x this
 };
 
-const fresh = () => ({ v: 1, blood: 0, bonus: PROGRESS.startPoints, picks: {}, claimed: {} });
+const fresh = () => ({ v: 1, blood: 0, bonus: PROGRESS.startPoints, picks: {}, claimed: {}, campaign: freshCampaign() });
+// THE CAMPAIGN (docs/campaign/plan.md): levels finished, the villagers saved (by id: they
+// show up later), and anything that must only ever happen once
+const freshCampaign = () => ({ levels: {}, rescued: {} });
 
 export class Progress {
   constructor(storage = null) {
@@ -33,6 +36,7 @@ export class Progress {
     try {
       const raw = storage?.getItem(PROGRESS.key);
       if (raw) this.data = { ...fresh(), ...JSON.parse(raw) };
+      this.data.campaign = { ...freshCampaign(), ...this.data.campaign };
     } catch { /* no saved progress: start fresh */ }
   }
 
@@ -62,6 +66,28 @@ export class Progress {
     if (this.data.claimed[key]) return false;
     this.data.claimed[key] = true;
     this.data.bonus++;
+    this.save();
+    return true;
+  }
+
+  // ------------------------------------------------------------ the campaign
+
+  get campaign() { return this.data.campaign; }
+
+  // A villager saved (once; later levels and the epilogue read the list)
+  rescue(id) {
+    if (this.campaign.rescued[id]) return false;
+    this.campaign.rescued[id] = true;
+    this.save();
+    return true;
+  }
+
+  isRescued(id) { return !!this.campaign.rescued[id]; }
+
+  // A level walked out of. Returns true the first time.
+  finishLevel(id) {
+    if (this.campaign.levels[id]) return false;
+    this.campaign.levels[id] = true;
     this.save();
     return true;
   }

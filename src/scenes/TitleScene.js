@@ -106,12 +106,15 @@ export class TitleScene extends Phaser.Scene {
   makeButtons(y) {
     const W = SETTINGS.width;
     // (the fourth: THE GALLOWS ASCENT, the platforming slice — data/stageGallows.js)
-    const acts = [() => this.go('solo'), () => this.go('local'), () => this.openLobby(), () => this.go('solo', null, 'gallows')];
+    // (the fifth: THE CAMPAIGN, level 1 THE BURNING VILLAGE — data/stageVillage.js)
+    const acts = [() => this.go('solo'), () => this.go('local'), () => this.openLobby(), () => this.go('solo', null, 'gallows'),
+      () => this.go('solo', null, 'village')];
     this.buttons = [
       this.makeButton(W / 2 - 250, y, '1 PLAYER', 220, acts[0]),
       this.makeButton(W / 2, y, '2 PLAYERS', 220, acts[1], 1650),
       this.makeButton(W / 2 + 250, y, 'ONLINE CO-OP', 240, acts[2], 1800),
-      this.makeButton(W / 2, y - 58, 'THE GALLOWS ASCENT (NEW)', 330, acts[3], 1950),
+      this.makeButton(W / 2 + 180, y - 58, 'THE GALLOWS ASCENT', 300, acts[3], 1950),
+      this.makeButton(W / 2 - 180, y - 58, 'CAMPAIGN: THE BURNING VILLAGE', 340, acts[4], 2050),
     ];
     this.buttons.forEach((b, i) => { b.act = acts[i]; b.c.on('pointerover', () => this.pick(i)); });
     this.button = this.buttons[0];

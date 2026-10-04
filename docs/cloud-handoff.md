@@ -289,3 +289,20 @@ the generator and run `node tools/sfx-gen/electric.js`.
 - **D-pad freed**: it no longer moves a hero (left stick only); its buttons are actions `padUp/padDown/padLeft/padRight` (new tick bits). Menus still use it. **D-pad Down / H = Rurik's Whirlwind Cleave.**
 - **Skill tree**: Wind Step first, Leap Smash second; Keen Edge = +25% on every sword blow; Executioner's Arc = the Whirlwind Cleave (360: front then behind, a turn and a full-circle smear; also cancels out of the combo). The tree closes on Esc / B / Backspace, pad B / Back / Start, or a click (it trapped players before: Enter didn't close it and B on the keyboard wasn't bound).
 - Fixed: landing with the stick pushed and letting go kept the sprint on.
+
+## Cloud, 2026-10-04: THE CAMPAIGN, stage 1 — THE BURNING VILLAGE (graybox; branch claude/project-thread-l70xhx, not on main, not on itch)
+- Nick's campaign brief is planned in `docs/campaign/plan.md` (six levels, the king's arc, the final battle, Rurik's judgment) with the build checklist in `docs/campaign/checklist.md`.
+- Title menu: **CAMPAIGN: THE BURNING VILLAGE** (solo). Level 1 in six sections: the Ashen Road, the Market Square, the Burning Roofs, the Mill Yard (Brother Cinder, the rear guard), the Longhall (Varek, the Ash Captain), the North Gate (the vow). Data: `src/data/stageVillage.js`.
+- New systems: story beats and villagers with rescue states (`src/stage/Story.js`: defend / wreckage / reach), fights that wait for you (`fightAt`), a level exit after the last words (`exit`), falling burning beams (hazard `beam`, `when: 'rage'` for the longhall), burning carts (fire `look: 'cart'`), the wreckage prop, the dialogue box (HUD), the other two Oath Keepers drawn at the opening and the gate (`src/view/NpcView.js`), the castle on the horizon (`src/view/castle.js`), the first king cutaway (`src/scenes/CutawayScene.js`), and the campaign save (`Progress.campaign`: levels done, villagers saved).
+- The ruler is **King Vaurath, the Ashen Crown** (working name from the final-boss mock-up prompts); Malgor is his champion and stands at the throne in the cutaway. Vaurath is a code-drawn stand-in until his art exists.
+- Story lines are timed in game frames and all rescue logic is sim-side, so online co-op should stay in step, but the campaign is only on the solo menu entry for now and has not been tried online.
+- Checked: logic tests (every hero walks the level with no upgrades and no falls; story order; skipping; all three rescues; beams; saving) and headless-browser screenshots of every section and the cutaway. Not played through by a person.
+
+### Art requests for THE BURNING VILLAGE (all temporary art now; same rules as before: magenta background, facing right, no text)
+1. `village_backdrop_far.png` — parallax: a river valley at night under smoke, the rest of the village burning across it, hills, and on the far right horizon a small black castle against a pale moon (the Black Keep). 2508x627 like `plx_far`.
+2. `village_houses.png` — the street's back wall, tiling: timber-and-plaster houses, some burning, some burnt out, doors and windows lit from inside. 2172x724.
+3. `village_barn.png`, `village_longhall.png`, `village_gate.png` — the three set-piece fronts (barn with big doors; the longhall with carved dragon gables, roof on fire; the north gate palisade with the gate open).
+4. `village_roof_tiles.png` — top-down-ish shingle texture for walkable roofs, and `village_boards.png` for the charred boards (ember cracks).
+5. `npc_villager_strip.png` — a peasant (no weapon) in 8 poses: stand, cower, wave for help, run (3), sit wounded, kneel. Then a woman with a child, and a boy. Muted homespun colours.
+6. `prop_wreckage.png` — a fallen burning beam across a door (+ broken state), and `prop_cart_burning.png`.
+7. `king_vaurath_*` — per `final-boss-mockups/final-boss-chatgpt-prompts.md`; the cutaway uses his throne pose once it exists.

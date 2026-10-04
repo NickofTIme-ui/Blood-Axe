@@ -10,13 +10,22 @@
 //   propHit / propBreak { prop }      pickup { pickup, fighter }
 //   hazardWarn / hazardFire { hazard }  hazardHit { hazard, fighter }
 //   secretFound { prop, count, total }  bossSpawn { boss }  bossRage { boss }
+//   beamCrash { hazard }  (a burning beam comes down)
 //   stageWon { stats }
+//
+// Campaign levels (data/stageVillage.js) add, all optional:
+//   story / npcs        dialogue and villagers to save (stage/Story.js)
+//   section.fightAt     its waves hold until a hero gets this far (walk in, look, then fight)
+//   exit: { x, after }  the level ends when a hero walks out here, once the last section
+//                       is won and the beat `after` has played (not the moment it's won)
+//   boss.entrance.freeze: false   he walks in without freezing the heroes (a sub-boss)
 
 import { STAGE, PICKUPS, PROPS } from '../data/stage.js';
 import { ENEMIES } from '../data/enemies.js';
 import { createEnemy, offscreenX } from '../entities/Enemy.js';
 import { toWorldBox, overlaps } from '../combat/Boxes.js';
 import { Terrain, PIT_LOST } from './Terrain.js';
+import { Story } from './Story.js';
 
 const PAD = 30;           // keep everyone this far inside the section's ends
 const WAVE_GAP = 50;      // frames between one wave dying and the next arriving
@@ -38,6 +47,10 @@ const BLADE = { period: 150, length: 320, damage: 20, bleed: 0.985, driven: { fr
 // A kicked crate or chest: how fast and far it skids (px/s, px), how close to an enemy's
 // lane it must pass to strike him, and the burst (reach along the lane, across it, damage)
 const KICKED = { kinds: ['crate', 'chest'], speed: 620, range: 560, lane: 26, radius: 95, depth: 44, damage: 34 };
+// A burning beam falling (hazard 'beam'): it creaks and sheds embers for `warn` frames,
+// its shadow growing on the ground, then comes down on whoever is under it, either side
+// (enemies too). `when: 'rage'` beams only fall while the section's boss is raging.
+const BEAM = { period: 230, warn: 80, damage: 22, lethalH: 60 };
 
 export class Stage {
   constructor(world, data = STAGE) {
@@ -53,6 +66,8 @@ export class Stage {
     // ledges, pits, lifts and rotten planks (stage/Terrain.js): stages without them have none
     this.terrain = data.terrain ? new Terrain(world, data.terrain) : null;
     world.terrain = this.terrain;
+    // dialogue and villagers (stage/Story.js): campaign levels only
+    this.story = data.story || data.npcs ? new Story(this, data) : null;
     this.stats = { kills: 0, finishers: 0, secrets: 0, deaths: 0, frames: 0 };
     let id = 1;
     for (const [si, sec] of this.sections.entries()) {
@@ -93,6 +108,7 @@ export class Stage {
     this.phase = 'fight';
     this.bossSpawned = false;
     this.boss = null;
+    this.fightOn = sec.fightAt == null; // (a section with fightAt: its waves wait for you)
     this.lockBounds(sec.x0, sec.x1);
     if (teleport) {
       // (a section can name where its heroes stand: on a stage with ledges and pits the
@@ -120,11 +136,20 @@ export class Stage {
     this.cleared = this.index;
     this.world.events.emit('sectionClear', { index: this.index, section: this.section, last });
     if (last) {
-      this.world.events.emit('stageWon', { stats: { ...this.stats, secretsTotal: this.secretsTotal } });
+      // a campaign level ends at its exit, walked out of (update); the rest end here
+      if (this.data.exit) this.phase = 'exit';
+      else this.win();
       return;
     }
     const next = this.sections[this.index + 1];
     this.lockBounds(this.section.x0, next.x1);
+  }
+
+  win() {
+    if (this.wonOnce) return;
+    this.wonOnce = true;
+    this.phase = 'won';
+    this.world.events.emit('stageWon', { stats: { ...this.stats, secretsTotal: this.secretsTotal } });
   }
 
   // Died: back to the last checkpoint, healed, with the section's fight reset.
@@ -328,8 +353,8 @@ export class Stage {
       const toX = Math.max(this.world.bounds.minX + 60, sec.x1 - E.to);
       boss.fsm.change('bossEntrance', { toX, speed: E.speed, stepEvery: E.stepEvery });
       // the heroes stand frozen while he comes (and a moment after)
-      const frames = Math.ceil(((x - toX) / E.speed) * 60) + E.awe;
-      for (const p of this.players) if (p.alive) p.awe = frames;
+      const frames = Math.ceil(((x - toX) / E.speed) * 60) + (E.awe ?? 0);
+      if (E.freeze !== false) for (const p of this.players) if (p.alive) p.awe = frames;
     }
     this.world.events.emit('bossSpawn', { boss, entrance: !!E });
   }
@@ -347,6 +372,7 @@ export class Stage {
     this.updateProps();
     this.updatePickups();
     this.updateDowned();
+    this.story?.update();
 
     // boss rage: at half health he calls his dogs in
     const b = this.boss;
@@ -358,6 +384,12 @@ export class Stage {
 
     if (this.phase === 'fight') {
       const sec = this.section;
+      if (!this.fightOn) {
+        if (!this.players.some((q) => q.alive && q.x >= sec.fightAt)) return;
+        this.fightOn = true;
+        this.waveDelay = Math.min(this.waveDelay, 10);
+        this.world.events.emit('fightStart', { index: this.index, section: sec });
+      }
       if (this.livingFoes().length) return;
       if (this.waveDelay > 0) { this.waveDelay--; return; }
       if (this.waveIndex < sec.waves.length) {
@@ -370,6 +402,11 @@ export class Stage {
     } else if (this.phase === 'clear') {
       const next = this.sections[this.index + 1];
       if (this.players.some((q) => q.alive && q.x > next.x0 + ADVANCE_AT)) this.enterSection(this.index + 1);
+    } else if (this.phase === 'exit') {
+      // the level's last stretch is won: walk out of it (once its last words are said)
+      const E = this.data.exit;
+      const said = !E.after || this.story?.done.has(E.after);
+      if (said && !this.story?.busy && this.players.some((q) => q.alive && q.x >= E.x)) this.win();
     }
   }
 
@@ -471,6 +508,7 @@ export class Stage {
       hz.t++;
       for (const [id, c] of hz.cool) { if (c <= 1) hz.cool.delete(id); else hz.cool.set(id, c - 1); }
       if (hz.type === 'fire') this.updateFire(hz);
+      else if (hz.type === 'beam') this.updateBeam(hz);
       else this.updateBlade(hz);
     }
   }
@@ -494,6 +532,36 @@ export class Stage {
     for (const f of this.world.fighters) {
       if (Math.abs(f.x - hz.x) > hz.w / 2 || Math.abs(f.z - hz.z) > hz.d / 2 || f.h - (hz.y ?? 0) > 40) continue;
       this.hurt(hz, f, FIRE.damage, Math.sign(f.x - hz.x) || 1, 'fire');
+    }
+  }
+
+  // Is a falling-beam hazard live right now? ('rage': only while its boss rages)
+  beamLive(hz) {
+    if (hz.when !== 'rage') return true;
+    const b = this.boss;
+    return !!(b && b.alive && b.raged && hz.section === this.index);
+  }
+
+  // phase of a beam: 'idle' | 'warn' (creaking, its shadow on the ground); it falls as the
+  // warning ends. (warnT: 0..1 through the warning, for the view)
+  beamPhase(hz) {
+    const P = hz.period ?? BEAM.period; const W = hz.warn ?? BEAM.warn;
+    const k = hz.t % P;
+    return k >= P - W ? { phase: 'warn', warnT: (k - (P - W)) / W, since: Infinity } : { phase: 'idle', warnT: 0, since: k };
+  }
+
+  updateBeam(hz) {
+    if (!this.beamLive(hz)) { hz.t = hz.phase ?? 0; hz.wasLive = false; return; }
+    if (!hz.wasLive) { hz.wasLive = true; hz.t = hz.phase ?? 0; } // (starts its count when it goes live)
+    const P = hz.period ?? BEAM.period;
+    if (hz.t % P !== 0 || hz.t === 0) return;
+    // it comes down
+    const y = this.terrain ? Math.max(0, this.terrain.groundAt(hz.x, hz.z)) : 0;
+    hz.y = y;
+    this.world.events.emit('beamCrash', { hazard: hz });
+    for (const f of this.world.fighters) {
+      if (Math.abs(f.x - hz.x) > hz.w / 2 || Math.abs(f.z - hz.z) > hz.d / 2 || f.h - y > BEAM.lethalH) continue;
+      this.hurt(hz, f, BEAM.damage, Math.sign(f.x - hz.x) || 1, 'beam');
     }
   }
 
@@ -566,13 +634,13 @@ export class Stage {
     // drops (the 'burning' state; effects/Burn.js chars the body)
     if (lethal && kind === 'fire' && f.team === 'enemy') f.fsm.change('burning', { dir });
     else {
-      f.fsm.change('knockdown', kind === 'fire'
+      f.fsm.change('knockdown', kind === 'fire' || kind === 'beam'
         ? { vx: dir * 160, vh: 260 }
         : { vx: dir * 420, vh: 320 });
     }
     const e = {
       attacker: null, defender: f, dir, kind: 'hazard', hazard: kind,
-      move: { cut: kind === 'fire' ? 'fire' : kind === 'crate' ? 'blunt' : 'slash', damage: dmg, hitstop: 6 },
+      move: { cut: kind === 'fire' ? 'fire' : kind === 'crate' || kind === 'beam' ? 'blunt' : 'slash', damage: dmg, hitstop: 6 },
       x: f.x, z: f.z, h: f.h + f.stats.body.h * 0.5, damage: dmg, fatality: 'none',
     };
     this.world.events.emit('hazardHit', { hazard: hz, fighter: f, kind });

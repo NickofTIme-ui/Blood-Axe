@@ -115,4 +115,5 @@ export const PROPS = {
   chest: { hp: 3, w: 46, h: 38 }, // iron-bound: takes a beating, always holds something good
   wall: { hp: 5, w: 90, h: 130 }, // a cracked section of the back wall
   bell: { hp: 1, w: 34, h: 70 }, // an iron bell on a post: ring it to call an optional fight (stage.challenge)
+  wreckage: { hp: 4, w: 84, h: 56 }, // a burning beam pinning a door shut: smash it and whoever is inside gets out
 };
