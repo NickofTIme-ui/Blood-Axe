@@ -154,7 +154,7 @@ export class SpriteEnemyView {
     const D = A.drop?.frames;
     const now = f.world?.frame ?? 0;
     const grounded = st === 'idle' || st === 'walk';
-    if (st === 'jump') this.airKind = f.airKind ?? 'fall';
+    if (st === 'jump') this.airKind = f.airKind ?? f.landedKind ?? 'fall';
     if (f.jumpPrep > 0 && grounded) {
       const drop = f.prepKind === 'drop';
       return drop
