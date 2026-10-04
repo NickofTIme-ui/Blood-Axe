@@ -11,6 +11,7 @@
 
 import { S as GS, woundTex, boneStubTex, bandTex, pieceTex, kindForCut } from './goreArt.js';
 import { GutRope } from './GutRope.js';
+import { SETTINGS } from '../config/settings.js';
 
 const G = 1500;
 // old loose-bit names -> painted pieces (effects/goreArt.js)
@@ -342,12 +343,23 @@ export class Dismember {
     return Math.max(8, Math.min(26, Math.min(s.def.w * Math.abs(s.sx), s.def.h * Math.abs(s.sy)) * 0.8));
   }
 
-  // A rope of gut spilling out of point p, optionally still attached to a chunk.
+  // A rope of gut spilling out of point p, optionally still attached to a chunk. The
+  // belly gives up SETTINGS.gore.guts of them: the one asked for, and the rest spilling
+  // out beside it, longer or shorter, some the other way.
   rope(p, z, { chunk = null, lenU = 60, dir = 0, power = 1 } = {}) {
-    if (this.gore.level === 0 || this.ropes.length > 14) return null;
-    const r = new GutRope(this, { x: p.x, y: p.y, z, chunk, lenU: lenU * (this.gore.level === 1 ? 0.6 : 1), dir, power });
-    this.ropes.push(r);
-    return r;
+    const n = Math.max(1, Math.round(SETTINGS.gore.guts ?? 1));
+    if (this.gore.level === 0 || this.ropes.length > 14 * n) return null;
+    const k = this.gore.level === 1 ? 0.6 : 1;
+    const first = new GutRope(this, { x: p.x, y: p.y, z, chunk, lenU: lenU * k, dir, power });
+    this.ropes.push(first);
+    for (let i = 1; i < n; i++) {
+      const d = i % 2 ? dir : (Math.random() < 0.5 ? -dir : dir) || (Math.random() < 0.5 ? -1 : 1);
+      this.ropes.push(new GutRope(this, {
+        x: p.x + rand(-7, 7), y: p.y + rand(-5, 6), z: z + rand(-2, 2), chunk,
+        lenU: lenU * k * rand(0.6, 1.25), dir: d, power: power * rand(0.7, 1.3),
+      }));
+    }
+    return first;
   }
 
   get restFrames() { return this.gore.level >= 2 ? 60 * 40 : 60 * 12; }
@@ -402,8 +414,17 @@ export class Dismember {
   // (painted in effects/goreArt.js, several variants of each).
   bits(x, y, z, kinds, count, power = 1, dir = 0) {
     count = Math.round(count * Math.max(0.35, this.gore.amount));
+    // the guts come SETTINGS.gore.guts times over: each loop of gut or organ thrown out
+    // brings the rest with it (meat, bone and the like stay as they were)
+    const GUTS = ['gut', 'organ'];
+    const list = [];
     for (let i = 0; i < count; i++) {
-      const g = pieceTex(this.scene, PIECE_OF[pick(kinds)] ?? 'meat', Math.floor(Math.random() * 6), this.skin);
+      const kind = pick(kinds);
+      list.push(kind);
+      if (GUTS.includes(kind)) for (let j = 1; j < Math.round(SETTINGS.gore.guts ?? 1); j++) list.push(pick(GUTS));
+    }
+    for (const kind of list) {
+      const g = pieceTex(this.scene, PIECE_OF[kind] ?? 'meat', Math.floor(Math.random() * 6), this.skin);
       const snap = { key: g.key, def: g, ox: g.ox, oy: g.oy, x: x + rand(-6, 6), y: y + rand(-6, 6), rot: rand(0, 6.28), sx: g.scale, sy: g.scale, tint: 0xffffff };
       const c = this.fly([{ snap }], z + rand(-6, 6), {
         vx: (dir * rand(40, 200) + rand(-160, 160)) * power,
