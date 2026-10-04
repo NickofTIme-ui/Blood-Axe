@@ -14,6 +14,7 @@
 //
 // Positions are in world px. z = depth on the floor (282 back .. 520 front: SETTINGS.world).
 // waves: line-ups spawned one after another (the next when the last is dead).
+//        (each line-up is written twice over: the fights were too easy at single strength)
 // props: breakables — kind: barrel | crate | urn | wall (secret wall) ; drop: meat (health),
 //        wine (half health), mana, relic (secret, score)
 // hazards: fire (x, z, w, d, phase) | blade (x, z = its lane, swing: px each side, phase)
@@ -25,7 +26,7 @@ export const STAGE = {
       id: 'gate', name: 'THE BURNING GATE', x0: 0, x1: 1150, ground: 'village',
       light: 0xffa060, mood: 0.12,
       objective: 'Cut through the gate guard',
-      waves: [['grunt', 'grunt'], ['grunt', 'grunt', 'grunt']],
+      waves: [['grunt', 'grunt', 'grunt', 'grunt'], ['grunt', 'grunt', 'grunt', 'grunt', 'grunt', 'grunt']],
       props: [
         { kind: 'barrel', x: 420, z: 320, drop: null },
         { kind: 'crate', x: 470, z: 310, drop: 'meat' },
@@ -38,7 +39,7 @@ export const STAGE = {
       id: 'bridge', name: 'THE CHARNEL BRIDGE', x0: 1150, x1: 2350, ground: 'castle',
       light: 0xff7030, mood: 0.2,
       objective: 'Cross the bridge — mind the grates',
-      waves: [['grunt', 'butcher'], ['grunt', 'grunt', 'stalker']],
+      waves: [['grunt', 'butcher', 'grunt', 'butcher'], ['grunt', 'grunt', 'stalker', 'grunt', 'grunt', 'stalker']],
       props: [
         { kind: 'crate', x: 1320, z: 495, drop: 'mana' },
         { kind: 'barrel', x: 2200, z: 307, drop: 'meat' },
@@ -53,7 +54,7 @@ export const STAGE = {
       id: 'nave', name: 'THE BLOODY NAVE', x0: 2350, x1: 3550, ground: 'cathedral',
       light: 0x9ab0ff, mood: 0.28,
       objective: 'Break them — then finish them',
-      waves: [['penitent', 'grunt'], ['stalker', 'ghoul', 'grunt']],
+      waves: [['penitent', 'grunt', 'penitent', 'grunt'], ['stalker', 'ghoul', 'grunt', 'stalker', 'ghoul', 'grunt']],
       props: [
         { kind: 'urn', x: 2560, z: 501, drop: null },
         { kind: 'urn', x: 2600, z: 510, drop: 'wine' },
@@ -67,7 +68,7 @@ export const STAGE = {
       id: 'ossuary', name: 'THE OSSUARY', x0: 3550, x1: 4600, ground: 'cathedral',
       light: 0x80ff9a, mood: 0.38,
       objective: 'Survive the bone-pits',
-      waves: [['berserker', 'grunt', 'grunt'], ['ghoul', 'penitent', 'butcher']],
+      waves: [['berserker', 'grunt', 'grunt', 'berserker', 'grunt', 'grunt'], ['ghoul', 'penitent', 'butcher', 'ghoul', 'penitent', 'butcher']],
       props: [
         { kind: 'urn', x: 3700, z: 295, drop: null },
         { kind: 'urn', x: 3735, z: 301, drop: null },
@@ -88,7 +89,7 @@ export const STAGE = {
       objective: 'Kill Warlord Malgor',
       // he walks in slowly, the ground shaking, the heroes frozen (Stage.spawnBoss);
       // at half health he calls Pitlord Kragg and his dogs (adds)
-      boss: { type: 'warlord', name: 'Warlord Malgor, the Oathbreaker', health: 6, damage: 1.15, adds: ['gladiator', 'grunt', 'grunt', 'stalker'],
+      boss: { type: 'warlord', name: 'Warlord Malgor, the Oathbreaker', health: 6, damage: 1.15, adds: ['gladiator', 'grunt', 'grunt', 'stalker', 'gladiator', 'grunt', 'grunt', 'stalker'],
         entrance: { from: 140, to: 300, speed: 58, stepEvery: 34, awe: 30 } },
       waves: [],
       props: [{ kind: 'barrel', x: 4780, z: 501, drop: 'meat' }],
