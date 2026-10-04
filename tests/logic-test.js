@@ -2637,8 +2637,32 @@ test('campaign save: CONTINUE points at the last checkpoint; a level done points
   assert(Q.campaign.levels.village && Q.campaign.flags && Q.campaign.at === null, 'an old save loads');
 });
 
+test('campaign: no section\'s fight is held open by a man stuck off-screen (the mill yard: one buried in the roof behind)', () => {
+  for (const data of [STAGE_VILLAGE, STAGE_WOOD, STAGE_GALLOWS]) {
+    for (let k = 0; k < data.sections.length; k++) {
+      const world = new World({ seed: 5 });
+      const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 150, z: 440, controller: new Controller() }));
+      const st = new Stage(world, data, {});
+      st.start(p, { section: k });
+      p.invincible = true;
+      const sec = st.section;
+      let f = 0;
+      for (; f < 60 * 120 && st.phase === 'fight'; f++) {
+        if (st.story) { st.story.current = null; st.story.queue = []; }
+        if (f === 1 && sec.fightAt != null) { p.x = Math.max(p.x, sec.fightAt + 5); if (st.terrain) p.floor = p.h = Math.max(0, st.terrain.groundAt(p.x, p.z)); }
+        // the hero fights whoever has arrived; nobody walks over to fetch a straggler
+        if (f % 60 === 0) for (const e of world.fighters) if (e.team === 'enemy' && e.alive && !e.entering && e.state !== 'bossEntrance') { e.health = 0; e.removeMe = true; }
+        world.tick(); st.update();
+      }
+      const left = st.livingFoes().map((e) => `${e.stats.name}@${Math.round(e.x)},${Math.round(e.z)} h${Math.round(e.h)}/${e.floor}`);
+      assert(st.phase !== 'fight', `${data.id} ${sec.id}: still fighting after ${f} frames: ${left.join(', ')}`);
+    }
+  }
+});
+
 for (const [name, fn] of later) {
   try { await fn(); console.log(`  ok   ${name}`); } catch (e) { failed++; console.log(`  FAIL ${name}\n       ${e.message}`); }
 }
 console.log(failed ? `\n${failed} test(s) FAILED` : '\nAll tests passed.');
 process.exit(failed ? 1 : 0);
+

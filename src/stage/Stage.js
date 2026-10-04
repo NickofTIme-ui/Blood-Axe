@@ -46,6 +46,7 @@ const PAD = 30;           // keep everyone this far inside the section's ends
 const WAVE_GAP = 50;      // frames between one wave dying and the next arriving
 const REVIVE_AFTER = 360; // ticks a fallen hero lies there before he rises beside his partner (co-op)
 const ADVANCE_AT = 300;  // px past the next section's start that locks you into it
+const STUCK_AFTER = 180;  // frames a man walking on can stand stuck (a stream, a ledge) before he's brought round
 
 // Fire grate: idle -> glowing warning -> eruption (frames)
 const FIRE = { period: 210, warn: 110, burst: 160, tick: 14, damage: 9 };
@@ -327,6 +328,27 @@ export class Stage {
     }
   }
 
+  // A man walking on from off-screen who can't get here (a stream or a ledge between him and
+  // the heroes) would hold the fight open for good, out of sight. Stuck too long, he's
+  // brought round to the other side; stuck there as well, he's let go.
+  updateLatecomers() {
+    for (const e of this.world.fighters) {
+      if (e.team !== 'enemy' || !e.alive || !e.entering || e.state === 'bossEntrance') continue;
+      const moved = Math.abs(e.x - (e.enterX ?? NaN)) > 1;
+      e.enterX = moved ? e.x : e.enterX;
+      e.enterStill = moved ? 0 : (e.enterStill ?? 0) + 1;
+      if (e.enterStill < STUCK_AFTER) continue;
+      e.enterStill = 0;
+      if (e.broughtRound) { e.removeMe = true; e.health = 0; continue; }
+      e.broughtRound = true;
+      const heroes = this.players.filter((p) => p.alive);
+      const side = Math.sign(e.x - (this.player?.x ?? e.x)) || 1;
+      e.x = offscreenX(this.world, heroes, -side, 0);
+      e.enterX = e.x;
+      this.setOnGround(e);
+    }
+  }
+
   livingFoes() {
     return this.world.fighters.filter((f) => f.team === 'enemy' && f.alive);
   }
@@ -352,8 +374,25 @@ export class Stage {
       const side = k % 2 === 0 ? 1 : -1;
       const x = offscreenX(this.world, heroes, side, k >> 1);
       const z = b.minZ + 20 + ((k * 71) % Math.max(1, b.maxZ - b.minZ - 40)); // spread over the lane
-      createEnemy(this.world, type, x, z, { entering: true });
+      const e = createEnemy(this.world, type, x, z, { entering: true });
+      this.setOnGround(e);
     });
+  }
+
+  // A man brought on from off-screen stands on whatever is there (a roof behind the yard:
+  // up on it, not buried inside it, where he'd be walled in for good); over a pit, the
+  // nearest ground further out.
+  setOnGround(e) {
+    const T = this.terrain;
+    if (!T) return;
+    const out = Math.sign(e.x - (this.player?.x ?? e.x)) || 1;
+    for (let d = 0; d <= 600; d += 20) {
+      const g = T.groundAt(e.x + out * d, e.z);
+      if (g < -1) continue;
+      e.x += out * d;
+      e.floor = g; e.h = g;
+      return;
+    }
   }
 
   spawnBoss() {
@@ -365,6 +404,7 @@ export class Stage {
     // 'bossEntrance' state); otherwise he's simply there
     const x = E ? sec.x1 + E.from : Math.min(sec.x1 - PAD - 40, this.player.x + 420);
     const boss = createEnemy(this.world, def.type, x, 430);
+    this.setOnGround(boss);
     // a boss is the same fighter, harder: more health, harder hits, never flinches from light blows
     boss.stats = {
       ...base, name: def.name, boss: true,
@@ -399,6 +439,7 @@ export class Stage {
     this.updateProps();
     this.updatePickups();
     this.updateDowned();
+    this.updateLatecomers();
     this.story?.update();
     // a scripted ending running: it has the stage until it's done
     if (this.sequence?.update()) return;
