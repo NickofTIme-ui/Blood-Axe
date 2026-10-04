@@ -43,6 +43,8 @@ export const SETTINGS = {
     level: 2,
     names: ['OFF', 'LOW', 'FULL'],
     maxDrops: 700,          // cap on live blood particles (performance safety)
+    guts: 3,                // how many times the guts: every gut rope and every loose loop of gut or organ
+                            // spilled from a cut-open body comes this many times over (effects/Dismember.js)
   },
 
   shake: { enabled: true, scale: 1 },

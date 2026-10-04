@@ -289,3 +289,9 @@ the generator and run `node tools/sfx-gen/electric.js`.
 - **D-pad freed**: it no longer moves a hero (left stick only); its buttons are actions `padUp/padDown/padLeft/padRight` (new tick bits). Menus still use it. **D-pad Down / H = Rurik's Whirlwind Cleave.**
 - **Skill tree**: Wind Step first, Leap Smash second; Keen Edge = +25% on every sword blow; Executioner's Arc = the Whirlwind Cleave (360: front then behind, a turn and a full-circle smear; also cancels out of the combo). The tree closes on Esc / B / Backspace, pad B / Back / Start, or a click (it trapped players before: Enter didn't close it and B on the keyboard wasn't bound).
 - Fixed: landing with the stick pushed and letting go kept the sprint on.
+
+## Cloud, 2026-10-04 (end): handed back to local
+- **Triple guts** (`SETTINGS.gore.guts = 3`, `effects/Dismember.js` `rope()` and `bits()`): every gut rope comes with two more beside it (varied length, some spilling the other way) and every loose gut/organ piece brings two more; the live-rope cap scales with it. Tests pass; **not yet seen in the browser** (the check was stopped when the work moved back to local). Look at a waist cut, a split and an explode kill, and watch the frame rate in a big fight. Turn it down in `src/config/settings.js` if it's too much or too slow.
+- Everything from this cloud session is on `main`: platforming + THE GALLOWS ASCENT, progression + Rurik's tree, higher jumps, enemy jump/drop poses, the D-pad freed (Down / H = Whirlwind Cleave), the skill-tree exit fix.
+- **Not on itch.** To upload: pull `main`, run `tools/build-release.ps1`, upload `release/blood-axe-web.zip`.
+- Art waiting to be painted: `docs/gallows-art-needed.md`, `docs/enemy-jump-art-prompts.md`.
