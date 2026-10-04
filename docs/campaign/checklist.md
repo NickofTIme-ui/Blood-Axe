@@ -38,7 +38,7 @@ checked (says how), `[ ]` not started. Graybox means code-drawn temporary art.
 - [x] Skill tree: Oryn's Stormcaller branch (Forked Bolt, Static Charge, Thunderhead) (`data/skills.js`, `combat/Storm.js`); his other two branches shown as planned
 - [x] Gallows Wood laid out in graybox to use all of it (six sections, the Houndmaster with two phases, the second king cutaway) (`data/stageWood.js`, `view/WoodView.js`)
 - [x] Logic tests: the wood walked by every hero, its story and rescues, each rescue kind (and failing it), INTERACT, boss phases, the sequence (once, skips, reloads), checkpoints, the save, the Stormcaller
-- [~] Seen in a headless browser (the wood's sections, the village-to-wood transition, CONTINUE); not played through by a person
+- [~] Seen in a headless browser: the wood's sections, the village tally -> ENTER -> Gallows Wood (save points at the wood), CONTINUE from the title into the wood's third section; not played through by a person
 - [ ] Online co-op and 2-player local campaign (all of it is sim-side and frame-timed; the transition rides in the online records; untried)
 - [ ] A whole-scene skip key for held scenes (now: each line skips with jump / attack)
 
