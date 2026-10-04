@@ -304,7 +304,9 @@ export class StageView {
 
   makeProp(pr) {
     const key = `prop-${pr.kind}`;
-    const s = this.hd.has(key) ? 0.25 : 0.5;
+    // (a level's painted prop, data/levelArt.js: sized to the prop, whatever size it was painted)
+    const lvl = (this.scene.registry.get('levelArt') ?? []).includes(key);
+    const s = lvl ? (pr.w * 1.3) / this.scene.textures.get(key).getSourceImage().width : this.hd.has(key) ? 0.25 : 0.5;
     if (pr.kind === 'wall') {
       // set into the back wall: the alcove waits behind it
       const y = SETTINGS.world.floorTop - 4;

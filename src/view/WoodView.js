@@ -13,6 +13,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { drawCastle } from './castle.js';
+import { PaintedLevel } from './levelArt.js';
 
 const COL = {
   skyTop: 0x05080c, skyLow: 0x1c2630,
@@ -39,11 +40,13 @@ export class WoodBackdrop {
     this.data = stage.data;
     this.width = this.data.width;
     this.mists = [];
-    this.drawSky();
-    this.drawCastle();
-    this.drawPines();
-    this.drawTrunks();
-    this.drawRoad();
+    // painted art where it exists (data/levelArt.js), the code-drawn stand-ins elsewhere
+    const art = this.art = new PaintedLevel(scene, 'wood', this.width);
+    if (art.has('sky')) art.layer('sky', DEPTH.sky); else this.drawSky();
+    if (art.has('far')) art.layer('far', DEPTH.far - 1); else this.drawCastle();
+    if (art.has('mid')) art.layer('mid', DEPTH.far + 2); else this.drawPines();
+    if (art.has('wall')) art.wall(); else this.drawTrunks();
+    if (art.has('ground')) art.ground(); else this.drawRoad();
     this.drawSetPieces();
   }
 
@@ -154,7 +157,9 @@ export class WoodBackdrop {
     const s = this.scene;
     const D = this.data;
     const top = SETTINGS.world.floorTop - 50;
-    if (D.gallows) {
+    if (D.gallows && this.art.piece('hanging_tree', D.gallows.x - 260, D.gallows.x + 120, { depth: D.gallows.z - 2, bottom: D.gallows.z - top })) {
+      // (painted)
+    } else if (D.gallows) {
       // a great dead oak with a long bough out over the road; the rope hangs from it (NpcView)
       const { x, z } = D.gallows;
       const g = s.add.graphics().setDepth(z - 2);
@@ -175,7 +180,9 @@ export class WoodBackdrop {
     if (pass) {
       // the rockslide: boulders heaped across the pass, higher than anyone can climb
       const slide = D.terrain.find((t) => t.kind === 'block' && t.x0 >= pass.x0 && t.top >= 200);
-      if (slide) {
+      if (slide && this.art.piece('rockslide', slide.x0 - 120, slide.x1 + 160, { depth: DEPTH.floor - 0.5, bottom: 60 })) {
+        // (painted)
+      } else if (slide) {
         const g = s.add.graphics().setDepth(DEPTH.floor - 0.5);
         const r = rng(91);
         for (let i = 0; i < 40; i++) {
@@ -190,6 +197,12 @@ export class WoodBackdrop {
 
   update() {
     const t = this.scene.time.now / 1000;
+    if (!this.kennelsDone) {
+      // the kennels at the back of the clearing (painted only: the code draws none)
+      this.kennelsDone = true;
+      const k = this.data.sections.find((sec) => sec.id === 'kennels');
+      if (k) this.art.piece('kennels', k.x0 + 380, k.x0 + 900);
+    }
     for (const m of this.mists) m.img.x = m.base + Math.sin(t * m.rate * 60) * m.amp;
   }
 }

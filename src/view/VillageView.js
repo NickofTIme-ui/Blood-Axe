@@ -13,6 +13,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { drawCastle } from './castle.js';
+import { PaintedLevel } from './levelArt.js';
 
 const COL = {
   skyTop: 0x07070f, skyMid: 0x1a1426, skyLow: 0x4a2a2a,
@@ -41,10 +42,12 @@ export class VillageBackdrop {
     this.width = this.data.width;
     this.flickers = [];
     this.embers = [];
-    this.drawSky();
-    this.drawCastle();
+    // painted art where it exists (data/levelArt.js), the code-drawn stand-ins elsewhere
+    const art = this.art = new PaintedLevel(scene, 'village', this.width);
+    if (art.has('sky')) art.layer('sky', DEPTH.sky); else this.drawSky();
+    if (art.has('far')) art.layer('far', DEPTH.far - 1); else this.drawCastle();
     this.drawSmoke();
-    this.drawFarRoofs();
+    if (art.has('mid')) art.layer('mid', DEPTH.far + 2); else this.drawFarRoofs();
     this.drawStreetFronts();
     this.drawStreet();
     this.makeEmbers();
@@ -143,20 +146,33 @@ export class VillageBackdrop {
     const g = s.add.graphics().setDepth(DEPTH.floor - 1);
     const r = rng(51);
     const special = (x) => this.data.sections.find((sec) => x >= sec.x0 && x < sec.x1)?.id;
+    const painted = this.art.has('wall');
+    if (painted) this.art.wall();
     for (let x = 0; x < this.width;) {
       const id = special(x);
       const sec = this.data.sections.find((q) => q.id === id);
       const prop = (tag) => sec?.props?.find((pr) => pr.tag === tag);
-      if (id === 'gate') { this.drawGate(g, sec.x0, this.width, top); x = this.width; continue; }
-      if (id === 'hall' && x >= sec.x0 + 200 && x < sec.x0 + 1200) { this.drawLonghall(g, sec.x0 + 200, sec.x0 + 1200, top); x = sec.x0 + 1200; continue; }
+      // (a set piece: its painting if there is one, else drawn here)
+      const piece = (name, x0, x1, draw) => { if (!this.art.piece(name, x0, x1)) draw(); return x1; };
+      if (id === 'gate') {
+        const gx = this.data.exit?.x ?? this.width - 120;
+        if (!this.art.has('gate')) this.drawGate(g, sec.x0, this.width, top); else this.art.piece('gate', gx - 260, gx + 260);
+        x = this.width; continue;
+      }
+      if (id === 'hall' && x >= sec.x0 + 200 && x < sec.x0 + 1200) { x = piece('longhall', sec.x0 + 200, sec.x0 + 1200, () => this.drawLonghall(g, sec.x0 + 200, sec.x0 + 1200, top)); continue; }
       const barn = id === 'mill' && prop('barn');
-      if (barn && x >= barn.x - 130 && x < barn.x + 150) { this.drawBarn(g, barn.x - 130, barn.x + 150, top); x = barn.x + 150; continue; }
+      if (barn && x >= barn.x - 130 && x < barn.x + 150) { x = piece('barn', barn.x - 130, barn.x + 150, () => this.drawBarn(g, barn.x - 130, barn.x + 150, top)); continue; }
       const stab = id === 'stables' && prop('stables');
-      if (stab && x >= stab.x - 260 && x < stab.x + 260) { this.drawStables(g, stab.x - 260, stab.x + 260, top, stab.x); x = stab.x + 260; continue; }
+      if (stab && x >= stab.x - 260 && x < stab.x + 260) {
+        x = piece('stables', stab.x - 260, stab.x + 260, () => this.drawStables(g, stab.x - 260, stab.x + 260, top, stab.x));
+        // (painted: only what changes is drawn over it, the open gate once the horses are out)
+        if (this.art.has('stables')) this.stables = { gx: stab.x, top, painted: true, g: this.scene.add.graphics().setDepth(DEPTH.floor - 0.95) };
+        continue;
+      }
       const w = 150 + Math.floor(r() * 90);
       const h = 86 + r() * 30;
       const burnt = r() < 0.3;
-      this.house(g, x, Math.min(w, this.width - x), h, top, burnt, r);
+      if (!painted) this.house(g, x, Math.min(w, this.width - x), h, top, burnt, r);
       // (now and then a burnt-out lot between houses: the valley and the castle show through)
       x += w + 4 + (r() < 0.35 ? 90 + Math.floor(r() * 80) : 0);
     }
@@ -237,6 +253,7 @@ export class VillageBackdrop {
     const n = this.stage.story?.npcs.find((q) => q.id === 'horses');
     const inside = !n || n.state === 'trapped';
     const g = S.g.clear();
+    if (S.painted && inside) return; // (the painting has them in it)
     if (!inside) {
       // the gate hangs open on an empty, burning stall
       g.fillStyle(COL.fire, 0.35 + 0.1 * Math.sin(t * 0.2)).fillRect(S.gx - 70, S.top - 100, 140, 100);
@@ -294,6 +311,11 @@ export class VillageBackdrop {
   drawStreet() {
     const s = this.scene;
     const top = SETTINGS.world.floorTop - 50;
+    if (this.art.has('ground')) {
+      this.art.ground();
+      if (this.data.well) this.drawWell(this.data.well);
+      return;
+    }
     const g = s.add.graphics().setDepth(DEPTH.floor);
     g.fillStyle(COL.street, 1).fillRect(0, top, this.width, SETTINGS.height - top + 40);
     // packed earth with ruts; cobbles in the market square
@@ -313,6 +335,7 @@ export class VillageBackdrop {
 
   // the square's well (where the family is held): stone ring, a roof on two posts
   drawWell({ x, z }) {
+    if (this.art.piece('well', x - 70, x + 70, { depth: z - 1, bottom: z - (SETTINGS.world.floorTop - 50) })) return;
     const g = this.scene.add.graphics().setDepth(z - 1);
     g.fillStyle(0x3a3a3e, 1).fillRect(x - 30, z - 34, 60, 34);
     g.fillStyle(0x4a4a50, 1).fillEllipse(x, z - 34, 64, 16);
