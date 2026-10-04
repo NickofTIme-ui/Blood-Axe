@@ -60,6 +60,14 @@ export class StageView {
       c.fillStyle = '#3a3a42'; for (const x of [4, w / 2 - 5, w - 14]) c.fillRect(x, 6, 10, h - 8);
       c.fillStyle = '#c8a040'; c.fillRect(w / 2 - 7, 30, 14, 16); c.fillStyle = '#2a1a08'; c.fillRect(w / 2 - 2, 36, 4, 6);
     });
+    // bell: an iron bell on a gallows post (ring it: an optional fight)
+    this.canvasTex('prop-bell', 68, 140, (c, w, h) => {
+      c.fillStyle = '#2a1e16'; c.fillRect(w / 2 - 4, 0, 8, h); c.fillRect(6, 4, w - 12, 8);
+      c.fillStyle = '#5a5e64'; c.beginPath(); c.moveTo(w / 2 - 10, 18); c.lineTo(w / 2 + 10, 18); c.lineTo(w / 2 + 22, 62); c.lineTo(w / 2 - 22, 62); c.closePath(); c.fill();
+      c.fillStyle = '#a4502a'; c.fillRect(w / 2 - 22, 58, 44, 5);
+      c.fillStyle = '#c8ccd2'; c.fillRect(w / 2 - 6, 22, 3, 34);
+      c.fillStyle = '#1a1a1e'; c.fillRect(w / 2 - 3, 62, 6, 8);
+    });
     // barrel: banded oak
     this.canvasTex('prop-barrel', 68, 92, (c, w, h) => {
       const g = c.createLinearGradient(0, 0, w, 0);
@@ -220,7 +228,7 @@ export class StageView {
       }
       // the section's light: big soft pools along the back wall
       for (let x = sec.x0 + 160; x < sec.x1; x += 420) {
-        scene.add.image(x, W.floorTop - 70, 'glow').setScale(7, 5).setTint(sec.light).setAlpha(0.22)
+        scene.add.image(x, W.floorTop - 70, 'glow').setScale(7, 5).setTint(sec.light ?? 0xffa060).setAlpha(0.22)
           .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 3.2);
       }
       // soot over the floor where one paving gives way to the next: darkest on the join,
@@ -248,8 +256,10 @@ export class StageView {
       const img = this.scene.add.image(pr.x, y, key).setOrigin(0.5, 1).setScale(s).setDepth(DEPTH.floor + 2.6);
       return { img, alcove, s };
     }
-    const img = this.scene.add.image(pr.x, pr.z, key).setOrigin(0.5, 1).setScale(s).setDepth(pr.z);
-    const shadow = this.scene.add.ellipse(pr.x, pr.z, pr.w * 1.2, 10, 0x000000, 0.35).setDepth(DEPTH.shadows);
+    // (y: up on a ledge, it's drawn on the ledge; its shadow too, just over the ledge's top)
+    const y = pr.y ?? 0;
+    const img = this.scene.add.image(pr.x, pr.z - y, key).setOrigin(0.5, 1).setScale(s).setDepth(pr.z);
+    const shadow = this.scene.add.ellipse(pr.x, pr.z - y, pr.w * 1.2, 10, 0x000000, 0.35).setDepth(y ? pr.z - 0.3 : DEPTH.shadows);
     return { img, shadow, s };
   }
 
@@ -279,7 +289,7 @@ export class StageView {
     // thrown open (painted states from the prop sheet) — not just a vanished object
     const wreck = pr.kind === 'chest' ? 'prop-chest-open' : `prop-${pr.kind}-broken`;
     if (this.scene.textures.exists(wreck)) {
-      v.img.setTexture(wreck).setOrigin(0.5, 1).setPosition(pr.x, pr.z).setDepth(pr.z - 0.2).clearTint();
+      v.img.setTexture(wreck).setOrigin(0.5, 1).setPosition(pr.x, pr.z - (pr.y ?? 0)).setDepth(pr.z - 0.2).clearTint();
       v.img.setScale(v.s * 1.25, v.s * 0.6);
       this.scene.tweens.add({ targets: v.img, scaleX: v.s, scaleY: v.s, duration: 160, ease: 'Back.easeOut' });
       v.shadow?.setAlpha(0.2);
@@ -300,7 +310,7 @@ export class StageView {
     const gore = this.scene.gore;
     for (let i = 0; i < n; i++) {
       gore.spawn({
-        x: pr.x + rand(-pr.w / 2, pr.w / 2), z: pr.z + rand(-4, 4), h: rand(8, pr.h),
+        x: pr.x + rand(-pr.w / 2, pr.w / 2), z: pr.z + rand(-4, 4), h: (pr.y ?? 0) + rand(8, pr.h),
         vx: dir * rand(40, 260) + rand(-80, 80), vz: rand(-40, 40), vh: rand(120, 380),
         tint: colors[i % colors.length], texture: 'px', scale: rand(0.8, 2), decal: false, life: rand(40, 90), spin: rand(-10, 10),
       });
@@ -322,8 +332,9 @@ export class StageView {
       // pops out, then bobs and glows so it's obvious it's there to take
       const pop = Math.max(0, 1 - pk.age / 20);
       const bob = pk.kind === 'shrine' ? 0 : Math.sin(pk.age * 0.08) * 3 + 4 + pop * 30 * Math.sin(pop * Math.PI);
-      v.img.setPosition(pk.x, pk.z - bob).setDepth(pk.z);
-      v.glow.setPosition(pk.x, pk.z - bob - 10).setDepth(pk.z - 0.1).setAlpha(0.35 + 0.25 * Math.sin(pk.age * 0.12));
+      const y = pk.y ?? 0; // (dropped up on a ledge)
+      v.img.setPosition(pk.x, pk.z - y - bob).setDepth(pk.z);
+      v.glow.setPosition(pk.x, pk.z - y - bob - 10).setDepth(pk.z - 0.1).setAlpha(0.35 + 0.25 * Math.sin(pk.age * 0.12));
     }
   }
 
@@ -628,8 +639,8 @@ export class StageView {
       if (!pr.fly || pr.broken) continue;
       const v = this.propSprites.get(pr.id);
       const t = pr.fly.left;
-      v.img.setPosition(pr.x, pr.z - Math.abs(Math.sin(t * 0.045)) * 9).setAngle(Math.sin(t * 0.09) * 7 * pr.fly.dir);
-      v.shadow?.setPosition(pr.x, pr.z);
+      v.img.setPosition(pr.x, pr.z - (pr.y ?? 0) - Math.abs(Math.sin(t * 0.045)) * 9).setAngle(Math.sin(t * 0.09) * 7 * pr.fly.dir);
+      v.shadow?.setPosition(pr.x, pr.z - (pr.y ?? 0));
       if (Math.floor(t / 40) !== Math.floor((t + 11) / 40)) this.chips(pr, 2, -pr.fly.dir);
     }
   }

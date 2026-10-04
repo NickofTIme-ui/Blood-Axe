@@ -46,6 +46,7 @@ export class SelectScene extends Phaser.Scene {
   // 'net' (online: each picks on his own screen; data.net = { link, index })
   init(data) {
     this.mode = data?.mode ?? 'solo';
+    this.stageId = data?.stage; // (THE GALLOWS ASCENT, or the Oath Road when unset)
     this.net = this.mode === 'net' ? data.net : null;
   }
 
@@ -222,7 +223,7 @@ export class SelectScene extends Phaser.Scene {
     if (this.leaving) return;
     this.leaving = true;
     this.time.delayedCall(320, () => this.cameras.main.fadeOut(420, 0, 0, 0));
-    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Arena', data));
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Arena', { ...data, stage: this.stageId }));
   }
 
   // ---- online: the two select screens talk over the link (net/Link.js)

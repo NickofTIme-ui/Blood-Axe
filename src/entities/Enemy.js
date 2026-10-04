@@ -89,7 +89,7 @@ export class EnemyBrain extends Controller {
       if (!inside || !near) {
         const dir = Math.sign(target.x - f.x) || -f.facing;
         this.facingHint = dir;
-        if (f.state === 'idle' || f.state === 'walk') this.moveX = dir;
+        if (f.state === 'idle' || f.state === 'walk') { this.moveX = dir; this.terrainSteer(target); }
         return;
       }
       f.entering = false;
@@ -190,7 +190,52 @@ export class EnemyBrain extends Controller {
     if (adx < ai.minRange) this.moveX = -side;
     else if (Math.abs(wantX - f.x) > 6) this.moveX = Math.sign(wantX - f.x);
     if (Math.abs(dz) > ai.alignZ * 0.5) this.moveZ = Math.sign(dz);
+    this.terrainSteer(target);
   }
+
+  // Ledges and pits (stage/Terrain.js): he never walks into a pit, never steps off a drop
+  // unless the man he wants is down there, and hops up a ledge he can clear when the man
+  // is up on it (or past it). One he can't clear, he waits at its foot.
+  terrainSteer(target) {
+    const T = this.world.terrain;
+    const f = this.fighter;
+    if (!T || !f.grounded) return;
+    const look = 26;
+    const s = f.stats;
+    const apex = (s.jumpStrength ** 2) / (2 * s.gravity);
+    const reach = s.walkSpeed * (2 * s.jumpStrength / s.gravity) * 0.9; // a running jump's length
+    const pit = (x, z) => T.groundAt(x, z) < -1;
+    const risky = (x, z) => {
+      if (pit(x, z)) return true;
+      const drop = f.floor - T.groundAt(x, z);
+      return drop > 45 && !(target.floor < f.floor - 30); // a drop he has no reason for (the man he wants is not down there)
+    };
+    const dir = this.moveX || Math.sign(target.x - f.x);
+    // a gap he can clear, with the man beyond it: he jumps it
+    if (this.moveX && pit(f.x + dir * look, f.z) && !(this.hopCool > 0) && Math.sign(target.x - f.x) === dir) {
+      for (let d = 30; d <= reach; d += 10) {
+        const g = T.groundAt(f.x + dir * d, f.z);
+        if (g < -1) continue;
+        if (Math.abs(g - f.floor) <= 20 && d <= reach) {
+          this.registerPress('jump');
+          this.hopCool = 40;
+          return;
+        }
+        break;
+      }
+    }
+    if (this.moveX && risky(f.x + this.moveX * look, f.z)) this.moveX = 0;
+    if (this.moveZ && risky(f.x, f.z + this.moveZ * look * 0.6)) this.moveZ = 0;
+    if (this.hopCool > 0) { this.hopCool--; return; }
+    const wall = T.wallAt(f.x + dir * 14, f.z, f.h);
+    const wantsUp = target.floor > f.floor + 12 || (wall && Math.abs(target.x - f.x) > 40);
+    if (wall && wantsUp && wall.top - f.h < apex * 0.92 && !risky(f.x + dir * 50, f.z)) {
+      this.moveX = dir;
+      this.registerPress('jump');
+      this.hopCool = 40;
+    }
+  }
+
 
   // Scared: never attacks or blocks again. Runs from the player in a panicked zig-zag,
   // but can't get away — he stumbles and falls, the arena walls trap him, and once

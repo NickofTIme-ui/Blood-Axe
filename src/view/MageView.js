@@ -389,7 +389,7 @@ export class MageView {
 
     // faint motes drifting down off him, more as he glides faster
     const gore = this.scene.gore;
-    if (gore && !gone && !frozen && p.ground < 0.5 && f.h < 1) {
+    if (gore && !gone && !frozen && p.ground < 0.5 && f.air < 1) {
       const speed = Math.hypot(f.vx, f.vz);
       const every = speed > 60 ? 3 : 9;
       if (this.age % every === 0) {

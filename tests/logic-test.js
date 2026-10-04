@@ -12,6 +12,10 @@ import { ENEMIES, WAVES } from '../src/data/enemies.js';
 import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.js';
 import { Stage } from '../src/stage/Stage.js';
 import { STAGE } from '../src/data/stage.js';
+import { Terrain, STEP, PIT_LOST } from '../src/stage/Terrain.js';
+import { STAGE_GALLOWS } from '../src/data/stageGallows.js';
+import { Progress, PROGRESS } from '../src/progression/Progress.js';
+import { SKILL_TREES } from '../src/data/skills.js';
 import { BladeChain, CHAIN_PHYS } from '../src/view/BladeChain.js';
 import { handshake } from '../src/net/Link.js';
 import { impalePin } from '../src/combat/Finisher.js';
@@ -187,7 +191,7 @@ test('combo chain: heavy pressed during light1 chains into heavy', () => {
 });
 
 test('input buffer: jump pressed just before landing jumps again', () => {
-  const t = setup({ script: { 1: ['jump'] }, gap: 400 });
+  const t = setup({ script: { 1: ['jump'] }, hold: { jump: true }, gap: 400 }); // (held: a full jump)
   let landedFrame = null;
   let pressed = false;
   for (let i = 0; i < 120; i++) {
@@ -1644,7 +1648,7 @@ test('Earthbreaker: the shockwave rolls both ways across the whole lane; on the 
   // far right, standing / far left, at the other edge of the lane / far right, jumping just as it arrives
   const impact = 400 + (m.hitbox.x + m.hitbox.w) * 0.8;
   const jumpAt = m.startup + 1 + Math.round(((800 - impact) - 110) / K.speed * 60); // (a beat before it arrives)
-  const t = quakeSetup({ heroes: [[750, 300, {}], [100, 510, {}], [800, 420, {}, { [jumpAt]: ['jump'] }]] });
+  const t = quakeSetup({ heroes: [[750, 300, {}], [100, 510, {}], [800, 420, { jump: true }, { [jumpAt]: ["jump"] }]] });
   const [stand, behind, jumper] = t.ps;
   t.run(m.startup + 2);
   assert(t.ev.filter(([n]) => n === 'quakeWave').length === 2, 'one wave each way');
@@ -1732,6 +1736,321 @@ test('balance: every stage fight is twice the size it was', () => {
   assert(sizes.every((n) => n >= 4), `every wave at least four strong (${sizes})`);
   const adds = STAGE.sections.find((s) => s.boss).boss.adds;
   assert(adds.length >= 8, `the boss calls eight men (${adds.length})`);
+});
+
+// ---------------------------------------------------------------- terrain (ledges, pits, lifts)
+
+function terrainSetup(defs, { hero = 'warrior', x = 300, z = 420, script = {}, hold = {} } = {}) {
+  const world = new World({ seed: 3 });
+  world.terrain = new Terrain(world, defs);
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x, z, controller: new Scripted(script, hold) }));
+  p.floor = world.terrain.groundAt(x, z); p.h = p.floor;
+  return { world, p, run: (n) => { for (let i = 0; i < n; i++) world.tick(); } };
+}
+
+test('terrain: a ledge taller than a step is a wall; jump high enough and he lands on top', () => {
+  const ledge = [{ kind: 'block', x0: 360, x1: 520, z0: 380, z1: 460, top: 60 }];
+  const walk = terrainSetup(ledge, { hold: { right: true } });
+  walk.run(60);
+  assert(walk.p.x < 360 && walk.p.h === 0, `walked into the wall and stopped (${walk.p.x.toFixed(0)})`);
+  const jump = terrainSetup(ledge, { x: 330, script: { 2: ['jump'] }, hold: { right: true, jump: true } });
+  jump.run(70);
+  assert(jump.p.x > 360 && jump.p.h === 60 && jump.p.grounded, `on top of the ledge (x ${jump.p.x.toFixed(0)}, h ${jump.p.h})`);
+  const low = terrainSetup([{ kind: 'block', x0: 360, x1: 520, z0: 380, z1: 460, top: STEP - 2 }], { hold: { right: true } });
+  low.run(40);
+  assert(low.p.x > 380 && low.p.h === STEP - 2, 'a low step he simply walks up');
+});
+
+test('terrain: walking off a ledge drops him, and coyote time still lets him jump', () => {
+  const defs = [{ kind: 'block', x0: 0, x1: 320, z0: 282, z1: 520, top: 80 }];
+  const t = terrainSetup(defs, { x: 300, hold: { right: true } });
+  for (let i = 0; i < 30 && t.p.x < 335; i++) t.run(1);
+  assert(t.p.state === 'jump' && t.p.h < 80, `stepped off and is falling (${t.p.state})`);
+  t.run(40);
+  assert(t.p.h === 0 && t.p.grounded, 'landed on the floor');
+  // pressed jump a few frames after running off the edge: still a jump
+  const c = terrainSetup(defs, { x: 300, hold: { right: true, jump: true } });
+  for (let i = 0; i < 30 && c.p.x <= 320; i++) c.run(1);
+  c.run(3);
+  c.p.controller.registerPress('jump');
+  c.run(2);
+  assert(c.p.vh > 300, `coyote jump (vh ${c.p.vh.toFixed(0)})`);
+});
+
+test('jump: let go early for a short hop, hold for the full height', () => {
+  const peak = (holdFrames) => {
+    const t = terrainSetup([], { script: { 1: ['jump'] }, hold: (n) => ({ jump: n <= holdFrames }) });
+    let top = 0;
+    for (let i = 0; i < 80; i++) { t.run(1); top = Math.max(top, t.p.h); }
+    return top;
+  };
+  const full = peak(99); const hop = peak(3);
+  assert(hop < full * 0.6 && hop > 15, `short hop ${hop.toFixed(0)} vs full ${full.toFixed(0)}`);
+});
+
+test('terrain: a pit swallows an enemy (a kill) and spits a hero back onto safe ground, a little hurt', () => {
+  const stage = { sections: [{ id: 'a', name: 'A', x0: 0, x1: 1200, waves: [], props: [], hazards: [], spawn: { x: 200, z: 420 } }],
+    terrain: [{ kind: 'pit', x0: 400, x1: 520, z0: 282, z1: 520 }] };
+  const world = new World({ seed: 4 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 200, z: 420, controller: new Scripted({}, { right: true }) }));
+  const st = new Stage(world, stage);
+  st.start(p);
+  const e = createEnemy(world, 'grunt', 460, 420);
+  let kills = 0; let falls = 0;
+  world.events.on('kill', (k) => { if (k.pit) kills++; });
+  let backAt = null;
+  world.events.on('pitFall', ({ fighter, to }) => { if (fighter === p) { falls++; backAt = { ...to, h: p.h }; } });
+  for (let i = 0; i < 200; i++) { world.tick(); st.update(); }
+  assert(kills === 1 && !world.fighters.includes(e), 'the enemy over the pit fell to his death');
+  // (he holds right the whole time, so he walks back in again and again: 12% a fall)
+  assert(falls >= 1 && Math.abs(p.health - p.stats.maxHealth * (1 - 0.12 * falls)) < 0.5, `each fall costs 12% (${falls} falls, ${p.health.toFixed(0)} left)`);
+  assert(backAt.x < 400 - 20 && backAt.h === 0, `put back on safe ground short of the edge (x ${backAt.x.toFixed(0)})`);
+});
+
+test('terrain: a lift carries whoever stands on it; a rotten plank shakes, gives way and comes back', () => {
+  const lift = terrainSetup([{ kind: 'lift', x0: 260, x1: 340, z0: 380, z1: 460, top: 20, move: { axis: 'top', range: 100, period: 240 } }]);
+  lift.run(120);
+  assert(lift.p.grounded && lift.p.h > 100, `ridden up (h ${lift.p.h.toFixed(0)})`);
+  lift.run(120);
+  assert(lift.p.grounded && lift.p.h < 30, `and down again (h ${lift.p.h.toFixed(0)})`);
+  const plank = terrainSetup([{ kind: 'crumble', x0: 260, x1: 340, z0: 380, z1: 460, top: 50, fall: 30, back: 100 }]);
+  plank.run(20);
+  assert(plank.p.h === 50, 'holds for a moment');
+  plank.run(40);
+  assert(plank.p.h === 0 && !plank.world.terrain.blocks[0].solid, 'gave way under him');
+  plank.p.x = 600;
+  plank.run(110);
+  assert(plank.world.terrain.blocks[0].solid, 'back after a while');
+});
+
+test('terrain: the Mage blinks over a pit and up onto a ledge he can clear, but never into a wall', () => {
+  const wall = [{ kind: 'block', x0: 420, x1: 600, z0: 282, z1: 520, top: 200 }];
+  const t = terrainSetup(wall, { hero: 'mage', script: { 2: ['dodge'] }, hold: { right: true } });
+  t.run(30);
+  assert(t.p.x < 420, `stopped short of the wall (x ${t.p.x.toFixed(0)})`);
+  const pit = [{ kind: 'pit', x0: 340, x1: 520, z0: 282, z1: 520 }];
+  const g = terrainSetup(pit, { hero: 'mage', script: { 2: ['dodge'] }, hold: { right: true } });
+  g.run(30);
+  assert(g.p.x > 520 && g.p.h === 0, `across the pit (x ${g.p.x.toFixed(0)})`);
+});
+
+// ---------------------------------------------------------------- progression and Rurik's tree
+
+const memStore = () => { const m = new Map(); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, v) }; };
+// Rurik with these skills (every point he needs, none of the rules skipped)
+function rurikWith(...ids) {
+  const P = new Progress(memStore());
+  P.data.bonus = 99;
+  for (const id of ids) assert(P.buy('warrior', id), `bought ${id} (${P.blocker('warrior', id)})`);
+  return P.statsFor('warrior', CHARACTERS.warrior);
+}
+function skillSetup(stats, { foes = [], script = {}, hold = {}, x = 400 } = {}) {
+  const world = new World({ seed: 9 });
+  const p = world.addFighter(new Fighter({ stats, team: 'player', x, z: 420, controller: new Scripted(script, hold) }));
+  const es = foes.map(([fx, fz = 420, type = 'grunt']) => {
+    const e = world.addFighter(new Fighter({ stats: ENEMIES[type], team: 'enemy', x: fx, z: fz, controller: new Scripted() }));
+    e.facing = Math.sign(p.x - fx) || -1;
+    return e;
+  });
+  return { world, p, es, run: (n) => { for (let i = 0; i < n; i++) world.tick(); } };
+}
+
+test('progress: blood makes levels, levels and milestones make points, each hero spends the shared pool', () => {
+  const P = new Progress(memStore());
+  assert(P.level === 1 && P.earned === PROGRESS.startPoints, 'a point to start with');
+  assert(P.addBlood(PROGRESS.levelStep) === 1 && P.level === 2, 'a level');
+  assert(P.claim('gallows:yard') && !P.claim('gallows:yard'), 'a milestone pays once');
+  const pts = P.earned;
+  assert(P.buy('warrior', 'keenEdge') && P.available('warrior') === pts - 1, 'Rurik spends one');
+  assert(P.available('rogue') === pts, 'Vexa still has them all: the pool is shared, the picks are not');
+  assert(P.blocker('warrior', 'berserk') === 'locked', 'a major needs the one before it');
+  P.respec('warrior');
+  assert(P.available('warrior') === pts && !P.has('warrior', 'keenEdge'), 'respec gives every point back');
+  const again = new Progress(P.storage);
+  assert(again.earned === pts, 'saved and loaded');
+});
+
+test('progress: the two majors shut each other out; picks never touch the shared hero data', () => {
+  const P = new Progress(memStore());
+  P.data.bonus = 99;
+  for (const id of ['keenEdge', 'executionersArc', 'berserk', 'bloodrush', 'ironWall']) P.buy('warrior', id);
+  assert(P.blocker('warrior', 'oathOfFury') === 'excluded', 'Oath of Fury is shut once Berserk is taken');
+  const base = JSON.stringify(CHARACTERS.warrior.moves.heavy);
+  const s = P.statsFor('warrior', CHARACTERS.warrior);
+  assert(s.moves.heavy.damage > CHARACTERS.warrior.moves.heavy.damage && JSON.stringify(CHARACTERS.warrior.moves.heavy) === base, 'a copy changed, not the original');
+  const nodes = SKILL_TREES.warrior.branches.flatMap((b) => b.nodes);
+  assert(nodes.length === 9 && nodes.reduce((n, x) => n + x.cost, 0) === 18, 'nine skills, 18 points for all of them');
+});
+
+test("rurik: Keen Edge cleaves harder; Executioner's Arc hits the man behind him", () => {
+  const dmg = (stats) => {
+    const t = skillSetup(stats, { script: { 1: ['heavy'] }, foes: [[450]] });
+    t.es[0].health = 1e4;
+    t.run(40);
+    return 1e4 - t.es[0].health;
+  };
+  const plain = dmg(CHARACTERS.warrior); const keen = dmg(rurikWith('keenEdge'));
+  assert(keen > plain * 1.2, `harder (${plain.toFixed(0)} -> ${keen.toFixed(0)})`);
+  const behind = (stats) => {
+    const t = skillSetup(stats, { script: { 1: ['heavy'] }, foes: [[340]] });
+    t.p.facing = 1;
+    t.run(40);
+    return t.es[0].health < t.es[0].stats.maxHealth;
+  };
+  assert(!behind(CHARACTERS.warrior) && behind(rurikWith('keenEdge', 'executionersArc')), 'only the arc reaches behind');
+});
+
+test('rurik: Leap Smash drives him down and floors the men round him; Skyfall bounces him back up', () => {
+  const t = skillSetup(rurikWith('leapSmash'), { script: { 1: ['jump'], 14: ['heavy'] }, hold: { jump: true }, foes: [[470], [340]] });
+  let smashed = 0;
+  t.world.events.on('leapSmash', () => smashed++);
+  t.run(50);
+  assert(smashed === 1, 'one crater');
+  assert(t.es.every((e) => ['knockdown', 'getup'].includes(e.state) && e.health < e.stats.maxHealth), `both floored (${t.es.map((e) => e.state)})`);
+  const plain = skillSetup(CHARACTERS.warrior, { script: { 1: ['jump'], 14: ['heavy'] }, hold: { jump: true } });
+  plain.run(20);
+  assert(plain.p.state !== 'plunge', 'without the skill, heavy in the air is nothing new');
+  const sky = skillSetup(rurikWith('leapSmash', 'windStep', 'skyfall'), { script: { 1: ['jump'], 14: ['heavy'] }, hold: { jump: true }, foes: [[470]] });
+  let up = false;
+  for (let i = 0; i < 60; i++) { sky.run(1); if (sky.p.state === 'jump' && sky.p.vh > 300 && i > 16) up = true; }
+  assert(up, 'bounced back up off the crater');
+});
+
+test('rurik: Wind Step gives him a second jump; Bloodrush feeds him on a kill; Berserk takes his guard', () => {
+  const ws = skillSetup(rurikWith('leapSmash', 'windStep'));
+  assert(ws.p.stats.airJumps === 1 && CHARACTERS.warrior.airJumps === 0, 'a double jump, his alone');
+  const br = skillSetup(rurikWith('bloodrush'), { script: { 1: ['heavy'] }, foes: [[450]] });
+  br.p.health = 50; br.p.stamina = 10; br.es[0].health = 1;
+  br.run(30);
+  assert(br.p.health >= 56 && br.p.stamina >= 19, `fed by the kill (hp ${br.p.health.toFixed(0)}, st ${br.p.stamina.toFixed(0)})`);
+  const bz = skillSetup(rurikWith('keenEdge', 'executionersArc', 'berserk'), { script: { 2: ['block'] }, hold: { block: true } });
+  bz.run(6);
+  assert(!['block', 'parry'].includes(bz.p.state), `no guard (${bz.p.state})`);
+});
+
+test('rurik: Iron Wall turns a parry into a riposte; Oath of Fury holds him up when he is low', () => {
+  const t = setup({ dummyScript: { 1: ['attack'] } });
+  t.p.stats = rurikWith('bloodrush', 'ironWall');
+  t.p.facing = 1;
+  t.p.controller.script = { 8: ['block'] };
+  t.run(20);
+  assert(t.log.includes('parry') && t.d.health <= t.d.stats.maxHealth - 25, `parried and hit back (${t.d.health})`);
+  const f = setup({ dummyScript: { 1: ['attack'] } });
+  f.p.stats = rurikWith('bloodrush', 'ironWall', 'oathOfFury');
+  f.p.health = f.p.stats.maxHealth * 0.2;
+  f.run(25);
+  assert(f.log.includes('hit') && !['hitstun', 'stagger', 'knockdown'].includes(f.p.state), `took the blow and kept his feet (${f.p.state})`);
+});
+
+// ---------------------------------------------------------------- THE GALLOWS ASCENT
+
+test('gallows: a rest shrine heals you, and standing still at it opens the skill tree', () => {
+  const world = new World({ seed: 2 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.rogue, team: 'player', x: 0, z: 400, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_GALLOWS);
+  st.start(p);
+  st.enterSection(1, true);
+  st.clearSection();
+  const r = STAGE_GALLOWS.sections[1].rest;
+  p.x = r.x; p.z = r.z; p.health = 10;
+  const ev = [];
+  for (const n of ['restTouch', 'restKneel']) world.events.on(n, () => ev.push(n));
+  for (let i = 0; i < 70; i++) { world.tick(); st.update(); }
+  assert(p.health === p.stats.maxHealth && ev[0] === 'restTouch' && ev.includes('restKneel'), `healed, then knelt (${ev})`);
+});
+
+test('gallows: ringing the bell calls an optional fight; winning it is reported once', () => {
+  const world = new World({ seed: 2 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 0, z: 400, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_GALLOWS);
+  st.start(p);
+  st.enterSection(1, true);
+  const bell = st.props.find((x) => x.kind === 'bell');
+  let won = 0;
+  world.events.on('challengeWon', () => won++);
+  st.breakProp(bell, 1);
+  const kragg = world.fighters.filter((f) => f.team === 'enemy');
+  assert(kragg.length === 1 && kragg[0].stats.name === ENEMIES.gladiator.name, 'Kragg answers');
+  kragg[0].health = 0;
+  for (let i = 0; i < 3; i++) { world.tick(); st.update(); }
+  assert(won === 1, 'won');
+});
+
+// A bot that only walks the route (no fighting: the enemies are cleared as they come):
+// right, jump at walls and gaps, a short hop for a small step, rides the cage.
+function routeRun(hero) {
+  class RouteBot extends Controller {
+    sample(frozen) {
+      if (frozen) return;
+      const p = this.me; const T = this.world.terrain;
+      this.held = {}; this.moveX = 1; this.moveZ = Math.abs(p.z - 415) > 6 ? Math.sign(415 - p.z) : 0;
+      if (this.jumpFor > 0) { this.jumpFor--; this.held.jump = p.h < this.jumpTo + 34; }
+      if (!p.grounded) {
+        if (p.vh < 0 && T.groundAt(p.x, 415) > -1 && T.groundAt(p.x + 25, 415) < -1) this.moveX = 0;
+        else if (p.vh < 0 && T.groundAt(p.x, 415) < -1 && T.groundAt(p.x - 35, 415) > -1 && T.groundAt(p.x + 40, 415) < -1) this.moveX = -1;
+        return;
+      }
+      const jump = (to) => { this.jumpTo = to; this.registerPress('jump'); this.held.jump = true; this.jumpFor = 20; };
+      if (T.groundAt(p.x + 14, 415) < -1) {
+        if (p.floorBlock?.kind === 'lift') { this.moveX = T.groundAt(p.x + 30, 415) > -1 ? 1 : 0; return; }
+        for (let d = 15; d <= this.reach; d += 5) {
+          const g = T.groundAt(p.x + d, 415);
+          if (g > -1) { if (g - p.floor <= 45) return jump(g); break; }
+        }
+        const lift = T.blocks.find((b) => b.kind === 'lift' && b.solid);
+        if (lift && lift.x0 <= p.x + 12 && lift.x1 > p.x + 40 && Math.abs(lift.top - p.floor) < 6 && lift.dx >= 0) return;
+        this.moveX = 0;
+        return;
+      }
+      const wall = T.wallAt(p.x + 22, p.z, p.h);
+      if (wall) jump(wall.top);
+    }
+  }
+  const world = new World({ seed: 5 });
+  const bot = new RouteBot();
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: 140, z: 440, controller: bot }));
+  const s = CHARACTERS[hero];
+  Object.assign(bot, { me: p, world, reach: Math.round(s.walkSpeed * 2 * s.jumpStrength / s.gravity * 0.8) });
+  const stage = new Stage(world, STAGE_GALLOWS);
+  stage.start(p);
+  let falls = 0;
+  world.events.on('pitFall', (e) => { if (e.fighter === p) falls++; });
+  let f = 0;
+  for (; f < 60 * 240 && p.x < 6700; f++) {
+    for (const e of world.fighters) if (e.team === 'enemy') { e.health = 0; e.removeMe = true; }
+    world.tick(); stage.update();
+  }
+  return { done: p.x >= 6700, secs: f / 60, falls };
+}
+
+test('gallows: every hero finishes the main route on his own legs (no upgrades), without a fall', () => {
+  for (const hero of ['warrior', 'mage', 'rogue']) {
+    const r = routeRun(hero);
+    assert(r.done && r.falls === 0, `${hero}: ${r.done ? 'through' : 'stuck'} in ${r.secs.toFixed(0)} s, ${r.falls} falls`);
+  }
+});
+
+test("gallows: the roost is Vexa's and Oryn's to reach, and Rurik's only with Wind Step", () => {
+  class S extends Controller { constructor(fn) { super(); this.fn = fn; this.t = 0; } sample(fr) { if (fr) return; this.t++; this.held = {}; this.moveX = 0; this.moveZ = 0; this.fn(this, this.t); } }
+  const reach = (stats, doubleJump) => {
+    const world = new World({ seed: 1 });
+    world.terrain = new Terrain(world, STAGE_GALLOWS.terrain);
+    const c = new S((c, t) => {
+      c.held.jump = true;
+      if (t === 2) c.registerPress('jump');
+      if (doubleJump && t > 2 && c.p.vh < 30 && !c.dj) { c.dj = 1; c.registerPress('jump'); }
+      c.moveX = c.p.x < 3470 ? 1 : c.p.x > 3500 ? -1 : 0; // (steers onto it like a player: in the air she keeps her speed)
+    });
+    const p = world.addFighter(new Fighter({ stats, team: 'player', x: 3370, z: 310, controller: c }));
+    c.p = p; p.floor = world.terrain.groundAt(p.x, p.z); p.h = p.floor;
+    let best = 0;
+    for (let i = 0; i < 200; i++) { world.tick(); if (p.grounded) best = Math.max(best, p.floor); }
+    return best;
+  };
+  assert(reach(CHARACTERS.rogue, true) === 184, 'Vexa: double jump');
+  assert(reach(CHARACTERS.mage, false) === 184, 'Oryn: his higher rise');
+  assert(reach(CHARACTERS.warrior, true) < 184, 'Rurik: not on his own');
+  assert(reach(rurikWith('leapSmash', 'windStep'), true) === 184, 'Rurik with Wind Step');
 });
 
 for (const [name, fn] of later) {

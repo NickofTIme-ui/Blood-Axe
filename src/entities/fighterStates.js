@@ -13,6 +13,7 @@ import { movePhase, totalFrames, inWindow } from '../combat/MoveRunner.js';
 import { FINISH, FINISHERS, CHAIN, IMPALE, impalePin, impalePierce, planFinisher, chainTimes } from '../combat/Finisher.js';
 import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher } from '../combat/Mage.js';
 import { rogueStates, rollMine,isRogueFinisher, rogueFinisherStart, runRogueFinisher, vaultTarget } from '../combat/Rogue.js';
+import { skillStates } from '../combat/Skills.js';
 
 const FEEL = SETTINGS.feel;
 
@@ -71,6 +72,9 @@ export function startJump(f, isAirJump = false) {
   f.vh = f.stats.jumpStrength * (isAirJump ? 0.9 : 1);
   f.h = Math.max(f.h, 0.01); // leave the ground
   f.jumpedSinceGrounded = true;
+  // variable height: a hero who lets go of jump while still rising cuts the jump short
+  // (the jump state). Enemies' jumps are always full.
+  f.jumpHeld = f.team === 'player';
   f.flipFrom = isAirJump ? f.world?.frame ?? 0 : null; // (view: the second jump is an acrobatic flip)
   f.world?.events.emit('jump', { fighter: f, airJump: isAirJump });
   const k = isAirJump ? 1 : sprintMult(f); // (a running jump carries the sprint)
@@ -108,7 +112,7 @@ export function tryActions(f, allowed = null) {
     f.fsm.change(stateFor(f, 'dodge'));
     return true;
   }
-  if (ok('block')) {
+  if (ok('block') && !s.skills?.berserk) { // (BERSERK: no guard at all)
     if (c.consume('block')) { f.fsm.change('parry'); return true; } // fresh press = parry attempt
     if (c.isDown('block')) { f.fsm.change('block'); return true; }  // already held = plain block
   }
@@ -400,6 +404,12 @@ export const FIGHTER_STATES = {
         return f.fsm.change('idle'); // landed (buffered jump fires from idle)
       }
 
+      // Released early: a short hop (FEEL.jumpCut of the rising speed is kept)
+      if (f.jumpHeld && !c.isDown('jump')) {
+        f.jumpHeld = false;
+        if (f.vh > 0) f.vh *= FEEL.jumpCut;
+      }
+
       // Air steering: holding a direction pulls him that way (and turns him to face it), so
       // a jump can be bent back the way it came; hands off, he keeps the speed he left with
       if (c.moveX) {
@@ -421,7 +431,7 @@ export const FIGHTER_STATES = {
       const am = s.states?.airMagic;
       if (am && !f.fanUsed && !(f.cool[am] > 0) && c.consume('magic')) return f.fsm.change(am);
       const ah = s.states?.airHeavy;
-      if (ah && f.h >= (s.kit?.dive?.minHeight ?? 0) && c.consume('heavy')) return f.fsm.change(ah);
+      if (ah && f.air >= (s.kit?.[ah]?.minHeight ?? s.kit?.dive?.minHeight ?? 0) && c.consume('heavy')) return f.fsm.change(ah);
       if (!f.airAttackUsed && s.moves.air && c.consume('attack')) f.fsm.change('airAttack');
     },
   },
@@ -440,7 +450,7 @@ export const FIGHTER_STATES = {
       f.activeAttack = movePhase(m, frame) === 'active' ? f.attackInfo : null;
       // the Rogue can still dive out of an air slash
       const ah = f.stats.states?.airHeavy;
-      if (ah && f.h >= (f.stats.kit?.dive?.minHeight ?? 0) && f.controller.consume('heavy')) f.fsm.change(ah);
+      if (ah && f.air >= (f.stats.kit?.dive?.minHeight ?? 0) && f.controller.consume('heavy')) f.fsm.change(ah);
     },
     exit(f) {
       f.activeAttack = null;
@@ -639,8 +649,8 @@ export const FIGHTER_STATES = {
     update(f) {
       f.invincible = true;
       f.vx = 0; f.vz = 0;
-      f.h = f.liftH ?? 0;
-      f.vh = f.h > 0 ? f.stats.gravity / 60 : 0; // held up: cancel this step's gravity
+      f.h = f.floor + (f.liftH ?? 0);
+      f.vh = f.h > f.floor ? f.stats.gravity / 60 : 0; // held up: cancel this step's gravity
       const r = f.execRelease;
       if (r) {
         f.execRelease = null;
@@ -844,3 +854,4 @@ export const FIGHTER_STATES = {
 Object.assign(FIGHTER_STATES, mageStates({ tryActions, stopMoving, friction, faceInput, aimTurn }));
 // ...and the Rogue's (combat/Rogue.js)
 Object.assign(FIGHTER_STATES, rogueStates({ tryActions, stopMoving, friction, faceInput, makeAttackState }));
+Object.assign(FIGHTER_STATES, skillStates()); // (the skill tree's moves: combat/Skills.js)

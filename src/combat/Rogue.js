@@ -69,7 +69,7 @@ export function rollMine(f) {
   f.mana = Math.max(0, f.mana - (f.stats.spell?.cost ?? 0));
   f.mineDropAt = f.world.frame;
   const v = foes(f)
-    .filter((e) => e.h < 40 && e.state !== 'executed' && Math.abs(e.x - f.x) <= K.stickReach && Math.abs(e.z - f.z) <= 34)
+    .filter((e) => e.air < 40 && e.state !== 'executed' && Math.abs(e.x - f.x) <= K.stickReach && Math.abs(e.z - f.z) <= 34)
     .sort((a, b) => Math.abs(a.x - f.x) - Math.abs(b.x - f.x))[0];
   return v ? f.world.mines.stick(f, v, K) : f.world.mines.drop(f, clampX(f.world, f.x), f.z, K);
 }
@@ -80,7 +80,7 @@ export function plantTarget(f) {
   const reach = kitOf(f).knife.kickReach;
   return foes(f)
     .map((e) => ({ e, dx: (e.x - f.x) * f.facing }))
-    .filter((o) => o.e.h < 40 && o.dx > -10 && o.dx < reach && Math.abs(o.e.z - f.z) < 30)
+    .filter((o) => o.e.air < 40 && o.dx > -10 && o.dx < reach && Math.abs(o.e.z - f.z) < 30)
     .sort((a, b) => Math.abs(a.dx) - Math.abs(b.dx))[0]?.e ?? null;
 }
 
@@ -153,8 +153,8 @@ export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeA
         friction(f, 0.7);
         if (frame === K.startup) {
           const t = f.knifeTarget;
-          const from = { x: f.x + f.facing * 20, z: f.z, h: K.projectile.y };
-          const to = t?.alive ? { x: t.x, z: t.z, h: t.h + t.stats.body.h * 0.55 } : { x: f.x + f.facing * K.range, z: f.z, h: K.projectile.y };
+          const from = { x: f.x + f.facing * 20, z: f.z, h: f.h + K.projectile.y };
+          const to = t?.alive ? { x: t.x, z: t.z, h: t.h + t.stats.body.h * 0.55 } : { x: f.x + f.facing * K.range, z: f.z, h: f.h + K.projectile.y };
           throwAt(f, K.projectile, from, to, K.projectile.speed);
           f.world.events.emit('knifeThrow', { fighter: f });
         }
@@ -255,7 +255,7 @@ export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeA
               to = { x: t.x + r(0) * 18, z: t.z + r(1) * 10, h: t.h + t.stats.body.h * 0.5 };
             } else {
               const u = n > 1 ? i / (n - 1) - 0.5 : 0;
-              to = { x: f.x + f.facing * (spread * 0.6 + r(2) * 30) + u * spread * 0.8, z: clampZ(f.world, f.z + u * spread * 0.9), h: 0 };
+              to = { x: f.x + f.facing * (spread * 0.6 + r(2) * 30) + u * spread * 0.8, z: clampZ(f.world, f.z + u * spread * 0.9), h: f.floor };
             }
             throwAt(f, K.projectile, from, to, K.projectile.speed);
           }
@@ -290,7 +290,7 @@ export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeA
         if (!f.diveLanded) {
           f.vh = -K.speed;
           f.activeAttack = f.attackInfo;
-          if (f.grounded || f.h <= 0.5) {
+          if (f.grounded || f.air <= 0.5) {
             f.diveLanded = frame;
             f.activeAttack = null;
             stopMoving(f);
@@ -357,7 +357,8 @@ function runOn(f, ex, frame, until) {
   }
 }
 // her height during a finisher (the execute state holds her: gravity is cancelled)
-function setH(f, h) { f.h = Math.max(0, h); f.vh = f.h > 0 ? f.stats.gravity / 60 : 0; }
+// (h here is off the ground under her: on a ledge she rises from the ledge)
+function setH(f, h) { f.h = f.floor + Math.max(0, h); f.vh = f.h > f.floor ? f.stats.gravity / 60 : 0; }
 const ease = (t) => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
 
 export function rogueFinisherStart(f, ex) {
@@ -519,5 +520,5 @@ export function runRogueFinisher(f, ex, frame) {
     });
     if (frame > F.impact) setH(f, 0);
   }
-  if (frame >= ex.total) { setH(f, f.h); f.fsm.change('idle'); }
+  if (frame >= ex.total) { setH(f, f.air); f.fsm.change('idle'); }
 }

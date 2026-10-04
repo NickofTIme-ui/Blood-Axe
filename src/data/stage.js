@@ -114,4 +114,5 @@ export const PROPS = {
   urn: { hp: 1, w: 24, h: 36 },
   chest: { hp: 3, w: 46, h: 38 }, // iron-bound: takes a beating, always holds something good
   wall: { hp: 5, w: 90, h: 130 }, // a cracked section of the back wall
+  bell: { hp: 1, w: 34, h: 70 }, // an iron bell on a post: ring it to call an optional fight (stage.challenge)
 };

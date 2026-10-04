@@ -87,6 +87,9 @@ export class HUDScene extends Phaser.Scene {
     // objective, under the hero's bars
     this.objective = this.add.text(14, 90, '', { fontFamily: FONT.ui, fontSize: '13px', color: '#e8d4b0' })
       .setStroke('#000000', 4).setAlpha(0.95);
+    // blood, level and unspent skill points (progression/Progress.js)
+    this.levelText = this.add.text(14, 128, '', { fontFamily: FONT.ui, fontSize: '12px', color: '#ff9a7a' })
+      .setStroke('#000000', 4).setAlpha(0.9);
     // GO → at the right edge, pulsing, while the way on is open
     this.go = this.add.text(W - 24, H / 2 - 20, 'GO\n→', { fontFamily: FONT.display, fontSize: '40px', align: 'center' })
       .setOrigin(1, 0.5).setStroke('#000000', 6).setVisible(false);
@@ -112,7 +115,8 @@ export class HUDScene extends Phaser.Scene {
     this.card.setText(section.name);
     epicFill(this.card, ['#ff7a5a', '#d0101a', '#5a0006']);
     this.cardSub.setText(`${roman}  ·  ${section.objective}`);
-    this.objective.setText(`▸ ${section.objective}`);
+    // (a section that teaches something says how, under the objective)
+    this.objective.setText(`▸ ${section.objective}${section.hint ? `\n   ${section.hint}` : ''}`);
     this.showGo(false);
     this.tweens.killTweensOf([this.card, this.cardSub]);
     for (const t of [this.card, this.cardSub]) {
@@ -336,6 +340,12 @@ export class HUDScene extends Phaser.Scene {
 
   update() {
     const p = this.arena.player;
+    const P = this.arena.progress;
+    if (P && this.levelText) {
+      const id = this.arena.heroIds?.[p.seat] ?? this.arena.characterId;
+      const pts = P.available(id);
+      this.levelText.setText(`LV ${P.level}  ·  ${P.toNext} blood to next${pts > 0 ? `  ·  ${pts} SKILL POINT${pts > 1 ? 'S' : ''} — kneel at a shrine` : ''}`);
+    }
     for (const set of this.barSets) {
       const q = set.p;
       const s = q.stats;

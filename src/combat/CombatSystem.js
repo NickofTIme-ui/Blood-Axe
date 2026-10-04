@@ -8,6 +8,7 @@ import { SETTINGS } from '../config/settings.js';
 import { toWorldBox, overlaps, contactPoint } from './Boxes.js';
 import { movePhase } from './MoveRunner.js';
 import { chooseFatality, chooseMaim } from './Fatality.js';
+import { furyArmor } from './Skills.js';
 
 const FEEL = SETTINGS.feel;
 const ATTACK_STATES = ['light1', 'light2', 'light3', 'heavy', 'special1', 'special2'];
@@ -17,6 +18,7 @@ const armMult = (f) => (f.maimed?.armF ? 0.4 : 1);
 
 // Moves with superArmor can't be interrupted during startup/active.
 function hasSuperArmor(f) {
+  if (furyArmor(f)) return true; // (Rurik's OATH OF FURY, low on health: combat/Skills.js)
   return !!f.move?.superArmor && ATTACK_STATES.includes(f.state) &&
     movePhase(f.move, f.fsm.frame) !== 'recovery';
 }
@@ -195,6 +197,7 @@ export class CombatSystem {
     const healthBefore = def.health;
     def.health = Math.max(0, def.health - damage);
     def.flash = 6;
+    if (attacker) def.lastAttacker = attacker; // (a kick off a ledge into a pit is his kill)
     const armored = hasSuperArmor(def);
     if (!armored) def.faceToward(ctx.fromX);
     event.damage = damage;

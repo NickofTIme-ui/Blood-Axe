@@ -9,6 +9,7 @@ import { Projectile } from '../entities/Projectile.js';
 import { Barriers } from '../combat/Barrier.js';
 import { Mines } from '../combat/Mine.js';
 import { Quakes } from '../combat/Quake.js';
+import { installSkills } from '../combat/Skills.js';
 
 export class World {
   constructor({ seed } = {}) {
@@ -25,6 +26,7 @@ export class World {
     this.mines = new Mines(this);       // the Rogue's widow mines (combat/Mine.js)
     this.quakes = new Quakes(this);     // a boss's ground shockwaves (combat/Quake.js)
     this.frame = 0;
+    installSkills(this); // (skill-tree behaviours: combat/Skills.js; inert without skills)
     // Dice. Every roll the simulation makes comes from roll(): a number fixed by the
     // seed, the tick, who's asking and what about — never Math.random — so two machines
     // given the same seed and the same button presses play out the same fight (online
@@ -82,6 +84,7 @@ export class World {
   // One fixed step (1/60 s).
   tick() {
     this.frame++;
+    this.terrain?.update(); // lifts move, planks give way (stage/Terrain.js)
     for (const f of this.fighters) f.update();
     for (const p of this.projectiles) p.update(this.bounds);
     this.separate();
@@ -110,7 +113,7 @@ export class World {
         const b = fs[j];
         const dx = b.x - a.x;
         const minX = ((a.stats.body.w + b.stats.body.w) / 2) * 0.8;
-        if (Math.abs(b.z - a.z) < 14 && Math.abs(dx) < minX) {
+        if (Math.abs(b.z - a.z) < 14 && Math.abs(dx) < minX && Math.abs(b.h - a.h) < 40) {
           const push = ((minX - Math.abs(dx)) / 2) * 0.5;
           const s = Math.sign(dx) || 1;
           a.x -= s * push;
@@ -130,7 +133,7 @@ export class World {
         if (o === f || o.team !== f.team || !o.alive || o.invincible || b.hit.has(o.id)) continue;
         if (o.state === 'knockdown' || o.state === 'getup') continue;
         const reach = ((f.stats.body.w + o.stats.body.w) / 2) * 0.9;
-        if (Math.abs(o.x - f.x) > reach || Math.abs(o.z - f.z) > 22) continue;
+        if (Math.abs(o.x - f.x) > reach || Math.abs(o.z - f.z) > 22 || Math.abs(o.h - f.h) > 60) continue;
         if (Math.sign(o.x - f.x) !== b.dir) continue; // only those in the flight path
         b.hit.add(o.id);
         o.health = Math.max(1, o.health - 5);

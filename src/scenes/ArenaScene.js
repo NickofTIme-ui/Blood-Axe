@@ -35,6 +35,11 @@ import { finisherTargets, IMPALE, impalePierce } from '../combat/Finisher.js';
 import { Burning } from '../effects/Burn.js';
 import { Stage } from '../stage/Stage.js';
 import { StageView } from '../view/StageView.js';
+import { TerrainView } from '../view/TerrainView.js';
+import { STAGE } from '../data/stage.js';
+import { STAGE_GALLOWS } from '../data/stageGallows.js';
+import { Progress } from '../progression/Progress.js';
+import { CHARACTERS } from '../data/characters.js';
 import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
 import { playMusic, toggleMute } from '../core/Music.js';
@@ -46,6 +51,11 @@ const SPAWN_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'];
 const SPAWN_ORDER = [...BAD_GUYS, 'grunt'];
 
 const STEP_MS = 1000 / 60;
+
+// The stages a run can be (data.stage): THE OATH ROAD, and the platforming slice.
+export const STAGES = { oath: STAGE, gallows: STAGE_GALLOWS };
+// How far above the floor a tall stage's camera can climb (px)
+const CAM_CLIMB = 360;
 
 export class ArenaScene extends Phaser.Scene {
   constructor() {
@@ -63,12 +73,14 @@ export class ArenaScene extends Phaser.Scene {
     this.netInfo = this.mode === 'net' ? data.net : null;
     this.seed = data.seed;
     this.keepSession = !!data.keepSession; // a restart inside an online game: same session, ticks carry on
+    this.stageId = STAGES[data.stage] ? data.stage : 'oath';
+    this.stageData = STAGES[this.stageId];
   }
 
   // What to start this scene again with (restart the stage).
   restartData() {
     return {
-      players: this.heroIds, mode: this.mode, net: this.netInfo, keepSession: true,
+      players: this.heroIds, mode: this.mode, net: this.netInfo, keepSession: true, stage: this.stageId,
       seed: this.mode === 'net' ? (this.world.seed + 1) >>> 0 : undefined, // (the same new dice on both machines)
     };
   }
@@ -77,12 +89,15 @@ export class ArenaScene extends Phaser.Scene {
     const W = SETTINGS.world;
     this.baseZoom = SETTINGS.renderScale ?? 1; // draw at full resolution (see main.js)
     this.cameras.main.setZoom(this.baseZoom);
-    this.cameras.main.setBounds(0, 0, W.width, SETTINGS.height);
+    this.stageWidth = this.stageData.width ?? W.width;
+    this.camTop = this.stageData.tall ? -CAM_CLIMB : 0; // (a tall stage: the camera climbs with you)
+    this.cameras.main.setBounds(0, this.camTop, this.stageWidth, SETTINGS.height - this.camTop);
     // a restart reuses this scene object: forget what the last run left behind
     this.ground = null;
     this.paused = false;
     this.slowUntil = 0;
-    this.drawBackground();
+    if (this.stageData.theme !== 'gallows') this.drawBackground(); // (the gallows draws its own: view/TerrainView.js)
+    else { this.parallax?.destroy(); this.parallax = { update() {}, destroy() {}, layers: [] }; }
 
     this.world = new World({ seed: this.seed });
     this.setupSession();
@@ -240,25 +255,51 @@ export class ArenaScene extends Phaser.Scene {
       }
     });
     ev.on('landHard', ({ fighter }) => this.fx.shake(fighter.alive ? 1.5 : 3, 6));
+    // the skill tree's moves (combat/Skills.js)
+    ev.on('leapSmash', ({ x, z, h, radius, launch }) => {
+      this.fx.shake(launch ? 10 : 7, 14);
+      playSfx(this, 'kick', { volume: 1, pitch: -1300, minGapMs: 0 });
+      const y = z - Math.max(0, h);
+      const ring = this.add.ellipse(x, y, 40, 12).setStrokeStyle(3, 0xd8c8a8, 0.9).setDepth(z + 0.5);
+      this.tweens.add({ targets: ring, scaleX: (radius * 2) / 40, scaleY: (radius * 0.5) / 12, alpha: 0, duration: 280, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+      for (let i = 0; i < 16; i++) this.gore.spawn({ x: x + (Math.random() - 0.5) * radius, z, h: Math.max(0, h) + 2, vx: (Math.random() - 0.5) * 300, vz: 0, vh: 120 + Math.random() * 220, tint: 0x8a7a60, texture: 'px', scale: 0.8 + Math.random(), decal: false, life: 30 + Math.random() * 20 });
+    });
+    ev.on('skillProc', ({ fighter, skill }) => {
+      if (fighter !== this.player) return;
+      if (skill === 'ironWall') this.callout('IRON WALL!', '#ffd24a', 22);
+      if (skill === 'bloodrush') this.gore.spark(fighter.x, fighter.z, Math.max(0, fighter.floor) + 60, 0xff3a2a, 8);
+    });
 
     // The heroes, in player order. Each reads a TickController: the session hands it that
     // tick's button record (core/TickInput.js), whoever's fingers it came from.
     this.players = this.heroIds.map((id, i) => createPlayer(this.world, new TickController(), id, 220 - i * 46, 430 + i * 26));
     this.players.forEach((p, i) => { p.seat = i; }); // whose button record drives him (stays put if a partner leaves)
+    // PROGRESSION (progression/Progress.js): blood, skill points and each hero's picks.
+    // Not online: both machines would have to agree on every pick.
+    if (!this.registry.get('progress')) {
+      let store = null;
+      try { store = window.localStorage; } catch { /* blocked: this session only */ }
+      this.registry.set('progress', new Progress(store));
+    }
+    this.progress = this.mode === 'net' ? null : this.registry.get('progress');
+    this.applySkills(true);
     this.player = this.players[this.session.localIndex] ?? this.players[0]; // "my" hero on this machine
     // two of the same hero: the second wears a cold steel-blue cast so you can tell them apart
     this.players.forEach((p, i) => { if (i > 0 && this.heroIds[i] === this.heroIds[0]) p.tint = 0x9fc0ff; });
     this.deadTicks = 0;
     this.camFocus = this.add.zone(this.player.x, this.player.z, 1, 1);
-    this.cameras.main.startFollow(this.camFocus, true, 0.12, 0);
+    this.cameras.main.startFollow(this.camFocus, true, 0.12, this.stageData.tall ? 0.09 : 0);
     this.cameras.main.roundPixels = true;
 
     // THE OATH ROAD (data/stage.js): sections, hazards, breakables, checkpoints, the boss.
     // The old endless waves stay on key 9 for testing, off by default.
     this.wavesOn = false;
-    this.stage = new Stage(this.world);
+    this.stage = new Stage(this.world, this.stageData);
     this.stageView = new StageView(this, this.stage);
+    // (after the StageView: it makes the 'glow' texture the terrain's lanterns use)
+    this.terrainView = this.stage.terrain || this.stageData.theme ? new TerrainView(this, this.stage) : null;
     this.setupStageEvents(ev);
+    this.setupProgressEvents(ev);
     this.stage.start(this.players);
     ev.on('revive', ({ fighter }) => {
       this.callout(fighter === this.player ? 'ON YOUR FEET' : 'YOUR PARTNER RISES', '#e0c080', 24);
@@ -440,8 +481,10 @@ export class ArenaScene extends Phaser.Scene {
       hud()?.sectionCard?.(index, section);
       if (index > 0) playSfx(this, 'block', { volume: 0.4, pitch: -900, minGapMs: 0 }); // the way shuts behind you
     });
-    ev.on('sectionClear', ({ last }) => {
+    ev.on('sectionClear', ({ last, section }) => {
       if (last) return;
+      // (a stretch with no fight — a climb — opens at once: no GO, its hint stays up)
+      if (!section.waves?.length && !section.boss) return;
       this.callout('GO  →', '#ffd24a', 30);
       hud()?.showGo?.(true);
     });
@@ -482,6 +525,62 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
+  // ------------------------------------------------------------ progression
+
+  // Each hero's stats with his skill picks (a fresh copy each time; health kept in proportion).
+  applySkills(fresh = false) {
+    if (!this.progress) return;
+    for (const p of this.players) {
+      const id = this.heroIds[p.seat] ?? this.characterId;
+      const share = fresh ? 1 : p.health / p.stats.maxHealth;
+      p.stats = this.progress.statsFor(id, CHARACTERS[id]);
+      p.health = Math.max(1, p.stats.maxHealth * share);
+      p.airJumpsLeft = Math.min(p.airJumpsLeft, p.stats.airJumps ?? 0);
+    }
+  }
+
+  setupProgressEvents(ev) {
+    const P = this.progress;
+    if (!P) return;
+    const gain = (text) => this.callout(text, '#ffd24a', 24);
+    ev.on('kill', (e) => {
+      if (e.defender?.team !== 'enemy') return;
+      const lv = P.addBlood(P.bloodFor(e.defender.stats) * (e.defender.stats.boss ? 3 : 1));
+      if (lv > 0) { gain(`LEVEL ${P.level}  ·  +${lv} SKILL POINT`); playSfx(this, 'block', { volume: 0.6, pitch: 700, minGapMs: 0 }); }
+    });
+    ev.on('sectionClear', ({ section }) => {
+      if (!section.waves?.length && !section.boss) return; // (only fights)
+      if (P.claim(`${this.stageId}:${section.id}`)) this.time.delayedCall(900, () => gain('FIRST CLEAR  ·  +1 SKILL POINT'));
+    });
+    ev.on('secretFound', ({ pickup }) => {
+      if (P.claim(`${this.stageId}:secret:${Math.round(pickup.x)}`)) this.time.delayedCall(900, () => gain('+1 SKILL POINT'));
+    });
+    ev.on('challengeStart', () => this.callout('THE BELL TOLLS — HE ANSWERS', '#ff9a30', 24));
+    ev.on('challengeWon', ({ prop }) => {
+      if (P.claim(`${this.stageId}:bell:${Math.round(prop.x)}`)) gain('CHALLENGE WON  ·  +1 SKILL POINT');
+      else this.callout('CHALLENGE WON', '#ffd24a', 24);
+    });
+    ev.on('restTouch', ({ fighter }) => {
+      if (fighter !== this.player) return;
+      this.callout('RESTED  ·  stand still to kneel and spend your points', '#ff9a7a', 20);
+      playSfx(this, 'block', { volume: 0.4, pitch: 500, minGapMs: 0 });
+    });
+    ev.on('restKneel', ({ fighter }) => { if (fighter === this.player) this.openSkills(); });
+  }
+
+  openSkills() {
+    if (this.skillOpen || !this.progress) return;
+    this.skillOpen = true;
+    this.scene.launch('Skills', { arena: this, heroId: this.heroIds[this.player.seat] ?? this.characterId, progress: this.progress });
+  }
+
+  closeSkills() {
+    this.skillOpen = false;
+    // (the buttons pressed in the tree don't carry into the fight)
+    for (const smp of this.session.samplers ?? [this.controls]) { smp?.read?.(); if (smp) smp.lastPresses = []; }
+    for (const p of this.players) p.controller.clearBuffer?.();
+  }
+
   // The camera follows the stage's lock smoothly: when a section shuts behind you the
   // left edge slides up rather than jumping.
   updateStageCamera() {
@@ -491,7 +590,7 @@ export class ArenaScene extends Phaser.Scene {
     this.camL += (tl - this.camL) * 0.06;
     this.camR += (tr - this.camR) * 0.15;
     if (Math.abs(tl - this.camL) < 0.5) this.camL = tl;
-    this.cameras.main.setBounds(this.camL, 0, Math.max(SETTINGS.width, this.camR - this.camL), SETTINGS.height);
+    this.cameras.main.setBounds(this.camL, this.camTop, Math.max(SETTINGS.width, this.camR - this.camL), SETTINGS.height - this.camTop);
   }
 
   // Fell: rise at the section's start, healed, with its fight reset.
@@ -828,6 +927,7 @@ export class ArenaScene extends Phaser.Scene {
       if (this.timeScale > 0.995) this.timeScale = 1;
     }
     this.accumulator += Math.min(delta, 100) * (this.paused ? 1 : this.timeScale);
+    if (this.skillOpen) this.accumulator = 0; // (kneeling at a shrine: the fight holds still)
     s.pump(s.tick);
     let steps = 0;
     while (this.accumulator >= STEP_MS && steps < 5) {
@@ -863,6 +963,8 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     for (const v of this.views.values()) v.update();
+    this.liftShadows();
+    this.terrainView?.update();
     this.parallax.update(Math.min(delta, 100) / 1000 * (this.paused ? 0 : 1));
     this.mageFX.update();
     this.rogueFX.update();
@@ -939,7 +1041,29 @@ export class ArenaScene extends Phaser.Scene {
     let x;
     if (this.mode === 'local' && up.length) x = up.reduce((s, p) => s + p.x, 0) / up.length;
     else x = (this.player.alive || !up.length ? this.player : up[0]).x;
-    this.camFocus.setPosition(x, this.player.z);
+    // a tall stage: the camera rises with the ground under you (not with every jump), with
+    // room above your head; on the floor it sits where it always has
+    let y = this.player.z;
+    if (this.stageData.tall) {
+      const who = this.player.alive || !up.length ? this.player : up[0];
+      const ground = this.mode === 'local' && up.length ? Math.max(...up.map((p) => Math.max(0, p.floor))) : Math.max(0, who.floor);
+      y = who.z - ground - 70;
+    }
+    this.camFocus.setPosition(x, y);
+  }
+
+  // Up on a ledge, a fighter's shadow lies on the ledge (the views put it on the floor).
+  liftShadows() {
+    if (!this.stage.terrain) return;
+    for (const [id, v] of this.views) {
+      const f = this.world.fighters.find((o) => o.id === id);
+      if (!f || !v.shadow) continue;
+      const g = Math.max(0, f.floor);
+      if (g > 0) v.shadow.setPosition(f.x, f.z - g).setDepth(f.z - 0.4);
+      else if (v.shadow.depth !== DEPTH.shadows) v.shadow.setDepth(DEPTH.shadows);
+      // (over a pit: no ground to cast it on)
+      if (f.floor < -1) { v.shadow.setVisible(false); v.pitHid = true; } else if (v.pitHid) { v.shadow.setVisible(true); v.pitHid = false; }
+    }
   }
 
   // Freeze / unfreeze everything: simulation, tweens, timers and sound. Safe to call

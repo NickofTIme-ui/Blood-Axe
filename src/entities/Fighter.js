@@ -10,6 +10,7 @@
 
 import { StateMachine } from '../core/StateMachine.js';
 import { FIGHTER_STATES } from './fighterStates.js';
+import { STEP, FOOT } from '../stage/Terrain.js';
 
 let nextId = 1;
 
@@ -23,6 +24,8 @@ export class Fighter {
 
     // Position & velocity (px, px/second)
     this.x = x; this.z = z; this.h = 0;
+    this.floor = 0;            // height of the ground under his feet (stage/Terrain.js)
+    this.floorBlock = null;    // the block he stands on, if any
     this.vx = 0; this.vz = 0; this.vh = 0;
     this.facing = 1;           // 1 = right, -1 = left
 
@@ -62,7 +65,10 @@ export class Fighter {
   }
 
   get state() { return this.fsm.name; }
-  get grounded() { return this.h <= 0 && this.vh <= 0; }
+  // On the ground under his feet (the floor, or a ledge: stage/Terrain.js) and not rising.
+  get grounded() { return this.h <= this.floor && this.vh <= 0; }
+  // Height above the ground under his feet (h itself is height above the floor).
+  get air() { return this.h - this.floor; }
   get alive() { return this.health > 0; }
 
   // Hurtbox: the area that can be hit, relative to the feet (see combat/Boxes.js).
@@ -113,6 +119,7 @@ export class Fighter {
     if (this.exposed > 0 && --this.exposed === 0) this.exposeCool = this.exposeCoolFrames ?? 0; // (the Rogue's EXPOSED)
     else if (this.exposeCool > 0) this.exposeCool--;
     this.fsm.update();
+    if (this.pitGuard > 0) { this.pitGuard--; this.invincible = true; } // (just climbed out of a fall)
     this.justLanded = false;
     this.integrate();
     this.regen();
@@ -122,25 +129,50 @@ export class Fighter {
   integrate() {
     const dt = 1 / 60;
     const b = this.world.bounds;
+    const T = this.world.terrain;
+    const wasGrounded = this.grounded;
 
-    this.x += this.vx * dt;
-    this.z += this.vz * dt;
-    if (this.h > 0 || this.vh > 0) {
-      this.vh -= this.stats.gravity * dt;
-      this.h += this.vh * dt;
-      if (this.h <= 0) {
-        this.h = 0;
-        this.vh = 0;
-        this.justLanded = true;
-      }
+    if (T && !this.ghost) {
+      // one axis at a time against the terrain's walls, so he slides along them
+      // (in the air he keeps pushing: a jump into a ledge's face carries on over its top
+      // the moment he's high enough, instead of dying against it)
+      const air = this.h > this.floor || this.vh > 0;
+      const nx = this.x + this.vx * dt;
+      if (!T.wallAt(nx, this.z, this.h)) this.x = nx;
+      else { if (!air) this.vx = 0; this.walled = true; }
+      const nz = this.z + this.vz * dt;
+      if (!T.wallAt(this.x, nz, this.h)) this.z = nz;
+      else { if (!air) this.vz = 0; this.walled = true; }
+    } else {
+      this.x += this.vx * dt;
+      this.z += this.vz * dt;
     }
-
     if (!this.unbounded) this.x = Math.max(b.minX, Math.min(b.maxX, this.x)); // (a boss walking in from off-screen)
     this.z = Math.max(b.minZ, Math.min(b.maxZ, this.z));
+
+    if (T) {
+      this.floorBlock = T.blockUnder(this.x, this.z, FOOT);
+      this.floor = T.groundAt(this.x, this.z, FOOT);
+      if (this.h < this.floor && this.h >= this.floor - STEP) this.h = this.floor; // a step up
+      // ...and a step down: walking (not jumping, not flung) off a small drop keeps his feet
+      else if (wasGrounded && this.vh <= 0 && this.h > this.floor && this.h - this.floor <= STEP) this.h = this.floor;
+    }
+    if (this.h > this.floor || this.vh > 0) {
+      this.vh -= this.stats.gravity * dt;
+      this.h += this.vh * dt;
+      if (this.h <= this.floor) {
+        this.landedFrom = this.peakH !== undefined ? this.peakH - this.floor : 0;
+        this.h = this.floor;
+        this.vh = 0;
+        this.justLanded = true;
+        this.peakH = undefined;
+      } else if (this.peakH === undefined || this.h > this.peakH) this.peakH = this.h;
+    }
 
     if (this.grounded) {
       this.fanUsed = false; // (one shuriken fan per time in the air)
       this.airBlinked = false; // (one air blink per time in the air)
+      this.plungeBounced = false; // (Skyfall: one bounce per time in the air)
       this.framesSinceGrounded = 0;
       this.jumpedSinceGrounded = false;
       this.airJumpsLeft = this.stats.airJumps ?? 0;

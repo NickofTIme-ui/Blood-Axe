@@ -127,7 +127,7 @@ export class Barriers {
         if (f.team === b.team) {
           // an ally rolling, blinking, vaulting or high in a jump goes over or through;
           // once he's clear on the far side, that's his side now
-          if (CROSSING.includes(f.state) || f.h > 50 || f.blinkGone) {
+          if (CROSSING.includes(f.state) || f.air > 50 || f.blinkGone) {
             if ((f.x - b.x) * side < -hold) b.sides.set(f.id, -side);
             continue;
           }
@@ -153,7 +153,7 @@ export class Barriers {
   // The fire wall burns whoever is pressed against it, and shoves him back.
   scorch(b, f, side) {
     const k = b.cfg;
-    if (!f.alive || f.invincible || f.h > 70 || b.cool.has(f.id)) return;
+    if (!f.alive || f.invincible || f.air > 70 || b.cool.has(f.id)) return;
     if ((f.x - b.x) * side > b.half + 10) return;
     b.cool.set(f.id, k.tickRate);
     const move = {
