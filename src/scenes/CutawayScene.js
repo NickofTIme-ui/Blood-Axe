@@ -88,7 +88,7 @@ export class CutawayScene extends Phaser.Scene {
     for (let y = H - 150; y < H; y += 20) g.lineBetween(0, y, W, y);
     // dais and throne
     g.fillStyle(0x18142a, 1).fillRect(W * 0.58, H - 176, W * 0.4, 30);
-    g.fillStyle(0x0a0810, 1).fillRect(W * 0.78, H - 330, 90, 160);
+    g.fillStyle(0x241c38, 1).fillRect(W * 0.78, H - 330, 90, 160); // the throne: dark violet stone, so the king reads against it
     g.fillTriangle(W * 0.78, H - 330, W * 0.78 + 90, H - 330, W * 0.78 + 45, H - 380);
     g.fillStyle(0x6a50b0, 1).fillRect(W * 0.78 + 40, H - 300, 10, 10);
     this.root.add(g);
@@ -118,13 +118,14 @@ export class CutawayScene extends Phaser.Scene {
     // KING VAURATH on the throne: a stand-in figure (tall, crowned, a long cape, ember eyes)
     const k = this.add.graphics();
     const kx = W * 0.78 + 45; const ky = H - 176;
-    k.fillStyle(0x1a0c0c, 1).fillTriangle(kx - 40, ky, kx + 40, ky, kx, ky - 150); // the cape
+    k.fillStyle(0x4a0e14, 1).fillTriangle(kx - 40, ky, kx + 40, ky, kx, ky - 150); // the cape, black and deep crimson
     k.fillStyle(0x0c0a0e, 1).fillRect(kx - 22, ky - 120, 44, 92).fillRect(kx - 26, ky - 34, 20, 34).fillRect(kx + 6, ky - 34, 20, 34);
     k.fillStyle(0x0c0a0e, 1).fillRect(kx - 13, ky - 146, 26, 28); // the closed helm
     k.fillStyle(0x2a2210, 1); // the crown, black iron and old gold
     for (let i = -3; i <= 3; i++) k.fillTriangle(kx + i * 4 - 3, ky - 146, kx + i * 4 + 3, ky - 146, kx + i * 4, ky - 160 - (i % 2 ? 0 : 6));
     k.fillStyle(0xa08040, 1).fillRect(kx - 14, ky - 148, 28, 3);
     k.fillStyle(0x806030, 1).fillRect(kx - 34, ky - 70, 8, 70); // the greatsword, point down beside him
+    k.fillStyle(0x5a4a70, 1).fillRect(kx + 19, ky - 120, 3, 92).fillRect(kx + 10, ky - 146, 3, 28); // a cold rim of torchlight
     this.eyes = this.add.rectangle(kx, ky - 134, 16, 3, 0xffa040);
     this.hand = this.add.image(kx - 30, ky - 84, 'glow').setScale(0).setTint(0xff8a30).setBlendMode(Phaser.BlendModes.ADD);
     this.root.add([k, this.eyes, this.hand]);
