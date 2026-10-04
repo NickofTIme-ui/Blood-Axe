@@ -79,7 +79,7 @@ export class Mines {
       if (!m.armed && m.t >= m.arm) { m.armed = true; w.events.emit('mineArmed', { mine: m }); }
       if (!m.special && m.t >= m.cfg.life) { this.fizzle(m); continue; }
       if (m.armed && m.cue < 0 && !m.special) {
-        const near = w.fighters.some((f) => f.team !== m.team && f.alive && !f.removeMe && f.h < 40 &&
+        const near = w.fighters.some((f) => f.team !== m.team && f.alive && !f.removeMe && f.air < 40 &&
           f.state !== 'executed' && Math.hypot(f.x - m.x, (f.z - m.z) * 1.4) <= m.cfg.trigger);
         if (near) { m.cue = 0; w.events.emit('mineCue', { mine: m }); }
       }

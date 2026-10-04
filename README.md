@@ -82,6 +82,23 @@ All their numbers are in `src/data/characters.js` (each hero's `kit` block).
 
 ---
 
+## THE GALLOWS ASCENT (new: platforming and skill trees)
+
+Pick **THE GALLOWS ASCENT (NEW)** on the title screen. A night climb with ledges, pits, a
+moving gibbet cage, rotten planks that give way, a secret ledge and an optional bell fight.
+
+- **Tap jump for a short hop, hold it for a full jump** (this works everywhere now).
+- Fall into a pit: you're back on the last firm ground, a little hurt. Enemies don't come back:
+  kick them in.
+- Kills give **blood** (experience): levels and milestones give **skill points**.
+- At a **blood altar** (rest shrine) you're healed; **stand still** at it to kneel and open
+  the skill tree (arrows / D-pad, J / A take, R / Y respec for free, Esc / B back).
+  Rurik's tree is in; Oryn's and Vexa's come next.
+
+Design, who-can-reach-what and the playtest checklist: `docs/gallows-ascent.md`. The rules
+of progression: `docs/progression.md`. All of the slice's art is temporary:
+`docs/gallows-art-needed.md` lists what to paint.
+
 ## The bad guys
 
 | Key | Name | Weapon | Moveset |

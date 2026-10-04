@@ -16,6 +16,7 @@ import { STAGE, PICKUPS, PROPS } from '../data/stage.js';
 import { ENEMIES } from '../data/enemies.js';
 import { createEnemy, offscreenX } from '../entities/Enemy.js';
 import { toWorldBox, overlaps } from '../combat/Boxes.js';
+import { Terrain, PIT_LOST } from './Terrain.js';
 
 const PAD = 30;           // keep everyone this far inside the section's ends
 const WAVE_GAP = 50;      // frames between one wave dying and the next arriving
@@ -24,6 +25,12 @@ const ADVANCE_AT = 300;  // px past the next section's start that locks you into
 
 // Fire grate: idle -> glowing warning -> eruption (frames)
 const FIRE = { period: 210, warn: 110, burst: 160, tick: 14, damage: 9 };
+// A rest shrine: stand at it (no fight on) and you're healed; stand still this long and
+// you kneel to rest (the skill tree opens: ArenaScene)
+const REST = { reach: 46, depth: 34, kneel: 50 };
+// A fall into a pit: a hero loses this share of his health (never the last of it) and is
+// back on the last safe ground he stood on, untouchable for a moment
+const PIT = { damage: 0.12, guard: 60 };
 // Pendulum blade
 // (driven: struck by a hero — how long it whips about, how much wider and faster, its damage)
 // (bleed: how much of the extra swing a struck blade keeps each frame once it's no longer driven)
@@ -43,12 +50,17 @@ export class Stage {
     this.pickups = [];
     this.hazards = [];
     this.secretsTotal = 0;
+    // ledges, pits, lifts and rotten planks (stage/Terrain.js): stages without them have none
+    this.terrain = data.terrain ? new Terrain(world, data.terrain) : null;
+    world.terrain = this.terrain;
     this.stats = { kills: 0, finishers: 0, secrets: 0, deaths: 0, frames: 0 };
     let id = 1;
     for (const [si, sec] of this.sections.entries()) {
       for (const p of sec.props ?? []) {
         const def = PROPS[p.kind];
-        this.props.push({ id: id++, section: si, ...p, ...def, hp: def.hp, broken: false, hitBy: new Set() });
+        // (y: the ground it stands on — a ledge's top on a stage with terrain)
+        const y = this.terrain ? Math.max(0, this.terrain.groundAt(p.x, p.z)) : 0;
+        this.props.push({ id: id++, section: si, ...p, ...def, y, hp: def.hp, broken: false, hitBy: new Set() });
         if (p.secret) this.secretsTotal++;
       }
       for (const h of sec.hazards ?? []) this.hazards.push({ id: id++, section: si, ...h, t: h.phase ?? 0, cool: new Map() });
@@ -83,7 +95,14 @@ export class Stage {
     this.boss = null;
     this.lockBounds(sec.x0, sec.x1);
     if (teleport) {
-      (this.players ?? []).forEach((p, i) => { p.x = sec.x0 + 140 - i * 46; p.z = 440 + i * 26; });
+      // (a section can name where its heroes stand: on a stage with ledges and pits the
+      // default spot may be neither)
+      const at = sec.spawn ?? { x: sec.x0 + 140, z: 440 };
+      (this.players ?? []).forEach((p, i) => {
+        p.x = at.x - i * 46; p.z = Math.min(this.world.bounds.maxZ, at.z + i * 26);
+        this.placeOnGround(p);
+        p.safe = { x: p.x, z: p.z };
+      });
     }
     this.world.events.emit('sectionStart', { index: i, section: sec });
   }
@@ -133,8 +152,109 @@ export class Stage {
     p.downFor = 0;
     p.awe = 0;
     p.vx = p.vz = p.vh = 0;
-    p.h = 0;
+    this.placeOnGround(p);
     p.fsm.change('idle');
+  }
+
+  // Stand him on whatever ground is under him (the floor, or a ledge).
+  placeOnGround(p) {
+    p.floor = this.terrain ? this.terrain.groundAt(p.x, p.z) : 0;
+    p.floorBlock = this.terrain?.blockAt(p.x, p.z) ?? null;
+    p.h = p.floor;
+  }
+
+  // ------------------------------------------------------------ rest shrines
+
+  // The shrine near a hero (this section's or the next one's), or null.
+  restNear(p) {
+    for (const sec of [this.section, this.sections[this.index + 1]]) {
+      const r = sec?.rest;
+      if (r && Math.abs(p.x - r.x) <= REST.reach && Math.abs(p.z - r.z) <= REST.depth && p.grounded) return r;
+    }
+    return null;
+  }
+
+  updateRests() {
+    for (const p of this.players) {
+      const r = p.alive ? this.restNear(p) : null;
+      if (!r || this.livingFoes().length) { p.restAt = null; p.restStill = 0; continue; }
+      if (p.restAt !== r) {
+        // reached it: healed whole, every time you come to it
+        p.restAt = r;
+        p.restStill = 0;
+        p.restOpened = false;
+        p.health = p.stats.maxHealth; p.mana = p.stats.maxMana; p.stamina = p.stats.maxStamina;
+        this.world.events.emit('restTouch', { fighter: p, rest: r });
+      }
+      const still = !p.controller.moveX && !p.controller.moveZ && ['idle'].includes(p.state);
+      p.restStill = still ? p.restStill + 1 : 0;
+      if (p.restStill >= REST.kneel && !p.restOpened) {
+        p.restOpened = true;
+        this.world.events.emit('restKneel', { fighter: p, rest: r });
+      }
+    }
+  }
+
+  // ------------------------------------------------------------ the bell (an optional fight)
+
+  ringBell(pr) {
+    const before = new Set(this.world.fighters);
+    this.spawnWave(pr.challenge);
+    const foes = this.world.fighters.filter((f) => !before.has(f));
+    this.challenge = { prop: pr, foes };
+    this.world.events.emit('challengeStart', { prop: pr, foes });
+  }
+
+  updateChallenge() {
+    const c = this.challenge;
+    if (!c || c.foes.some((f) => f.alive)) return;
+    this.challenge = null;
+    this.world.events.emit('challengeWon', { prop: c.prop });
+  }
+
+  // ------------------------------------------------------------ falls
+
+  // Heroes remember the last firm ground they stood on (not a lift, not a rotten plank,
+  // not the lip of a pit). Whoever drops into a pit is gone from the fight: an enemy dies,
+  // a hero is put back on that ground a little hurt — never more than ten seconds lost.
+  updateFalls() {
+    const T = this.terrain;
+    if (!T) return;
+    for (const p of this.players) {
+      if (!p.alive || !p.grounded) continue;
+      const firm = [[0, 0], [-22, 0], [22, 0], [0, -14], [0, 14]].every(([dx, dz]) =>
+        T.safeAt(p.x + dx, p.z + dz) && T.groundAt(p.x + dx, p.z + dz) === p.floor);
+      if (firm) p.safe = { x: p.x, z: p.z };
+    }
+    for (const f of this.world.fighters) {
+      if (!f.alive || f.removeMe || !(f.h < PIT_LOST)) continue; // (only a pit lets anyone sink this low)
+      if (f.team === 'player') this.pitRecover(f);
+      else this.pitKill(f);
+    }
+  }
+
+  pitRecover(p) {
+    const at = p.safe ?? this.section.spawn ?? { x: this.section.x0 + 140, z: 440 };
+    p.health = Math.max(1, p.health - p.stats.maxHealth * PIT.damage);
+    p.x = at.x; p.z = at.z;
+    p.vx = p.vz = p.vh = 0;
+    this.placeOnGround(p);
+    p.pitGuard = PIT.guard;
+    p.fsm.change('idle');
+    this.stats.falls = (this.stats.falls ?? 0) + 1;
+    this.world.events.emit('pitFall', { fighter: p, to: at });
+  }
+
+  pitKill(f) {
+    f.health = 0;
+    f.fsm.change('dead');
+    f.removeMe = true;
+    const e = {
+      attacker: f.lastAttacker ?? null, defender: f, dir: Math.sign(f.vx) || 1, kind: 'hazard', hazard: 'pit', pit: true,
+      move: { cut: 'blunt', damage: 0, hitstop: 0, noBlood: true }, x: f.x, z: f.z, h: f.h, damage: 0, fatality: 'none',
+    };
+    this.world.events.emit('pitFall', { fighter: f });
+    this.world.events.emit('kill', e);
   }
 
   // Co-op: a fallen hero isn't out while his partner still stands — after a while he
@@ -163,6 +283,19 @@ export class Stage {
   spawnWave(roster) {
     const b = this.world.bounds;
     const heroes = this.players.filter((p) => p.alive);
+    // a section with ledges and pits names where its men come from (`spawns`: { x, z },
+    // usually just off-screen on firm ground); each is set down on whatever ground is there
+    // (or one list per wave: spawns[waveIndex])
+    let sp = this.section.spawns;
+    if (Array.isArray(sp?.[0])) sp = sp[Math.max(0, Math.min(sp.length - 1, this.waveIndex - 1))];
+    if (sp?.length) {
+      roster.forEach((type, k) => {
+        const at = sp[(this.spawnCursor = ((this.spawnCursor ?? -1) + 1)) % sp.length];
+        const e = createEnemy(this.world, type, at.x + (k >= sp.length ? Math.sign(at.x - heroes[0]?.x || 1) * 40 : 0), at.z, { entering: !at.inPlace });
+        if (this.terrain) { e.floor = this.terrain.groundAt(e.x, e.z); e.h = e.floor; }
+      });
+      return;
+    }
     roster.forEach((type, k) => {
       // from off-screen, alternating sides; they walk on (Enemy.js offscreenX)
       const side = k % 2 === 0 ? 1 : -1;
@@ -207,6 +340,9 @@ export class Stage {
     if (!this.player || this.phase === 'idle') return;
     this.stats.frames++;
     const p = this.player;
+    this.updateFalls();
+    this.updateRests();
+    this.updateChallenge();
     this.updateHazards();
     this.updateProps();
     this.updatePickups();
@@ -248,7 +384,7 @@ export class Stage {
       const hb = f.activeAttack ? toWorldBox(f, info.hitbox ?? info.move.hitbox) : ps.box;
       for (const pr of this.props) {
         if (pr.broken || pr.hitBy.has(info)) continue;
-        const box = { left: pr.x - pr.w / 2, right: pr.x + pr.w / 2, bottom: 0, top: pr.h, z: pr.z };
+        const box = { left: pr.x - pr.w / 2, right: pr.x + pr.w / 2, bottom: pr.y, top: pr.y + pr.h, z: pr.z };
         if (!overlaps(hb, box, f.activeAttack ? (pr.kind === 'wall' ? 60 : 30) : ps.depth)) continue;
         pr.hitBy.add(info);
         // a kick doesn't break a crate or a chest: it sends it skidding off down the lane
@@ -274,10 +410,11 @@ export class Stage {
     pr.broken = true;
     pr.fly = null;
     this.world.events.emit('propBreak', { prop: pr, dir, blast });
+    if (pr.challenge) this.ringBell(pr);
     if (pr.drop) {
       // a wall's shrine sits in the alcove behind it; everything else rolls out in front
       const z = pr.kind === 'wall' ? pr.z + 6 : Math.min(this.world.bounds.maxZ - 5, pr.z + 14);
-      this.pickups.push({ kind: pr.drop, x: pr.x, z, age: 0, taken: false, secret: !!pr.secret });
+      this.pickups.push({ kind: pr.drop, x: pr.x, z, y: pr.y ?? 0, age: 0, taken: false, secret: !!pr.secret });
     }
   }
 
@@ -290,10 +427,12 @@ export class Stage {
       if (!fl || pr.broken) continue;
       const step = KICKED.speed / 60;
       pr.x += fl.dir * step;
+      // (off the end of a ledge, or into its side: it breaks there)
+      const offEdge = this.terrain && this.terrain.groundAt(pr.x + fl.dir * pr.w / 2, pr.z) !== (pr.y || 0) && this.terrain.groundAt(pr.x, pr.z) !== (pr.y || 0);
       fl.left -= step;
       const near = (f, rx, rz) => f.team === 'enemy' && f.alive && Math.abs(f.x - pr.x) <= rx && Math.abs(f.z - pr.z) <= rz;
       const struck = this.world.fighters.some((f) => near(f, pr.w / 2 + 16, KICKED.lane));
-      if (!struck && fl.left > 0 && pr.x > PAD && pr.x < end) continue;
+      if (!struck && !offEdge && fl.left > 0 && pr.x > PAD && pr.x < end) continue;
       if (struck) {
         const hz = { cool: new Map(), x: pr.x, z: pr.z };
         for (const f of this.world.fighters) {
@@ -308,7 +447,7 @@ export class Stage {
     for (const pk of this.pickups) {
       pk.age++;
       if (pk.taken || pk.age < 20) continue;
-      const p = this.players.find((q) => q.alive && Math.abs(q.x - pk.x) <= 30 && Math.abs(q.z - pk.z) <= 24);
+      const p = this.players.find((q) => q.alive && Math.abs(q.x - pk.x) <= 30 && Math.abs(q.z - pk.z) <= 24 && Math.abs(q.h - (pk.y ?? 0)) <= 40);
       if (!p) continue;
       pk.taken = true;
       const def = PICKUPS[pk.kind];
@@ -353,7 +492,7 @@ export class Stage {
     if (t === FIRE.burst) this.world.events.emit('hazardFire', { hazard: hz });
     if (this.firePhase(hz) !== 'burst') return;
     for (const f of this.world.fighters) {
-      if (Math.abs(f.x - hz.x) > hz.w / 2 || Math.abs(f.z - hz.z) > hz.d / 2 || f.h > 40) continue;
+      if (Math.abs(f.x - hz.x) > hz.w / 2 || Math.abs(f.z - hz.z) > hz.d / 2 || f.h - (hz.y ?? 0) > 40) continue;
       this.hurt(hz, f, FIRE.damage, Math.sign(f.x - hz.x) || 1, 'fire');
     }
   }
@@ -382,7 +521,7 @@ export class Stage {
     const s = this.bladeState(hz);
     if (Math.abs(s.speed) < 0.55) return; // only the fast bottom of the swing cuts
     for (const f of this.world.fighters) {
-      if (Math.abs(f.x - s.tipX) > (hz.driven ? 40 : 30) || Math.abs(f.z - hz.z) > (hz.driven ? 30 : 20) || f.h > 70) continue;
+      if (Math.abs(f.x - s.tipX) > (hz.driven ? 40 : 30) || Math.abs(f.z - hz.z) > (hz.driven ? 30 : 20) || Math.abs(f.h - (hz.y ?? 0)) > 70) continue;
       if (hz.driven && f.team === 'player') continue; // sent on its way by a hero: it's his blade now
       this.hurt(hz, f, hz.driven ? D.damage : BLADE.damage, Math.sign(s.speed), 'blade');
     }

@@ -105,11 +105,13 @@ export class TitleScene extends Phaser.Scene {
   // The three ways to play.
   makeButtons(y) {
     const W = SETTINGS.width;
-    const acts = [() => this.go('solo'), () => this.go('local'), () => this.openLobby()];
+    // (the fourth: THE GALLOWS ASCENT, the platforming slice — data/stageGallows.js)
+    const acts = [() => this.go('solo'), () => this.go('local'), () => this.openLobby(), () => this.go('solo', null, 'gallows')];
     this.buttons = [
       this.makeButton(W / 2 - 250, y, '1 PLAYER', 220, acts[0]),
       this.makeButton(W / 2, y, '2 PLAYERS', 220, acts[1], 1650),
       this.makeButton(W / 2 + 250, y, 'ONLINE CO-OP', 240, acts[2], 1800),
+      this.makeButton(W / 2, y - 58, 'THE GALLOWS ASCENT (NEW)', 330, acts[3], 1950),
     ];
     this.buttons.forEach((b, i) => { b.act = acts[i]; b.c.on('pointerover', () => this.pick(i)); });
     this.button = this.buttons[0];
@@ -135,13 +137,13 @@ export class TitleScene extends Phaser.Scene {
     L.join.setAlpha(L.picked === 1 ? 1 : 0.6);
   }
 
-  go(mode = 'solo', net = null) {
+  go(mode = 'solo', net = null, stage = undefined) {
     // (not before the buttons are shown — except when a friend has just connected)
     if (this.leaving || (mode !== 'net' && this.button.c.alpha < 0.5)) return;
     this.leaving = true;
     playSfx(this, 'swingAlt', { volume: 0.5, pitch: -300 });
     this.cameras.main.fadeOut(450, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Select', { mode, net }));
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Select', { mode, net, stage }));
   }
 
   // ------------------------------------------------------------ online lobby

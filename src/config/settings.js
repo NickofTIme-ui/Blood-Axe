@@ -27,6 +27,7 @@ export const SETTINGS = {
     inputBufferFrames: 8,   // ~133 ms: a button pressed this early still counts
     jumpBufferFrames: 8,    // jump pressed this long before landing still jumps
     coyoteFrames: 6,        // can still jump this long after leaving the ground
+    jumpCut: 0.45,          // let go of jump while rising: keep this share of the speed (short hop)
     depthTolerance: 22,     // default: how close in depth (up/down) a hit must be to connect
     maxHitstop: 20,         // cap on freeze frames for any single hit
     killHitstop: 16,        // extra-long freeze on the killing blow

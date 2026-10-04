@@ -154,6 +154,8 @@ export class SpriteFighterView {
         return loop(f.sprinting ? { ...w, fps: w.fps * 1.5 } : w);
       }
       case 'jump': return f.vh > 0 ? a.jump.rise[0] : a.jump.fall[0];
+      // LEAP SMASH (combat/Skills.js): the cleave's downstroke all the way down, then kneeling in the crater
+      case 'plunge': { const ph = a.heavy?.phases; return ph ? (f.landedAt ? ph.recovery?.[0] ?? ph.active[0] : ph.active[0]) : a.jump.fall[0]; }
       case 'block':
       case 'parry': return a.block.frames[0];
       case 'dodge': {

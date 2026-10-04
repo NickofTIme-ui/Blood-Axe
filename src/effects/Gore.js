@@ -290,8 +290,12 @@ export class Gore {
       d.life--;
       if (d.spin) d.img.rotation += d.spin * dt;
 
-      if (d.h <= 0 || d.life <= 0) {
-        if (d.decal && d.h <= 0) this.splat(d.x, d.z, d.scale * (d.spin ? 1.2 : 0.8));
+      // (on a stage with ledges it lands on whatever is under it; the floor's stains are
+      // only for the floor: a drop that lands on a ledge just soaks in)
+      const T = this.scene.world?.terrain;
+      const ground = T ? T.groundAt(d.x, d.z) : 0;
+      if (d.h <= ground || d.life <= 0) {
+        if (d.decal && d.h <= ground && ground === 0) this.splat(d.x, d.z, d.scale * (d.spin ? 1.2 : 0.8));
         d.img.destroy();
         this.drops.splice(i, 1);
         continue;

@@ -1,0 +1,123 @@
+// Progress.js — Blood (experience), levels, skill points and each hero's picks. Pure
+// logic: the arena feeds it what happened and saves it; the skill tree screen spends it.
+//
+// THE RULES
+//   - Blood is shared: whoever you play, the kills feed one pool. Every LEVEL_STEP of
+//     blood is a level, and every level is a skill point.
+//   - Skill points are shared too: each hero spends the whole pool on their own tree
+//     (picking Vexa after a run with Rurik, she has as many points as he had). Switching
+//     heroes never means grinding again.
+//   - First clear of each fight on a stage: +1 point. Each secret: +1. Each optional
+//     challenge won: +1. (So a full run of the Gallows earns ~7-8, the full tree costs 18:
+//     you choose.)
+//   - Respec is free at any rest shrine.
+//   - Enemy health never scales with your level: a damage upgrade always shows.
+//
+// Saved in the browser (localStorage) when it can be; without it, it lasts the session.
+
+import { SKILL_TREES, nodesOf } from '../data/skills.js';
+
+export const PROGRESS = {
+  key: 'bloodaxe.progress.v1',
+  levelStep: 160,     // blood a level (a grunt is worth ~12, a brute ~25, an elite ~80)
+  startPoints: 1,     // one to spend at the first shrine
+  bloodPer: 1 / 6,    // blood for a kill = the man's max health x this
+};
+
+const fresh = () => ({ v: 1, blood: 0, bonus: PROGRESS.startPoints, picks: {}, claimed: {} });
+
+export class Progress {
+  constructor(storage = null) {
+    this.storage = storage;
+    this.data = fresh();
+    try {
+      const raw = storage?.getItem(PROGRESS.key);
+      if (raw) this.data = { ...fresh(), ...JSON.parse(raw) };
+    } catch { /* no saved progress: start fresh */ }
+  }
+
+  save() {
+    try { this.storage?.setItem(PROGRESS.key, JSON.stringify(this.data)); } catch { /* storage blocked */ }
+  }
+
+  // ------------------------------------------------------------ earning
+
+  get level() { return 1 + Math.floor(this.data.blood / PROGRESS.levelStep); }
+  get toNext() { return PROGRESS.levelStep - (this.data.blood % PROGRESS.levelStep); }
+  // points earned in all (levels past the first + milestones)
+  get earned() { return this.level - 1 + this.data.bonus; }
+
+  // Blood for a kill. Returns the levels gained (0 or more).
+  addBlood(amount) {
+    const before = this.level;
+    this.data.blood += Math.max(0, Math.round(amount));
+    this.save();
+    return this.level - before;
+  }
+
+  bloodFor(enemyStats) { return Math.max(4, Math.round(enemyStats.maxHealth * PROGRESS.bloodPer)); }
+
+  // A one-off milestone (a fight's first clear, a secret, a challenge): +1 point once.
+  claim(key) {
+    if (this.data.claimed[key]) return false;
+    this.data.claimed[key] = true;
+    this.data.bonus++;
+    this.save();
+    return true;
+  }
+
+  // ------------------------------------------------------------ spending
+
+  picks(heroId) { return this.data.picks[heroId] ?? []; }
+  spent(heroId) { return this.picks(heroId).reduce((n, id) => n + (nodesOf(heroId).find((x) => x.id === id)?.cost ?? 0), 0); }
+  available(heroId) { return this.earned - this.spent(heroId); }
+  has(heroId, id) { return this.picks(heroId).includes(id); }
+
+  // Why a node can't be bought right now (null = it can).
+  blocker(heroId, id) {
+    const n = nodesOf(heroId).find((x) => x.id === id);
+    if (!n) return 'unknown';
+    if (this.has(heroId, id)) return 'owned';
+    const missing = (n.req ?? []).filter((r) => !this.has(heroId, r));
+    if (missing.length) return 'locked';
+    if ((n.excl ?? []).some((x) => this.has(heroId, x))) return 'excluded';
+    if (this.available(heroId) < n.cost) return 'points';
+    return null;
+  }
+
+  buy(heroId, id) {
+    if (this.blocker(heroId, id)) return false;
+    this.data.picks[heroId] = [...this.picks(heroId), id];
+    this.save();
+    return true;
+  }
+
+  respec(heroId) {
+    this.data.picks[heroId] = [];
+    this.save();
+  }
+
+  reset() { this.data = fresh(); this.save(); }
+
+  // ------------------------------------------------------------ the hero's stats
+
+  // The hero's stats with his picks applied (a deep copy: the shared data is never touched).
+  statsFor(heroId, base) {
+    const picks = this.picks(heroId);
+    if (!SKILL_TREES[heroId] || !picks.length) return base;
+    const s = deepCopy(base);
+    s.skills = {};
+    for (const n of nodesOf(heroId)) if (picks.includes(n.id)) n.apply(s);
+    return s;
+  }
+}
+
+function deepCopy(v) {
+  if (Array.isArray(v)) return v.map(deepCopy);
+  if (v && typeof v === 'object') {
+    const o = {};
+    for (const k of Object.keys(v)) o[k] = deepCopy(v[k]);
+    return o;
+  }
+  return v;
+}

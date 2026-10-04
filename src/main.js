@@ -12,6 +12,7 @@ import { TitleScene } from './scenes/TitleScene.js';
 import { SelectScene } from './scenes/SelectScene.js';
 import { ArenaScene } from './scenes/ArenaScene.js';
 import { HUDScene } from './scenes/HUDScene.js';
+import { SkillScene } from './scenes/SkillScene.js';
 import { loadFonts } from './view/fonts.js';
 import { playStartupIntro } from './core/StartupIntro.js';
 
@@ -31,7 +32,7 @@ const config = {
   backgroundColor: '#0b0606',
   input: { gamepad: true },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [BootScene, TitleScene, SelectScene, ArenaScene, HUDScene],
+  scene: [BootScene, TitleScene, SelectScene, ArenaScene, HUDScene, SkillScene],
 };
 
 document.title = SETTINGS.title;

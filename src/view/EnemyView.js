@@ -234,7 +234,7 @@ export class EnemyView {
       pose.aB += Math.sin(ph) * 12;
       if (this.running) pose.lean = Math.max(pose.lean, 16);
     }
-    if (f.h > 0 && st !== 'knockdown') { F.y -= 2; B.y -= 3; F.x -= 1; }
+    if (f.air > 0 && st !== 'knockdown') { F.y -= 2; B.y -= 3; F.x -= 1; }
     return { F, B };
   }
 

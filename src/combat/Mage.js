@@ -118,7 +118,7 @@ export function forceTargets(f, K) {
       const dz = e.z - f.z;
       return { e, dx, dz, dist: Math.hypot(dx, dz * 1.4) };
     })
-    .filter((o) => o.dx >= -12 && o.dist <= K.radius && Math.abs(o.dz) <= Math.tan(half) * Math.max(0, o.dx) + 24 && o.e.h < 130)
+    .filter((o) => o.dx >= -12 && o.dist <= K.radius && Math.abs(o.dz) <= Math.tan(half) * Math.max(0, o.dx) + 24 && o.e.air < 130)
     .sort((a, b) => a.dist - b.dist || a.e.id - b.e.id);
 }
 
@@ -174,6 +174,16 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
         if (Math.abs(ux) > 0.2) f.facing = Math.sign(ux);
         f.blinkFrom = { x: f.x, z: f.z };
         f.blinkTo = { x: clampX(f.world, f.x + ux * B.distance), z: clampZ(f.world, f.z + uz * B.distance * 0.6) };
+        // never into a wall: pulled back along the line until he fits (stage/Terrain.js).
+        // Over a pit or up onto a ledge he can clear from where he is, he goes.
+        const T = f.world.terrain;
+        if (T) {
+          const from = { x: f.x, z: f.z };
+          const to = { ...f.blinkTo };
+          for (let k = 1; k <= 12 && T.wallAt(f.blinkTo.x, f.blinkTo.z, f.h); k++) {
+            f.blinkTo = { x: to.x + (from.x - to.x) * (k / 12), z: to.z + (from.z - to.z) * (k / 12) };
+          }
+        }
         f.blinkDir = Math.abs(uz) > Math.abs(ux) * 1.2 ? (uz < 0 ? 'up' : 'down') : 'side';
         f.blinkGone = false;
         f.blinkAir = !f.grounded; // blinked out of a jump: he stays at that height through it
@@ -185,7 +195,7 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
         const d = f.stats.dodge;
         const B = kitOf(f).blink;
         stopMoving(f);
-        if (f.blinkAir && f.h > 0) f.vh = f.stats.gravity / 60; // (held at that height: no fall while blinking)
+        if (f.blinkAir && f.air > 0) f.vh = f.stats.gravity / 60; // (held at that height: no fall while blinking)
         f.invincible = frame <= d.iframes;
         if (frame === B.vanishAt) f.blinkGone = true;
         if (frame === B.arriveAt) {
@@ -194,7 +204,7 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
           f.blinkGone = false;
           f.world.events.emit('blinkIn', { fighter: f, x: f.x, z: f.z, from: f.blinkFrom });
         }
-        if (f.blinkAir && f.h > 0) {
+        if (f.blinkAir && f.air > 0) {
           // in the air: re-formed, he drops again (an air chop is the only thing he can do up there)
           if (frame >= B.actFrom && f.controller.consume('attack') && f.stats.moves.air) { f.vh = 0; return f.fsm.change('airAttack'); }
           if (frame >= d.duration + d.recovery) { f.vh = 0; f.airBlinked = true; f.fsm.change('jump'); }

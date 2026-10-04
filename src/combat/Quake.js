@@ -55,7 +55,7 @@ export class Quakes {
       }
       for (const f of w.fighters) {
         if (f.team === wave.team || !f.alive || f.removeMe || f.invincible || wave.hitList.has(f.id)) continue;
-        if (f.h > K.clear) continue;                      // jumped it
+        if (f.air > K.clear) continue;                      // jumped it
         if (f.isDowned || f.state === 'executed') continue; // already on the floor
         if (Math.abs(f.x - wave.x) > f.stats.body.w / 2 + K.width / 2) continue;
         wave.hitList.add(f.id);
