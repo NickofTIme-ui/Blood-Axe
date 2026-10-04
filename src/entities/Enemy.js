@@ -12,6 +12,33 @@ import { Controller } from '../core/Controller.js';
 import { Fighter } from './Fighter.js';
 import { ENEMIES } from '../data/enemies.js';
 import { usable } from './fighterStates.js';
+import { SETTINGS } from '../config/settings.js';
+
+// Enemies never pop into view: a new one is placed just past the edge of anything a
+// hero's screen can show, and walks on (his brain's 'entering' leg, below). Placement
+// reads only the simulation (heroes, bounds), never a camera, so both machines of an
+// online game put him in the same spot.
+export const ENTER = {
+  halfView: SETTINGS.width / 2, // a screen is centred on its hero (or between two)
+  camPad: 30,    // the camera shows at most this far past the locked bounds
+  margin: 140,   // + his half-width and the camera's lag behind a running hero
+  stagger: 45,   // each next man in a wave a step further back
+  onScreen: 400, // he's arrived once he's this close to a hero (and inside the bounds)
+};
+
+// Where to put the k-th man of a wave coming from this side (+1 right, -1 left).
+export function offscreenX(world, heroes, side, k = 0) {
+  const b = world.bounds;
+  const xs = heroes.length ? heroes.map((p) => p.x) : [(b.minX + b.maxX) / 2];
+  // a screen is centred on its hero, but stops at the bounds (+ camPad); it always
+  // shows a full screen, so a room narrower than that shows past its far end
+  const W = ENTER.halfView * 2;
+  const camL = b.minX - ENTER.camPad;
+  const camR = Math.max(b.maxX + ENTER.camPad, camL + W);
+  const left = (x) => Math.max(camL, Math.min(camR - W, x - ENTER.halfView));
+  const edge = side > 0 ? Math.max(...xs.map(left)) + W : Math.min(...xs.map(left));
+  return edge + side * (ENTER.margin + k * ENTER.stagger);
+}
 
 const ATTACK_STATES = ['light1', 'light2', 'light3', 'light4', 'heavy', 'kick', 'viper', 'sweep', 'bolt', 'force'];
 const COMBO_STATES = ['light1', 'light2'];
@@ -40,7 +67,7 @@ export class EnemyBrain extends Controller {
     const moves = f.stats.moves;
     if (press === 'heavy') return usable(f, moves.heavy);
     if (press === 'magic') return !!f.stats.spell && usable(f, f.stats.spell) && f.mana >= f.stats.spell.cost;
-    return usable(f, moves[press]);
+    return usable(f, moves[press]) && !(f.cool[press] > 0);
   }
 
   sample(frozen) {
@@ -52,6 +79,22 @@ export class EnemyBrain extends Controller {
 
     const target = this.pickTarget();
     if (!target) { this.facingHint = null; return; }
+
+    // Still walking on from off-screen: nothing but the walk (no specials or shots
+    // from where nobody can see him), until he's inside the bounds and in view.
+    if (f.entering) {
+      const b = this.world.bounds;
+      const inside = f.x >= b.minX && f.x <= b.maxX;
+      const near = this.world.fighters.some((o) => o.team === 'player' && Math.abs(o.x - f.x) < ENTER.onScreen);
+      if (!inside || !near) {
+        const dir = Math.sign(target.x - f.x) || -f.facing;
+        this.facingHint = dir;
+        if (f.state === 'idle' || f.state === 'walk') this.moveX = dir;
+        return;
+      }
+      f.entering = false;
+      f.unbounded = false;
+    }
 
     // Lost an arm: the fight has gone out of him — he tries to run.
     if (f.maimed?.armF || f.maimed?.armB) return this.panic(target);
@@ -242,13 +285,19 @@ export class EnemyBrain extends Controller {
   }
 }
 
-export function createEnemy(world, typeId, x, z) {
+// opts.entering: he starts off-screen (offscreenX) and walks on before he fights.
+export function createEnemy(world, typeId, x, z, opts = {}) {
   const stats = ENEMIES[typeId];
   const brain = new EnemyBrain(stats.ai);
   const f = new Fighter({ stats, team: 'enemy', x, z, controller: brain });
   brain.fighter = f;
   brain.world = world;
   f.facing = -1;
+  if (opts.entering) {
+    f.entering = true;
+    f.unbounded = true; // (the bounds would snap him on-screen)
+    f.facing = Math.sign(world.bounds.minX + world.bounds.maxX - 2 * x) || -1;
+  }
   world.addFighter(f);
   brain.cooldown = brain.randInt(stats.ai.attackCooldown, 15);
   return f;

@@ -126,7 +126,8 @@ Prompts and progress notes: `tools/enemy-parts/`.
 Sound effects (`assets/audio/sfx/`, list in `src/core/Sfx.js`, volume `audio.sfx`):
 block clang on blocks / parries / guard breaks, swoosh when a light swing misses, a slice on the
 2nd and 3rd combo swings, an extra swing sound mixed in at random, and a distant sword clash
-mixed low now and then when the fight gets busy.
+mixed low now and then when the fight gets busy. The Mage's lightning (`elec-*.wav`) is
+synthesised by `tools/sfx-gen/electric.js`, so it is ours outright.
 
 ## HUD
 

@@ -14,6 +14,18 @@ const DECAL = [0x5a0000, 0x6b0505, 0x4a0000];
 const GRAVITY = 1400;
 
 const rand = (a, b) => a + Math.random() * (b - a);
+
+// 'soft': a round puff that fades to nothing at its edge (mist, smoke, fire), painted once.
+export function softTex(scene) {
+  if (scene.textures.exists('soft')) return;
+  const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,0.75)');
+  g.addColorStop(0.7, 'rgba(255,255,255,0.25)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 64, 64);
+  scene.textures.addCanvas('soft', c);
+}
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 export class Gore {
@@ -31,6 +43,7 @@ export class Gore {
     this.dismemberer.minX = W.edgePadding;
     this.dismemberer.maxX = W.width - W.edgePadding;
     this.puffs = [];
+    softTex(scene);
   }
 
   get level() { return SETTINGS.gore.level; }
@@ -125,7 +138,7 @@ export class Gore {
   //   halfH            cut through at the waist, the top half thrown clear
   //   halfV            a steep diagonal from shoulder to hip, the halves sliding apart
   //   limbs            the legs taken at the knee, the body dropping where it stood
-  //   explode          blown in two, both halves hurled, in a storm of meat
+  //   explode          torn to pieces (blowApart), in a storm of meat
   cutSprite(type, view, e) {
     const cuts = this.scene.cuts;
     if (!cuts || !view?.sheet || !view.sprite?.visible || view.cutAway) return false;
@@ -135,21 +148,10 @@ export class Gore {
     const f = view.f;
     const mid = f.h + f.stats.body.h * 0.5;
     // a mine doesn't cut a man in two: there are no halves, only what's left of him
-    if (type === 'explode' && e.move?.fx === 'mine') {
-      view.cutAway = true;
-      view.hideAll();
-      this.mist(e.x, e.z, mid, 22);
-      this.scorch(f.x, f.z);
-      for (let i = 0; i < Math.round(48 * this.amount); i++) {
-        this.spawn({
-          x: f.x + rand(-12, 12), z: f.z + rand(-6, 6), h: mid + rand(-30, 30), texture: 'px',
-          vx: rand(-520, 520), vz: rand(-120, 120), vh: rand(260, 760),
-          tint: pick([...BLOOD, ...BLOOD, f.stats.look.color, f.stats.look.skin ?? 0x8a0303]), scale: rand(1.8, 4.6), spin: rand(-16, 16),
-        });
-      }
-      this.burst(f.x, f.z, mid, dir, Math.round(90 * this.amount), 1.9);
-      return true;
-    }
+    if (type === 'explode' && e.move?.fx === 'mine') return this.blowApart(view, e, { pieces: 15, power: 1.15 });
+    // anything else that blows a man up (a lotus, a rupture, a crushing crit) tears him
+    // into fewer, bigger pieces, thrown the way the blow was going
+    if (type === 'explode') return this.blowApart(view, e, { pieces: 9, power: 0.95, push: dir * 140 });
     const { upper, lower } = cuts.split(view, cut, dir);
     view.cutAway = true;
     view.hideAll();
@@ -158,20 +160,52 @@ export class Gore {
     else if (type === 'halfH') cuts.launch(upper, dir * rand(160, 320), rand(260, 380), dir * rand(5, 9));
     else if (type === 'halfV') cuts.launch(upper, dir * rand(60, 130), rand(150, 220), dir * rand(1.5, 3));
     else if (type === 'limbs') cuts.launch(upper, dir * rand(20, 70), rand(120, 180), dir * rand(1, 2.5));
-    else {
-      cuts.launch(upper, dir * rand(260, 520), rand(520, 700), dir * rand(10, 18));
-      cuts.launch(lower, -dir * rand(160, 360), rand(360, 520), -dir * rand(8, 14));
-      this.mist(e.x, e.z, mid, 14);
-      this.scorch(f.x, f.z);
-      for (let i = 0; i < Math.round(22 * this.amount); i++) {
-        this.spawn({
-          x: f.x + rand(-10, 10), z: f.z + rand(-6, 6), h: mid + rand(-20, 20), texture: 'px',
-          vx: rand(-420, 420), vz: rand(-90, 90), vh: rand(220, 640),
-          tint: pick([...BLOOD, f.stats.look.color, f.stats.look.skin ?? 0x8a0303]), scale: rand(1.6, 3.4), spin: rand(-14, 14),
-        });
-      }
-    }
     this.burst(f.x, f.z, mid, dir, Math.round(60 * this.amount), 1.6);
+    return true;
+  }
+
+  // A painted enemy blown to pieces: his picture torn into jagged fragments of armour,
+  // cloth and skin (effects/SpriteCut.js shatter), painted meat, organs, gut, bone,
+  // skull and an eye thrown out with them (effects/goreArt.js, the same pieces the doll
+  // fatalities use), a heavy spray and a hanging red mist, a scorched ring of blood
+  // below. push: extra sideways throw (the way the blow was travelling).
+  blowApart(view, e, { pieces = 12, power = 1, push = 0 } = {}) {
+    const f = view.f;
+    const mid = f.h + f.stats.body.h * 0.5;
+    const dir = e.dir || f.facing;
+    // the blast's centre: a little below his middle, toward where it came from
+    const bx = f.x - push * 0.05;
+    const bh = f.h + f.stats.body.h * 0.4;
+    const frags = this.scene.cuts.shatter(view, Math.round(pieces * (this.level === 1 ? 0.7 : 1)), bx, bh, power);
+    if (push) for (const p of frags) p.vx += push * rand(0.5, 1.2);
+    view.cutAway = true;
+    view.hideAll();
+    // what was inside him
+    const D = this.dismemberer;
+    const skin = f.stats.look.skin;
+    D.skin = typeof skin === 'number' ? `#${skin.toString(16).padStart(6, '0')}` : (skin ?? '#b06a48');
+    const y = f.z - mid;
+    D.bits(f.x, y, f.z, ['meat1', 'meat2', 'meat3', 'organ', 'organ', 'gut'], 8, 1.25 * power, Math.sign(push));
+    D.bits(f.x, y - 6, f.z, ['bone', 'bone', 'sinew'], 4, 1.1 * power, Math.sign(push));
+    D.bits(f.x, f.z - f.h - f.stats.body.h * 0.85, f.z, ['skullBit', 'skullBit', 'eyeball'], 3, 1.3 * power, Math.sign(push));
+    // blood: one heavy spray all round, a fan of it up, and a fine mist that hangs
+    for (let i = 0; i < Math.round(70 * this.amount); i++) {
+      const a = rand(-Math.PI, 0) + rand(-0.4, 0.4);
+      const sp = rand(120, 620) * power;
+      this.spawn({
+        x: f.x + rand(-10, 10), z: f.z + rand(-6, 6), h: mid + rand(-24, 24),
+        vx: Math.cos(a) * sp + push * 0.6, vz: rand(-80, 80), vh: -Math.sin(a) * sp + 80,
+        tint: pick(BLOOD), scale: rand(0.25, 0.75),
+      });
+    }
+    this.burst(f.x, f.z, mid, dir, Math.round(40 * this.amount), 1.5);
+    this.mist(f.x, f.z, mid, 18);
+    this.scorch(f.x, f.z);
+    // the pool he leaves behind spreads as the last of it rains down
+    this.scene.time.delayedCall(450, () => {
+      if (!this.decals.active) return;
+      for (let i = 0; i < 8; i++) this.splat(f.x + rand(-50, 50), f.z + rand(-7, 7), rand(1.6, 3.6), 0.7);
+    });
     return true;
   }
 
@@ -206,11 +240,11 @@ export class Gore {
   mist(x, z, h, count) {
     if (this.level === 0) return;
     for (let i = 0; i < count; i++) {
-      const img = this.scene.add.image(x + rand(-14, 14), z - h + rand(-14, 10), 'dot')
-        .setTint(pick([0x6e0202, 0x8a0303, 0x4a0000])).setScale(rand(2, 4.5)).setAlpha(rand(0.35, 0.6)).setDepth(z + 2);
+      const img = this.scene.add.image(x + rand(-18, 18), z - h + rand(-18, 12), 'soft')
+        .setTint(pick([0x6e0202, 0x8a0303, 0x4a0000, 0x5a0408])).setScale(rand(0.5, 1.1)).setAlpha(rand(0.22, 0.42)).setDepth(z + 2);
       this.scene.tweens.add({
-        targets: img, alpha: 0, scale: img.scale * 1.8, y: img.y + rand(-10, 20), x: img.x + rand(-20, 20),
-        duration: rand(500, 1100), onComplete: () => img.destroy(),
+        targets: img, alpha: 0, scale: img.scale * 2, y: img.y + rand(-6, 26), x: img.x + rand(-28, 28),
+        duration: rand(700, 1500), ease: 'Sine.easeOut', onComplete: () => img.destroy(),
       });
     }
   }

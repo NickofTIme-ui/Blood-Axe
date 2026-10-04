@@ -3,20 +3,23 @@
 // Each test builds a tiny World, scripts button presses, and checks the outcome.
 
 import { World } from '../src/core/World.js';
+import { SETTINGS } from '../src/config/settings.js';
 import { Controller } from '../src/core/Controller.js';
 import { Fighter } from '../src/entities/Fighter.js';
-import { createEnemy } from '../src/entities/Enemy.js';
+import { createEnemy, ENTER } from '../src/entities/Enemy.js';
 import { CHARACTERS } from '../src/data/characters.js';
 import { ENEMIES, WAVES } from '../src/data/enemies.js';
 import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.js';
 import { Stage } from '../src/stage/Stage.js';
 import { STAGE } from '../src/data/stage.js';
+import { BladeChain, CHAIN_PHYS } from '../src/view/BladeChain.js';
 import { handshake } from '../src/net/Link.js';
 import { impalePin } from '../src/combat/Finisher.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/Mage.js';
 import { ROGUE_FINISHERS } from '../src/combat/Rogue.js';
 import { TickController, pressed } from '../src/core/TickInput.js';
 import { NetSession, NET, loopPair, snapshot, correct, feedPlayers, delayFor } from '../src/net/Session.js';
+import { runTickJobs } from '../src/core/TickJobs.js';
 
 // A controller driven by a script: { frameNumber: ['attack'] } presses,
 // plus `hold` for held buttons.
@@ -56,6 +59,10 @@ function assert(cond, msg) { if (!cond) throw new Error(msg); }
 
 console.log('Blood Axe — combat logic tests');
 
+// Random critical hits would make damage comparisons flaky: off unless a test turns them on.
+const CRIT_CHANCE = SETTINGS.feel.critChance;
+SETTINGS.feel.critChance = 0;
+
 // (async tests: run after the rest, results printed at the end)
 const later = [];
 function testAsync(name, fn) { later.push([name, fn]); }
@@ -68,6 +75,34 @@ test('light attack hits and causes hitstun', () => {
   assert(t.d.state === 'hitstun' || t.d.hitstop > 0, `dummy state ${t.d.state}`);
 });
 
+test('critical hits: every hero can land one (more damage, flagged on the hit); enemies never do', () => {
+  assert(CRIT_CHANCE > 0 && SETTINGS.feel.critMultiplier > 1, 'crits are on in the game');
+  const hitOnce = (player, chance) => {
+    SETTINGS.feel.critChance = chance;
+    const t = setup({ player, script: { 1: ['attack'] } });
+    t.d.health = 1e4; t.d.stats = { ...t.d.stats, maxHealth: 1e4 };
+    const hits = [];
+    t.world.events.on('hit', (h) => hits.push(h));
+    t.run(40);
+    SETTINGS.feel.critChance = 0;
+    return { dmg: 1e4 - t.d.health, crit: hits.some((h) => h.crit) };
+  };
+  for (const hero of Object.keys(CHARACTERS)) {
+    const plain = hitOnce(hero, 0); const crit = hitOnce(hero, 1);
+    assert(plain.dmg > 0 && !plain.crit, `${hero}: plain hit lands (${plain.dmg})`);
+    assert(crit.crit && Math.abs(crit.dmg - plain.dmg * SETTINGS.feel.critMultiplier) < 0.01,
+      `${hero}: critical hit (${plain.dmg.toFixed(1)} -> ${crit.dmg.toFixed(1)})`);
+  }
+  // an enemy swinging at a hero never crits
+  SETTINGS.feel.critChance = 1;
+  const t = setup({ dummyScript: { 1: ['attack'] }, gap: 50 });
+  const hits = [];
+  t.world.events.on('hit', (h) => hits.push(h));
+  t.run(60);
+  SETTINGS.feel.critChance = 0;
+  assert(hits.some((h) => h.defender === t.p) && !hits.some((h) => h.crit), 'enemy hits are never critical');
+});
+
 test('3-hit combo chains and the finisher knocks down', () => {
   const t = setup({ script: { 1: ['attack'], 12: ['attack'], 25: ['attack'] } });
   const states = new Set();
@@ -75,6 +110,18 @@ test('3-hit combo chains and the finisher knocks down', () => {
   assert(states.has('light2') && states.has('light3'), `states seen: ${[...states]}`);
   assert(t.log.filter((e) => e === 'hit').length === 3, `hits: ${t.log}`);
   assert(['knockdown', 'getup', 'dead'].includes(t.d.state), `dummy ${t.d.state}`);
+});
+
+test('tick jobs: a job started by another job runs to its end (Storm Judgment bolts clear)', () => {
+  const owner = { tickJobs: [] };
+  const every = (n, fn) => { const j = (t) => fn(t); j.t = 0; j.n = n; owner.tickJobs.push(j); };
+  let live = 0;
+  // like MageFX.bolt: on screen when made, gone once its job reaches its last tick
+  const bolt = () => { live++; let on = true; every(4, (t) => { if (on && t >= 3) { on = false; live--; } return true; }); };
+  every(30, (t) => { if (t % 3 === 0) bolt(); return true; }); // like the storm's gather
+  for (let i = 0; i < 60; i++) runTickJobs(owner);
+  assert(live === 0, `${live} bolt(s) left on screen`);
+  assert(owner.tickJobs.length === 0, 'every job finished');
 });
 
 test('input buffer: attack pressed during dodge recovery comes out right after', () => {
@@ -691,6 +738,38 @@ test('co-op: a fallen hero rises beside his partner; both down = back to the che
   stage.respawn();
   assert(heroes.every((h) => h.alive && h.state === 'idle'), 'checkpoint brings both back');
   assert(stage.stats.deaths === 1, 'one death counted');
+});
+
+test('waves: every enemy starts off every screen and walks on (no popping in)', () => {
+  // a hero at the start (the camera pinned to the left wall), hugging the right wall, mid-room
+  for (const at of ['start', 'wall', 'middle']) {
+    const world = new World({ seed: 3 });
+    const hero = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 300, z: 430, controller: new TickController() }));
+    const stage = new Stage(world);
+    stage.start([hero]);
+    for (const f of world.fighters) if (f.team === 'enemy') f.removeMe = true;
+    world.tick();
+    const b = world.bounds;
+    if (at !== 'start') hero.x = at === 'wall' ? b.maxX : (b.minX + b.maxX) / 2;
+    stage.spawnWave(['grunt', 'grunt', 'grunt', 'grunt', 'grunt']);
+    const foes = stage.livingFoes();
+    assert(foes.length === 5, `five came (${foes.length})`);
+    // what the screen shows: 960 wide, centred on the hero but held inside the camera's
+    // bounds (the section +30 each side, never narrower than a screen)
+    const camL = b.minX - 30;
+    const camR = Math.max(b.maxX + 30, camL + SETTINGS.width);
+    const viewL = Math.max(camL, Math.min(camR - SETTINGS.width, hero.x - SETTINGS.width / 2));
+    const viewR = viewL + SETTINGS.width;
+    for (const f of foes) {
+      assert(f.x < viewL - 100 || f.x > viewR + 100, `${at}: spawned off-screen (x ${f.x.toFixed(0)}, view ${viewL.toFixed(0)}..${viewR.toFixed(0)})`);
+      assert(f.entering, 'and is walking on');
+    }
+    for (let i = 0; i < 60 * 15; i++) { hero.health = hero.stats.maxHealth; world.tick(); }
+    for (const f of foes) {
+      assert(!f.entering && f.x >= b.minX && f.x <= b.maxX, `${at}: walked into the room (x ${f.x.toFixed(0)}, ${b.minX}..${b.maxX})`);
+      assert(Math.abs(f.x - hero.x) < 300, `${at}: and came for the hero (${Math.abs(f.x - hero.x).toFixed(0)} away)`);
+    }
+  }
 });
 
 // ---------------------------------------------------------------- the Mage
@@ -1490,6 +1569,120 @@ test('stage: the throne spawns the boss, he rages at half health, killing him wi
   assert(t.ev.includes('bossRage'), 'rage');
   t.killAll(); t.run(5);
   assert(t.ev.includes('stageWon') && t.stage.phase === 'won', `won (${t.stage.phase})`);
+});
+
+test('blade: a struck blade reverses where it is (no jump); its chain snaps and the heavy blade swings, then all settles', () => {
+  const t = stageSetup();
+  const blade = t.stage.hazards.find((h) => h.type === 'blade');
+  t.stage.enterSection(blade.section, true);
+  t.p.x = blade.x - 60; t.p.z = blade.z + 26; t.p.facing = 1;
+  const chain = new BladeChain();
+  let struckAt = -1;
+  t.world.events.on('bladeStruck', (e) => { struckAt = t.world.frame; chain.kick(e.dir, 1); });
+  const bend = () => Math.max(...chain.w.map(Math.abs));
+  blade.t = 60;
+  let last = t.stage.bladeState(blade).a;
+  let jump = 0; let calm = 0; let whip = 0; let swing = 0;
+  for (let i = 0; i < 700; i++) {
+    if (i === 30) t.p.controller.registerPress('attack');
+    t.run(1);
+    const s = t.stage.bladeState(blade);
+    jump = Math.max(jump, Math.abs(s.a - last));
+    last = s.a;
+    chain.step(1, 320, s.omega);
+    if (struckAt < 0) calm = Math.max(calm, bend(), Math.abs(chain.bladeTilt(320)) * 10);
+    else if (t.world.frame - struckAt < 40) { whip = Math.max(whip, bend()); swing = Math.max(swing, Math.abs(chain.bladeTilt(320))); }
+  }
+  assert(struckAt >= 0, 'struck');
+  assert(jump < 0.08, `the blade never jumps (${jump.toFixed(3)} rad in one frame)`);
+  assert(calm < 1, `a plain swing leaves the chain straight and the blade in line (${calm.toFixed(2)})`);
+  assert(whip > 3 && whip <= CHAIN_PHYS.maxBend, `the blow snaps the chain (${whip.toFixed(1)} px)`);
+  assert(swing > 0.08 && swing <= CHAIN_PHYS.bladeMax + 0.1, `and swings the blade on its end (${swing.toFixed(2)} rad)`);
+  assert(bend() < 1 && Math.abs(chain.bladeTilt(320)) < 0.05 && Math.abs((blade.amp ?? 1) - 1) < 0.01, 'then everything settles back');
+});
+
+// The Warlord's Earthbreaker: a scripted Malgor and up to three heroes standing about.
+function quakeSetup({ heroes = [[520, 420, {}]], boss = { 1: ['special2'] } } = {}) {
+  const world = new World();
+  const b = world.addFighter(new Fighter({ stats: ENEMIES.warlord, team: 'enemy', x: 400, z: 420, controller: new Scripted(boss) }));
+  b.facing = 1;
+  const ps = heroes.map(([x, z, hold, script]) => {
+    const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x, z, controller: new Scripted(script ?? {}, hold) }));
+    p.facing = -1;
+    return p;
+  });
+  const ev = [];
+  for (const n of ['hit', 'block', 'parry', 'guardBreak', 'quakeSlam', 'quakeWave', 'quakeHit', 'quakeEnd']) world.events.on(n, (e) => ev.push([n, e]));
+  return { world, b, ps, ev, run: (n) => { for (let i = 0; i < n; i++) world.tick(); } };
+}
+
+test('Earthbreaker: the boss\'s slam goes through a guard, shakes the screen and floors you', () => {
+  const t = quakeSetup({ heroes: [[520, 420, { block: true }]] });
+  const m = ENEMIES.warlord.moves.special2;
+  t.run(3);
+  assert(t.ps[0].state === 'block', `hero blocking (${t.ps[0].state})`);
+  t.run(m.startup + 4);
+  const names = t.ev.map(([n]) => n);
+  assert(!names.includes('block') && !names.includes('guardBreak'), `no guard against it (${names})`);
+  assert(names.includes('quakeSlam'), 'the floor is struck');
+  const hit = t.ev.find(([n, e]) => n === 'hit' && e.defender === t.ps[0]);
+  assert(hit && hit[1].move.shake >= 12, 'a hard hit with a big screen shake');
+  assert(t.ps[0].state === 'knockdown', `knocked down (${t.ps[0].state})`);
+});
+
+test('Earthbreaker: a parry can\'t stop it either', () => {
+  const m = ENEMIES.warlord.moves.special2;
+  const t = quakeSetup({ heroes: [[520, 420, {}, { [m.startup - 2]: ['block'] }]] });
+  t.run(m.startup + 4);
+  assert(!t.ev.some(([n]) => n === 'parry'), 'no parry');
+  assert(t.ps[0].state === 'knockdown', `knocked down (${t.ps[0].state})`);
+});
+
+test('Earthbreaker: the shockwave rolls both ways across the whole lane; on the ground = knocked down, in the air = it rolls under', () => {
+  const m = ENEMIES.warlord.moves.special2;
+  const K = m.shockwave;
+  // far right, standing / far left, at the other edge of the lane / far right, jumping just as it arrives
+  const impact = 400 + (m.hitbox.x + m.hitbox.w) * 0.8;
+  const jumpAt = m.startup + 1 + Math.round(((800 - impact) - 110) / K.speed * 60); // (a beat before it arrives)
+  const t = quakeSetup({ heroes: [[750, 300, {}], [100, 510, {}], [800, 420, {}, { [jumpAt]: ['jump'] }]] });
+  const [stand, behind, jumper] = t.ps;
+  t.run(m.startup + 2);
+  assert(t.ev.filter(([n]) => n === 'quakeWave').length === 2, 'one wave each way');
+  let jumperCleared = false;
+  for (let i = 0; i < 120; i++) {
+    t.run(1);
+    if (jumper.h > K.clear && t.world.quakes.list.some((w) => w.dir > 0 && Math.abs(w.x - jumper.x) < 40)) jumperCleared = true;
+  }
+  const hitBy = new Set(t.ev.filter(([n]) => n === 'quakeHit').map(([, e]) => e.fighter));
+  assert(hitBy.has(stand) && hitBy.has(behind), 'both heroes on the ground went down, in front and behind, near and far in the lane');
+  assert(jumperCleared, 'the jumper was in the air as it passed');
+  assert(!hitBy.has(jumper), 'the jumper cleared it');
+  assert(jumper.health === jumper.stats.maxHealth, 'and took no damage');
+  assert(t.ev.some(([n]) => n === 'quakeEnd') && t.world.quakes.list.length === 0, 'the waves die out');
+});
+
+test('Earthbreaker: a blocking hero is still floored by the wave, and his own side is never hurt', () => {
+  const t = quakeSetup({ heroes: [[800, 420, { block: true }]] });
+  const grunt = createEnemy(t.world, 'grunt', 700, 420);
+  t.run(150);
+  const hitBy = t.ev.filter(([n]) => n === 'quakeHit').map(([, e]) => e.fighter);
+  assert(hitBy.includes(t.ps[0]), 'blocking doesn\'t stop the wave');
+  assert(!hitBy.includes(grunt) && grunt.health === grunt.stats.maxHealth, 'the boss\'s men are untouched');
+});
+
+test('Earthbreaker: not twice in a row (cooldown), and the boss\'s brain does use it', () => {
+  const m = ENEMIES.warlord.moves.special2;
+  const t = quakeSetup({ heroes: [[900, 420, {}]], boss: { 1: ['special2'], [m.startup + m.active + m.recovery + 5]: ['special2'] } });
+  t.run(m.startup + m.active + m.recovery + 10);
+  assert(t.ev.filter(([n]) => n === 'quakeSlam').length === 1, 'the second press is refused while cooling down');
+  // the real AI, left to fight a hero who just stands there
+  const world = new World({ seed: 7 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 300, z: 420, controller: new Scripted() }));
+  createEnemy(world, 'warlord', 600, 420);
+  let slams = 0;
+  world.events.on('quakeSlam', () => slams++);
+  for (let i = 0; i < 60 * 40 && !slams; i++) { p.health = p.stats.maxHealth; world.tick(); }
+  assert(slams > 0, 'he slams the ground in a fight');
 });
 
 for (const [name, fn] of later) {

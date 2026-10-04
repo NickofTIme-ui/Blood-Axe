@@ -190,3 +190,81 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 - `tools/build-release.py` is a Linux/macOS twin of `build-release.ps1` (same PNG->JPEG rules and exceptions, BUILD_TIME stamp, palette copy, forward-slash zip). Needs Pillow.
 - Merged PRs #1 (teal earth wall) and #2 (doom poses wired) into `main` (only the hand-off notes conflicted). Built from `main` at cd257fb: 298 files, zip 134 MB, all logic tests pass. Booted the staged build headless: title, Rurik, Oryn and Vexa painted, parallax and all seven doom sheets load, no errors beyond the sandbox blocking Google Fonts.
 - Not uploaded: the cloud environment cannot reach itch.io and has no butler API key. To upload from the PC: pull `main`, run `tools/build-release.ps1`, upload `release/blood-axe-web.zip`.
+
+## Cloud, 2026-10-03: online join fixed for two different networks (not on itch)
+- Why Nick's friend could not join (itch upload 19531276): `SETTINGS.net.iceServers` listed only STUN, and handing PeerJS our own list replaces its built-in one, which carries PeerJS's free TURN relay (`turn:eu-0/us-0.turn.peerjs.com`, user `peerjs`). Without a relay, two homes behind routers or carrier NAT that won't allow a direct line can't connect. Same-machine and same-Wi-Fi tests always worked, which is why it was missed. The relay is back in `src/config/settings.js`; keep it in the list. `net.broker` can point at a self-hosted PeerJS server if 0.peerjs.com ever goes down.
+- Every failed join now ends in a message (`src/net/Link.js`): matchmaker unreachable (12 s), no room with that code, or room found but no line (ICE failed or 30 s). The host now sees "Your friend found this room, but could not connect" in red under the code, and the room stays open. Before, the host saw nothing at all. The host also re-registers if the matchmaker drops its socket.
+- Tested in the cloud with two separate Chromium instances, a local PeerJS server and a local TURN server, with every direct (non-relay) candidate dropped to stand in for two networks that won't connect directly. With the relay, the two connect and reach hero select through the relay. With the old STUN-only list, both screens show the failure. A wrong code says "No game found". Not tested: the real turn.peerjs.com / 0.peerjs.com (blocked from the cloud) or a real two-house test. Typing the code still needs a keyboard, and in the itch iframe the game must be clicked first so it has focus.
+- To do on the PC: build and upload to itch, then a real two-computer test. Both players must refresh to the new build (the version check will say so otherwise).
+
+## Cloud, 2026-10-03: better explosion chunks (not on itch)
+- A painted enemy blown up (stuck or floor mine, lotus, rupture, crushing crit) is now torn into 9-15 jagged pieces of his own sprite frame (`SpriteCuts.shatter` / `tear` in `src/effects/SpriteCut.js`): head, boots, hands, weapon, torso chunks, each with raw meat on its torn edges, blood soaked in and soot. Painted meat, organs, gut, bone, skull and an eye fly with them (`Gore.blowApart`). The old flat coloured squares are gone. Non-mine explodes used to split him in two halves; they now shatter too (fewer, bigger pieces, thrown the way the blow went).
+- The mine blast (`RogueFX.blast`) is a fireball with a white-hot core, floor glow, shock ring, dust skirt, embers, gravel and rising smoke, replacing the pink flash circles. A small violet flash keeps it reading as the Rogue's.
+- Mist uses a new soft round texture (`softTex` in `Gore.js`), so red mist no longer shows as hard discs.
+- Visual only, no sim change. Before/after captures: project files `explosion/`. Not watched at full speed in a real fight.
+
+## Cloud, 2026-10-03: earth wall polish (not on itch)
+- The Mage's Earthen Bulwark (`EarthWallView` in `src/effects/MageFX.js`) no longer has teal lines drawn over it: the teal zigzag fissure, the seam lines on every slab and the teal health bar are gone. The magic is only the glowing veins already painted into `assets/fx/earthwall-strip.png`.
+- Going up: a dark jagged crack runs across the floor with grit kicked up at its tip; each slab throws real rock chips (new `rockchip` texture) and a skirt of brown dust, and flares briefly as it locks in. No more white dot puffs.
+- Hit: the wall jolts away from the blow, slabs near the impact flash, a burst of stone chips and dust comes off the struck face, grit trickles off the top, a small camera shake, and a heavier thud (`earthHit`). The stone near each hit gets knocked a little shorter and the whole wall darkens as it loses health. Health bar is bone on red.
+- Broken: slabs topple and sink in a dust cloud with rubble and a bigger shake (`earthBreak` sound; `barrierDown`'s `broken` flag is now passed to the view). Timed out: it just sinks back with a little dust.
+- View only, no sim change. Before/after captures: project files `earth-wall/polish/`. Not watched at full speed in a real fight.
+
+## Cloud, 2026-10-03: Storm Judgment lightning no longer sticks (not on itch)
+
+- The Mage's STORM JUDGMENT left a cluster of lightning frozen over his staff after the
+  finisher. Its gather beat throws a new bolt every few ticks from inside a tick job, and
+  the scene's job loop rebuilt its list with `filter`, dropping any job added while it
+  ran. Those bolts were drawn once and never cleared. The loop now lives in
+  `src/core/TickJobs.js` (`runTickJobs`) and keeps jobs started mid-run. Test added.
+- Nick asked for the finisher's lightning to come out of the staff's tip, the source of
+  its power. The seize bolts, the gather's crackle and the killing bolt now all start
+  at the lantern (they used to fall from the top of the screen). `finStorm` in
+  `src/data/heroStrips.js` marks the lantern in each pose (`tips`);
+  `StripHeroView.staffTip()` turns that into a screen point and `MageFX.staffTip` uses
+  it, falling back to the old fixed offset. Other strips can get `tips` the same way.
+  Filmed in the cloud: project files `mage-storm/`.
+
+## Cloud, 2026-10-03: Mage blocks with his staff (not on itch)
+- His block (and parry) used `react` pose 0, which holds the staff trailing behind him and reads as a flinch. It now shows `combo2` pose 3: both hands on the staff, raised diagonally across the front of him (`HERO_ANIMS.mage.block` in `src/data/heroStrips.js`). Reuses existing art, no new strip needed. Before/after: project files `mage-block/`.
+- If Nick wants a purpose-made guard (staff held level in front, both hands, a little shield glow), that would be one new pose to paint; not requested yet.
+
+## Cloud, 2026-10-03: critical hits for every hero (not on itch)
+- Nick asked for critical hits for all good guys. Before this the only crit was Vexa's mark of death (the SUPER CRITICAL a teammate lands on her marked man).
+- Now any hero's clean hit (not blocked or parried) has a 12% chance to be a CRITICAL for 1.75x damage: `SETTINGS.feel.critChance` / `critMultiplier`; a hero can override with `stats.critChance`. Enemies never crit. A super critical never also rolls a normal crit.
+- Rolled with `world.roll()` in `CombatSystem.resolve`, so online co-op stays in step. The hit event carries `crit`; `ArenaScene.critFX` shows "CRITICAL!" (or "CRITICAL COUNTER!"), a small shake, a thump and an extra spray.
+- `tests/logic-test.js` turns crits off by default (they'd make damage comparisons flaky) and has its own crit test for all three heroes.
+
+## Cloud, 2026-10-03: Mage hover upgrade (not on itch)
+- Nick asked for a higher-grade hover: "perhaps effects, his cape moving better". New `src/effects/MageHover.js`, hooked into `StripHeroView` for any hero with `stats.hover` (only the Mage). It only runs while he hovers (idle / gliding, not sprinting) and is visual only, no sim change.
+- Cloth: a WebGL pipeline (`MageCloth`, a `SinglePipeline` with its own fragment shader) ripples the painted cape and robe from the waist down, most along the trailing back edge, with extra streaming while he glides. Each frame is scanned once for the figure box, the staff column and the lantern, so the staff, boots and lantern stay still. It switches off at once for every other state. On the canvas renderer the shader is skipped.
+- Float: the single sine bob is now a slow swell under a quicker bob, with a slight sway; the floor shadow shrinks and grows with the height.
+- Magic: a slow-turning rune circle on the floor under him, a glow at his boots, motes rising under the hem, and the lantern breathing light (halo behind him) and shedding sparks.
+- Finisher code untouched. Checked in a headless browser (idle, glide, combo, spells, sprint, knockdown): no errors. Before/after GIFs: project files `mage-hover/`. Not watched at full speed on a real GPU.
+
+## Cloud, 2026-10-03: Malgor's Earthbreaker slam (not on itch)
+- New boss move `ENEMIES.warlord.moves.special2` (Earthbreaker): a long tell (glaive up, the ground trembles, "JUMP!" banner), then the glaive goes into the floor. It can't be blocked or parried (`unblockable`, checked in `CombatSystem.resolve`), has super armor, and gives the hardest screen shake in the game plus pad rumble.
+- The slam splits the floor and sends a shockwave out both ways across the whole depth of the lane (`src/combat/Quake.js`, `world.quakes`). Anyone on the ground when the front reaches him is knocked down (also unblockable); a hero whose feet are more than 26 px up lets it roll under. It rolls 620 px each way at 420 px/s. One blow per man between the glaive and the two waves; the boss's own men are never hurt.
+- `cooldown` on a move (frames before it can be used again, via `f.cool`) keeps him to one slam every 7 s at most. His AI rolls it within 380 px.
+- Visuals in `src/effects/QuakeFX.js`: dust during the tell, flung floor chunks, a crack decal that fades, and stone and dust thrown up along each wave's front. No new art: it reuses his `heavy` strip with a longer hold at the top. If it should get its own strip, ask for `warlord_slam.png` (6 poses on magenta, same 2172x724 as his others: ready, glaive lifting, glaive high over his head, driving down, blade buried in the floor, pulling it free).
+- Sim change: both online players need the new build. Logic tests cover the guard, parry, jump, wave both ways, cooldown and that his AI uses it.
+
+## Cloud, 2026-10-03: enemies always walk on from off-screen (not on itch)
+- Nick: "always have the bad guys walk onto the screen, not spawning visibly in". Waves used to spawn about 500 px from the hero but clamped inside the section, so near a wall, or in a room narrower than a screen, they popped into view.
+- `offscreenX` in `src/entities/Enemy.js` places each man past the edge of anything a hero's screen can show (centred on the hero, held inside the camera bounds, never narrower than a screen), plus a margin. It reads only sim state, so both online machines agree. `createEnemy(..., { entering: true })` lets him stand outside the bounds (`unbounded`) and his brain only walks him in until he's inside the bounds and within 400 px of a hero; then he fights as normal. Hazards skip him while he's entering. Stage waves, boss adds and the test-arena waves (key 9) all use it; Malgor's own entrance is unchanged; the debug spawn-near key still drops a man beside you.
+- Checked in a headless browser: every enemy spawned outside the view and first showed up at the screen edge, walking. Logic test added (hero at the start, at the right wall, mid-room). Sim change: both online players need the new build.
+
+## Cloud, 2026-10-03: Mage lightning sounds (not on itch)
+The Mage's lightning has its own electric sounds now: a rising hum while the bolt charges, a
+zap when it leaves the staff, a stuttering shock buzz when it hits, a short snap for each fork,
+and a thunderclap on the third chain hit and Storm Judgment. They are five WAVs in
+`assets/audio/sfx/elec-*.wav`, made in code by `tools/sfx-gen/electric.js` (no samples, so no
+licence question). Wired in through `MAGE_SOUNDS` in `src/effects/MageFX.js`. To tweak one, edit
+the generator and run `node tools/sfx-gen/electric.js`.
+
+## Cloud, 2026-10-03: real chain on the pendulum blades (not on itch)
+- The swinging blades used to hang from a dotted line of grey squares. `StageView.drawChain` now draws real interlocking links in rusted iron matched to the painted blade's own chain: open oval rings seen face-on alternating with links seen edge-on that cross in front of them, a highlight on the lit side and rust on the shadow side, a slow twist along the chain, and an iron ceiling plate with rivets and an eye at the pivot. Each link has its weld seam, rust patches, pitting, a glint and contact shadows. Sizes and colours are in `CHAIN` at the top of `StageView.js`.
+- Chain physics (`src/view/BladeChain.js`), built around the blade being far heavier than the chain (Nick: "more bottom heavy"). The blade's weight pulls the chain tight, so it hangs straight through a normal swing, and a blow makes it shudder and snap straight in a moment rather than flop. The blade hangs from the last link like a short heavy pendulum: it lags a touch at each end of the swing, and when struck it carries on for an instant, swings back past the chain's line and settles. The blow shakes the ceiling mount and knocks grit loose from it.
+- Sim change (`Stage.js`): a struck blade used to jump to the bottom of its arc, and jump again when the driven spell ended (its swing halved at once). It now reverses where it is (`strikeBlade` picks the point of the wide arc it's already at), and the extra width and speed bleed away over a few swings (`BLADE.bleed`, `hz.amp`, `hz.rate`). `bladeState` also returns `omega`. Damage, reach and the driven time are unchanged. Logic test: "blade: a struck blade reverses where it is...".
+- Fixed: the blade was drawn turned the wrong way relative to its chain (mirrored tilt, about 16 degrees at the ends of the swing). It now lines up with the chain.
+- Before/after captures and a GIF of a strike: project files `trap-chain/` (`chain-physics-heavy.gif` is the current one).

@@ -155,6 +155,161 @@ export class SpriteCuts {
     } catch { return null; }
   }
 
+  // Blown apart (a mine, a lotus, a rupture): the frame on screen is torn into `n`
+  // jagged fragments of his own pixels (armour, cloth, skin), each with raw meat along
+  // the edges it was torn from its neighbours, blood soaking in behind that and soot
+  // scorched across it, all thrown out from (bx, bh) — the blast's centre, world x and
+  // height. Returns the pieces (already flying); hides nothing itself.
+  shatter(view, n, bx, bh, power = 1) {
+    const f = view.f;
+    const s = view.sprite;
+    const sh = view.sheet;
+    const k = Math.abs(s.scaleY) || 1 / sh.res;
+    const face = Math.sign(s.scaleX) || f.facing;
+    const feetY = f.z - f.h;
+    const cells = this.tear(s.frame, n);
+    if (!cells) return [];
+    const out = [];
+    for (const c of cells) {
+      // the fragment's centre, from frame px to the world (the frame is mirrored when he faces left)
+      const x = f.x + (c.cx - sh.ax) * k * face;
+      const h = f.h + (sh.ay - c.cy) * k;
+      const img = this.scene.add.image(x, feetY + (c.cy - sh.ay) * k, c.key)
+        .setOrigin(c.ox / c.w, c.oy / c.h).setScale(k * face, k).setRotation(s.rotation).setDepth(f.z);
+      const thick = Math.min(c.w, c.h) * k;
+      const p = this.add({
+        img, tex: c.key, x, z: f.z + rand(-5, 5), h, mode: 'fly', rot: s.rotation, spin: 0, face, k, dir: face,
+        edge: thick * 0.75, rest: thick * 0.45, bleed: Math.floor(rand(30, 90) * c.meat), bleedDir: 1, pump: 0.45, age: 0,
+        bandOff: { x: 0, y: 0 }, gib: true,
+      });
+      // thrown out from the blast: the further from its centre, the harder; low bits skid
+      const dx = x - bx; const dy = h - bh;
+      const d = Math.hypot(dx, dy) || 1;
+      const sp = rand(180, 420) * power * (0.7 + Math.min(0.6, d / 80));
+      this.launch(p, (dx / d) * sp + rand(-90, 90), Math.max(140, (dy / d) * sp * 0.4 + rand(220, 560) * power), rand(-16, 16));
+      p.rest = thick * 0.45;
+      out.push(p);
+    }
+    return out;
+  }
+
+  // Divide a frame's opaque pixels into about `n` jagged cells (a noisy Voronoi: seeds
+  // spread over his body, the borders roughened so nothing parts on a clean line) and
+  // paint each one as its own texture. Returns [{ key, w, h, ox, oy, cx, cy, meat }]:
+  // texture key and size, the cell's centre in the texture (ox, oy) and in the frame
+  // (cx, cy), and how much of it is torn edge (0..1, for how long it bleeds).
+  tear(frame, n) {
+    try {
+      const W = frame.cutWidth;
+      const H = frame.cutHeight;
+      const srcC = document.createElement('canvas'); srcC.width = W; srcC.height = H;
+      const sctx = srcC.getContext('2d', { willReadFrequently: true });
+      sctx.drawImage(frame.source.image, frame.cutX, frame.cutY, W, H, 0, 0, W, H);
+      const src = sctx.getImageData(0, 0, W, H).data;
+      const solid = [];
+      for (let i = 0; i < W * H; i++) if (src[i * 4 + 3] >= 40) solid.push(i);
+      if (solid.length < 60) return null;
+      // seeds: random body pixels, kept apart so the pieces come out of a similar size
+      const gap = Math.sqrt(solid.length / n) * 0.75;
+      const seeds = [];
+      for (let t = 0; t < n * 40 && seeds.length < n; t++) {
+        const i = solid[Math.floor(Math.random() * solid.length)];
+        const sx = i % W; const sy = (i / W) | 0;
+        if (seeds.every((q) => Math.hypot(q.x - sx, q.y - sy) > gap)) seeds.push({ x: sx, y: sy, w: rand(0.85, 1.15) });
+      }
+      const ph = [rand(0, 6), rand(0, 6), rand(0, 6)];
+      const rough = gap * 0.13;
+      const owner = new Int16Array(W * H).fill(-1);
+      for (const i of solid) {
+        const x = i % W; const y = (i / W) | 0;
+        // the noise bends the borders into torn, toothed edges
+        const nx = x + (Math.sin(y * 0.11 + ph[0]) + Math.sin(y * 0.33 + x * 0.07 + ph[1]) * 0.45) * rough;
+        const ny = y + (Math.sin(x * 0.12 + ph[2]) + Math.sin(x * 0.36 - y * 0.09 + ph[0]) * 0.45) * rough;
+        let best = 0; let bd = Infinity;
+        for (let j = 0; j < seeds.length; j++) {
+          const d = Math.hypot(seeds[j].x - nx, seeds[j].y - ny) * seeds[j].w;
+          if (d < bd) { bd = d; best = j; }
+        }
+        owner[i] = best;
+      }
+      const meat = [[0x4a, 0x02, 0x08], [0x7a, 0x0a, 0x12], [0xa0, 0x16, 0x1c], [0xc4, 0x3a, 0x34]];
+      const TORN = 2.2; // px of open meat along a torn edge
+      const SOAK = 6;   // and blood soaking in past it
+      const out = [];
+      seeds.forEach((_, j) => {
+        let x0 = W; let y0 = H; let x1 = -1; let y1 = -1; let cnt = 0; let sx = 0; let sy = 0;
+        for (const i of solid) {
+          if (owner[i] !== j) continue;
+          const x = i % W; const y = (i / W) | 0;
+          if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+          cnt++; sx += x; sy += y;
+        }
+        if (cnt < 24) return; // a crumb: the blood and meat bits cover for it
+        const w = x1 - x0 + 1; const h = y1 - y0 + 1;
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        const ctx = c.getContext('2d');
+        const img = ctx.createImageData(w, h);
+        // distance (in px, up to SOAK) from each pixel to the nearest torn edge: a pixel
+        // of this cell touching a pixel of another cell
+        const dist = new Float32Array(w * h).fill(SOAK);
+        const edge = [];
+        for (let y = y0; y <= y1; y++) {
+          for (let x = x0; x <= x1; x++) {
+            const i = y * W + x;
+            if (owner[i] !== j) continue;
+            const o = (q) => q >= 0 && q < W * H && owner[q] >= 0 && owner[q] !== j;
+            if ((x > 0 && o(i - 1)) || (x < W - 1 && o(i + 1)) || o(i - W) || o(i + W)) { edge.push([x - x0, y - y0]); dist[(y - y0) * w + (x - x0)] = 0; }
+          }
+        }
+        // spread the edge distance inward (a few passes of a chamfer sweep is plenty)
+        for (let pass = 0; pass < 2; pass++) {
+          for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+            const q = y * w + x; let d = dist[q];
+            if (x > 0) d = Math.min(d, dist[q - 1] + 1); if (y > 0) d = Math.min(d, dist[q - w] + 1);
+            if (x > 0 && y > 0) d = Math.min(d, dist[q - w - 1] + 1.4); if (x < w - 1 && y > 0) d = Math.min(d, dist[q - w + 1] + 1.4);
+            dist[q] = d;
+          }
+          for (let y = h - 1; y >= 0; y--) for (let x = w - 1; x >= 0; x--) {
+            const q = y * w + x; let d = dist[q];
+            if (x < w - 1) d = Math.min(d, dist[q + 1] + 1); if (y < h - 1) d = Math.min(d, dist[q + w] + 1);
+            if (x < w - 1 && y < h - 1) d = Math.min(d, dist[q + w + 1] + 1.4); if (x > 0 && y < h - 1) d = Math.min(d, dist[q + w - 1] + 1.4);
+            dist[q] = d;
+          }
+        }
+        const soot = [rand(0, 6), rand(0, 6)];
+        for (let y = y0; y <= y1; y++) {
+          for (let x = x0; x <= x1; x++) {
+            const i = y * W + x;
+            if (owner[i] !== j) continue;
+            const q = (y - y0) * w + (x - x0);
+            const d = dist[q];
+            let r = src[i * 4]; let g = src[i * 4 + 1]; let b = src[i * 4 + 2];
+            const nz = Math.sin(x * 0.9 + y * 1.7) + Math.sin(x * 0.31 - y * 0.8) * 1.3 + (Math.random() - 0.5);
+            if (d < TORN) {
+              // open meat, darkest at the very rim, with a pale fleck of bone here and there
+              const m = meat[Math.max(0, Math.min(3, Math.round((d < 0.8 ? 1 : 2) + nz * 0.7)))];
+              [r, g, b] = Math.random() < 0.008 ? [0xe6, 0xd8, 0xbc] : m;
+            } else if (d < SOAK) {
+              const t = 1 - (d - TORN) / (SOAK - TORN);
+              const k = 0.6 * t * (0.7 + 0.3 * Math.sin(x * 1.3 + y * 0.4));
+              r = r * (1 - k) + 0x6a * k; g = g * (1 - k) + 0x04 * k; b = b * (1 - k) + 0x08 * k;
+            }
+            // scorched by the blast: soot in blotches, heaviest away from the torn edges
+            const sc = Math.max(0, Math.sin(x * 0.12 + soot[0]) * Math.sin(y * 0.15 + soot[1]) + nz * 0.15) * 0.45 * Math.min(1, d / SOAK);
+            r *= 1 - sc; g *= 1 - sc * 1.05; b *= 1 - sc * 1.1;
+            img.data[q * 4] = r; img.data[q * 4 + 1] = Math.max(0, g); img.data[q * 4 + 2] = Math.max(0, b); img.data[q * 4 + 3] = 255;
+          }
+        }
+        ctx.putImageData(img, 0, 0);
+        const key = `gibpiece-${++pieceId}`;
+        this.scene.textures.addCanvas(key, c).setFilter(Phaser.Textures.FilterMode.NEAREST);
+        const cx = sx / cnt; const cy = sy / cnt;
+        out.push({ key, w, h, ox: cx - x0, oy: cy - y0, cx, cy, meat: Math.min(1, edge.length / Math.sqrt(cnt) / 3) });
+      });
+      return out;
+    } catch { return null; }
+  }
+
   add(p) {
     p.cont = { alpha: 1 };
     // gut ropes hang off pieces like off doll chunks (effects/GutRope.js)
@@ -203,8 +358,8 @@ export class SpriteCuts {
         if (b && (p.x < b.minX + 4 || p.x > b.maxX - 4)) {
           p.x = Math.max(b.minX + 4, Math.min(b.maxX - 4, p.x));
           p.vx = -p.vx * 0.35; p.spin = -p.spin * 0.5;
-          gore?.burst(p.x, p.z, p.h, Math.sign(p.vx) || 1, Math.round(16 * (gore.amount ?? 1)), 0.8);
-          this.scene.fx?.shake(3, 6);
+          gore?.burst(p.x, p.z, p.h, Math.sign(p.vx) || 1, Math.round((p.gib ? 5 : 16) * (gore.amount ?? 1)), 0.8);
+          if (!p.gib) this.scene.fx?.shake(3, 6);
         }
         if (p.bowl) this.bowlInto(p);
         // a thrown piece trails blood in the air
@@ -217,13 +372,13 @@ export class SpriteCuts {
           if (Math.abs(p.vh) > 160) {
             p.vh = -p.vh * 0.22; p.vx *= 0.5; p.spin *= 0.4; // thud, a small bounce
             if (gore?.level > 0) {
-              gore.burst(p.x, p.z, 4, Math.sign(p.vx) || p.face, Math.round(16 * (gore.amount ?? 1)), 0.6);
-              for (let i = 0; i < 3; i++) gore.splat(p.x + rand(-26, 26), p.z + rand(-4, 4), rand(1.6, 3));
+              gore.burst(p.x, p.z, 4, Math.sign(p.vx) || p.face, Math.round((p.gib ? 6 : 16) * (gore.amount ?? 1)), 0.6);
+              for (let i = 0; i < (p.gib ? 1 : 3); i++) gore.splat(p.x + rand(-26, 26) * (p.gib ? 0.4 : 1), p.z + rand(-4, 4), rand(1.6, 3) * (p.gib ? 0.6 : 1));
             }
           } else {
             p.vh = 0; p.vx *= 0.8; p.spin *= 0.6;
             p.landed = true;
-            if (p.thrown) {
+            if (p.thrown && !p.gib) {
               const side = Math.round((p.rot - Math.PI / 2) / Math.PI) * Math.PI + Math.PI / 2;
               p.rot += (side - p.rot) * 0.18;
               p.rest += (Math.abs(p.edge) * 0.45 - p.rest) * 0.2; // lies lower than it stood
@@ -255,7 +410,7 @@ export class SpriteCuts {
           const cp = this.cutPoint(p);
           const nx = -Math.sin(p.rot) * p.bleedDir;
           const ny = Math.cos(p.rot) * p.bleedDir;
-          const pump = 0.55 + 0.45 * Math.max(0, Math.sin(p.age * 0.35)) * (p.bleed / 200);
+          const pump = (0.55 + 0.45 * Math.max(0, Math.sin(p.age * 0.35)) * (p.bleed / 200)) * (p.pump ?? 1);
           gore.spawn({
             x: cp.x + rand(-4, 4), z: p.z + rand(-1.5, 1.5), h: Math.max(1, p.z - cp.y),
             vx: nx * 150 * pump + rand(-30, 30), vz: rand(-10, 10),
