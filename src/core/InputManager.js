@@ -45,6 +45,7 @@ export class InputManager extends Controller {
     this.padPrev = {};
     this.padSlot = opts.pad === undefined ? 'any' : opts.pad;
     this.useKeyboard = opts.keyboard !== false;
+    this.menuPad = !!opts.menu; // a menu: the D-pad moves the cursor too (in a fight it doesn't move the hero)
     this.lastPresses = [];   // what read() saw pressed since the read before
 
     const kb = scene.input.keyboard;
@@ -110,6 +111,10 @@ export class InputManager extends Controller {
       if (Math.hypot(x, y) > Math.hypot(sx, sy)) { sx = x; sy = y; }
     }
     const stick = { left: sx < -0.5, right: sx > 0.5, up: sy < -0.5, down: sy > 0.5 };
+    if (this.menuPad) {
+      const dp = (i) => pads.some((pad) => pad.buttons[i]?.pressed);
+      stick.up ||= dp(12); stick.down ||= dp(13); stick.left ||= dp(14); stick.right ||= dp(15);
+    }
 
     for (const action of Object.keys(this.keys)) {
       const keyDown = this.keys[action].some((k) => k.isDown);

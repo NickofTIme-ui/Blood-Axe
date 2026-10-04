@@ -69,7 +69,8 @@ export const sprintMult = (f) => (f.sprinting && f.stats.sprint ? f.stats.sprint
 
 export function startJump(f, isAirJump = false) {
   const c = f.controller;
-  f.vh = f.stats.jumpStrength * (isAirJump ? 0.9 : 1);
+  // (an enemy hopping DOWN off a ledge goes up only a little: entities/Enemy.js terrainSteer)
+  f.vh = f.stats.jumpStrength * (isAirJump ? 0.9 : f.airKind === 'drop' ? 0.38 : 1);
   f.h = Math.max(f.h, 0.01); // leave the ground
   f.jumpedSinceGrounded = true;
   // variable height: a hero who lets go of jump while still rising cuts the jump short
@@ -140,6 +141,12 @@ export function tryActions(f, allowed = null) {
   }
   if (ok('kick') && usable(f, s.moves.kick) && ready(f, s.moves.kick, stateFor(f, 'kick')) && c.consume('kick')) {
     f.fsm.change(stateFor(f, 'kick'));
+    return true;
+  }
+  // Rurik's WHIRLWIND CLEAVE (Executioner's Arc, combat/Skills.js): D-pad down / H
+  if (ok('spin') && s.moves.spin && c.peek('padDown') && ready(f, s.moves.spin, 'spin')) {
+    c.consume('padDown');
+    f.fsm.change('spin');
     return true;
   }
   // Enemy-only extra moves (hooks, charges, spins). Players have no button for these.
@@ -369,9 +376,12 @@ export const FIGHTER_STATES = {
     enter(f) { stopMoving(f); if (!f.controller.moveX && !f.controller.moveZ) f.sprinting = false; },
     update(f) {
       if (!f.grounded) return f.fsm.change('jump');
+      // (landed with the stick still pushed, then let go: the sprint is over. A sprint
+      // armed by a click while standing still stays armed.)
+      if (!f.controller.moveX && !f.controller.moveZ && f.sprinting && ['jump', 'airAttack'].includes(f.fsm.prevName) && !f.sprintArmed) f.sprinting = false;
       if (f.controller.facingHint) f.facing = f.controller.facingHint;
       if (tryActions(f)) return;
-      if (f.stats.sprint && f.controller.consume('sprint')) f.sprinting = !f.sprinting; // (armed: he sets off at a sprint)
+      if (f.stats.sprint && f.controller.consume('sprint')) { f.sprinting = !f.sprinting; f.sprintArmed = f.sprinting; } // (armed: he sets off at a sprint)
       if (f.controller.moveX || f.controller.moveZ) f.fsm.change('walk');
     },
   },
@@ -387,6 +397,7 @@ export const FIGHTER_STATES = {
         f.sprinting = !f.sprinting;
         if (f.sprinting) f.world.events.emit('sprintStart', { fighter: f });
       }
+      f.sprintArmed = false; // (moving: an armed sprint has been used)
       const k = sprintMult(f);
       f.vx = c.moveX * f.stats.walkSpeed * k;
       f.vz = c.moveZ * f.stats.depthSpeed * k;
@@ -854,4 +865,4 @@ export const FIGHTER_STATES = {
 Object.assign(FIGHTER_STATES, mageStates({ tryActions, stopMoving, friction, faceInput, aimTurn }));
 // ...and the Rogue's (combat/Rogue.js)
 Object.assign(FIGHTER_STATES, rogueStates({ tryActions, stopMoving, friction, faceInput, makeAttackState }));
-Object.assign(FIGHTER_STATES, skillStates()); // (the skill tree's moves: combat/Skills.js)
+Object.assign(FIGHTER_STATES, skillStates({ tryActions, stopMoving, friction, movePhase })); // (the skill tree's moves: combat/Skills.js)

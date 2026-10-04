@@ -281,3 +281,11 @@ the generator and run `node tools/sfx-gen/electric.js`.
 - **THE GALLOWS ASCENT** (`src/data/stageGallows.js`, title menu): 6 sections, design and playtest list in `docs/gallows-ascent.md`. Placeholder art in `src/view/TerrainView.js`; what to paint in `docs/gallows-art-needed.md`.
 - **Progression** (`src/progression/Progress.js`, `src/data/skills.js`, `src/combat/Skills.js`, `src/scenes/SkillScene.js`): shared blood/points, per-hero picks, free respec at shrines, Rurik's 9-skill tree. Rules: `docs/progression.md`. Off online.
 - Tests: terrain, jump, pits, lifts, planks, blink, skills, shrines, the bell, a route bot that finishes the main route with each hero, and the roost's reachability.
+
+## Cloud, 2026-10-04 (later): platforming with teeth, enemy jumps, skill fixes (not on itch)
+- **Higher jumps** for everyone: Rurik 680/1900 (rises 122), Oryn 650/1300 (162), Vexa 800/1900 (168), enemies 560/1700 (92). A tapped jump is a 54-70 px hop.
+- **Gallows rebuilt around them**: held-jump steps (85-90), gaps over pits, rising rotten planks (30-frame fuse), a faster cage, roost 150 px up. Pit falls cost 20%. A route bot finishes it with every hero; a fight bot wins it with Oryn and Vexa.
+- **Enemies jump properly**: a crouch before a hop up (`f.jumpPrep`, the readable wind-up), rise / top / fall poses, a landing squash, and a deliberate short hop DOWN off ledges (`airKind 'drop'`). Painted strips `<enemy>_jump.png` (4) and `_drop.png` (3) plug in by name; until then the walk frames are squashed and stretched (`SpriteEnemyView.ledgePose`). Prompts: `docs/enemy-jump-art-prompts.md`.
+- **D-pad freed**: it no longer moves a hero (left stick only); its buttons are actions `padUp/padDown/padLeft/padRight` (new tick bits). Menus still use it. **D-pad Down / H = Rurik's Whirlwind Cleave.**
+- **Skill tree**: Wind Step first, Leap Smash second; Keen Edge = +25% on every sword blow; Executioner's Arc = the Whirlwind Cleave (360: front then behind, a turn and a full-circle smear; also cancels out of the combo). The tree closes on Esc / B / Backspace, pad B / Back / Start, or a click (it trapped players before: Enter didn't close it and B on the keyboard wasn't bound).
+- Fixed: landing with the stick pushed and letting go kept the sprint on.

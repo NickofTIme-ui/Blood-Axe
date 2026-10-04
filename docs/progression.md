@@ -34,8 +34,8 @@ still. Arrows / D-pad move, J / A takes a skill, R / Y respecs, Esc / B goes bac
 
 | | THE BUTCHER (bigger, crueller swings) | THE OATHGUARD (outlast them) | THE SKYBREAKER (own the air) |
 |---|---|---|---|
-| 1 pt | **Keen Edge** — Cleave +25% damage, 4 frames faster (upgrade) | **Bloodrush** — each kill: +20 stamina, +6 health (passive) | **Leap Smash** — NEW: heavy in the air plunges down; the landing floors everyone close (active) |
-| 2 pts | **Executioner's Arc** — Cleave hits behind you too (behaviour, area) | **Iron Wall** — a parry hits back for 25 and breaks his guard (defensive behaviour) | **Wind Step** — a second jump, double air control; reaches the roost (mobility) |
+| 1 pt | **Keen Edge** — every sword blow +25% damage (upgrade) | **Bloodrush** — each kill: +20 stamina, +6 health (passive) | **Wind Step** — a second jump, double air control; reaches the roost (mobility) |
+| 2 pts | **Executioner's Arc** — NEW MOVE on D-pad Down / H: the Whirlwind Cleave, a full 360 turn that cuts the men in front, then behind; also out of the combo (active, area) | **Iron Wall** — a parry hits back for 25 and breaks his guard (defensive behaviour) | **Leap Smash** — NEW: heavy in the air plunges down; the landing floors everyone close (active) |
 | 3 pts | **Berserk** — no block; +30% damage; every blow gives 6 stamina (major, risk) | **Oath of Fury** — under 1/3 health: blows don't stagger you, 20% of your damage heals you (major, risk) | **Skyfall** — Leap Smash 60% wider, launches them, bounces you back up to smash again (major) |
 
 Berserk and Oath of Fury shut each other out: the choice at the top of the tree. Skyfall

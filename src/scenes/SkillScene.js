@@ -4,7 +4,7 @@
 //   ← → ↑ ↓ / D-pad   move between skills
 //   J / ENTER / A     take the skill (enough points, the one before it owned)
 //   R / Y             respec: every point back, free at a shrine
-//   ESC / B           back to the fight
+//   ESC / B / BACKSPACE, or the pad's B / Back / Start, or the button: back to the fight
 //
 // TEMPORARY ART: plain panels and text. (The painted frame and icons are in
 // docs/gallows-art-needed.md.)
@@ -35,14 +35,19 @@ export class SkillScene extends Phaser.Scene {
     const H = SETTINGS.height;
     this.cameras.main.setOrigin(0, 0).setZoom(SETTINGS.renderScale ?? 1); // full resolution
     this.add.rectangle(0, 0, W, H, 0x000000, 0.9).setOrigin(0);
-    this.controls = new InputManager(this);
+    this.controls = new InputManager(this, undefined, { menu: true }); // (the D-pad moves the cursor here)
     this.openedAt = this.time.now;
     const name = this.arena.player.stats.name ?? this.heroId;
     const title = this.add.text(W / 2, 30, `${name.toUpperCase()}  ·  SKILLS`, { fontFamily: FONT.display, fontSize: '30px' })
       .setOrigin(0.5).setStroke('#000000', 6);
     epicFill(title, ['#ffd2a0', '#d06030', '#5a1a06']);
     this.header = this.add.text(W / 2, 62, '', { fontFamily: FONT.ui, fontSize: '14px', color: '#e8d4b0' }).setOrigin(0.5);
-    this.footer = this.add.text(W / 2, H - 18, 'J / A: take    R / Y: respec (free)    ESC / B: back to the fight', { fontFamily: FONT.ui, fontSize: '13px', color: '#a89878' }).setOrigin(0.5);
+    this.footer = this.add.text(W / 2 - 150, H - 20, 'J / ENTER / A: take      R / Y: respec (free)', { fontFamily: FONT.ui, fontSize: '13px', color: '#a89878' }).setOrigin(0.5);
+    // leaving can never be a puzzle: a big button that says so, and a click on it works too
+    const back = this.add.text(W / 2 + 190, H - 20, '[ ESC / B ]  BACK TO THE FIGHT', { fontFamily: FONT.ui, fontSize: '15px', color: '#ffd24a' })
+      .setOrigin(0.5).setStroke('#000000', 4).setInteractive({ useHandCursor: true });
+    back.on('pointerdown', () => this.close());
+    this.tweens.add({ targets: back, alpha: { from: 0.7, to: 1 }, duration: 700, yoyo: true, repeat: -1 });
     if (!this.tree) {
       this.add.text(W / 2, H / 2, `${name}'s tree is not in this slice yet.\nRurik's is: play him to try it.\n(Planned trees: docs/progression.md)`,
         { fontFamily: FONT.ui, fontSize: '18px', color: '#e8d4b0', align: 'center' }).setOrigin(0.5);
@@ -121,9 +126,10 @@ export class SkillScene extends Phaser.Scene {
     const c = this.controls;
     c.tick(false);
     if (this.time.now - this.openedAt < 250) { c.read?.(); return; } // (the press that got you here doesn't count)
-    // (Enter is pause in a fight AND confirm: here it takes a skill, so only Esc / B leave)
+    // (Enter is pause in a fight AND confirm: here it takes a skill. Leaving: Esc / B /
+    // Backspace on the keys, B / Back / Start on a pad)
     c.consume('pause');
-    if (c.consume('menu') || c.consume('dodge')) return this.close();
+    if (c.consume('back') || c.consume('menu') || c.consume('dodge')) return this.close();
     if (!this.tree) { if (c.consume('confirm') || c.consume('attack')) this.close(); return; }
     const dx = (c.consume('right') ? 1 : 0) - (c.consume('left') ? 1 : 0);
     const dy = (c.consume('down') ? 1 : 0) - (c.consume('up') ? 1 : 0);

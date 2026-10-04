@@ -5,7 +5,9 @@
 // GAMEPAD:  button numbers in the "standard" layout (Xbox names shown):
 //           0=A 1=B 2=X 3=Y 4=LB 5=RB 6=LT 7=RT 8=Back/View 9=Start/Menu
 //           10=left stick click 12=D-pad Up 13=D-pad Down 14=D-pad Left 15=D-pad Right
-//           The left analog stick always moves.
+//           The left analog stick always moves. The D-pad does NOT move a hero (it's kept
+//           free for new actions: padUp/padDown/padLeft/padRight below); in the menus
+//           (title, hero select, skill tree) it still moves the cursor.
 
 export const CONTROLS = {
   keyboard: {
@@ -33,10 +35,14 @@ export const CONTROLS = {
     restart: ['R'],              // dead: rise at the checkpoint. Paused / won: restart the stage
     menu:    ['ESC'],            // playing: pause. Paused / dead / won: back to character select
     mute:    ['M'],              // music on/off
+    back:    ['ESC', 'B', 'BACKSPACE'], // leave a menu (the skill tree)
+    // the D-pad's four buttons, free for whatever the game needs next (no keys yet)
+    // padDown: Rurik's 360 WHIRLWIND CLEAVE once he has Executioner's Arc (H on the keys)
+    padUp: [], padDown: ['H'], padLeft: [], padRight: [],
   },
 
   gamepad: {
-    left: [14], right: [15], up: [12], down: [13],
+    left: [], right: [], up: [], down: [], // (the left stick moves: the D-pad is free)
     attack: [2],     // X
     heavy:  [3],     // Y
     jump:   [0],     // A
@@ -49,6 +55,8 @@ export const CONTROLS = {
     pause:   [9],    // Start
     restart: [3],    // Y — only acts when dead, paused or after winning (it's the heavy button in a fight)
     menu:    [8],    // Back / View
+    back:    [1, 8, 9], // B, Back or Start: leave a menu (the skill tree)
+    padUp: [12], padDown: [13], padLeft: [14], padRight: [15], // the D-pad: Down = the 360 swing (a skill); the rest free
   },
 
   stickDeadzone: 0.3,

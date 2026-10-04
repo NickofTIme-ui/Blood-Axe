@@ -13,7 +13,7 @@ import { Controller } from './Controller.js';
 
 // Bit order. Append only: both machines must agree on it.
 export const ACTIONS = ['left', 'right', 'up', 'down', 'attack', 'heavy', 'block', 'dodge', 'magic', 'kick', 'jump',
-  'confirm', 'pause', 'restart', 'menu', 'sprint'];
+  'confirm', 'pause', 'restart', 'menu', 'sprint', 'padUp', 'padDown', 'padLeft', 'padRight'];
 const BIT = Object.fromEntries(ACTIONS.map((a, i) => [a, 1 << i]));
 
 export const EMPTY = [0, 0, 0, 0];

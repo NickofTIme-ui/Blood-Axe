@@ -55,6 +55,12 @@ const set = (id) => ({
   // it (f.doom.kind): 0 rigid, staring at it / 1 looking back, pleading / 2 hopping,
   // pulling at it / 3 leaning away from it. Optional: without it the hit/idle poses stand in.
   doom: { file: `${DIR}/${id}_doom.png`, frames: 4, ref: 0, ground: 'drawn', optional: true },
+  // jumping up a ledge / a gap: 0 crouch, 1 push-off rising, 2 tucked at the top, 3 landing
+  // crouch. Hopping DOWN off a ledge: 0 stepping off (looking down), 1 dropping (legs
+  // reaching for the ground), 2 landing. Optional: without them his own frames are bent
+  // into the shapes (view/SpriteEnemyView.js). Prompts: docs/enemy-jump-art-prompts.md
+  jump: { file: `${DIR}/${id}_jump.png`, frames: 4, ref: 0, ground: 'drawn', optional: true },
+  drop: { file: `${DIR}/${id}_drop.png`, frames: 3, ref: 0, ground: 'drawn', optional: true },
 });
 
 // The scared set of animations for a one-armed enemy (side = 'B' or 'F').
@@ -131,6 +137,9 @@ const COMMON = {
   getup: { needs: ['react'], frames: seq('react', [5, 4, 0]) },
   // stuck with a mine: one pose per f.doom.kind (picked in SpriteEnemyView)
   doom: { needs: ['doom'], frames: seq('doom', [0, 1, 2, 3]) },
+  // ledges (stage/Terrain.js): the painted jump and drop, when they exist
+  jump: { needs: ['jump'], frames: seq('jump', [0, 1, 2, 3]) },
+  drop: { needs: ['drop'], frames: seq('drop', [0, 1, 2]) },
 };
 
 export const ENEMY_ANIMS = {

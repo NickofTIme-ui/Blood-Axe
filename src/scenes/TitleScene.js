@@ -25,7 +25,7 @@ export class TitleScene extends Phaser.Scene {
     this.cameras.main.setOrigin(0, 0).setZoom(SETTINGS.renderScale ?? 1); // full resolution
     const W = SETTINGS.width;
     const H = SETTINGS.height;
-    this.controls = new InputManager(this);
+    this.controls = new InputManager(this, undefined, { menu: true }); // (the D-pad moves the cursor here)
     this.leaving = false;
     this.add.rectangle(0, 0, W, H, 0x000000).setOrigin(0);
 
