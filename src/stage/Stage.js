@@ -19,6 +19,20 @@
 //   exit: { x, after }  the level ends when a hero walks out here, once the last section
 //                       is won and the beat `after` has played (not the moment it's won)
 //   boss.entrance.freeze: false   he walks in without freezing the heroes (a sub-boss)
+//   boss.phases: [{ id, at, adds?, ai?, damage?, speed?, rage? }]   BOSS PHASES: under `at`
+//                       of his health he moves on to the next phase (in order, each once):
+//                       new men (`adds`), his brain's numbers changed (`ai`: e.g. a shorter
+//                       attackCooldown), harder (`damage` x) or faster (`speed` x). Emits
+//                       bossPhase { boss, phase, index }; story beats 'phase:<section>:<id>';
+//                       hazards `when: 'phase:<id>'` only run from that phase on. `rage: true`
+//                       also counts as his rage (bossRage, `when: 'rage'`). Without phases a
+//                       boss has one: at half health he rages and calls his `adds`.
+//   sequence            a scripted ending (stage/Sequence.js: the judgment)
+//
+// new Stage(world, data, opts): opts.rescued / opts.lost (villagers already saved / lost in
+// this level: a saved checkpoint), opts.saved (every level's saved, from the campaign save),
+// opts.flags (the campaign's one-time flags: a sequence's progress). start(players,
+// { section }) starts at a later section's checkpoint.
 
 import { STAGE, PICKUPS, PROPS } from '../data/stage.js';
 import { ENEMIES } from '../data/enemies.js';
@@ -26,6 +40,7 @@ import { createEnemy, offscreenX } from '../entities/Enemy.js';
 import { toWorldBox, overlaps } from '../combat/Boxes.js';
 import { Terrain, PIT_LOST } from './Terrain.js';
 import { Story } from './Story.js';
+import { Sequence } from './Sequence.js';
 
 const PAD = 30;           // keep everyone this far inside the section's ends
 const WAVE_GAP = 50;      // frames between one wave dying and the next arriving
@@ -53,9 +68,10 @@ const KICKED = { kinds: ['crate', 'chest'], speed: 620, range: 560, lane: 26, ra
 const BEAM = { period: 230, warn: 80, damage: 22, lethalH: 60 };
 
 export class Stage {
-  constructor(world, data = STAGE) {
+  constructor(world, data = STAGE, opts = {}) {
     this.world = world;
     this.data = data;
+    this.opts = opts;
     this.sections = data.sections;
     this.index = -1;
     this.phase = 'idle';
@@ -68,6 +84,8 @@ export class Stage {
     world.terrain = this.terrain;
     // dialogue and villagers (stage/Story.js): campaign levels only
     this.story = data.story || data.npcs ? new Story(this, data) : null;
+    // a scripted ending (the judgment): stage/Sequence.js
+    this.sequence = data.sequence ? new Sequence(this, data.sequence, opts.flags ?? {}) : null;
     this.stats = { kills: 0, finishers: 0, secrets: 0, deaths: 0, frames: 0 };
     let id = 1;
     for (const [si, sec] of this.sections.entries()) {
@@ -92,9 +110,16 @@ export class Stage {
   get player() { return this.players?.find((p) => p.alive) ?? this.players?.[0]; }
 
   // players: the hero, or the heroes (co-op), in player order.
-  start(players) {
+  // section: start at this section's checkpoint (what came before counts as done).
+  start(players, { section = 0 } = {}) {
     this.players = Array.isArray(players) ? players : [players];
-    this.enterSection(0, true);
+    const k = Math.max(0, Math.min(this.sections.length - 1, section | 0));
+    if (k > 0) {
+      this.cleared = k - 1;
+      this.story?.skipTo(k);
+    }
+    this.enterSection(k, true);
+    this.sequence?.resume();
   }
 
   // ------------------------------------------------------------ sections
@@ -160,6 +185,7 @@ export class Stage {
     this.world.mines?.clear();
     for (const p of this.players) this.restore(p, 1);
     const won = this.cleared === this.checkpoint; // died (a trap) after the fight here was already won
+    this.story?.resetSection(this.checkpoint);
     this.enterSection(this.checkpoint, true);
     if (won) {
       // ...then it stays won: no fighting the same waves twice
@@ -347,6 +373,7 @@ export class Stage {
       knockdownFrames: Math.round((base.knockdownFrames ?? 40) * 0.6),
     };
     boss.health = boss.stats.maxHealth;
+    boss.phase = 0; // (how many of his phase thresholds he has passed)
     this.boss = boss;
     this.bossSpawned = true;
     if (E) {
@@ -368,19 +395,16 @@ export class Stage {
     this.updateFalls();
     this.updateRests();
     this.updateChallenge();
-    this.updateHazards();
+    if (!this.hazardsOff) this.updateHazards();
     this.updateProps();
     this.updatePickups();
     this.updateDowned();
     this.story?.update();
+    // a scripted ending running: it has the stage until it's done
+    if (this.sequence?.update()) return;
 
-    // boss rage: at half health he calls his dogs in
     const b = this.boss;
-    if (b && b.alive && !b.raged && b.health < b.stats.maxHealth * 0.5) {
-      b.raged = true;
-      this.spawnWave(this.section.boss.adds);
-      this.world.events.emit('bossRage', { boss: b });
-    }
+    if (b && b.alive) this.updateBossPhases(b);
 
     if (this.phase === 'fight') {
       const sec = this.section;
@@ -408,6 +432,34 @@ export class Stage {
       const said = !E.after || this.story?.done.has(E.after);
       if (said && !this.story?.busy && this.players.some((q) => q.alive && q.x >= E.x)) this.win();
     }
+  }
+
+  // Boss phases (see the top): each threshold of his health passed, once, in order.
+  bossPhases() {
+    const def = this.section?.boss;
+    return def?.phases ?? [{ id: 'rage', at: 0.5, adds: def?.adds, rage: true }];
+  }
+
+  updateBossPhases(b) {
+    const phases = this.bossPhases();
+    while (b.phase < phases.length && b.health < b.stats.maxHealth * phases[b.phase].at) {
+      const ph = phases[b.phase++];
+      b.phaseId = ph.id;
+      if (ph.ai) b.controller.ai = { ...b.controller.ai, ...ph.ai };
+      if (ph.damage) b.stats.meleeMult *= ph.damage;
+      if (ph.speed) { b.stats.walkSpeed *= ph.speed; b.stats.depthSpeed *= ph.speed; }
+      if (ph.adds?.length) this.spawnWave(ph.adds);
+      this.world.events.emit('bossPhase', { boss: b, phase: ph, index: b.phase });
+      if (ph.rage && !b.raged) { b.raged = true; this.world.events.emit('bossRage', { boss: b }); }
+    }
+  }
+
+  // Has the boss here reached this phase (by id)?
+  bossInPhase(id) {
+    const b = this.boss;
+    if (!b || !b.alive) return false;
+    const i = this.bossPhases().findIndex((p) => p.id === id);
+    return i >= 0 && b.phase > i;
   }
 
   // ------------------------------------------------------------ props & pickups
@@ -535,11 +587,14 @@ export class Stage {
     }
   }
 
-  // Is a falling-beam hazard live right now? ('rage': only while its boss rages)
+  // Is a falling-beam hazard live right now? ('rage': only while its boss rages;
+  // 'phase:<id>': only once he has reached that phase)
   beamLive(hz) {
-    if (hz.when !== 'rage') return true;
+    if (!hz.when) return true;
     const b = this.boss;
-    return !!(b && b.alive && b.raged && hz.section === this.index);
+    if (!b || !b.alive || hz.section !== this.index) return false;
+    if (hz.when === 'rage') return !!b.raged;
+    return hz.when.startsWith('phase:') && this.bossInPhase(hz.when.slice(6));
   }
 
   // phase of a beam: 'idle' | 'warn' (creaking, its shadow on the ground); it falls as the
@@ -625,9 +680,10 @@ export class Stage {
   // A hazard hurting anyone (players and enemies alike).
   hurt(hz, f, dmg, dir, kind) {
     if (!f.alive || f.invincible || f.entering || f.state === 'executed' || f.state === 'execute' || hz.cool.has(f.id)) return;
+    if (f.spare && f.health - dmg < 1) dmg = Math.max(0, f.health - 1); // (beaten to his knees, never killed: Sequence.js)
     if (kind === 'fire' && f.state === 'knockdown' && f.lyingSince === null) return; // already thrown clear
     hz.cool.set(f.id, kind === 'fire' ? FIRE.tick * 3 : 50);
-    f.health = Math.max(0, f.health - dmg);
+    f.health = Math.max(f.spare ? 1 : 0, f.health - dmg);
     f.flash = 6;
     const lethal = f.health <= 0;
     // an enemy the fire kills doesn't get thrown clear: he burns where he stands, then

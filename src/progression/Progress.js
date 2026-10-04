@@ -26,8 +26,9 @@ export const PROGRESS = {
 
 const fresh = () => ({ v: 1, blood: 0, bonus: PROGRESS.startPoints, picks: {}, claimed: {}, campaign: freshCampaign() });
 // THE CAMPAIGN (docs/campaign/plan.md): levels finished, the villagers saved (by id: they
-// show up later), and anything that must only ever happen once
-const freshCampaign = () => ({ levels: {}, rescued: {} });
+// show up later) and lost, where to CONTINUE from (`at`: the level and the section whose
+// checkpoint was reached last), and the one-time flags (a sequence's steps: the judgment)
+const freshCampaign = () => ({ levels: {}, rescued: {}, lost: {}, at: null, flags: {} });
 
 export class Progress {
   constructor(storage = null) {
@@ -84,9 +85,38 @@ export class Progress {
 
   isRescued(id) { return !!this.campaign.rescued[id]; }
 
-  // A level walked out of. Returns true the first time.
-  finishLevel(id) {
-    if (this.campaign.levels[id]) return false;
+  // A villager lost (an execution, an escort) — until he's saved on a later try
+  lose(id) {
+    if (this.campaign.rescued[id] || this.campaign.lost[id]) return false;
+    this.campaign.lost[id] = true;
+    this.save();
+    return true;
+  }
+
+  // The villagers saved / lost so far, by id
+  rescuedIds() { return Object.keys(this.campaign.rescued); }
+  lostIds() { return Object.keys(this.campaign.lost).filter((id) => !this.campaign.rescued[id]); }
+
+  // A checkpoint reached: CONTINUE starts here.
+  reach(level, section) {
+    const at = this.campaign.at;
+    if (at && at.level === level && at.section === section) return;
+    this.campaign.at = { level, section };
+    this.save();
+  }
+
+  // A one-time flag (a sequence's step). Returns true the first time.
+  setFlag(key) {
+    if (this.campaign.flags[key]) return false;
+    this.campaign.flags[key] = true;
+    this.save();
+    return true;
+  }
+
+  // A level walked out of: CONTINUE now starts the next one. Returns true the first time.
+  finishLevel(id, next = null) {
+    if (next) this.campaign.at = { level: next, section: 0 };
+    if (this.campaign.levels[id]) { this.save(); return false; }
     this.campaign.levels[id] = true;
     this.save();
     return true;

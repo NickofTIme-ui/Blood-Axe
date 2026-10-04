@@ -195,7 +195,7 @@ export class CombatSystem {
     const damage = move.damage * mult * (counter ? FEEL.counterMultiplier : 1) * exposed *
       (crit ? FEEL.critMultiplier : 1);
     const healthBefore = def.health;
-    def.health = Math.max(0, def.health - damage);
+    def.health = Math.max(def.spare ? 1 : 0, def.health - damage); // (spare: a boss beaten to his knees, not killed: stage/Sequence.js)
     def.flash = 6;
     if (attacker) def.lastAttacker = attacker; // (a kick off a ledge into a pit is his kill)
     const armored = hasSuperArmor(def);

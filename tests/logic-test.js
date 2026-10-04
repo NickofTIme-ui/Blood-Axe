@@ -15,7 +15,8 @@ import { STAGE } from '../src/data/stage.js';
 import { Terrain, STEP, PIT_LOST } from '../src/stage/Terrain.js';
 import { STAGE_GALLOWS } from '../src/data/stageGallows.js';
 import { STAGE_VILLAGE } from '../src/data/stageVillage.js';
-import { LINE } from '../src/stage/Story.js';
+import { STAGE_WOOD } from '../src/data/stageWood.js';
+import { LINE, NPC } from '../src/stage/Story.js';
 import { Progress, PROGRESS } from '../src/progression/Progress.js';
 import { SKILL_TREES } from '../src/data/skills.js';
 import { BladeChain, CHAIN_PHYS } from '../src/view/BladeChain.js';
@@ -2110,7 +2111,8 @@ class Pressing extends Controller {
 
 // A bot that walks the village (no fighting: enemies are cleared as they come), jumping
 // walls and gaps like the gallows bot. Reports the stage's end, falls and the story.
-function villageRun(hero, { kill = true, frames = 60 * 300, onTick = null } = {}) {
+function villageRun(hero, opts = {}) { return campaignRun(STAGE_VILLAGE, hero, opts); }
+function campaignRun(data, hero, { kill = true, frames = 60 * 300, onTick = null, opts = {}, section = 0 } = {}) {
   class Bot extends Controller {
     sample(frozen) {
       if (frozen) return;
@@ -2142,8 +2144,8 @@ function villageRun(hero, { kill = true, frames = 60 * 300, onTick = null } = {}
   const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: 150, z: 440, controller: bot }));
   const s = CHARACTERS[hero];
   Object.assign(bot, { me: p, world, reach: Math.round(s.walkSpeed * 2 * s.jumpStrength / s.gravity * 0.95) });
-  const stage = new Stage(world, STAGE_VILLAGE);
-  stage.start(p);
+  const stage = new Stage(world, data, opts);
+  stage.start(p, { section });
   let falls = 0; let won = 0; const beats = []; const rescued = [];
   world.events.on('pitFall', (e) => { if (e.fighter === p) falls++; });
   world.events.on('stageWon', () => won++);
@@ -2307,6 +2309,267 @@ test('village: story lines are timed in game frames (both online machines agree)
   for (let i = 0; i < 400; i++) { w1.tick(); a.update(); w2.tick(); b.update(); }
   assert(JSON.stringify(a.story.line) === JSON.stringify(b.story.line), 'same line, same age');
   assert(t('abc') > 0, 'timing');
+});
+
+
+// ------------------------------------------------------------ the campaign, stage 2: GALLOWS WOOD and the shared systems
+
+// a hero standing still where we put him, holding whatever we say (a scripted INTERACT)
+function woodSetup(section, { x, z, hold = {}, hero = 'warrior' } = {}) {
+  const world = new World({ seed: 11 });
+  const c = new Scripted({}, hold);
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: x ?? 200, z: z ?? 440, controller: c }));
+  const st = new Stage(world, STAGE_WOOD);
+  st.start(p, { section });
+  hush(st);
+  if (x != null) { p.x = x; p.z = z; st.placeOnGround(p); }
+  const run = (n, each) => { for (let i = 0; i < n; i++) { world.tick(); st.update(); each?.(i); } };
+  return { world, p, st, c, run };
+}
+const killFoes = (world) => { for (const e of world.fighters) if (e.team === 'enemy') { e.health = 0; e.removeMe = true; } };
+
+test('wood: every hero walks Gallows Wood (no upgrades), without a fall, out by the mine road', () => {
+  for (const hero of ['warrior', 'mage', 'rogue']) {
+    const r = campaignRun(STAGE_WOOD, hero);
+    assert(r.won === 1 && r.falls === 0, `${hero}: ${r.won ? 'out' : `stuck at x ${Math.round(r.x)} (${r.stage.section.id}, ${r.stage.phase})`} in ${r.secs.toFixed(0)} s, ${r.falls} falls`);
+  }
+});
+
+test('wood: the story runs in order; Joren and Ansel are saved by fighting, the cages need their locks opened', () => {
+  const r = campaignRun(STAGE_WOOD, 'warrior');
+  const at = (id) => r.beats.indexOf(id);
+  for (const id of ['opening', 'rope', 'joren', 'ansel', 'ansel-safe', 'houndmaster', 'gathered', 'turn']) assert(at(id) >= 0, `${id} played (${r.beats.join(',')})`);
+  assert(at('opening') === 0 && at('rope') < at('joren') && at('joren') < at('ansel') && at('ansel') < at('turn'), r.beats.join(','));
+  assert(r.rescued.includes('joren') && r.rescued.includes('ansel'), `saved: ${r.rescued.join(',')}`);
+  assert(!r.rescued.includes('tanners') && !r.rescued.includes('wenna'), 'the cages stay shut unless someone opens them');
+  assert(!r.beats.includes('pilgrim'), 'the pilgrim only talks when asked');
+});
+
+test('wood: the execution: too slow and Joren is lost; rising at the checkpoint puts him back on the rope', () => {
+  const { world, p, st, run } = woodSetup(1, { x: 1900, z: 440 });
+  const j = st.story.npc('joren');
+  const lost = []; world.events.on('npcLost', (e) => lost.push(e.npc.id));
+  for (const b of st.story.beats) if (b.id === 'joren-lost') b.fired = false;
+  run(30);
+  assert(st.fightOn && j.state === 'threatened', `the hangmen are at work (${j.state})`);
+  run(j.time + 20, () => { p.health = p.stats.maxHealth; p.invincible = true; });
+  assert(j.state === 'lost' && lost.join() === 'joren' && st.story.lost.has('joren'), `lost (${j.state})`);
+  for (let i = 0; i < 400 && !st.story.done.has('joren-lost'); i++) { killFoes(world); world.tick(); st.update(); }
+  assert(st.story.done.has('joren-lost'), 'his loss is said (once the fight is over)');
+  st.respawn();
+  assert(j.state === 'threatened' && j.clock === 0 && !st.story.lost.has('joren'), `back on the rope (${j.state})`);
+  run(30); killFoes(world); run(60, () => killFoes(world));
+  assert(st.story.isRescued('joren'), 'and saved this time, in time');
+});
+
+test('wood: a cage opens when a hero holds INTERACT at its lock, only with no enemy standing', () => {
+  const L = STAGE_WOOD.npcs.find((n) => n.id === 'wenna').lock;
+  const { world, st, run } = woodSetup(2, { x: L.x, z: L.z, hold: { padUp: true } });
+  const w = st.story.npc('wenna');
+  st.fightOn = true; st.waveIndex = st.section.waves.length; // (the convoy's guards: just this one left)
+  const foe = createEnemy(world, 'grunt', L.x + 400, L.z); foe.controller.sample = () => {};
+  run(NPC.pick + 10);
+  assert(w.state === 'trapped' && w.pick === 0, 'not while they are still fighting');
+  assert(st.story.prompts.some((q) => q.npc === w && q.kind === 'busy'), 'the prompt says so');
+  foe.health = 0; foe.removeMe = true;
+  run(NPC.pick - 5);
+  assert(w.state === 'trapped' && w.pick > 0, `the lock is giving (${w.pick})`);
+  run(10);
+  assert(st.story.isRescued('wenna'), `open (${w.state})`);
+});
+
+test('wood: an escort follows the hero, freezes and loses his nerve with enemies near him, and is safe across the ford', () => {
+  {
+    const { world, p, st, run } = woodSetup(3, { x: 4560 + 40, z: 440, hold: { right: true } });
+    const a = st.story.npc('ansel');
+    run(5);
+    assert(a.state === 'escort', `he follows (${a.state})`);
+    run(60 * 40, () => { killFoes(world); if (p.x > 5560) p.x = 5560; });
+    assert(st.story.isRescued('ansel'), `across the ford (${a.state} at ${Math.round(a.x)}, ${Math.round(a.z)})`);
+  }
+  {
+    const { world, st, run } = woodSetup(3, { x: 4600, z: 440 });
+    const a = st.story.npc('ansel');
+    run(3);
+    const foe = createEnemy(world, 'grunt', a.x + 60, a.z); foe.controller.sample = () => {};
+    const x0 = a.x;
+    run(30);
+    assert(a.cower && a.x === x0 && a.nerve < NPC.nerve, 'he freezes and his nerve goes');
+    run(Math.ceil(NPC.nerve / NPC.fear));
+    assert(a.state === 'lost', `lost (${a.state}, nerve ${a.nerve})`);
+  }
+});
+
+test('wood: the pilgrim talks only when a hero near him presses INTERACT', () => {
+  const pg = STAGE_WOOD.npcs.find((n) => n.id === 'pilgrim');
+  const { st, c, run } = woodSetup(5, { x: pg.x - 30, z: pg.z });
+  for (const b of st.story.beats) if (b.id === 'pilgrim') b.fired = false;
+  run(60);
+  assert(!st.story.npc('pilgrim').talked && st.story.prompts.some((q) => q.kind === 'talk'), 'a prompt, no words yet');
+  c.script = { [c.t + 1]: ['padUp'] };
+  run(900);
+  assert(st.story.done.has('pilgrim'), 'asked, he tells them');
+});
+
+test('boss phases: the Houndmaster calls his pack, then rages; each phase once, in order, even past two at a blow', () => {
+  const { world, p, st, run } = woodSetup(4, { x: 6100, z: 440 });
+  const phases = []; let rages = 0;
+  world.events.on('bossPhase', (e) => phases.push(e.phase.id));
+  world.events.on('bossRage', () => rages++);
+  run(700, () => { p.health = p.stats.maxHealth; p.awe = 0; });
+  const b = st.boss;
+  assert(b?.stats.name === 'The Houndmaster', 'he is here');
+  const cd0 = b.controller.ai.attackCooldown[0];
+  b.health = b.stats.maxHealth * 0.6;
+  run(2, () => { p.health = p.stats.maxHealth; });
+  assert(phases.join() === 'pack' && st.livingFoes().length === 3, `his pack (${phases}, ${st.livingFoes().length} up)`);
+  assert(b.controller.ai.attackCooldown[0] < cd0 && ENEMIES.stalker.ai.attackCooldown[0] === cd0, 'he quickens (his own brain, not the shared data)');
+  assert(st.bossInPhase('pack') && !st.bossInPhase('frenzy'), 'in the pack phase');
+  const walk = b.stats.walkSpeed;
+  b.health = b.stats.maxHealth * 0.2;
+  run(2, () => { p.health = p.stats.maxHealth; });
+  assert(phases.join() === 'pack,frenzy' && rages === 1 && b.raged && b.stats.walkSpeed > walk, `frenzy (${phases}, rages ${rages})`);
+  run(30);
+  assert(phases.length === 2, 'each once');
+  // two thresholds at one blow: both phases, in order
+  const t2 = woodSetup(4, { x: 6100, z: 440 });
+  const ph2 = []; t2.world.events.on('bossPhase', (e) => ph2.push(e.phase.id));
+  t2.run(700, () => { t2.p.health = t2.p.stats.maxHealth; t2.p.awe = 0; });
+  t2.st.boss.health = 5;
+  t2.run(2);
+  assert(ph2.join() === 'pack,frenzy', `both (${ph2})`);
+  assert(t2.st.story.beats.find((x) => x.id === 'pack').fired && t2.st.story.beats.find((x) => x.id === 'frenzy').fired, 'their lines');
+});
+
+test('boss phases: a boss without phases still rages at half health and calls his dogs (the village captain)', () => {
+  const world = new World({ seed: 7 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 6050, z: 440, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_VILLAGE);
+  st.start(p, { section: 4 });
+  hush(st);
+  p.x = 6050;
+  for (let i = 0; i < 900; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; p.awe = 0; }
+  const n = st.livingFoes().length;
+  st.boss.health = st.boss.stats.maxHealth * 0.45;
+  world.tick(); st.update();
+  assert(st.boss.raged && st.livingFoes().length === n + STAGE_VILLAGE.sections[4].boss.adds.length, 'raged, his dogs came');
+});
+
+// a tiny stage to drive the ending framework with (the judgment uses it in Stage 3)
+const SEQ_STAGE = {
+  id: 'seqTest', name: 'TEST', width: 1600,
+  sections: [{
+    id: 'throne', name: 'THRONE', x0: 0, x1: 1600, spawn: { x: 200, z: 440 }, waves: [],
+    boss: { type: 'gladiator', name: 'Test King', health: 1, damage: 1, adds: ['grunt', 'grunt'] },
+    hazards: [{ type: 'fire', x: 600, z: 440, w: 100, d: 60 }],
+  }],
+  sequence: { id: 'judgment', section: 'throne', beat: 'judgment', reward: 'campaign:complete', then: 'epilogue',
+    place: { boss: { x: 900, z: 400, facing: -1 }, heroes: [{ x: 760, z: 400, facing: 1 }, { x: 700, z: 460, facing: 1 }] } },
+  story: [{ id: 'judgment', hold: true, lines: [['RURIK', 'For the burning of our village.'], ['RURIK', 'I sentence you to death.']] }],
+};
+function seqSetup(flags = {}) {
+  const world = new World({ seed: 12 });
+  const c = new Pressing();
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 200, z: 440, controller: c }));
+  const st = new Stage(world, SEQ_STAGE, { flags });
+  const ev = { flag: [], award: [], done: [], won: 0, steps: [] };
+  world.events.on('campaignFlag', (e) => ev.flag.push(e.key));
+  world.events.on('sequenceAward', (e) => ev.award.push(e.reward));
+  world.events.on('sequenceDone', (e) => ev.done.push(e.then));
+  world.events.on('sequenceStep', (e) => ev.steps.push(e.step));
+  world.events.on('stageWon', () => ev.won++);
+  st.start(p);
+  const run = (n) => { for (let i = 0; i < n; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; } };
+  return { world, p, c, st, ev, run };
+}
+
+test('sequence: the king beaten is never killed; his defeat is caught once; the fight is cleared; the scene plays; the reward once; then won', () => {
+  const { world, p, st, ev, run } = seqSetup();
+  run(60);
+  const b = st.boss;
+  assert(b && b.spare, 'he is spared from the start');
+  b.health = b.stats.maxHealth * 0.4; run(2); // (his dogs come)
+  assert(st.livingFoes().length > 1, 'a fight going on');
+  world.combat.resolve(p, b, { cut: 'slash', damage: 9999, hitstun: 10, hitstop: 4, knockback: { x: 100, y: 0 } }, { kind: 'melee', fromX: p.x, dir: 1, contact: { x: b.x, h: 60 } });
+  assert(b.alive && b.health === 1, `on his knees, not dead (${b.health})`);
+  run(3);
+  assert(st.livingFoes().length === 1 && st.livingFoes()[0] === b, 'his men are gone');
+  assert(st.hazardsOff && b.defeated && b.invincible, 'hazards off; he is beaten and out of reach');
+  assert(Math.abs(p.x - 760) < 1 && Math.abs(b.x - 900) < 1 && p.facing === 1, `placed (${p.x}, ${b.x})`);
+  assert(ev.flag.join() === 'judgment:down', `defeat saved at once (${ev.flag})`);
+  run(60 * 30);
+  assert(st.story.done.has('judgment'), 'the scene played');
+  assert(ev.award.join() === 'campaign:complete' && ev.flag.join() === 'judgment:down,judgment:awarded', `rewarded once (${ev.award}; ${ev.flag})`);
+  assert(ev.done.join() === 'epilogue' && ev.won === 1, `on to the epilogue, once (${ev.won})`);
+  run(120);
+  assert(ev.won === 1 && ev.award.length === 1, 'nothing twice');
+  assert(ev.steps.join() === 'clear,place,play,award,done', ev.steps.join());
+});
+
+test('sequence: skipping the scene gives the same outcome; a reload after his defeat starts at the scene; after the reward, at the end', () => {
+  {
+    const { p, st, ev, run, c } = seqSetup();
+    run(60); st.boss.health = 1; run(4);
+    assert(st.sequence.step === 'play', st.sequence.step);
+    for (let i = 0; i < 4; i++) { c.script = { [c.t + 1]: ['attack'] }; run(LINE.minSkip + 20); }
+    assert(st.story.done.has('judgment') && ev.award.length === 1 && ev.won === 1, 'skipped line by line: same end');
+    assert(p.alive, 'he is fine');
+  }
+  {
+    const { st, ev, run } = seqSetup({ 'judgment:down': true });
+    assert(st.sequence.step === 'clear' && st.boss?.spare, 'reloaded: straight to the scene, the king on his knees');
+    run(3);
+    assert(st.livingFoes().length === 1 && ev.flag.length === 0, 'no fight, nothing saved twice');
+    st.story.skipScene(); run(LINE.max + 30);
+    assert(ev.award.length === 1 && ev.won === 1, 'and the end');
+  }
+  {
+    const { st, ev, run } = seqSetup({ 'judgment:down': true, 'judgment:awarded': true });
+    run(2);
+    assert(ev.won === 1 && ev.award.length === 0 && !st.story.done.has('judgment'), 'already rewarded: straight to the epilogue, no second reward');
+  }
+});
+
+test('checkpoints: starting a level at a saved section skips what came before; the saved are there, the rest are gone', () => {
+  // the village from the longhall, with the family saved (from the save) but not the barn
+  const world = new World({ seed: 13 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 0, z: 440, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_VILLAGE, { rescued: ['mira'] });
+  const beats = []; world.events.on('storyBeat', (e) => beats.push(e.beat.id));
+  st.start(p, { section: 4 });
+  assert(st.index === 4 && Math.abs(p.x - STAGE_VILLAGE.sections[4].spawn.x) < 1, 'at the longhall');
+  for (let i = 0; i < 60; i++) { world.tick(); st.update(); }
+  assert(!beats.includes('opening') && !beats.includes('hale') && !beats.includes('cry'), `nothing from before replays (${beats})`);
+  assert(['safe', 'gathered'].includes(st.story.npc('mira').state), `the family is safe (${st.story.npc('mira').state})`);
+  assert(st.story.npc('barn').state === 'gone', 'the barn people were never freed: gone');
+  assert(!st.story.done.has('vow') && !st.story.beats.find((b) => b.id === 'gathered').fired, 'what is ahead is still to come');
+  // every section of every campaign level starts on firm, safe ground
+  for (const D of [STAGE_VILLAGE, STAGE_WOOD]) {
+    const T = new Terrain(new World(), D.terrain);
+    for (const s of D.sections) {
+      const at = s.spawn ?? { x: s.x0 + 140, z: 440 };
+      assert(T.safeAt(at.x, at.z) && T.groundAt(at.x, at.z) >= 0, `${D.id} ${s.id}: spawn on safe ground`);
+    }
+  }
+});
+
+test('campaign save: CONTINUE points at the last checkpoint; a level done points at the next; flags once', () => {
+  const store = memStore();
+  const P = new Progress(store);
+  assert(P.campaign.at === null, 'nothing to continue');
+  P.reach('village', 3);
+  assert(new Progress(store).campaign.at.section === 3, 'the checkpoint survives a reload');
+  P.finishLevel('village', 'gallowsWood');
+  const at = new Progress(store).campaign.at;
+  assert(at.level === 'gallowsWood' && at.section === 0, 'on to the next level');
+  assert(P.setFlag('judgment:down') && !P.setFlag('judgment:down'), 'a flag is set once');
+  assert(P.lose('joren') && P.lostIds().join() === 'joren', 'lost recorded');
+  P.rescue('joren');
+  assert(P.lostIds().length === 0, 'saved on a later try: no longer lost');
+  // an old save (stage 1) without the new fields still loads
+  const old = memStore(); old.setItem(PROGRESS.key, JSON.stringify({ v: 1, blood: 10, bonus: 1, picks: {}, claimed: {}, campaign: { levels: { village: true }, rescued: {} } }));
+  const Q = new Progress(old);
+  assert(Q.campaign.levels.village && Q.campaign.flags && Q.campaign.at === null, 'an old save loads');
 });
 
 for (const [name, fn] of later) {
