@@ -36,11 +36,9 @@ import { Burning } from '../effects/Burn.js';
 import { Stage } from '../stage/Stage.js';
 import { StageView } from '../view/StageView.js';
 import { TerrainView } from '../view/TerrainView.js';
-import { STAGE } from '../data/stage.js';
-import { STAGE_GALLOWS } from '../data/stageGallows.js';
-import { STAGE_VILLAGE } from '../data/stageVillage.js';
+import { STAGES, nextLevel } from '../data/stages.js';
 import { NpcView } from '../view/NpcView.js';
-import { Progress } from '../progression/Progress.js';
+import { sharedProgress } from '../progression/Progress.js';
 import { CHARACTERS } from '../data/characters.js';
 import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
@@ -54,9 +52,9 @@ const SPAWN_ORDER = [...BAD_GUYS, 'grunt'];
 
 const STEP_MS = 1000 / 60;
 
-// The stages a run can be (data.stage): THE OATH ROAD, and the platforming slice.
-// The campaign's levels (docs/campaign/plan.md) are stages too: 'village' is level 1.
-export const STAGES = { oath: STAGE, gallows: STAGE_GALLOWS, village: STAGE_VILLAGE };
+// The stages a run can be (data.stage): data/stages.js. The campaign's levels
+// (docs/campaign/plan.md) are stages too: 'village' is level 1, 'gallowsWood' level 2.
+export { STAGES };
 // How far above the floor a tall stage's camera can climb (px)
 const CAM_CLIMB = 360;
 
@@ -78,6 +76,11 @@ export class ArenaScene extends Phaser.Scene {
     this.keepSession = !!data.keepSession; // a restart inside an online game: same session, ticks carry on
     this.stageId = STAGES[data.stage] ? data.stage : 'oath';
     this.stageData = STAGES[this.stageId];
+    // the campaign: start at a saved checkpoint (CONTINUE), and the health the heroes
+    // walked out of the last level with (shares of their max, in player order)
+    this.startSection = data.section ?? 0;
+    this.carry = data.carry ?? null;
+    this.campaign = !!(this.stageData.exit || this.stageData.sequence);
   }
 
   // What to start this scene again with (restart the stage).
@@ -279,13 +282,11 @@ export class ArenaScene extends Phaser.Scene {
     this.players.forEach((p, i) => { p.seat = i; }); // whose button record drives him (stays put if a partner leaves)
     // PROGRESSION (progression/Progress.js): blood, skill points and each hero's picks.
     // Not online: both machines would have to agree on every pick.
-    if (!this.registry.get('progress')) {
-      let store = null;
-      try { store = window.localStorage; } catch { /* blocked: this session only */ }
-      this.registry.set('progress', new Progress(store));
-    }
+    sharedProgress(this.registry);
     this.progress = this.mode === 'net' ? null : this.registry.get('progress');
     this.applySkills(true);
+    // (on from the last level: a little worn, never on his last legs)
+    if (this.carry) this.players.forEach((p, i) => { p.health = p.stats.maxHealth * Math.max(0.5, Math.min(1, this.carry.health?.[i] ?? 1)); });
     this.player = this.players[this.session.localIndex] ?? this.players[0]; // "my" hero on this machine
     // two of the same hero: the second wears a cold steel-blue cast so you can tell them apart
     this.players.forEach((p, i) => { if (i > 0 && this.heroIds[i] === this.heroIds[0]) p.tint = 0x9fc0ff; });
@@ -297,7 +298,14 @@ export class ArenaScene extends Phaser.Scene {
     // THE OATH ROAD (data/stage.js): sections, hazards, breakables, checkpoints, the boss.
     // The old endless waves stay on key 9 for testing, off by default.
     this.wavesOn = false;
-    this.stage = new Stage(this.world, this.stageData);
+    // (the campaign save: who was saved and lost before, and the one-time flags. Not
+    // online: both machines would have to agree on it)
+    const C = this.progress?.campaign;
+    const back = this.startSection > 0;
+    this.stage = new Stage(this.world, this.stageData, C ? {
+      saved: this.progress.rescuedIds(), flags: { ...C.flags },
+      rescued: back ? this.progress.rescuedIds() : undefined, lost: back ? this.progress.lostIds() : undefined,
+    } : {});
     this.stageView = new StageView(this, this.stage);
     // (after the StageView: it makes the 'glow' texture the terrain's lanterns use)
     this.terrainView = this.stage.terrain || this.stageData.theme ? new TerrainView(this, this.stage) : null;
@@ -307,7 +315,8 @@ export class ArenaScene extends Phaser.Scene {
     this.scene.stop('Cutaway');
     this.setupStageEvents(ev);
     this.setupProgressEvents(ev);
-    this.stage.start(this.players);
+    this.stage.start(this.players, { section: this.startSection });
+    this.nextReady = false;
     ev.on('revive', ({ fighter }) => {
       this.callout(fighter === this.player ? 'ON YOUR FEET' : 'YOUR PARTNER RISES', '#e0c080', 24);
       this.gore.spark(fighter.x, fighter.z, 40, 0xffe0a0, 14);
@@ -486,6 +495,8 @@ export class ArenaScene extends Phaser.Scene {
     const hud = () => { const h = this.scene.get('HUD'); return h?.arena === this && h.card?.active ? h : null; };
     ev.on('sectionStart', ({ index, section }) => {
       hud()?.sectionCard?.(index, section);
+      // a campaign checkpoint: CONTINUE starts here
+      if (this.campaign) this.progress?.reach(this.stageId, index);
       if (index > 0) playSfx(this, 'block', { volume: 0.4, pitch: -900, minGapMs: 0 }); // the way shuts behind you
     });
     ev.on('sectionClear', ({ last, section }) => {
@@ -514,9 +525,23 @@ export class ArenaScene extends Phaser.Scene {
       hud()?.showBoss?.(boss);
     });
     ev.on('bossRage', () => {
+      if (this.stage.section?.boss?.phases) return; // (a boss with phases: each says its own)
       this.callout('HE CALLS HIS DOGS!', '#ff9a30', 24);
       this.fx.shake(5, 14);
     });
+    // a boss with phases moves on to the next: a roar, the screen shakes, its call-out
+    ev.on('bossPhase', ({ phase }) => {
+      this.callout(phase.callout ?? 'HE FIGHTS HARDER!', '#ff9a30', 26);
+      this.fx.shake(7, 18);
+      this.rumble(0.7, 0.4, 300);
+      playSfx(this, 'kick', { volume: 0.9, pitch: -1500, minGapMs: 0 });
+    });
+    ev.on('npcLost', ({ npc }) => {
+      this.callout(`${npc.name.toUpperCase()}  ·  LOST`, '#a09080', 24);
+      playSfx(this, 'kick', { volume: 0.5, pitch: -2200, minGapMs: 0 });
+    });
+    ev.on('npcFollow', ({ npc }) => this.callout(`${npc.name.toUpperCase()}  ·  FOLLOWS YOU`, '#e8f0ff', 20));
+    ev.on('lockPick', () => playSfx(this, 'block', { volume: 0.3, pitch: 900, minGapMs: 0 }));
     ev.on('npcRescued', ({ npc }) => {
       this.callout(`${npc.name.toUpperCase()}  ·  SAVED`, '#e8f0ff', 24);
       playSfx(this, 'block', { volume: 0.5, pitch: 400, minGapMs: 0 });
@@ -542,20 +567,40 @@ export class ArenaScene extends Phaser.Scene {
   // plays (skippable), then the tally with who was saved and where the road goes next.
   campaignLevelDone(stats, hud) {
     const D = this.stageData;
-    this.callout('THE PURSUIT BEGINS', '#bfe8ff', 34);
-    this.progress?.finishLevel(D.id);
+    const N = nextLevel(D);
+    const title = D.doneTitle ?? 'THE PURSUIT GOES ON';
+    this.callout(title, '#bfe8ff', 34);
+    this.progress?.finishLevel(D.id, N ? D.next.id : null);
     const story = this.stage.story;
     const saved = (story?.npcs ?? []).filter((n) => story.isRescued(n.id)).map((n) => n.name);
-    const tally = () => hud()?.showVictory?.({
-      ...stats, ...this.stage.stats,
-      campaign: { title: 'THE PURSUIT BEGINS', saved, next: D.next ? `NEXT  ·  II  ${D.next.name}  (not built yet)` : '' },
-    });
+    const lost = (story?.npcs ?? []).filter((n) => story.lost.has(n.id)).map((n) => n.name);
+    const tally = () => {
+      hud()?.showVictory?.({
+        ...stats, ...this.stage.stats,
+        campaign: {
+          title, saved, lost,
+          next: D.next ? `NEXT  ·  ${N?.chapter ?? D.next.chapter ?? ''}  ${D.next.name}${N ? '' : '  (not built yet)'}` : '',
+          onward: N ? `ENTER  —  ON TO ${N.name}` : null,
+        },
+      });
+      this.nextReady = !!N; // (ENTER: on to the next level, once the tally is up)
+    };
     if (!D.cutaway) { this.time.delayedCall(1600, tally); return; }
     this.time.delayedCall(1800, () => {
       if (!this.sys.isActive()) return;
       this.cutawayOn = true;
       this.scene.launch('Cutaway', { kind: D.cutaway, onDone: () => { this.cutawayOn = false; tally(); } });
     });
+  }
+
+  // On to the campaign's next level: the same heroes, the health they walked out with.
+  goNextLevel() {
+    const N = nextLevel(this.stageData);
+    if (!N) return;
+    this.nextReady = false;
+    this.setPaused(false);
+    const carry = { health: this.players.map((p) => p.health / p.stats.maxHealth) };
+    this.scene.restart({ ...this.restartData(), stage: this.stageData.next.id, section: 0, carry });
   }
 
   // ------------------------------------------------------------ progression
@@ -603,6 +648,10 @@ export class ArenaScene extends Phaser.Scene {
     ev.on('npcRescued', ({ npc }) => {
       if (P.rescue(npc.id)) P.addBlood(30);
     });
+    ev.on('npcLost', ({ npc }) => P.lose(npc.id));
+    // an ending sequence's steps (the judgment), saved the moment they happen
+    ev.on('campaignFlag', ({ key }) => P.setFlag(key));
+    ev.on('sequenceAward', ({ reward }) => { if (reward && P.claim(reward)) gain('+1 SKILL POINT'); });
   }
 
   openSkills() {
@@ -1033,6 +1082,9 @@ export class ArenaScene extends Phaser.Scene {
     const any = (a) => recs.some((r) => pressed(r, a));
     const dead = this.allDead;
     const won = this.stage?.phase === 'won';
+    // a campaign level won and its tally up: ENTER goes on to the next level (both online
+    // machines on the same tick: it rides in the records)
+    if (won && this.nextReady && any('pause')) { this.goNextLevel(); return true; }
     if (any('pause')) {
       // (everyone down: Start / Enter is "rise again", as the death screen says — after
       // a beat, so the blow that killed you can't also skip the death)

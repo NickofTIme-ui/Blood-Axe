@@ -312,3 +312,23 @@ the generator and run `node tools/sfx-gen/electric.js`.
 5. `npc_villager_strip.png` — a peasant (no weapon) in 8 poses: stand, cower, wave for help, run (3), sit wounded, kneel. Then a woman with a child, and a boy. Muted homespun colours.
 6. `prop_wreckage.png` — a fallen burning beam across a door (+ broken state), and `prop_cart_burning.png`.
 7. `king_vaurath_*` — per `final-boss-mockups/final-boss-chatgpt-prompts.md`; the cutaway uses his throne pose once it exists.
+
+## Cloud, 2026-10-04: THE CAMPAIGN, stage 2 — shared systems and GALLOWS WOOD (graybox; branch claude/project-thread-l70xhx, not on main, not on itch)
+- After the village's tally, **Enter** goes on to level 2, **GALLOWS WOOD** (`src/data/stageWood.js`, backdrop `src/view/WoodView.js`). **CONTINUE** on the title starts the campaign at the last section reached (`Progress.campaign.at`). The stage list moved to `src/data/stages.js`.
+- New rescue kinds in `src/stage/Story.js`: **cage** (hold INTERACT at the lock once the guards are dead), **execution** (kill the hangmen before the rope runs out, or he's lost), **escort** (he follows; enemies near him wear his nerve down). INTERACT is **E** / **D-pad up** (`padUp`; P2 on the keys: numpad 8). Prompts and meters are drawn over the villagers (`src/view/NpcView.js`).
+- **Boss phases** (`boss.phases` in a section; `Stage.updateBossPhases`): the Houndmaster calls his pack at 2/3 and goes into a frenzy at 1/3. Bosses without phases rage at half health as before.
+- **The ending framework** for Rurik's judgment (`src/stage/Sequence.js`): tested on a test stage; the real judgment comes with the Black Keep (stage 3).
+- **Oryn's skill tree**: THE STORMCALLER (Forked Bolt, Static Charge, Thunderhead: `src/data/skills.js`, `src/combat/Storm.js`); his other two branches show as PLANNED.
+- The second king cutaway ('convoy': irritation, he cracks the throne) in `src/scenes/CutawayScene.js`.
+- Checked: logic tests (all pass) and headless-browser screenshots. Not played through by a person; not tried online.
+
+### Art requests for GALLOWS WOOD (temporary art now; same rules: magenta background, facing right, no text)
+1. `wood_backdrop_far.png` — parallax: wet black pines in mist under a pale moon, a ridge, the Black Keep's silhouette over it (bigger than from the village). 2508x627 like `plx_far`.
+2. `wood_trunks.png` — the road's back wall, tiling: tall black pine trunks, ferns, a lantern post. 2172x724.
+3. `wood_hanging_tree.png` — a dead oak with a long bough over the road and a rope (empty: the villager is drawn separately).
+4. `prop_cage_cart.png` — a broken prisoner cart with an iron cage on it: shut (with a padlock), and open (door swung).
+5. `wood_stream.png` — a fast black stream seen from above at an angle; `wood_log.png` a fallen pine to walk across; `wood_stones.png` stepping stones.
+6. `wood_rockslide.png` — boulders heaped across a mountain pass.
+7. `npc_villager_strip.png` additions: hands bound on the rope (standing, then hanging), cowering in a cage, limping with a crutch, kneeling to pick a lock is the hero's (no new hero art needed).
+8. `boss_houndmaster_*` — a kennel master (Stalker build) with a whip and a horn; and `enemy_hound_*` (the pack), for stage 3.
+

@@ -231,12 +231,13 @@ export class HUDScene extends Phaser.Scene {
     ];
     if (C) {
       if (C.saved?.length) lines.push(`SAVED:  ${C.saved.join(',  ')}`);
+      if (C.lost?.length) lines.push(`LOST:  ${C.lost.join(',  ')}`);
       if (C.next) lines.push('', C.next);
     }
-    const tally = this.add.text(W / 2, H * 0.44, lines.join('\n'), { fontFamily: FONT.ui, fontSize: C ? '16px' : '18px', color: '#f0e0c0', align: 'center', lineSpacing: C ? 6 : 10 })
+    const tally = this.add.text(W / 2, H * 0.44, lines.join('\n'), { fontFamily: FONT.ui, fontSize: C ? '16px' : '18px', color: '#f0e0c0', align: 'center', lineSpacing: C ? 6 : 10, wordWrap: { width: W - 160 } })
       .setOrigin(0.5, 0).setStroke('#000000', 4).setAlpha(0).setDepth(D + 3);
     this.tweens.add({ targets: tally, alpha: 1, delay: 1200, duration: 900 });
-    const prompt = this.add.text(W / 2, H * (C ? 0.8 : 0.74), 'R  —  RIDE AGAIN      ESC  —  CHOOSE ANOTHER', { fontFamily: FONT.ui, fontSize: '15px', color: '#cdb391' })
+    const prompt = this.add.text(W / 2, H * (C ? 0.8 : 0.74), `${C?.onward ? `${C.onward}      ` : ''}R  —  RIDE AGAIN      ESC  —  CHOOSE ANOTHER`, { fontFamily: FONT.ui, fontSize: '15px', color: '#cdb391' })
       .setOrigin(0.5).setStroke('#000000', 3).setAlpha(0).setDepth(D + 3);
     this.tweens.add({ targets: prompt, alpha: 0.9, delay: 2400, duration: 900 });
     this.objective.setText('');

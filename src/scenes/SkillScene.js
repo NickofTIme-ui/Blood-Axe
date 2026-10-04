@@ -49,7 +49,7 @@ export class SkillScene extends Phaser.Scene {
     back.on('pointerdown', () => this.close());
     this.tweens.add({ targets: back, alpha: { from: 0.7, to: 1 }, duration: 700, yoyo: true, repeat: -1 });
     if (!this.tree) {
-      this.add.text(W / 2, H / 2, `${name}'s tree is not in this slice yet.\nRurik's is: play him to try it.\n(Planned trees: docs/progression.md)`,
+      this.add.text(W / 2, H / 2, `${name}'s tree is not built yet (Stage 4 of the campaign).\nRurik's and Oryn's are: play one of them to try it.\n(Planned trees: docs/progression.md)`,
         { fontFamily: FONT.ui, fontSize: '18px', color: '#e8d4b0', align: 'center' }).setOrigin(0.5);
       this.refreshHeader();
       return;
@@ -97,7 +97,7 @@ export class SkillScene extends Phaser.Scene {
       k.box.setFillStyle(owned ? Phaser.Display.Color.ValueToColor(col).darken(55).color : 0x161210, 1);
       k.box.setStrokeStyle(sel ? 4 : 2, sel ? 0xffe0a0 : owned ? col : why === null ? 0xb08a4a : 0x3a3028);
       k.label.setColor(owned ? '#ffffff' : why === null ? '#f0e0c0' : '#7a6e60');
-      const state = owned ? 'TAKEN' : why === 'excluded' ? 'SHUT: you chose the other' : why === 'locked' ? 'needs the one above' : why === 'points' ? 'not enough points' : 'ready';
+      const state = why === 'planned' ? 'PLANNED' : owned ? 'TAKEN' : why === 'excluded' ? 'SHUT: you chose the other' : why === 'locked' ? 'needs the one above' : why === 'points' ? 'not enough points' : 'ready';
       k.sub.setText(`${KIND_LABEL[k.n.kind] ?? ''}  ·  ${k.n.cost} pt${k.n.cost > 1 ? 's' : ''}  ·  ${state}`);
       if (k.r > 0) {
         const up = this.card(k.c, k.r - 1);

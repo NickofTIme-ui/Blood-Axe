@@ -23,6 +23,7 @@ import { BladeChain, CHAIN_PHYS } from '../src/view/BladeChain.js';
 import { handshake } from '../src/net/Link.js';
 import { impalePin } from '../src/combat/Finisher.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/Mage.js';
+import { STORM } from '../src/combat/Storm.js';
 import { ROGUE_FINISHERS } from '../src/combat/Rogue.js';
 import { TickController, pressed } from '../src/core/TickInput.js';
 import { NetSession, NET, loopPair, snapshot, correct, feedPlayers, delayFor } from '../src/net/Session.js';
@@ -782,9 +783,9 @@ test('waves: every enemy starts off every screen and walks on (no popping in)', 
 // ---------------------------------------------------------------- the Mage
 
 // A Mage on an empty floor with grunts where we put them (all standing still unless told).
-function mageSetup({ script = {}, hold = {}, foes = [] } = {}) {
+function mageSetup({ script = {}, hold = {}, foes = [], stats = CHARACTERS.mage } = {}) {
   const world = new World({ seed: 7 });
-  const p = world.addFighter(new Fighter({ stats: CHARACTERS.mage, team: 'player', x: 600, z: 420, controller: new Scripted(script, hold) }));
+  const p = world.addFighter(new Fighter({ stats, team: 'player', x: 600, z: 420, controller: new Scripted(script, hold) }));
   const es = foes.map(([x, z, type = 'grunt']) => {
     const e = world.addFighter(new Fighter({ stats: ENEMIES[type], team: 'enemy', x, z: z ?? 420, controller: new Scripted() }));
     e.facing = -1;
@@ -2311,6 +2312,70 @@ test('village: story lines are timed in game frames (both online machines agree)
   assert(t('abc') > 0, 'timing');
 });
 
+
+
+// ------------------------------------------------------------ Oryn's tree: THE STORMCALLER
+
+function orynWith(...ids) {
+  const P = new Progress(memStore());
+  P.data.bonus = 99;
+  for (const id of ids) assert(P.buy('mage', id), `bought ${id}`);
+  return P.statsFor('mage', CHARACTERS.mage);
+}
+
+test("oryn's tree: the Stormcaller can be taken in order; the planned branches are shown but can't be", () => {
+  const P = new Progress(memStore());
+  P.data.bonus = 99;
+  assert(P.blocker('mage', 'staticCharge') === 'locked' && P.buy('mage', 'forkedBolt') && P.buy('mage', 'staticCharge') && P.buy('mage', 'thunderhead'), 'in order');
+  assert(P.blocker('mage', 'secondWall') === 'planned' && !P.buy('mage', 'secondWall') && P.blocker('mage', 'phaseWalk') === 'planned', 'planned: not for sale');
+  assert(SKILL_TREES.mage.branches.length === 3 && SKILL_TREES.mage.branches.filter((b) => b.planned).length === 2, 'three columns, two placeholders');
+  const s = P.statsFor('mage', CHARACTERS.mage);
+  assert(s.kit.bolt.branches === CHARACTERS.mage.kit.bolt.branches + 1 && CHARACTERS.mage.kit.bolt.maxJumps === 4, 'his copy changes, the shared data does not');
+  assert(P.statsFor('warrior', CHARACTERS.warrior) === CHARACTERS.warrior, "Rurik's picks are his own");
+});
+
+test('stormcaller: Forked Bolt makes the chain reach more of a crowd', () => {
+  const crowd = [[700, 420], [740, 400], [740, 440], [790, 420], [830, 400], [830, 440], [880, 420], [920, 410], [960, 430]];
+  const plain = mageSetup({ script: { 1: ['heavy'] }, hold: (n) => ({ heavy: n < 3 }), foes: crowd });
+  plain.run(60);
+  const forked = mageSetup({ script: { 1: ['heavy'] }, hold: (n) => ({ heavy: n < 3 }), foes: crowd, stats: orynWith('forkedBolt') });
+  forked.run(60);
+  const n = (t) => t.seen('lightningArc').length;
+  assert(n(forked) > n(plain), `more men struck (${n(forked)} vs ${n(plain)})`);
+});
+
+test('stormcaller: Static Charge: the combo\'s third strike leaves a field that shocks whoever walks in, then fades', () => {
+  const t = mageSetup({ script: { 1: ['heavy'], 24: ['heavy'], 44: ['heavy'] }, foes: [[720]], stats: orynWith('forkedBolt', 'staticCharge') });
+  const fields = []; const shocks = [];
+  t.world.events.on('stormField', (e) => fields.push(e.field));
+  t.world.events.on('stormShock', (e) => shocks.push(e.target));
+  t.run(90);
+  assert(fields.length === 1, `one field (${fields.length})`);
+  const f = fields[0];
+  const walker = t.world.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x: f.x + 300, z: f.z, controller: new Scripted() }));
+  t.run(5);
+  assert(!shocks.includes(walker), 'not while outside it');
+  walker.x = f.x; walker.health = walker.stats.maxHealth;
+  t.run(40);
+  assert(shocks.filter((e) => e === walker).length >= 1 && walker.health < walker.stats.maxHealth, 'shocked inside it');
+  t.run(STORM.field.life);
+  assert(t.world.storms.list.length === 0, 'it fades');
+  const none = mageSetup({ script: { 1: ['heavy'], 24: ['heavy'], 44: ['heavy'] }, foes: [[720]] });
+  let any = 0; none.world.events.on('stormField', () => any++); none.run(90);
+  assert(any === 0, 'no field without the skill');
+});
+
+test('stormcaller: Thunderhead: a full overcharge calls a strike down on its first man and floors everyone close by', () => {
+  const foes = [[720], [760, 440], [1100]];
+  const t = mageSetup({ script: { 1: ['heavy'] }, hold: (n) => ({ heavy: n < 50 }), foes, stats: orynWith('forkedBolt', 'staticCharge', 'thunderhead') });
+  const strikes = []; t.world.events.on('thunderStrike', (e) => strikes.push(e));
+  t.run(110);
+  assert(strikes.length === 1 && strikes[0].hits.length >= 2, `one strike, two men (${strikes.length}, ${strikes[0]?.hits.length})`);
+  assert(!strikes[0].hits.includes(t.es[2]), 'not the man far away');
+  const tap = mageSetup({ script: { 1: ['heavy'] }, hold: (n) => ({ heavy: n < 3 }), foes, stats: orynWith('forkedBolt', 'staticCharge', 'thunderhead') });
+  let n = 0; tap.world.events.on('thunderStrike', () => n++); tap.run(110);
+  assert(n === 0, 'not from a tapped bolt');
+});
 
 // ------------------------------------------------------------ the campaign, stage 2: GALLOWS WOOD and the shared systems
 

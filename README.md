@@ -83,7 +83,7 @@ All their numbers are in `src/data/characters.js` (each hero's `kit` block).
 
 ---
 
-## THE CAMPAIGN: THE OATH KEEPERS (new, level 1 of 6)
+## THE CAMPAIGN: THE OATH KEEPERS (new, levels 1 and 2 of 6)
 
 Pick **CAMPAIGN: THE BURNING VILLAGE** on the title screen. Rurik, Oryn and Vexa come home
 from the ford to find their village burning. Save who you can (the family at the well, the
@@ -91,12 +91,24 @@ people in the barn, a boy on a burning roof), break the rear guard, kill the Ash
 make the vow at the north gate, and walk out after the prisoners. Then a first look at
 King Vaurath in the Black Keep.
 
+When the tally is up, **Enter** goes on to level 2, **GALLOWS WOOD**: the convoy's road
+through the pines. Cut Joren down from the hanging tree before the rope runs out, open the
+cages on the broken carts, walk Ansel across the ford through an ambush, and kill the
+Houndmaster (he calls his pack, then goes into a frenzy). The pass is buried; the way on is
+the mine (level 3, not built yet).
+
+- **E** (keyboard) or **D-pad up** (pad) is INTERACT: hold it at a cage's lock, press it
+  to talk to someone who has something to say.
 - Lines of dialogue play at the top of the screen. During a held scene (the opening, the
   vow) everyone stands still: **Space / J** moves to the next line.
 - Burning carts flare up after they glow; burning beams fall where their shadow grows.
-- The saved villagers are kept in your save: they wait at the north gate, and later levels
-  will remember them.
-- Everything new in this level is temporary art (drawn in code).
+- The saved villagers are kept in your save: they wait at the end of the level, and later
+  levels remember them. Someone you were too slow for is lost (no score, just a missing
+  face). Dying puts the section back as it was, rope and all.
+- **CONTINUE** on the title starts the campaign at the last checkpoint (every section).
+- Oryn has a skill tree now: **THE STORMCALLER** (Forked Bolt, Static Charge, Thunderhead).
+  His other two branches are shown as planned.
+- Everything new in these levels is temporary art (drawn in code).
 
 The whole plan (six levels, the king, the final battle, Rurik's judgment):
 `docs/campaign/plan.md`; what's built so far: `docs/campaign/checklist.md`.

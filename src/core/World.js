@@ -9,6 +9,7 @@ import { Projectile } from '../entities/Projectile.js';
 import { Barriers } from '../combat/Barrier.js';
 import { Mines } from '../combat/Mine.js';
 import { Quakes } from '../combat/Quake.js';
+import { Storms } from '../combat/Storm.js';
 import { installSkills } from '../combat/Skills.js';
 
 export class World {
@@ -25,6 +26,7 @@ export class World {
     this.barriers = new Barriers(this); // the Mage's walls (combat/Barrier.js)
     this.mines = new Mines(this);       // the Rogue's widow mines (combat/Mine.js)
     this.quakes = new Quakes(this);     // a boss's ground shockwaves (combat/Quake.js)
+    this.storms = new Storms(this);     // Oryn's Stormcaller fields and strikes (combat/Storm.js)
     this.frame = 0;
     installSkills(this); // (skill-tree behaviours: combat/Skills.js; inert without skills)
     // Dice. Every roll the simulation makes comes from roll(): a number fixed by the
@@ -93,6 +95,7 @@ export class World {
     this.mines.update();
     this.combat.update();
     this.quakes.update(); // (after the melee: whoever the slam itself hit, the wave passes by)
+    this.storms.update();
 
     const gone = this.fighters.filter((f) => f.removeMe);
     if (gone.length) {

@@ -14,6 +14,8 @@
 // own that never runs: the fight can't touch them.
 
 import { DEPTH, depthScale } from './depths.js';
+import { NPC } from '../stage/Story.js';
+import { FONT } from './fonts.js';
 import { World } from '../core/World.js';
 import { Controller } from '../core/Controller.js';
 import { createPlayer } from '../entities/Player.js';
@@ -40,7 +42,12 @@ export class NpcView {
     const g = s.add.graphics();
     const halo = s.add.image(n.x, n.z, 'glow').setScale(2.4, 3).setTint(0xdfe8ff).setAlpha(0).setBlendMode(Phaser.BlendModes.ADD);
     const shadow = s.add.ellipse(n.x, n.z, 40, 9, 0x000000, 0.3);
-    return { g, halo, shadow, seed: n.id.length * 7 + n.id.charCodeAt(0) };
+    // the prompt over him when a hero can do something (stage/Story.js prompts), and a
+    // meter under it: a lock giving, a rope tightening, an escort's nerve
+    const tip = s.add.text(n.x, n.z, '', { fontFamily: FONT.ui, fontSize: '13px', color: '#f0e6d0', align: 'center' })
+      .setOrigin(0.5, 1).setStroke('#000000', 4).setDepth(DEPTH.popups - 1).setVisible(false);
+    const meter = s.add.graphics().setDepth(DEPTH.popups - 1);
+    return { g, halo, shadow, tip, meter, seed: n.id.length * 7 + n.id.charCodeAt(0) };
   }
 
   // one peasant: w/h body size, pose 'stand' | 'cower' | 'sit' | 'wave' | 'run'
@@ -86,7 +93,9 @@ export class NpcView {
   drawNpc(n, v) {
     const g = v.g.clear();
     const t = this.scene.time.now / 16.7;
-    const show = !['safe'].includes(n.state) && !(n.pose === 'group' && n.state === 'trapped');
+    this.drawPrompt(n, v);
+    if (n.pose === 'noose' || n.pose === 'cage') { this.drawCaptive(n, v, t); return; }
+    const show = !['safe', 'gone'].includes(n.state) && !(n.pose === 'group' && n.state === 'trapped');
     const fadeOut = n.state === 'free' && !n.flee ? Math.max(0, 1 - n.t / 50) : 1; // (he slips away)
     g.setVisible(show).setAlpha(fadeOut);
     v.shadow.setVisible(show);
@@ -100,8 +109,16 @@ export class NpcView {
     v.shadow.setPosition(n.x, y).setDepth(n.h > 0 ? n.z - 0.4 : DEPTH.shadows);
     g.setDepth(n.z);
     const tun = (i) => TUNIC[(v.seed + i) % TUNIC.length];
-    const pose = n.state === 'fleeing' ? 'run' : n.state === 'threatened' ? 'cower' : n.state === 'trapped' ? 'wave' : 'stand';
+    const pose = n.state === 'fleeing' ? 'run' : n.state === 'threatened' || n.cower ? 'cower' : n.state === 'trapped' ? 'wave' : 'stand';
+    if (n.state === 'lost') { this.fallen(g, n.x, y, k, tun(0)); return; }
     if (n.pose === 'wounded') return this.figure(g, n.x, y, k, 'sit', t, tun(0), 1);
+    if (n.pose === 'lame') {
+      // limping on a crutch (a stick under one arm), slow
+      const p = n.state === 'escort' && n.moving ? 'run' : pose;
+      this.figure(g, n.x, y, k, p === 'run' ? 'stand' : p, t * 0.5, tun(5), dir);
+      g.lineStyle(3 * k, 0x6a5038, 1).lineBetween(n.x + 10 * k * dir, y, n.x + 6 * k * dir, y - 44 * k);
+      return;
+    }
     if (n.pose === 'child') return this.figure(g, n.x, y, k * 0.7, pose, t, tun(1), dir);
     if (n.pose === 'family') {
       this.figure(g, n.x, y, k, pose, t, tun(2), dir);
@@ -113,6 +130,80 @@ export class NpcView {
       return;
     }
     this.figure(g, n.x, y, k, pose, t, tun(0), dir);
+  }
+
+  // someone who didn't make it: on the ground, still
+  fallen(g, x, y, k, tunic) {
+    g.fillStyle(0x4a0606, 0.5).fillEllipse(x + 4, y + 2, 56 * k, 10 * k);
+    g.fillStyle(tunic, 1).fillRoundedRect(x - 22 * k, y - 9 * k, 40 * k, 10 * k, 4);
+    g.fillStyle(SKIN, 0.8).fillCircle(x + 22 * k, y - 5 * k, 5 * k);
+  }
+
+  // A captive in a cage on a cart, or on the hanging tree's rope.
+  drawCaptive(n, v, t) {
+    const g = v.g;
+    const k = depthScale(n.z);
+    const y = n.z - n.h;
+    const tun = (i) => TUNIC[(v.seed + i) % TUNIC.length];
+    const needs = n.state === 'trapped' || n.state === 'threatened';
+    v.halo.setVisible(needs).setPosition(n.x, y - 60).setDepth(n.z - 0.6).setAlpha(needs ? 0.25 + 0.2 * Math.sin(t * 0.12) : 0);
+    v.shadow.setVisible(false);
+    g.setVisible(true).setAlpha(1).setDepth(n.z);
+    if (n.pose === 'cage') {
+      const open = !['trapped'].includes(n.state);
+      // the prisoners inside (cowering), then the bars in front; open: the door swung wide
+      if (!open) {
+        const many = n.group ? 3 : 1;
+        for (let i = 0; i < many; i++) this.figure(g, n.x - (many - 1) * 12 + i * 24, y - 26, k * 0.85, 'cower', t + i * 5, tun(i), -1);
+      } else if (n.state === 'free') this.figure(g, n.x + 40, y, k, 'stand', t, tun(0), 1);
+      const w = (n.group ? 96 : 64) * k; const h = 70 * k;
+      g.fillStyle(0x2a2016, 1).fillRect(n.x - w / 2 - 4, y - 28, w + 8, 6); // its floor, on the cart
+      g.lineStyle(3, 0x4a4a52, 1).strokeRect(n.x - w / 2, y - 28 - h, w, h);
+      for (let x = n.x - w / 2 + 10; x < n.x + w / 2; x += 11) {
+        if (open && x > n.x - 6 && x < n.x + 22) continue; // (the door)
+        g.lineBetween(x, y - 28 - h, x, y - 28);
+      }
+      if (open) g.lineBetween(n.x - 6, y - 28 - h, n.x - 30, y - 34 - h * 0.6).lineBetween(n.x - 30, y - 34 - h * 0.6, n.x - 30, y - 34 + h * 0.3);
+      else g.fillStyle(0xb08a4a, 1).fillRect(n.x + 2, y - 28 - h * 0.5, 8, 10); // the lock
+      return;
+    }
+    // the noose: the rope from the tree's bough; he stands on a cart's tail with his hands
+    // bound; lost, he hangs; saved, the rope is cut and he's on his knees, then away
+    const bough = this.stage.data.gallows ? this.stage.data.gallows.z - 214 : y - 200;
+    if (n.state === 'lost') {
+      g.lineStyle(2, 0x8a7a5a, 1).lineBetween(n.x, bough, n.x, y - 92);
+      const sway = Math.sin(t * 0.04) * 2;
+      this.figure(g, n.x + sway, y - 30, k, 'stand', 0, tun(0), 1);
+      return;
+    }
+    if (n.state === 'threatened') {
+      g.fillStyle(0x2a2016, 1).fillRect(n.x - 26, y - 4, 52, 8);
+      g.lineStyle(2, 0x8a7a5a, 1).lineBetween(n.x, bough, n.x, y - 62 * k);
+      g.strokeCircle(n.x, y - 62 * k - 2, 5);
+      this.figure(g, n.x, y - 4, k, 'stand', 0, tun(0), 1);
+      return;
+    }
+    g.lineStyle(2, 0x8a7a5a, 1).lineBetween(n.x, bough, n.x, bough + 30); // (cut)
+    if (n.state === 'safe' || n.state === 'gone') { g.setVisible(false); return; }
+    if (n.state === 'gathered') { this.figure(g, n.x, y, k, 'stand', t, tun(0), -1); return; }
+    this.figure(g, n.x, y, k, n.state === 'fleeing' ? 'run' : 'cower', t, tun(0), n.dir ?? -1);
+  }
+
+  // What a hero near him can do now, and the meter that goes with it.
+  drawPrompt(n, v) {
+    const S = this.story;
+    const m = v.meter.clear();
+    const q = S.prompts.find((p) => p.npc === n);
+    const y = n.z - n.h;
+    const text = !q ? '' : q.kind === 'talk' ? 'E  /  D-PAD ▲   TALK' : q.kind === 'open' ? 'HOLD  E  /  D-PAD ▲   OPEN' : 'KILL THEM FIRST';
+    v.tip.setVisible(!!text).setText(text).setPosition(n.x, y - 110).setColor(q?.kind === 'busy' ? '#ff9a7a' : '#f0e6d0');
+    const bar = (frac, col) => {
+      m.fillStyle(0x000000, 0.7).fillRect(n.x - 31, y - 104, 62, 7);
+      m.fillStyle(col, 1).fillRect(n.x - 30, y - 103, 60 * Math.max(0, Math.min(1, frac)), 5);
+    };
+    if (q?.kind === 'open' && n.pick > 0) bar(n.pick / (n.hold ?? NPC.pick), 0xd8b04a);
+    else if (n.rescue === 'execution' && n.state === 'threatened' && n.clock > 0) bar(1 - n.clock / (n.time ?? 900), 0xd04030); // the rope
+    else if (n.state === 'escort') bar(n.nerve / (n.hp ?? NPC.nerve), n.cower ? 0xff7050 : 0x9ad0ff);         // his nerve
   }
 
   // ------------------------------------------------------------ the dead
@@ -155,13 +246,16 @@ export class NpcView {
     const st = this.stage;
     const gate = st.sections[st.sections.length - 1];
     const gx = st.data.exit?.x ?? gate.x1 - 100;
+    // (a level's `companions`: the beat after which they go ahead, where they wait, and the
+    // beat after which they leave with you; the village's are the defaults)
+    const C = { leaveAfter: 'opening', meet: gate.x0 - 200, farewell: 'vow', ...st.data.companions };
     const cam = this.scene.cameras.main.worldView;
     for (const c of this.companions) {
       const f = c.f;
       let target = null;
-      if (st.phase === 'won' || st.story.done.has('vow')) target = { x: gx + 260, z: 380 + c.i * 50, leave: true };
-      else if (st.index >= st.sections.length - 1 || this.scene.player.x > gate.x0 - 200) target = { x: gx - 260 + c.i * 70, z: 340 + c.i * 90, face: -1 };
-      else if (st.story.done.has('opening')) target = { x: cam.right + 160, z: f.z, leave: true };
+      if (st.phase === 'won' || st.story.done.has(C.farewell)) target = { x: gx + 260, z: 380 + c.i * 50, leave: true };
+      else if (st.index >= st.sections.length - 1 || this.scene.player.x > C.meet) target = { x: gx - 260 + c.i * 70, z: 340 + c.i * 90, face: -1 };
+      else if (st.story.done.has(C.leaveAfter)) target = { x: cam.right + 160, z: f.z, leave: true };
       if (target?.face === -1 && c.mode !== 'gate') { c.mode = 'gate'; f.x = target.x; f.z = target.z; } // (they were waiting there)
       if (target) {
         const dx = target.x - f.x; const dz = target.z - f.z;

@@ -5,7 +5,8 @@
 // Still to come (Stage 3): the convoy itself on the move (the set piece), real hounds,
 // its own art. Everything here is drawn in code (view/WoodView.js, view/NpcView.js).
 //
-// Same format as data/stageVillage.js. Built for the weakest jumper (Rurik, walking, no
+// Same format as data/stageVillage.js (a terrain block's `mat: 'log'` draws it as a fallen
+// tree). Built for the weakest jumper (Rurik, walking, no
 // upgrades): the streams are crossed on fallen logs (a 10 px step: walked onto) or on
 // stepping stones (gaps of 60, ups of 30); a test walks it with every hero.
 //
@@ -27,7 +28,8 @@ export const STAGE_WOOD = {
   id: 'gallowsWood',
   name: 'GALLOWS WOOD',
   chapter: 'II',
-  next: { id: 'hollowMountain', name: 'HOLLOW MOUNTAIN' }, // (not built yet: Stage 3 of the plan)
+  next: { id: 'hollowMountain', name: 'HOLLOW MOUNTAIN', chapter: 'III' }, // (not built yet: Stage 3 of the plan)
+  doneTitle: 'THE CONVOY IS BROKEN', // (the tally's title)
   width: 7600,
   theme: 'wood',
   tall: true,
@@ -123,9 +125,9 @@ export const STAGE_WOOD = {
 
   terrain: [
     // ---- I THE WOOD ROAD: a fallen pine to hop, a stream with a log across it
-    { kind: 'block', x0: 520, x1: 555, ...FULL, top: 40 },
+    { kind: 'block', x0: 520, x1: 555, ...FULL, top: 40, mat: 'log' },
     { kind: 'pit', x0: 820, x1: 900, ...FULL },
-    { kind: 'block', x0: 800, x1: 920, z0: 400, z1: 452, top: 10 },
+    { kind: 'block', x0: 800, x1: 920, z0: 400, z1: 452, top: 10, mat: 'log' },
 
     // ---- III THE CAGE CARTS: a ravine stream crossed on stepping stones
     { kind: 'pit', x0: 3080, x1: 3380, ...FULL },
@@ -135,7 +137,7 @@ export const STAGE_WOOD = {
 
     // ---- IV THE OLD FORD: a stream with a wide log bridge (Ansel walks it)
     { kind: 'pit', x0: 5160, x1: 5240, ...FULL },
-    { kind: 'block', x0: 5140, x1: 5260, z0: 380, z1: 470, top: 10 },
+    { kind: 'block', x0: 5140, x1: 5260, z0: 380, z1: 470, top: 10, mat: 'log' },
 
     // ---- VI THE BLOCKED ROAD: the rockslide across the pass (nobody climbs it)
     { kind: 'block', x0: 7440, x1: 7600, ...FULL, top: 320 },

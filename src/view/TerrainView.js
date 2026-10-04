@@ -20,6 +20,7 @@ import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { playSfx } from '../core/Sfx.js';
 import { VillageBackdrop } from './VillageView.js';
+import { WoodBackdrop } from './WoodView.js';
 
 const COL = {
   skyTop: 0x05070d, skyLow: 0x1c2733, mist: 0x8aa4b8,
@@ -50,6 +51,10 @@ export class TerrainView {
     this.village = data.theme === 'village';
     if (data.theme === 'gallows') this.drawBackdrop();
     if (this.village) this.backdrop = new VillageBackdrop(scene, stage);
+    // GALLOWS WOOD (theme 'wood'): pines and mist (view/WoodView.js); streams for pits,
+    // fallen logs for bridges, stone for the rest
+    this.wood = data.theme === 'wood';
+    if (this.wood) this.backdrop = new WoodBackdrop(scene, stage);
     this.drawFloor();
     this.drawPits();
     this.blockGfx = new Map();
@@ -136,8 +141,15 @@ export class TerrainView {
     const s = this.scene;
     for (const p of this.terrain?.pits ?? []) {
       const g = s.add.graphics().setDepth(DEPTH.floor + 4);
-      g.fillStyle(0x000000, 1).fillRect(p.x0, p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0), p.x1 - p.x0, p.z1 - p.z0 + (p.z0 <= SETTINGS.world.floorTop ? 50 : 0) + 40);
-      // a cold glow at the lip so the edge reads (in the village: a burning cellar, its fire far down)
+      g.fillStyle(this.wood ? 0x0c1820 : 0x000000, 1).fillRect(p.x0, p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0), p.x1 - p.x0, p.z1 - p.z0 + (p.z0 <= SETTINGS.world.floorTop ? 50 : 0) + 40);
+      // a cold glow at the lip so the edge reads (in the village: a burning cellar, its fire far
+      // down; in the wood: a stream, black water running fast)
+      if (this.wood) {
+        // (it runs down out of the trees at the back and on toward the camera)
+        g.lineStyle(1, 0x3a5a70, 0.5);
+        for (let y = p.z0 - 40; y < p.z1 + 30; y += 18) g.lineBetween(p.x0 + 6, y, p.x1 - 6, y + 4);
+        g.fillStyle(0x6a8aa0, 0.25).fillRect(p.x0, p.z0 - 50, p.x1 - p.x0, 6);
+      }
       if (this.village) {
         s.add.image((p.x0 + p.x1) / 2, p.z1 + 30, 'glow').setDisplaySize(p.x1 - p.x0, 90).setTint(VIL.cellarLip).setAlpha(0.45)
           .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 4.2);
@@ -175,7 +187,7 @@ export class TerrainView {
       return;
     }
     v.top.setVisible(true); v.front.setVisible(true);
-    if (this.village) { this.drawVillageBlock(v, x0, x1, w, yTop0, yTop1); return; }
+    if (this.village || (this.wood && b.mat === 'log')) { this.drawVillageBlock(v, x0, x1, w, yTop0, yTop1); return; } // (the wood's fallen trees: as the village's beams)
     const mat = b.kind === 'crumble' ? 'plank' : b.kind === 'lift' ? 'iron' : 'rock';
     const C = mat === 'plank' ? [COL.plankTop, COL.plankRim, COL.plankFront]
       : mat === 'iron' ? [COL.iron, COL.ironRim, COL.ironDark] : [COL.rockTop, COL.rockRim, COL.rockFront];

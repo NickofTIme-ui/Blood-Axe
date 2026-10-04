@@ -94,12 +94,26 @@ big fight.
 Then the first **castle cutaway**: King Vaurath, Malgor at his side, learns the Oath
 Keepers survived (confidence).
 
+### Level 2 — Gallows Wood (built in graybox in Stage 2, to put the shared systems to work)
+
+| § | Section | Content |
+|---|---|---|
+| I | THE WOOD ROAD | The others scout ahead. A fallen pine, a stream crossed on a log. The convoy's rear guard. |
+| II | THE HANGING TREE | Joren (Mira's husband) on the rope: kill the hangmen before it runs out (execution; too slow and he's lost). A shrine. |
+| III | THE CAGE CARTS | Stepping stones over a ravine stream. The broken carts: two cages to open once the guards are dead (cage). |
+| IV | THE OLD FORD | Ansel the wheelwright, lame, follows you across; an ambush on the road (escort). |
+| V | THE KENNELS | A shrine; **the Houndmaster**: his pack at two thirds, his frenzy at one third (boss phases). |
+| VI | THE BLOCKED ROAD | The pass buried by their own men; a pilgrim (ask him); the tracks turn into the old mine. |
+
+Then the second cutaway (irritation). Still to come in Stage 3: the convoy itself on the
+move (the set piece), real hounds, its art.
+
 ### The king's arc (cutaways at milestones only)
 
 | After | His mood | Scene |
 |---|---|---|
 | Level 1 | confidence | told they live; Malgor asks to ride out and is refused; a wave of ash puts out every torch; "a minor inconvenience" |
-| Level 2 | irritation | the convoy lost; he orders the mountain road sealed and the mine's captives worked harder |
+| Level 2 | irritation | the convoy lost; he strikes the throne and cracks it; Malgor is refused again; "let them dig for them" (built) |
 | Level 3 | frustration | the mine collapse failed; he sends the siege commander to destroy the route |
 | Level 4 | unease | horns; troops pulled back to the gates; he kills a captain who brings bad news |
 | Level 5 | fear | the gates fall; he orders the prison wing burned with the prisoners in it |
@@ -122,7 +136,8 @@ sacrifices in level 5, his own bridges destroyed in front of his men.
 
 ### Rurik's judgment (mandatory ending)
 
-A one-shot, save-safe sequence (`stage/Judgment.js`, planned):
+A one-shot, save-safe sequence, on the framework built in Stage 2 (`stage/Sequence.js`:
+the level's `sequence` data names the section, the places, the scene and the reward):
 1. Detect King Vaurath's defeat once (`campaign.kingDown` saved immediately).
 2. Stop combat: clear enemies, projectiles, mines, walls, hazards; heroes to idle.
 3. Place the heroes and the camera: the king on his knees centre stage; Rurik steps forward;
@@ -140,16 +155,20 @@ for them. I sentence you to death."
 
 ## 4. Shared systems (Stage 2 and on)
 
-- **Level transitions**: a level's exit loads the next level's start; the run carries health
-  share, the heroes and their picks. Continue from the title starts at the last level reached.
+- **Level transitions**: after a level's tally, ENTER loads the next level's start; the run
+  carries the heroes, their picks and their health (at least half). CONTINUE on the title
+  starts at the last checkpoint reached (built in Stage 2).
 - **Checkpoints**: every section start (exists); saved to the campaign file at each section.
-- **NPCs and rescue states**: `trapped | threatened → free → fleeing → safe`, kinds
-  `defend`, `wreckage`, `reach` (built in level 1), plus `cage` (open a lock), `execution`
-  (kill the executioner before his swing ends) and `escort` (keep enemies off a moving group).
+- **NPCs and rescue states**: `trapped | threatened | escort → free → fleeing → safe`, or
+  `lost`; kinds `defend`, `wreckage`, `reach` (built in level 1), `cage` (hold INTERACT at
+  the lock once the guards are dead), `execution` (kill the hangmen before the rope runs
+  out) and `escort` (he follows; enemies near him wear his nerve down) (built in Stage 2,
+  used in Gallows Wood). INTERACT is E / D-pad up.
 - **Story triggers**: beats fired by position, a section's clear, a rescue or a boss's rage;
   calm beats wait until no enemy is alive (built in level 1).
-- **Boss encounters**: walk-in entrance (exists), phase thresholds, scripted hazards on rage
-  (built in level 1: the falling beams).
+- **Boss encounters**: walk-in entrance (exists), phase thresholds (`boss.phases`: adds,
+  brain, damage, speed, lines, hazards `when: 'phase:<id>'`; built in Stage 2, the
+  Houndmaster uses two), scripted hazards on rage (level 1: the falling beams).
 - **Campaign save**: levels done, checkpoints, rescued villagers by name, rewards claimed,
   the judgment flags (`progress.data.campaign`, started in level 1).
 

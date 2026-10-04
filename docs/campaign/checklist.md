@@ -27,29 +27,35 @@ checked (says how), `[ ]` not started. Graybox means code-drawn temporary art.
 
 ## Stage 2 — Shared systems
 
-- [ ] Level transitions: exit loads the next level; carry the heroes, health share and picks
-- [ ] Campaign save and CONTINUE on the title (last level reached, its checkpoint)
-- [ ] Checkpoints saved per section
-- [ ] More rescue kinds: cage (open a lock), execution (stop the swing), escort
-- [ ] An interact prompt for survivors (now: walking near them is enough)
-- [ ] Boss phases (thresholds that change moves and hazards), reusable
-- [ ] Held-scene framework reused for the judgment (detect once, clear combat, place, play, award once)
-- [ ] Skill tree: one representative branch for Oryn (Stormcaller)
+- [x] Level transitions: after the tally ENTER loads the next level (same heroes, their picks, the health they walked out with, at least half) (`ArenaScene.goNextLevel`, `data/stages.js`)
+- [x] Campaign save and CONTINUE on the title (the level and section last reached) (`Progress.campaign.at`, `TitleScene`)
+- [x] Checkpoints saved per section; starting at one skips what came before (beats spent, the saved there, the unsaved gone) (`Story.skipTo`)
+- [x] More rescue kinds: cage (hold INTERACT at the lock once the guards are dead), execution (kill the hangmen before the rope runs out; too slow and he's lost), escort (he follows; enemies near him freeze him and wear his nerve down; lost at zero) (`stage/Story.js`)
+- [x] Lost villagers: saved as lost, named in the tally, a line said; dying puts the section back (rope and all)
+- [x] INTERACT: E / D-pad up; a prompt over whoever you can talk to or free, a meter for a lock, a rope, a nerve (`view/NpcView.js`)
+- [x] Boss phases (thresholds that add men, change his brain, damage and speed; their own lines and hazards), reusable; the old half-health rage is the default (`Stage.updateBossPhases`)
+- [x] Ending-sequence framework for the judgment: defeat caught once and saved, combat cleared, everyone placed, the scene, the reward once, then the end; reload-safe at every step; skipping gives the same result (`stage/Sequence.js`; proven by tests on a test stage, used for real in Stage 3)
+- [x] Skill tree: Oryn's Stormcaller branch (Forked Bolt, Static Charge, Thunderhead) (`data/skills.js`, `combat/Storm.js`); his other two branches shown as planned
+- [x] Gallows Wood laid out in graybox to use all of it (six sections, the Houndmaster with two phases, the second king cutaway) (`data/stageWood.js`, `view/WoodView.js`)
+- [x] Logic tests: the wood walked by every hero, its story and rescues, each rescue kind (and failing it), INTERACT, boss phases, the sequence (once, skips, reloads), checkpoints, the save, the Stormcaller
+- [~] Seen in a headless browser (the wood's sections, the village-to-wood transition, CONTINUE); not played through by a person
+- [ ] Online co-op and 2-player local campaign (all of it is sim-side and frame-timed; the transition rides in the online records; untried)
+- [ ] A whole-scene skip key for held scenes (now: each line skips with jump / attack)
 
 ## Stage 3 — Continuous campaign (graybox)
 
-- [ ] 2 Gallows Wood: convoy, Houndmaster, the execution, the road blocked
+- [~] 2 Gallows Wood: built in Stage 2 (road, hanging tree, cage carts, ford, kennels, blocked road); still to add: the convoy on the move (the set piece), real hounds, its art
 - [ ] 3 Hollow Mountain: lifts, counterweights, rivers, Chain Warden, the war machine, the collapse
 - [ ] 4 Shattered Ascent: rockfall timing, bombardment, the shelter, the siege commander
 - [ ] 5 Iron Gates: siege weapons, the gate from inside, Gate Twins, the Iron Marshal (Malgor), returning villagers
 - [ ] 6 Black Keep: courtyard, prison wing, great hall, the Executioner, King Vaurath (three phases)
-- [ ] The king's cutaways 2-6 (irritation to desperation), enemy reactions (horns, retreats)
-- [ ] Rurik's judgment and execution; the village epilogue
-- [ ] The castle growing level by level
+- [~] The king's cutaways: 1 (confidence) and 2 (irritation) built; 3-6 to come; enemy reactions (horns, retreats)
+- [ ] Rurik's judgment and execution (on the Stage 2 framework); the village epilogue
+- [~] The castle growing level by level (bigger over the wood)
 
 ## Stage 4 — Character progression
 
-- [ ] Oryn's tree (Stormcaller, Earthshaper, Waywalker)
+- [~] Oryn's tree: Stormcaller built (Stage 2); Earthshaper, Waywalker to build
 - [ ] Vexa's tree (Widowmaker, Deathmark, Skydancer)
 - [ ] Point pacing across six levels; balance against the bosses
 

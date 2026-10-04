@@ -8,7 +8,8 @@
 // SPACE / ENTER / J (pad A): next line.  ESC (pad B or Start): skip the scene. Skipping
 // changes nothing: the scene is only shown, and its outcome is the level's (already saved).
 //
-// Scenes (CUTAWAYS): 'learns' (after the village: he hears they survived; confidence).
+// Scenes (CUTAWAYS): 'learns' (after the village: he hears they survived; confidence),
+// 'convoy' (after Gallows Wood: the convoy lost; irritation — he strikes the throne).
 
 import { SETTINGS } from '../config/settings.js';
 import { FONT, epicFill } from '../view/fonts.js';
@@ -24,6 +25,17 @@ export const CUTAWAYS = {
       { act: 'ember' }, // his power, shown: ember-fire gathered in one hand, then a wave of ash that puts out every torch
       { who: 'VAURATH', text: 'Three who should have died at the ford. A minor inconvenience.' },
       { who: 'VAURATH', text: 'Close the wood road. Hang whoever they try to free.' },
+    ],
+  },
+  convoy: {
+    caption: 'THE BLACK KEEP',
+    beats: [
+      { who: 'MESSENGER', text: 'My king... the Houndmaster is dead. The cages on the wood road are open. Empty.' },
+      { who: 'VAURATH', text: 'Empty.' },
+      { act: 'strike' }, // irritation: his fist on the arm of the throne; the stone cracks
+      { who: 'MALGOR', text: 'Give me the mountain road, my king. They will not pass me.' },
+      { who: 'VAURATH', text: 'The pass is already buried. Let them crawl into the mine after their people.' },
+      { who: 'VAURATH', text: 'Work the captives harder. If the Oath Keepers want them, they can dig for them.' },
     ],
   },
 };
@@ -138,6 +150,7 @@ export class CutawayScene extends Phaser.Scene {
     const b = this.def.beats[this.step];
     if (!b) { this.finish(); return; }
     if (b.act === 'ember') { this.ember(); return; }
+    if (b.act === 'strike') { this.strike(); return; }
     this.who.setText(b.who).setColor(SPEAKER[b.who] ?? '#d8d0c0');
     this.line.setText(b.text).setAlpha(0);
     this.tweens.add({ targets: this.line, alpha: 1, duration: 250 });
@@ -176,6 +189,28 @@ export class CutawayScene extends Phaser.Scene {
       this.busy = false;
       this.next();
     });
+  }
+
+  // his patience, shown: a fist brought down on the arm of the throne; the stone cracks,
+  // the hall shakes, the messenger flinches back
+  strike() {
+    this.busy = true;
+    this.auto?.remove();
+    this.who.setText(''); this.line.setText('');
+    const W = SETTINGS.width; const H = SETTINGS.height;
+    const ax = W * 0.78 + 8; const ay = H - 238;
+    this.time.delayedCall(500, () => {
+      this.cameras.main.shake(300, 0.01);
+      playSfx(this, 'kick', { volume: 1, pitch: -2000, minGapMs: 0 });
+      const crack = this.add.graphics().lineStyle(2, 0x0a0810, 1);
+      crack.beginPath(); crack.moveTo(ax, ay); crack.lineTo(ax - 8, ay + 18); crack.lineTo(ax - 3, ay + 30); crack.lineTo(ax - 12, ay + 52); crack.strokePath();
+      const dust = this.add.image(ax, ay, 'glow').setScale(1.2).setTint(0x8a7a6a).setAlpha(0.6);
+      this.root.add([crack, dust]);
+      this.tweens.add({ targets: dust, alpha: 0, scale: 2.4, duration: 600 });
+      this.tweens.add({ targets: this.messenger, x: -14, duration: 160, ease: 'Quad.easeOut' });
+      this.eyes.setAlpha(1).setFillStyle(0xffd080);
+    });
+    this.time.delayedCall(1600, () => { this.busy = false; this.next(); });
   }
 
   finish() {

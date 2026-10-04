@@ -30,6 +30,16 @@ const fresh = () => ({ v: 1, blood: 0, bonus: PROGRESS.startPoints, picks: {}, c
 // checkpoint was reached last), and the one-time flags (a sequence's steps: the judgment)
 const freshCampaign = () => ({ levels: {}, rescued: {}, lost: {}, at: null, flags: {} });
 
+// The one Progress the game shares (kept in the Phaser registry; saved in the browser).
+export function sharedProgress(registry) {
+  if (!registry.get('progress')) {
+    let store = null;
+    try { store = window.localStorage; } catch { /* blocked: this session only */ }
+    registry.set('progress', new Progress(store));
+  }
+  return registry.get('progress');
+}
+
 export class Progress {
   constructor(storage = null) {
     this.storage = storage;
@@ -133,6 +143,7 @@ export class Progress {
   blocker(heroId, id) {
     const n = nodesOf(heroId).find((x) => x.id === id);
     if (!n) return 'unknown';
+    if (n.planned) return 'planned'; // (a placeholder branch: shown, not built yet)
     if (this.has(heroId, id)) return 'owned';
     const missing = (n.req ?? []).filter((r) => !this.has(heroId, r));
     if (missing.length) return 'locked';
@@ -163,7 +174,7 @@ export class Progress {
     if (!SKILL_TREES[heroId] || !picks.length) return base;
     const s = deepCopy(base);
     s.skills = {};
-    for (const n of nodesOf(heroId)) if (picks.includes(n.id)) n.apply(s);
+    for (const n of nodesOf(heroId)) if (picks.includes(n.id) && n.apply) n.apply(s);
     return s;
   }
 }

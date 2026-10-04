@@ -28,7 +28,8 @@ export const STAGE_VILLAGE = {
   id: 'village',
   name: 'THE BURNING VILLAGE',
   chapter: 'I',
-  next: { id: 'gallowsWood', name: 'GALLOWS WOOD' }, // (not built yet: Stage 3 of the plan)
+  next: { id: 'gallowsWood', name: 'GALLOWS WOOD' },
+  doneTitle: 'THE PURSUIT BEGINS', // (the tally's title)
   width: 8000,
   theme: 'village',
   tall: true,
