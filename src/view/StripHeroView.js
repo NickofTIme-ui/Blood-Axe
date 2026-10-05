@@ -12,10 +12,14 @@ import { ROGUE_FINISHERS } from '../combat/Rogue.js';
 import { Heading, headingAnim } from './Heading.js';
 import { MageHover } from '../effects/MageHover.js';
 import { HERO_STRIPS } from '../data/heroStrips.js';
+import { BodyFeel, easedSpread, swingBody } from './animFeel.js';
 
 const spread = (list, t) => list[Math.min(list.length - 1, Math.max(0, Math.floor(t * list.length)))];
 const FLIP_FRAMES = 40; // ticks the double-jump flip takes (about the time she's rising and turning over)
 const clamp01 =(t) => Math.max(0, Math.min(1, t));
+// How hard each strip-drawn swing reads in the body (view only: anticipation coil, strike
+// drive, damped settle; see swingBody in view/animFeel.js)
+const SWING_K = { light1: 0.5, light2: 0.55, light3: 0.85, heavy: 1.15, airAttack: 0.5, kick: 0.7 };
 
 export class StripHeroView {
   constructor(scene, fighter, sheet) {
@@ -29,6 +33,7 @@ export class StripHeroView {
     this.sprite = scene.add.image(fighter.x, fighter.z, `${sheet.key}-${first[0]}`, `f${first[1]}`)
       .setOrigin(sheet.ax / sheet.fw, sheet.ay / sheet.fh);
     this.last = null;
+    this.feel = new BodyFeel(fighter); // squash, stretch, state blends (view/animFeel.js)
     // the Mage's hover: cloth ripple, the float, the floor circle and motes (effects/MageHover.js)
     this.hover = fighter.stats.hover ? new MageHover(scene, this) : null;
   }
@@ -61,9 +66,10 @@ export class StripHeroView {
     if (a?.phases && f.move) {
       const m = f.move;
       const ph = movePhase(m, fr);
-      if (ph === 'startup') return spread(a.phases.startup, (fr - 1) / Math.max(1, m.startup));
+      // (wind-up and recovery eased so the key poses hold; the strike stays on its frames)
+      if (ph === 'startup') return easedSpread(a.phases.startup, (fr - 1) / Math.max(1, m.startup));
       if (ph === 'active') return spread(a.phases.active, (fr - m.startup - 1) / Math.max(1, m.active));
-      return spread(a.phases.recovery, (fr - m.startup - m.active - 1) / Math.max(1, m.recovery));
+      return easedSpread(a.phases.recovery, (fr - m.startup - m.active - 1) / Math.max(1, m.recovery));
     }
 
     switch (st) {
@@ -87,7 +93,7 @@ export class StripHeroView {
       case 'dodge': {
         const d = f.stats.dodge;
         const back = A.dodgeBack && Math.sign(f.vx || f.facing) !== f.facing;
-        return spread((back ? A.dodgeBack : A.dodge ?? A.idle).frames, fr / (d.duration + d.recovery));
+        return easedSpread((back ? A.dodgeBack : A.dodge ?? A.idle).frames, fr / (d.duration + d.recovery));
       }
       case 'hitstun': return A.hitstun.frames[0];
       case 'stagger':
@@ -95,7 +101,7 @@ export class StripHeroView {
       case 'knockdown': return (f.lyingSince === null ? A.flying : A.lying).frames[0];
       case 'dead':
       case 'burning': return A.lying.frames[0];
-      case 'getup': return spread(A.getup.frames, fr / Math.max(1, f.stats.getupFrames));
+      case 'getup': return easedSpread(A.getup.frames, fr / Math.max(1, f.stats.getupFrames));
       case 'execute': {
         // his own finisher strip when it's drawn, else the borrowed poses
         const fin = A[`fin_${f.exec?.kind}`]?.frames ?? A.finisher?.[f.exec?.kind];
@@ -166,7 +172,7 @@ export class StripHeroView {
     this.last = ref;
 
     const k = depthScale(f.z) / this.sheet.res;
-    let sx = k; let sy = k; let bob = 0; let lean = 0;
+    let sx = k; let sy = k; let bob = 0; let lean = 0; let push = 0;
 
     // the Mage floats: off the floor unless he's been knocked out of the air
     const hover = f.stats.hover;
@@ -186,7 +192,17 @@ export class StripHeroView {
     // charging the force push: a tremble that builds as it fills
     if (st === 'force' && !f.forceAt && f.forceCharge > 0) lean += (Math.random() - 0.5) * Math.min(1, f.forceCharge / 30) * 2.5;
 
-    s.setPosition(f.x, f.z - f.h + bob).setDepth(f.z).setScale(sx * f.facing, sy);
+    // a swing drawn from strips: coil back, drive in, settle (heavier blows read heavier)
+    if (this.A[st]?.phases && f.move && SWING_K[st]) {
+      const sw = swingBody(f.move, fr, SWING_K[st]);
+      lean += sw.lean; push += sw.push; bob += sw.bob; sx *= sw.sx; sy *= sw.sy;
+    }
+    // eased across state changes; squashed on landings and hits, stretched on take-off
+    ({ lean, push, bob } = this.feel.blend({ lean, push, bob }, st));
+    const shape = this.feel.step();
+    sx *= shape.sx; sy *= shape.sy;
+
+    s.setPosition(f.x + push * f.facing, f.z - f.h + bob).setDepth(f.z).setScale(sx * f.facing, sy);
     s.angle = lean * f.facing;
 
     s.clearTint();

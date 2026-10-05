@@ -376,3 +376,9 @@ Code only, not on itch. Logic tests cover all of it.
 - **Hordes**: a new fodder enemy, the Ashen Thrall (`ENEMIES.thrall`, 30 health, wears the
   grunt's strips via `strips: 'grunt'`). One horde wave of 10-11 per campaign level (Market
   Square, the Convoy, the Workings), announced "THE HORDE".
+
+## Cloud, 2026-10-05: animation smoothing (branch claude/animation-smoothing-6anlb4, not on itch)
+View-only, no sim or input timing changed: eased key-pose timing, squash and stretch on
+jumps, landings and hits, lean blended across state changes (src/view/animFeel.js).
+Painting notes for strips (key poses, frame counts): docs/animation-poses.md. Before/after
+GIFs: project files, animation/.

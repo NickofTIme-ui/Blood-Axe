@@ -8,8 +8,13 @@
 // rolled over (knockdown), dead on its side (fades).
 
 import { DEPTH } from './depths.js';
-import { movePhase, totalFrames } from '../combat/MoveRunner.js';
+import { movePhase } from '../combat/MoveRunner.js';
 import { SPRITES, haveSprites } from './levelArt.js';
+import { phaseCell } from './animFeel.js';
+
+// the painted attack strip's cells by phase: 1 crouch (held through the wind-up),
+// 2 the leaping lunge and 3 the bite while the hitbox is out, 4 landing
+const ATK_CELLS = { startup: [0], active: [1, 2], recovery: [3] };
 
 const C = { coat: 0x15110f, coatHi: 0x2c2420, plate: 0x3a3842, plateHi: 0x6a6674, eye: 0xff2a1a, maw: 0x5a0a0a, tooth: 0xe8e0d0 };
 
@@ -34,7 +39,7 @@ export class HoundView {
   paint(st, fr, alpha) {
     const f = this.f;
     let name = 'hound-walk'; let i = 0;
-    if ((st === 'light1' || st === 'heavy') && f.move) { name = 'hound-atk1'; i = Math.floor((fr / Math.max(1, totalFrames(f.move))) * 4); }
+    if ((st === 'light1' || st === 'heavy') && f.move) { name = 'hound-atk1'; i = phaseCell(f.move, fr, ATK_CELLS); }
     else if (st === 'hitstun' || st === 'stagger') name = 'hound-react';
     else if (st === 'knockdown' || st === 'getup') { name = 'hound-react'; i = st === 'getup' ? 2 : 1; }
     else if (st === 'dead') { name = 'hound-doom'; i = Math.floor(fr / 8); }
