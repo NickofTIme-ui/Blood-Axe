@@ -355,3 +355,9 @@ the generator and run `node tools/sfx-gen/electric.js`.
 - **itch**: a campaign build is zipped on the PC (`release\blood-axe-web.zip`); the upload was blocked by the PC's safety check and waits on Nick (upload it himself at itch.io/game/edit/5082289, or approve it on the PC). itch still runs 19540958.
 - **Play link**: publishing the web build as a private claude.ai page was blocked pending Nick's yes.
 - **Code next**: level 4, Shattered Ascent (the Siege Commander); wire villager, hound, Houndmaster and Crusher strips once their art exists; the king's art is in Nick's ChatGPT folder "Ashen King".
+
+## Cloud, 2026-10-05: animation smoothing (branch claude/animation-smoothing-6anlb4, not on itch)
+View-only, no sim or input timing changed: eased key-pose timing, squash and stretch on
+jumps, landings and hits, lean blended across state changes (src/view/animFeel.js).
+Painting notes for strips (key poses, frame counts): docs/animation-poses.md. Before/after
+GIFs: project files, animation/.
