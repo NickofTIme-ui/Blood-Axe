@@ -31,7 +31,7 @@ export class SweepBot extends Controller {
     const g = this.pickGoal();
     // a goal chased too long (an optional ledge it can't find the way up to): give it up
     const key = g.key ?? null;
-    if (key && key === this.goal?.key) { if (++this.chase > 60 * 40) (this.skip ??= new Set()).add(key); } else this.chase = 0;
+    if (key && key === this.goal?.key) { if (++this.chase > 60 * 25) (this.skip ??= new Set()).add(key); } else this.chase = 0;
     this.goal = g;
     if (g.act === 'hit' && this.near(g, 70, 14)) {
       this.moveX = Math.sign(g.fx - p.x) * 0.01; // (face him)
@@ -58,7 +58,7 @@ export class SweepBot extends Controller {
     if (tgt) {
       const side = p.x < tgt.x ? -1 : 1;
       let x = tgt.x + side * 50;
-      if (T && T.groundAt(x, tgt.z) < -1) x = tgt.x - side * 50;
+      if (T && (T.groundAt(x, tgt.z) < -1 || Math.abs(T.groundAt(x, tgt.z) - tgt.floor) > 20)) x = tgt.x - side * 50; // (stand on his level)
       return { act: 'hit', x, z: tgt.z, h: tgt.floor, fx: tgt.x, foe: tgt };
     }
     const sec = st.section; const next = st.sections[st.index + 1];
@@ -74,7 +74,7 @@ export class SweepBot extends Controller {
       }
     }
     // what opens the way, and what holds the shackled
-    const pr = st.props.find((q) => !q.broken && (q.opens || q.kind === 'shackle') && inReach(q.x));
+    const pr = st.props.find((q) => !q.broken && (q.opens || q.kind === 'shackle' || (sec.needs && q.tag === sec.needs)) && inReach(q.x));
     if (pr) return this.propGoal(pr);
     return { act: 'go', x: this.world.bounds.maxX + 60, z: LANE };
   }
@@ -136,6 +136,8 @@ export class SweepBot extends Controller {
       const zw = T.wallAt(p.x, p.z + this.moveZ * 14, p.h);
       if (zw && zw.top - p.floor <= 95) return jump(zw.top);
     }
+    // the goal is below, right under this ledge: step off toward it
+    if (g.h != null && p.floor - g.h > 20 && Math.abs(dx) < 60) { this.moveX = Math.sign(dx) || 1; return; }
     // the goal is up on a ledge right here: hop up
     if (g.h != null && g.h - p.floor > 10 && g.h - p.floor <= 95 && Math.abs(dx) < 60 && Math.abs(g.z - p.z) < 40) jump(g.h);
   }
