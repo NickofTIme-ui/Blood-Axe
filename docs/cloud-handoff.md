@@ -378,7 +378,7 @@ Code only, not on itch. Logic tests cover all of it.
 - **Boss loot: trophies** (`src/data/trophies.js`, saved in `Progress.trophies`): every boss
   drops his own legendary the first time; men with 130+ health drop a common/rare 12% of the
   time. Three worn slots; O / RT on the skill screen opens the TROPHIES page (wear / take off).
-  The dropped reliquary is a code-drawn stand-in: prompts 32-33 in
+  The dropped reliquary is a code-drawn stand-in: prompts 39-40 in
   `/mnt/project-files/campaign/art/art-levels-1-2.md` (icons are not wired in yet).
 - **Hordes**: a new fodder enemy, the Ashen Thrall (`ENEMIES.thrall`, 30 health, wears the
   grunt's strips via `strips: 'grunt'`). One horde wave of 10-11 per campaign level (Market
