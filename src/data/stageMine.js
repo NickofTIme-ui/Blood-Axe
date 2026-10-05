@@ -33,7 +33,7 @@ export const STAGE_MINE = {
   id: 'hollowMountain',
   name: 'HOLLOW MOUNTAIN',
   chapter: 'III',
-  next: { id: 'shatteredAscent', name: 'THE SHATTERED ASCENT', chapter: 'IV' }, // (not built yet: Stage 3 of the plan)
+  next: { id: 'shatteredAscent', name: 'THE SHATTERED ASCENT', chapter: 'IV' },
   doneTitle: 'OUT OF THE MOUNTAIN',
   width: 9400,
   theme: 'mine',
@@ -61,7 +61,7 @@ export const STAGE_MINE = {
       objective: 'Strike the shackles',
       hint: 'Break the posts they are chained to',
       fightAt: 1600,
-      waves: [['grunt', 'butcher', 'grunt', 'grunt'], ['ghoul', 'grunt', 'stalker']],
+      waves: [['grunt', 'butcher', 'grunt', 'grunt'], ['ghoul', 'grunt', 'stalker'], [...Array(10).fill('thrall'), 'ghoul']], // (the last: the HORDE)
       props: [
         { kind: 'shackle', tag: 'tobin', x: 1900, z: 300, drop: null },
         { kind: 'shackle', tag: 'hilde', x: 2160, z: 300, drop: null },

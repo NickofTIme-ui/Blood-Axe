@@ -348,6 +348,13 @@ the generator and run `node tools/sfx-gen/electric.js`.
 - Art prompts: items 18-25 in `docs/campaign/art-levels-1-2.md` (the mine and the Ore Crusher). Crusher strips are wired (5 October 2026).
 - Checked: logic tests (every hero walks it, the gate, the collapse, both bosses) and headless screenshots. Not played by a person.
 
+## Cloud, 2026-10-05: level 4, THE SHATTERED ASCENT (branch claude/campaign-level-4-guc3fp, off the campaign branch; not on main, not on itch)
+- Built in its own thread while the campaign thread paints art; to be merged into `claude/project-thread-l70xhx`. Code art: `src/data/stageAscent.js`, `src/view/AscentView.js`. Hollow Mountain now leads into it; it names THE IRON GATES as next (not built).
+- New systems: the bombardment (hazard `bombard`: volleys aimed at the heroes, landing spots shown first, no stone within 170 px of a drop; `silence: '<tag>'` thins it per smashed prop; `when` works as for beams), the catapult prop, `section.needs` (the fight isn't won until every prop with that tag is broken) and the story key `broken:<tag>`.
+- The fourth king cutaway ('retreat': unease; horns, the captain burned to ash).
+- Art prompts: items 32-38 in `docs/campaign/art-levels-1-2.md` (the ascent's backdrop, four set pieces, the catapult). Orsk wears the Berserker's strips. Screens: project files `campaign/shattered-ascent/`.
+- Checked: logic tests (every hero walks it, the bombardment, the shelter, Orsk) and headless screenshots. Not played by a person.
+
 ## Paused, 2026-10-05 00:55 UTC (Nick out of usage until it refreshes)
 - Campaign branch `claude/project-thread-l70xhx` is pushed (latest: heads on pikes in the village); it's PR #12 into main, open, waiting on Nick's OK to merge.
 - **Art**: painting in ChatGPT on Nick's PC finished everything level 1 can use: backdrop (items 1-5), the five set pieces (well, barn, stables, longhall, gate), both props (wreckage, cart; whole and broken) and the stampede horse. All only on the PC in `assets/env/village/` and `assets/fx/`, uncommitted (no GitHub login there). Not yet: pikes picture, villagers. Next: Gallows Wood, then Hollow Mountain.
@@ -355,3 +362,30 @@ the generator and run `node tools/sfx-gen/electric.js`.
 - **itch**: a campaign build is zipped on the PC (`release\blood-axe-web.zip`); the upload was blocked by the PC's safety check and waits on Nick (upload it himself at itch.io/game/edit/5082289, or approve it on the PC). itch still runs 19540958.
 - **Play link**: publishing the web build as a private claude.ai page was blocked pending Nick's yes.
 - **Code next**: level 4, Shattered Ascent (the Siege Commander); wire villager, hound, Houndmaster and Crusher strips once their art exists; the king's art is in Nick's ChatGPT folder "Ashen King".
+
+## Cloud, 2026-10-05: hack-and-slash pillars (branch claude/combat-pillars-2znjh7, off the campaign branch)
+
+Code only, not on itch. Logic tests cover all of it.
+
+- **Air juggles** (`src/combat/Juggle.js`): Rurik's J, J, K is the RISING CLEAVE launcher
+  (`moves.launcher`, borrows light2's poses until a strip exists). Any hero's hit on a flying
+  enemy keeps him up; air attacks chain three a jump while they connect, the third spikes him
+  and he bounces once. Bosses and the Crusher are never juggled.
+- **Combo counter and style rank** (`src/combat/Style.js`, HUD `src/view/StyleMeter.js`):
+  D to SSS, right side of the HUD. The rank multiplies the blood each kill pays.
+- **Riposte** (`CombatSystem.js`, `RIPOSTE`): the first melee hit after a parry on that man is
+  a sure critical, x1.6 more, long freeze, "RIPOSTE!" call-out.
+- **Boss loot: trophies** (`src/data/trophies.js`, saved in `Progress.trophies`): every boss
+  drops his own legendary the first time; men with 130+ health drop a common/rare 12% of the
+  time. Three worn slots; O / RT on the skill screen opens the TROPHIES page (wear / take off).
+  The dropped reliquary is a code-drawn stand-in: prompts 39-40 in
+  `/mnt/project-files/campaign/art/art-levels-1-2.md` (icons are not wired in yet).
+- **Hordes**: a new fodder enemy, the Ashen Thrall (`ENEMIES.thrall`, 30 health, wears the
+  grunt's strips via `strips: 'grunt'`). One horde wave of 10-11 per campaign level (Market
+  Square, the Convoy, the Workings), announced "THE HORDE".
+
+## Cloud, 2026-10-05: animation smoothing (branch claude/animation-smoothing-6anlb4, not on itch)
+View-only, no sim or input timing changed: eased key-pose timing, squash and stretch on
+jumps, landings and hits, lean blended across state changes (src/view/animFeel.js).
+Painting notes for strips (key poses, frame counts): docs/animation-poses.md. Before/after
+GIFs: project files, animation/.

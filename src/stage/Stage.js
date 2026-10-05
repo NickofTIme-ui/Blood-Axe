@@ -20,6 +20,9 @@
 //                       is won and the beat `after` has played (not the moment it's won)
 //   boss.entrance.freeze: false   he walks in without freezing the heroes (a sub-boss)
 //   boss.escort: [types]          brought on with him (the Houndmaster's two hounds)
+//   section.needs: '<tag>'        its fight isn't won until every prop with that tag is
+//                       broken (the Shattered Ascent's catapults); propsDown { tag } is
+//                       emitted when the last one goes (story beats 'broken:<tag>')
 //   boss.phases: [{ id, at, adds?, ai?, damage?, speed?, rage? }]   BOSS PHASES: under `at`
 //                       of his health he moves on to the next phase (in order, each once):
 //                       new men (`adds`), his brain's numbers changed (`ai`: e.g. a shorter
@@ -36,12 +39,13 @@
 // { section }) starts at a later section's checkpoint.
 
 import { STAGE, PICKUPS, PROPS } from '../data/stage.js';
-import { ENEMIES } from '../data/enemies.js';
+import { ENEMIES, HORDE_SIZE } from '../data/enemies.js';
 import { createEnemy, offscreenX } from '../entities/Enemy.js';
 import { toWorldBox, overlaps } from '../combat/Boxes.js';
 import { Terrain, PIT_LOST } from './Terrain.js';
 import { Story } from './Story.js';
 import { Sequence } from './Sequence.js';
+import { LOOT } from '../data/trophies.js';
 
 const PAD = 30;           // keep everyone this far inside the section's ends
 const WAVE_GAP = 50;      // frames between one wave dying and the next arriving
@@ -74,6 +78,11 @@ const STAMPEDE = { period: 330, warn: 80, speed: 13, gap: 120, reach: 46, damage
 // The mine's collapse: how far ahead of the falling rock it still hits you, the damage
 const COLLAPSE = { reach: 30, damage: 24 };
 const BEAM = { period: 230, warn: 80, damage: 22, lethalH: 60 };
+// The Shattered Ascent's catapults (hazard 'bombard'): a volley every `period` frames, each
+// stone aimed at a hero (a little off where he stands), its landing spot shown for `warn`
+// frames; what it hits (either side) within `radius` along the lane and `depth` across it.
+// No stone is aimed within `pitClear` px of a drop (nobody is shelled off a bridge or a ledge).
+const BOMBARD = { period: 200, warn: 75, shots: 2, radius: 64, depth: 46, damage: 20, spread: 110, pitClear: 170 };
 
 export class Stage {
   constructor(world, data = STAGE, opts = {}) {
@@ -110,7 +119,10 @@ export class Stage {
       if (e.defender?.team !== 'enemy') return;
       this.stats.kills++;
       if (e.finisher) this.stats.finishers++;
+      this.dropLoot(e.defender);
     });
+    // a boss the story spares (beaten to his knees: stage/Sequence.js) still gives up his trophy
+    world.events.on('hit', (e) => { if (e.defender?.spare && e.defender.health <= 1) this.dropLoot(e.defender); });
   }
 
   get section() { return this.sections[this.index]; }
@@ -195,6 +207,7 @@ export class Stage {
     const won = this.cleared === this.checkpoint; // died (a trap) after the fight here was already won
     this.story?.resetSection(this.checkpoint);
     for (const hz of this.hazards) if (hz.type === 'collapse' && hz.section === this.checkpoint) hz.front = null; // (the rock starts again behind you)
+    for (const hz of this.hazards) if (hz.type === 'bombard') hz.shells = []; // (nothing left in the air)
     // (a wagon still rolling here goes back to where it started, its people still in it)
     for (const pr of this.props) {
       if (pr.roll?.from == null || pr.section !== this.checkpoint || pr.broken) continue;
@@ -485,11 +498,14 @@ export class Stage {
       if (this.livingFoes().length) return;
       if (this.waveDelay > 0) { this.waveDelay--; return; }
       if (this.waveIndex < sec.waves.length) {
-        this.spawnWave(sec.waves[this.waveIndex++]);
+        const roster = sec.waves[this.waveIndex++];
+        this.spawnWave(roster);
+        if (roster.length >= HORDE_SIZE) this.world.events.emit('horde', { section: sec, count: roster.length });
         this.waveDelay = WAVE_GAP;
         return;
       }
       if (sec.boss && !this.bossSpawned) { this.spawnBoss(); return; }
+      if (sec.needs && this.props.some((pr) => pr.tag === sec.needs && !pr.broken)) return; // (the catapults still stand)
       this.clearSection();
     } else if (this.phase === 'clear') {
       const next = this.sections[this.index + 1];
@@ -597,12 +613,29 @@ export class Stage {
     pr.fly = null;
     this.world.events.emit('propBreak', { prop: pr, dir, blast });
     if (pr.opens) this.openWay(pr.opens);
+    if (pr.tag && !this.props.some((q) => q.tag === pr.tag && !q.broken)) this.world.events.emit('propsDown', { tag: pr.tag });
     if (pr.challenge) this.ringBell(pr);
     if (pr.drop) {
       // a wall's shrine sits in the alcove behind it; everything else rolls out in front
       const z = pr.kind === 'wall' ? pr.z + 6 : Math.min(this.world.bounds.maxZ - 5, pr.z + 14);
       this.pickups.push({ kind: pr.drop, x: pr.x, z, y: pr.y ?? 0, age: 0, taken: false, secret: !!pr.secret });
     }
+  }
+
+  // BOSS LOOT: a boss always drops a trophy; an elite (a big man) sometimes does. Which
+  // trophy it is gets decided when it's picked up (data/trophies.js pickTrophy), so the
+  // stage — and an online game's two copies of it — only agree on where it lies.
+  dropLoot(f) {
+    if (f.lootDropped || f.team !== 'enemy') return;
+    const boss = !!f.stats.boss;
+    if (!boss && (f.stats.maxHealth < LOOT.eliteHealth || this.world.roll(f.id, 4100) >= LOOT.eliteChance)) return;
+    f.lootDropped = true;
+    const x = Math.max(this.world.bounds.minX + 20, Math.min(this.world.bounds.maxX - 20, f.x));
+    const z = Math.max(this.world.bounds.minZ + 5, Math.min(this.world.bounds.maxZ - 5, f.z + 10));
+    const y = this.terrain ? Math.max(0, this.terrain.groundAt(x, z)) : 0;
+    const pk = { kind: 'trophy', from: boss ? 'boss' : 'elite', boss: f.stats.name, x, z, y, age: 0, taken: false };
+    this.pickups.push(pk);
+    this.world.events.emit('lootDrop', { pickup: pk, fighter: f });
   }
 
   // Kicked crates and chests: they skid along the lane and burst on the first enemy they
@@ -661,6 +694,7 @@ export class Stage {
       else if (hz.type === 'beam') this.updateBeam(hz);
       else if (hz.type === 'stampede') this.updateStampede(hz);
       else if (hz.type === 'collapse') this.updateCollapse(hz);
+      else if (hz.type === 'bombard') this.updateBombard(hz);
       else this.updateBlade(hz);
     }
   }
@@ -780,6 +814,66 @@ export class Stage {
       this.hurt(hz, f, hz.damage ?? COLLAPSE.damage, 1, 'beam');
       f.x = Math.max(f.x, hz.front + COLLAPSE.reach + 4);
     }
+  }
+
+  // How many stones a bombardment throws a volley right now: its `shots`, but never more
+  // than the catapults (props tagged `silence`) still standing; none once they're all gone
+  // or before its `when`.
+  bombardShots(hz) {
+    if (hz.section !== this.index || !this.beamLive(hz)) return 0;
+    const n = hz.shots ?? BOMBARD.shots;
+    if (!hz.silence) return n;
+    const standing = this.props.filter((pr) => pr.tag === hz.silence && !pr.broken).length;
+    return Math.min(n, standing);
+  }
+
+  // The catapults on the heights (the Shattered Ascent): every `period` frames a volley,
+  // a stone aimed near each hero in turn (where it will land is known at once: the view
+  // shows its shadow); after `warn` frames it lands and hurts whoever is under it, Ashen
+  // men too. Not while a held scene plays. (World.roll: the same on every machine.)
+  updateBombard(hz) {
+    hz.shells ??= [];
+    const B = BOMBARD;
+    const held = this.story?.holding;
+    const shots = this.bombardShots(hz);
+    if (!shots) { hz.shells = hz.shells.filter((s) => s.land > hz.t); }
+    const P = hz.period ?? B.period;
+    if (shots && !held && hz.t % P === 0) {
+      const heroes = this.players.filter((p) => p.alive);
+      const b = this.world.bounds;
+      let fired = 0;
+      for (let i = 0; i < shots && heroes.length; i++) {
+        const p = heroes[i % heroes.length];
+        const r = this.world.rngFor(hz.id, hz.t + i);
+        const ahead = Math.sign(p.vx || p.facing || 1);
+        let x = p.x + (r() * 2 - 1) * B.spread * 0.6 + ahead * (i % 2 ? B.spread : B.spread * 0.3);
+        const z = Math.max(b.minZ + 10, Math.min(b.maxZ - 10, p.z + (r() * 2 - 1) * 50));
+        x = Math.max(b.minX + 20, Math.min(b.maxX - 20, x));
+        if (this.nearDrop(x, z)) continue;
+        hz.shells.push({ x, z, from: hz.t, land: hz.t + (hz.warn ?? B.warn) });
+        fired++;
+      }
+      if (fired) this.world.events.emit('shellLaunch', { hazard: hz, count: fired });
+    }
+    for (const s of hz.shells) {
+      if (s.land !== hz.t) continue;
+      const y = this.terrain ? Math.max(0, this.terrain.groundAt(s.x, s.z)) : 0;
+      s.y = y;
+      this.world.events.emit('shellLand', { hazard: hz, shell: s });
+      for (const f of this.world.fighters) {
+        if (Math.abs(f.x - s.x) > (hz.radius ?? B.radius) || Math.abs(f.z - s.z) > (hz.depth ?? B.depth) || Math.abs(f.h - y) > 70) continue;
+        this.hurt(hz, f, hz.damage ?? B.damage, Math.sign(f.x - s.x) || 1, 'beam');
+      }
+    }
+    hz.shells = hz.shells.filter((s) => s.land > hz.t);
+  }
+
+  // Is there a drop (a pit) within BOMBARD.pitClear of this spot along the lane?
+  nearDrop(x, z) {
+    const T = this.terrain;
+    if (!T) return false;
+    for (let d = -BOMBARD.pitClear; d <= BOMBARD.pitClear; d += 15) if (T.groundAt(x + d, z) < -1) return true;
+    return false;
   }
 
   // The blade's angle (radians) and tip position. amp / rate: how much wider and faster

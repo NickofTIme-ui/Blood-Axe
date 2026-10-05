@@ -103,7 +103,7 @@ export const CHARACTERS = {
         smear: { arc: [155, -40], r: 74, cx: 6, cy: 70, w: 30 },
         chains: [
           { button: 'attack', next: 'light3', from: 6, to: 21 },
-          { button: 'heavy', next: 'heavy', from: 9, to: 21 },
+          { button: 'heavy', next: 'launcher', from: 9, to: 21 }, // J, J, K: the RISING CLEAVE
         ],
         cancels: [{ from: 9, to: 21, into: ['dodge', 'block', 'kick'] }],
       },
@@ -131,6 +131,17 @@ export const CHARACTERS = {
         ],
       },
       kick: { ...SPARTA_KICK },
+      // J, J, K — the RISING CLEAVE: an upward rip that throws him straight into the air.
+      // Jump out of it and keep him up there (combat/Juggle.js).
+      launcher: {
+        cut: 'slash', launch: true,
+        startup: 7, active: 4, recovery: 18,
+        damage: 14, hitstun: 30, hitstop: 9, shake: 4,
+        knockback: { x: 24, y: 660 }, knockdown: true, guardDamage: 24, staminaCost: 8, lunge: 60,
+        hitbox: { x: 4, y: 8, w: 80, h: 104 },
+        smear: { arc: [120, -110], r: 82, cx: 6, cy: 70, w: 36, heavy: true },
+        cancels: [{ from: 12, to: 29, into: ['jump', 'dodge'] }],
+      },
       air: {
         cut: 'chop',
         startup: 4, active: 14, recovery: 0,

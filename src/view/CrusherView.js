@@ -10,8 +10,15 @@
 // and wrecked (dead: tilted, the furnace out, smoke pouring off it).
 
 import { DEPTH } from './depths.js';
-import { movePhase, totalFrames } from '../combat/MoveRunner.js';
+import { movePhase } from '../combat/MoveRunner.js';
 import { SPRITES, haveSprites } from './levelArt.js';
+import { phaseCell } from './animFeel.js';
+
+// the painted attack strips' cells by phase (the strike cells on screen exactly while the
+// hitbox is out): the drum 1 drawn back, 2-3 shoved out spinning, 4 pulled in; the hammer
+// 1-3 hauled up (the top held longest), 4 the slam, 5 resting in the dent
+const ATK1_CELLS = { startup: [0], active: [1, 2], recovery: [3] };
+const HEAVY_CELLS = { startup: [0, 1, 2], active: [3], recovery: [4] };
 
 const C = { iron: 0x2a2826, ironHi: 0x4a4644, ironDk: 0x161514, rivet: 0x6a6460, rust: 0x6a3a1e, fire: 0xff6a20, fireHi: 0xffd080, spike: 0x8a8480 };
 
@@ -40,7 +47,7 @@ export class CrusherView {
     let name = 'crusher-walk'; let i = Math.floor(Math.abs(this.roll) * 1.2);
     if ((st === 'light1' || st === 'heavy') && f.move) {
       name = st === 'light1' ? 'crusher-atk1' : 'crusher-heavy';
-      i = Math.floor((fr / Math.max(1, totalFrames(f.move))) * SPRITES[name].count);
+      i = phaseCell(f.move, fr, st === 'light1' ? ATK1_CELLS : HEAVY_CELLS);
     } else if (st === 'dead') { name = 'crusher-doom'; i = Math.floor(fr / 10); }
     const S = SPRITES[name];
     i = name === 'crusher-walk' ? i % S.count : Math.min(S.count - 1, Math.max(0, i));

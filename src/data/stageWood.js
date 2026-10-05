@@ -98,7 +98,7 @@ export const STAGE_WOOD = {
       objective: 'Stop the prisoner wagon',
       hint: 'Smash the wagon before it gets away up the road',
       fightAt: 5860,
-      waves: [['grunt', 'butcher', 'grunt'], ['stalker', 'grunt', 'berserker'], ['grunt', 'butcher', 'stalker']],
+      waves: [['grunt', 'butcher', 'grunt'], ['stalker', 'grunt', 'berserker'], ['grunt', 'butcher', 'stalker'], [...Array(10).fill('thrall'), 'berserker']], // (the last: the HORDE)
       props: [
         { kind: 'wagon', tag: 'convoy', x: 6080, z: 320, roll: { to: 7110, speed: 22 } },
         { kind: 'barrel', x: 5700, z: 480, drop: 'wine' },

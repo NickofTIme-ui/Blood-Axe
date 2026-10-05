@@ -2,6 +2,7 @@
 // Optional for you: if Node.js is installed, run `node tests/logic-test.js`.
 // Each test builds a tiny World, scripts button presses, and checks the outcome.
 
+import { readFileSync } from 'node:fs';
 import { World } from '../src/core/World.js';
 import { SETTINGS } from '../src/config/settings.js';
 import { Controller } from '../src/core/Controller.js';
@@ -17,6 +18,8 @@ import { STAGE_GALLOWS } from '../src/data/stageGallows.js';
 import { STAGE_VILLAGE } from '../src/data/stageVillage.js';
 import { STAGE_WOOD } from '../src/data/stageWood.js';
 import { STAGE_MINE } from '../src/data/stageMine.js';
+import { STAGE_ASCENT } from '../src/data/stageAscent.js';
+import { STAGES } from '../src/data/stages.js';
 import { LINE, NPC } from '../src/stage/Story.js';
 import { Progress, PROGRESS } from '../src/progression/Progress.js';
 import { SKILL_TREES } from '../src/data/skills.js';
@@ -29,6 +32,9 @@ import { ROGUE_FINISHERS } from '../src/combat/Rogue.js';
 import { TickController, pressed } from '../src/core/TickInput.js';
 import { NetSession, NET, loopPair, snapshot, correct, feedPlayers, delayFor } from '../src/net/Session.js';
 import { runTickJobs } from '../src/core/TickJobs.js';
+import { JUGGLE } from '../src/combat/Juggle.js';
+import { STYLE, styleMult } from '../src/combat/Style.js';
+import { TROPHIES, TROPHY_SLOTS, pickTrophy, bossTrophy } from '../src/data/trophies.js';
 
 // A controller driven by a script: { frameNumber: ['attack'] } presses,
 // plus `hold` for held buttons.
@@ -234,6 +240,21 @@ test('parry staggers the attacker', () => {
   assert(t.d.state === 'stagger', `grunt should be staggered, is ${t.d.state}`);
 });
 
+test('riposte: the first hit after a parry is a sure, heavier critical; later hits are plain', () => {
+  const t = setup({ dummyScript: { 1: ['attack'] } });
+  t.d.stats = { ...t.d.stats, maxHealth: 1e4 }; t.d.health = 1e4;
+  t.p.facing = 1;
+  t.p.controller.script = { 8: ['block'], 24: ['attack'], 60: ['attack'] };
+  const hits = [];
+  t.world.events.on('hit', (e) => { if (e.attacker === t.p) hits.push(e); });
+  t.run(100);
+  assert(t.log.includes('parry'), 'parried');
+  assert(hits.length >= 2, `two answers land (${hits.length})`);
+  assert(hits[0].riposte && hits[0].crit, 'the first is a riposte');
+  assert(!hits[1].riposte, 'only the first');
+  assert(hits[0].damage > hits[1].damage * 2, `and it hurts (${hits[0].damage.toFixed(1)} vs ${hits[1].damage.toFixed(1)})`);
+});
+
 test('dodge i-frames avoid a hit', () => {
   const t = setup({ dummyScript: { 1: ['attack'] }, gap: 50 });
   t.p.controller.script = { 8: ['dodge'] };
@@ -287,7 +308,7 @@ test('every enemy has art, anims, specials that exist, and is in a wave', () => 
   const anims = ['slash', 'backslash', 'chop', 'stab', 'stabB', 'thrust', 'uppercut', 'swingChain', 'slamChain', 'spin', 'hook', 'bash', 'charge'];
   // (a wave, the stage's waves, or the stage boss and his adds)
   const boss = (b) => (b ? [b.type, ...(b.adds ?? []), ...(b.escort ?? []), ...(b.phases ?? []).flatMap((ph) => ph.adds ?? [])] : []);
-  const inWaves = new Set([...WAVES.flat(), ...[STAGE, STAGE_WOOD, STAGE_MINE].flatMap((S) => S.sections.flatMap((s) => [...(s.waves ?? []).flat(), ...boss(s.boss)]))]);
+  const inWaves = new Set([...WAVES.flat(), ...[STAGE, STAGE_WOOD, STAGE_MINE, STAGE_ASCENT].flatMap((S) => S.sections.flatMap((s) => [...(s.waves ?? []).flat(), ...boss(s.boss)]))]);
   for (const e of Object.values(ENEMIES)) {
     assert(e.art || e.view, `${e.id} has no art`);
     assert(inWaves.has(e.id), `${e.id} never appears in a wave`);
@@ -2616,7 +2637,7 @@ test('checkpoints: starting a level at a saved section skips what came before; t
   assert(st.story.npc('barn').state === 'gone', 'the barn people were never freed: gone');
   assert(!st.story.done.has('vow') && !st.story.beats.find((b) => b.id === 'gathered').fired, 'what is ahead is still to come');
   // every section of every campaign level starts on firm, safe ground
-  for (const D of [STAGE_VILLAGE, STAGE_WOOD, STAGE_MINE]) {
+  for (const D of [STAGE_VILLAGE, STAGE_WOOD, STAGE_MINE, STAGE_ASCENT]) {
     const T = new Terrain(new World(), D.terrain);
     for (const s of D.sections) {
       const at = s.spawn ?? { x: s.x0 + 140, z: 440 };
@@ -2645,7 +2666,7 @@ test('campaign save: CONTINUE points at the last checkpoint; a level done points
 });
 
 test('campaign: no section\'s fight is held open by a man stuck off-screen (the mill yard: one buried in the roof behind)', () => {
-  for (const data of [STAGE_VILLAGE, STAGE_WOOD, STAGE_GALLOWS, STAGE_MINE]) {
+  for (const data of [STAGE_VILLAGE, STAGE_WOOD, STAGE_GALLOWS, STAGE_MINE, STAGE_ASCENT]) {
     for (let k = 0; k < data.sections.length; k++) {
       const world = new World({ seed: 5 });
       const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 150, z: 440, controller: new Controller() }));
@@ -2657,6 +2678,7 @@ test('campaign: no section\'s fight is held open by a man stuck off-screen (the 
       for (; f < 60 * 120 && st.phase === 'fight'; f++) {
         if (st.story) { st.story.current = null; st.story.queue = []; }
         if (f === 1 && sec.fightAt != null) { p.x = Math.max(p.x, sec.fightAt + 5); if (st.terrain) p.floor = p.h = Math.max(0, st.terrain.groundAt(p.x, p.z)); }
+        if (f === 1 && sec.needs) for (const pr of st.props) if (pr.tag === sec.needs) st.breakProp(pr, 1); // (what the hero must smash, smashed)
         // the hero fights whoever has arrived; nobody walks over to fetch a straggler
         if (f % 60 === 0) for (const e of world.fighters) if (e.team === 'enemy' && e.alive && !e.entering && e.state !== 'bossEntrance') { e.health = 0; e.removeMe = true; }
         world.tick(); st.update();
@@ -2887,6 +2909,268 @@ test('terrain: a man left inside a wall (a finisher carried him there) steps out
   p.x = gate.x0 + 4; p.h = p.floor = 0;
   run(2);
   assert(!st.terrain.wallAt(p.x, p.z, p.h) && p.x < gate.x0, `out on the near side (x ${Math.round(p.x)})`);
+});
+
+// ------------------------------------------------------------ The Shattered Ascent (level 4)
+
+const ASC_SEC = (id) => STAGE_ASCENT.sections.findIndex((q) => q.id === id);
+function ascentSetup(section, { x, z, hero = 'warrior', opts = {} } = {}) {
+  const world = new World({ seed: 17 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: x ?? 200, z: z ?? 440, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_ASCENT, opts);
+  st.start(p, { section });
+  hush(st);
+  if (x != null) { p.x = x; p.z = z; st.placeOnGround(p); }
+  const run = (n, each) => { for (let i = 0; i < n; i++) { world.tick(); st.update(); each?.(i); } };
+  return { world, p, st, run };
+}
+// (the walker smashes what a player would: the catapults, Bram's chain)
+const ascentBreaker = (w, st, p) => { for (const pr of st.props) if (!pr.broken && (pr.kind === 'catapult' || pr.kind === 'shackle') && Math.abs(pr.x - p.x) < 140) st.breakProp(pr, 1); };
+
+test('ascent: the level is wired in: Hollow Mountain leads to it, its cutaway exists', () => {
+  assert(STAGES[STAGE_MINE.next.id] === STAGE_ASCENT, 'the mine leads on to the ascent');
+  // (scenes/CutawayScene.js needs Phaser to load: read it as text)
+  const src = readFileSync(new URL('../src/scenes/CutawayScene.js', import.meta.url), 'utf8');
+  assert(new RegExp(`\\n  ${STAGE_ASCENT.cutaway}: \\{`).test(src), `the king's fourth scene (${STAGE_ASCENT.cutaway})`);
+  assert(src.includes("{ act: 'horns' }") && src.includes("{ act: 'kill' }") && src.includes("b.act === 'kill'"), 'horns, and the captain who brings bad news');
+});
+
+test('ascent: every hero walks the Shattered Ascent (no upgrades), without a fall, defends the shelter, wrecks the battery, frees Bram', () => {
+  for (const hero of ['warrior', 'mage', 'rogue']) {
+    let shells = 0;
+    const r = campaignRun(STAGE_ASCENT, hero, {
+      frames: 60 * 420,
+      onTick: (w, st, p, f) => {
+        if (f === 0) w.events.on('shellLand', () => shells++);
+        ascentBreaker(w, st, p); p.health = p.stats.maxHealth;
+      },
+    });
+    assert(r.won === 1 && r.falls === 0, `${hero}: ${r.won ? 'out' : `stuck at x ${Math.round(r.x)} (${r.stage.section.id}, ${r.stage.phase})`} in ${r.secs.toFixed(0)} s, ${r.falls} falls`);
+    for (const id of ['shelter', 'bram']) assert(r.rescued.includes(id), `${hero}: ${id} saved (${r.rescued})`);
+    for (const id of ['opening', 'silenced', 'orsk', 'retreat', 'gates']) assert(r.beats.includes(id), `${hero}: ${id} played (${r.beats})`);
+    assert(shells > 0, `${hero}: the catapults fired on the way (${shells})`);
+  }
+});
+
+test('ascent: the bombardment: stones land near the hero, hurt both sides, never by a drop; each catapult smashed is one stone fewer; none left, it stops', () => {
+  const { world, p, st, run } = ascentSetup(ASC_SEC('battery'), { x: 6900, z: 420 });
+  st.fightOn = true; st.waveIndex = 99;
+  const hz = st.hazards.find((h) => h.type === 'bombard' && h.section === ASC_SEC('battery'));
+  const land = []; world.events.on('shellLand', (e) => land.push(e.shell));
+  const launches = []; world.events.on('shellLaunch', (e) => launches.push(e.count));
+  let hurtHero = 0; let hurtFoe = 0;
+  world.events.on('hazardHit', (e) => { if (e.fighter === p) hurtHero++; else if (e.fighter.team === 'enemy') hurtFoe++; });
+  p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  // an Ashen man standing right by him
+  const e = createEnemy(world, 'grunt', 6930, 420);
+  e.entering = false; e.controller = new Controller(); st.placeOnGround(e);
+  run(60 * 8, () => { p.health = p.stats.maxHealth; if (e.alive) { e.health = e.stats.maxHealth; e.x = p.x + 30; e.z = p.z; } });
+  assert(launches.length >= 2 && launches.every((n) => n <= 2), `volleys of two (${launches})`);
+  assert(land.length >= 3 && land.every((s) => Math.abs(s.x - p.x) < 260), `the stones come down near him (${land.map((s) => Math.round(s.x - p.x))})`);
+  assert(hurtHero >= 1 && hurtFoe >= 1, `they hit whoever is under them (hero ${hurtHero}, Ashen ${hurtFoe})`);
+  const cats = st.props.filter((pr) => pr.tag === 'battery');
+  assert(cats.length === 3, 'three catapults');
+  st.breakProp(cats[0], 1); st.breakProp(cats[1], 1);
+  assert(st.bombardShots(hz) === 1, 'two smashed: one stone a volley');
+  // the fight is won but the section holds while a catapult stands
+  killFoes(world);
+  run(120);
+  assert(st.phase === 'fight', 'the way on stays shut while a catapult stands');
+  const beats = []; world.events.on('storyBeat', (ev) => beats.push(ev.beat.id));
+  st.story.beats.find((b) => b.id === 'silenced').fired = false;
+  st.breakProp(cats[2], 1);
+  assert(st.bombardShots(hz) === 0, 'all smashed: silence');
+  const n = land.length;
+  run(400, () => killFoes(world));
+  assert(land.length <= n + 2, 'nothing more is thrown');
+  assert(st.phase !== 'fight' && beats.includes('silenced'), `the way on opens; the beat plays (${st.phase}, ${beats})`);
+  // no stone is ever aimed by the bridge's drop
+  const b2 = ascentSetup(ASC_SEC('bombardment'), { x: 5060, z: 420 });
+  const land2 = []; b2.world.events.on('shellLand', (ev) => land2.push(ev.shell));
+  b2.p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  b2.run(60 * 10, () => { b2.p.health = b2.p.stats.maxHealth; b2.p.x = 5060; });
+  assert(land2.every((s) => s.x < 5100 - 150 || s.x > 5400 + 150), `none by the gorge (${land2.map((s) => Math.round(s.x))})`);
+});
+
+test('ascent: the shelter: the miners are safe once the men on them are dead; Hilde knows her brother is at the battery (if she was saved)', () => {
+  const { world, p, st, run } = ascentSetup(ASC_SEC('shelter'), { x: 3700, z: 440, opts: { saved: ['hilde'] } });
+  p.invincible = true;
+  for (const b of st.story.beats) if (['shelter', 'hilde'].includes(b.id)) b.fired = false;
+  const beats = []; world.events.on('storyBeat', (e) => beats.push(e.beat.id));
+  assert(st.story.npc('shelter').state === 'threatened', 'pinned down');
+  run(60 * 30, () => killFoes(world));
+  assert(st.story.rescued.has('shelter'), 'defended');
+  run(60 * 20);
+  assert(beats.includes('shelter') && beats.includes('hilde'), `their lines (${beats})`);
+});
+
+test('ascent: Siege Commander Orsk has the Keep fire on his own camp at two thirds, and goes berserk at one third', () => {
+  const { world, p, st, run } = ascentSetup(ASC_SEC('camp'), { x: 8000, z: 440 });
+  const phases = []; world.events.on('bossPhase', (e) => phases.push(e.phase.id));
+  bossUp(st, run, p);
+  const b = st.boss;
+  assert(b?.stats.name === 'Siege Commander Orsk', 'Orsk is here');
+  const hz = st.hazards.find((h) => h.type === 'bombard' && h.section === ASC_SEC('camp'));
+  assert(st.bombardShots(hz) === 0, 'no barrage yet');
+  b.health = b.stats.maxHealth * 0.6;
+  run(2, () => { p.health = p.stats.maxHealth; });
+  assert(phases.join() === 'barrage' && st.bombardShots(hz) === 2, `the barrage (${phases})`);
+  b.health = b.stats.maxHealth * 0.2;
+  run(2, () => { p.health = p.stats.maxHealth; });
+  assert(phases.join() === 'barrage,berserk' && b.raged, `berserk (${phases})`);
+});
+
+
+// ---------------------------------------------------------------- hack-and-slash pillars
+
+// Rurik's J, J, K, then a jump and three air swings into a tough dummy that can't die.
+function juggleRun(extra = {}) {
+  const t = setup({
+    script: { 1: ['attack'], 12: ['attack'], 24: ['heavy'], 50: ['jump'], 62: ['attack'], 80: ['attack'], 95: ['attack'], ...extra },
+    hold: (n) => ({ jump: n >= 50 && n < 70 }),
+  });
+  t.d.stats = { ...t.d.stats, maxHealth: 1e4 }; t.d.health = 1e4;
+  const hits = [];
+  t.world.events.on('hit', (e) => { if (e.attacker === t.p) hits.push({ state: t.p.state, juggle: e.juggle ?? 0, spike: !!e.move.spike, air: !t.d.grounded }); });
+  return { ...t, hits };
+}
+
+test('juggle: J, J, K is the Rising Cleave and throws him straight up', () => {
+  const t = juggleRun({ 50: [], 62: [], 80: [], 95: [] });
+  t.p.controller.hold = {};
+  let peak = 0, states = new Set();
+  for (let i = 0; i < 90; i++) { t.world.tick(); peak = Math.max(peak, t.d.h); states.add(t.p.state); }
+  assert(states.has('launcher'), `the launcher comes out (${[...states]})`);
+  assert(peak > 90, `he flies high (${peak.toFixed(0)} px)`);
+});
+
+test('juggle: air swings keep him up, chain three a jump, and the third spikes him down', () => {
+  const t = juggleRun();
+  t.run(160);
+  const air = t.hits.filter((h) => h.juggle > 0);
+  assert(air.length === JUGGLE.airHits, `${air.length} juggle hits (${JSON.stringify(t.hits)})`);
+  assert(air.map((h) => h.juggle).join() === '1,2,3', `juggle count climbs (${air.map((h) => h.juggle)})`);
+  assert(air[air.length - 1].spike && !air[0].spike, 'the last air swing is the spike');
+});
+
+test('juggle: bosses are never juggled; a juggle runs out', () => {
+  const t = setup();
+  t.d.stats = { ...t.d.stats, boss: true };
+  t.d.h = 80; t.d.vh = 0; t.d.fsm.change('knockdown', { vx: 0, vh: 0 });
+  t.world.combat.resolve(t.p, t.d, CHARACTERS.warrior.moves.air, { kind: 'melee', fromX: t.p.x, dir: 1, contact: { x: t.d.x, h: 100 } });
+  assert(!t.d.juggles, 'no juggle on a boss');
+  const u = setup();
+  u.d.stats = { ...u.d.stats, maxHealth: 1e4 }; u.d.health = 1e4;
+  u.d.h = 80; u.d.fsm.change('knockdown', { vx: 0, vh: 0 });
+  u.d.juggles = JUGGLE.maxHits;
+  u.world.combat.resolve(u.p, u.d, CHARACTERS.warrior.moves.air, { kind: 'melee', fromX: u.p.x, dir: 1, contact: { x: u.d.x, h: 100 } });
+  assert(u.d.juggles === JUGGLE.maxHits, 'past the limit he just falls');
+});
+
+test('style: hits build a combo and a rank; a blow taken costs most of it; rank pays more blood', () => {
+  const t = juggleRun();
+  t.run(135);
+  const s = t.p.style;
+  assert(s.best >= 5, `combo counted (${s.best})`);
+  assert(s.rank >= 2, `rank climbs to B or better (${STYLE.ranks[s.rank].letter}, ${s.score.toFixed(0)})`);
+  assert(styleMult(t.p) > 1, 'a good rank pays more blood');
+  const before = s.score;
+  t.world.combat.resolve(t.d, t.p, ENEMIES.grunt.moves.light1, { kind: 'melee', fromX: t.d.x, dir: -1, contact: { x: t.p.x, h: 60 } });
+  assert(s.hits === 0 && s.score < before * 0.5, `hit taken: combo over, style cut (${before.toFixed(0)} -> ${s.score.toFixed(0)})`);
+  t.p.health = t.p.stats.maxHealth;
+  for (let i = 0; i < 1200; i++) t.world.tick();
+  assert(t.p.style.score === 0 && t.p.style.rank === 0, 'idle, it drains away');
+});
+
+test('style: the same move over and over scores less than mixing it up', () => {
+  const score = (moves) => {
+    const t = setup();
+    for (const m of moves) t.world.events.emit('hit', { attacker: t.p, defender: t.d, move: m, damage: 5, nth: 1 });
+    return t.p.style.score;
+  };
+  const M = CHARACTERS.warrior.moves;
+  const same = score([M.light1, M.light1, M.light1, M.light1]);
+  const mixed = score([M.light1, M.kick, M.heavy, M.light2]);
+  assert(mixed > same, `mixed ${mixed.toFixed(0)} > same ${same.toFixed(0)}`);
+});
+
+test('horde: each campaign level has a HORDE wave of thralls, and it is announced', () => {
+  for (const data of [STAGE_VILLAGE, STAGE_WOOD, STAGE_MINE]) {
+    const big = data.sections.flatMap((sec) => sec.waves ?? []).filter((w) => w.length >= 7);
+    assert(big.length >= 1 && big.every((w) => w.filter((x) => x === 'thrall').length >= 8), `${data.name}: a horde of thralls`);
+  }
+  assert(ENEMIES.thrall.moves.light1 && ENEMIES.thrall.maxHealth < ENEMIES.grunt.maxHealth / 2, 'a thrall swings a grunt\'s sword and dies easier');
+  const world = new World({ seed: 3 });
+  const stage = new Stage(world, STAGE_VILLAGE);
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 1500, z: 440, controller: new Scripted() }));
+  const sq = STAGE_VILLAGE.sections.findIndex((x) => x.id === 'square');
+  stage.start([p], { section: sq });
+  const hordes = [];
+  world.events.on('horde', (e) => hordes.push(e.count));
+  p.x = 2300;
+  for (let i = 0; i < 4000 && !hordes.length; i++) {
+    world.tick(); stage.update();
+    p.health = p.stats.maxHealth;
+    for (const f of world.fighters) if (f.team === 'enemy' && f.alive && !f.entering) { f.health = 0; f.removeMe = true; }
+  }
+  assert(hordes.length === 1 && hordes[0] >= 8, `the horde comes, announced (${hordes})`);
+  assert(world.fighters.filter((f) => f.stats.id === 'thrall').length >= 8, 'and they are thralls');
+});
+
+test('loot: each boss drops his own trophy first, then something new, then blood', () => {
+  assert(bossTrophy('Hruk the Hangman') === 'hangmansHood', 'Hruk has the Hood');
+  assert(bossTrophy('Warlord Malgor, the Oathbreaker') === 'oathbreakerGauntlet', 'Malgor has the Gauntlet');
+  assert(bossTrophy('Varek, the Ash Captain') === 'captainsCrest', 'Varek has the Crest');
+  assert(pickTrophy({ from: 'boss', boss: 'Hruk the Hangman' }, {}, 0.5) === 'hangmansHood', 'first kill: his own');
+  const again = pickTrophy({ from: 'boss', boss: 'Hruk the Hangman' }, { hangmansHood: true }, 0.5);
+  assert(again && again !== 'hangmansHood' && TROPHIES[again].rarity === 'legendary', `again: another legendary (${again})`);
+  const elite = pickTrophy({ from: 'elite' }, {}, 0.3);
+  assert(elite && TROPHIES[elite].rarity !== 'legendary', `an elite drops a lesser one (${elite})`);
+  const all = Object.fromEntries(Object.keys(TROPHIES).map((id) => [id, true]));
+  assert(pickTrophy({ from: 'boss', boss: 'Hruk' }, all, 0.5) === null, 'everything owned: nothing new');
+});
+
+test('loot: a boss falls and a trophy lies where he died; elites drop one only sometimes', () => {
+  const world = new World({ seed: 7 });
+  const stage = new Stage(world, STAGE_VILLAGE);
+  const boss = createEnemy(world, 'gladiator', 900, 430);
+  boss.stats = { ...boss.stats, boss: true, name: 'Varek, the Ash Captain' };
+  world.events.emit('kill', { attacker: null, defender: boss, move: {} });
+  const pk = stage.pickups.find((p) => p.kind === 'trophy');
+  assert(pk && pk.from === 'boss' && pk.boss.includes('Varek') && Math.abs(pk.x - 900) < 30, 'his trophy drops');
+  let drops = 0;
+  for (let i = 0; i < 200; i++) {
+    world.frame = i;
+    const e = createEnemy(world, 'butcher', 900, 430);
+    const n = stage.pickups.length;
+    stage.dropLoot(e);
+    if (stage.pickups.length > n) drops++;
+  }
+  assert(drops > 5 && drops < 60, `elites drop now and then (${drops}/200)`);
+  const g = createEnemy(world, 'grunt', 900, 430);
+  const n = stage.pickups.length;
+  for (let i = 0; i < 50; i++) { world.frame = i; g.lootDropped = false; stage.dropLoot(g); }
+  assert(stage.pickups.length === n, 'a grunt never drops one');
+});
+
+test('loot: trophies are kept, worn in a few slots, and change the hero', () => {
+  const P = new Progress(null);
+  assert(P.addTrophy('oathbreakerGauntlet').worn, 'worn at once');
+  const s = P.statsFor('warrior', CHARACTERS.warrior);
+  assert(Math.abs(s.meleeMult - CHARACTERS.warrior.meleeMult * 1.15) < 1e-9, 'the Gauntlet hits harder');
+  assert(CHARACTERS.warrior.meleeMult === 1.3, 'the shared data is untouched');
+  const ids = Object.keys(TROPHIES).filter((id) => id !== 'oathbreakerGauntlet');
+  for (const id of ids.slice(0, TROPHY_SLOTS + 1)) P.addTrophy(id);
+  assert(P.worn().length === TROPHY_SLOTS, `only ${TROPHY_SLOTS} worn (${P.worn()})`);
+  assert(Object.keys(P.trophies.owned).length === TROPHY_SLOTS + 2, 'all of them kept');
+  P.unwear('oathbreakerGauntlet');
+  assert(P.wear(ids[TROPHY_SLOTS]), 'a slot freed takes another');
+  for (const id of Object.keys(TROPHIES)) {
+    for (const hero of Object.keys(CHARACTERS)) {
+      const c = JSON.parse(JSON.stringify({ moves: {}, dodge: {}, ...CHARACTERS[hero] }));
+      TROPHIES[id].apply(c); // every trophy works on every hero
+    }
+  }
 });
 
 for (const [name, fn] of later) {

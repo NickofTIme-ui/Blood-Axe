@@ -19,6 +19,7 @@ import { depthScale } from './depths.js';
 import { Heading, headingAnim } from './Heading.js';
 import { applyBurn } from '../effects/Burn.js';
 import { IMPALE } from '../combat/Finisher.js';
+import { BodyFeel, easedSpread, swingBody } from './animFeel.js';
 
 const ATTACKS = ['light1', 'light2', 'light3', 'heavy', 'special1', 'special2', 'airAttack'];
 
@@ -47,6 +48,9 @@ function spread(list, t) {
   return list[Math.min(list.length - 1, Math.max(0, Math.floor(t * list.length)))];
 }
 const lerp = (a, b, t) => a + (b - a) * t;
+// how hard a swing reads in his body (swingBody, view/animFeel.js): heavies and specials
+// coil deeper and drive harder than jabs
+const SWING_K = { light1: 0.45, light2: 0.5, light3: 0.7, heavy: 1, special1: 0.9, special2: 0.9, airAttack: 0.45 };
 
 export class SpriteEnemyView {
   constructor(scene, fighter, sheet) {
@@ -67,6 +71,8 @@ export class SpriteEnemyView {
     this.hookDef = hookDef;
     this.lastRef = null;
     this.heading = new Heading();
+    // squash, stretch, state blends (view/animFeel.js); big men and bosses move heavier
+    this.feel = new BodyFeel(fighter, { mass: Math.max(1, fighter.stats.body.h / 108) });
   }
 
   get hidden() { return this.puppet.hidden; }
@@ -100,9 +106,10 @@ export class SpriteEnemyView {
         const m = f.move;
         const ph = atk.phases;
         const phase = movePhase(m, fr);
-        if (phase === 'startup') return spread(ph.startup, (fr - 1) / m.startup);
+        // (wind-up and recovery eased so the key poses hold; the strike stays on its frames)
+        if (phase === 'startup') return easedSpread(ph.startup, (fr - 1) / m.startup);
         if (phase === 'active') return spread(ph.active, (fr - m.startup - 1) / Math.max(1, m.active));
-        return spread(ph.recovery, (fr - m.startup - m.active - 1) / Math.max(1, m.recovery));
+        return easedSpread(ph.recovery, (fr - m.startup - m.active - 1) / Math.max(1, m.recovery));
       }
       return A.idle.frames[0];
     }
@@ -127,7 +134,7 @@ export class SpriteEnemyView {
       case 'burning':
       case 'guardBreak': return A.hit.frames[0];
       case 'knockdown': return f.lyingSince === null ? A.air.frames[0] : A.lying.frames[0];
-      case 'getup': return spread(A.getup.frames, fr / f.stats.getupFrames);
+      case 'getup': return easedSpread(A.getup.frames, fr / f.stats.getupFrames);
       case 'dead': return A.lying.frames[0];
       case 'jump': return A.air.frames[0];
       // held by an executioner: struggling in his grip / run through / frozen in terror
@@ -400,6 +407,20 @@ export class SpriteEnemyView {
     let wide = 1;
     const L = this.ledge;
     if (L) { dy += L.dy; angle += L.angle; tall *= L.sy; wide = L.sx; }
+    // a swing: coil back, drive in, settle (his strike pose still lands on the hitbox frames)
+    let push = 0;
+    if (ATTACKS.includes(st) && m && SWING_K[st] && !doom && this.anim(st)) {
+      const sw = swingBody(m, fr, SWING_K[st]);
+      angle += sw.lean; push += sw.push; dy += sw.bob; tall *= sw.sy; wide *= sw.sx;
+    }
+    // eased across state changes; squashed on landings and hits, stretched on take-off
+    if (!doom) {
+      const o = this.feel.blend({ lean: angle, push, bob: dy }, st);
+      angle = o.lean; push = o.push; dy = o.bob;
+    }
+    const shape = this.feel.step({ land: !L });
+    tall *= shape.sy; wide *= shape.sx;
+    dx += push;
     const k = depthScale(f.z) / this.res;
     s.setPosition(f.x + dx * f.facing, f.z - f.h + dy).setDepth(f.z);
     s.setScale(k * face * (1 - breathe * 0.006) * wide, k * (1 + breathe * 0.014) * tall);

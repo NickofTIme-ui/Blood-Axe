@@ -14,6 +14,7 @@ import { SETTINGS } from '../config/settings.js';
 import { HUD_ART } from '../view/hudArt.js';
 import { FONT, epicFill } from '../view/fonts.js';
 import { DeathScreen } from '../view/DeathScreen.js';
+import { StyleMeter } from '../view/StyleMeter.js';
 
 const SERIF = FONT.ui;
 
@@ -58,11 +59,13 @@ export class HUDScene extends Phaser.Scene {
     const style = { fontFamily: FONT.ui, fontSize: '13px', color: '#d9c7a3', fontStyle: 'normal' };
     this.info = this.add.text(SETTINGS.width - 12, mate ? 92 : 10, '', { ...style, align: 'right' }).setOrigin(1, 0)
       .setStroke('#000000', 3);
+    // the combo counter and style rank (combat/Style.js), right side under the kill count
+    this.styleMeter = new StyleMeter(this, SETTINGS.width - 14, mate ? 170 : 92);
     this.debugText = this.add.text(12, 112, '', { ...style, fontFamily: 'monospace', fontStyle: '', fontSize: '11px', color: '#7fffa0' });
 
     // controls hint: shown for a few seconds, then gets out of the way
     const hint = this.add.text(SETTINGS.width / 2, SETTINGS.height - 8,
-      'J light  K heavy  O kick  L block (+←/→ turn)  Shift roll  U firebolt  Space jump  |  P pause  G gore  M music',
+      'J light  J J K launch  K heavy  O kick  L block (+←/→ turn)  Shift roll  U firebolt  Space jump  |  P pause  G gore  M music',
       { ...style, fontSize: '11px', color: '#b0a590' }).setOrigin(0.5, 1).setStroke('#000000', 3);
     this.tweens.add({ targets: hint, alpha: 0, delay: 7000, duration: 1500 });
 
@@ -421,6 +424,7 @@ export class HUDScene extends Phaser.Scene {
     const sess = arena.session;
     this.waitText.setText(!sess?.waiting ? '' : sess.stall > 240 ? 'Your partner is not responding  —  press R to carry on alone' : 'waiting for your partner…');
 
+    this.styleMeter.update(p);
     this.updateEnemyStrip();
     this.updateBoss();
     this.updateDialogue();

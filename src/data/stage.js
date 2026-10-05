@@ -105,6 +105,7 @@ export const PICKUPS = {
   mana: { mana: 1, label: 'MANA', color: 0x3a6aff },
   relic: { score: 1, label: 'RELIC', color: 0xffd060 },
   shrine: { heal: 1, mana: 1, score: 1, label: 'BLOOD SHRINE', color: 0xff3a2a },
+  trophy: { trophy: true, label: 'TROPHY', color: 0xffb030 }, // boss loot (data/trophies.js): dropped by bosses and elites
 };
 
 // Breakable props: hits to break, size.
@@ -119,5 +120,6 @@ export const PROPS = {
   shackle: { hp: 3, w: 30, h: 84 }, // (the mine) a post a captive is chained to: break it and he's free
   counterweight: { hp: 5, w: 70, h: 120 }, // (the mine) the stone that holds a gate down: break its chain and the gate rises (`opens`)
   rubble: { hp: 6, w: 110, h: 90 }, // (the mine) loose fall in a passage: dig it out (`opens`: the rock wall behind it)
+  catapult: { hp: 7, w: 130, h: 120 }, // (the Shattered Ascent) a siege catapult on the heights: wreck it and the bombardment thins (hazard 'bombard', `silence`)
   wagon: { hp: 16, w: 200, h: 110 }, // the convoy's prisoner wagon: rolls away (`roll`); wreck it and they're out
 };

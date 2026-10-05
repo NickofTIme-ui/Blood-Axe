@@ -47,6 +47,8 @@ import { FATALITY_LABELS } from '../combat/Fatality.js';
 import { playMusic, toggleMute } from '../core/Music.js';
 import { playSfx } from '../core/Sfx.js';
 import { runTickJobs } from '../core/TickJobs.js';
+import { styleMult } from '../combat/Style.js';
+import { TROPHIES, RARITY, LOOT, pickTrophy } from '../data/trophies.js';
 
 // Number keys spawn a specific enemy next to you (for testing the roster).
 const SPAWN_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'];
@@ -225,6 +227,7 @@ export class ArenaScene extends Phaser.Scene {
       light1: [['whiff', 2], ['swingAlt', 1]],
       light2: [['second', 2], ['swingAlt', 1]],
       light3: 'finisher',
+      launcher: 'finisher',
       heavy: 'heavySwing',
       thrust: 'heavySwing',
     };
@@ -461,7 +464,8 @@ export class ArenaScene extends Phaser.Scene {
 
   // A hero's random critical hit: a sharp callout, a hard thump, an extra spray.
   critFX(e) {
-    this.callout(e.counter ? 'CRITICAL COUNTER!' : 'CRITICAL!', '#ff8a2a', 26);
+    this.callout(e.riposte ? 'RIPOSTE!' : e.counter ? 'CRITICAL COUNTER!' : 'CRITICAL!', e.riposte ? '#ffffff' : '#ff8a2a', e.riposte ? 30 : 26);
+    if (e.riposte) this.fx.shake(9, 14);
     this.fx.shake(6, 10);
     this.rumble(0.6, 0.6, 120);
     playSfx(this, 'kick', { volume: 0.8, pitch: -400, spread: 80 });
@@ -625,7 +629,8 @@ export class ArenaScene extends Phaser.Scene {
     const gain = (text) => this.callout(text, '#ffd24a', 24);
     ev.on('kill', (e) => {
       if (e.defender?.team !== 'enemy') return;
-      const lv = P.addBlood(P.bloodFor(e.defender.stats) * (e.defender.stats.boss ? 3 : 1));
+      // (the killer's style rank pays more blood: combat/Style.js)
+      const lv = P.addBlood(P.bloodFor(e.defender.stats) * (e.defender.stats.boss ? 3 : 1) * styleMult(e.attacker));
       if (lv > 0) { gain(`LEVEL ${P.level}  ·  +${lv} SKILL POINT`); playSfx(this, 'block', { volume: 0.6, pitch: 700, minGapMs: 0 }); }
     });
     ev.on('sectionClear', ({ section }) => {
@@ -651,6 +656,24 @@ export class ArenaScene extends Phaser.Scene {
       if (P.rescue(npc.id)) P.addBlood(30);
     });
     ev.on('npcLost', ({ npc }) => P.lose(npc.id));
+    ev.on('horde', ({ count }) => { this.callout(`THE HORDE  ·  ${count} OF THEM`, '#ff9a30', 28); this.fx?.shake(4, 30); });
+    // BOSS LOOT: a trophy picked up — which one is decided now, from what's owned (data/trophies.js)
+    ev.on('lootDrop', ({ pickup: pk }) => {
+      if (pk.from === 'boss') this.time.delayedCall(700, () => this.callout('HE DROPPED SOMETHING', '#ffd24a', 22));
+    });
+    ev.on('pickup', ({ pickup: pk }) => {
+      if (pk.kind !== 'trophy') return;
+      const id = pickTrophy(pk, P.trophies.owned, this.world.roll(Math.round(pk.x), 4200));
+      playSfx(this, 'block', { volume: 0.7, pitch: 1100, minGapMs: 0 });
+      if (!id) { P.addBlood(LOOT.dupeBlood); gain(`NOTHING NEW  ·  +${LOOT.dupeBlood} BLOOD`); return; }
+      const T = TROPHIES[id];
+      const got = P.addTrophy(id);
+      this.callout(`${RARITY[T.rarity].label}:  ${T.name.toUpperCase()}`, '#ffd24a', 26);
+      const note = got.worn ? 'WORN' : 'KEPT  ·  your trophy slots are full';
+      this.time.delayedCall(1500, () => this.callout(`${T.text}  ·  ${note}`, '#e0c080', 18));
+      // worn at once (online, both games change stats together at the next shrine instead)
+      if (got.worn && !this.session?.net) this.applySkills();
+    });
     // an ending sequence's steps (the judgment), saved the moment they happen
     ev.on('campaignFlag', ({ key }) => P.setFlag(key));
     ev.on('sequenceAward', ({ reward }) => { if (reward && P.claim(reward)) gain('+1 SKILL POINT'); });
@@ -944,7 +967,7 @@ export class ArenaScene extends Phaser.Scene {
     if (f.stats.view === 'hound') return new HoundView(this, f); // (code-drawn until its strips exist)
     if (f.stats.view === 'crusher') return new CrusherView(this, f);
     // named enemies with hand-animated strips (data/enemyStrips.js); the doll runs underneath
-    const sheet = f.team === 'enemy' && !this.dollsOnly && this.registry.get('enemySprites')?.[f.stats.id];
+    const sheet = f.team === 'enemy' && !this.dollsOnly && this.registry.get('enemySprites')?.[f.stats.strips ?? f.stats.id]; // (strips: wears another's)
     if (sheet && f.stats.art && ENEMY_ART[f.stats.art]) return new SpriteEnemyView(this, f, sheet);
     if (f.stats.art && ENEMY_ART[f.stats.art]) return new EnemyView(this, f);
     // the Mage and the Rogue, once their painted strips are all in (data/heroStrips.js)

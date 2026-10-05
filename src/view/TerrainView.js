@@ -22,6 +22,7 @@ import { playSfx } from '../core/Sfx.js';
 import { VillageBackdrop } from './VillageView.js';
 import { WoodBackdrop } from './WoodView.js';
 import { MineBackdrop } from './MineView.js';
+import { AscentBackdrop } from './AscentView.js';
 import { artKey } from './levelArt.js';
 import { LEVEL_ART } from '../data/levelArt.js';
 
@@ -62,6 +63,9 @@ export class TerrainView {
     // underground river's cold black water, like the wood's streams
     this.mine = data.theme === 'mine';
     if (this.mine) this.backdrop = new MineBackdrop(scene, stage);
+    // THE SHATTERED ASCENT (theme 'ascent'): grey cliffs, wind, the Keep across the gorge
+    // (view/AscentView.js); its ledges are the cliff's own rock, its drops the gorge
+    if (data.theme === 'ascent') this.backdrop = new AscentBackdrop(scene, stage);
     this.water = this.wood || this.mine;
     this.theme = data.theme;
     this.drawFloor();

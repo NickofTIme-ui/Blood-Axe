@@ -16,6 +16,7 @@
 // Saved in the browser (localStorage) when it can be; without it, it lasts the session.
 
 import { SKILL_TREES, nodesOf } from '../data/skills.js';
+import { TROPHIES, TROPHY_SLOTS } from '../data/trophies.js';
 
 export const PROGRESS = {
   key: 'bloodaxe.progress.v1',
@@ -24,7 +25,9 @@ export const PROGRESS = {
   bloodPer: 1 / 6,    // blood for a kill = the man's max health x this
 };
 
-const fresh = () => ({ v: 1, blood: 0, bonus: PROGRESS.startPoints, picks: {}, claimed: {}, campaign: freshCampaign() });
+const fresh = () => ({ v: 1, blood: 0, bonus: PROGRESS.startPoints, picks: {}, claimed: {}, campaign: freshCampaign(), trophies: freshTrophies() });
+// BOSS LOOT (data/trophies.js): every trophy taken (kept for good), and the ones worn
+const freshTrophies = () => ({ owned: {}, worn: [] });
 // THE CAMPAIGN (docs/campaign/plan.md): levels finished, the villagers saved (by id: they
 // show up later) and lost, where to CONTINUE from (`at`: the level and the section whose
 // checkpoint was reached last), and the one-time flags (a sequence's steps: the judgment)
@@ -48,6 +51,7 @@ export class Progress {
       const raw = storage?.getItem(PROGRESS.key);
       if (raw) this.data = { ...fresh(), ...JSON.parse(raw) };
       this.data.campaign = { ...freshCampaign(), ...this.data.campaign };
+      this.data.trophies = { ...freshTrophies(), ...this.data.trophies };
     } catch { /* no saved progress: start fresh */ }
   }
 
@@ -132,6 +136,36 @@ export class Progress {
     return true;
   }
 
+  // ------------------------------------------------------------ trophies (boss loot)
+
+  get trophies() { return this.data.trophies; }
+  owns(id) { return !!this.trophies.owned[id]; }
+  worn() { return this.trophies.worn.filter((id) => TROPHIES[id]); }
+
+  // A trophy taken. Worn at once if a slot is free. Returns { fresh, worn }.
+  addTrophy(id) {
+    if (!TROPHIES[id]) return { fresh: false, worn: false };
+    const fresh = !this.owns(id);
+    this.trophies.owned[id] = true;
+    const worn = fresh && this.wear(id);
+    this.save();
+    return { fresh, worn };
+  }
+
+  // Wear one (false when every slot is taken: take one off first)
+  wear(id) {
+    const T = this.trophies;
+    if (!this.owns(id) || T.worn.includes(id) || T.worn.length >= TROPHY_SLOTS) return false;
+    T.worn.push(id);
+    this.save();
+    return true;
+  }
+
+  unwear(id) {
+    this.trophies.worn = this.trophies.worn.filter((x) => x !== id);
+    this.save();
+  }
+
   // ------------------------------------------------------------ spending
 
   picks(heroId) { return this.data.picks[heroId] ?? []; }
@@ -168,13 +202,15 @@ export class Progress {
 
   // ------------------------------------------------------------ the hero's stats
 
-  // The hero's stats with his picks applied (a deep copy: the shared data is never touched).
+  // The hero's stats with his picks and worn trophies applied (a deep copy: the shared data is never touched).
   statsFor(heroId, base) {
-    const picks = this.picks(heroId);
-    if (!SKILL_TREES[heroId] || !picks.length) return base;
+    const picks = SKILL_TREES[heroId] ? this.picks(heroId) : [];
+    const worn = this.worn();
+    if (!picks.length && !worn.length) return base;
     const s = deepCopy(base);
     s.skills = {};
     for (const n of nodesOf(heroId)) if (picks.includes(n.id) && n.apply) n.apply(s);
+    for (const id of worn) TROPHIES[id].apply(s); // (worn trophies: data/trophies.js)
     return s;
   }
 }

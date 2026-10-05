@@ -16,8 +16,9 @@ import { movePhase } from '../combat/MoveRunner.js';
 import { drawSmear, smearSparks } from './Smear.js';
 import { IMPALE, CHAIN } from '../combat/Finisher.js';
 import { Heading, headingAnim } from './Heading.js';
+import { BodyFeel, easedSpread } from './animFeel.js';
 
-const ATTACKS = ['light1', 'light2', 'light3', 'heavy', 'airAttack', 'kick', 'thrust', 'spin'];
+const ATTACKS = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'airAttack', 'kick', 'thrust', 'spin'];
 
 // How hard each swing reads in the body (view only — gameplay timing is untouched):
 //   k      overall amplitude of the anticipation / drive / settle
@@ -28,10 +29,11 @@ const SWING_FEEL = {
   light2: { k: 0.62, arc: 0.88, w: 0.88 },
   light3: { k: 1.0, arc: 1, w: 1 },
   heavy: { k: 1.35, arc: 1, w: 1 },
+  launcher: { k: 1.1, arc: 1, w: 1.05 }, // (the Rising Cleave: light2's upward return, harder)
   spin: { k: 1.1, arc: 1, w: 1.1 }, // (the Whirlwind Cleave: its arc is the full circle)
   airAttack: { k: 0.6, arc: 1, w: 1 },
 };
-const COMBO = ['light1', 'light2', 'light3', 'heavy'];
+const COMBO = ['light1', 'light2', 'light3', 'launcher', 'heavy'];
 const easeInOut = (t) => t * t * (3 - 2 * t);
 
 // Pick an item from a list by how far we are through a stretch of frames.
@@ -76,6 +78,7 @@ export class SpriteFighterView {
       .setOrigin(m.anchorX / m.frameWidth, m.anchorY / m.frameHeight).setVisible(false);
     this.lastFrameRef = null;
     this.heading = new Heading();
+    this.feel = new BodyFeel(fighter, { mass: fighter.stats.body.h / 108 }); // squash, stretch, state blends (view/animFeel.js)
 
     if (fighter.team === 'enemy') {
       this.hpBg = scene.add.rectangle(0, 0, 44, 5, 0x000000, 0.7).setOrigin(0, 0.5);
@@ -87,6 +90,7 @@ export class SpriteFighterView {
     const a = this.meta.anims;
     if (a[st]) return a[st];
     if (st === 'kick') return a.light1; // no kick strip yet
+    if (st === 'launcher') return a.light2; // the Rising Cleave: the upward return stroke (no strip yet)
     if (st === 'spin') return a.heavy;  // the Whirlwind Cleave: the cleave's poses, turned round (no strip yet)
     return null;
   }
@@ -125,9 +129,11 @@ export class SpriteFighterView {
       // chained out of another swing: the last follow-through IS the wind-up, so skip
       // the strip's ready stance instead of snapping back to it between hits
       const startup = this.chained() && ph.startup.length > 1 ? ph.startup.slice(1) : ph.startup;
-      if (phase === 'startup') return spread(startup, (fr - 1) / m.startup);
+      // (wind-up and recovery eased: the coil and the follow-through hold, the in-betweens
+      // fly; the strike itself is never moved off its active frames)
+      if (phase === 'startup') return easedSpread(startup, (fr - 1) / m.startup);
       if (phase === 'active' || !ph.recovery) return spread(ph.active, (fr - m.startup - 1) / Math.max(1, m.active));
-      return spread(ph.recovery, (fr - m.startup - m.active - 1) / Math.max(1, m.recovery));
+      return easedSpread(ph.recovery, (fr - m.startup - m.active - 1) / Math.max(1, m.recovery));
     }
 
     switch (st) {
@@ -163,7 +169,7 @@ export class SpriteFighterView {
       case 'dodge': {
         const d = f.stats.dodge;
         const anim = (f.dodgeDir === 'up' && a.dodgeUp) || (f.dodgeDir === 'down' && a.dodgeDown) || a.dodge;
-        return spread(anim.frames, fr / (d.duration + d.recovery));
+        return easedSpread(anim.frames, fr / (d.duration + d.recovery));
       }
       case 'cast': {
         const sp = f.stats.spell;
@@ -175,7 +181,7 @@ export class SpriteFighterView {
       case 'stagger':
       case 'guardBreak': return a.hitstun.frames[fr < 6 ? 0 : 1];
       case 'knockdown': return f.lyingSince === null ? a.knockdown.air[0] : a.knockdown.lying[0];
-      case 'getup': return spread(a.getup.frames, fr / f.stats.getupFrames);
+      case 'getup': return easedSpread(a.getup.frames, fr / f.stats.getupFrames);
       case 'dead': return a.knockdown.lying[0];
       default: return loop(a.idle);
     }
@@ -420,6 +426,10 @@ export class SpriteFighterView {
 
     // holding a man from behind (throat): he's drawn in front of Ulric
     const behind = ex && (ex.kind === 'throat' || ex.kind === 'pending') ? -0.3 : 0;
+    // eased across state changes; squashed on landings and hits, stretched on take-off
+    ({ lean, push, bob } = this.feel.blend({ lean, push, bob }, st));
+    const shape = this.feel.step();
+    sx *= shape.sx; sy *= shape.sy;
     s.setPosition(f.x + push * f.facing, f.z - f.h + bob).setDepth(f.z + behind);
     s.setScale(sx, sy);
     s.angle = lean * f.facing;

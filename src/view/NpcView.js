@@ -25,11 +25,15 @@ const TUNIC = [0x5a6a5a, 0x6a5a48, 0x4a5468, 0x6a4a4a, 0x5a5048, 0x58586a];
 const SKIN = 0xc8a080;
 const HEROES = ['warrior', 'mage', 'rogue'];
 // the painted villagers (data/levelArt.js SPRITE_SHEETS): each pose's cell in its sheet
-// (run: the cells it cycles through); a pose a sheet lacks falls back to standing
+// (run: the cells it cycles through); a pose a sheet lacks falls back to standing.
+// The three painted run poses (one foot down, legs passing, the other foot down) play as a
+// four-beat cycle through the passing pose twice, sinking on each footfall (RUN_BOB).
+const RUN = [3, 4, 5, 4];
+const RUN_BOB = [1.5, -1, 1.5, -1];
 const CELLS = {
-  villager: { stand: 0, cower: 1, wave: 2, run: [3, 4, 5], sit: 6, kneel: 7 },
-  mother: { stand: 0, cower: 1, wave: 2, run: [3, 4, 5] },
-  boy: { stand: 0, cower: 1, wave: 2, run: [3, 4, 5] },
+  villager: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7 },
+  mother: { stand: 0, cower: 1, wave: 2, run: RUN },
+  boy: { stand: 0, cower: 1, wave: 2, run: RUN },
   elder: { stand: 0, sit: 1, wave: 2, kneel: 3 },
 };
 
@@ -65,7 +69,9 @@ export class NpcView {
     const v = this.cur;
     if (!S || !v) return false;
     const c = CELLS[who][pose] ?? CELLS[who].stand;
-    const i = Array.isArray(c) ? c[Math.floor(t / 8) % c.length] : c;
+    const beat = Math.floor(t / 7);
+    const i = Array.isArray(c) ? c[beat % c.length] : c;
+    if (c === RUN) y += RUN_BOB[beat % 4] * k;
     let img = v.imgs[this.curN];
     if (!img) v.imgs.push(img = this.scene.add.image(x, y, S.key, 'f0').setOrigin(0.5, 1));
     this.curN++;

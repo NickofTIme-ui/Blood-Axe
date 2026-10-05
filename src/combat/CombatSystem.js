@@ -9,9 +9,14 @@ import { toWorldBox, overlaps, contactPoint } from './Boxes.js';
 import { movePhase } from './MoveRunner.js';
 import { chooseFatality, chooseMaim } from './Fatality.js';
 import { furyArmor } from './Skills.js';
+import { juggles, juggleHit } from './Juggle.js';
 
 const FEEL = SETTINGS.feel;
-const ATTACK_STATES = ['light1', 'light2', 'light3', 'heavy', 'special1', 'special2'];
+const ATTACK_STATES = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'special1', 'special2'];
+
+// RIPOSTE: a hero who parries a blow has a moment to answer it. His next hit on the man
+// he parried is a riposte: a sure critical, harder still, with a long freeze.
+export const RIPOSTE = { window: 50, mult: 1.6, hitstop: 8 };
 
 // A fighter who lost their weapon arm hits with a bloody stump.
 const armMult = (f) => (f.maimed?.armF ? 0.4 : 1);
@@ -141,6 +146,7 @@ export class CombatSystem {
         ctx.projectile.alive = false;
       }
       def.stamina = Math.min(def.stats.maxStamina, def.stamina + 10);
+      if (melee && def.team === 'player') def.riposte = { target: attacker, until: this.world.frame + RIPOSTE.window };
       def.fsm.change(def.controller.isDown('block') ? 'block' : 'idle');
       bus.emit('parry', event);
       return;
@@ -191,10 +197,14 @@ export class CombatSystem {
     const exposed = !marked ? 1 : superCrit ? def.exposedCrit : 1 + (def.exposedBonus ?? 0);
     if (superCrit && def.exposedConsumes) def.exposed = 0;
     // heroes' clean hits can land CRITICAL (rolled from the world's dice, so online stays in step)
+    const riposte = melee && attacker?.riposte?.target === def && this.world.frame <= attacker.riposte.until;
+    if (riposte) attacker.riposte = null;
     const critChance = attacker?.team === 'player' && !superCrit ? (attacker.stats.critChance ?? FEEL.critChance) : 0;
-    const crit = critChance > 0 && this.world.roll(def.id, 2300 + attacker.id) < critChance;
+    const crit = riposte || (critChance > 0 && this.world.roll(def.id, 2300 + attacker.id) < critChance);
+    // (a juggle hit: the Hangman's Hood trophy pays more for it — data/trophies.js)
+    const juggleMult = juggles(attacker, def) ? (attacker.stats.juggleMult ?? 1) : 1;
     const damage = move.damage * mult * (counter ? FEEL.counterMultiplier : 1) * exposed *
-      (crit ? FEEL.critMultiplier : 1);
+      (crit ? FEEL.critMultiplier : 1) * juggleMult * (riposte ? RIPOSTE.mult : 1);
     const healthBefore = def.health;
     def.health = Math.max(def.spare ? 1 : 0, def.health - damage); // (spare: a boss beaten to his knees, not killed: stage/Sequence.js)
     def.flash = 6;
@@ -206,11 +216,12 @@ export class CombatSystem {
     event.exposed = exposed > 1;
     event.superCrit = superCrit;
     event.crit = crit;
+    event.riposte = riposte;
     if ((move.expose || shadow) && !(def.health <= 0)) this.expose(attacker, def);
 
     const kb = move.knockback ?? { x: 0, y: 0 };
     const lethal = def.health <= 0;
-    let hitstop = Math.min(FEEL.maxHitstop, (move.hitstop ?? 4) + (counter ? 3 : 0) + (superCrit ? 8 : crit ? 3 : 0));
+    let hitstop = Math.min(FEEL.maxHitstop, (move.hitstop ?? 4) + (counter ? 3 : 0) + (superCrit ? 8 : crit ? 3 : 0) + (riposte ? RIPOSTE.hitstop : 0));
     if (lethal) hitstop = FEEL.killHitstop;
     def.hitstop = hitstop;
     // a piercing blade already buried in someone keeps driving: later victims only
@@ -226,6 +237,8 @@ export class CombatSystem {
     if (move.bowl) def.bowl = { frames: 36, dir, hit: new Set([def.id]) };
 
     if (lethal) {
+      // a kill gives back health (the Warden's Chain trophy)
+      if (attacker?.stats.killHeal && attacker.alive) attacker.health = Math.min(attacker.stats.maxHealth, attacker.health + attacker.stats.killHeal);
       // How do they come apart? (only rigged enemies can be dismembered)
       if (def.stats.art && superCrit) event.fatality = 'explode'; // heavy carnage
       else if (def.stats.art && move.fatality) event.fatality = move.fatality; // (a mine says how)
@@ -276,6 +289,9 @@ export class CombatSystem {
       def.fsm.change('hitstun', { frames: 48 });
       def.vx = 0;
       def.vz = 0;
+    } else if (juggles(attacker, def) && juggleHit(def, attacker, move, dir, melee)) {
+      // AIR JUGGLE: a hero's hit on a man in the air keeps him up (combat/Juggle.js)
+      event.juggle = def.juggles;
     } else if (move.knockdown || !def.grounded) {
       def.fsm.change('knockdown', { vx: dir * kb.x, vh: kb.y || 250 });
     } else {
