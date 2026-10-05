@@ -35,6 +35,8 @@ const CELLS = {
   mother: { stand: 0, cower: 1, wave: 2, run: RUN },
   boy: { stand: 0, cower: 1, wave: 2, run: RUN },
   elder: { stand: 0, sit: 1, wave: 2, kneel: 3 },
+  // the wood's captives: bound on the rope, hanging, in the cage, at its bars, limping
+  captive: { bound: 0, hang: 1, cower: 2, grip: 3, limp: [4, 5], stand: 4 },
 };
 
 export class NpcView {
@@ -153,7 +155,7 @@ export class NpcView {
     if (n.pose === 'lame') {
       // limping on a crutch (a stick under one arm), slow
       const p = n.state === 'escort' && n.moving ? 'run' : pose;
-      this.figure(g, n.x, y, k, p === 'run' ? 'stand' : p, t * 0.5, tun(5), dir);
+      if (this.figure(g, n.x, y, k, p === 'run' ? 'limp' : p, t * 0.5, tun(5), dir, SPRITES.captive ? 'captive' : n.art)) return;
       g.lineStyle(3 * k, 0x6a5038, 1).lineBetween(n.x + 10 * k * dir, y, n.x + 6 * k * dir, y - 44 * k);
       return;
     }
@@ -204,7 +206,7 @@ export class NpcView {
       // the prisoners inside (cowering), then the bars in front; open: the door swung wide
       if (!open) {
         const many = n.group ? 3 : 1;
-        for (let i = 0; i < many; i++) this.figure(g, n.x - (many - 1) * 12 + i * 24, y - 26, k * 0.85, 'cower', t + i * 5, tun(i), -1);
+        for (let i = 0; i < many; i++) this.figure(g, n.x - (many - 1) * 12 + i * 24, y - 26, k * 0.85, i === many - 1 && SPRITES.captive ? 'grip' : 'cower', t + i * 5, tun(i), -1, SPRITES.captive ? 'captive' : undefined);
       } else if (n.state === 'free') this.figure(g, n.x + 40, y, k, 'stand', t, tun(0), 1);
       const w = (n.group ? 96 : 64) * k; const h = 70 * k;
       g.fillStyle(0x2a2016, 1).fillRect(n.x - w / 2 - 4, y - 28, w + 8, 6); // its floor, on the cart
@@ -223,14 +225,14 @@ export class NpcView {
     if (n.state === 'lost') {
       g.lineStyle(2, 0x8a7a5a, 1).lineBetween(n.x, bough, n.x, y - 92);
       const sway = Math.sin(t * 0.04) * 2;
-      this.figure(g, n.x + sway, y - 30, k, 'stand', 0, tun(0), 1);
+      this.figure(g, n.x + sway, y - 30, k, SPRITES.captive ? 'hang' : 'stand', 0, tun(0), 1, SPRITES.captive ? 'captive' : undefined);
       return;
     }
     if (n.state === 'threatened') {
       g.fillStyle(0x2a2016, 1).fillRect(n.x - 26, y - 4, 52, 8);
       g.lineStyle(2, 0x8a7a5a, 1).lineBetween(n.x, bough, n.x, y - 62 * k);
       g.strokeCircle(n.x, y - 62 * k - 2, 5);
-      this.figure(g, n.x, y - 4, k, 'stand', 0, tun(0), 1);
+      this.figure(g, n.x, y - 4, k, SPRITES.captive ? 'bound' : 'stand', 0, tun(0), 1, SPRITES.captive ? 'captive' : undefined);
       return;
     }
     g.lineStyle(2, 0x8a7a5a, 1).lineBetween(n.x, bough, n.x, bough + 30); // (cut)

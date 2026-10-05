@@ -187,7 +187,7 @@ Palette: wet black pines, blue-grey mist, mud, and the warm lanterns of the conv
   > wet stepping stones. Each on FLAT PURE MAGENTA.
 
 ### 16. Villager poses for the wood (on black, same rules as item 8)
-Not wired in yet: until it is, the wood's captives use `villager.png`. Paint item 8 first.
+The game picks it up as soon as it is in the folder: the rope, the cages and Ansel's limp.
 - `assets/sprites/npc/captive.png`, 6 poses
   > The peasant man from `villager.png` (attach it): 1 standing with hands bound, a noose
   > round his neck; 2 hanging, kicking; 3 cowering in a cage; 4 gripping cage bars;
