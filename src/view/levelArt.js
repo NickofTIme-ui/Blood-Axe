@@ -4,8 +4,14 @@
 
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
-import { LEVEL_ART } from '../data/levelArt.js';
+import { LEVEL_ART, SPRITE_SHEETS } from '../data/levelArt.js';
 import { keyLayer, makeSeamless } from './envArt.js';
+import { importFxStrip } from './stripImporter.js';
+
+// the painted figures that loaded (data/levelArt.js SPRITE_SHEETS): name -> { key, count, fw, fh }
+export const SPRITES = {};
+// all of these painted? (a creature switches over only once every sheet it needs is in)
+export const haveSprites = (...names) => names.every((n) => SPRITES[n]);
 
 const src = (theme, name) => `lvlsrc-${theme}-${name}`;
 export const artKey = (theme, name) => `lvl-${theme}-${name}`;
@@ -21,10 +27,11 @@ export function preloadLevelArt(scene) {
     for (const [k, s] of Object.entries(A.strips ?? {})) load(`strip-${k}`, s.file);
     for (const k of Object.keys(A.surfaces ?? {})) load(`surf-${k}`, `surf_${k}.png`);
   }
+  for (const [name, S] of Object.entries(SPRITE_SHEETS)) scene.load.image(`sprsrc-${name}`, S.file);
 }
 
 // (a missing file is expected: it simply hasn't been painted yet)
-export const isLevelArtKey = (key) => key?.startsWith('lvlsrc-');
+export const isLevelArtKey = (key) => key?.startsWith('lvlsrc-') || key?.startsWith('sprsrc-');
 
 // Cut out, made seamless, split: every painted piece that loaded. Returns the keys made.
 export function buildLevelArt(scene) {
@@ -72,6 +79,20 @@ export function buildLevelArt(scene) {
       }
     } catch (err) {
       console.warn(`[boot] level art for ${theme} failed`, err);
+    }
+  }
+  for (const [name, S] of Object.entries(SPRITE_SHEETS)) {
+    if (!T.exists(`sprsrc-${name}`)) continue;
+    try {
+      const { canvas, count, fw, fh } = importFxStrip(T.get(`sprsrc-${name}`).getSourceImage(), { frames: S.frames, height: S.height, bg: 'black' });
+      const key = `spr-${name}`;
+      if (T.exists(key)) T.remove(key);
+      const tex = T.addCanvas(key, canvas);
+      for (let i = 0; i < count; i++) tex.add(`f${i}`, 0, i * fw, 0, fw, fh);
+      SPRITES[name] = { key, count, fw, fh };
+      made.push(key);
+    } catch (err) {
+      console.warn(`[boot] sprite sheet ${name} failed`, err);
     }
   }
   return made;

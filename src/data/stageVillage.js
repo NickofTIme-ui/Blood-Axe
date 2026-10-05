@@ -223,7 +223,7 @@ export const STAGE_VILLAGE = {
       flee: { x: 4400, z: 510 }, gather: { x: 8660, z: 330 },
     },
     { id: 'horses', name: 'the horses', x: 6380, z: 294, pose: 'horses', rescue: 'wreckage', tag: 'stables', flee: null },
-    { id: 'brann', name: 'Elder Brann', x: 8880, z: 330, pose: 'wounded', talk: null },
+    { id: 'brann', name: 'Elder Brann', x: 8880, z: 330, pose: 'wounded', art: 'elder', talk: null },
   ],
 
   // who says what (stage/Story.js). The three Oath Keepers speak whoever is played: the

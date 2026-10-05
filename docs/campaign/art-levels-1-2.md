@@ -102,6 +102,9 @@ plaster.
   > burning with tall flames. FLAT PURE MAGENTA background.
 
 ### 8. Villagers (on black, the same size as the grunt strip)
+The game picks these up as soon as they are in the folder (data/levelArt.js SPRITE_SHEETS):
+the villager for everyone, the mother for the family, the boy for the children, the elder
+for Elder Brann. Each one switches over on its own.
 - `assets/sprites/npc/villager.png`, 8 poses
   > A sprite strip of a medieval peasant man (no weapon, homespun tunic, muted browns),
   > one row on plain black, facing right, the same size and style as the attached grunt
@@ -184,6 +187,7 @@ Palette: wet black pines, blue-grey mist, mud, and the warm lanterns of the conv
   > wet stepping stones. Each on FLAT PURE MAGENTA.
 
 ### 16. Villager poses for the wood (on black, same rules as item 8)
+Not wired in yet: until it is, the wood's captives use `villager.png`. Paint item 8 first.
 - `assets/sprites/npc/captive.png`, 6 poses
   > The peasant man from `villager.png` (attach it): 1 standing with hands bound, a noose
   > round his neck; 2 hanging, kicking; 3 cowering in a cage; 4 gripping cage bars;
@@ -198,15 +202,9 @@ Palette: wet black pines, blue-grey mist, mud, and the warm lanterns of the conv
   > strips in style. walk: a 6-frame prowling run. atk1: 1 crouch, 2 leaping lunge jaws
   > open, 3 biting, 4 landing. react: 1-3 yelping, knocked back. doom: 1-4 collapsing
   > dead. No text.
-- `assets/enemies/strips/houndmaster_*.png` (walk 8, atk1 4, atk2 4, heavy 5, special 4,
-  react 3, doom 4)
-  > A sprite strip of the Houndmaster, a kennel master of the Ashen King: a big scarred
-  > man in black leather and furs, a hound-skull pauldron, a long barbed whip in his right
-  > hand and a war horn on his belt, one row on plain black, facing right, the same size
-  > and style as the attached stalker strips. walk: an 8-frame stalking walk. atk1: a whip
-  > crack forward. atk2: a backhand whip. heavy: the whip wrapped and yanked back. special:
-  > he blows the war horn. react: hit and staggering. doom: falling dead. No text.
-
+  The hounds switch over once all four strips are in.
+- The Houndmaster needs no strips of his own: he is a stalker (data/stageWood.js
+  `type: 'stalker'`), so he already wears the stalker's painted strips. Skip him.
 
 ---
 
@@ -273,6 +271,7 @@ grey daylight and the Black Keep across a gorge.
   > right. walk: a 6-frame roll forward, the drum turning. atk1: the drum shoved forward,
   > spinning, sparks. heavy: 1-3 the hammer hauled up high while the furnace flares, 4-5 it
   > slams down in front. doom: 1-5 it tips, the furnace goes out, smoke pours out. No text.
+  The Crusher switches over once all four strips are in.
 
 ---
 

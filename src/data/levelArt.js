@@ -67,3 +67,25 @@ export const LEVEL_ART = {
     strips: { 'horse-gallop': { file: 'horse_gallop.png', frames: 6, key: 'black' } },
   },
 };
+
+// Painted figures that have no sprite pipeline of their own yet: the villagers
+// (view/NpcView.js), the war hounds (view/HoundView.js) and the Ore Crusher
+// (view/CrusherView.js). Each is one row of poses on plain black, cut into `frames`
+// equal cells and scaled so the tallest pose is `height` px (drawn at half that). A
+// figure keeps its code drawing until its sheets exist (all of them, for the creatures).
+// The poses in each sheet are listed in docs/campaign/art-levels-1-2.md (items 8, 16,
+// 17, 25).
+export const SPRITE_SHEETS = {
+  villager: { file: 'assets/sprites/npc/villager.png', frames: 8, height: 150 },
+  mother: { file: 'assets/sprites/npc/mother.png', frames: 6, height: 150 },
+  boy: { file: 'assets/sprites/npc/boy.png', frames: 6, height: 110 },
+  elder: { file: 'assets/sprites/npc/elder.png', frames: 4, height: 150 },
+  'hound-walk': { file: 'assets/enemies/strips/hound_walk.png', frames: 6, height: 120 },
+  'hound-atk1': { file: 'assets/enemies/strips/hound_atk1.png', frames: 4, height: 120 },
+  'hound-react': { file: 'assets/enemies/strips/hound_react.png', frames: 3, height: 120 },
+  'hound-doom': { file: 'assets/enemies/strips/hound_doom.png', frames: 4, height: 120 },
+  'crusher-walk': { file: 'assets/enemies/strips/crusher_walk.png', frames: 6, height: 380 },
+  'crusher-atk1': { file: 'assets/enemies/strips/crusher_atk1.png', frames: 4, height: 380 },
+  'crusher-heavy': { file: 'assets/enemies/strips/crusher_heavy.png', frames: 5, height: 380 },
+  'crusher-doom': { file: 'assets/enemies/strips/crusher_doom.png', frames: 5, height: 380 },
+};

@@ -335,7 +335,7 @@ the generator and run `node tools/sfx-gen/electric.js`.
 
 ## Cloud, 2026-10-04 (night): polish pass on levels 1 and 2 (branch claude/project-thread-l70xhx, not on main, not on itch)
 - Nick asked to polish the first two levels before the rest: painted art, a little longer, more set pieces and fights. Stage 3 waits.
-- **Art**: the prompts for every picture are in `docs/campaign/art-levels-1-2.md` (also in project files `campaign/art/`). Save each at the path in its heading; it shows up in the game with no code change (`src/data/levelArt.js`, `src/view/levelArt.js`). Not yet wired: villager strips, hound and Houndmaster strips (their frame layouts need the real pictures), the cage-cart picture.
+- **Art**: the prompts for every picture are in `docs/campaign/art-levels-1-2.md` (also in project files `campaign/art/`). Save each at the path in its heading; it shows up in the game with no code change (`src/data/levelArt.js`, `src/view/levelArt.js`). Wired since 5 October 2026: villager, mother, boy and elder sheets, hound and Crusher strips (`SPRITE_SHEETS` in `src/data/levelArt.js`; tested with stand-in sheets). The Houndmaster needs none (he is a stalker). Not yet wired: the captive sheet (item 16), the cage-cart picture.
 - **Burning Village**: new section THE BURNING STABLES (the stampede), an ambush on the roofs. 9400 wide.
 - **Gallows Wood**: new section THE CONVOY (the rolling prisoner wagon), war hounds with the Houndmaster. 9200 wide.
 - The other two heroes now slip away up a lane at the start and stay hidden until the meeting place.
@@ -345,7 +345,7 @@ the generator and run `node tools/sfx-gen/electric.js`.
 - Nick asked to keep building level 3 alongside the polish. It's in, with code art: `src/data/stageMine.js`, `src/view/MineView.js`, `src/view/CrusherView.js`. Gallows Wood now leads into it.
 - New systems: terrain blocks with a `tag` that a prop's `opens` removes (`Stage.openWay`: the portcullis and the fallen rock), the collapse chase (hazard `collapse`), rock-falls (beam hazards with `look: 'rock'`), war machines (`machine: true`: never flinch), fire grates can now wait on a boss phase (`when`).
 - The third king cutaway ('collapse': frustration, the war map hurled).
-- Art prompts: items 18-25 in `docs/campaign/art-levels-1-2.md` (the mine and the Ore Crusher). Crusher strips are not wired yet.
+- Art prompts: items 18-25 in `docs/campaign/art-levels-1-2.md` (the mine and the Ore Crusher). Crusher strips are wired (5 October 2026).
 - Checked: logic tests (every hero walks it, the gate, the collapse, both bosses) and headless screenshots. Not played by a person.
 
 ## Paused, 2026-10-05 00:55 UTC (Nick out of usage until it refreshes)

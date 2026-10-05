@@ -19,10 +19,19 @@ import { FONT } from './fonts.js';
 import { World } from '../core/World.js';
 import { Controller } from '../core/Controller.js';
 import { createPlayer } from '../entities/Player.js';
+import { SPRITES } from './levelArt.js';
 
 const TUNIC = [0x5a6a5a, 0x6a5a48, 0x4a5468, 0x6a4a4a, 0x5a5048, 0x58586a];
 const SKIN = 0xc8a080;
 const HEROES = ['warrior', 'mage', 'rogue'];
+// the painted villagers (data/levelArt.js SPRITE_SHEETS): each pose's cell in its sheet
+// (run: the cells it cycles through); a pose a sheet lacks falls back to standing
+const CELLS = {
+  villager: { stand: 0, cower: 1, wave: 2, run: [3, 4, 5], sit: 6, kneel: 7 },
+  mother: { stand: 0, cower: 1, wave: 2, run: [3, 4, 5] },
+  boy: { stand: 0, cower: 1, wave: 2, run: [3, 4, 5] },
+  elder: { stand: 0, sit: 1, wave: 2, kneel: 3 },
+};
 
 export class NpcView {
   constructor(scene, stage) {
@@ -47,11 +56,30 @@ export class NpcView {
     const tip = s.add.text(n.x, n.z, '', { fontFamily: FONT.ui, fontSize: '13px', color: '#f0e6d0', align: 'center' })
       .setOrigin(0.5, 1).setStroke('#000000', 4).setDepth(DEPTH.popups - 1).setVisible(false);
     const meter = s.add.graphics().setDepth(DEPTH.popups - 1);
-    return { g, halo, shadow, tip, meter, seed: n.id.length * 7 + n.id.charCodeAt(0) };
+    return { g, halo, shadow, tip, meter, imgs: [], seed: n.id.length * 7 + n.id.charCodeAt(0) };
+  }
+
+  // one painted figure, from the NPC's pool of images; false if that sheet isn't painted
+  sprite(g, x, y, k, pose, t, dir, who) {
+    const S = SPRITES[who];
+    const v = this.cur;
+    if (!S || !v) return false;
+    const c = CELLS[who][pose] ?? CELLS[who].stand;
+    const i = Array.isArray(c) ? c[Math.floor(t / 8) % c.length] : c;
+    let img = v.imgs[this.curN];
+    if (!img) v.imgs.push(img = this.scene.add.image(x, y, S.key, 'f0').setOrigin(0.5, 1));
+    this.curN++;
+    img.setTexture(S.key, `f${Math.min(i, S.count - 1)}`).setPosition(x, y).setScale(k * 0.5)
+      .setFlipX(dir < 0).setDepth(g.depth + 0.01 * this.curN).setAlpha(g.alpha).setVisible(true);
+    return true;
   }
 
   // one peasant: w/h body size, pose 'stand' | 'cower' | 'sit' | 'wave' | 'run'
-  figure(g, x, y, k, pose, t, tunic, dir = 1) {
+  // (who: the painted sheet to use when there is one: villager, mother, boy, elder; a
+  // level's NPC can name its own with `art`)
+  figure(g, x, y, k, pose, t, tunic, dir = 1, who) {
+    who ??= 'villager';
+    if (this.sprite(g, x, y, k, pose, t, dir, who)) return true;
     const sc = k;
     const bob = pose === 'run' ? Math.abs(Math.sin(t * 0.4)) * 3 : pose === 'cower' ? Math.sin(t * 0.25) * 1 : 0;
     const H = (pose === 'cower' ? 40 : pose === 'sit' ? 30 : 56) * sc;
@@ -92,6 +120,8 @@ export class NpcView {
 
   drawNpc(n, v) {
     const g = v.g.clear();
+    this.cur = v; this.curN = 0;
+    for (const img of v.imgs) img.setVisible(false);
     const t = this.scene.time.now / 16.7;
     this.drawPrompt(n, v);
     if (n.pose === 'noose' || n.pose === 'cage') { this.drawCaptive(n, v, t); return; }
@@ -113,7 +143,7 @@ export class NpcView {
     const tun = (i) => TUNIC[(v.seed + i) % TUNIC.length];
     const pose = n.state === 'fleeing' ? 'run' : n.state === 'threatened' || n.cower ? 'cower' : n.state === 'trapped' ? 'wave' : 'stand';
     if (n.state === 'lost') { this.fallen(g, n.x, y, k, tun(0)); return; }
-    if (n.pose === 'wounded') return this.figure(g, n.x, y, k, 'sit', t, tun(0), 1);
+    if (n.pose === 'wounded') return this.figure(g, n.x, y, k, 'sit', t, tun(0), 1, n.art);
     if (n.pose === 'lame') {
       // limping on a crutch (a stick under one arm), slow
       const p = n.state === 'escort' && n.moving ? 'run' : pose;
@@ -121,10 +151,10 @@ export class NpcView {
       g.lineStyle(3 * k, 0x6a5038, 1).lineBetween(n.x + 10 * k * dir, y, n.x + 6 * k * dir, y - 44 * k);
       return;
     }
-    if (n.pose === 'child') return this.figure(g, n.x, y, k * 0.7, pose, t, tun(1), dir);
+    if (n.pose === 'child') return this.figure(g, n.x, y, k * 0.7 / (SPRITES.boy ? 0.7 : 1), pose, t, tun(1), dir, 'boy');
     if (n.pose === 'family') {
-      this.figure(g, n.x, y, k, pose, t, tun(2), dir);
-      this.figure(g, n.x + 22 * dir * -1, y + 4, k * 0.68, pose, t + 7, tun(3), dir);
+      // (the painted mother carries her child; the drawn one has him at her side)
+      if (!this.figure(g, n.x, y, k, pose, t, tun(2), dir, 'mother')) this.figure(g, n.x + 22 * dir * -1, y + 4, k * 0.68, pose, t + 7, tun(3), dir);
       return;
     }
     if (n.pose === 'chained') {
@@ -143,7 +173,7 @@ export class NpcView {
       for (let i = 0; i < 3; i++) this.figure(g, n.x - 30 + i * 28, y + (i % 2) * 6, k * (i === 1 ? 0.75 : 1), pose, t + i * 5, tun(i + 4), dir);
       return;
     }
-    this.figure(g, n.x, y, k, pose, t, tun(0), dir);
+    this.figure(g, n.x, y, k, pose, t, tun(0), dir, n.art);
   }
 
   // someone who didn't make it: on the ground, still

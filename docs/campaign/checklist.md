@@ -68,7 +68,7 @@ checked (says how), `[ ]` not started. Graybox means code-drawn temporary art.
 - [x] Fix: enemies brought on from off-screen stood inside raised ground (the mill yard softlock); a stuck latecomer is brought round
 - [~] Checked: logic tests and headless screenshots; not played by a person
 - [~] The art itself (generated in ChatGPT on Nick's PC): as of 5 October 2026 00:50 UTC the Burning Village is done (items 1-7 and 9: backdrop, set pieces, props, stampede horse), saved on the PC but NOT pushed (git on the PC has no GitHub login). Left: the pikes picture, villagers (8), terrain-block art (needs a code slot first), all of Gallows Wood (10-17), all of Hollow Mountain (18-25)
-- [ ] Painted strips for the villagers, the hounds and the Houndmaster (their loaders come with the art)
+- [~] Painted strips for the villagers, the hounds and the Ore Crusher: the slots are in (5 October 2026, `SPRITE_SHEETS` in `src/data/levelArt.js`; each switches over when its files are in); the pictures are not painted yet. The Houndmaster is a stalker and already wears the stalker's strips. The wood's captive sheet (item 16) is not wired
 
 ## Stage 5 — Presentation and polish
 

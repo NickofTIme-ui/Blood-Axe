@@ -1,8 +1,8 @@
 // CrusherView.js — THE ORE CRUSHER (data/enemies.js `crusher`), Hollow Mountain's war
 // machine, drawn in code: an iron hulk on rollers, a spiked drum turning in front, a
 // pile-driver arm on top, a furnace grate in its belly and a chimney trailing smoke.
-// TEMPORARY ART: the painted strips (assets/enemies/strips/crusher_*.png,
-// docs/campaign/art-levels-1-2.md) replace it once they exist.
+// The painted strips (assets/enemies/strips/crusher_*.png, data/levelArt.js SPRITE_SHEETS,
+// docs/campaign/art-levels-1-2.md) replace the drawing once all four exist.
 //
 // Poses from the fighter's state: rolling (walk: the rollers and drum turn with the ground
 // covered), the grind (light1: the drum shoved forward, spinning fast, sparks), the slam
@@ -10,7 +10,8 @@
 // and wrecked (dead: tilted, the furnace out, smoke pouring off it).
 
 import { DEPTH } from './depths.js';
-import { movePhase } from '../combat/MoveRunner.js';
+import { movePhase, totalFrames } from '../combat/MoveRunner.js';
+import { SPRITES, haveSprites } from './levelArt.js';
 
 const C = { iron: 0x2a2826, ironHi: 0x4a4644, ironDk: 0x161514, rivet: 0x6a6460, rust: 0x6a3a1e, fire: 0xff6a20, fireHi: 0xffd080, spike: 0x8a8480 };
 
@@ -28,6 +29,23 @@ export class CrusherView {
     this.roll = 0;
     this.lastX = fighter.x;
     this.smokeT = 0;
+    // the painted strips, once all four exist (else the code drawing)
+    this.painted = haveSprites('crusher-walk', 'crusher-atk1', 'crusher-heavy', 'crusher-doom');
+    if (this.painted) this.img = scene.add.image(fighter.x, fighter.z, SPRITES['crusher-walk'].key, 'f0').setOrigin(0.5, 1).setScale(0.5);
+  }
+
+  // the painted machine: which strip and cell, from the same state the drawing reads
+  paint(st, fr, alpha, sink) {
+    const f = this.f;
+    let name = 'crusher-walk'; let i = Math.floor(Math.abs(this.roll) * 1.2);
+    if ((st === 'light1' || st === 'heavy') && f.move) {
+      name = st === 'light1' ? 'crusher-atk1' : 'crusher-heavy';
+      i = Math.floor((fr / Math.max(1, totalFrames(f.move))) * SPRITES[name].count);
+    } else if (st === 'dead') { name = 'crusher-doom'; i = Math.floor(fr / 10); }
+    const S = SPRITES[name];
+    i = name === 'crusher-walk' ? i % S.count : Math.min(S.count - 1, Math.max(0, i));
+    this.img.setTexture(S.key, `f${i}`).setPosition(f.x, f.z - f.h + (st === 'dead' ? 0 : sink)).setFlipX(f.facing < 0).setDepth(f.z).setAlpha(alpha);
+    if (f.flash > 0) this.img.setTintFill(0xffffff); else this.img.clearTint();
   }
 
   update() {
@@ -59,59 +77,62 @@ export class CrusherView {
     g.setDepth(f.z).setAlpha(alpha);
     const sink = tilt * 18;
     const top = base - 150 + sink;
-    // rollers: two great iron wheels under the hull, spokes turning
-    for (const rx of [-48, 38]) {
-      const cx = X(rx); const cy = base - 26 + sink * (rx < 0 ? 0.3 : 1);
-      g.fillStyle(C.ironDk, 1).fillCircle(cx, cy, 26);
-      g.lineStyle(4, C.ironHi, 1);
-      for (let k = 0; k < 3; k++) {
-        const a = this.roll + (k * Math.PI) / 3;
-        g.lineBetween(cx - Math.cos(a) * 22, cy - Math.sin(a) * 22, cx + Math.cos(a) * 22, cy + Math.sin(a) * 22);
+    const dx = X(78 + drumOut); const dy = base - 48 + sink; // (the drum, where the sparks fly)
+    if (this.painted) this.paint(st, fr, alpha, sink);
+    else {
+      // rollers: two great iron wheels under the hull, spokes turning
+      for (const rx of [-48, 38]) {
+        const cx = X(rx); const cy = base - 26 + sink * (rx < 0 ? 0.3 : 1);
+        g.fillStyle(C.ironDk, 1).fillCircle(cx, cy, 26);
+        g.lineStyle(4, C.ironHi, 1);
+        for (let k = 0; k < 3; k++) {
+          const a = this.roll + (k * Math.PI) / 3;
+          g.lineBetween(cx - Math.cos(a) * 22, cy - Math.sin(a) * 22, cx + Math.cos(a) * 22, cy + Math.sin(a) * 22);
+        }
+        g.fillStyle(C.rivet, 1).fillCircle(cx, cy, 5);
       }
-      g.fillStyle(C.rivet, 1).fillCircle(cx, cy, 5);
+      // the hull: a boxy iron body, riveted, rust streaks
+      const hx0 = Math.min(X(-74), X(58)); const hx1 = Math.max(X(-74), X(58));
+      g.fillStyle(iron, 1).fillRect(hx0, top + 40, hx1 - hx0, 90);
+      g.fillStyle(C.ironHi, 1).fillRect(hx0, top + 40, hx1 - hx0, 6);
+      g.fillStyle(C.rust, 0.6).fillRect(X(-50), top + 50, 4, 60).fillRect(X(10), top + 56, 3, 50);
+      g.fillStyle(C.rivet, 1);
+      for (let k = -66; k <= 50; k += 14) g.fillCircle(X(k), top + 50, 2).fillCircle(X(k), top + 122, 2);
+      // the furnace grate in its belly
+      g.fillStyle(C.ironDk, 1).fillRect(Math.min(X(-30), X(4)), top + 76, 34, 30);
+      g.fillStyle(C.fire, 0.4 + 0.6 * heat).fillRect(Math.min(X(-28), X(2)), top + 80, 30, 22);
+      g.lineStyle(2, C.ironDk, 1);
+      for (let k = -24; k <= 0; k += 8) g.lineBetween(X(k), top + 80, X(k), top + 102);
+      // the chimney at the back
+      g.fillStyle(C.ironDk, 1).fillRect(Math.min(X(-66), X(-50)), top - 4, 16, 46);
+      g.fillStyle(C.ironHi, 1).fillRect(Math.min(X(-70), X(-46)), top - 8, 24, 6);
+      // the cab: a slit where the driver sits
+      g.fillStyle(iron, 1).fillRect(Math.min(X(-40), X(10)), top + 10, 50, 32);
+      g.fillStyle(C.fire, 0.5 + 0.4 * heat).fillRect(Math.min(X(-30), X(0)), top + 22, 30, 4);
+      // the pile-driver arm: pivots on the cab, a great iron hammer at its end
+      const px = X(4); const py = top + 14;
+      // (its angle above the horizontal: 75deg raised high, 20deg at rest, -55deg slammed down)
+      const ang = ((-55 + ((arm + 0.35) / 1.35) * 130) * Math.PI) / 180;
+      const len = 110;
+      const ex = px + Math.cos(ang) * len * d; const ey = py - Math.sin(ang) * len;
+      g.lineStyle(12, flash ? 0xffffff : C.ironDk, 1).lineBetween(px, py, ex, ey);
+      g.lineStyle(3, C.ironHi, 1).lineBetween(px, py - 4, ex, ey - 4);
+      g.fillStyle(iron, 1).fillRect(ex - 22, ey - 10, 44, 42);
+      g.fillStyle(C.ironHi, 1).fillRect(ex - 22, ey - 10, 44, 5);
+      g.fillStyle(C.ironDk, 1).fillRect(ex - 18, ey + 32, 36, 8);
+      g.fillStyle(C.rivet, 1).fillCircle(px, py, 6);
+      // the spiked drum in front, turning
+      g.fillStyle(C.ironDk, 1).fillRect(Math.min(X(56), X(70 + drumOut)), dy - 6, Math.abs(14 + drumOut), 12); // its axle arms
+      g.fillStyle(iron, 1).fillCircle(dx, dy, 36);
+      g.lineStyle(3, C.ironHi, 1).strokeCircle(dx, dy, 36);
+      g.fillStyle(C.spike, 1);
+      for (let k = 0; k < 8; k++) {
+        const a = drumSpin + (k * Math.PI) / 4;
+        const c = Math.cos(a); const s = Math.sin(a);
+        g.fillTriangle(dx + c * 33 - s * 6, dy + s * 33 + c * 6, dx + c * 33 + s * 6, dy + s * 33 - c * 6, dx + c * 50, dy + s * 50);
+      }
+      g.fillStyle(C.rivet, 1).fillCircle(dx, dy, 8);
     }
-    // the hull: a boxy iron body, riveted, rust streaks
-    const hx0 = Math.min(X(-74), X(58)); const hx1 = Math.max(X(-74), X(58));
-    g.fillStyle(iron, 1).fillRect(hx0, top + 40, hx1 - hx0, 90);
-    g.fillStyle(C.ironHi, 1).fillRect(hx0, top + 40, hx1 - hx0, 6);
-    g.fillStyle(C.rust, 0.6).fillRect(X(-50), top + 50, 4, 60).fillRect(X(10), top + 56, 3, 50);
-    g.fillStyle(C.rivet, 1);
-    for (let k = -66; k <= 50; k += 14) g.fillCircle(X(k), top + 50, 2).fillCircle(X(k), top + 122, 2);
-    // the furnace grate in its belly
-    g.fillStyle(C.ironDk, 1).fillRect(Math.min(X(-30), X(4)), top + 76, 34, 30);
-    g.fillStyle(C.fire, 0.4 + 0.6 * heat).fillRect(Math.min(X(-28), X(2)), top + 80, 30, 22);
-    g.lineStyle(2, C.ironDk, 1);
-    for (let k = -24; k <= 0; k += 8) g.lineBetween(X(k), top + 80, X(k), top + 102);
-    // the chimney at the back
-    g.fillStyle(C.ironDk, 1).fillRect(Math.min(X(-66), X(-50)), top - 4, 16, 46);
-    g.fillStyle(C.ironHi, 1).fillRect(Math.min(X(-70), X(-46)), top - 8, 24, 6);
-    // the cab: a slit where the driver sits
-    g.fillStyle(iron, 1).fillRect(Math.min(X(-40), X(10)), top + 10, 50, 32);
-    g.fillStyle(C.fire, 0.5 + 0.4 * heat).fillRect(Math.min(X(-30), X(0)), top + 22, 30, 4);
-    // the pile-driver arm: pivots on the cab, a great iron hammer at its end
-    const px = X(4); const py = top + 14;
-    // (its angle above the horizontal: 75deg raised high, 20deg at rest, -55deg slammed down)
-    const ang = ((-55 + ((arm + 0.35) / 1.35) * 130) * Math.PI) / 180;
-    const len = 110;
-    const ex = px + Math.cos(ang) * len * d; const ey = py - Math.sin(ang) * len;
-    g.lineStyle(12, flash ? 0xffffff : C.ironDk, 1).lineBetween(px, py, ex, ey);
-    g.lineStyle(3, C.ironHi, 1).lineBetween(px, py - 4, ex, ey - 4);
-    g.fillStyle(iron, 1).fillRect(ex - 22, ey - 10, 44, 42);
-    g.fillStyle(C.ironHi, 1).fillRect(ex - 22, ey - 10, 44, 5);
-    g.fillStyle(C.ironDk, 1).fillRect(ex - 18, ey + 32, 36, 8);
-    g.fillStyle(C.rivet, 1).fillCircle(px, py, 6);
-    // the spiked drum in front, turning
-    const dx = X(78 + drumOut); const dy = base - 48 + sink;
-    g.fillStyle(C.ironDk, 1).fillRect(Math.min(X(56), X(70 + drumOut)), dy - 6, Math.abs(14 + drumOut), 12); // its axle arms
-    g.fillStyle(iron, 1).fillCircle(dx, dy, 36);
-    g.lineStyle(3, C.ironHi, 1).strokeCircle(dx, dy, 36);
-    g.fillStyle(C.spike, 1);
-    for (let k = 0; k < 8; k++) {
-      const a = drumSpin + (k * Math.PI) / 4;
-      const c = Math.cos(a); const s = Math.sin(a);
-      g.fillTriangle(dx + c * 33 - s * 6, dy + s * 33 + c * 6, dx + c * 33 + s * 6, dy + s * 33 - c * 6, dx + c * 50, dy + s * 50);
-    }
-    g.fillStyle(C.rivet, 1).fillCircle(dx, dy, 8);
     if (sparks && fr % 2 === 0) {
       this.scene.gore?.spawn({ x: dx + d * 30, z: f.z + 2, h: 6, vx: d * (60 + Math.random() * 140), vz: 0, vh: 60 + Math.random() * 140, tint: 0xffc060, texture: 'px', scale: 0.6 + Math.random() * 0.6, decal: false, life: 20 });
     }
@@ -134,6 +155,7 @@ export class CrusherView {
   destroy() {
     this.g.destroy();
     this.glow.destroy();
+    this.img?.destroy();
     this.shadow.destroy();
     this.hpBg?.destroy();
     this.hpFill?.destroy();
