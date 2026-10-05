@@ -348,6 +348,13 @@ the generator and run `node tools/sfx-gen/electric.js`.
 - Art prompts: items 18-25 in `docs/campaign/art-levels-1-2.md` (the mine and the Ore Crusher). Crusher strips are wired (5 October 2026).
 - Checked: logic tests (every hero walks it, the gate, the collapse, both bosses) and headless screenshots. Not played by a person.
 
+## Cloud, 2026-10-05: level 4, THE SHATTERED ASCENT (branch claude/campaign-level-4-guc3fp, off the campaign branch; not on main, not on itch)
+- Built in its own thread while the campaign thread paints art; to be merged into `claude/project-thread-l70xhx`. Code art: `src/data/stageAscent.js`, `src/view/AscentView.js`. Hollow Mountain now leads into it; it names THE IRON GATES as next (not built).
+- New systems: the bombardment (hazard `bombard`: volleys aimed at the heroes, landing spots shown first, no stone within 170 px of a drop; `silence: '<tag>'` thins it per smashed prop; `when` works as for beams), the catapult prop, `section.needs` (the fight isn't won until every prop with that tag is broken) and the story key `broken:<tag>`.
+- The fourth king cutaway ('retreat': unease; horns, the captain burned to ash).
+- Art prompts: items 32-38 in `docs/campaign/art-levels-1-2.md` (the ascent's backdrop, four set pieces, the catapult). Orsk wears the Berserker's strips. Screens: project files `campaign/shattered-ascent/`.
+- Checked: logic tests (every hero walks it, the bombardment, the shelter, Orsk) and headless screenshots. Not played by a person.
+
 ## Paused, 2026-10-05 00:55 UTC (Nick out of usage until it refreshes)
 - Campaign branch `claude/project-thread-l70xhx` is pushed (latest: heads on pikes in the village); it's PR #12 into main, open, waiting on Nick's OK to merge.
 - **Art**: painting in ChatGPT on Nick's PC finished everything level 1 can use: backdrop (items 1-5), the five set pieces (well, barn, stables, longhall, gate), both props (wreckage, cart; whole and broken) and the stampede horse. All only on the PC in `assets/env/village/` and `assets/fx/`, uncommitted (no GitHub login there). Not yet: pikes picture, villagers. Next: Gallows Wood, then Hollow Mountain.

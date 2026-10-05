@@ -11,7 +11,9 @@
 // Scenes (CUTAWAYS): 'learns' (after the village: he hears they survived; confidence),
 // 'convoy' (after Gallows Wood: the convoy lost; irritation — he strikes the throne),
 // 'collapse' (after Hollow Mountain: the mine brought down on them and they walked out of
-// it; frustration — he hurls the war map off its table).
+// it; frustration — he hurls the war map off its table), 'retreat' (after the Shattered
+// Ascent: Orsk dead, the army falling back to the Iron Gates; unease — horns, and he burns
+// the captain who brings the news to ash).
 
 import { SETTINGS } from '../config/settings.js';
 import { FONT, epicFill } from '../view/fonts.js';
@@ -51,9 +53,22 @@ export const CUTAWAYS = {
       { who: 'VAURATH', text: 'Send for the Siege Commander. Burn the ascent behind them. Leave them nothing to stand on.' },
     ],
   },
+  retreat: {
+    caption: 'THE BLACK KEEP',
+    beats: [
+      { act: 'horns' }, // the retreat sounding across the Keep: long, low horns; the torches shiver
+      { who: 'CAPTAIN', text: 'My king... Orsk is dead. The ascent is theirs. The men on the cliffs are running for the gates.' },
+      { who: 'VAURATH', text: 'Running.' },
+      { who: 'MALGOR', text: 'Give me the Iron Gates, my king. Nothing passes me.' },
+      { who: 'VAURATH', text: 'Take them. Every man behind the iron. Let the Oath Keepers break themselves on it.' },
+      { who: 'CAPTAIN', text: 'My king, the men are afraid. They say the Oath Keepers cannot be killed...' },
+      { act: 'kill' }, // unease, turned on his own: an ember bolt from his hand; the captain burns to ash where he kneels
+      { who: 'VAURATH', text: 'Now they have something else to be afraid of.' },
+    ],
+  },
 };
 
-const SPEAKER = { VAURATH: '#ffb070', MALGOR: '#b8a0ff', MESSENGER: '#c8c0b0' };
+const SPEAKER = { VAURATH: '#ffb070', MALGOR: '#b8a0ff', MESSENGER: '#c8c0b0', CAPTAIN: '#c8c0b0' };
 
 export class CutawayScene extends Phaser.Scene {
   constructor() { super('Cutaway'); }
@@ -165,6 +180,8 @@ export class CutawayScene extends Phaser.Scene {
     if (b.act === 'ember') { this.ember(); return; }
     if (b.act === 'strike') { this.strike(); return; }
     if (b.act === 'hurl') { this.hurl(); return; }
+    if (b.act === 'horns') { this.horns(); return; }
+    if (b.act === 'kill') { this.kill(); return; }
     this.who.setText(b.who).setColor(SPEAKER[b.who] ?? '#d8d0c0');
     this.line.setText(b.text).setAlpha(0);
     this.tweens.add({ targets: this.line, alpha: 1, duration: 250 });
@@ -252,6 +269,66 @@ export class CutawayScene extends Phaser.Scene {
       this.eyes.setAlpha(1).setFillStyle(0xffd080);
     });
     this.time.delayedCall(2000, () => { this.busy = false; this.next(); });
+  }
+
+  // the retreat, heard in the hall: long low horns from the walls, three times; the torches
+  // shiver with each; the king's eyes narrow
+  horns() {
+    this.busy = true;
+    this.auto?.remove();
+    this.who.setText('(horns, long and low, from the walls)').setColor('#9a8a7a');
+    this.line.setText('');
+    for (let i = 0; i < 3; i++) {
+      this.time.delayedCall(200 + i * 900, () => {
+        playSfx(this, 'fireWhoosh', { volume: 0.7, pitch: -2400, minGapMs: 0 });
+        this.cameras.main.shake(500, 0.002);
+        for (const t of this.torches) this.tweens.add({ targets: t, alpha: 0.15, duration: 180, yoyo: true });
+      });
+    }
+    this.time.delayedCall(1400, () => this.eyes.setFillStyle(0xff7a30));
+    this.time.delayedCall(3000, () => { this.busy = false; this.next(); });
+  }
+
+  // the captain who brought the news: an ember bolt from the king's hand; he burns where he
+  // kneels and there is only ash left (a stand-in figure: the messenger's)
+  kill() {
+    this.busy = true;
+    this.auto?.remove();
+    this.who.setText(''); this.line.setText('');
+    const W = SETTINGS.width; const H = SETTINGS.height;
+    const mx = W * 0.3 + (this.messenger.x ?? 0); const my = H - 140;
+    this.tweens.add({ targets: this.hand, scale: 1.6, alpha: 1, duration: 500, ease: 'Sine.easeIn' });
+    playSfx(this, 'fireWhoosh', { volume: 0.6, pitch: -400, minGapMs: 0 });
+    this.time.delayedCall(600, () => {
+      this.tweens.killTweensOf(this.hand);
+      this.hand.setScale(0);
+      const bolt = this.add.image(this.hand.x, this.hand.y, 'glow').setScale(1.4).setTint(0xff8a30).setBlendMode(Phaser.BlendModes.ADD);
+      this.root.add(bolt);
+      this.tweens.add({
+        targets: bolt, x: mx, y: my, duration: 260, ease: 'Quad.easeIn',
+        onComplete: () => {
+          bolt.destroy();
+          this.cameras.main.flash(160, 255, 140, 60);
+          this.cameras.main.shake(260, 0.008);
+          playSfx(this, 'kick', { volume: 0.9, pitch: -1400, minGapMs: 0 });
+          playSfx(this, 'fireWhoosh', { volume: 1, pitch: -200, minGapMs: 0 });
+          const burn = this.add.image(mx, my, 'glow').setScale(3).setTint(0xff6a20).setAlpha(0.9).setBlendMode(Phaser.BlendModes.ADD);
+          this.root.add(burn);
+          this.tweens.add({ targets: burn, alpha: 0, scale: 4, duration: 900, onComplete: () => burn.destroy() });
+          this.tweens.add({ targets: this.messenger, alpha: 0, duration: 700 });
+          // the ash left on the floor, and a little of it rising
+          const ash = this.add.ellipse(mx, H - 108, 46, 8, 0x2a2622, 1).setAlpha(0);
+          this.root.add(ash);
+          this.tweens.add({ targets: ash, alpha: 1, duration: 600, delay: 300 });
+          for (let i = 0; i < 12; i++) {
+            const a = this.add.rectangle(mx + (Math.random() - 0.5) * 30, my + Math.random() * 30, 3, 3, i % 3 ? 0x5a524a : 0xff8a40);
+            this.root.add(a);
+            this.tweens.add({ targets: a, y: a.y - 60 - Math.random() * 80, x: a.x + (Math.random() - 0.5) * 40, alpha: 0, duration: 1200 + Math.random() * 600, onComplete: () => a.destroy() });
+          }
+        },
+      });
+    });
+    this.time.delayedCall(2600, () => { this.busy = false; this.next(); });
   }
 
   finish() {

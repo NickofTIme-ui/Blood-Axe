@@ -62,6 +62,18 @@ export const LEVEL_ART = {
     },
     surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, plank: { fit: true } },
   },
+  ascent: {
+    dir: 'assets/env/ascent/',
+    layers: [
+      { name: 'sky', key: 'opaque', scroll: 0.04, bottom: -40, height: 420 },
+      { name: 'far', key: 'magenta', scroll: 0.12, bottom: -10, height: 280 },
+      { name: 'mid', key: 'magenta', scroll: 0.45, bottom: -20, height: 260 },
+    ],
+    wall: { height: 140 }, // (low: the Keep across the gorge shows over it)
+    ground: true,
+    pieces: ['overhang', 'palisade', 'camp', 'gates_view'],
+    props: { catapult: { file: 'prop_catapult.png', pair: true } },
+  },
   fx: {
     dir: 'assets/fx/',
     strips: { 'horse-gallop': { file: 'horse_gallop.png', frames: 6, key: 'black' } },

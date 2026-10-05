@@ -263,6 +263,33 @@ export class StageView {
     };
     this.canvasTex('prop-rubble', 240, 190, (c, w, h) => rubble(c, w, h, 26, 150));
     this.canvasTex('prop-rubble-broken', 240, 190, (c, w, h) => rubble(c, w, h, 8, 30));
+    // (the Shattered Ascent) a siege catapult: a timber frame on wheels, the throwing arm
+    // cocked back, a sling with a stone in it; wrecked: the frame split, the arm snapped
+    const catapult = (c, w, h, wrecked) => {
+      const base = h - 30;
+      c.fillStyle = '#3a2616';
+      if (!wrecked) {
+        c.fillRect(20, base - 16, w - 40, 16); // the bed
+        c.save(); c.translate(w * 0.42, base - 90); c.rotate(-0.15); c.fillRect(-10, 0, 20, 90); c.restore(); // the uprights
+        c.fillRect(w * 0.62, base - 80, 18, 80);
+        c.fillStyle = '#4a3220'; c.fillRect(w * 0.3, base - 96, w * 0.42, 12); // the crossbar
+        c.save(); c.translate(w * 0.56, base - 30); c.rotate(-1.05); // the arm, cocked back
+        c.fillStyle = '#5a3c22'; c.fillRect(-6, -150, 12, 170);
+        c.fillStyle = '#2a1c12'; c.beginPath(); c.ellipse(0, -156, 18, 10, 0, 0, 7); c.fill(); // the sling
+        c.fillStyle = '#6a6a72'; c.beginPath(); c.arc(0, -162, 13, 0, 7); c.fill(); // the stone in it
+        c.restore();
+        c.strokeStyle = '#8a7a60'; c.lineWidth = 2; c.beginPath(); c.moveTo(w * 0.3, base - 16); c.lineTo(w * 0.5, base - 40); c.stroke(); // the winch rope
+      } else {
+        c.fillRect(14, base - 10, w * 0.4, 12); c.fillRect(w * 0.52, base - 6, w * 0.4, 10);
+        c.save(); c.translate(w * 0.3, base - 14); c.rotate(-0.4); c.fillRect(0, -6, 110, 10); c.restore(); // the snapped arm
+        c.fillStyle = '#4a3220'; c.fillRect(w * 0.6, base - 40, 14, 34);
+        c.fillStyle = '#6a6a72'; c.beginPath(); c.arc(w * 0.82, base - 6, 12, 0, 7); c.fill();
+      }
+      const wheel = (x) => { c.fillStyle = '#2a1c12'; c.beginPath(); c.arc(x, base + 6, 22, 0, 7); c.fill(); c.fillStyle = '#4a3220'; c.beginPath(); c.arc(x, base + 6, 7, 0, 7); c.fill(); };
+      wheel(48); if (!wrecked) wheel(w - 52);
+    };
+    this.canvasTex('prop-catapult', 300, 260, (c, w, h) => catapult(c, w, h, false));
+    this.canvasTex('prop-catapult-broken', 300, 260, (c, w, h) => catapult(c, w, h, true));
     this.canvasTex('prop-wagon', 420, 240, (c, w, h) => wagon(c, w, h, false));
     this.canvasTex('prop-wagon-broken', 420, 240, (c, w, h) => wagon(c, w, h, true));
     this.canvasTex('flame', 32, 64, (c, w, h) => {
@@ -445,6 +472,7 @@ export class StageView {
     for (const hz of this.stage.hazards) {
       if (hz.type === 'stampede') { this.drawStampede(hz, cam); continue; }
       if (hz.type === 'collapse') { this.drawCollapse(hz, cam); continue; }
+      if (hz.type === 'bombard') { this.drawBombard(hz); continue; }
       if (hz.x < cam.x - 200 || hz.x > cam.right + 200) {
         hz.view?.setVisible(false);
         hz.hot?.setVisible(false);
@@ -579,6 +607,38 @@ export class StageView {
         g.fillTriangle(rx - 16, gy, rx + 16, gy, rx + (i % 2 ? 4 : -4), gy - rh);
       }
       g.fillStyle(0x8a8070, a * 0.25).fillEllipse(hz.x, gy - 14, hz.w * 1.4, 40);
+    }
+  }
+
+  // The catapults' stones (Stage 'bombard'): where each will land, a shadow spreading on the
+  // ground and a red ring round its reach, then the stone itself, burning, dropping out of
+  // the sky onto the middle of it.
+  drawBombard(hz) {
+    const g = hz.g = hz.g ?? this.scene.add.graphics();
+    g.clear();
+    const shells = hz.shells ?? [];
+    g.setVisible(shells.length > 0);
+    if (shells.length) g.setDepth(Math.min(...shells.map((q) => q.z)) - 1); // (over a ledge's top, under the men on it)
+    if (!hz.stones) hz.stones = this.scene.add.graphics();
+    const st = hz.stones.clear();
+    for (const s of shells) {
+      s.gy ??= this.stage.terrain ? Math.max(0, this.stage.terrain.groundAt(s.x, s.z)) : 0;
+      const k = Math.max(0, Math.min(1, (hz.t - s.from) / Math.max(1, s.land - s.from)));
+      const gy = s.z - s.gy;
+      const R = hz.radius ?? 64;
+      g.fillStyle(0x000000, 0.15 + 0.5 * k).fillEllipse(s.x, gy, R * (0.5 + 1.1 * k), R * 0.38 * (0.5 + 1.1 * k));
+      g.lineStyle(2, 0xff5a3a, 0.25 + 0.55 * k).strokeEllipse(s.x, gy, R * 2, R * 0.75);
+      if (k < 0.45) continue;
+      // the stone: the last half of its flight, falling steeply onto the mark
+      const f = (k - 0.45) / 0.55;
+      const sy = gy - 720 * (1 - f) * (1 - f) - 12;
+      const sx = s.x - 120 * (1 - f);
+      st.setDepth(s.z + 1);
+      // (a pitch-soaked stone, burning: it reads against the sky and the Keep alike)
+      for (let k2 = 1; k2 <= 4; k2++) st.fillStyle(k2 < 3 ? 0xff7a30 : 0x6a6460, 0.35 - k2 * 0.06).fillCircle(sx - 26 * k2 * (1 - f * 0.6), sy - 60 * k2 * (1 - f * 0.6), 11 - k2);
+      st.fillStyle(0xffb050, 1).fillCircle(sx, sy, 17);
+      st.fillStyle(0x2a2420, 1).fillCircle(sx + 2, sy + 2, 13);
+      st.fillStyle(0xff8a30, 1).fillCircle(sx - 5, sy - 5, 5);
     }
   }
 
@@ -927,6 +987,29 @@ export class StageView {
         playSfx(this.scene, 'kick', { volume: 0.7, pitch: -2000, minGapMs: 0 });
         this.scene.fx?.shake(3, 40);
       }
+    });
+    ev.on('shellLaunch', ({ hazard: hz }) => {
+      // the catapults on the heights kick as they throw
+      const near = Math.abs(this.scene.player.x - (this.stage.section?.x0 ?? 0)) < 2400;
+      if (near) playSfx(this.scene, 'heavySwing', { volume: 0.5, pitch: -900, minGapMs: 0 });
+      for (const pr of this.stage.props) {
+        if (pr.kind !== 'catapult' || pr.broken || (hz.silence && pr.tag !== hz.silence)) continue;
+        const v = this.propSprites.get(pr.id);
+        if (v?.img) this.scene.tweens.add({ targets: v.img, angle: -4, duration: 90, yoyo: true, ease: 'Quad.easeOut' });
+      }
+    });
+    ev.on('shellLand', ({ shell: s }) => {
+      const y = s.y ?? 0;
+      if (Math.abs(this.scene.player.x - s.x) < 800) {
+        playSfx(this.scene, 'kick', { volume: 1, pitch: -1700, minGapMs: 0 });
+        this.scene.fx?.shake(7, 14);
+      }
+      this.scene.gore.spark(s.x, s.z, y + 10, 0xd8c8a8, 20);
+      for (let i = 0; i < 22; i++) {
+        this.scene.gore.spawn({ x: s.x + rand(-30, 30), z: s.z + rand(-8, 8), h: y + 4, vx: rand(-220, 220), vz: rand(-40, 40), vh: rand(120, 360), tint: i % 3 ? 0x4a4650 : 0x8a8070, texture: 'px', scale: rand(0.8, 2), decal: false, life: rand(30, 70) });
+      }
+      const ring = this.scene.add.ellipse(s.x, s.z - y, 30, 10).setStrokeStyle(3, 0xd8c8b0, 0.8).setDepth(DEPTH.shadows + 0.1);
+      this.scene.tweens.add({ targets: ring, scaleX: 5, scaleY: 5, alpha: 0, duration: 300, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
     });
     ev.on('collapseStart', () => {
       playSfx(this.scene, 'kick', { volume: 1, pitch: -2200, minGapMs: 0 });

@@ -275,6 +275,71 @@ grey daylight and the Black Keep across a gorge.
 
 ---
 
+## LEVEL 4: THE SHATTERED ASCENT
+
+Chat: **BA · Level 4 · Shattered Ascent**. Attach the same reference pictures plus a
+screenshot of the ascent in the game (project files `campaign/shattered-ascent/`). The
+look: cold grey cliffs under a low overcast sky, wind driving grit along a road cut into
+the cliff face; the Black Keep huge across a gorge (black stone, cold violet light); warm
+red only in the Ashen camp's fires and banners. Siege Commander Orsk wears the Berserker's
+strips for now.
+
+### 32. `assets/env/ascent/sky.png` (opaque, the furthest layer)
+> Same style. A very wide seamless sky over high mountains: a low grey overcast, torn
+> clouds driven by wind, a cold pale light breaking through in places. NO land. Left and
+> right edges join seamlessly. 3:1 or wider. No text.
+
+### 33. `assets/env/ascent/far.png` (on magenta)
+> Same style. A very wide seamless strip seen across a deep gorge: snow-streaked grey peaks,
+> and on a black crag in the middle a huge dark castle, the Black Keep, black stone towers
+> and spires with cold violet light in its windows, haze in the gorge below it. Everything
+> sits in the lower two thirds; above it is FLAT PURE MAGENTA. Edges join seamlessly.
+> 3:1 or wider.
+
+### 34. `assets/env/ascent/mid.png` (on magenta)
+> Same style. A very wide seamless strip of nearer broken crags and sharp rock spurs, grey
+> and cold, a few stunted pines bent by the wind. FLAT PURE MAGENTA above and between
+> them. Edges join seamlessly. 3:1 or wider.
+
+### 35. `assets/env/ascent/wall.png` (on magenta, the cliff face behind the road, repeats)
+> Same style. A very wide seamless strip of a sheer grey cliff face seen straight on, the
+> rock in layered strata, cracks running down it, a stunted pine growing out of a crack,
+> scars where stones have struck. The cliff fills the bottom 85% of the picture; above it
+> is FLAT PURE MAGENTA. Edges join seamlessly.
+
+### 36. `assets/env/ascent/ground.png` (opaque, the road under the fight)
+> Same style. A very wide seamless picture of an old mountain road cut into a cliff, seen
+> from a low three-quarter angle (the far edge at the top, the near edge at the bottom):
+> worn grey flagstones, grit, fallen stones, a crater or two where catapult stones have
+> landed. Nothing taller than a stone. Left and right edges join seamlessly. 3:1.
+
+### 37. Set pieces (on magenta, each one picture, seen straight on, about 1536 x 1024)
+- `assets/env/ascent/overhang.png`
+  > Same style. A great overhang of grey rock jutting out of a cliff, a dark hollow under
+  > it big enough for a dozen people to shelter in, stones and a broken cart piled at its
+  > mouth as a barricade. FLAT PURE MAGENTA background. No people.
+- `assets/env/ascent/palisade.png`
+  > Same style. A siege battery's wooden palisade of sharpened stakes along a cliff top,
+  > a heap of round catapult stones, ropes and winches, a red Ashen banner. FLAT PURE
+  > MAGENTA background. No people, no catapults.
+- `assets/env/ascent/camp.png`
+  > Same style. An Ashen siege camp on a mountain shelf: rough hide tents, a command tent
+  > with red banners, campfires, weapon racks, crates. FLAT PURE MAGENTA background. No
+  > people.
+- `assets/env/ascent/gates_view.png`
+  > Same style. Looking down from a high pass: far below, a black iron wall across a
+  > valley with a great iron gatehouse in it, two square towers, red siege fires, smoke.
+  > FLAT PURE MAGENTA above the mountains. No people.
+
+### 38. Props (on magenta, two pictures side by side: whole, then broken)
+- `assets/env/ascent/prop_catapult.png`
+  > Same style. Left: a siege catapult seen from the side, a heavy timber frame on four
+  > wheels, the throwing arm cocked back, a sling with a round stone in it, a winch and
+  > ropes. Right: the same catapult wrecked, the frame split, the arm snapped, a wheel off.
+  > FLAT PURE MAGENTA.
+
+---
+
 ## SURFACES: the roofs, beams and ledges you stand on (all levels)
 
 Opaque, seamless tiles: left and right edges join (and top and bottom for the `px` ones),

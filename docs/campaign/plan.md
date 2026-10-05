@@ -124,14 +124,29 @@ Then the second cutaway (irritation). Its painted art: docs/campaign/art-levels-
 Then the third cutaway (frustration: he hurls the war map, sends for the Siege Commander).
 Its painted art: items 18-25 in docs/campaign/art-levels-1-2.md.
 
+### Level 4 — The Shattered Ascent (built 5 October 2026, code art)
+
+| § | Section | Content |
+|---|---|---|
+| I | THE CLIFF ROAD | Out on the mountain's far face; the others take the high paths; loose rock (taught alone); a horn above; the first Ashen on the road. |
+| II | THE BROKEN STAIR | Steps cut in the cliff, a ledge that gives way over the drop, men waiting on the landing; Wren the goatherd up the goat path (optional). A shrine. |
+| III | THE SHELTER | The miners freed in the mountain went up the road ahead and are pinned under an overhang: defend them (defend). The first catapult stones, one at a time. Hilde (if saved) says her brother is at the battery. |
+| IV | THE BOMBARDMENT | The crossing: open road under the catapults (two stones a volley, each landing spot shown by its shadow), the half-gone bridge over the gorge (no stone lands by a drop). |
+| V | THE BATTERY | Up onto the heights: smash the three catapults (each one gone, one stone fewer; the way on stays shut until all three are wrecked); Bram, Hilde's brother, chained to the stone pile (wreckage). |
+| VI | THE SIEGE CAMP | A shrine; **Siege Commander Orsk** (Berserker type). At two thirds he has the Keep fire on his own camp (it hits his men too); at one third he goes berserk. |
+| VII | THE HIGH PASS | Horns from the Keep: the Ashen fall back to the Iron Gates; the saved gather; the Iron Gates below. |
+
+Then the fourth cutaway (unease: the retreat's horns; he burns the captain who brings the
+news to ash). Its painted art: items 32-38 in docs/campaign/art-levels-1-2.md.
+
 ### The king's arc (cutaways at milestones only)
 
 | After | His mood | Scene |
 |---|---|---|
 | Level 1 | confidence | told they live; Malgor asks to ride out and is refused; a wave of ash puts out every torch; "a minor inconvenience" |
 | Level 2 | irritation | the convoy lost; he strikes the throne and cracks it; Malgor is refused again; "let them dig for them" (built) |
-| Level 3 | frustration | the mine collapse failed; he sends the siege commander to destroy the route |
-| Level 4 | unease | horns; troops pulled back to the gates; he kills a captain who brings bad news |
+| Level 3 | frustration | the mine collapse failed; he sends the siege commander to destroy the route (built) |
+| Level 4 | unease | horns; troops pulled back to the gates; he kills a captain who brings bad news (built) |
 | Level 5 | fear | the gates fall; he orders the prison wing burned with the prisoners in it |
 | Level 6 entry | desperation | he sends everyone, then the Executioner; seals himself in the throne room |
 

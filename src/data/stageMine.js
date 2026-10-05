@@ -33,7 +33,7 @@ export const STAGE_MINE = {
   id: 'hollowMountain',
   name: 'HOLLOW MOUNTAIN',
   chapter: 'III',
-  next: { id: 'shatteredAscent', name: 'THE SHATTERED ASCENT', chapter: 'IV' }, // (not built yet: Stage 3 of the plan)
+  next: { id: 'shatteredAscent', name: 'THE SHATTERED ASCENT', chapter: 'IV' },
   doneTitle: 'OUT OF THE MOUNTAIN',
   width: 9400,
   theme: 'mine',

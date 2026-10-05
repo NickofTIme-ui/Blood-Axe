@@ -7,7 +7,8 @@
 // BEATS (stage data `story`): { id, lines: [[who, text], ...], ...trigger }
 //   at: x        fires when a hero gets this far along
 //   on: key      fires on an event: 'start', 'clear:<sectionId>', 'enter:<sectionId>',
-//                'boss:<sectionId>' (he appears), 'rage:<sectionId>', 'rescued:<npcId>'
+//                'boss:<sectionId>' (he appears), 'rage:<sectionId>', 'rescued:<npcId>',
+//                'broken:<tag>' (the last prop with that tag smashed)
 //   (neither: fired by a villager's `talk` when a hero comes near him)
 //   calm: true   waits until no enemy is alive (essential lines are said on safe ground)
 //   hold: true   a held scene: the heroes stand still while it plays (never in a fight);
@@ -83,6 +84,7 @@ export class Story {
     ev.on('bossRage', () => this.trigger(`rage:${stage.section?.id}`));
     ev.on('bossSpawn', () => this.trigger(`boss:${stage.section?.id}`));
     ev.on('bossPhase', ({ phase }) => this.trigger(`phase:${stage.section?.id}:${phase.id}`));
+    ev.on('propsDown', ({ tag }) => this.trigger(`broken:${tag}`));
   }
 
   // ------------------------------------------------------------ queries
