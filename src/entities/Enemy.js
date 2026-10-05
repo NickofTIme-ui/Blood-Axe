@@ -162,6 +162,16 @@ export class EnemyBrain extends Controller {
       }
     }
 
+    // 3c) His man is up on a ledge (or down off one) out of his reach: no standing below
+    // swinging at the air; he heads straight for him, so terrainSteer hops him up (or down).
+    const T = this.world.terrain;
+    if (T && Math.abs((target.floor ?? 0) - (f.floor ?? 0)) > 40) {
+      if (adx > 8) this.moveX = Math.sign(dx);
+      if (Math.abs(dz) > ai.alignZ * 0.5) this.moveZ = Math.sign(dz);
+      this.terrainSteer(target);
+      return;
+    }
+
     // 4) Pick a spot: in attack range, or further back if others are crowding.
     const crowd = this.world.fighters.filter((o) =>
       o !== f && o.team === f.team && o.alive && !o.controller?.scared && Math.abs(o.x - target.x) < ai.attackRange + 25).length;

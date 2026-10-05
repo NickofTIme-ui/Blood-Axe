@@ -68,7 +68,7 @@ export const STAGE_ASCENT = {
       hint: 'The ledge will not hold you long: keep moving',
       fightAt: 2320,
       // the men waiting on the landing
-      spawns: [[{ x: 2420, z: 340, inPlace: true }, { x: 2520, z: 440, inPlace: true }, { x: 2470, z: 400, inPlace: true }], [{ x: 2560, z: 380 }, { x: 2560, z: 470 }]],
+      spawns: [[{ x: 2340, z: 380, inPlace: true }, { x: 2540, z: 440, inPlace: true }, { x: 2560, z: 370, inPlace: true }], [{ x: 2560, z: 380 }, { x: 2560, z: 470 }]],
       waves: [['grunt', 'stalker', 'grunt'], ['butcher', 'grunt']],
       props: [{ kind: 'crate', x: 2900, z: 480, drop: 'mana' }],
       hazards: [
@@ -175,8 +175,10 @@ export const STAGE_ASCENT = {
     { kind: 'crumble', x0: 2195, x1: 2260, z0: 350, z1: 480, top: 140, fall: 40, back: 200 }, // gap 45
     { kind: 'block', x0: 2260, x1: 2600, ...FULL, top: 140 },             // the landing
     { kind: 'block', x0: 2600, x1: 2750, ...FULL, top: 70 },              // down
-    // (up at the back from the landing: a goat path where a girl is stranded; optional)
-    { kind: 'block', x0: 2560, x1: 2700, z0: 282, z1: 340, top: 220 },
+    // (up at the back of the landing: a goat path where a girl is stranded; optional. Over
+    // the landing only, so the step down from it is clear at every depth and the men below
+    // can climb back up)
+    { kind: 'block', x0: 2380, x1: 2520, z0: 282, z1: 340, top: 220 },
 
     // ---- IV THE BOMBARDMENT: the half-gone bridge over the gorge
     { kind: 'pit', x0: 5100, x1: 5400, ...FULL },
@@ -201,7 +203,7 @@ export const STAGE_ASCENT = {
 
   npcs: [
     // (optional: a goatherd stranded on the goat path above the landing; reach her)
-    { id: 'wren', name: 'Wren', x: 2640, z: 310, pose: 'child', rescue: 'reach', flee: null, gather: { x: 9300, z: 330 } },
+    { id: 'wren', name: 'Wren', x: 2450, z: 310, pose: 'child', rescue: 'reach', flee: null, gather: { x: 9300, z: 330 } },
     // the miners from the mountain, pinned under the overhang
     {
       id: 'shelter', name: 'the miners under the rock', x: 3960, z: 310, pose: 'group', rescue: 'defend',
