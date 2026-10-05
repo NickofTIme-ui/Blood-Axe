@@ -160,6 +160,16 @@ export class StageView {
       c.fillRect(13, 18, 4, 10); c.fillRect(7, 28, 16, 5);
       c.fillStyle = '#ffe080'; c.fillRect(6, 4, 5, 8); c.fillStyle = '#c0161c'; c.fillRect(13, 8, 4, 4);
     });
+    // a boss's trophy (data/trophies.js): a gilded reliquary with a blood-red stone
+    // (a stand-in until the painted one arrives: docs/campaign art prompts)
+    this.canvasTex('pk-trophy', 34, 40, (c, w, h) => {
+      c.fillStyle = '#5a3a10'; c.fillRect(5, h - 8, w - 10, 6);
+      c.fillStyle = '#c89028'; c.beginPath(); c.moveTo(4, 10); c.lineTo(w - 4, 10); c.lineTo(w - 8, h - 8); c.lineTo(8, h - 8); c.closePath(); c.fill();
+      c.fillStyle = '#ffd870'; c.fillRect(7, 12, 4, h - 22);
+      c.fillStyle = '#e0b040'; c.beginPath(); c.moveTo(w / 2, 0); c.lineTo(w - 6, 10); c.lineTo(6, 10); c.closePath(); c.fill();
+      c.fillStyle = '#c0161c'; c.beginPath(); c.arc(w / 2, 21, 6, 0, 7); c.fill();
+      c.fillStyle = '#ff8a8a'; c.fillRect(w / 2 - 3, 17, 2, 3);
+    });
     this.canvasTex('pk-shrine', 70, 80, (c, w, h) => {
       c.fillStyle = '#3a302a'; c.fillRect(8, 40, w - 16, h - 40); c.fillStyle = '#5a4a40'; c.fillRect(4, 36, w - 8, 8);
       c.fillStyle = '#8a0a0a'; c.beginPath(); c.ellipse(w / 2, 36, 22, 7, 0, 0, 7); c.fill();
@@ -443,8 +453,8 @@ export class StageView {
     const live = new Set(this.stage.pickups);
     for (const pk of this.stage.pickups) {
       if (this.pickupSprites.has(pk)) continue;
-      const img = this.scene.add.image(pk.x, pk.z, `pk-${pk.kind}`).setOrigin(0.5, 1).setScale(pk.kind === 'shrine' ? 0.7 : 0.75);
-      const glow = this.scene.add.image(pk.x, pk.z - 12, 'glow').setScale(1.4).setTint(PICKUPS[pk.kind].color).setAlpha(0.6).setBlendMode(Phaser.BlendModes.ADD);
+      const img = this.scene.add.image(pk.x, pk.z, `pk-${pk.kind}`).setOrigin(0.5, 1).setScale(pk.kind === 'shrine' ? 0.7 : pk.kind === 'trophy' ? 1 : 0.75);
+      const glow = this.scene.add.image(pk.x, pk.z - 12, 'glow').setScale(pk.kind === 'trophy' ? 2.6 : 1.4).setTint(PICKUPS[pk.kind].color).setAlpha(0.6).setBlendMode(Phaser.BlendModes.ADD);
       this.pickupSprites.set(pk, { img, glow });
     }
     for (const [pk, v] of this.pickupSprites) {
@@ -459,6 +469,7 @@ export class StageView {
   }
 
   pickup({ pickup: pk, def }) {
+    if (def.trophy) { this.scene.gore.spark(pk.x, pk.z, 20, def.color, 30); return; } // (ArenaScene names the trophy)
     playSfx(this.scene, 'block', { volume: 0.4, pitch: 900, minGapMs: 0 });
     this.scene.gore.spark(pk.x, pk.z, 20, def.color, 14);
     const what = def.heal && def.mana ? 'FULLY RESTORED' : def.heal ? `+HEALTH  (${def.label})` : def.mana ? '+MANA' : def.label;

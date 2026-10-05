@@ -39,12 +39,13 @@
 // { section }) starts at a later section's checkpoint.
 
 import { STAGE, PICKUPS, PROPS } from '../data/stage.js';
-import { ENEMIES } from '../data/enemies.js';
+import { ENEMIES, HORDE_SIZE } from '../data/enemies.js';
 import { createEnemy, offscreenX } from '../entities/Enemy.js';
 import { toWorldBox, overlaps } from '../combat/Boxes.js';
 import { Terrain, PIT_LOST } from './Terrain.js';
 import { Story } from './Story.js';
 import { Sequence } from './Sequence.js';
+import { LOOT } from '../data/trophies.js';
 
 const PAD = 30;           // keep everyone this far inside the section's ends
 const WAVE_GAP = 50;      // frames between one wave dying and the next arriving
@@ -117,7 +118,10 @@ export class Stage {
       if (e.defender?.team !== 'enemy') return;
       this.stats.kills++;
       if (e.finisher) this.stats.finishers++;
+      this.dropLoot(e.defender);
     });
+    // a boss the story spares (beaten to his knees: stage/Sequence.js) still gives up his trophy
+    world.events.on('hit', (e) => { if (e.defender?.spare && e.defender.health <= 1) this.dropLoot(e.defender); });
   }
 
   get section() { return this.sections[this.index]; }
@@ -481,7 +485,9 @@ export class Stage {
       if (this.livingFoes().length) return;
       if (this.waveDelay > 0) { this.waveDelay--; return; }
       if (this.waveIndex < sec.waves.length) {
-        this.spawnWave(sec.waves[this.waveIndex++]);
+        const roster = sec.waves[this.waveIndex++];
+        this.spawnWave(roster);
+        if (roster.length >= HORDE_SIZE) this.world.events.emit('horde', { section: sec, count: roster.length });
         this.waveDelay = WAVE_GAP;
         return;
       }
@@ -601,6 +607,22 @@ export class Stage {
       const z = pr.kind === 'wall' ? pr.z + 6 : Math.min(this.world.bounds.maxZ - 5, pr.z + 14);
       this.pickups.push({ kind: pr.drop, x: pr.x, z, y: pr.y ?? 0, age: 0, taken: false, secret: !!pr.secret });
     }
+  }
+
+  // BOSS LOOT: a boss always drops a trophy; an elite (a big man) sometimes does. Which
+  // trophy it is gets decided when it's picked up (data/trophies.js pickTrophy), so the
+  // stage — and an online game's two copies of it — only agree on where it lies.
+  dropLoot(f) {
+    if (f.lootDropped || f.team !== 'enemy') return;
+    const boss = !!f.stats.boss;
+    if (!boss && (f.stats.maxHealth < LOOT.eliteHealth || this.world.roll(f.id, 4100) >= LOOT.eliteChance)) return;
+    f.lootDropped = true;
+    const x = Math.max(this.world.bounds.minX + 20, Math.min(this.world.bounds.maxX - 20, f.x));
+    const z = Math.max(this.world.bounds.minZ + 5, Math.min(this.world.bounds.maxZ - 5, f.z + 10));
+    const y = this.terrain ? Math.max(0, this.terrain.groundAt(x, z)) : 0;
+    const pk = { kind: 'trophy', from: boss ? 'boss' : 'elite', boss: f.stats.name, x, z, y, age: 0, taken: false };
+    this.pickups.push(pk);
+    this.world.events.emit('lootDrop', { pickup: pk, fighter: f });
   }
 
   // Kicked crates and chests: they skid along the lane and burst on the first enemy they

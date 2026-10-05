@@ -17,7 +17,7 @@ import { drawSmear, smearSparks } from './Smear.js';
 import { IMPALE, CHAIN } from '../combat/Finisher.js';
 import { Heading, headingAnim } from './Heading.js';
 
-const ATTACKS = ['light1', 'light2', 'light3', 'heavy', 'airAttack', 'kick', 'thrust', 'spin'];
+const ATTACKS = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'airAttack', 'kick', 'thrust', 'spin'];
 
 // How hard each swing reads in the body (view only — gameplay timing is untouched):
 //   k      overall amplitude of the anticipation / drive / settle
@@ -28,10 +28,11 @@ const SWING_FEEL = {
   light2: { k: 0.62, arc: 0.88, w: 0.88 },
   light3: { k: 1.0, arc: 1, w: 1 },
   heavy: { k: 1.35, arc: 1, w: 1 },
+  launcher: { k: 1.1, arc: 1, w: 1.05 }, // (the Rising Cleave: light2's upward return, harder)
   spin: { k: 1.1, arc: 1, w: 1.1 }, // (the Whirlwind Cleave: its arc is the full circle)
   airAttack: { k: 0.6, arc: 1, w: 1 },
 };
-const COMBO = ['light1', 'light2', 'light3', 'heavy'];
+const COMBO = ['light1', 'light2', 'light3', 'launcher', 'heavy'];
 const easeInOut = (t) => t * t * (3 - 2 * t);
 
 // Pick an item from a list by how far we are through a stretch of frames.
@@ -87,6 +88,7 @@ export class SpriteFighterView {
     const a = this.meta.anims;
     if (a[st]) return a[st];
     if (st === 'kick') return a.light1; // no kick strip yet
+    if (st === 'launcher') return a.light2; // the Rising Cleave: the upward return stroke (no strip yet)
     if (st === 'spin') return a.heavy;  // the Whirlwind Cleave: the cleave's poses, turned round (no strip yet)
     return null;
   }

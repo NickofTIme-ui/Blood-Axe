@@ -61,7 +61,8 @@ export const STAGE_VILLAGE = {
       objective: 'Save the family at the well',
       hint: 'The burning carts flare up: watch for the glow',
       // they're at the well with the mother and her boy when you come into the square
-      waves: [['grunt', 'butcher', 'grunt', 'grunt'], ['stalker', 'grunt', 'grunt']],
+      // ...and then the HORDE: a pack of thralls from both ends of the square (one against many)
+      waves: [['grunt', 'butcher', 'grunt', 'grunt'], ['stalker', 'grunt', 'grunt'], [...Array(9).fill('thrall'), 'butcher']],
       spawns: [
         [{ x: 2230, z: 340, inPlace: true }, { x: 2330, z: 380, inPlace: true }, { x: 2400, z: 320, inPlace: true }, { x: 2300, z: 470, inPlace: true }],
         [],

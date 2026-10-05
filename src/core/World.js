@@ -11,6 +11,7 @@ import { Mines } from '../combat/Mine.js';
 import { Quakes } from '../combat/Quake.js';
 import { Storms } from '../combat/Storm.js';
 import { installSkills } from '../combat/Skills.js';
+import { installStyle, tickStyle } from '../combat/Style.js';
 
 export class World {
   constructor({ seed } = {}) {
@@ -29,6 +30,7 @@ export class World {
     this.storms = new Storms(this);     // Oryn's Stormcaller fields and strikes (combat/Storm.js)
     this.frame = 0;
     installSkills(this); // (skill-tree behaviours: combat/Skills.js; inert without skills)
+    installStyle(this);  // (the combo counter and style rank: combat/Style.js)
     // Dice. Every roll the simulation makes comes from roll(): a number fixed by the
     // seed, the tick, who's asking and what about — never Math.random — so two machines
     // given the same seed and the same button presses play out the same fight (online
@@ -96,6 +98,7 @@ export class World {
     this.combat.update();
     this.quakes.update(); // (after the melee: whoever the slam itself hit, the wave passes by)
     this.storms.update();
+    tickStyle(this);
 
     const gone = this.fighters.filter((f) => f.removeMe);
     if (gone.length) {
