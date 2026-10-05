@@ -79,6 +79,25 @@ export class Terrain {
     return null;
   }
 
+  // A man somewhere he could never have walked to (inside a wall: carried there by a
+  // finisher, set down there by a script): the nearest spot just outside it, or null if
+  // he isn't inside one. (Walking never gets him there: every step checks wallAt first.)
+  pushOut(x, z, h, bounds = null) {
+    for (let k = 0; k < 4; k++) {
+      const b = this.wallAt(x, z, h);
+      if (!b) return k ? { x, z } : null;
+      const out = [
+        { x: b.x0 - EDGE - 1, z }, { x: b.x1 + EDGE + 1, z },
+        { x, z: b.z0 - EDGE - 1 }, { x, z: b.z1 + EDGE + 1 },
+      ].filter((q) => !bounds || (q.z >= bounds.minZ && q.z <= bounds.maxZ));
+      out.sort((a, c) => Math.abs(a.x - x) + Math.abs(a.z - z) - Math.abs(c.x - x) - Math.abs(c.z - z));
+      const free = out.find((q) => !this.wallAt(q.x, q.z, h)) ?? out[0];
+      if (!free) return null;
+      ({ x, z } = free);
+    }
+    return { x, z };
+  }
+
   // Is the ground at (x, z) safe to stand on for good (a checkpoint, a respawn): solid,
   // not a pit, not a rotten plank, not a moving lift.
   safeAt(x, z) {

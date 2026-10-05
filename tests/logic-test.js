@@ -2855,6 +2855,40 @@ test('mine: the Chain Warden calls up his ghouls at half health', () => {
   assert(phases.join() === 'chains' && st.boss.raged, `his chains (${phases})`);
 });
 
+// ---------------------------------------------------------- the campaign sweep's finds
+
+test('village: Brother Cinder walks in even with a hero standing in his road (he was held there for good, invincible)', () => {
+  const world = new World({ seed: 3 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 200, z: 430, controller: new Pressing({}, { right: true }) }));
+  const st = new Stage(world, STAGE_VILLAGE);
+  const k = STAGE_VILLAGE.sections.findIndex((q) => q.id === 'mill');
+  st.start(p, { section: k });
+  hush(st);
+  const sec = STAGE_VILLAGE.sections[k];
+  p.x = sec.x1 - 260; p.z = 430; st.placeOnGround(p);
+  st.fightOn = true; st.waveIndex = sec.waves.length; st.waveDelay = 0;
+  for (let i = 0; i < 60 * 20 && !(st.boss && st.boss.state !== 'bossEntrance'); i++) { p.health = p.stats.maxHealth; world.tick(); st.update(); }
+  assert(st.boss && st.boss.state !== 'bossEntrance', `he arrived (${st.boss?.state} at x ${Math.round(st.boss?.x)}, hero x ${Math.round(p.x)})`);
+});
+
+test('mine: nobody walks on from behind the portcullis while it is down (he could never be reached)', () => {
+  const { world, st } = mineSetup(MINE_SEC('shaft'), { x: 3980, z: 420 });
+  killFoes(world);
+  st.spawnWave(['grunt', 'stalker', 'grunt', 'butcher']);
+  const gate = st.terrain.blocks.find((b) => b.tag === 'portcullis');
+  const foes = world.fighters.filter((f) => f.team === 'enemy');
+  assert(foes.length === 4 && foes.every((f) => f.x < gate.x0), `all on this side (${foes.map((f) => Math.round(f.x))})`);
+});
+
+test('terrain: a man left inside a wall (a finisher carried him there) steps out the nearest side', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('shaft'), { x: 4100, z: 420 });
+  killFoes(world); st.fightOn = true; st.waveIndex = 99;
+  const gate = st.terrain.blocks.find((b) => b.tag === 'portcullis');
+  p.x = gate.x0 + 4; p.h = p.floor = 0;
+  run(2);
+  assert(!st.terrain.wallAt(p.x, p.z, p.h) && p.x < gate.x0, `out on the near side (x ${Math.round(p.x)})`);
+});
+
 for (const [name, fn] of later) {
   try { await fn(); console.log(`  ok   ${name}`); } catch (e) { failed++; console.log(`  FAIL ${name}\n       ${e.message}`); }
 }

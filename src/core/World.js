@@ -108,8 +108,9 @@ export class World {
 
   // Gently push standing fighters apart so they don't stack on top of each other.
   separate() {
-    // (nobody gets shoved out of an execution: it places both of them itself)
-    const fs = this.fighters.filter((f) => f.alive && f.grounded && !['dodge', 'blink', 'viper', 'vault', 'execute', 'executed'].includes(f.state));
+    // (nobody gets shoved out of an execution: it places both of them itself; a boss walking
+    // in isn't held back by a hero standing in his road, or he'd never arrive)
+    const fs = this.fighters.filter((f) => f.alive && f.grounded && !['dodge', 'blink', 'viper', 'vault', 'execute', 'executed', 'bossEntrance'].includes(f.state));
     for (let i = 0; i < fs.length; i++) {
       for (let j = i + 1; j < fs.length; j++) {
         const a = fs[i];

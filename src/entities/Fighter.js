@@ -143,6 +143,11 @@ export class Fighter {
       const nz = this.z + this.vz * dt;
       if (!T.wallAt(this.x, nz, this.h)) this.z = nz;
       else { if (!air) this.vz = 0; this.walled = true; }
+      // carried into a wall (a finisher places both men itself): out the nearest side once it lets go
+      if (this.state !== 'execute' && this.state !== 'executed') {
+        const out = T.pushOut(this.x, this.z, this.h, b);
+        if (out) { this.x = out.x; this.z = out.z; }
+      }
     } else {
       this.x += this.vx * dt;
       this.z += this.vz * dt;

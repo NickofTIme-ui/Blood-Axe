@@ -778,7 +778,9 @@ export const FIGHTER_STATES = {
       f.vz = 0;
       f.vx = Math.sign(E.toX - f.x) * E.speed;
       if (frame % E.stepEvery === 0) f.world.events.emit('bossStomp', { boss: f, x: f.x, z: f.z });
-      if (Math.abs(E.toX - f.x) <= E.speed / 60) {
+      // (held up on the way, by anything: he's there anyway once he should have been, and then some)
+      E.limit ??= Math.ceil((Math.abs(E.toX - f.x) / E.speed) * 60) + 120;
+      if (Math.abs(E.toX - f.x) <= E.speed / 60 || frame >= E.limit) {
         f.x = E.toX;
         f.vx = 0;
         f.unbounded = false;

@@ -47,6 +47,7 @@ const PAD = 30;           // keep everyone this far inside the section's ends
 const WAVE_GAP = 50;      // frames between one wave dying and the next arriving
 const REVIVE_AFTER = 360; // ticks a fallen hero lies there before he rises beside his partner (co-op)
 const ADVANCE_AT = 300;  // px past the next section's start that locks you into it
+const SEALED = 200;      // px: a wall across the lane this tall can't be climbed (nobody comes on from behind it)
 const STUCK_AFTER = 180;  // frames a man walking on can stand stuck (a stream, a ledge) before he's brought round
 
 // Fire grate: idle -> glowing warning -> eruption (frames)
@@ -383,13 +384,25 @@ export class Stage {
       return;
     }
     roster.forEach((type, k) => {
-      // from off-screen, alternating sides; they walk on (Enemy.js offscreenX)
-      const side = k % 2 === 0 ? 1 : -1;
+      // from off-screen, alternating sides; they walk on (Enemy.js offscreenX). Not from
+      // behind a wall nobody can climb (a portcullis still down): he'd stand there for good
+      let side = k % 2 === 0 ? 1 : -1;
+      if (this.sealedSide(side, heroes)) side = -side;
       const x = offscreenX(this.world, heroes, side, k >> 1);
       const z = b.minZ + 20 + ((k * 71) % Math.max(1, b.maxZ - b.minZ - 40)); // spread over the lane
       const e = createEnemy(this.world, type, x, z, { entering: true });
       this.setOnGround(e);
     });
+  }
+
+  // Is there a wall across the whole lane, too tall to climb, between the heroes and that
+  // side of the room (a portcullis down, a fall of rock)?
+  sealedSide(side, heroes) {
+    const T = this.terrain; const b = this.world.bounds;
+    if (!T || !heroes.length) return false;
+    const x = heroes[0].x;
+    return T.blocks.some((w) => w.solid && w.top >= SEALED && w.z0 <= b.minZ && w.z1 >= b.maxZ
+      && (side > 0 ? w.x0 > x && w.x0 < b.maxX + 400 : w.x1 < x && w.x1 > b.minX - 400));
   }
 
   // A man brought on from off-screen stands on whatever is there (a roof behind the yard:
