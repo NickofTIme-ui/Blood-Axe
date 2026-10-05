@@ -67,7 +67,7 @@ checked (says how), `[ ]` not started. Graybox means code-drawn temporary art.
 - [x] The other two Oath Keepers slip away up the lanes and stay hidden until the meeting place (Nick: seeing them by accident broke the immersion)
 - [x] Fix: enemies brought on from off-screen stood inside raised ground (the mill yard softlock); a stuck latecomer is brought round
 - [~] Checked: logic tests and headless screenshots; not played by a person
-- [~] The art itself (generated in ChatGPT on Nick's PC): as of 5 October 2026 00:50 UTC the Burning Village backdrop is done (sky, far, mid, wall, ground: items 1-5 in `art-levels-1-2.md`), saved on the PC in `assets/env/village/` but NOT pushed (git on the PC has no GitHub login). Left: village props and set pieces (items 6-7, plus the new pikes picture), villagers (8), stampede (9), all of Gallows Wood (10-17), all of Hollow Mountain (18-25)
+- [~] The art itself (generated in ChatGPT on Nick's PC): as of 5 October 2026 00:50 UTC the Burning Village is done (items 1-7 and 9: backdrop, set pieces, props, stampede horse), saved on the PC but NOT pushed (git on the PC has no GitHub login). Left: the pikes picture, villagers (8), terrain-block art (needs a code slot first), all of Gallows Wood (10-17), all of Hollow Mountain (18-25)
 - [ ] Painted strips for the villagers, the hounds and the Houndmaster (their loaders come with the art)
 
 ## Stage 5 — Presentation and polish
