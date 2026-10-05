@@ -389,3 +389,18 @@ View-only, no sim or input timing changed: eased key-pose timing, squash and str
 jumps, landings and hits, lean blended across state changes (src/view/animFeel.js).
 Painting notes for strips (key poses, frame counts): docs/animation-poses.md. Before/after
 GIFs: project files, animation/.
+
+## FOR THE PC, next time Nick wakes it (written 2026-10-05 13:55 UTC)
+Since the PC went offline the cloud merged into `claude/project-thread-l70xhx` (now 48e5d89):
+level 4 THE SHATTERED ASCENT, the combat round (juggles, style rank, trophies, thralls), the
+animation pass and the playtest soft-lock fixes. The PC holds 3 unpushed art commits on the
+same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one go:
+1. `git pull --no-rebase origin claude/project-thread-l70xhx` (a merge, keep both sides;
+   on a conflict in docs keep both sections).
+2. `git push origin claude/project-thread-l70xhx`: the GitHub sign-in window opens and Nick
+   only clicks Sign in.
+3. Build with `tools/build-release.ps1` and upload to itch like build 19540958 (Nick approves
+   the prompt). Test the build muted (`?mute=1`) and close the tabs after.
+4. Then the painting queue in `/mnt/project-files/campaign/art/art-levels-1-2.md` (the shared
+   copy is newer than the repo's: Gallows Wood 10-17, Hollow Mountain 18-24, the ascent
+   32-38, trophies 39-40). Pose rules: `docs/animation-poses.md`.
