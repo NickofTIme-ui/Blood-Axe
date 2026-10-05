@@ -29,6 +29,9 @@ import { ROGUE_FINISHERS } from '../src/combat/Rogue.js';
 import { TickController, pressed } from '../src/core/TickInput.js';
 import { NetSession, NET, loopPair, snapshot, correct, feedPlayers, delayFor } from '../src/net/Session.js';
 import { runTickJobs } from '../src/core/TickJobs.js';
+import { JUGGLE } from '../src/combat/Juggle.js';
+import { STYLE, styleMult } from '../src/combat/Style.js';
+import { TROPHIES, TROPHY_SLOTS, pickTrophy, bossTrophy } from '../src/data/trophies.js';
 
 // A controller driven by a script: { frameNumber: ['attack'] } presses,
 // plus `hold` for held buttons.
@@ -2853,6 +2856,136 @@ test('mine: the Chain Warden calls up his ghouls at half health', () => {
   st.boss.health = st.boss.stats.maxHealth * 0.4;
   run(2, () => { p.health = p.stats.maxHealth; });
   assert(phases.join() === 'chains' && st.boss.raged, `his chains (${phases})`);
+});
+
+
+// ---------------------------------------------------------------- hack-and-slash pillars
+
+// Rurik's J, J, K, then a jump and three air swings into a tough dummy that can't die.
+function juggleRun(extra = {}) {
+  const t = setup({
+    script: { 1: ['attack'], 12: ['attack'], 24: ['heavy'], 50: ['jump'], 62: ['attack'], 80: ['attack'], 95: ['attack'], ...extra },
+    hold: (n) => ({ jump: n >= 50 && n < 70 }),
+  });
+  t.d.stats = { ...t.d.stats, maxHealth: 1e4 }; t.d.health = 1e4;
+  const hits = [];
+  t.world.events.on('hit', (e) => { if (e.attacker === t.p) hits.push({ state: t.p.state, juggle: e.juggle ?? 0, spike: !!e.move.spike, air: !t.d.grounded }); });
+  return { ...t, hits };
+}
+
+test('juggle: J, J, K is the Rising Cleave and throws him straight up', () => {
+  const t = juggleRun({ 50: [], 62: [], 80: [], 95: [] });
+  t.p.controller.hold = {};
+  let peak = 0, states = new Set();
+  for (let i = 0; i < 90; i++) { t.world.tick(); peak = Math.max(peak, t.d.h); states.add(t.p.state); }
+  assert(states.has('launcher'), `the launcher comes out (${[...states]})`);
+  assert(peak > 90, `he flies high (${peak.toFixed(0)} px)`);
+});
+
+test('juggle: air swings keep him up, chain three a jump, and the third spikes him down', () => {
+  const t = juggleRun();
+  t.run(160);
+  const air = t.hits.filter((h) => h.juggle > 0);
+  assert(air.length === JUGGLE.airHits, `${air.length} juggle hits (${JSON.stringify(t.hits)})`);
+  assert(air.map((h) => h.juggle).join() === '1,2,3', `juggle count climbs (${air.map((h) => h.juggle)})`);
+  assert(air[air.length - 1].spike && !air[0].spike, 'the last air swing is the spike');
+});
+
+test('juggle: bosses are never juggled; a juggle runs out', () => {
+  const t = setup();
+  t.d.stats = { ...t.d.stats, boss: true };
+  t.d.h = 80; t.d.vh = 0; t.d.fsm.change('knockdown', { vx: 0, vh: 0 });
+  t.world.combat.resolve(t.p, t.d, CHARACTERS.warrior.moves.air, { kind: 'melee', fromX: t.p.x, dir: 1, contact: { x: t.d.x, h: 100 } });
+  assert(!t.d.juggles, 'no juggle on a boss');
+  const u = setup();
+  u.d.stats = { ...u.d.stats, maxHealth: 1e4 }; u.d.health = 1e4;
+  u.d.h = 80; u.d.fsm.change('knockdown', { vx: 0, vh: 0 });
+  u.d.juggles = JUGGLE.maxHits;
+  u.world.combat.resolve(u.p, u.d, CHARACTERS.warrior.moves.air, { kind: 'melee', fromX: u.p.x, dir: 1, contact: { x: u.d.x, h: 100 } });
+  assert(u.d.juggles === JUGGLE.maxHits, 'past the limit he just falls');
+});
+
+test('style: hits build a combo and a rank; a blow taken costs most of it; rank pays more blood', () => {
+  const t = juggleRun();
+  t.run(135);
+  const s = t.p.style;
+  assert(s.best >= 5, `combo counted (${s.best})`);
+  assert(s.rank >= 2, `rank climbs to B or better (${STYLE.ranks[s.rank].letter}, ${s.score.toFixed(0)})`);
+  assert(styleMult(t.p) > 1, 'a good rank pays more blood');
+  const before = s.score;
+  t.world.combat.resolve(t.d, t.p, ENEMIES.grunt.moves.light1, { kind: 'melee', fromX: t.d.x, dir: -1, contact: { x: t.p.x, h: 60 } });
+  assert(s.hits === 0 && s.score < before * 0.5, `hit taken: combo over, style cut (${before.toFixed(0)} -> ${s.score.toFixed(0)})`);
+  t.p.health = t.p.stats.maxHealth;
+  for (let i = 0; i < 1200; i++) t.world.tick();
+  assert(t.p.style.score === 0 && t.p.style.rank === 0, 'idle, it drains away');
+});
+
+test('style: the same move over and over scores less than mixing it up', () => {
+  const score = (moves) => {
+    const t = setup();
+    for (const m of moves) t.world.events.emit('hit', { attacker: t.p, defender: t.d, move: m, damage: 5, nth: 1 });
+    return t.p.style.score;
+  };
+  const M = CHARACTERS.warrior.moves;
+  const same = score([M.light1, M.light1, M.light1, M.light1]);
+  const mixed = score([M.light1, M.kick, M.heavy, M.light2]);
+  assert(mixed > same, `mixed ${mixed.toFixed(0)} > same ${same.toFixed(0)}`);
+});
+
+test('loot: each boss drops his own trophy first, then something new, then blood', () => {
+  assert(bossTrophy('Hruk the Hangman') === 'hangmansHood', 'Hruk has the Hood');
+  assert(bossTrophy('Warlord Malgor, the Oathbreaker') === 'oathbreakerGauntlet', 'Malgor has the Gauntlet');
+  assert(bossTrophy('Varek, the Ash Captain') === 'captainsCrest', 'Varek has the Crest');
+  assert(pickTrophy({ from: 'boss', boss: 'Hruk the Hangman' }, {}, 0.5) === 'hangmansHood', 'first kill: his own');
+  const again = pickTrophy({ from: 'boss', boss: 'Hruk the Hangman' }, { hangmansHood: true }, 0.5);
+  assert(again && again !== 'hangmansHood' && TROPHIES[again].rarity === 'legendary', `again: another legendary (${again})`);
+  const elite = pickTrophy({ from: 'elite' }, {}, 0.3);
+  assert(elite && TROPHIES[elite].rarity !== 'legendary', `an elite drops a lesser one (${elite})`);
+  const all = Object.fromEntries(Object.keys(TROPHIES).map((id) => [id, true]));
+  assert(pickTrophy({ from: 'boss', boss: 'Hruk' }, all, 0.5) === null, 'everything owned: nothing new');
+});
+
+test('loot: a boss falls and a trophy lies where he died; elites drop one only sometimes', () => {
+  const world = new World({ seed: 7 });
+  const stage = new Stage(world, STAGE_VILLAGE);
+  const boss = createEnemy(world, 'gladiator', 900, 430);
+  boss.stats = { ...boss.stats, boss: true, name: 'Varek, the Ash Captain' };
+  world.events.emit('kill', { attacker: null, defender: boss, move: {} });
+  const pk = stage.pickups.find((p) => p.kind === 'trophy');
+  assert(pk && pk.from === 'boss' && pk.boss.includes('Varek') && Math.abs(pk.x - 900) < 30, 'his trophy drops');
+  let drops = 0;
+  for (let i = 0; i < 200; i++) {
+    world.frame = i;
+    const e = createEnemy(world, 'butcher', 900, 430);
+    const n = stage.pickups.length;
+    stage.dropLoot(e);
+    if (stage.pickups.length > n) drops++;
+  }
+  assert(drops > 5 && drops < 60, `elites drop now and then (${drops}/200)`);
+  const g = createEnemy(world, 'grunt', 900, 430);
+  const n = stage.pickups.length;
+  for (let i = 0; i < 50; i++) { world.frame = i; g.lootDropped = false; stage.dropLoot(g); }
+  assert(stage.pickups.length === n, 'a grunt never drops one');
+});
+
+test('loot: trophies are kept, worn in a few slots, and change the hero', () => {
+  const P = new Progress(null);
+  assert(P.addTrophy('oathbreakerGauntlet').worn, 'worn at once');
+  const s = P.statsFor('warrior', CHARACTERS.warrior);
+  assert(Math.abs(s.meleeMult - CHARACTERS.warrior.meleeMult * 1.15) < 1e-9, 'the Gauntlet hits harder');
+  assert(CHARACTERS.warrior.meleeMult === 1.3, 'the shared data is untouched');
+  const ids = Object.keys(TROPHIES).filter((id) => id !== 'oathbreakerGauntlet');
+  for (const id of ids.slice(0, TROPHY_SLOTS + 1)) P.addTrophy(id);
+  assert(P.worn().length === TROPHY_SLOTS, `only ${TROPHY_SLOTS} worn (${P.worn()})`);
+  assert(Object.keys(P.trophies.owned).length === TROPHY_SLOTS + 2, 'all of them kept');
+  P.unwear('oathbreakerGauntlet');
+  assert(P.wear(ids[TROPHY_SLOTS]), 'a slot freed takes another');
+  for (const id of Object.keys(TROPHIES)) {
+    for (const hero of Object.keys(CHARACTERS)) {
+      const c = JSON.parse(JSON.stringify({ moves: {}, dodge: {}, ...CHARACTERS[hero] }));
+      TROPHIES[id].apply(c); // every trophy works on every hero
+    }
+  }
 });
 
 for (const [name, fn] of later) {

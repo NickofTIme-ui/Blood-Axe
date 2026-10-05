@@ -105,6 +105,7 @@ export const PICKUPS = {
   mana: { mana: 1, label: 'MANA', color: 0x3a6aff },
   relic: { score: 1, label: 'RELIC', color: 0xffd060 },
   shrine: { heal: 1, mana: 1, score: 1, label: 'BLOOD SHRINE', color: 0xff3a2a },
+  trophy: { trophy: true, label: 'TROPHY', color: 0xffb030 }, // boss loot (data/trophies.js): dropped by bosses and elites
 };
 
 // Breakable props: hits to break, size.

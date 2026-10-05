@@ -9,9 +9,10 @@ import { toWorldBox, overlaps, contactPoint } from './Boxes.js';
 import { movePhase } from './MoveRunner.js';
 import { chooseFatality, chooseMaim } from './Fatality.js';
 import { furyArmor } from './Skills.js';
+import { juggles, juggleHit } from './Juggle.js';
 
 const FEEL = SETTINGS.feel;
-const ATTACK_STATES = ['light1', 'light2', 'light3', 'heavy', 'special1', 'special2'];
+const ATTACK_STATES = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'special1', 'special2'];
 
 // A fighter who lost their weapon arm hits with a bloody stump.
 const armMult = (f) => (f.maimed?.armF ? 0.4 : 1);
@@ -193,8 +194,10 @@ export class CombatSystem {
     // heroes' clean hits can land CRITICAL (rolled from the world's dice, so online stays in step)
     const critChance = attacker?.team === 'player' && !superCrit ? (attacker.stats.critChance ?? FEEL.critChance) : 0;
     const crit = critChance > 0 && this.world.roll(def.id, 2300 + attacker.id) < critChance;
+    // (a juggle hit: the Hangman's Hood trophy pays more for it — data/trophies.js)
+    const juggleMult = juggles(attacker, def) ? (attacker.stats.juggleMult ?? 1) : 1;
     const damage = move.damage * mult * (counter ? FEEL.counterMultiplier : 1) * exposed *
-      (crit ? FEEL.critMultiplier : 1);
+      (crit ? FEEL.critMultiplier : 1) * juggleMult;
     const healthBefore = def.health;
     def.health = Math.max(def.spare ? 1 : 0, def.health - damage); // (spare: a boss beaten to his knees, not killed: stage/Sequence.js)
     def.flash = 6;
@@ -226,6 +229,8 @@ export class CombatSystem {
     if (move.bowl) def.bowl = { frames: 36, dir, hit: new Set([def.id]) };
 
     if (lethal) {
+      // a kill gives back health (the Warden's Chain trophy)
+      if (attacker?.stats.killHeal && attacker.alive) attacker.health = Math.min(attacker.stats.maxHealth, attacker.health + attacker.stats.killHeal);
       // How do they come apart? (only rigged enemies can be dismembered)
       if (def.stats.art && superCrit) event.fatality = 'explode'; // heavy carnage
       else if (def.stats.art && move.fatality) event.fatality = move.fatality; // (a mine says how)
@@ -276,6 +281,9 @@ export class CombatSystem {
       def.fsm.change('hitstun', { frames: 48 });
       def.vx = 0;
       def.vz = 0;
+    } else if (juggles(attacker, def) && juggleHit(def, attacker, move, dir, melee)) {
+      // AIR JUGGLE: a hero's hit on a man in the air keeps him up (combat/Juggle.js)
+      event.juggle = def.juggles;
     } else if (move.knockdown || !def.grounded) {
       def.fsm.change('knockdown', { vx: dir * kb.x, vh: kb.y || 250 });
     } else {

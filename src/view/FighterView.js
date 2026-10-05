@@ -9,7 +9,7 @@
 import { DEPTH } from './depths.js';
 import { movePhase } from '../combat/MoveRunner.js';
 
-const ATTACKS = ['light1', 'light2', 'light3', 'heavy', 'airAttack', 'kick'];
+const ATTACKS = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'airAttack', 'kick'];
 
 export class FighterView {
   constructor(scene, fighter) {
