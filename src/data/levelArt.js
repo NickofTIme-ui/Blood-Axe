@@ -104,6 +104,7 @@ export const SPRITE_SHEETS = {
   mother: { file: 'assets/sprites/npc/mother.png', frames: 6, height: 150 },
   boy: { file: 'assets/sprites/npc/boy.png', frames: 6, height: 110 },
   elder: { file: 'assets/sprites/npc/elder.png', frames: 4, height: 150 },
+  captive: { file: 'assets/sprites/npc/captive.png', frames: 6, height: 150 },
   'hound-walk': { file: 'assets/enemies/strips/hound_walk.png', frames: 6, height: 120 },
   'hound-atk1': { file: 'assets/enemies/strips/hound_atk1.png', frames: 4, height: 120 },
   'hound-react': { file: 'assets/enemies/strips/hound_react.png', frames: 3, height: 120 },
