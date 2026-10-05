@@ -314,6 +314,7 @@ export class VillageBackdrop {
     if (this.art.has('ground')) {
       this.art.ground();
       if (this.data.well) this.drawWell(this.data.well);
+      for (const pk of this.data.pikes ?? []) this.drawPikes(pk);
       return;
     }
     const g = s.add.graphics().setDepth(DEPTH.floor);
@@ -331,6 +332,33 @@ export class VillageBackdrop {
     // ash and soot drifts along the foot of the houses
     g.fillStyle(0x000000, 0.3).fillRect(0, top, this.width, 26);
     if (this.data.well) this.drawWell(this.data.well);
+    for (const pk of this.data.pikes ?? []) this.drawPikes(pk);
+  }
+
+  // Heads on pikes, the raiders' warning: a cluster of crooked spears driven into the mud,
+  // a head on each, blood run down the shafts, a crow on one. (Painted: 'pikes'.)
+  drawPikes({ x, z, n = 3 }) {
+    const w = 40 + n * 34;
+    if (this.art.piece('pikes', x - w / 2, x + w / 2, { depth: z - 1, bottom: z - (SETTINGS.world.floorTop - 50) })) return;
+    const g = this.scene.add.graphics().setDepth(z - 1);
+    for (let i = 0; i < n; i++) {
+      const px = x - w / 2 + 20 + i * 34 + ((i * 7) % 5);
+      const lean = ((i * 5) % 3 - 1) * 6;
+      const tall = 120 + ((i * 13) % 4) * 10;
+      const hx = px + lean; const hy = z - tall;
+      g.lineStyle(4, 0x2a1c12, 1).lineBetween(px, z, hx, hy - 12); // the shaft
+      g.lineStyle(2, 0x5a0a0a, 0.9).lineBetween(hx - lean * 0.15, hy + 10, px + lean * 0.4, z - tall * 0.55); // blood run down it
+      g.fillStyle(0x6a6a70, 1).fillTriangle(hx - 3, hy - 12, hx + 3, hy - 12, hx, hy - 24); // the point through the top
+      g.fillStyle(0x6a5040, 1).fillEllipse(hx, hy, 18, 22); // the head
+      g.fillStyle(0x1a1210, 1).fillEllipse(hx, hy - 8, 20, 10); // hair
+      g.fillStyle(0x0a0606, 1).fillRect(hx - 5, hy - 2, 3, 2).fillRect(hx + 2, hy - 2, 3, 2).fillRect(hx - 3, hy + 5, 6, 2);
+      g.fillStyle(0x5a0a0a, 1).fillTriangle(hx - 6, hy + 9, hx + 6, hy + 9, hx, hy + 18); // the ragged neck
+      if (i === 1) { // a crow
+        g.fillStyle(0x0a0a0c, 1).fillEllipse(hx + 2, hy - 18, 14, 8).fillCircle(hx + 8, hy - 21, 4);
+        g.fillTriangle(hx + 11, hy - 21, hx + 16, hy - 20, hx + 11, hy - 19);
+      }
+    }
+    g.fillStyle(0x000000, 0.3).fillEllipse(x, z, w, 10);
   }
 
   // the square's well (where the family is held): stone ring, a roof on two posts

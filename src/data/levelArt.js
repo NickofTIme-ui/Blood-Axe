@@ -26,7 +26,7 @@ export const LEVEL_ART = {
     ],
     wall: { height: 250 },
     ground: true,
-    pieces: ['well', 'barn', 'stables', 'longhall', 'gate'],
+    pieces: ['well', 'barn', 'stables', 'longhall', 'gate', 'pikes'],
     props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' } },
   },
   wood: {

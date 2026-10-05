@@ -204,6 +204,10 @@ export const STAGE_VILLAGE = {
     { x: 2050, z: 490, pose: 0 }, { x: 4450, z: 320, pose: 1 }, { x: 7600, z: 500, pose: 2 }, { x: 8600, z: 470, pose: 0 },
   ],
 
+  // heads on pikes (view only: view/VillageView.js drawPikes): the raiders' warning at the
+  // road in, the square, and the gate out. n: how many in the cluster
+  pikes: [{ x: 560, z: 292, n: 3 }, { x: 1480, z: 290, n: 2 }, { x: 5080, z: 292, n: 3 }, { x: 8560, z: 294, n: 4 }],
+
   // the villagers (stage/Story.js; drawn by view/NpcView.js)
   npcs: [
     { id: 'hale', name: 'Hale the smith', x: 960, z: 296, pose: 'wounded', talk: 'hale' },

@@ -83,6 +83,11 @@ plaster.
   > Same style. The front of a Norse-style longhall: carved dragon-head gables, a huge
   > door, shields on the walls, the roof on fire. Wide (about 2:1). FLAT PURE MAGENTA
   > background.
+- `assets/env/village/pikes.png`
+  > Same style. A cluster of three crooked wooden pikes driven into the mud, a severed
+  > human head on each (grim but not cartoonish), dried blood run down the shafts, a crow
+  > perched on the middle one, a torn banner of the Ashen King tied below. Tall and narrow
+  > (about 1:1.4). FLAT PURE MAGENTA background.
 - `assets/env/village/gate.png`
   > Same style. A village's north gate in a log palisade: two watch platforms, the gate
   > standing open onto a dark road into pine woods. FLAT PURE MAGENTA background.
