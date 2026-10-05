@@ -347,3 +347,10 @@ the generator and run `node tools/sfx-gen/electric.js`.
 - The third king cutaway ('collapse': frustration, the war map hurled).
 - Art prompts: items 18-25 in `docs/campaign/art-levels-1-2.md` (the mine and the Ore Crusher). Crusher strips are not wired yet.
 - Checked: logic tests (every hero walks it, the gate, the collapse, both bosses) and headless screenshots. Not played by a person.
+
+## Paused, 2026-10-05 00:55 UTC (Nick out of usage until it refreshes)
+- Campaign branch `claude/project-thread-l70xhx` is pushed (latest: heads on pikes in the village); it's PR #12 into main, open, waiting on Nick's OK to merge.
+- **Art**: painting in ChatGPT on Nick's PC got as far as the Burning Village backdrop (items 1-5). Those five files sit only on the PC in `assets/env/village/`, uncommitted (no GitHub login there). Next: village props, set pieces including pikes, then Gallows Wood, then Hollow Mountain. The PC copy of `art-levels-1-2.md` predates the pikes item; pull the branch first. Mute any test load (`?mute=1`).
+- **itch**: a campaign build is zipped on the PC (`release\blood-axe-web.zip`); the upload was blocked by the PC's safety check and waits on Nick (upload it himself at itch.io/game/edit/5082289, or approve it on the PC). itch still runs 19540958.
+- **Play link**: publishing the web build as a private claude.ai page was blocked pending Nick's yes.
+- **Code next**: level 4, Shattered Ascent (the Siege Commander); wire villager, hound, Houndmaster and Crusher strips once their art exists; the king's art is in Nick's ChatGPT folder "Ashen King".
