@@ -19,6 +19,7 @@ export function preloadLevelArt(scene) {
     for (const p of A.pieces ?? []) load(p, `${p}.png`);
     for (const [k, p] of Object.entries(A.props ?? {})) load(`prop-${k}`, p.file);
     for (const [k, s] of Object.entries(A.strips ?? {})) load(`strip-${k}`, s.file);
+    for (const k of Object.keys(A.surfaces ?? {})) load(`surf-${k}`, `surf_${k}.png`);
   }
 }
 
@@ -63,6 +64,11 @@ export function buildLevelArt(scene) {
         const c = keyed(src(theme, `strip-${k}`), s.key ?? 'black');
         const w = Math.floor(c.width / s.frames);
         for (let i = 0; i < s.frames; i++) add(`${k}-${i}`, part(c, i * w, w));
+      }
+      for (const k of Object.keys(A.surfaces ?? {})) {
+        if (!have(`surf-${k}`)) continue;
+        const img = T.get(src(theme, `surf-${k}`)).getSourceImage();
+        add(artKey(theme, `surf-${k}`), part(img, 0, img.width));
       }
     } catch (err) {
       console.warn(`[boot] level art for ${theme} failed`, err);

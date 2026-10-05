@@ -273,3 +273,31 @@ grey daylight and the Black Keep across a gorge.
   > right. walk: a 6-frame roll forward, the drum turning. atk1: the drum shoved forward,
   > spinning, sparks. heavy: 1-3 the hammer hauled up high while the furnace flares, 4-5 it
   > slams down in front. doom: 1-5 it tips, the furnace goes out, smoke pours out. No text.
+
+---
+
+## SURFACES: the roofs, beams and ledges you stand on (all levels)
+
+Opaque, seamless tiles: left and right edges join (and top and bottom for the `px` ones),
+about 1024 x 512, no magenta, no objects, no people. Same painted style. They go in each
+level's folder and replace the striped boxes.
+
+### 26. `assets/env/village/surf_roof_top.png`
+> Same style. Seamless texture of dark clay roof shingles seen from above at a low angle,
+> scorched, embers caught between them, the far edge darker.
+### 27. `assets/env/village/surf_roof_front.png`
+> Same style. Seamless texture of a timber-frame house front: dark beams, plaster, one
+> shuttered window glowing with fire inside.
+### 28. `assets/env/village/surf_beam.png`
+> Same style. Seamless texture of a long charred timber beam seen side on, wood grain,
+> glowing cracks.
+### 29. `assets/env/village/surf_board.png`
+> Same style. Seamless texture of charred floorboards seen from above, orange fire glowing
+> through the gaps.
+### 30. `assets/env/wood/surf_rock_top.png`, `surf_rock_front.png`, `surf_log.png`, `surf_plank.png`
+> Same style, four textures for a dark wet pine forest: mossy flat rock from above; a rough
+> rock face side on; a fallen pine trunk with bark side on; old wet planks from above.
+### 31. `assets/env/mine/surf_rock_top.png`, `surf_rock_front.png`, `surf_plank.png`
+> Same style, three textures for a torchlit mine: flat black rock with grit from above; a
+> rough rock face with timber props and blue ore flecks side on; rotten mine planks from
+> above.

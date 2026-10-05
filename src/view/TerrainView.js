@@ -22,6 +22,8 @@ import { playSfx } from '../core/Sfx.js';
 import { VillageBackdrop } from './VillageView.js';
 import { WoodBackdrop } from './WoodView.js';
 import { MineBackdrop } from './MineView.js';
+import { artKey } from './levelArt.js';
+import { LEVEL_ART } from '../data/levelArt.js';
 
 const COL = {
   skyTop: 0x05070d, skyLow: 0x1c2733, mist: 0x8aa4b8,
@@ -61,6 +63,7 @@ export class TerrainView {
     this.mine = data.theme === 'mine';
     if (this.mine) this.backdrop = new MineBackdrop(scene, stage);
     this.water = this.wood || this.mine;
+    this.theme = data.theme;
     this.drawFloor();
     this.drawPits();
     this.blockGfx = new Map();
@@ -188,6 +191,7 @@ export class TerrainView {
     const shake = b.shake ? Math.sin(b.shake * 1.7) * Math.min(3, b.shake / 6) : 0;
     const x0 = b.x0 + shake; const x1 = b.x1 + shake; const w = x1 - x0;
     const yTop0 = b.z0 - b.top; const yTop1 = b.z1 - b.top;
+    for (const t of Object.values(v.tiles ?? {})) t.setVisible(false); // (shown again below by whichever face is painted)
     if (!b.solid) {
       v.top.setVisible(false); v.front.setVisible(false);
       return;
@@ -199,10 +203,11 @@ export class TerrainView {
     const mat = b.kind === 'crumble' ? 'plank' : b.kind === 'lift' ? 'iron' : 'rock';
     const C = mat === 'plank' ? [COL.plankTop, COL.plankRim, COL.plankFront]
       : mat === 'iron' ? [COL.iron, COL.ironRim, COL.ironDark] : [COL.rockTop, COL.rockRim, COL.rockFront];
-    // top face (where you stand): the lightest surface around
-    top.fillStyle(C[0], 1).fillRect(x0, yTop0, w, yTop1 - yTop0);
-    if (mat === 'plank') { top.fillStyle(COL.plankCrack, 0.8); for (let x = x0 + 16; x < x1; x += 18) top.fillRect(x, yTop0, 2, yTop1 - yTop0); }
-    if (mat === 'rock') {
+    // top face (where you stand): the lightest surface around (painted, when its tile exists)
+    const topArt = mat !== 'iron' && this.surface(v, 'top', mat === 'plank' ? 'plank' : 'rock_top', x0, yTop0, w, yTop1 - yTop0, b.z0 - 0.6);
+    if (!topArt) top.fillStyle(C[0], 1).fillRect(x0, yTop0, w, yTop1 - yTop0);
+    if (mat === 'plank' && !topArt) { top.fillStyle(COL.plankCrack, 0.8); for (let x = x0 + 16; x < x1; x += 18) top.fillRect(x, yTop0, 2, yTop1 - yTop0); }
+    if (mat === 'rock' && !topArt) {
       // flagstones receding into the lane, darker toward the back: it reads as a floor, not a wall
       const depth = yTop1 - yTop0;
       top.fillStyle(0x000000, 0.25).fillRect(x0, yTop0, w, depth * 0.35);
@@ -221,10 +226,13 @@ export class TerrainView {
     // cage are thin things hanging in the air
     const depthDown = mat === 'plank' ? 12 : mat === 'iron' ? 16
       : Math.max(0, b.top) + (this.terrain.inPit((x0 + x1) / 2, b.z1 - 1) ? 120 : 0);
-    front.fillStyle(C[2], 1).fillRect(x0, yTop1 + 1, w, depthDown);
-    if (mat === 'rock') {
+    const frontArt = mat === 'rock' && this.surface(v, 'front', 'rock_front', x0, yTop1 + 1, w, depthDown, b.z1 + 0.4);
+    if (!frontArt) front.fillStyle(C[2], 1).fillRect(x0, yTop1 + 1, w, depthDown);
+    if (mat === 'rock' && !frontArt) {
       front.fillStyle(COL.rockShade, 1);
       for (let y = yTop1 + 14; y < floorY; y += 22) front.fillRect(x0, y, w, 2);
+    } else if (mat === 'rock') {
+      // (painted)
     } else if (mat === 'iron') {
       // the gibbet cage: bars and a chain up out of sight
       front.fillStyle(COL.ironRim, 0.7);
@@ -239,6 +247,21 @@ export class TerrainView {
     }
     top.setDepth(b.z0 - 0.5);
     front.setDepth(b.z1 + 0.5);
+  }
+
+  // A painted surface tile (data/levelArt.js `surfaces`) over one face of a block, lined up
+  // with the world so neighbouring blocks continue each other. False if it isn't painted.
+  surface(v, slot, name, x, y, w, h, depth) {
+    const key = artKey(this.theme, `surf-${name}`);
+    if (!name || w <= 0 || h <= 0 || !this.scene.textures.exists(key)) return false;
+    const conf = LEVEL_ART[this.theme]?.surfaces?.[name] ?? {};
+    v.tiles ??= {};
+    const t = v.tiles[slot] ??= this.scene.add.tileSprite(0, 0, 1, 1, key).setOrigin(0);
+    const img = this.scene.textures.get(key).getSourceImage();
+    const sc = (conf.fit ? h : conf.px ?? 128) / img.height;
+    t.setPosition(x, y).setSize(w, h).setDisplaySize(w, h).setTileScale(sc, sc).setDepth(depth).setVisible(true);
+    t.tilePositionX = x / sc;
+    return true;
   }
 
   // A portcullis (the mine): a tall iron grille across the lane, its chain running up out
@@ -284,8 +307,13 @@ export class TerrainView {
     const C = mat === 'board' ? [VIL.boardTop, VIL.boardRim, VIL.boardFront]
       : mat === 'beam' ? [VIL.beamTop, VIL.beamRim, VIL.beamFront] : [VIL.roofTop, VIL.roofRim, VIL.roofFront];
     const depth = yTop1 - yTop0;
-    top.fillStyle(C[0], 1).fillRect(x0, yTop0, w, depth);
-    if (mat === 'roof') {
+    // painted tiles when they exist (the wood's fallen trees use its 'log', the village's 'beam')
+    const art = { roof: ['roof_top', 'roof_front'], beam: this.village ? ['beam', 'beam'] : ['log', 'log'], board: ['board', null] }[mat];
+    const topArt = this.surface(v, 'top', art[0], x0, yTop0, w, depth, b.z0 - 0.6);
+    if (!topArt) top.fillStyle(C[0], 1).fillRect(x0, yTop0, w, depth);
+    if (topArt) {
+      // (painted)
+    } else if (mat === 'roof') {
       // shingle rows, darker toward the back
       top.fillStyle(0x000000, 0.25).fillRect(x0, yTop0, w, depth * 0.35);
       top.lineStyle(1, VIL.roofSeam, 1);
@@ -304,8 +332,11 @@ export class TerrainView {
     front.fillStyle(C[1], 1).fillRect(x0, yTop1 - 2, w, 3);
     const overPit = this.terrain.inPit((x0 + x1) / 2, b.z1 - 1);
     const down = mat === 'board' ? 12 : mat === 'beam' && overPit ? 18 : Math.max(0, b.top) + (overPit ? 120 : 0);
-    front.fillStyle(C[2], 1).fillRect(x0, yTop1 + 1, w, down);
-    if (mat === 'roof') {
+    const frontArt = art[1] && this.surface(v, 'front', art[1], x0, yTop1 + 1, w, down, b.z1 + 0.4);
+    if (!frontArt) front.fillStyle(C[2], 1).fillRect(x0, yTop1 + 1, w, down);
+    if (frontArt) {
+      // (painted)
+    } else if (mat === 'roof') {
       // the house below: timber posts, a beam, a window with fire in it
       front.fillStyle(VIL.timber, 1);
       for (let x = x0; x < x1; x += 70) front.fillRect(x, yTop1 + 1, 6, down);

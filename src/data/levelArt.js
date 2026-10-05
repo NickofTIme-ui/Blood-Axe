@@ -15,6 +15,9 @@
 //   props    breakables repainted: the prop kind they replace (`prop-<kind>` and, with
 //            `pair`, `prop-<kind>-broken`)
 //   strips   frame strips cut into `frames` equal cells: `horse-gallop-0..5`
+//   surfaces the ground you stand and jump on (terrain blocks: view/TerrainView.js), as
+//            opaque seamless tiles `surf_<name>.png`. `fit`: stretched to the face's depth
+//            (a top face, receding into the lane); `px`: drawn this many px tall, repeating
 
 export const LEVEL_ART = {
   village: {
@@ -28,6 +31,7 @@ export const LEVEL_ART = {
     ground: true,
     pieces: ['well', 'barn', 'stables', 'longhall', 'gate', 'pikes'],
     props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' } },
+    surfaces: { roof_top: { fit: true }, roof_front: { px: 180 }, beam: { px: 40 }, board: { fit: true } },
   },
   wood: {
     dir: 'assets/env/wood/',
@@ -40,6 +44,7 @@ export const LEVEL_ART = {
     ground: true,
     pieces: ['hanging_tree', 'kennels', 'rockslide'],
     props: { wagon: { file: 'convoy_wagon.png', pair: true }, cagecart: { file: 'cage_cart.png', pair: true, texture: 'cagecart' } },
+    surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, log: { px: 40 }, plank: { fit: true } },
   },
   mine: {
     dir: 'assets/env/mine/',
@@ -55,6 +60,7 @@ export const LEVEL_ART = {
       shackle: { file: 'prop_shackle.png', pair: true }, counterweight: { file: 'prop_counterweight.png', pair: true },
       rubble: { file: 'prop_rubble.png', pair: true },
     },
+    surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, plank: { fit: true } },
   },
   fx: {
     dir: 'assets/fx/',
