@@ -355,3 +355,24 @@ the generator and run `node tools/sfx-gen/electric.js`.
 - **itch**: a campaign build is zipped on the PC (`release\blood-axe-web.zip`); the upload was blocked by the PC's safety check and waits on Nick (upload it himself at itch.io/game/edit/5082289, or approve it on the PC). itch still runs 19540958.
 - **Play link**: publishing the web build as a private claude.ai page was blocked pending Nick's yes.
 - **Code next**: level 4, Shattered Ascent (the Siege Commander); wire villager, hound, Houndmaster and Crusher strips once their art exists; the king's art is in Nick's ChatGPT folder "Ashen King".
+
+## Cloud, 2026-10-05: hack-and-slash pillars (branch claude/combat-pillars-2znjh7, off the campaign branch)
+
+Code only, not on itch. Logic tests cover all of it.
+
+- **Air juggles** (`src/combat/Juggle.js`): Rurik's J, J, K is the RISING CLEAVE launcher
+  (`moves.launcher`, borrows light2's poses until a strip exists). Any hero's hit on a flying
+  enemy keeps him up; air attacks chain three a jump while they connect, the third spikes him
+  and he bounces once. Bosses and the Crusher are never juggled.
+- **Combo counter and style rank** (`src/combat/Style.js`, HUD `src/view/StyleMeter.js`):
+  D to SSS, right side of the HUD. The rank multiplies the blood each kill pays.
+- **Riposte** (`CombatSystem.js`, `RIPOSTE`): the first melee hit after a parry on that man is
+  a sure critical, x1.6 more, long freeze, "RIPOSTE!" call-out.
+- **Boss loot: trophies** (`src/data/trophies.js`, saved in `Progress.trophies`): every boss
+  drops his own legendary the first time; men with 130+ health drop a common/rare 12% of the
+  time. Three worn slots; O / RT on the skill screen opens the TROPHIES page (wear / take off).
+  The dropped reliquary is a code-drawn stand-in: prompts 32-33 in
+  `/mnt/project-files/campaign/art/art-levels-1-2.md` (icons are not wired in yet).
+- **Hordes**: a new fodder enemy, the Ashen Thrall (`ENEMIES.thrall`, 30 health, wears the
+  grunt's strips via `strips: 'grunt'`). One horde wave of 10-11 per campaign level (Market
+  Square, the Convoy, the Workings), announced "THE HORDE".

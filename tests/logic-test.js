@@ -237,6 +237,21 @@ test('parry staggers the attacker', () => {
   assert(t.d.state === 'stagger', `grunt should be staggered, is ${t.d.state}`);
 });
 
+test('riposte: the first hit after a parry is a sure, heavier critical; later hits are plain', () => {
+  const t = setup({ dummyScript: { 1: ['attack'] } });
+  t.d.stats = { ...t.d.stats, maxHealth: 1e4 }; t.d.health = 1e4;
+  t.p.facing = 1;
+  t.p.controller.script = { 8: ['block'], 24: ['attack'], 60: ['attack'] };
+  const hits = [];
+  t.world.events.on('hit', (e) => { if (e.attacker === t.p) hits.push(e); });
+  t.run(100);
+  assert(t.log.includes('parry'), 'parried');
+  assert(hits.length >= 2, `two answers land (${hits.length})`);
+  assert(hits[0].riposte && hits[0].crit, 'the first is a riposte');
+  assert(!hits[1].riposte, 'only the first');
+  assert(hits[0].damage > hits[1].damage * 2, `and it hurts (${hits[0].damage.toFixed(1)} vs ${hits[1].damage.toFixed(1)})`);
+});
+
 test('dodge i-frames avoid a hit', () => {
   const t = setup({ dummyScript: { 1: ['attack'] }, gap: 50 });
   t.p.controller.script = { 8: ['dodge'] };
@@ -2930,6 +2945,29 @@ test('style: the same move over and over scores less than mixing it up', () => {
   const same = score([M.light1, M.light1, M.light1, M.light1]);
   const mixed = score([M.light1, M.kick, M.heavy, M.light2]);
   assert(mixed > same, `mixed ${mixed.toFixed(0)} > same ${same.toFixed(0)}`);
+});
+
+test('horde: each campaign level has a HORDE wave of thralls, and it is announced', () => {
+  for (const data of [STAGE_VILLAGE, STAGE_WOOD, STAGE_MINE]) {
+    const big = data.sections.flatMap((sec) => sec.waves ?? []).filter((w) => w.length >= 7);
+    assert(big.length >= 1 && big.every((w) => w.filter((x) => x === 'thrall').length >= 8), `${data.name}: a horde of thralls`);
+  }
+  assert(ENEMIES.thrall.moves.light1 && ENEMIES.thrall.maxHealth < ENEMIES.grunt.maxHealth / 2, 'a thrall swings a grunt\'s sword and dies easier');
+  const world = new World({ seed: 3 });
+  const stage = new Stage(world, STAGE_VILLAGE);
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 1500, z: 440, controller: new Scripted() }));
+  const sq = STAGE_VILLAGE.sections.findIndex((x) => x.id === 'square');
+  stage.start([p], { section: sq });
+  const hordes = [];
+  world.events.on('horde', (e) => hordes.push(e.count));
+  p.x = 2300;
+  for (let i = 0; i < 4000 && !hordes.length; i++) {
+    world.tick(); stage.update();
+    p.health = p.stats.maxHealth;
+    for (const f of world.fighters) if (f.team === 'enemy' && f.alive && !f.entering) { f.health = 0; f.removeMe = true; }
+  }
+  assert(hordes.length === 1 && hordes[0] >= 8, `the horde comes, announced (${hordes})`);
+  assert(world.fighters.filter((f) => f.stats.id === 'thrall').length >= 8, 'and they are thralls');
 });
 
 test('loot: each boss drops his own trophy first, then something new, then blood', () => {

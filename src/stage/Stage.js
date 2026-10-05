@@ -36,7 +36,7 @@
 // { section }) starts at a later section's checkpoint.
 
 import { STAGE, PICKUPS, PROPS } from '../data/stage.js';
-import { ENEMIES } from '../data/enemies.js';
+import { ENEMIES, HORDE_SIZE } from '../data/enemies.js';
 import { createEnemy, offscreenX } from '../entities/Enemy.js';
 import { toWorldBox, overlaps } from '../combat/Boxes.js';
 import { Terrain, PIT_LOST } from './Terrain.js';
@@ -476,7 +476,9 @@ export class Stage {
       if (this.livingFoes().length) return;
       if (this.waveDelay > 0) { this.waveDelay--; return; }
       if (this.waveIndex < sec.waves.length) {
-        this.spawnWave(sec.waves[this.waveIndex++]);
+        const roster = sec.waves[this.waveIndex++];
+        this.spawnWave(roster);
+        if (roster.length >= HORDE_SIZE) this.world.events.emit('horde', { section: sec, count: roster.length });
         this.waveDelay = WAVE_GAP;
         return;
       }

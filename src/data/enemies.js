@@ -97,6 +97,35 @@ export const ENEMIES = {
     },
   },
 
+  // =========================================================== THRALL (horde fodder)
+  // The press-ganged: a grunt's kit and none of his nerve. They come in HORDES of ten
+  // (stage/Stage.js announces a wave that big) to be cut down by the armful: little health,
+  // rarely block, wait their turn round you. Wear the grunt's painted strips (`strips`).
+  thrall: {
+    ...BASE,
+    id: 'thrall',
+    strips: 'grunt',
+    name: 'Ashen Thrall',
+    title: 'Chained to the Legion',
+    art: 'grunt',
+    body: { w: 44, h: 96 },
+    look: { color: 0x4a5428, accent: 0x666666, skin: 0x8a937a },
+    maxHealth: 30, maxStamina: 40,
+    walkSpeed: 128, depthSpeed: 92,
+    meleeMult: 0.8,
+    blockReduction: 0.6, guardEfficiency: 1.4,
+    knockdownFrames: 40, getupFrames: 18, staggerFrames: 50,
+    moves: {}, // (the grunt's: filled in below)
+    ai: {
+      attackRange: 66, minRange: 34, alignZ: 10,
+      waitRange: 170, maxCrowd: 3,
+      threatRange: 110,
+      attackCooldown: [60, 130],
+      heavyChance: 0.08, comboChance: 0.3,
+      blockChance: 0.05, blockHold: [16, 30],
+    },
+  },
+
   // =========================================================== WAR HOUND (Gallows Wood)
   // The Houndmaster's pack: a huge black mastiff in spiked plates. Low, fast, never blocks;
   // a snapping bite and a leaping pounce that floors you. Few hits put one down. No painted
@@ -687,6 +716,12 @@ export const ENEMIES = {
 };
 
 // Wave line-ups for the test arena. After the last one, waves are random mixes.
+// the thrall swings the grunt's sword
+ENEMIES.thrall.moves = ENEMIES.grunt.moves;
+
+// A wave this big is a HORDE (stage/Stage.js announces it).
+export const HORDE_SIZE = 7;
+
 export const WAVES = [
   ['grunt', 'grunt', 'butcher'],
   ['stalker', 'grunt', 'ghoul'],

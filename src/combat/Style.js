@@ -21,7 +21,7 @@ export const STYLE = {
     juggle: 12,         // a hit on a man in the air (more for a longer juggle)
     spike: 30,          // the last air swing, driving him into the floor
     crit: 10, counter: 14, superCrit: 40, multi: 6, // (multi: each extra body one swing cuts)
-    kill: 22, parry: 45, guardBreak: 18,
+    kill: 22, parry: 45, guardBreak: 18, riposte: 35,
   },
   // rank: the score it starts at, its letter, the word under it, the blood it pays
   ranks: [
@@ -94,6 +94,7 @@ export function installStyle(world) {
     if (e.crit) pts += P.crit;
     if (e.counter) pts += P.counter;
     if (e.superCrit) pts += P.superCrit;
+    if (e.riposte) pts += P.riposte;
     gain(world, a, pts);
   });
   ev.on('kill', (e) => { if (hero(e.attacker) && e.defender.team !== 'player') gain(world, e.attacker, STYLE.points.kill); });

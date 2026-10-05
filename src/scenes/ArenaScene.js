@@ -464,7 +464,8 @@ export class ArenaScene extends Phaser.Scene {
 
   // A hero's random critical hit: a sharp callout, a hard thump, an extra spray.
   critFX(e) {
-    this.callout(e.counter ? 'CRITICAL COUNTER!' : 'CRITICAL!', '#ff8a2a', 26);
+    this.callout(e.riposte ? 'RIPOSTE!' : e.counter ? 'CRITICAL COUNTER!' : 'CRITICAL!', e.riposte ? '#ffffff' : '#ff8a2a', e.riposte ? 30 : 26);
+    if (e.riposte) this.fx.shake(9, 14);
     this.fx.shake(6, 10);
     this.rumble(0.6, 0.6, 120);
     playSfx(this, 'kick', { volume: 0.8, pitch: -400, spread: 80 });
@@ -655,6 +656,7 @@ export class ArenaScene extends Phaser.Scene {
       if (P.rescue(npc.id)) P.addBlood(30);
     });
     ev.on('npcLost', ({ npc }) => P.lose(npc.id));
+    ev.on('horde', ({ count }) => { this.callout(`THE HORDE  ·  ${count} OF THEM`, '#ff9a30', 28); this.fx?.shake(4, 30); });
     // BOSS LOOT: a trophy picked up — which one is decided now, from what's owned (data/trophies.js)
     ev.on('lootDrop', ({ pickup: pk }) => {
       if (pk.from === 'boss') this.time.delayedCall(700, () => this.callout('HE DROPPED SOMETHING', '#ffd24a', 22));
@@ -965,7 +967,7 @@ export class ArenaScene extends Phaser.Scene {
     if (f.stats.view === 'hound') return new HoundView(this, f); // (code-drawn until its strips exist)
     if (f.stats.view === 'crusher') return new CrusherView(this, f);
     // named enemies with hand-animated strips (data/enemyStrips.js); the doll runs underneath
-    const sheet = f.team === 'enemy' && !this.dollsOnly && this.registry.get('enemySprites')?.[f.stats.id];
+    const sheet = f.team === 'enemy' && !this.dollsOnly && this.registry.get('enemySprites')?.[f.stats.strips ?? f.stats.id]; // (strips: wears another's)
     if (sheet && f.stats.art && ENEMY_ART[f.stats.art]) return new SpriteEnemyView(this, f, sheet);
     if (f.stats.art && ENEMY_ART[f.stats.art]) return new EnemyView(this, f);
     // the Mage and the Rogue, once their painted strips are all in (data/heroStrips.js)
