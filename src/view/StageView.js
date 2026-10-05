@@ -300,6 +300,28 @@ export class StageView {
     };
     this.canvasTex('prop-catapult', 300, 260, (c, w, h) => catapult(c, w, h, false));
     this.canvasTex('prop-catapult-broken', 300, 260, (c, w, h) => catapult(c, w, h, true));
+    // (the Iron Gates) the gate winch: an iron-bound drum on a timber frame, the gate chain
+    // wound on it and running up out of sight; broken: the frame split, the chain gone slack
+    const winch = (c, w, h, broken) => {
+      const base = h - 10;
+      c.fillStyle = '#3a2616';
+      if (!broken) {
+        c.fillRect(14, base - 110, 16, 110); c.fillRect(w - 30, base - 110, 16, 110); // the frame
+        c.fillRect(8, base - 12, w - 16, 12);
+        c.fillStyle = '#2a2a30'; c.fillRect(22, base - 96, w - 44, 50); // the drum
+        c.fillStyle = '#5a5a62'; for (let x = 26; x < w - 26; x += 8) c.fillRect(x, base - 94, 4, 46); // the chain wound on it
+        c.fillStyle = '#7a7a82'; c.fillRect(w / 2 - 4, 0, 8, base - 96); // the chain, taut, running up
+        c.fillStyle = '#8a8a92'; for (let y = 4; y < base - 96; y += 14) c.fillRect(w / 2 - 6, y, 12, 6);
+        c.fillStyle = '#4a3220'; c.fillRect(w - 26, base - 76, 34, 8); // the crank
+      } else {
+        c.fillRect(10, base - 40, 16, 40); c.save(); c.translate(w - 30, base); c.rotate(0.5); c.fillRect(0, -70, 16, 70); c.restore();
+        c.fillRect(8, base - 10, w * 0.5, 10);
+        c.fillStyle = '#2a2a30'; c.fillRect(30, base - 40, w - 70, 34);
+        c.strokeStyle = '#6a6a72'; c.lineWidth = 4; c.beginPath(); c.moveTo(w * 0.3, base - 4); c.quadraticCurveTo(w * 0.6, base - 30, w * 0.9, base - 2); c.stroke(); // the slack chain
+      }
+    };
+    this.canvasTex('prop-winch', 220, 300, (c, w, h) => winch(c, w, h, false));
+    this.canvasTex('prop-winch-broken', 220, 300, (c, w, h) => winch(c, w, h, true));
     this.canvasTex('prop-wagon', 420, 240, (c, w, h) => wagon(c, w, h, false));
     this.canvasTex('prop-wagon-broken', 420, 240, (c, w, h) => wagon(c, w, h, true));
     this.canvasTex('flame', 32, 64, (c, w, h) => {
@@ -638,8 +660,16 @@ export class StageView {
       const gy = s.z - s.gy;
       const R = hz.radius ?? 64;
       g.fillStyle(0x000000, 0.15 + 0.5 * k).fillEllipse(s.x, gy, R * (0.5 + 1.1 * k), R * 0.38 * (0.5 + 1.1 * k));
-      g.lineStyle(2, 0xff5a3a, 0.25 + 0.55 * k).strokeEllipse(s.x, gy, R * 2, R * 0.75);
+      g.lineStyle(2, hz.friendly ? 0xd8e8ff : 0xff5a3a, 0.25 + 0.55 * k).strokeEllipse(s.x, gy, R * 2, R * 0.75);
       if (k < 0.45) continue;
+      if (hz.friendly) {
+        // (your own people's: plain sling stones, thrown from behind you, a flat arc)
+        const f = (k - 0.45) / 0.55;
+        const sx = s.x - 260 * (1 - f); const sy = gy - 260 * (1 - f) * f * 4 * 0.5 - 10;
+        st.setDepth(s.z + 1);
+        for (let i = 0; i < 3; i++) st.fillStyle(0x6a6a72, 1).fillCircle(sx + (i - 1) * 16, sy + (i % 2) * 8, 6);
+        continue;
+      }
       // the stone: the last half of its flight, falling steeply onto the mark
       const f = (k - 0.45) / 0.55;
       const sy = gy - 720 * (1 - f) * (1 - f) - 12;

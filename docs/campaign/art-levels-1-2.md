@@ -340,6 +340,75 @@ strips for now.
 
 ---
 
+## LEVEL 5: THE IRON GATES
+
+Chat: **BA · Level 5 · Iron Gates**. Attach the same reference pictures plus a screenshot
+of the gates in the game (project files `campaign/iron-gates/`). The look: black iron and
+soot-grey stone under a smoke-brown sky lit red from below by siege fires; the Black Keep
+filling the sky behind (black stone, cold violet light); the burning town orange. Inside
+the gatehouse: dark stone and torchlight. The Gate Twins wear the Gladiator's strips and
+Malgor his own, for now.
+
+### 41. `assets/env/gates/sky.png` (opaque, the furthest layer)
+> Same style. A very wide seamless sky over a burning city at dusk: heavy brown smoke
+> rolling across it, lit red and orange from below by fires, darker toward the top. NO
+> land. Left and right edges join seamlessly. 3:1 or wider. No text.
+
+### 42. `assets/env/gates/far.png` (on magenta)
+> Same style. A very wide seamless strip: on a black crag in the middle, a huge dark castle,
+> the Black Keep, close now, black stone towers and spires with cold violet light in the
+> windows, filling most of the height; columns of smoke rising from a town below it, red
+> fire at their feet. Everything sits in the lower three quarters; above it is FLAT PURE
+> MAGENTA. Edges join seamlessly. 3:1 or wider.
+
+### 43. `assets/env/gates/mid.png` (on magenta)
+> Same style. A very wide seamless strip of a walled town's rooftops seen from inside its
+> walls: steep black gables, a few square towers, some windows lit orange, smoke between
+> them. FLAT PURE MAGENTA above. Edges join seamlessly. 3:1 or wider.
+
+### 44. `assets/env/gates/wall.png` (on magenta, the wall behind the lane, repeats)
+> Same style. A very wide seamless strip of a great fortress wall's inner face seen straight
+> on: huge soot-blackened grey blocks, iron rings and brackets, a timber walkway along the
+> top, arrow slits, scorch marks. The wall fills the bottom 80% of the picture; above it is
+> FLAT PURE MAGENTA. Edges join seamlessly.
+
+### 45. `assets/env/gates/ground.png` (opaque, the ground under the fight)
+> Same style. A very wide seamless picture of a fortress yard seen from a low three-quarter
+> angle (the far edge at the top, the near edge at the bottom): cracked grey flagstones,
+> soot, ash, a few broken arrows and dropped stones, mud trodden between the flags. Nothing
+> taller than a stone. Left and right edges join seamlessly. 3:1.
+
+### 46. Set pieces (on magenta, each one picture, seen straight on, about 1536 x 1024)
+- `assets/env/gates/gatehouse.png`
+  > Same style. The outside of a huge iron gatehouse in a fortress wall: two square stone
+  > towers with battlements and red fire burning on top, between them a shut gate of
+  > black iron bars and riveted plates. FLAT PURE MAGENTA background. No people.
+- `assets/env/gates/winch_room.png`
+  > Same style. Inside a gatehouse: a tall stone arch at the end of a dark stone room,
+  > heavy chains running up from the floor into the dark, torches in iron brackets.
+  > FLAT PURE MAGENTA background. No people, no gate in the arch.
+- `assets/env/gates/town.png`
+  > Same style. A tall timber granary in a town street, its big doors barred shut with
+  > planks, flames and smoke pouring from its eaves, a burning house either side.
+  > FLAT PURE MAGENTA background. No people.
+- `assets/env/gates/inner_wall.png`
+  > Same style. A long, very tall inner fortress wall seen straight on, with a walkway of
+  > archers along the top (dark silhouettes with bows), long crimson war banners hanging
+  > down its face. FLAT PURE MAGENTA background and sky. About 3:1.
+- `assets/env/gates/keep_road.png`
+  > Same style. The end of a fortress wall on the left; beyond it a stone road leading to a
+  > long bridge with two gate towers, and at its far end the foot of a huge black castle in
+  > violet light. FLAT PURE MAGENTA sky. No people.
+
+### 47. Props (on magenta, two pictures side by side: whole, then broken)
+- `assets/env/gates/prop_winch.png`
+  > Same style. Left: a great gate winch seen from the side, a heavy timber frame holding an
+  > iron-bound drum with a thick chain wound on it, the chain running straight up out of
+  > the picture, a crank handle. Right: the same winch wrecked, the frame split, the drum
+  > dropped, the broken chain lying slack. FLAT PURE MAGENTA.
+
+---
+
 ## SURFACES: the roofs, beams and ledges you stand on (all levels)
 
 Opaque, seamless tiles: left and right edges join (and top and bottom for the `px` ones),

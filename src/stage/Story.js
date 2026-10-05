@@ -8,7 +8,8 @@
 //   at: x        fires when a hero gets this far along
 //   on: key      fires on an event: 'start', 'clear:<sectionId>', 'enter:<sectionId>',
 //                'boss:<sectionId>' (he appears), 'rage:<sectionId>', 'rescued:<npcId>',
-//                'broken:<tag>' (the last prop with that tag smashed)
+//                'broken:<tag>' (the last prop with that tag smashed), 'twin:<sectionId>'
+//                (one of the twins down)
 //   (neither: fired by a villager's `talk` when a hero comes near him)
 //   calm: true   waits until no enemy is alive (essential lines are said on safe ground)
 //   hold: true   a held scene: the heroes stand still while it plays (never in a fight);
@@ -42,6 +43,8 @@
 //    him; with `ask: true` only when a hero near him presses INTERACT)
 //   flee: { x, z }      where he runs once free (null: he slips away out of sight)
 //   gather: { x, z }    where he waits later (the gate at the end of the level)
+//   if / unless         only there if that holds ('saved:<npcId>': someone saved in an
+//                       earlier level, come back to stand with you)
 // States: idle (a survivor), threatened / trapped / escort -> free (says his line) ->
 // fleeing -> safe (gone from here) -> gathered (at his gather point); or lost. Saved ones
 // are reported with 'npcRescued' (the arena keeps them in the campaign save), the lost with
@@ -78,6 +81,8 @@ export class Story {
     this.rescued = new Set(stage.opts?.rescued ?? stage.data.rescuedBefore ?? []);
     this.lost = new Set(stage.opts?.lost ?? []);
     this.savedBefore = new Set(stage.opts?.saved ?? []); // (every level's, from the campaign save)
+    // (a villager with `if` / `unless` is only there if that holds: the rescued who come back)
+    this.npcs = this.npcs.filter((n) => !(n.if || n.unless) || this.ok(n));
     const ev = this.world.events;
     ev.on('sectionClear', ({ section }) => this.trigger(`clear:${section.id}`));
     ev.on('sectionStart', ({ section }) => this.trigger(`enter:${section.id}`));
@@ -85,6 +90,7 @@ export class Story {
     ev.on('bossSpawn', () => this.trigger(`boss:${stage.section?.id}`));
     ev.on('bossPhase', ({ phase }) => this.trigger(`phase:${stage.section?.id}:${phase.id}`));
     ev.on('propsDown', ({ tag }) => this.trigger(`broken:${tag}`));
+    ev.on('twinFall', () => this.trigger(`twin:${stage.section?.id}`));
   }
 
   // ------------------------------------------------------------ queries

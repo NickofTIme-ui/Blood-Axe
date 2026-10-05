@@ -36,7 +36,7 @@ export const STAGE_ASCENT = {
   id: 'shatteredAscent',
   name: 'THE SHATTERED ASCENT',
   chapter: 'IV',
-  next: { id: 'ironGates', name: 'THE IRON GATES', chapter: 'V' }, // (not built yet: Stage 3 of the plan)
+  next: { id: 'ironGates', name: 'THE IRON GATES', chapter: 'V' },
   doneTitle: 'THE ASCENT IS TAKEN',
   width: 9800,
   theme: 'ascent',

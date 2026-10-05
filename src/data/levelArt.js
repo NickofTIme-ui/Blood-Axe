@@ -74,6 +74,18 @@ export const LEVEL_ART = {
     pieces: ['overhang', 'palisade', 'camp', 'gates_view'],
     props: { catapult: { file: 'prop_catapult.png', pair: true } },
   },
+  gates: {
+    dir: 'assets/env/gates/',
+    layers: [
+      { name: 'sky', key: 'opaque', scroll: 0.04, bottom: -40, height: 420 },
+      { name: 'far', key: 'magenta', scroll: 0.12, bottom: -10, height: 300 },
+      { name: 'mid', key: 'magenta', scroll: 0.45, bottom: -20, height: 240 },
+    ],
+    wall: { height: 200 },
+    ground: true,
+    pieces: ['gatehouse', 'winch_room', 'town', 'inner_wall', 'keep_road'],
+    props: { winch: { file: 'prop_winch.png', pair: true } },
+  },
   fx: {
     dir: 'assets/fx/',
     strips: { 'horse-gallop': { file: 'horse_gallop.png', frames: 6, key: 'black' } },

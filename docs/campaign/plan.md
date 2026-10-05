@@ -139,6 +139,22 @@ Its painted art: items 18-25 in docs/campaign/art-levels-1-2.md.
 Then the fourth cutaway (unease: the retreat's horns; he burns the captain who brings the
 news to ash). Its painted art: items 32-38 in docs/campaign/art-levels-1-2.md.
 
+### Level 5 — The Iron Gates (built 5 October 2026, code art)
+
+| § | Section | Content |
+|---|---|---|
+| I | THE KILLING GROUND | The road to the shut gates under stones from the wall; the thralls the King locked outside thrown at you as a horde. The others find the sally port. |
+| II | THE GATEHOUSE | In by the sally port: pitch on the grates under the murder holes, the stair up inside the wall, the rotten floor over the oubliette, the guardroom landing. A shrine. |
+| III | THE WINCH ROOM | **The Gate Twins**, Hask and Hrolf (Gladiator type): kill one and the other goes wild. Break both winch chains: the gate rises. |
+| IV | THE GATE YARD | The counter-attack to take the gate back (a horde). Through the gate behind you come the people you saved: the miners' slings from the wall (if the shelter was saved), the convoy's prisoners (if freed), Joren. |
+| V | THE LOWER TOWN | The King is burning his own town to slow you: defend the townsfolk, break the bar on the burning granary. A shrine. |
+| VI | THE MARSHAL'S YARD | **Malgor, the Iron Marshal**. At two thirds the archers on the inner wall loose on everyone (the miners answer them, if saved); at one third he will not fall. |
+| VII | THE KEEP ROAD | Quiet. Whoever was saved on the way stands here. The Black Keep, and nothing between. |
+
+Then the fifth cutaway (fear: Malgor's helm rolled to the dais; the fire in his hand goes
+out; he orders the prison wing burned with the prisoners in it). Its painted art: items
+41-47 in docs/campaign/art-levels-1-2.md.
+
 ### The king's arc (cutaways at milestones only)
 
 | After | His mood | Scene |
@@ -147,7 +163,7 @@ news to ash). Its painted art: items 32-38 in docs/campaign/art-levels-1-2.md.
 | Level 2 | irritation | the convoy lost; he strikes the throne and cracks it; Malgor is refused again; "let them dig for them" (built) |
 | Level 3 | frustration | the mine collapse failed; he sends the siege commander to destroy the route (built) |
 | Level 4 | unease | horns; troops pulled back to the gates; he kills a captain who brings bad news (built) |
-| Level 5 | fear | the gates fall; he orders the prison wing burned with the prisoners in it |
+| Level 5 | fear | the gates fall; Malgor's helm brought to him; he orders the prison wing burned with the prisoners in it (built) |
 | Level 6 entry | desperation | he sends everyone, then the Executioner; seals himself in the throne room |
 
 Enemy behaviour follows him: horns and retreating troops after level 4, men left behind as

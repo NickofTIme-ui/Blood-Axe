@@ -20,6 +20,16 @@
 //                       is won and the beat `after` has played (not the moment it's won)
 //   boss.entrance.freeze: false   he walks in without freezing the heroes (a sub-boss)
 //   boss.escort: [types]          brought on with him (the Houndmaster's two hounds)
+//   boss.twin: { type, name, health, damage }   a second boss beside him (the Iron Gates'
+//                       twins): both must die; when one falls the other takes his place on
+//                       the HUD and fights harder (`boss.grief`: { damage, speed } x).
+//                       Emits twinFall { fallen, left }; story beats 'twin:<section>'
+//   prop.opens + prop.tag         with a tag, the way opens only once every prop with that
+//                       tag is broken (the Iron Gates' two winch chains)
+//   hazard.if / hazard.unless     a hazard only runs if the story's condition holds
+//                       ('saved:<npcId>': the rescued come back to help)
+//   bombard.friendly: true        stones thrown by your own people (the rescued, from the
+//                       walls): aimed at the Ashen, never at a boss; they hurt only the Ashen
 //   section.needs: '<tag>'        its fight isn't won until every prop with that tag is
 //                       broken (the Shattered Ascent's catapults); propsDown { tag } is
 //                       emitted when the last one goes (story beats 'broken:<tag>')
@@ -83,6 +93,8 @@ const BEAM = { period: 230, warn: 80, damage: 22, lethalH: 60 };
 // frames; what it hits (either side) within `radius` along the lane and `depth` across it.
 // No stone is aimed within `pitClear` px of a drop (nobody is shelled off a bridge or a ledge).
 const BOMBARD = { period: 200, warn: 75, shots: 2, radius: 64, depth: 46, damage: 20, spread: 110, pitClear: 170 };
+// A twin whose brother falls: harder and faster (boss.grief overrides)
+const GRIEF = { damage: 1.3, speed: 1.2 };
 
 export class Stage {
   constructor(world, data = STAGE, opts = {}) {
@@ -120,6 +132,7 @@ export class Stage {
       this.stats.kills++;
       if (e.finisher) this.stats.finishers++;
       this.dropLoot(e.defender);
+      this.twinFell(e.defender);
     });
     // a boss the story spares (beaten to his knees: stage/Sequence.js) still gives up his trophy
     world.events.on('hit', (e) => { if (e.defender?.spare && e.defender.health <= 1) this.dropLoot(e.defender); });
@@ -437,14 +450,37 @@ export class Stage {
   spawnBoss() {
     const sec = this.section;
     const def = sec.boss;
-    const base = ENEMIES[def.type];
     const E = def.entrance;
     // with an entrance he starts off the right edge of the room and walks in (the
     // 'bossEntrance' state); otherwise he's simply there
     const x = E ? sec.x1 + E.from : Math.min(sec.x1 - PAD - 40, this.player.x + 420);
-    const boss = createEnemy(this.world, def.type, x, 430);
+    const boss = this.makeBoss(def, x, 430);
+    this.boss = boss;
+    this.bossSpawned = true;
+    // (the twins: his brother at his side, a little further back and down the lane)
+    this.twins = null;
+    if (def.twin) {
+      const twin = this.makeBoss({ damage: 1, health: 1, ...def.twin }, Math.min(x + 90, sec.x1 + (E?.from ?? -PAD - 40)), 360);
+      twin.phase = Infinity; // (no phases of his own)
+      this.twins = [boss, twin];
+    }
+    if (E) {
+      const toX = Math.max(this.world.bounds.minX + 60, sec.x1 - E.to);
+      boss.fsm.change('bossEntrance', { toX, speed: E.speed, stepEvery: E.stepEvery });
+      if (this.twins) this.twins[1].fsm.change('bossEntrance', { toX: toX + 70, speed: E.speed, stepEvery: E.stepEvery });
+      // the heroes stand frozen while he comes (and a moment after)
+      const frames = Math.ceil(((x - toX) / E.speed) * 60) + (E.awe ?? 0);
+      if (E.freeze !== false) for (const p of this.players) if (p.alive) p.awe = frames;
+    }
+    if (def.escort?.length) this.spawnWave(def.escort); // (the men or dogs he brings with him)
+    this.world.events.emit('bossSpawn', { boss, entrance: !!E });
+  }
+
+  // A boss is the same fighter, harder: more health, harder hits, never flinches from light blows.
+  makeBoss(def, x, z) {
+    const base = ENEMIES[def.type];
+    const boss = createEnemy(this.world, def.type, x, z);
     this.setOnGround(boss);
-    // a boss is the same fighter, harder: more health, harder hits, never flinches from light blows
     boss.stats = {
       ...base, name: def.name, boss: true,
       maxHealth: Math.round(base.maxHealth * def.health),
@@ -453,17 +489,23 @@ export class Stage {
     };
     boss.health = boss.stats.maxHealth;
     boss.phase = 0; // (how many of his phase thresholds he has passed)
-    this.boss = boss;
-    this.bossSpawned = true;
-    if (E) {
-      const toX = Math.max(this.world.bounds.minX + 60, sec.x1 - E.to);
-      boss.fsm.change('bossEntrance', { toX, speed: E.speed, stepEvery: E.stepEvery });
-      // the heroes stand frozen while he comes (and a moment after)
-      const frames = Math.ceil(((x - toX) / E.speed) * 60) + (E.awe ?? 0);
-      if (E.freeze !== false) for (const p of this.players) if (p.alive) p.awe = frames;
-    }
-    if (def.escort?.length) this.spawnWave(def.escort); // (the men or dogs he brings with him)
-    this.world.events.emit('bossSpawn', { boss, entrance: !!E });
+    return boss;
+  }
+
+  // One of the twins is dead: the other takes his place (on the HUD) and fights harder.
+  twinFell(f) {
+    const tw = this.twins;
+    if (!tw || !tw.includes(f)) return;
+    const left = tw.find((q) => q !== f && q.alive);
+    this.twins = null;
+    if (!left) return;
+    const G = { ...GRIEF, ...(this.section?.boss?.grief ?? {}) };
+    left.stats.meleeMult *= G.damage;
+    left.stats.walkSpeed *= G.speed; left.stats.depthSpeed *= G.speed;
+    left.raged = true;
+    left.phase = Infinity;
+    this.boss = left;
+    this.world.events.emit('twinFall', { fallen: f, left });
   }
 
   // ------------------------------------------------------------ per frame
@@ -612,8 +654,9 @@ export class Stage {
     pr.broken = true;
     pr.fly = null;
     this.world.events.emit('propBreak', { prop: pr, dir, blast });
-    if (pr.opens) this.openWay(pr.opens);
-    if (pr.tag && !this.props.some((q) => q.tag === pr.tag && !q.broken)) this.world.events.emit('propsDown', { tag: pr.tag });
+    const lastOfTag = !pr.tag || !this.props.some((q) => q.tag === pr.tag && !q.broken);
+    if (pr.opens && lastOfTag) this.openWay(pr.opens); // (two chains on one gate: both must go)
+    if (pr.tag && lastOfTag) this.world.events.emit('propsDown', { tag: pr.tag });
     if (pr.challenge) this.ringBell(pr);
     if (pr.drop) {
       // a wall's shrine sits in the alcove behind it; everything else rolls out in front
@@ -725,6 +768,7 @@ export class Stage {
   // Is a falling-beam (or fire-grate) hazard live right now? ('rage': only while its boss rages;
   // 'phase:<id>': only once he has reached that phase)
   beamLive(hz) {
+    if ((hz.if || hz.unless) && this.story && !this.story.ok(hz)) return false; // (the rescued come back to help: only if they were saved)
     if (!hz.when) return true;
     if (hz.when.startsWith('freed:')) return !!this.story?.rescued.has(hz.when.slice(6));
     const b = this.boss;
@@ -839,7 +883,10 @@ export class Stage {
     if (!shots) { hz.shells = hz.shells.filter((s) => s.land > hz.t); }
     const P = hz.period ?? B.period;
     if (shots && !held && hz.t % P === 0) {
-      const heroes = this.players.filter((p) => p.alive);
+      // (your own people's stones go for the Ashen, never for a boss: he's yours)
+      const heroes = hz.friendly
+        ? this.livingFoes().filter((e) => !e.entering && !e.stats.boss)
+        : this.players.filter((p) => p.alive);
       const b = this.world.bounds;
       let fired = 0;
       for (let i = 0; i < shots && heroes.length; i++) {
@@ -861,6 +908,7 @@ export class Stage {
       s.y = y;
       this.world.events.emit('shellLand', { hazard: hz, shell: s });
       for (const f of this.world.fighters) {
+        if (hz.friendly && (f.team !== 'enemy' || f.stats.boss)) continue;
         if (Math.abs(f.x - s.x) > (hz.radius ?? B.radius) || Math.abs(f.z - s.z) > (hz.depth ?? B.depth) || Math.abs(f.h - y) > 70) continue;
         this.hurt(hz, f, hz.damage ?? B.damage, Math.sign(f.x - s.x) || 1, 'beam');
       }

@@ -13,7 +13,9 @@
 // 'collapse' (after Hollow Mountain: the mine brought down on them and they walked out of
 // it; frustration — he hurls the war map off its table), 'retreat' (after the Shattered
 // Ascent: Orsk dead, the army falling back to the Iron Gates; unease — horns, and he burns
-// the captain who brings the news to ash).
+// the captain who brings the news to ash), 'fear' (after the Iron Gates: the gates fallen,
+// Malgor dead — his helm rolled to the foot of the dais; fear — the fire in his hand gutters
+// out, and he orders the prison wing burned with the prisoners in it).
 
 import { SETTINGS } from '../config/settings.js';
 import { FONT, epicFill } from '../view/fonts.js';
@@ -64,6 +66,20 @@ export const CUTAWAYS = {
       { who: 'CAPTAIN', text: 'My king, the men are afraid. They say the Oath Keepers cannot be killed...' },
       { act: 'kill' }, // unease, turned on his own: an ember bolt from his hand; the captain burns to ash where he kneels
       { who: 'VAURATH', text: 'Now they have something else to be afraid of.' },
+    ],
+  },
+  fear: {
+    caption: 'THE BLACK KEEP',
+    noMalgor: true, // (he died at the gates)
+    beats: [
+      { who: 'MESSENGER', text: 'My king... the gates are open. The Marshal...' },
+      { act: 'helm' }, // the Iron Marshal's helm, dented and split, rolled across the floor to the foot of the dais
+      { who: 'VAURATH', text: 'He asked me three times. I told him no three times.' },
+      { act: 'gutter' }, // fear: the ember-fire gathers in his hand, shakes, and gutters out
+      { who: 'MESSENGER', text: 'The town is burning, my king. The people are going over to them.' },
+      { who: 'VAURATH', text: 'Then the prison wing burns too. Every cell. With every one of them in it.' },
+      { who: 'MESSENGER', text: 'My king... those are the prisoners they came for...' },
+      { who: 'VAURATH', text: 'Yes. Let them climb my walls for ashes.' },
     ],
   },
 };
@@ -150,7 +166,7 @@ export class CutawayScene extends Phaser.Scene {
     this.root.add(m);
     // Warlord Malgor, his champion, at the foot of the dais: his own painted strips
     const sheet = this.registry.get('enemySprites')?.warlord;
-    if (sheet && this.textures.exists(`${sheet.key}-react`)) {
+    if (!this.def.noMalgor && sheet && this.textures.exists(`${sheet.key}-react`)) {
       this.malgor = this.add.image(W * 0.6, H - 150, `${sheet.key}-react`, 'f0').setOrigin(sheet.ax / sheet.fw, sheet.ay / sheet.fh)
         .setScale(-1.1 / sheet.res, 1.1 / sheet.res);
       this.root.add(this.malgor);
@@ -182,6 +198,8 @@ export class CutawayScene extends Phaser.Scene {
     if (b.act === 'hurl') { this.hurl(); return; }
     if (b.act === 'horns') { this.horns(); return; }
     if (b.act === 'kill') { this.kill(); return; }
+    if (b.act === 'helm') { this.helm(); return; }
+    if (b.act === 'gutter') { this.gutter(); return; }
     this.who.setText(b.who).setColor(SPEAKER[b.who] ?? '#d8d0c0');
     this.line.setText(b.text).setAlpha(0);
     this.tweens.add({ targets: this.line, alpha: 1, duration: 250 });
@@ -329,6 +347,53 @@ export class CutawayScene extends Phaser.Scene {
       });
     });
     this.time.delayedCall(2600, () => { this.busy = false; this.next(); });
+  }
+
+  // the Iron Marshal's helm: dented, split, rolled across the floor past the messenger to
+  // the foot of the dais, where it rocks and stops; the hall goes still
+  helm() {
+    this.busy = true;
+    this.auto?.remove();
+    this.who.setText('(a helm rolls across the floor)').setColor('#9a8a7a');
+    this.line.setText('');
+    const W = SETTINGS.width; const H = SETTINGS.height;
+    const h = this.add.graphics();
+    h.fillStyle(0x2a2a30, 1).fillCircle(0, 0, 16).fillRect(-16, 0, 32, 10);
+    h.fillStyle(0x6a5a3a, 1).fillRect(-16, -2, 32, 3); // the gold band
+    h.fillStyle(0x0a0a0c, 1).fillRect(-8, -4, 16, 3); // the eye slit
+    h.lineStyle(2, 0x0a0a0c, 1).lineBetween(4, -16, -2, 2); // the split
+    h.setPosition(-30, H - 100);
+    this.root.add(h);
+    playSfx(this, 'block', { volume: 0.6, pitch: -1400, minGapMs: 0 });
+    this.tweens.add({
+      targets: h, x: W * 0.62, angle: 540, duration: 1500, ease: 'Quad.easeOut',
+      onComplete: () => {
+        playSfx(this, 'block', { volume: 0.4, pitch: -1800, minGapMs: 0 });
+        this.tweens.add({ targets: h, angle: 520, duration: 180, yoyo: true, repeat: 1 });
+      },
+    });
+    this.time.delayedCall(1000, () => this.tweens.add({ targets: this.messenger, x: -16, duration: 200, ease: 'Quad.easeOut' }));
+    this.time.delayedCall(2600, () => { this.busy = false; this.next(); });
+  }
+
+  // fear: the ember-fire gathers in his open hand as it always has; it shakes, sputters and
+  // goes out, and the torches with it, one by one; only his eyes are left
+  gutter() {
+    this.busy = true;
+    this.auto?.remove();
+    this.who.setText(''); this.line.setText('');
+    this.tweens.add({ targets: this.hand, scale: 1.8, alpha: 1, duration: 900, ease: 'Sine.easeIn' });
+    playSfx(this, 'fireWhoosh', { volume: 0.4, pitch: -900, minGapMs: 0 });
+    this.time.delayedCall(950, () => {
+      this.tweens.killTweensOf(this.hand);
+      this.tweens.add({ targets: this.hand, x: this.hand.x + 3, duration: 50, yoyo: true, repeat: 8 });
+      this.tweens.add({ targets: this.hand, scale: 0, alpha: 0, duration: 900, delay: 400, ease: 'Quad.easeIn' });
+    });
+    this.time.delayedCall(1500, () => {
+      this.torches.forEach((t, i) => this.time.delayedCall(i * 140, () => { this.tweens.killTweensOf(t); this.tweens.add({ targets: t, alpha: 0.08, duration: 300 }); }));
+      this.eyes.setFillStyle(0xff5a20);
+    });
+    this.time.delayedCall(3200, () => { this.busy = false; this.next(); });
   }
 
   finish() {

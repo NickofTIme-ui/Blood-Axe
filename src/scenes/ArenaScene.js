@@ -530,6 +530,13 @@ export class ArenaScene extends Phaser.Scene {
       playSfx(this, 'kick', { volume: 1, pitch: -1200, minGapMs: 0 });
       hud()?.showBoss?.(boss);
     });
+    // (the twins) one is down: his brother takes his place on the bar, and goes wild
+    ev.on('twinFall', ({ left }) => {
+      this.callout('HE AVENGES HIS BROTHER!', '#ff9a30', 26);
+      this.fx.shake(7, 18);
+      playSfx(this, 'kick', { volume: 0.9, pitch: -1500, minGapMs: 0 });
+      hud()?.showBoss?.(left);
+    });
     ev.on('bossRage', () => {
       if (this.stage.section?.boss?.phases) return; // (a boss with phases: each says its own)
       this.callout('HE CALLS HIS DOGS!', '#ff9a30', 24);

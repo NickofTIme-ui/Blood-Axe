@@ -355,6 +355,14 @@ the generator and run `node tools/sfx-gen/electric.js`.
 - Art prompts: items 32-38 in `docs/campaign/art-levels-1-2.md` (the ascent's backdrop, four set pieces, the catapult). Orsk wears the Berserker's strips. Screens: project files `campaign/shattered-ascent/`.
 - Checked: logic tests (every hero walks it, the bombardment, the shelter, Orsk) and headless screenshots. Not played by a person.
 
+## Cloud, 2026-10-05: level 5, THE IRON GATES (branch claude/campaign-level-5-u65mi8, off the campaign branch; not on main, not on itch)
+- Built in its own thread while the campaign thread paints art; to be merged into `claude/project-thread-l70xhx`. Code art: `src/data/stageGates.js`, `src/view/GatesView.js`. The ascent now leads into it; it names THE BLACK KEEP as next (not built).
+- Route: the killing ground (thralls the King shut outside, as a horde), the gatehouse (pitch grates, the stair, the rotten floor), the winch room (THE GATE TWINS, Hask and Hrolf; break both winch chains and the gate rises), the gate yard (the counter-attack; the people saved earlier come back), the lower town (the King burning his own people: defend the townsfolk, free the granary), MALGOR, THE IRON MARSHAL (archers on the wall at two thirds, rage at one third), the Keep road.
+- New systems: `boss.twin` (two bosses; when one dies the other takes the HUD bar and fights harder, `boss.grief`; story key `twin:<section>`), props with the same `tag` and `opens` (the way opens only when all are broken), hazards with `if` / `unless` (story conditions), `bombard.friendly` (the rescued's slings: only hit the Ashen, never a boss), villagers with `if` (who stands at the Keep road depends on who was saved in levels 1-4), the `winch` prop.
+- The fifth king cutaway ('fear': Malgor's helm rolled to the dais, the fire in his hand gutters out, he orders the prison wing burned).
+- Art prompts: items 41-47 in `docs/campaign/art-levels-1-2.md`. The twins wear the Gladiator's strips, Malgor his own. Screens: project files `campaign/iron-gates/`.
+- Checked: logic tests (every hero walks it, the twins and the gate, the returning slings, Malgor's phases), the sweep bot from every checkpoint with every hero, headless screenshots. Not played by a person.
+
 ## Paused, 2026-10-05 00:55 UTC (Nick out of usage until it refreshes)
 - Campaign branch `claude/project-thread-l70xhx` is pushed (latest: heads on pikes in the village); it's PR #12 into main, open, waiting on Nick's OK to merge.
 - **Art**: painting in ChatGPT on Nick's PC finished everything level 1 can use: backdrop (items 1-5), the five set pieces (well, barn, stables, longhall, gate), both props (wreckage, cart; whole and broken) and the stampede horse. All only on the PC in `assets/env/village/` and `assets/fx/`, uncommitted (no GitHub login there). Not yet: pikes picture, villagers. Next: Gallows Wood, then Hollow Mountain.

@@ -19,6 +19,7 @@ import { STAGE_VILLAGE } from '../src/data/stageVillage.js';
 import { STAGE_WOOD } from '../src/data/stageWood.js';
 import { STAGE_MINE } from '../src/data/stageMine.js';
 import { STAGE_ASCENT } from '../src/data/stageAscent.js';
+import { STAGE_GATES } from '../src/data/stageGates.js';
 import { STAGES } from '../src/data/stages.js';
 import { LINE, NPC } from '../src/stage/Story.js';
 import { Progress, PROGRESS } from '../src/progression/Progress.js';
@@ -3020,6 +3021,120 @@ test('ascent: Siege Commander Orsk has the Keep fire on his own camp at two thir
   assert(phases.join() === 'barrage,berserk' && b.raged, `berserk (${phases})`);
 });
 
+
+// ------------------------------------------------------------ The Iron Gates (level 5)
+
+const GATE_SEC = (id) => STAGE_GATES.sections.findIndex((q) => q.id === id);
+function gatesSetup(section, { x, z, hero = 'warrior', opts = {} } = {}) {
+  const world = new World({ seed: 23 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: x ?? 200, z: z ?? 440, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_GATES, opts);
+  st.start(p, { section });
+  hush(st);
+  if (x != null) { p.x = x; p.z = z; st.placeOnGround(p); }
+  const run = (n, each) => { for (let i = 0; i < n; i++) { world.tick(); st.update(); each?.(i); } };
+  return { world, p, st, run };
+}
+// (the walker smashes what a player would: the winch chains, the granary's bar)
+const gatesBreaker = (w, st, p) => { for (const pr of st.props) if (!pr.broken && (pr.kind === 'winch' || pr.kind === 'wreckage') && Math.abs(pr.x - p.x) < 160) st.breakProp(pr, 1); };
+const EVERYONE = ['shelter', 'bram', 'hilde', 'joren', 'convoy'];
+// a fighter killed the way a blow kills him (Stage listens for 'kill')
+const slay = (world, f) => { f.health = 0; world.events.emit('kill', { defender: f, attacker: null }); };
+
+test('gates: the level is wired in: the ascent leads to it, its cutaway exists', () => {
+  assert(STAGES[STAGE_ASCENT.next.id] === STAGE_GATES, 'the ascent leads on to the gates');
+  const src = readFileSync(new URL('../src/scenes/CutawayScene.js', import.meta.url), 'utf8');
+  assert(new RegExp(`\\n  ${STAGE_GATES.cutaway}: \\{`).test(src), `the king's fifth scene (${STAGE_GATES.cutaway})`);
+  assert(src.includes("{ act: 'helm' }") && src.includes("{ act: 'gutter' }") && src.includes("b.act === 'gutter'"), 'the helm, and the fire that goes out');
+});
+
+test('gates: every hero walks the Iron Gates (no upgrades), without a fall, raises the gate, saves the town; the saved come back', () => {
+  for (const hero of ['warrior', 'mage', 'rogue']) {
+    const r = campaignRun(STAGE_GATES, hero, {
+      frames: 60 * 420, opts: { saved: EVERYONE },
+      onTick: (w, st, p) => { gatesBreaker(w, st, p); p.health = p.stats.maxHealth; },
+    });
+    assert(r.won === 1 && r.falls === 0, `${hero}: ${r.won ? 'out' : `stuck at x ${Math.round(r.x)} (${r.stage.section.id}, ${r.stage.phase})`} in ${r.secs.toFixed(0)} s, ${r.falls} falls`);
+    for (const id of ['townsfolk', 'granary']) assert(r.rescued.includes(id), `${hero}: ${id} saved (${r.rescued})`);
+    for (const id of ['opening', 'gateUp', 'miners', 'convoy', 'joren', 'malgor', 'fallen', 'returned', 'bramHilde', 'keep']) assert(r.beats.includes(id), `${hero}: ${id} played (${r.beats})`);
+    assert(!r.beats.includes('alone'), `${hero}: not alone with the miners back (${r.beats})`);
+  }
+  // nobody saved on the way: nobody comes back
+  const r = campaignRun(STAGE_GATES, 'warrior', { frames: 60 * 420, onTick: (w, st, p) => { gatesBreaker(w, st, p); p.health = p.stats.maxHealth; } });
+  assert(r.won === 1 && r.beats.includes('alone') && !r.beats.includes('miners') && !r.beats.includes('returned'), `alone (${r.beats})`);
+});
+
+test('gates: the twins: both must die; when one falls the other takes his place and fights harder; the gate rises only when both chains break', () => {
+  const { world, p, st, run } = gatesSetup(GATE_SEC('winch'), { x: 3800, z: 440 });
+  st.fightOn = true; st.waveIndex = 99;
+  const events = []; world.events.on('twinFall', (e) => events.push(e));
+  const beats = []; world.events.on('storyBeat', (e) => beats.push(e.beat.id));
+  for (const b of st.story.beats) if (['grief', 'gateUp'].includes(b.id)) b.fired = false;
+  run(60, () => { p.health = p.stats.maxHealth; p.awe = 0; });
+  assert(st.boss?.stats.name === 'Hask of the Gate' && st.twins?.length === 2, 'Hask and his brother');
+  const [hask, hrolf] = st.twins;
+  assert(hrolf.stats.boss && hrolf.stats.name === 'Hrolf of the Gate' && hrolf.health === hask.health, 'Hrolf as tough as his brother');
+  const mult = hrolf.stats.meleeMult; const speed = hrolf.stats.walkSpeed;
+  slay(world, hask);
+  run(2, () => { p.health = p.stats.maxHealth; });
+  assert(events.length === 1 && events[0].left === hrolf && st.boss === hrolf, 'his brother takes his place');
+  assert(Math.abs(hrolf.stats.meleeMult - mult * 1.3) < 1e-6 && Math.abs(hrolf.stats.walkSpeed - speed * 1.2) < 1e-6 && hrolf.raged, 'and fights harder');
+  run(60 * 8, () => { p.health = p.stats.maxHealth; p.invincible = true; });
+  assert(beats.includes('grief'), `his roar (${beats})`);
+  assert(st.phase === 'fight', 'the fight goes on while a twin stands');
+  slay(world, hrolf); hrolf.removeMe = true;
+  run(120, () => { p.health = p.stats.maxHealth; });
+  assert(st.phase === 'fight', 'both dead, but the way on waits on the winch');
+  const gate = st.terrain.blocks.find((b) => b.tag === 'gate');
+  const [c1, c2] = st.props.filter((pr) => pr.tag === 'winch');
+  st.breakProp(c1, 1);
+  assert(gate.solid && !gate.gone, 'one chain broken: the gate holds');
+  st.breakProp(c2, 1);
+  assert(!gate.solid && gate.gone, 'both broken: the gate is up');
+  run(60 * 6, () => { p.health = p.stats.maxHealth; });
+  assert(st.phase !== 'fight' && beats.includes('gateUp'), `the way on opens (${st.phase}, ${beats})`);
+});
+
+test('gates: the rescued come back: the miners\' slings hit only the Ashen, never a boss; nobody saved, nobody throws', () => {
+  const yard = GATE_SEC('yard');
+  const { world, p, st, run } = gatesSetup(yard, { x: 5400, z: 440, opts: { saved: ['shelter'] } });
+  st.fightOn = true; st.waveIndex = 99;
+  const hzs = st.hazards.filter((h) => h.type === 'bombard' && h.section === yard);
+  assert(hzs.length === 2 && st.bombardShots(hzs[0]) === 2 && st.bombardShots(hzs[1]) === 0, 'the miners throw; the convoy\'s people weren\'t saved');
+  const land = []; world.events.on('shellLand', (e) => land.push(e.shell));
+  const hurt = []; world.events.on('hazardHit', (e) => hurt.push(e.fighter));
+  p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  const e = createEnemy(world, 'grunt', 5700, 430); e.entering = false; e.controller = new Controller();
+  const big = createEnemy(world, 'gladiator', 5900, 430); big.entering = false; big.controller = new Controller(); big.stats = { ...big.stats, boss: true };
+  run(60 * 10, () => {
+    p.health = p.stats.maxHealth; p.x = 5400; p.z = 440;
+    for (const f of [e, big]) { f.health = f.stats.maxHealth; f.x = f === e ? 5700 : 5900; f.z = 430; }
+  });
+  assert(land.length >= 4 && land.every((s) => Math.abs(s.x - 5700) < 280), `the stones go for the Ashen man (${land.map((s) => Math.round(s.x))})`);
+  assert(hurt.includes(e) && !hurt.includes(p) && !hurt.includes(big), 'they hit him, never the hero, never a boss');
+  // nobody saved: nobody on the wall, nobody back at the Keep road
+  const b2 = gatesSetup(yard, { x: 5400, z: 440 });
+  assert(b2.st.hazards.filter((h) => h.type === 'bombard' && h.section === yard).every((h) => b2.st.bombardShots(h) === 0), 'no slings');
+  assert(!b2.st.story.npc('minersBack') && !b2.st.story.npc('bramBack'), 'nobody at the Keep road');
+  assert(st.story.npc('minersBack') && !st.story.npc('bramBack'), 'the miners are there; Bram wasn\'t saved');
+});
+
+test('gates: Malgor, the Iron Marshal: the archers loose at two thirds (the miners answer if saved); at one third he will not fall', () => {
+  const { world, p, st, run } = gatesSetup(GATE_SEC('marshal'), { x: 8300, z: 440, opts: { saved: ['shelter'] } });
+  const phases = []; world.events.on('bossPhase', (e) => phases.push(e.phase.id));
+  bossUp(st, run, p);
+  const b = st.boss;
+  assert(b?.stats.name === 'Malgor, the Iron Marshal' && b.stats.boss, 'the Marshal is here');
+  const hzs = st.hazards.filter((h) => h.type === 'bombard' && h.section === GATE_SEC('marshal'));
+  const archers = hzs.find((h) => !h.friendly); const slings = hzs.find((h) => h.friendly);
+  assert(st.bombardShots(archers) === 0 && st.bombardShots(slings) === 0, 'nothing from the walls yet');
+  b.health = b.stats.maxHealth * 0.6;
+  run(2, () => { p.health = p.stats.maxHealth; });
+  assert(phases.join() === 'walls' && st.bombardShots(archers) === 2 && st.bombardShots(slings) === 1, `the archers, and the slings (${phases})`);
+  b.health = b.stats.maxHealth * 0.2;
+  run(2, () => { p.health = p.stats.maxHealth; });
+  assert(phases.join() === 'walls,iron' && b.raged, `he will not fall (${phases})`);
+});
 
 // ---------------------------------------------------------------- hack-and-slash pillars
 

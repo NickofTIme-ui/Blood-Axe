@@ -23,6 +23,7 @@ import { VillageBackdrop } from './VillageView.js';
 import { WoodBackdrop } from './WoodView.js';
 import { MineBackdrop } from './MineView.js';
 import { AscentBackdrop } from './AscentView.js';
+import { GatesBackdrop } from './GatesView.js';
 import { artKey } from './levelArt.js';
 import { LEVEL_ART } from '../data/levelArt.js';
 
@@ -66,6 +67,9 @@ export class TerrainView {
     // THE SHATTERED ASCENT (theme 'ascent'): grey cliffs, wind, the Keep across the gorge
     // (view/AscentView.js); its ledges are the cliff's own rock, its drops the gorge
     if (data.theme === 'ascent') this.backdrop = new AscentBackdrop(scene, stage);
+    // THE IRON GATES (theme 'gates'): the iron wall and its gatehouse, the burning town, the
+    // Keep filling the sky (view/GatesView.js)
+    if (data.theme === 'gates') this.backdrop = new GatesBackdrop(scene, stage);
     this.water = this.wood || this.mine;
     this.theme = data.theme;
     this.drawFloor();
