@@ -18,7 +18,7 @@
 
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
-import { playSfx } from '../core/Sfx.js';
+import { playSfx, playSplash } from '../core/Sfx.js';
 import { VillageBackdrop } from './VillageView.js';
 import { WoodBackdrop } from './WoodView.js';
 import { MineBackdrop } from './MineView.js';
@@ -442,6 +442,13 @@ export class TerrainView {
     ev.on('plankFall', ({ block: b }) => {
       playSfx(this.scene, 'kick', { volume: 0.6, pitch: -900, minGapMs: 0 });
       this.dust(b, 18);
+    });
+    // going over: a scream, never the same one twice running — or, into water, a splash
+    ev.on('pitDrop', () => {
+      if (this.water) { playSplash(this.scene); return; }
+      const keys = ['fallScream1', 'fallScream2', 'fallScream3'].filter((k) => k !== this.lastScream);
+      this.lastScream = keys[Math.floor(Math.random() * keys.length)];
+      playSfx(this.scene, this.lastScream, { volume: 0.9, spread: 60, minGapMs: 0 });
     });
     ev.on('pitFall', ({ fighter }) => {
       if (fighter.team === 'player') {

@@ -12,6 +12,7 @@
 import { S as GS, woundTex, boneStubTex, bandTex, pieceTex, kindForCut } from './goreArt.js';
 import { GutRope } from './GutRope.js';
 import { SETTINGS } from '../config/settings.js';
+import { landThud } from '../core/Sfx.js';
 
 const G = 1500;
 // old loose-bit names -> painted pieces (effects/goreArt.js)
@@ -184,7 +185,7 @@ class Chunk {
         this.h = this.rad;
         if (this.vh < -160) {
           // heavy wet thud: small bounce, loses most of its spin
-          if (!this.landed) gore.burst(this.x, this.z, 2, Math.sign(this.vx) || 1, Math.round(10 * gore.amount), 0.5);
+          if (!this.landed) { gore.burst(this.x, this.z, 2, Math.sign(this.vx) || 1, Math.round(10 * gore.amount), 0.5); landThud(this.sys.scene, this.rad < 8); }
           this.landed = true;
           this.vh = -this.vh * 0.2;
           this.vx *= 0.6; this.vz *= 0.45; this.spin *= 0.4;
@@ -234,6 +235,7 @@ class Chunk {
           if (!this.landed) {
             this.landed = true;
             this.sys.scene.fx?.shake(2, 6);
+            landThud(this.sys.scene, false);
             gore.burst(this.x + this.fallDir * this.bh * 0.5, this.z, 4, this.fallDir, Math.round(14 * gore.amount), 0.6);
           }
         }

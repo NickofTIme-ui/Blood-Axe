@@ -15,6 +15,8 @@
 // the arena walls, and work as anchors for gut ropes (local()/worldPoint()).
 // Stepped once per game tick (update()), so slow motion slows them too.
 
+import { landThud } from '../core/Sfx.js';
+
 const GRAVITY = 1700;
 
 const CUTS = {
@@ -371,6 +373,7 @@ export class SpriteCuts {
           p.h = p.rest;
           if (Math.abs(p.vh) > 160) {
             p.vh = -p.vh * 0.22; p.vx *= 0.5; p.spin *= 0.4; // thud, a small bounce
+            if (!p.thudded) { p.thudded = true; landThud(this.scene, p.gib); }
             if (gore?.level > 0) {
               gore.burst(p.x, p.z, 4, Math.sign(p.vx) || p.face, Math.round((p.gib ? 6 : 16) * (gore.amount ?? 1)), 0.6);
               for (let i = 0; i < (p.gib ? 1 : 3); i++) gore.splat(p.x + rand(-26, 26) * (p.gib ? 0.4 : 1), p.z + rand(-4, 4), rand(1.6, 3) * (p.gib ? 0.6 : 1));

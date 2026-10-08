@@ -254,6 +254,16 @@ Shuriken stamina, boss victory beat, roll/stuck mines with the frozen reactions 
 - `offscreenX` in `src/entities/Enemy.js` places each man past the edge of anything a hero's screen can show (centred on the hero, held inside the camera bounds, never narrower than a screen), plus a margin. It reads only sim state, so both online machines agree. `createEnemy(..., { entering: true })` lets him stand outside the bounds (`unbounded`) and his brain only walks him in until he's inside the bounds and within 400 px of a hero; then he fights as normal. Hazards skip him while he's entering. Stage waves, boss adds and the test-arena waves (key 9) all use it; Malgor's own entrance is unchanged; the debug spawn-near key still drops a man beside you.
 - Checked in a headless browser: every enemy spawned outside the view and first showed up at the screen edge, walking. Logic test added (hero at the start, at the right wall, mid-room). Sim change: both online players need the new build.
 
+## PC, 2026-10-08: fall and gore sounds (not on itch)
+- Nick's clips, copied from Downloads into `assets/audio/sfx/` and listed in `SFX` in `src/core/Sfx.js`:
+  - Cliff or pit drop: `fall-scream-1..3`, one at random, never the same twice running. Water pits (theme `wood` and `mine`) play `playSplash` instead: `water-splash`, then `water-air` under it at 0.35 s, then `water-bubble` at 2.3 s, layered at runtime as one sound.
+  - Cut in half (`halfH`, `halfV`, the halve finisher's `sever`, the chain finisher's `chainCut`): `blood-splatter`.
+  - Head off (`decap`): `head-off` or `limb-off` at random. Arm off (`maim`) and `limbs` fatality: `limb-off`.
+  - Impale finisher, booted off the blade (`kick` beat): `blade-out`.
+  - A severed piece hitting the floor (`SpriteCut` and `Dismember` landings): `gore-land` via `landThud`, at most one every 110 ms so a man blown apart gives a few thuds.
+- Sim: `Stage.updateFalls` emits `pitDrop` once per fall as a living fighter sinks 20 px below the floor over a pit (`f.pitDropping`, reset when he is back at floor height). Views only, no rolls, so online play stays in step. `TerrainView` plays the sounds.
+- Checked in the browser by dropping heroes and enemies into a Gallows pit and a Gallows Wood stream and forcing each kill type. Logic tests pass (browser runner).
+
 ## Cloud, 2026-10-03: Mage lightning sounds (not on itch)
 The Mage's lightning has its own electric sounds now: a rising hum while the bolt charges, a
 zap when it leaves the staff, a stuttering shock buzz when it hits, a short snap for each fork,

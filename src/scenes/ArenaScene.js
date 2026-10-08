@@ -195,6 +195,7 @@ export class ArenaScene extends Phaser.Scene {
     ev.on('maim', (e) => {
       this.gore.onMaim(e, this.views.get(e.defender.id));
       this.fx.shake(4, 10);
+      playSfx(this, 'limbOff', { volume: 0.85, spread: 80, minGapMs: 60 });
       this.popup(e.x, e.z - e.h - 30, e.limb === 'armF' ? 'DISARMED!' : 'ARM OFF!', '#ff3a2a');
     });
     ev.on('swing', ({ fighter, move }) => {
@@ -492,6 +493,9 @@ export class ArenaScene extends Phaser.Scene {
       this.time.delayedCall(260, () => cam.zoomTo(this.baseZoom, 380, 'Quad.easeInOut', true));
     }
     if (e.fatality === 'explode') cam.flash(120, 140, 10, 10);
+    if (e.fatality === 'halfH' || e.fatality === 'halfV') playSfx(this, 'bloodSplatter', { volume: 0.9, spread: 80, minGapMs: 60 });
+    if (e.fatality === 'decap') playSfx(this, [['headOff', 1], ['limbOff', 1]], { volume: 0.9, spread: 80, minGapMs: 60 });
+    if (e.fatality === 'limbs') playSfx(this, 'limbOff', { volume: 0.9, spread: 80, minGapMs: 60 });
   }
 
   // ------------------------------------------------------------ the stage
@@ -863,6 +867,8 @@ export class ArenaScene extends Phaser.Scene {
         playSfx(this, 'swingAlt', { volume: 0.35, pitch: -900, spread: 30, minGapMs: 0 });
         break;
       case 'kick':
+        // booted off: the blade comes out of him
+        playSfx(this, 'bladeOut', { volume: 0.9, spread: 60, minGapMs: 0 });
         this.rumble(0.7, 0.9, 110);
         this.slowmo(0.45, 200);
         this.kickImpact(v.x - dir * 8, v.z, v.h + H * 0.5, dir);
@@ -873,6 +879,7 @@ export class ArenaScene extends Phaser.Scene {
         this.fx.shake(7, 12);
         playSfx(this, 'heavySwing', { volume: 0.8, spread: 60 });
         playSfx(this, 'finisher', { volume: 0.7, pitch: -500, spread: 60 });
+        playSfx(this, 'bloodSplatter', { volume: 0.9, spread: 80, minGapMs: 0 });
         g.spark(v.x, v.z, v.h + H * 0.5, 0xdfe8ff, 16);
         this.popup(v.x, v.z - v.h - H - 34, 'CUT IN HALF!', '#ff2a1a', 24);
         break;
@@ -905,7 +912,8 @@ export class ArenaScene extends Phaser.Scene {
         g.spark(v.x, v.z, hh, 0xdfe8ff, big ? 14 : 8);
         break;
       }
-      case 'chainCut':
+      case 'chainCut': // (the blade through and gone: he comes apart)
+        playSfx(this, 'bloodSplatter', { volume: 0.8, spread: 80, minGapMs: 60 });
         break;
     }
   }
