@@ -39,6 +39,7 @@ export const STAGE_MINE = {
   theme: 'mine',
   tall: true,
   castle: { x: 760, scale: 0.8, detail: 0.6 }, // (seen only from the far side, at the end)
+  music: 'caves', // (core/Music.js)
   companions: { leaveAfter: 'opening', meet: 8800, farewell: 'daylight' },
 
   sections: [

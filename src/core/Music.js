@@ -11,11 +11,12 @@ export const MUSIC = {
   battle: 'assets/audio/gameplay-battle-field.mp3', // arena
   boss: 'assets/audio/boss-theme.mp3',              // the Warlord (until the file is added, the battle track plays on)
   wilderness: 'assets/audio/wilderness.mp3',        // Gallows Wood (a stage's `music` picks its track)
+  caves: 'assets/audio/caves.mp3',                  // the Hollow Mountain ("Fiends Path")
 };
 
 // Per-track level, so every stage sits as loud as the battle track (measured RMS:
-// battle -18.5 dB, wilderness -11.0 dB)
-const GAIN = { wilderness: 0.42 };
+// battle -18.5 dB, wilderness -11.0 dB, caves -11.6 dB)
+const GAIN = { wilderness: 0.42, caves: 0.45 };
 
 let current = null; // { key, sound }
 
