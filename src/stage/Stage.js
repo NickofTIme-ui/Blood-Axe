@@ -477,7 +477,11 @@ export class Stage {
       if (this.twins) this.twins[1].fsm.change('bossEntrance', { toX: toX + 70, speed: E.speed, stepEvery: E.stepEvery });
       // the heroes stand frozen while he comes (and a moment after)
       const frames = Math.ceil(((x - toX) / E.speed) * 60) + (E.awe ?? 0);
-      if (E.freeze !== false) for (const p of this.players) if (p.alive) p.awe = frames;
+      // (and every other foe on the field: nobody gets free hits on a frozen hero)
+      if (E.freeze !== false) {
+        for (const p of this.players) if (p.alive) p.awe = frames;
+        for (const f of this.world.fighters) if (f.team === 'enemy' && f.alive && f !== boss && !this.twins?.includes(f)) { f.awe = frames; f.vx = f.vz = 0; }
+      }
     }
     if (def.escort?.length) this.spawnWave(def.escort); // (the men or dogs he brings with him)
     this.world.events.emit('bossSpawn', { boss, entrance: !!E });

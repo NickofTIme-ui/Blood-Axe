@@ -30,6 +30,9 @@ import { keyLayer } from './envArt.js';
 
 // the painted oath shrine is drawn this tall (about twice a man)
 const SHRINE_H = 170;
+// the painted lantern post: drawn this tall; its lantern at this point of the 300x400 picture
+const LANTERN_H = 150;
+const LANTERN_AT = [200, 134];
 
 const COL = {
   skyTop: 0x05070d, skyLow: 0x1c2733, mist: 0x8aa4b8,
@@ -165,7 +168,13 @@ export class TerrainView {
       g.fillStyle(this.water ? 0x0c1820 : 0x000000, 1).fillRect(p.x0, p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0), p.x1 - p.x0, p.z1 - p.z0 + (p.z0 <= SETTINGS.world.floorTop ? 50 : 0) + 40);
       // a cold glow at the lip so the edge reads (in the village: a burning cellar, its fire far
       // down; in the wood: a stream, black water running fast)
-      if (this.water) {
+      if (this.water && s.textures.exists('water-src')) {
+        // the painted stream (assets/env/water.png, a seamless tile): it runs toward the camera
+        const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0);
+        const ws = s.add.tileSprite(p.x0, top, p.x1 - p.x0, p.z1 + 40 - top, 'water-src').setOrigin(0).setTileScale(0.32).setDepth(DEPTH.floor + 4.1);
+        s.tweens.add({ targets: ws, tilePositionY: -1024, duration: 9000, repeat: -1 });
+        s.tweens.add({ targets: ws, tilePositionX: { from: 0, to: 18 }, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+      } else if (this.water) {
         // (it runs down out of the trees at the back and on toward the camera)
         g.lineStyle(1, 0x3a5a70, 0.5);
         for (let y = p.z0 - 40; y < p.z1 + 30; y += 18) g.lineBetween(p.x0 + 6, y, p.x1 - 6, y + 4);
@@ -377,6 +386,17 @@ export class TerrainView {
         g.fillStyle(0x1a1410, 1).fillRect(l.x - 2, y0 - 70, 4, 70);
         s.add.image(l.x, y0 - 74, 'flame').setOrigin(0.5, 1).setScale(0.5, 0.7).setTint(COL.lantern).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
         s.add.image(l.x, y0 - 80, 'glow').setScale(2.2).setTint(COL.lantern).setAlpha(0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
+        continue;
+      }
+      if (s.textures.exists('lantern-src')) {
+        // the painted lantern post (assets/env/lantern.png, on magenta: cut out once); its
+        // lantern hangs at LANTERN_AT of the picture, where the cold light is
+        if (!s.textures.exists('lantern')) s.textures.addCanvas('lantern', keyLayer(s.textures.get('lantern-src').getSourceImage(), 'magenta'));
+        const k = LANTERN_H / 400;
+        s.add.image(l.x, y0 + 3, 'lantern').setOrigin(0.5, 0.98).setScale(k).setDepth(l.z - 0.2);
+        const lx = l.x + (LANTERN_AT[0] - 150) * k; const ly = y0 + 3 - (392 - LANTERN_AT[1]) * k;
+        const glow = s.add.image(lx, ly, 'glow').setScale(2).setTint(0xb8ffd8).setAlpha(0.45).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
+        s.tweens.add({ targets: glow, alpha: { from: 0.32, to: 0.5 }, duration: 900 + (l.x % 400), yoyo: true, repeat: -1 });
         continue;
       }
       g.fillStyle(0x1a1410, 1).fillRect(l.x - 2, y0 - 96, 4, 96);

@@ -20,10 +20,36 @@ import { World } from '../core/World.js';
 import { Controller } from '../core/Controller.js';
 import { createPlayer } from '../entities/Player.js';
 import { SPRITES } from './levelArt.js';
+import { keyLayer } from './envArt.js';
 
 const TUNIC = [0x5a6a5a, 0x6a5a48, 0x4a5468, 0x6a4a4a, 0x5a5048, 0x58586a];
 const SKIN = 0xc8a080;
 const HEROES = ['warrior', 'mage', 'rogue'];
+
+// The painted cage (assets/env/cage.png: shut on the left, broken open on the right, on
+// magenta): cut out once into 'cage-shut' and 'cage-open', each trimmed to its bars.
+const CAGE_H = 118; // drawn this tall (at depth scale 1): three men crouch in it
+function paintedCage(scene) {
+  const T = scene.textures;
+  if (T.exists('cage-shut')) return true;
+  if (!T.exists('cage-src')) return false;
+  const img = T.get('cage-src').getSourceImage();
+  const half = Math.floor(img.width / 2);
+  for (const [name, x0] of [['cage-shut', 0], ['cage-open', half]]) {
+    const c = document.createElement('canvas'); c.width = half; c.height = img.height;
+    c.getContext('2d').drawImage(img, x0, 0, half, img.height, 0, 0, half, img.height);
+    const cut = keyLayer(c, 'magenta');
+    const px = cut.getContext('2d').getImageData(0, 0, half, img.height).data;
+    let l = half; let r = 0; let t = img.height; let b = 0;
+    for (let y = 0; y < img.height; y++) for (let x = 0; x < half; x++) {
+      if (px[(y * half + x) * 4 + 3] > 40) { if (x < l) l = x; if (x > r) r = x; if (y < t) t = y; if (y > b) b = y; }
+    }
+    const out = document.createElement('canvas'); out.width = r - l + 1; out.height = b - t + 1;
+    out.getContext('2d').drawImage(cut, l, t, out.width, out.height, 0, 0, out.width, out.height);
+    T.addCanvas(name, out);
+  }
+  return true;
+}
 // the painted villagers (data/levelArt.js SPRITE_SHEETS): each pose's cell in its sheet
 // (run: the cells it cycles through); a pose a sheet lacks falls back to standing.
 // The three painted run poses (one foot down, legs passing, the other foot down) play as a
@@ -208,6 +234,13 @@ export class NpcView {
         const many = n.group ? 3 : 1;
         for (let i = 0; i < many; i++) this.figure(g, n.x - (many - 1) * 12 + i * 24, y - 26, k * 0.85, i === many - 1 && SPRITES.captive ? 'grip' : 'cower', t + i * 5, tun(i), -1, SPRITES.captive ? 'captive' : undefined);
       } else if (n.state === 'free') this.figure(g, n.x + 40, y, k, 'stand', t, tun(0), 1);
+      if (paintedCage(this.scene)) {
+        // the painted cage over them (its bars in front; the shut one, or broken open)
+        v.cage ??= this.scene.add.image(0, 0, 'cage-shut').setOrigin(0.5, 1);
+        v.cage.setTexture(open ? 'cage-open' : 'cage-shut').setPosition(n.x, y - 20).setDepth(g.depth + 0.5).setVisible(true);
+        v.cage.setScale((CAGE_H * k * (n.group ? 1 : 0.85)) / v.cage.frame.height);
+        return;
+      }
       const w = (n.group ? 96 : 64) * k; const h = 70 * k;
       g.fillStyle(0x2a2016, 1).fillRect(n.x - w / 2 - 4, y - 28, w + 8, 6); // its floor, on the cart
       g.lineStyle(3, 0x4a4a52, 1).strokeRect(n.x - w / 2, y - 28 - h, w, h);

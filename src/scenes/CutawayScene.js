@@ -137,6 +137,9 @@ export class CutawayScene extends Phaser.Scene {
   // before it; the messenger on his knees
   drawRoom(W, H) {
     const g = this.add.graphics();
+    // the painted hall (assets/env/keep_hall.png), when it is in: the code drawing below is hidden
+    const painted = this.textures.exists('keep-hall');
+    if (painted) { this.root.add(this.add.image(0, 0, 'keep-hall').setOrigin(0).setDisplaySize(W, H)); g.setVisible(false); }
     g.fillGradientStyle(0x0a0812, 0x0a0812, 0x1a1428, 0x1a1428, 1).fillRect(0, 0, W, H);
     // pillars receding
     for (let i = 0; i < 6; i++) {
@@ -158,9 +161,11 @@ export class CutawayScene extends Phaser.Scene {
     this.root.add(g);
     this.torches = [];
     // violet torches
-    for (const x of [130, 490, 850]) {
-      const glow = this.add.image(x, 120, 'glow').setScale(3).setTint(0x9070ff).setAlpha(0.5).setBlendMode(Phaser.BlendModes.ADD);
-      const fl = this.add.image(x, 128, 'flame').setOrigin(0.5, 1).setScale(0.5, 0.7).setTint(0xb090ff).setBlendMode(Phaser.BlendModes.ADD);
+    // (over the painting: on its own flames, the chandelier, a sconce and the dais brazier)
+    const lights = painted ? [[442, 70], [29, 119], [720, 254]] : [[130, 120], [490, 120], [850, 120]];
+    for (const [x, y] of lights) {
+      const glow = this.add.image(x, y, 'glow').setScale(3).setTint(0x9070ff).setAlpha(0.5).setBlendMode(Phaser.BlendModes.ADD);
+      const fl = this.add.image(x, y + 8, 'flame').setOrigin(0.5, 1).setScale(0.5, 0.7).setTint(0xb090ff).setBlendMode(Phaser.BlendModes.ADD).setVisible(!painted);
       this.tweens.add({ targets: [glow, fl], alpha: { from: 0.35, to: 0.65 }, duration: 300 + x % 200, yoyo: true, repeat: -1 });
       this.root.add([glow, fl]);
       (this.torches = this.torches ?? []).push(glow, fl);
