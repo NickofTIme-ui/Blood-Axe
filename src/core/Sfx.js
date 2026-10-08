@@ -77,6 +77,10 @@ export function landThud(scene, small = false) {
   playSfx(scene, 'goreLand', { volume: small ? 0.45 : 0.85, pitch: small ? 250 : 0, spread: 200, minGapMs: 110 });
 }
 
+// The cut-in-half splatter was mixed hot next to the swings: it is played at this
+// share of the volume its caller asks for.
+const TRIM = { bloodSplatter: 0.75 };
+
 // key can be a list of [key, weight] pairs to pick one at random (variations).
 export function playSfx(scene, key, { volume = 1, pitch = 0, spread = 150, minGapMs = 45 } = {}) {
   if (Array.isArray(key)) {
@@ -89,7 +93,7 @@ export function playSfx(scene, key, { volume = 1, pitch = 0, spread = 150, minGa
   if (now - (lastPlayed[key] ?? 0) < minGapMs) return;
   lastPlayed[key] = now;
   scene.sound.play(key, {
-    volume: (SETTINGS.audio.sfx ?? 0.8) * volume * (0.85 + Math.random() * 0.3),
+    volume: (SETTINGS.audio.sfx ?? 0.8) * volume * (TRIM[key] ?? 1) * (0.85 + Math.random() * 0.3),
     detune: pitch + (Math.random() - 0.5) * 2 * spread,
   });
 }

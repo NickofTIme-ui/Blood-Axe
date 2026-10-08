@@ -10,12 +10,17 @@ export const MUSIC = {
   title: 'assets/audio/title-the-battle.mp3',       // title + character select
   battle: 'assets/audio/gameplay-battle-field.mp3', // arena
   boss: 'assets/audio/boss-theme.mp3',              // the Warlord (until the file is added, the battle track plays on)
+  wilderness: 'assets/audio/wilderness.mp3',        // Gallows Wood (a stage's `music` picks its track)
 };
+
+// Per-track level, so every stage sits as loud as the battle track (measured RMS:
+// battle -18.5 dB, wilderness -11.0 dB)
+const GAIN = { wilderness: 0.42 };
 
 let current = null; // { key, sound }
 
-function volume() {
-  return SETTINGS.audio.muted ? 0 : SETTINGS.audio.music;
+function volume(key = current?.key) {
+  return SETTINGS.audio.muted ? 0 : SETTINGS.audio.music * (GAIN[key] ?? 1);
 }
 
 export function playMusic(scene, key) {

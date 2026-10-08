@@ -20,6 +20,7 @@ Chat links: `https://chatgpt.com/g/g-p-6abc117dea488191879974e87ba0e0a7-bloody-a
 | BA · Enemy · Kragg (gladiator) | 6abd1e8b-6200-83e9-bf8f-559c546fd70d | `gladiator_*.png` |
 | BA · Mage · Strips | 6abf21d9-5a14-83e9-8f0c-f8ca070e6b3c | `mage_*.png` (design: `docs/art-refs/mage_ref.png`) |
 | BA · Rogue · Strips | 6abf228c-72ec-83ea-a414-0cbe1cc3a990 | `rogue_*.png` (design: `docs/art-refs/rogue_ref.png`) |
+| BA · Boss · Ashen King | 6ac2b5ed-1d2c-83ea-bc85-d7474d6caa6f | final boss concept sheets: `docs/art-refs/finalboss_concept_face.png` (approved, face shown), `finalboss_concept.png` (closed helm) (ref: `boss_ref.png`) |
 | BA · Env · Floor | 6abc877c | floor tiles |
 | BA · Env · Pillars | 6abc8c7a | pillars |
 

@@ -489,7 +489,7 @@ export class Stage {
     const boss = createEnemy(this.world, def.type, x, z);
     this.setOnGround(boss);
     boss.stats = {
-      ...base, name: def.name, boss: true,
+      ...base, name: def.name, boss: true, size: def.size ?? 1, // size: drawn this much bigger (looks only)
       maxHealth: Math.round(base.maxHealth * def.health),
       meleeMult: (base.meleeMult ?? 1) * def.damage,
       knockdownFrames: Math.round((base.knockdownFrames ?? 40) * 0.6),

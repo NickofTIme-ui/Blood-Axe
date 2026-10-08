@@ -421,7 +421,7 @@ export class SpriteEnemyView {
     const shape = this.feel.step({ land: !L });
     tall *= shape.sy; wide *= shape.sx;
     dx += push;
-    const k = depthScale(f.z) / this.res;
+    const k = depthScale(f.z) / this.res * (f.stats?.size ?? 1); // (a boss can be drawn bigger: makeBoss)
     s.setPosition(f.x + dx * f.facing, f.z - f.h + dy).setDepth(f.z);
     s.setScale(k * face * (1 - breathe * 0.006) * wide, k * (1 + breathe * 0.014) * tall);
     s.angle = angle * face;

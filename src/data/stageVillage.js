@@ -110,7 +110,7 @@ export const STAGE_VILLAGE = {
       ],
       // the rear guard: the Iron Penitent's kind, grown into a sub-boss. He walks in from
       // the north road without freezing anyone
-      boss: { type: 'penitent', name: 'Brother Cinder, the Rear Guard', health: 2.4, damage: 1, adds: ['grunt', 'grunt'],
+      boss: { type: 'penitent', name: 'Brother Cinder, the Rear Guard', health: 2.4, damage: 1, size: 1.3, adds: ['grunt', 'grunt'],
         entrance: { from: 140, to: 330, speed: 70, stepEvery: 30, awe: 0, freeze: false } },
     },
     {
