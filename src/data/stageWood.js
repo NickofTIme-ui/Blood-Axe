@@ -34,6 +34,7 @@ export const STAGE_WOOD = {
   doneTitle: 'THE CONVOY IS BROKEN', // (the tally's title)
   width: 9200,
   theme: 'wood',
+  music: 'wilderness', // (core/Music.js)
   tall: true,
   castle: { x: 760, scale: 0.6, detail: 0.5 }, // nearer now: a silhouette over the wood
   // the other two Oath Keepers (view/NpcView.js): with you at the start, then scouting

@@ -369,7 +369,7 @@ export class ArenaScene extends Phaser.Scene {
       if (this.paused) { this.sound.resumeAll(); this.paused = false; } // never leave the sound frozen
     });
 
-    playMusic(this, 'battle');
+    playMusic(this, this.stageData.music ?? 'battle');
   }
 
   // Sparta kick landing: shockwave ring, dust off the floor, heavy shake.
@@ -718,7 +718,7 @@ export class ArenaScene extends Phaser.Scene {
   // Fell: rise at the section's start, healed, with its fight reset.
   riseAtCheckpoint() {
     this.stage.respawn();
-    if (!this.stage.bossSpawned) playMusic(this, 'battle'); // (died to the boss: back to the battle track)
+    if (!this.stage.bossSpawned) playMusic(this, this.stageData.music ?? 'battle'); // (died to the boss: back to the battle track)
     this.cuts.clear();
     this.burning.clear();
     this.timeScale = 1;
