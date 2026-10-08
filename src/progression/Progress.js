@@ -193,6 +193,14 @@ export class Progress {
     return true;
   }
 
+  // Back to level 1 with the starting point: blood, every hero's picks and the one-off
+  // point milestones (so first clears pay out again). The campaign's place, the villagers
+  // and the trophies are kept. (The title's DIRECTOR'S CUT menu: RESET HERO LEVEL.)
+  resetLevel() {
+    Object.assign(this.data, { blood: 0, bonus: PROGRESS.startPoints, picks: {}, claimed: {} });
+    this.save();
+  }
+
   respec(heroId) {
     this.data.picks[heroId] = [];
     this.save();

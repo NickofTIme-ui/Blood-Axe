@@ -13,7 +13,7 @@ import { movePhase, totalFrames, inWindow } from '../combat/MoveRunner.js';
 import { FINISH, FINISHERS, CHAIN, IMPALE, impalePin, impalePierce, planFinisher, chainTimes } from '../combat/Finisher.js';
 import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher } from '../combat/Mage.js';
 import { rogueStates, rollMine,isRogueFinisher, rogueFinisherStart, runRogueFinisher, vaultTarget } from '../combat/Rogue.js';
-import { skillStates } from '../combat/Skills.js';
+import { skillStates, plungeReady } from '../combat/Skills.js';
 import { JUGGLE, juggleLand, airMoveFor } from '../combat/Juggle.js';
 
 const FEEL = SETTINGS.feel;
@@ -443,7 +443,7 @@ export const FIGHTER_STATES = {
       const am = s.states?.airMagic;
       if (am && !f.fanUsed && !(f.cool[am] > 0) && c.consume('magic')) return f.fsm.change(am);
       const ah = s.states?.airHeavy;
-      if (ah && f.air >= (s.kit?.[ah]?.minHeight ?? s.kit?.dive?.minHeight ?? 0) && c.consume('heavy')) return f.fsm.change(ah);
+      if (ah && f.air >= (s.kit?.[ah]?.minHeight ?? s.kit?.dive?.minHeight ?? 0) && (ah !== 'plunge' || plungeReady(f)) && c.consume('heavy')) return f.fsm.change(ah);
       if (!f.airAttackUsed && s.moves.air && c.consume('attack')) f.fsm.change('airAttack');
     },
   },
@@ -466,7 +466,7 @@ export const FIGHTER_STATES = {
           f.attackInfo?.hitList.size && f.controller.consume('attack')) return f.fsm.change('airAttack');
       // the Rogue can still dive out of an air slash
       const ah = f.stats.states?.airHeavy;
-      if (ah && f.air >= (f.stats.kit?.dive?.minHeight ?? 0) && f.controller.consume('heavy')) f.fsm.change(ah);
+      if (ah && f.air >= (f.stats.kit?.dive?.minHeight ?? 0) && (ah !== 'plunge' || plungeReady(f)) && f.controller.consume('heavy')) f.fsm.change(ah);
     },
     exit(f) {
       f.activeAttack = null;

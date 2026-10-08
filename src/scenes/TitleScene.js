@@ -82,14 +82,13 @@ export class TitleScene extends Phaser.Scene {
   }
 
   // One menu button. Returns { c, glow, plate, label }.
-  makeButton(x, y, text, w, onClick, delay = 1500) {
-    const h = 46;
+  makeButton(x, y, text, w, onClick, delay = 1500, { h = 46, size = 22 } = {}) {
     const c = this.add.container(x, y).setAlpha(0).setSize(w, h);
     const glow = this.add.rectangle(0, 0, w + 14, h + 14, 0xc0161c, 0.35).setBlendMode(Phaser.BlendModes.ADD);
     const plate = this.add.rectangle(0, 0, w, h, 0x160606, 0.92).setStrokeStyle(2, 0xb08a4a);
     const inner = this.add.rectangle(0, 0, w - 8, h - 8).setStrokeStyle(1, 0x5a3a20);
     const label = this.add.text(0, 1, text, {
-      fontFamily: FONT.display, fontSize: '22px', align: 'center',
+      fontFamily: FONT.display, fontSize: `${size}px`, align: 'center',
     }).setOrigin(0.5).setStroke('#0a0000', 5);
     label.setLetterSpacing?.(2);
     epicFill(label, ['#fff2c8', '#e0b060', '#7a4a10']);
@@ -104,38 +103,100 @@ export class TitleScene extends Phaser.Scene {
     return btn;
   }
 
-  // The three ways to play.
-  makeButtons(y) {
+  // The menu. MAIN: the campaign, big and first (CONTINUE from its last checkpoint once
+  // it has been started), then a new campaign, two players on one machine, and the
+  // DIRECTOR'S CUT: the earlier builds and modes — the Oath Road (the first stage, one or
+  // two players), online co-op (it plays the Oath Road) and THE GALLOWS ASCENT (the
+  // platforming slice, data/stageGallows.js) — and RESET HERO LEVEL (Progress.resetLevel).
+  makeButtons(y, page = 'main', delay = 1500) {
     const W = SETTINGS.width;
-    // (the fourth: THE GALLOWS ASCENT, the platforming slice — data/stageGallows.js)
-    // (the fifth: THE CAMPAIGN, level 1 THE BURNING VILLAGE — data/stageVillage.js)
-    // (the sixth, when the campaign has been started: CONTINUE from its last checkpoint)
-    const at = sharedProgress(this.registry).campaign.at;
+    for (const b of this.buttons ?? []) b.c.destroy();
+    this.cutTitle?.destroy(); this.cutTitle = null;
+    this.cutDim?.destroy(); this.cutDim = null;
+    this.page = page;
+    const P = sharedProgress(this.registry);
+    const at = P.campaign.at;
     const resume = at && STAGES[at.level] ? at : null;
-    const acts = [() => this.go('solo'), () => this.go('local'), () => this.openLobby(), () => this.go('solo', null, 'gallows'),
-      () => this.go('solo', null, 'village')];
-    this.buttons = [
-      this.makeButton(W / 2 - 250, y, '1 PLAYER', 220, acts[0]),
-      this.makeButton(W / 2, y, '2 PLAYERS', 220, acts[1], 1650),
-      this.makeButton(W / 2 + 250, y, 'ONLINE CO-OP', 240, acts[2], 1800),
-      this.makeButton(W / 2 + 180, y - 58, 'THE GALLOWS ASCENT', 300, acts[3], 1950),
-      this.makeButton(W / 2 - 180, y - 58, resume ? 'CAMPAIGN: NEW' : 'CAMPAIGN: THE BURNING VILLAGE', 340, acts[4], 2050),
-    ];
-    if (resume) {
-      const D = STAGES[resume.level];
-      const where = resume.section > 0 ? `  ·  ${D.sections[resume.section]?.name ?? ''}` : '';
-      acts.push(() => this.go('solo', null, resume.level, resume.section));
-      this.buttons.push(this.makeButton(W / 2, y - 116, `CONTINUE:  ${D.chapter}  ${D.name}${where}`, 520, acts[5], 2150));
+    const entries = []; // [x, y, label, width, act, options]
+    if (page === 'main') {
+      if (resume) {
+        const D = STAGES[resume.level];
+        const where = resume.section > 0 ? `  ·  ${D.sections[resume.section]?.name ?? ''}` : '';
+        entries.push([W / 2, y - 74, `CONTINUE:  ${D.chapter}  ${D.name}${where}`, 600, () => this.go('solo', null, resume.level, resume.section), { h: 64, size: 26 }]);
+      } else {
+        entries.push([W / 2, y - 74, 'THE CAMPAIGN  ·  BEGIN', 600, () => this.go('solo', null, 'village'), { h: 64, size: 30 }]);
+      }
+      if (resume) entries.push([W / 2 - 260, y, 'NEW CAMPAIGN', 230, () => this.go('solo', null, 'village')]);
+      // (two players carry on from the same checkpoint)
+      entries.push([resume ? W / 2 : W / 2 - 140, y, '2 PLAYERS', resume ? 230 : 250,
+        () => this.go('local', null, resume?.level ?? 'village', resume?.section)]);
+      entries.push([resume ? W / 2 + 260 : W / 2 + 140, y, "DIRECTOR'S CUT", 250, () => this.openCut()]);
+    } else {
+      this.cutDim = this.add.rectangle(0, y - 196, W, SETTINGS.height, 0x050000, 0.72).setOrigin(0);
+      this.cutTitle = this.add.text(W / 2, y - 164, "DIRECTOR'S CUT  ·  THE EARLIER BUILDS", { fontFamily: FONT.display, fontSize: '26px' })
+        .setOrigin(0.5).setStroke('#0a0000', 6);
+      epicFill(this.cutTitle, ['#fff2c8', '#e0b060', '#7a4a10']);
+      entries.push([W / 2 - 270, y - 116, 'THE OATH ROAD', 230, () => this.go('solo')]);
+      entries.push([W / 2, y - 116, 'OATH ROAD: 2 PLAYERS', 250, () => this.go('local'), { size: 19 }]);
+      entries.push([W / 2 + 270, y - 116, 'ONLINE CO-OP', 230, () => this.openLobby()]);
+      entries.push([W / 2 - 190, y - 58, 'THE GALLOWS ASCENT', 300, () => this.go('solo', null, 'gallows')]);
+      entries.push([W / 2 + 190, y - 58, this.resetText(), 330, () => this.resetLevel()]);
+      entries.push([W / 2, y, 'BACK', 200, () => this.closeCut()]);
     }
-    this.buttons.forEach((b, i) => { b.act = acts[i]; b.c.on('pointerover', () => this.pick(i)); });
+    this.buttons = entries.map(([x, by, label, w, act, opts], i) => {
+      const b = this.makeButton(x, by, label, w, act, delay + i * 80, opts);
+      b.act = act;
+      b.c.on('pointerover', () => this.pick(i));
+      return b;
+    });
     this.button = this.buttons[0];
+    this.resetBtn = page === 'cut' ? this.buttons[4] : null;
+    this.armedReset = false;
     this.pick(0);
+  }
+
+  resetText() { return `RESET HERO LEVEL  (LV ${sharedProgress(this.registry).level})`; }
+
+  openCut() {
+    if (this.leaving) return;
+    playSfx(this, 'swingAlt', { volume: 0.4, pitch: 200 });
+    this.makeButtons(SETTINGS.height - 44, 'cut', 0);
+  }
+
+  closeCut() {
+    playSfx(this, 'swingAlt', { volume: 0.4, pitch: -200 });
+    this.makeButtons(SETTINGS.height - 44, 'main', 0);
+    this.pick(this.buttons.length - 1); // (back on the DIRECTOR'S CUT button)
+  }
+
+  // RESET HERO LEVEL: press once to arm it, again to do it. Blood, skill picks and the
+  // one-off point milestones go back to the start (Progress.resetLevel); the campaign's
+  // place, the villagers and the trophies stay.
+  resetLevel() {
+    const b = this.resetBtn;
+    if (this.buttons[this.picked] !== b) this.pick(this.buttons.indexOf(b)); // (clicked)
+    const P = sharedProgress(this.registry);
+    if (!this.armedReset) {
+      this.armedReset = true;
+      b.label.setText(`SURE? LV ${P.level} → LV 1`);
+      playSfx(this, 'block', { volume: 0.5, pitch: -400 });
+      return;
+    }
+    P.resetLevel();
+    this.armedReset = false;
+    playSfx(this, 'finisher', { volume: 0.5, pitch: -300 });
+    b.label.setText(`DONE: LV ${P.level}, ${P.earned} SKILL POINT${P.earned === 1 ? '' : 'S'}`);
   }
 
   // The button the keys and the gamepad are on (left / right to move, confirm to choose).
   pick(i) {
     const n = this.buttons.length;
     this.picked = ((i % n) + n) % n;
+    // (moving off an armed RESET HERO LEVEL disarms it)
+    if (this.armedReset && this.buttons[this.picked] !== this.resetBtn) {
+      this.armedReset = false;
+      this.resetBtn.label.setText(this.resetText());
+    }
     this.buttons.forEach((b, k) => {
       const on = k === this.picked;
       b.plate.setStrokeStyle(on ? 3 : 2, on ? 0xffd070 : 0xb08a4a);
@@ -299,8 +360,11 @@ export class TitleScene extends Phaser.Scene {
       }
     } else if (this.time.now - (this.lobbyClosedAt ?? -999) < 300) { c.consume('confirm'); c.consume('attack'); }
     else {
-      if (step) this.pick(this.picked + step);
+      // (up / down step through the buttons too: the menu is in rows)
+      const row = (c.consume('down') ? 1 : 0) - (c.consume('up') ? 1 : 0);
+      if (step || row) this.pick(this.picked + step + row);
       if (c.consume('confirm') || c.consume('attack')) this.buttons[this.picked].act();
+      else if (this.page === 'cut' && (c.consume('back') || c.consume('dodge'))) this.closeCut();
     }
     if (!this.sound.locked && this.soundHint.alpha > 0) this.soundHint.setAlpha(Math.max(0, this.soundHint.alpha - 0.05));
 

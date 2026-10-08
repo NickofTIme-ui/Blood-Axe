@@ -2,8 +2,11 @@
 // progression/Progress.js applies the number changes to a hero's stats). Everything here
 // reads stats.skills / stats.kit, so a hero without the skill is untouched.
 //
-//   LEAP SMASH (state 'plunge'): heavy in the air drives him straight down; landing,
-//     everyone close is knocked down. SKYFALL: wider, launches them, and he bounces up.
+//   LEAP SMASH (state 'plunge'): heavy in the air: he hangs a beat with the blade raised,
+//     then drives straight down sword-first; landing, everyone close is knocked down and
+//     the blade stays buried a moment before he wrenches it out. SKYFALL: wider, launches
+//     them, and he bounces up for one more. Then it cools down (kit.plunge.cooldown frames,
+//     f.cool.plunge) so it can't be pogoed.
 //   BLOODRUSH: a kill gives back stamina and health
 //   IRON WALL: a parry hits back and breaks the man's guard
 //   BERSERK: no blocking; every blow gives back stamina (the damage is in meleeMult)
@@ -54,7 +57,7 @@ export function skillStates({ tryActions, stopMoving, friction, movePhase } = {}
       enter(f) {
         const K = f.stats.kit.plunge;
         f.vx = 0; f.vz = 0;
-        f.vh = -K.speed;
+        f.vh = 0; // (the hang: update() drives him down after K.hang frames)
         f.move = null;
         f.activeAttack = null;
         f.world.events.emit('plungeStart', { fighter: f });
@@ -63,12 +66,16 @@ export function skillStates({ tryActions, stopMoving, friction, movePhase } = {}
         const K = f.stats.kit.plunge;
         f.vx = 0; f.vz = 0;
         if (f.landedAt) {
-          // on one knee in the crater for a moment
-          if (frame - f.landedAt >= 12) { f.landedAt = 0; f.fsm.change('idle'); }
+          // the blade buried in the crater, then wrenched out
+          if (frame - f.landedAt === PLUNGE_LAND - 8) f.world.events.emit('plungeWrench', { fighter: f });
+          if (frame - f.landedAt >= PLUNGE_LAND) { f.landedAt = 0; f.fsm.change('idle'); }
           return;
         }
+        // the hang at the top: blade raised overhead, the fall held a beat
+        if (frame <= (K.hang ?? 0) && !f.grounded) { f.vh = Math.max(0, f.vh * 0.5); return; }
         if (!f.grounded) { f.vh = Math.min(f.vh, -K.speed); return; }
         smash(f, K);
+        f.cool.plunge = K.cooldown ?? 0; // (Skyfall's own bounce may still smash once more: plungeReady)
         if (K.bounce && !f.plungeBounced) {
           // SKYFALL: back up off the crater, ready to come down again
           f.plungeBounced = true;
@@ -83,6 +90,15 @@ export function skillStates({ tryActions, stopMoving, friction, movePhase } = {}
       exit(f) { f.landedAt = 0; },
     },
   };
+}
+
+// How long the blade stays buried after the landing (the view keys its poses to this).
+export const PLUNGE_LAND = 22;
+
+// Can heavy in the air start a Leap Smash now? Not while it cools down, except off
+// Skyfall's own bounce: that second smash is what the skill promises.
+export function plungeReady(f) {
+  return !(f.cool.plunge > 0) || f.plungeBounced;
 }
 
 // The crater: everyone within the radius on his level is hit and floored.

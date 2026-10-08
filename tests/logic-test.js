@@ -1930,6 +1930,20 @@ test('progress: blood makes levels, levels and milestones make points, each hero
   assert(again.earned === pts, 'saved and loaded');
 });
 
+test('progress: RESET HERO LEVEL takes him back to level 1 and keeps the campaign', () => {
+  const P = new Progress(memStore());
+  P.addBlood(PROGRESS.levelStep * 52);
+  P.claim('village:gate');
+  P.buy('warrior', 'keenEdge');
+  P.reach('ironGates', 2);
+  P.rescue('miller');
+  P.resetLevel();
+  assert(P.level === 1 && P.earned === PROGRESS.startPoints && P.available('warrior') === PROGRESS.startPoints, `level 1, the starting point (lv ${P.level}, ${P.earned} pts)`);
+  assert(!P.has('warrior', 'keenEdge') && P.claim('village:gate'), 'picks gone, first clears pay again');
+  assert(P.campaign.at.level === 'ironGates' && P.isRescued('miller'), 'the campaign is kept');
+  assert(new Progress(P.storage).level === 1, 'saved');
+});
+
 test('progress: the two majors shut each other out; picks never touch the shared hero data', () => {
   const P = new Progress(memStore());
   P.data.bonus = 99;
@@ -1977,6 +1991,21 @@ test('rurik: Leap Smash drives him down and floors the men round him; Skyfall bo
   let up = false;
   for (let i = 0; i < 60; i++) { sky.run(1); if (sky.p.state === 'jump' && sky.p.vh > 300 && i > 16) up = true; }
   assert(up, 'bounced back up off the crater');
+});
+
+test('rurik: Leap Smash cools down, so it cannot be pogoed', () => {
+  const t = skillSetup(rurikWith('windStep', 'leapSmash'), { script: { 1: ['jump'], 14: ['heavy'], 60: ['jump'], 74: ['heavy'], 170: ['jump'], 184: ['heavy'] }, hold: { jump: true } });
+  let smashed = 0;
+  t.world.events.on('leapSmash', () => smashed++);
+  t.run(150);
+  assert(smashed === 1, `the second leap is just a jump while it cools (${smashed})`);
+  t.run(80);
+  assert(smashed === 2, `ready again after the cooldown (${smashed})`);
+  const sky = skillSetup(rurikWith('windStep', 'leapSmash', 'skyfall'), { script: { 1: ['jump'], 14: ['heavy'], 40: ['heavy'], 50: ['heavy'], 60: ['heavy'], 70: ['heavy'] }, hold: { jump: true } });
+  let skySmashed = 0;
+  sky.world.events.on('leapSmash', () => skySmashed++);
+  sky.run(140);
+  assert(skySmashed === 2, `Skyfall still gets its one smash off the bounce, and no more (${skySmashed})`);
 });
 
 test('rurik: Wind Step gives him a second jump; Bloodrush feeds him on a kill; Berserk takes his guard', () => {

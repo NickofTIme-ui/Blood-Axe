@@ -425,3 +425,24 @@ same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one 
 4. Then the painting queue in `/mnt/project-files/campaign/art/art-levels-1-2.md` (the shared
    copy is newer than the repo's: Gallows Wood 10-17, Hollow Mountain 18-24, the ascent
    32-38, trophies 39-40). Pose rules: `docs/animation-poses.md`.
+
+## Local, 2026-10-08: Rurik's floor strike, controller remap, title menu (not on itch yet)
+
+- **Leap Smash / Skyfall cooldown**: `kit.plunge.cooldown` 90 frames (1.5 s) from each
+  smash (`f.cool.plunge`, `plungeReady` in `combat/Skills.js`). Skyfall's own bounce may
+  still smash once more; nothing else can until it cools. The Skyfall bounce also no
+  longer re-arms on the crater it lands in (`Fighter.js`), which was an endless pogo.
+- **Leap Smash animation**: a 7-frame hang with the blade raised (cleave poses 1-3), wind
+  streaks and a trail on the drop, the chop just before the floor, the blade buried for
+  `PLUNGE_LAND` frames then wrenched out (`plungeWrench` event). Impact: flash at the
+  point, a radial crack, stone and dust (`ArenaScene` `leapSmash`). Code and tweens only,
+  no new strips; a dedicated "sword into the ground" strip would still look better.
+- **Gamepad**: RT = block / parry, RB = Sparta kick (they swapped). README, itch controls
+  doc and the skill screen footer updated.
+- **Title menu**: the campaign is the big featured button (CONTINUE, or BEGIN), then NEW
+  CAMPAIGN, 2 PLAYERS (campaign co-op from the same checkpoint) and DIRECTOR'S CUT. The
+  Director's Cut holds the Oath Road (1 or 2 players), online co-op, the Gallows Ascent
+  and RESET HERO LEVEL (press twice: `Progress.resetLevel` clears blood, every hero's
+  picks and the point milestones; keeps the campaign place, villagers and trophies).
+- No Node on this PC: `tests/browser.html` runs the logic tests in the browser (with
+  `tests/node-fs-shim.js`). All pass.
