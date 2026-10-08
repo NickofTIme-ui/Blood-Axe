@@ -33,6 +33,49 @@ const SHRINE_H = 170;
 // the painted lantern post: drawn this tall; its lantern at this point of the 300x400 picture
 const LANTERN_H = 150;
 const LANTERN_AT = [200, 134];
+// the painted log bridge, fitted to a block: `walk` = how far down the picture its top edge
+// is (set on the lane's front edge), `wide` = drawn this much wider than the block (roots
+// and the broken end out past the banks)
+const LOG_FIT = { walk: 0.38, wide: 1.6 };
+
+// Worn edges, not ruled lines: a steady pseudo-random wobble (the same every frame for a
+// block, so it never shimmers), used for the rims and to cut the painted faces' outlines.
+const wob = (i, seed) => { const s = Math.sin(i * 12.9898 + seed * 78.233) * 43758.5453; return s - Math.floor(s); };
+function raggedLine(g, x0, x1, y, color, alpha, width, seed) {
+  const pts = [];
+  for (let x = x0, i = 0; x < x1 + 7; x += 7, i++) pts.push({ x: Math.min(x, x1), y: y + (wob(i, seed) - 0.5) * 2.4 });
+  g.lineStyle(width, color, alpha).strokePoints(pts);
+}
+
+// The painted fallen-tree bridge (assets/env/bridge_log.png, on magenta): cut out once.
+function paintedLog(scene) {
+  const T = scene.textures;
+  if (T.exists('bridge-log')) return true;
+  if (!T.exists('bridge-log-src')) return false;
+  T.addCanvas('bridge-log', keyLayer(T.get('bridge-log-src').getSourceImage(), 'magenta'));
+  return true;
+}
+// a w×h rectangle with its outline chipped and wobbling, except along `straight` (the
+// edge where the top face meets the front: kept straight so the two never gap)
+function raggedRect(x, y, w, h, seed, straight) {
+  const a = Math.max(0, Math.min(5, w * 0.08, h * 0.12));
+  const j = (i, k) => (wob(i * 3 + k, seed) - 0.5) * 2 * a + (wob(i * 7 + k, seed + 3) > 0.9 ? a * 0.8 : 0); // (+ the odd chip)
+  const pts = [];
+  const step = 9;
+  const edge = (side, from, to, fixed, horiz, inward) => {
+    const n = Math.max(1, Math.round(Math.abs(to - from) / step));
+    for (let i = 0; i < n; i++) {
+      const p = from + (to - from) * (i / n);
+      const off = side === straight ? 0 : Math.abs(j(i, side.length)) * inward;
+      pts.push(horiz ? { x: p, y: fixed + off } : { x: fixed + off, y: p });
+    }
+  };
+  edge('top', x, x + w, y, true, 1);
+  edge('right', y, y + h, x + w, false, -1);
+  edge('bottom', x + w, x, y + h, true, -1);
+  edge('left', y + h, y, x, false, 1);
+  return pts;
+}
 
 const COL = {
   skyTop: 0x05070d, skyLow: 0x1c2733, mist: 0x8aa4b8,
@@ -168,10 +211,14 @@ export class TerrainView {
       g.fillStyle(this.water ? 0x0c1820 : 0x000000, 1).fillRect(p.x0, p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0), p.x1 - p.x0, p.z1 - p.z0 + (p.z0 <= SETTINGS.world.floorTop ? 50 : 0) + 40);
       // a cold glow at the lip so the edge reads (in the village: a burning cellar, its fire far
       // down; in the wood: a stream, black water running fast)
-      if (this.water && s.textures.exists('water-src')) {
+      const paintedWater = this.water && s.textures.exists('water-src');
+      if (paintedWater) {
+        g.clear(); // (the painted water alone, its banks worn: no dark box or ruled edges round it)
         // the painted stream (assets/env/water.png, a seamless tile): it runs toward the camera
         const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0);
         const ws = s.add.tileSprite(p.x0, top, p.x1 - p.x0, p.z1 + 40 - top, 'water-src').setOrigin(0).setTileScale(0.32).setDepth(DEPTH.floor + 4.1);
+        const wm = s.make.graphics({ add: false }).fillStyle(0xffffff, 1).fillPoints(raggedRect(p.x0, top, p.x1 - p.x0, p.z1 + 40 - top, p.x0, 'none'), true);
+        ws.setMask(wm.createGeometryMask()); // (its banks worn, not ruled)
         s.tweens.add({ targets: ws, tilePositionY: -1024, duration: 9000, repeat: -1 });
         s.tweens.add({ targets: ws, tilePositionX: { from: 0, to: 18 }, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
       } else if (this.water) {
@@ -184,10 +231,10 @@ export class TerrainView {
         s.add.image((p.x0 + p.x1) / 2, p.z1 + 30, 'glow').setDisplaySize(p.x1 - p.x0, 90).setTint(VIL.cellarLip).setAlpha(0.45)
           .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 4.2);
       }
-      g.lineStyle(2, this.village ? VIL.cellarLip : 0x6a8aa8, 0.6);
-      g.lineBetween(p.x0, p.z0, p.x0, p.z1 + 40);
-      g.lineBetween(p.x1, p.z0, p.x1, p.z1 + 40);
-      if (p.z0 > SETTINGS.world.floorTop) g.lineBetween(p.x0, p.z0, p.x1, p.z0);
+      if (!paintedWater) g.lineStyle(2, this.village ? VIL.cellarLip : 0x6a8aa8, 0.6);
+      if (!paintedWater) g.lineBetween(p.x0, p.z0, p.x0, p.z1 + 40);
+      if (!paintedWater) g.lineBetween(p.x1, p.z0, p.x1, p.z1 + 40);
+      if (!paintedWater && p.z0 > SETTINGS.world.floorTop) g.lineBetween(p.x0, p.z0, p.x1, p.z0);
     }
   }
 
@@ -218,6 +265,13 @@ export class TerrainView {
       return;
     }
     v.top.setVisible(true); v.front.setVisible(true);
+    // a log bridge over the water: its walkway is the bark tile as before, and its front the
+    // painted fallen tree (assets/env/bridge_log.png), roots and broken end past the banks
+    if (b.mat === 'log' && this.terrain.inPit((x0 + x1) / 2, b.z1 - 1) && paintedLog(this.scene)) {
+      v.art ??= this.scene.add.image(0, 0, 'bridge-log').setOrigin(0.5, LOG_FIT.walk);
+      const lw = (x1 - x0) * LOG_FIT.wide;
+      v.art.setPosition((x0 + x1) / 2, yTop1 - 4).setScale(lw / v.art.frame.width).setDepth(b.z1 + 0.6).setVisible(true);
+    }
     if (b.mat === 'iron' && b.kind === 'block') { this.drawPortcullis(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
     if (this.village || (this.water && b.mat === 'log')) { this.drawVillageBlock(v, x0, x1, w, yTop0, yTop1); return; } // (the wood's fallen trees: as the village's beams)
@@ -238,9 +292,9 @@ export class TerrainView {
         for (let x = x0 + (row % 2) * 30 + 20; x < x1; x += 60) top.lineBetween(x, y, x, Math.min(yTop1, y + 26));
       }
     }
-    top.lineStyle(2, C[1], 0.9).lineBetween(x0, yTop0, x1, yTop0);
+    if (!topArt) raggedLine(top, x0, x1, yTop0, C[1], 0.75, 2, b.x0);
     // the landing rim along the front edge
-    front.fillStyle(C[1], 1).fillRect(x0, yTop1 - 2, w, 3);
+    raggedLine(front, x0, x1, yTop1 - 0.5, C[1], 0.9, 3, b.x0 + 7);
     // front face, down to the floor (or into the dark, over a pit)
     const floorY = b.z1;
     // rock goes down to the floor (or on down into the dark over a pit); a plank and the
@@ -282,6 +336,11 @@ export class TerrainView {
     const sc = (conf.fit ? h : conf.px ?? 128) / img.height;
     t.setPosition(x, y).setSize(w, h).setDisplaySize(w, h).setTileScale(sc, sc).setDepth(depth).setVisible(true);
     t.tilePositionX = x / sc;
+    // its outline worn and chipped (a mask), not a ruled rectangle
+    v.masks ??= {};
+    let m = v.masks[slot];
+    if (!m) { m = v.masks[slot] = this.scene.make.graphics({ add: false }); t.setMask(m.createGeometryMask()); }
+    m.clear().fillStyle(0xffffff, 1).fillPoints(raggedRect(x, y, w, h, Math.round(v.b.x0) + (slot === 'top' ? 0 : 11), slot === 'top' ? 'bottom' : 'top'), true);
     return true;
   }
 
@@ -349,8 +408,8 @@ export class TerrainView {
       top.fillStyle(VIL.boardCrack, 0.8);
       for (let x = x0 + 14; x < x1; x += 17) top.fillRect(x, yTop0, 2, depth); // ember-lit cracks between the boards
     }
-    top.lineStyle(2, C[1], 0.9).lineBetween(x0, yTop0, x1, yTop0);
-    front.fillStyle(C[1], 1).fillRect(x0, yTop1 - 2, w, 3);
+    if (!topArt) raggedLine(top, x0, x1, yTop0, C[1], 0.75, 2, b.x0);
+    raggedLine(front, x0, x1, yTop1 - 0.5, C[1], 0.9, 3, b.x0 + 7);
     const overPit = this.terrain.inPit((x0 + x1) / 2, b.z1 - 1);
     const down = mat === 'board' ? 12 : mat === 'beam' && overPit ? 18 : Math.max(0, b.top) + (overPit ? 120 : 0);
     const frontArt = art[1] && this.surface(v, 'front', art[1], x0, yTop1 + 1, w, down, b.z1 + 0.4);

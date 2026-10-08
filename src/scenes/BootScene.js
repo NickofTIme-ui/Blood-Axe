@@ -38,6 +38,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('cage-src', 'assets/env/cage.png'); // the painted cage (view/NpcView.js drawCaptive)
     this.load.image('lantern-src', 'assets/env/lantern.png'); // the painted lantern post (view/TerrainView.js drawLanterns)
     this.load.image('keep-hall', 'assets/env/keep_hall.png'); // the Black Keep's throne room (scenes/CutawayScene.js)
+    this.load.image('bridge-log-src', 'assets/env/bridge_log.png'); // the painted log bridge (view/TerrainView.js drawBlock)
     for (const [key, strips] of Object.entries(CHARACTER_STRIPS)) {
       for (const [name, s] of Object.entries(strips)) this.load.image(`strip-${key}-${name}`, s.file);
     }

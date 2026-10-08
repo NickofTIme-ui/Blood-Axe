@@ -73,6 +73,7 @@ export const LEVEL_ART = {
     ground: true,
     pieces: ['overhang', 'palisade', 'camp', 'gates_view'],
     props: { catapult: { file: 'prop_catapult.png', pair: true } },
+    surfaces: { plank: { fit: true } }, // (the half-gone bridge's planks, cut from the plank bridge in assets/incoming/bridges_raw.png)
   },
   gates: {
     dir: 'assets/env/gates/',
