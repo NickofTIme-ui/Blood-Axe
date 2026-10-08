@@ -72,6 +72,7 @@ const REST = { reach: 46, depth: 34, kneel: 50 };
 // A fall into a pit: a hero loses this share of his health (a fifth; never the last of it) and is
 // back on the last safe ground he stood on, untouchable for a moment
 const PIT = { damage: 0.2, guard: 60 };
+const PIT_DROP = -20; // sunk this far below the floor over a pit: he's going over (pitDrop)
 // Pendulum blade
 // (driven: struck by a hero — how long it whips about, how much wider and faster, its damage)
 // (bleed: how much of the extra swing a struck blade keeps each frame once it's no longer driven)
@@ -319,6 +320,12 @@ export class Stage {
       if (firm) p.safe = { x: p.x, z: p.z };
     }
     for (const f of this.world.fighters) {
+      // (once per fall, as he drops past the lip: the views scream)
+      if (f.h >= -1) f.pitDropping = false;
+      else if (f.alive && !f.pitDropping && f.floor < -1 && f.h < PIT_DROP) {
+        f.pitDropping = true;
+        this.world.events.emit('pitDrop', { fighter: f });
+      }
       if (!f.alive || f.removeMe || !(f.h < PIT_LOST)) continue; // (only a pit lets anyone sink this low)
       if (f.team === 'player') this.pitRecover(f);
       else this.pitKill(f);

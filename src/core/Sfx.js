@@ -18,6 +18,19 @@ export const SFX = {
   second: 'assets/audio/sfx/combo-second.mp3',     // 2nd swing of the light combo (the return)
   finisher: 'assets/audio/sfx/combo-finisher.mp3', // 3rd swing of the light combo (the overhand)
   heavySwing: 'assets/audio/sfx/heavy-swing.mp3',  // heavy two-handed swing (on the button press)
+  // a man going over a cliff or into a pit (not into water): one picked at random per fall
+  fallScream1: 'assets/audio/sfx/fall-scream-1.mp3',
+  fallScream2: 'assets/audio/sfx/fall-scream-2.mp3',
+  fallScream3: 'assets/audio/sfx/fall-scream-3.mp3',
+  // a man going into water: layered as one sound by playSplash() below
+  waterSplash: 'assets/audio/sfx/water-splash.mp3', // the strong splash going in
+  waterAir: 'assets/audio/sfx/water-air.mp3',       // his air let go under the water, trailing under it
+  waterBubble: 'assets/audio/sfx/water-bubble.mp3', // the last bubble
+  bloodSplatter: 'assets/audio/sfx/blood-splatter.mp3', // a man cut in half (split, cleaved, or by a finisher)
+  goreLand: 'assets/audio/sfx/gore-land.mp3',           // a body part hitting the floor (landThud below)
+  headOff: 'assets/audio/sfx/head-off.mp3',             // a head cut off (taking turns with limbOff)
+  limbOff: 'assets/audio/sfx/limb-off.mp3',             // an arm (or a head, or legs) cut off
+  bladeOut: 'assets/audio/sfx/blade-out.mp3',           // the sword pulled out of an impaled man
   // the Mage's lightning: made in code by tools/sfx-gen/electric.js (ours outright, no licence)
   elecCharge: 'assets/audio/sfx/elec-charge.wav',   // hum and sparks building in the lantern
   elecZap: 'assets/audio/sfx/elec-zap.wav',         // a bolt leaving the staff
@@ -48,6 +61,20 @@ export function startLoop(scene, key, { volume = 1, fadeInMs = 80 } = {}) {
       scene.time.delayedCall(fadeMs + 100, () => { if (snd.isPlaying) { snd.stop(); snd.destroy(); } });
     },
   };
+}
+
+// A man going into water, as one sound: the splash, his air let go under it a moment
+// later, then the last bubble as the splash dies away.
+export function playSplash(scene) {
+  playSfx(scene, 'waterSplash', { volume: 1, spread: 60, minGapMs: 0 });
+  scene.time.delayedCall(350, () => playSfx(scene, 'waterAir', { volume: 0.55, spread: 60, minGapMs: 0 }));
+  scene.time.delayedCall(2300, () => playSfx(scene, 'waterBubble', { volume: 0.8, spread: 60, minGapMs: 0 }));
+}
+
+// A body part hitting the floor. A man blown apart drops a dozen pieces at once: each
+// sound holds the floor a moment, so they come as a few wet thuds, not a roar.
+export function landThud(scene, small = false) {
+  playSfx(scene, 'goreLand', { volume: small ? 0.45 : 0.85, pitch: small ? 250 : 0, spread: 200, minGapMs: 110 });
 }
 
 // key can be a list of [key, weight] pairs to pick one at random (variations).
