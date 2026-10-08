@@ -103,7 +103,13 @@ export class NpcView {
     let img = v.imgs[this.curN];
     if (!img) v.imgs.push(img = this.scene.add.image(x, y, S.key, 'f0').setOrigin(0.5, 1));
     this.curN++;
-    img.setTexture(S.key, `f${Math.min(i, S.count - 1)}`).setPosition(x, y).setScale(k * 0.5)
+    // alive, not a picture: a breath, and a little sway (more on the rope, a shiver when
+    // cowering), each man on his own beat
+    const now = this.scene.time.now; const ph = (v.seed ?? 0) * 0.9 + this.curN * 1.7;
+    const br = c === RUN ? 0 : Math.sin(now * 0.0026 + ph);
+    const sway = c === RUN ? 0 : pose === 'hang' ? 3.5 * Math.sin(now * 0.0017 + ph) : pose === 'cower' ? 0.9 * Math.sin(now * 0.021 + ph) : 1.1 * Math.sin(now * 0.0011 + ph);
+    img.setTexture(S.key, `f${Math.min(i, S.count - 1)}`).setPosition(x, y).setScale(k * 0.5 * (1 - 0.008 * br), k * 0.5 * (1 + 0.018 * br))
+      .setAngle(dir < 0 ? -sway : sway)
       .setFlipX(dir < 0).setDepth(g.depth + 0.01 * this.curN).setAlpha(g.alpha).setVisible(true);
     return true;
   }
