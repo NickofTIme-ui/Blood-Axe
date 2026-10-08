@@ -415,3 +415,7 @@ same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one 
 4. Then the painting queue in `/mnt/project-files/campaign/art/art-levels-1-2.md` (the shared
    copy is newer than the repo's: Gallows Wood 10-17, Hollow Mountain 18-24, the ascent
    32-38, trophies 39-40). Pose rules: `docs/animation-poses.md`.
+
+## PC, 2026-10-08: King Vaurath concept art
+- Approved design: `docs/art-refs/finalboss_concept_face.png` (Nick said "thats it"): long pale hair, ember-orange eyes, ember cracks down the cheeks, spiked gold crown, black-and-gold plate with ember seams, fur collar, black and crimson cape, black greatsword with an ember edge, ember fire in the free hand. The closed-helm first try is `finalboss_concept.png`. Chat: "BA · Boss · Ashen King" (6ac2b5ed-1d2c-83ea-bc85-d7474d6caa6f).
+- These are design sheets, not game art. The cutaways still need his throne pose (magenta background, facing right); it has not been drawn yet. Until it is, `CutawayScene.js` keeps the code-drawn stand-in, but it can be restyled to match this design (face showing, pale hair, ember eyes, gold crown).
