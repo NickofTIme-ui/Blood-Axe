@@ -90,8 +90,8 @@ export const SKILL_TREES = {
           },
           {
             id: 'leapSmash', name: 'Leap Smash', cost: 2, tier: 2, req: ['windStep'], kind: 'active',
-            text: 'NEW: heavy in the air drives you straight down; the landing knocks down everyone close.',
-            apply(s) { s.states = { ...(s.states ?? {}), airHeavy: 'plunge' }; s.kit = { ...(s.kit ?? {}), plunge: { speed: 1100, radius: 110, depth: 46, damage: 26, launch: 0, bounce: 0, minHeight: 30 } }; },
+            text: 'NEW: heavy in the air drives your blade straight down into the ground; the landing knocks down everyone close. It needs a moment to come back.',
+            apply(s) { s.states = { ...(s.states ?? {}), airHeavy: 'plunge' }; s.kit = { ...(s.kit ?? {}), plunge: { speed: 1100, radius: 110, depth: 46, damage: 26, launch: 0, bounce: 0, minHeight: 30, hang: 7, cooldown: 90 } }; },
           },
           {
             id: 'skyfall', name: 'Skyfall', cost: 3, tier: 3, req: ['leapSmash'], kind: 'major',

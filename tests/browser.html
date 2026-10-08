@@ -1,0 +1,29 @@
+<!doctype html>
+<!-- browser.html — Runs tests/logic-test.js in a browser, for a machine without Node.js.
+     Start the local server (start-game.bat) and open http://localhost:8123/tests/browser.html -->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Blood Axe logic tests</title>
+<style>body { background: #111; color: #ddd; font: 13px monospace; white-space: pre; } .fail { color: #ff6a5a; } .done { color: #8f8; }</style>
+<script type="importmap">{ "imports": { "node:fs": "./node-fs-shim.js" } }</script>
+</head>
+<body>
+<script type="module">
+  const out = document.body;
+  const log = console.log.bind(console);
+  window.testFailures = null;
+  console.log = (...a) => {
+    log(...a);
+    const line = document.createElement('div');
+    const text = a.join(' ');
+    if (text.includes('FAIL')) line.className = 'fail';
+    line.textContent = text;
+    out.appendChild(line);
+  };
+  // (the suite ends with process.exit: record the result instead)
+  window.process = { exit(code) { window.testFailures = code; const d = document.createElement('div'); d.className = code ? 'fail' : 'done'; d.textContent = code ? 'FAILED' : 'DONE'; out.appendChild(d); } };
+  import('./logic-test.js').catch((e) => { console.log('FAIL could not run the suite: ' + e.message); window.testFailures = -1; });
+</script>
+</body>
+</html>

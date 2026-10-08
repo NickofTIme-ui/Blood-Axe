@@ -179,7 +179,7 @@ export class Fighter {
     if (this.grounded) {
       this.fanUsed = false; // (one shuriken fan per time in the air)
       this.airBlinked = false; // (one air blink per time in the air)
-      this.plungeBounced = false; // (Skyfall: one bounce per time in the air)
+      if (this.state !== 'plunge') this.plungeBounced = false; // (Skyfall: one bounce per leap; the crater it lands in still counts)
       this.framesSinceGrounded = 0;
       this.jumpedSinceGrounded = false;
       this.airJumpsLeft = this.stats.airJumps ?? 0;

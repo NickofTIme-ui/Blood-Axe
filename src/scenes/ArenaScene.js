@@ -268,10 +268,50 @@ export class ArenaScene extends Phaser.Scene {
     });
     ev.on('landHard', ({ fighter }) => this.fx.shake(fighter.alive ? 1.5 : 3, 6));
     // the skill tree's moves (combat/Skills.js)
-    ev.on('leapSmash', ({ x, z, h, radius, launch }) => {
-      this.fx.shake(launch ? 10 : 7, 14);
+    // Leap Smash: the blade goes into the floor point first just ahead of his feet — a white
+    // flash at the point, the floor split out from it, stone and dust thrown up
+    ev.on('plungeStart', () => playSfx(this, 'heavySwing', { volume: 0.8, pitch: -500, minGapMs: 0 }));
+    ev.on('plungeWrench', ({ fighter }) => {
+      const tx = fighter.x + fighter.facing * 38;
+      playSfx(this, 'block', { volume: 0.5, pitch: -1100, minGapMs: 0 });
+      for (let i = 0; i < 6; i++) this.quakeFX.rock(tx + (Math.random() - 0.5) * 12, fighter.z, fighter.facing * -(40 + Math.random() * 120), 140 + Math.random() * 160, 0.6);
+      this.quakeFX.dust(tx, fighter.z, 3, 0.7);
+    });
+    ev.on('leapSmash', ({ fighter, x, z, h, radius, launch }) => {
+      this.fx.shake(launch ? 12 : 9, 16);
+      this.rumble(1, 1, launch ? 380 : 260);
       playSfx(this, 'kick', { volume: 1, pitch: -1300, minGapMs: 0 });
+      playSfx(this, 'block', { volume: 0.9, pitch: -1600, minGapMs: 0 });
       const y = z - Math.max(0, h);
+      const tx = x + (fighter?.facing ?? 1) * 38; // where the point goes in
+      const star = this.add.graphics().setDepth(z + 0.6).setBlendMode(Phaser.BlendModes.ADD);
+      for (let i = 0; i < 10; i++) {
+        const a = Math.PI + (i / 9) * Math.PI; // a fan up off the floor
+        const len = 30 + Math.random() * 46;
+        star.lineStyle(i % 3 ? 2 : 4, 0xfff4d8, 1).lineBetween(tx, y, tx + Math.cos(a) * len, y + Math.sin(a) * len * 0.8);
+      }
+      star.fillStyle(0xffffff, 0.9).fillCircle(tx, y, 12);
+      this.tweens.add({ targets: star, alpha: 0, duration: 220, ease: 'Quad.easeIn', onComplete: () => star.destroy() });
+      // the floor split out from the point, in jagged branches flat on the lane
+      const crack = this.add.graphics().setDepth(DEPTH.decals + 1);
+      const branches = launch ? 9 : 7;
+      for (const [color, w] of [[0x140e09, 5], [0x3a2a1c, 2]]) {
+        for (let b = 0; b < branches; b++) {
+          let a = (b / branches) * Math.PI * 2 + (b * 0.7) % 0.5;
+          let cx = tx, cy = y;
+          crack.lineStyle(w, color, 0.9).beginPath().moveTo(cx, cy);
+          const reach = (launch ? 0.55 : 0.45) * radius;
+          for (let s = 0; s < 4; s++) {
+            a += ((b * 13 + s * 7) % 5 - 2) * 0.12;
+            cx += Math.cos(a) * reach / 4; cy += Math.sin(a) * reach / 4 * 0.3;
+            crack.lineTo(cx, cy);
+          }
+          crack.strokePath();
+        }
+      }
+      this.tweens.add({ targets: crack, alpha: 0, delay: 2400, duration: 1400, onComplete: () => crack.destroy() });
+      for (let i = 0; i < (launch ? 18 : 12); i++) this.quakeFX.rock(tx + (Math.random() - 0.5) * 30, z + (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 420, 200 + Math.random() * 300);
+      this.quakeFX.dust(tx, z, launch ? 12 : 8, 1.2);
       const ring = this.add.ellipse(x, y, 40, 12).setStrokeStyle(3, 0xd8c8a8, 0.9).setDepth(z + 0.5);
       this.tweens.add({ targets: ring, scaleX: (radius * 2) / 40, scaleY: (radius * 0.5) / 12, alpha: 0, duration: 280, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
       for (let i = 0; i < 16; i++) this.gore.spawn({ x: x + (Math.random() - 0.5) * radius, z, h: Math.max(0, h) + 2, vx: (Math.random() - 0.5) * 300, vz: 0, vh: 120 + Math.random() * 220, tint: 0x8a7a60, texture: 'px', scale: 0.8 + Math.random(), decal: false, life: 30 + Math.random() * 20 });

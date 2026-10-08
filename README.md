@@ -33,9 +33,9 @@ from files opened directly, so the game needs that little server.
 | Rurik's **Whirlwind Cleave** (360 swing; skill: Executioner's Arc) | H | D-pad Down |
 | Light attack (tap 3× for combo) | J | X |
 | Heavy attack (breaks guard) | K | Y |
-| **Sparta kick** (breaks blocks & shields, sends them bowling into others) | O | RT |
-| Block (hold) / **Parry** (tap just before a hit) | L | RB |
-| Turn your guard while blocking | ← / → while holding block | stick while holding RB |
+| **Sparta kick** (breaks blocks & shields, sends them bowling into others) | O | RB |
+| Block (hold) / **Parry** (tap just before a hit) | L | RT |
+| Turn your guard while blocking | ← / → while holding block | stick while holding RT |
 | Dodge roll (invincible at the start; up/down rolls into or out of the screen) | Shift or I (+ direction) | B |
 | Magic | U | LB or LT |
 | Jump (Rogue: press again for double jump) | Space | A |

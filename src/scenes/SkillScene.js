@@ -4,7 +4,7 @@
 //   ← → ↑ ↓ / D-pad   move between skills
 //   J / ENTER / A     take the skill (enough points, the one before it owned)
 //   R / Y             respec: every point back, free at a shrine
-//   O / RT            TROPHIES: the boss loot you carry (data/trophies.js): wear or take off
+//   O / RB            TROPHIES: the boss loot you carry (data/trophies.js): wear or take off
 //   ESC / B / BACKSPACE, or the pad's B / Back / Start, or the button: back to the fight
 //
 // TEMPORARY ART: plain panels and text. (The painted frame and icons are in
@@ -134,7 +134,7 @@ export class SkillScene extends Phaser.Scene {
     for (const o of this.trophyObjs) o.setVisible(tro);
     this.title.setText(`${this.heroName.toUpperCase()}  ·  ${tro ? 'TROPHIES' : 'SKILLS'}`);
     epicFill(this.title, tro ? ['#fff2b0', '#e0a530', '#6a3c08'] : ['#ffd2a0', '#d06030', '#5a1a06']);
-    this.footer.setText(tro ? 'J / A: wear or take off      O / RT: skills' : 'J / A: take    R / Y: respec    O / RT: trophies');
+    this.footer.setText(tro ? 'J / A: wear or take off      O / RB: skills' : 'J / A: take    R / Y: respec    O / RB: trophies');
     if (tro) this.refreshTrophies();
     else if (this.tree) this.refresh();
     else this.refreshHeader();

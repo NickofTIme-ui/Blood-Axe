@@ -17,6 +17,7 @@ import { drawSmear, smearSparks } from './Smear.js';
 import { IMPALE, CHAIN } from '../combat/Finisher.js';
 import { Heading, headingAnim } from './Heading.js';
 import { BodyFeel, easedSpread } from './animFeel.js';
+import { PLUNGE_LAND } from '../combat/Skills.js';
 
 const ATTACKS = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'airAttack', 'kick', 'thrust', 'spin'];
 
@@ -162,8 +163,19 @@ export class SpriteFighterView {
         return loop(f.sprinting ? { ...w, fps: w.fps * 1.5 } : w);
       }
       case 'jump': return f.vh > 0 ? a.jump.rise[0] : a.jump.fall[0];
-      // LEAP SMASH (combat/Skills.js): the cleave's downstroke all the way down, then kneeling in the crater
-      case 'plunge': { const ph = a.heavy?.phases; return ph ? (f.landedAt ? ph.recovery?.[0] ?? ph.active[0] : ph.active[0]) : a.jump.fall[0]; }
+      // LEAP SMASH (combat/Skills.js), on the cleave's poses: the blade comes up overhead in
+      // the hang and is held there through the drop, chops down just before the floor,
+      // stays buried in the crater, then is wrenched out
+      case 'plunge': {
+        const ph = a.heavy?.phases;
+        if (!ph) return a.jump.fall[0];
+        const up = ph.startup;
+        const down = ph.active[0];
+        if (f.landedAt) return fr - f.landedAt < PLUNGE_LAND - 7 ? down : ph.recovery.at(-1);
+        const hang = f.stats.kit?.plunge?.hang ?? 0;
+        if (fr <= hang) return up[Math.min(up.length - 1, 1 + Math.floor((fr / Math.max(1, hang)) * (up.length - 1)))];
+        return f.air < 46 ? down : up.at(-1);
+      }
       case 'block':
       case 'parry': return a.block.frames[0];
       case 'dodge': {
@@ -388,6 +400,30 @@ export class SpriteFighterView {
       }
     }
 
+    // Leap Smash: coils back and up in the hang, stretches long down the drop, then the
+    // whole body slams down behind the blade, sinks into the crater and heaves it free
+    const plunging = st === 'plunge';
+    if (plunging) {
+      const hang = f.stats.kit?.plunge?.hang ?? 0;
+      if (f.landedAt) {
+        const t = fr - f.landedAt;
+        const hit = Math.max(0, 1 - t / 8);
+        sx *= 1 + 0.16 * hit; sy *= 1 - 0.16 * hit;
+        bob += 5 * Math.min(1, t / 3) * (t < PLUNGE_LAND - 7 ? 1 : Math.max(0, 1 - (t - PLUNGE_LAND + 7) / 7));
+        push += 3 * hit;
+        if (t >= PLUNGE_LAND - 9 && t < PLUNGE_LAND - 7) { lean -= 6; push += (Math.random() - 0.5) * 2; } // the heave
+        else if (t >= PLUNGE_LAND - 7) lean -= 6 * Math.max(0, 1 - (t - PLUNGE_LAND + 7) / 7);
+        else push += (t > 6 ? (Math.random() - 0.5) * 0.8 : 0); // braced on the buried blade
+      } else if (fr <= hang) {
+        const t = fr / Math.max(1, hang);
+        lean -= 8 * Math.sin(t * Math.PI * 0.5);
+        sx *= 1 - 0.05 * t; sy *= 1 + 0.05 * t;
+      } else {
+        lean += 4;
+        sx *= 0.9; sy *= 1.14;
+      }
+    }
+
     // swings: anticipation -> drive -> settle (see swingMotion)
     const sw = ATTACKS.includes(st) ? this.swingMotion(st, fr) : null;
     if (sw) { lean += sw.lean; push += sw.push; sx *= sw.sx; sy *= sw.sy; bob += sw.bob; }
@@ -437,7 +473,15 @@ export class SpriteFighterView {
     // afterimage: when a swing changes pose through the strike, the last pose lingers a
     // few frames behind him (fills the gap between hand-drawn poses, sells the speed)
     const g = this.ghost;
-    if (this.poseChanged && sw && f.move && fr >= f.move.startup - 1 && fr <= f.move.startup + f.move.active + 2 && this.prevPose) {
+    const dropping = plunging && !f.landedAt && fr > (f.stats.kit?.plunge?.hang ?? 0);
+    if (dropping && this.prevPose) {
+      // Leap Smash: a trail of himself left up the drop
+      const p = this.prevPose;
+      if (!g.visible || g.alpha < 0.2) {
+        g.setTexture(p.key, p.frame).setPosition(p.x, p.y - 26).setScale(p.sx, p.sy * 1.1).setAngle(p.angle)
+          .setDepth(f.z - 0.05).setAlpha(0.45).setVisible(true).setTint(0xb8d0ff);
+      } else g.setAlpha(g.alpha - 0.05);
+    } else if (this.poseChanged && sw && f.move && fr >= f.move.startup - 1 && fr <= f.move.startup + f.move.active + 2 && this.prevPose) {
       const p = this.prevPose;
       g.setTexture(p.key, p.frame).setPosition(p.x, p.y).setScale(p.sx, p.sy).setAngle(p.angle)
         .setDepth(f.z - 0.05).setAlpha(0.38).setVisible(true).setTint(0xffc8a0);
@@ -464,6 +508,15 @@ export class SpriteFighterView {
 
     // Sword smear
     this.smear.clear().setDepth(f.z + 0.5);
+    if (dropping) {
+      // Leap Smash: wind streaks off him as he drops
+      const top = f.z - f.h - f.stats.body.h;
+      for (let i = 0; i < 6; i++) {
+        const x = f.x + (i - 2.5) * 11 + Math.sin(fr * 1.7 + i * 2.1) * 3;
+        const len = 40 + ((i * 37 + fr * 13) % 50);
+        this.smear.lineStyle(i % 2 ? 2 : 3, 0xe8f0ff, 0.35 + (i % 3) * 0.12).lineBetween(x, top - 6 - len, x, top + 20);
+      }
+    }
     if (ATTACKS.includes(st) && f.move) {
       const sm = this.swingSmear(st);
       drawSmear(this.smear, f, sm, fr);

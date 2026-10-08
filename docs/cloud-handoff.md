@@ -429,3 +429,23 @@ same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one 
 ## PC, 2026-10-08: King Vaurath concept art
 - Approved design: `docs/art-refs/finalboss_concept_face.png` (Nick said "thats it"): long pale hair, ember-orange eyes, ember cracks down the cheeks, spiked gold crown, black-and-gold plate with ember seams, fur collar, black and crimson cape, black greatsword with an ember edge, ember fire in the free hand. The closed-helm first try is `finalboss_concept.png`. Chat: "BA · Boss · Ashen King" (6ac2b5ed-1d2c-83ea-bc85-d7474d6caa6f).
 - These are design sheets, not game art. **Cloud, 2026-10-08:** the cutaways now show him from the face sheet: its side view, cut out to `assets/enemies/king_vaurath_stand.png` (transparent PNG, facing right, flipped in the scene), standing before a bigger code-drawn throne (`KING_ART` in `src/scenes/CutawayScene.js` holds his size and the eye/hand points). Checked in a headless browser on the first cutaway only. A painted throne pose can still replace it later.
+## Local, 2026-10-08: Rurik's floor strike, controller remap, title menu (not on itch yet)
+
+- **Leap Smash / Skyfall cooldown**: `kit.plunge.cooldown` 90 frames (1.5 s) from each
+  smash (`f.cool.plunge`, `plungeReady` in `combat/Skills.js`). Skyfall's own bounce may
+  still smash once more; nothing else can until it cools. The Skyfall bounce also no
+  longer re-arms on the crater it lands in (`Fighter.js`), which was an endless pogo.
+- **Leap Smash animation**: a 7-frame hang with the blade raised (cleave poses 1-3), wind
+  streaks and a trail on the drop, the chop just before the floor, the blade buried for
+  `PLUNGE_LAND` frames then wrenched out (`plungeWrench` event). Impact: flash at the
+  point, a radial crack, stone and dust (`ArenaScene` `leapSmash`). Code and tweens only,
+  no new strips; a dedicated "sword into the ground" strip would still look better.
+- **Gamepad**: RT = block / parry, RB = Sparta kick (they swapped). README, itch controls
+  doc and the skill screen footer updated.
+- **Title menu**: the campaign is the big featured button (CONTINUE, or BEGIN), then NEW
+  CAMPAIGN, 2 PLAYERS (campaign co-op from the same checkpoint) and DIRECTOR'S CUT. The
+  Director's Cut holds the Oath Road (1 or 2 players), online co-op, the Gallows Ascent
+  and RESET HERO LEVEL (press twice: `Progress.resetLevel` clears blood, every hero's
+  picks and the point milestones; keeps the campaign place, villagers and trophies).
+- No Node on this PC: `tests/browser.html` runs the logic tests in the browser (with
+  `tests/node-fs-shim.js`). All pass.

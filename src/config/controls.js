@@ -48,8 +48,8 @@ export const CONTROLS = {
     heavy:  [3],     // Y
     jump:   [0],     // A
     dodge:  [1],     // B
-    block:  [5],     // RB
-    kick:   [7],     // RT — Sparta kick
+    block:  [7],     // RT: hold to block, tap to parry
+    kick:   [5],     // RB — Sparta kick
     magic:  [4, 6],  // LB or LT
     sprint: [10],    // click the left stick: sprint on / off
     confirm: [0, 9],
