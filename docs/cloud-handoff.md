@@ -401,7 +401,8 @@ GIFs: project files, animation/.
 ## FOR THE PC, next time Nick wakes it (written 2026-10-05 13:55 UTC)
 Since the PC went offline the cloud merged into `claude/project-thread-l70xhx` (now 5444d91):
 level 4 THE SHATTERED ASCENT, the combat round (juggles, style rank, trophies, thralls), the
-animation pass and the playtest soft-lock fixes. The PC holds 3 unpushed art commits on the
+animation pass, the playtest soft-lock fixes, the captive slot and level 5 THE IRON GATES (art
+items 41-47). The 5 October push from the PC never reached GitHub; the PC holds 3 unpushed art commits on the
 same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one go:
 1. `git pull --no-rebase origin claude/project-thread-l70xhx` (a merge, keep both sides;
    on a conflict in docs keep both sections).
