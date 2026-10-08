@@ -42,6 +42,7 @@ export const STAGE_ASCENT = {
   theme: 'ascent',
   tall: true,
   castle: { x: 1250, scale: 0.6, detail: 0.85 }, // close now: it fills the sky across the gorge (x: see view/AscentView.js HORIZON)
+  music: 'cliffs', // (core/Music.js)
   companions: { leaveAfter: 'opening', meet: 9200, farewell: 'gates' },
 
   sections: [
