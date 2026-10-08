@@ -185,3 +185,28 @@ export function buildParallax(scene, layers) {
   }
   return ready;
 }
+
+// A painted sheet of n pieces side by side on magenta (`srcKey`): cut out once into the
+// textures `names` (equal-width columns), each trimmed to its own shape. False until the
+// sheet has loaded.
+export function cutPieces(scene, srcKey, names) {
+  const T = scene.textures;
+  if (T.exists(names[0])) return true;
+  if (!T.exists(srcKey)) return false;
+  const img = T.get(srcKey).getSourceImage();
+  const cw = Math.floor(img.width / names.length);
+  names.forEach((name, n) => {
+    const c = document.createElement('canvas'); c.width = cw; c.height = img.height;
+    c.getContext('2d').drawImage(img, n * cw, 0, cw, img.height, 0, 0, cw, img.height);
+    const cut = keyLayer(c, 'magenta');
+    const px = cut.getContext('2d').getImageData(0, 0, cw, img.height).data;
+    let l = cw; let r = 0; let t = img.height; let b = 0;
+    for (let y = 0; y < img.height; y++) for (let x = 0; x < cw; x++) {
+      if (px[(y * cw + x) * 4 + 3] > 40) { if (x < l) l = x; if (x > r) r = x; if (y < t) t = y; if (y > b) b = y; }
+    }
+    const out = document.createElement('canvas'); out.width = Math.max(1, r - l + 1); out.height = Math.max(1, b - t + 1);
+    out.getContext('2d').drawImage(cut, l, t, out.width, out.height, 0, 0, out.width, out.height);
+    T.addCanvas(name, out);
+  });
+  return true;
+}

@@ -261,7 +261,7 @@ export class TerrainView {
     const yTop0 = b.z0 - b.top; const yTop1 = b.z1 - b.top;
     for (const t of Object.values(v.tiles ?? {})) t.setVisible(false); // (shown again below by whichever face is painted)
     if (!b.solid) {
-      v.top.setVisible(false); v.front.setVisible(false);
+      v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); // (gone: broken through, or fallen)
       return;
     }
     v.top.setVisible(true); v.front.setVisible(true);
@@ -366,6 +366,17 @@ export class TerrainView {
   // (gone) once its rubble prop in front is broken.
   drawRubble(v, x0, x1, yTop0, yTop1) {
     const { front, b } = v;
+    // painted (assets/env/mine/rubble_wall.png, on magenta: cut out once): the whole fall of
+    // boulders, from the floor in front up past the top of the wall, its own width
+    if (this.scene.textures.exists('rubble-wall-src')) {
+      if (!this.scene.textures.exists('rubble-wall')) this.scene.textures.addCanvas('rubble-wall', keyLayer(this.scene.textures.get('rubble-wall-src').getSourceImage(), 'magenta'));
+      v.art ??= this.scene.add.image(0, 0, 'rubble-wall').setOrigin(0.5, 1);
+      const h = b.top + (b.z1 - b.z0) + 30;
+      const wide = Math.min(v.art.frame.width * (h / v.art.frame.height), x1 - x0 + 180); // (no wider than the wall and a spill each side)
+      v.art.setPosition((x0 + x1) / 2, b.z1 + 8).setDisplaySize(wide, h).setDepth(b.z1 + 0.5).setVisible(true);
+      front.clear();
+      return;
+    }
     let k = b.id * 97;
     const r = () => { k = (k * 9301 + 49297) % 233280; return k / 233280; };
     for (let i = 0; i < 46; i++) {

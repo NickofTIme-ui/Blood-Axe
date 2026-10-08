@@ -20,7 +20,7 @@ import { World } from '../core/World.js';
 import { Controller } from '../core/Controller.js';
 import { createPlayer } from '../entities/Player.js';
 import { SPRITES } from './levelArt.js';
-import { keyLayer } from './envArt.js';
+import { keyLayer, cutPieces } from './envArt.js';
 
 const TUNIC = [0x5a6a5a, 0x6a5a48, 0x4a5468, 0x6a4a4a, 0x5a5048, 0x58586a];
 const SKIN = 0xc8a080;
@@ -29,6 +29,7 @@ const HEROES = ['warrior', 'mage', 'rogue'];
 // The painted cage (assets/env/cage.png: shut on the left, broken open on the right, on
 // magenta): cut out once into 'cage-shut' and 'cage-open', each trimmed to its bars.
 const CAGE_H = 118; // drawn this tall (at depth scale 1): three men crouch in it
+const BODY_W = 112; // a painted fallen villager is drawn this long
 function paintedCage(scene) {
   const T = scene.textures;
   if (T.exists('cage-shut')) return true;
@@ -301,9 +302,16 @@ export class NpcView {
 
   drawBodies(list) {
     const s = this.scene;
+    // painted (assets/env/bodies.png: three fallen villagers, on magenta), when it's in
+    const painted = cutPieces(s, 'bodies-src', ['body-0', 'body-1', 'body-2']);
     for (const b of list) {
       const g = s.add.graphics().setDepth(DEPTH.decals + 1);
       g.fillStyle(0x4a0606, 0.6).fillEllipse(b.x + 6, b.z + 2, 60, 12); // dried blood
+      if (painted) {
+        const img = s.add.image(b.x, b.z + 4, `body-${b.pose % 3}`).setOrigin(0.5, 1).setDepth(DEPTH.decals + 1.1);
+        img.setScale(BODY_W / img.width).setFlipX(b.x % 2 === 1);
+        continue;
+      }
       const c = [0x3a3a3a, 0x40382e, 0x34343e][b.pose % 3];
       g.fillStyle(c, 1).fillRoundedRect(b.x - 24, b.z - 8, 44, 10, 4);
       g.fillStyle(0x6a5a50, 1).fillCircle(b.x + 24, b.z - 4, 5);
