@@ -1,5 +1,5 @@
 // main.js — Entry point. Creates the Phaser game and lists the scenes.
-// Launch: UFO Technologies video -> Boot (make textures) -> Title (cover art)
+// Launch: UFO Technologies logo -> opening cinematic (Boot makes textures meanwhile) -> Title (cover art)
 // -> Select (pick a hero) -> Arena (+ HUD on top).
 //
 // The world is SETTINGS.width x SETTINGS.height units (960 x 540), but the canvas is
@@ -61,8 +61,8 @@ try {
   padNotice('This page is blocking controllers. Open the game full screen or in its own window to use one.', 0);
 }
 // fonts first (view/fonts.js), so no text is drawn in a fallback face and never redrawn
-// Fonts can load during the studio introduction. The engine starts only once it ends,
-// so title music and game inputs cannot run underneath the video.
+// Fonts can load during the logo. The engine starts once the logo ends and loads during
+// the cinematic; BootScene holds the title screen until the cinematic hands over.
 Promise.all([loadFonts(), playStartupIntro()]).then(() => {
   window.game = new Phaser.Game(config); // exposed for poking around in the browser console
   // ?mute=1 starts the game silent (used when testing, so nothing blares)

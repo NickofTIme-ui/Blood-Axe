@@ -18,6 +18,7 @@ import { preloadGrounds, buildGrounds, buildSky, buildPillars, buildParallax } f
 import { PARALLAX_LAYERS } from '../data/parallax.js';
 import { preloadLevelArt, buildLevelArt, isLevelArtKey } from '../view/levelArt.js';
 import { warmGore } from '../effects/goreArt.js';
+import { introFinished } from '../core/StartupIntro.js';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -126,7 +127,8 @@ export class BootScene extends Phaser.Scene {
     this.registry.set('levelArt', buildLevelArt(this));
     this.buildHeroArt();
 
-    this.scene.start('Title');
+    await introFinished; // the opening cinematic crossfades into the title (core/StartupIntro.js)
+    if (this.sys.isActive()) this.scene.start('Title');
   }
 
   // One strip: from the cache if it's there, else cut now. Lets the screen redraw between
