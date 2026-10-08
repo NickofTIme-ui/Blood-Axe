@@ -399,7 +399,7 @@ Painting notes for strips (key poses, frame counts): docs/animation-poses.md. Be
 GIFs: project files, animation/.
 
 ## FOR THE PC, next time Nick wakes it (written 2026-10-05 13:55 UTC)
-Since the PC went offline the cloud merged into `claude/project-thread-l70xhx` (now 48e5d89):
+Since the PC went offline the cloud merged into `claude/project-thread-l70xhx` (now 5444d91):
 level 4 THE SHATTERED ASCENT, the combat round (juggles, style rank, trophies, thralls), the
 animation pass and the playtest soft-lock fixes. The PC holds 3 unpushed art commits on the
 same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one go:
