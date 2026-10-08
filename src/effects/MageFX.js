@@ -71,6 +71,13 @@ export class MageFX {
       if (!plan.hits.length) this.bolt(this.staffTip(fighter), { x: plan.end.x, y: plan.end.z - plan.end.h }, fighter.z, charged, 0.6);
     });
     ev.on('lightningArc', (a) => this.arc(a));
+    // THE STORMCALLER (combat/Storm.js): a crackling field on the ground; a bolt from the sky
+    ev.on('stormField', ({ field }) => this.stormField(field));
+    ev.on('stormShock', ({ field, target }) => {
+      this.bolt({ x: field.x + rand(-20, 20), y: field.z - 4 }, { x: target.x, y: target.z - target.h - 40 }, target.z, false, 0.7);
+      this.sound('elecCharge', field.by);
+    });
+    ev.on('thunderStrike', ({ strike }) => this.thunder(strike));
     ev.on('forceBlast', (b) => this.force(b));
     ev.on('forceCharge', ({ fighter }) => this.sound('boltCharge', fighter));
     ev.on('forceChargeFull', ({ fighter }) => { this.sound('magicBlock', fighter); this.flashAt({ x: fighter.x + fighter.facing * 20, y: fighter.z - 70 }, 0xeef0ff, 16); });
@@ -168,6 +175,37 @@ export class MageFX {
       return true;
     });
     draw(1);
+  }
+
+  // STATIC CHARGE: a ring of blue-white sparks on the floor that crackles until it fades
+  stormField(f) {
+    const ring = this.scene.add.ellipse(f.x, f.z, f.radius * 2, f.depth * 2).setStrokeStyle(2, 0x9ad0ff, 0.8).setDepth(f.z - 1).setBlendMode(ADD());
+    const glow = this.scene.add.ellipse(f.x, f.z, f.radius * 2, f.depth * 2, 0x6aa0ff, 0.18).setDepth(f.z - 1.1).setBlendMode(ADD());
+    this.scene.everyTick(f.life, (t) => {
+      if (!ring.active) return false;
+      const k = 1 - t / f.life;
+      ring.setAlpha(0.4 + 0.5 * k * (0.6 + 0.4 * Math.sin(t * 0.7)));
+      glow.setAlpha(0.18 * k);
+      if (t % 9 === 0) {
+        const a = rand(0, Math.PI * 2);
+        const p = { x: f.x + Math.cos(a) * f.radius * 0.8, y: f.z + Math.sin(a) * f.depth * 0.8 };
+        this.bolt(p, { x: p.x + rand(-18, 18), y: p.y - rand(14, 30) }, f.z, false, 0.4);
+      }
+      if (t >= f.life - 1) { ring.destroy(); glow.destroy(); }
+      return true;
+    });
+  }
+
+  // THUNDERHEAD: a bolt straight down out of the dark, a flash, the floor rings
+  thunder(s) {
+    const top = { x: s.x + rand(-30, 30), y: s.z - 620 };
+    this.bolt(top, { x: s.x, y: s.z - 6 }, s.z, true, 1.6);
+    this.bolt({ x: top.x + 40, y: top.y }, { x: s.x + rand(-40, 40), y: s.z - 6 }, s.z, false, 1);
+    this.flashAt({ x: s.x, y: s.z - 20 }, 0xeef4ff, 50);
+    this.pulse(s.x, s.z, 0, 0x9ad0ff, s.radius);
+    this.scene.fx?.shake(10, 18);
+    this.sound('elecFull', s.by);
+    playSfx(this.scene, 'kick', { volume: 1, pitch: -1700, minGapMs: 0 });
   }
 
   // One jump of the chain: from the staff (or the last body) into this one.

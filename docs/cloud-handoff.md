@@ -295,3 +295,123 @@ the generator and run `node tools/sfx-gen/electric.js`.
 - Everything from this cloud session is on `main`: platforming + THE GALLOWS ASCENT, progression + Rurik's tree, higher jumps, enemy jump/drop poses, the D-pad freed (Down / H = Whirlwind Cleave), the skill-tree exit fix.
 - **Not on itch.** To upload: pull `main`, run `tools/build-release.ps1`, upload `release/blood-axe-web.zip`.
 - Art waiting to be painted: `docs/gallows-art-needed.md`, `docs/enemy-jump-art-prompts.md`.
+
+## Cloud, 2026-10-04: THE CAMPAIGN, stage 1 — THE BURNING VILLAGE (graybox; branch claude/project-thread-l70xhx, not on main, not on itch)
+- Nick's campaign brief is planned in `docs/campaign/plan.md` (six levels, the king's arc, the final battle, Rurik's judgment) with the build checklist in `docs/campaign/checklist.md`.
+- Title menu: **CAMPAIGN: THE BURNING VILLAGE** (solo). Level 1 in six sections: the Ashen Road, the Market Square, the Burning Roofs, the Mill Yard (Brother Cinder, the rear guard), the Longhall (Varek, the Ash Captain), the North Gate (the vow). Data: `src/data/stageVillage.js`.
+- New systems: story beats and villagers with rescue states (`src/stage/Story.js`: defend / wreckage / reach), fights that wait for you (`fightAt`), a level exit after the last words (`exit`), falling burning beams (hazard `beam`, `when: 'rage'` for the longhall), burning carts (fire `look: 'cart'`), the wreckage prop, the dialogue box (HUD), the other two Oath Keepers drawn at the opening and the gate (`src/view/NpcView.js`), the castle on the horizon (`src/view/castle.js`), the first king cutaway (`src/scenes/CutawayScene.js`), and the campaign save (`Progress.campaign`: levels done, villagers saved).
+- The ruler is **King Vaurath, the Ashen Crown** (working name from the final-boss mock-up prompts); Malgor is his champion and stands at the throne in the cutaway. Vaurath is a code-drawn stand-in until his art exists.
+- Story lines are timed in game frames and all rescue logic is sim-side, so online co-op should stay in step, but the campaign is only on the solo menu entry for now and has not been tried online.
+- Checked: logic tests (every hero walks the level with no upgrades and no falls; story order; skipping; all three rescues; beams; saving) and headless-browser screenshots of every section and the cutaway. Not played through by a person.
+
+### Art requests for THE BURNING VILLAGE (all temporary art now; same rules as before: magenta background, facing right, no text)
+1. `village_backdrop_far.png` — parallax: a river valley at night under smoke, the rest of the village burning across it, hills, and on the far right horizon a small black castle against a pale moon (the Black Keep). 2508x627 like `plx_far`.
+2. `village_houses.png` — the street's back wall, tiling: timber-and-plaster houses, some burning, some burnt out, doors and windows lit from inside. 2172x724.
+3. `village_barn.png`, `village_longhall.png`, `village_gate.png` — the three set-piece fronts (barn with big doors; the longhall with carved dragon gables, roof on fire; the north gate palisade with the gate open).
+4. `village_roof_tiles.png` — top-down-ish shingle texture for walkable roofs, and `village_boards.png` for the charred boards (ember cracks).
+5. `npc_villager_strip.png` — a peasant (no weapon) in 8 poses: stand, cower, wave for help, run (3), sit wounded, kneel. Then a woman with a child, and a boy. Muted homespun colours.
+6. `prop_wreckage.png` — a fallen burning beam across a door (+ broken state), and `prop_cart_burning.png`.
+7. `king_vaurath_*` — per `final-boss-mockups/final-boss-chatgpt-prompts.md`; the cutaway uses his throne pose once it exists.
+
+## Cloud, 2026-10-04: THE CAMPAIGN, stage 2 — shared systems and GALLOWS WOOD (graybox; branch claude/project-thread-l70xhx, not on main, not on itch)
+- After the village's tally, **Enter** goes on to level 2, **GALLOWS WOOD** (`src/data/stageWood.js`, backdrop `src/view/WoodView.js`). **CONTINUE** on the title starts the campaign at the last section reached (`Progress.campaign.at`). The stage list moved to `src/data/stages.js`.
+- New rescue kinds in `src/stage/Story.js`: **cage** (hold INTERACT at the lock once the guards are dead), **execution** (kill the hangmen before the rope runs out, or he's lost), **escort** (he follows; enemies near him wear his nerve down). INTERACT is **E** / **D-pad up** (`padUp`; P2 on the keys: numpad 8). Prompts and meters are drawn over the villagers (`src/view/NpcView.js`).
+- **Boss phases** (`boss.phases` in a section; `Stage.updateBossPhases`): the Houndmaster calls his pack at 2/3 and goes into a frenzy at 1/3. Bosses without phases rage at half health as before.
+- **The ending framework** for Rurik's judgment (`src/stage/Sequence.js`): tested on a test stage; the real judgment comes with the Black Keep (stage 3).
+- **Oryn's skill tree**: THE STORMCALLER (Forked Bolt, Static Charge, Thunderhead: `src/data/skills.js`, `src/combat/Storm.js`); his other two branches show as PLANNED.
+- The second king cutaway ('convoy': irritation, he cracks the throne) in `src/scenes/CutawayScene.js`.
+- Checked: logic tests (all pass) and headless-browser screenshots. Not played through by a person; not tried online.
+
+### Art requests for GALLOWS WOOD (temporary art now; same rules: magenta background, facing right, no text)
+1. `wood_backdrop_far.png` — parallax: wet black pines in mist under a pale moon, a ridge, the Black Keep's silhouette over it (bigger than from the village). 2508x627 like `plx_far`.
+2. `wood_trunks.png` — the road's back wall, tiling: tall black pine trunks, ferns, a lantern post. 2172x724.
+3. `wood_hanging_tree.png` — a dead oak with a long bough over the road and a rope (empty: the villager is drawn separately).
+4. `prop_cage_cart.png` — a broken prisoner cart with an iron cage on it: shut (with a padlock), and open (door swung).
+5. `wood_stream.png` — a fast black stream seen from above at an angle; `wood_log.png` a fallen pine to walk across; `wood_stones.png` stepping stones.
+6. `wood_rockslide.png` — boulders heaped across a mountain pass.
+7. `npc_villager_strip.png` additions: hands bound on the rope (standing, then hanging), cowering in a cage, limping with a crutch, kneeling to pick a lock is the hero's (no new hero art needed).
+8. `boss_houndmaster_*` — a kennel master (Stalker build) with a whip and a horn; and `enemy_hound_*` (the pack), for stage 3.
+
+
+## Cloud, 2026-10-04 (night): polish pass on levels 1 and 2 (branch claude/project-thread-l70xhx, not on main, not on itch)
+- Nick asked to polish the first two levels before the rest: painted art, a little longer, more set pieces and fights. Stage 3 waits.
+- **Art**: the prompts for every picture are in `docs/campaign/art-levels-1-2.md` (also in project files `campaign/art/`). Save each at the path in its heading; it shows up in the game with no code change (`src/data/levelArt.js`, `src/view/levelArt.js`). Wired since 5 October 2026: villager, mother, boy and elder sheets, hound and Crusher strips (`SPRITE_SHEETS` in `src/data/levelArt.js`; tested with stand-in sheets). The Houndmaster needs none (he is a stalker). Captive sheet (item 16) wired 5 October 2026. Not yet wired: the cage-cart picture.
+- **Burning Village**: new section THE BURNING STABLES (the stampede), an ambush on the roofs. 9400 wide.
+- **Gallows Wood**: new section THE CONVOY (the rolling prisoner wagon), war hounds with the Houndmaster. 9200 wide.
+- The other two heroes now slip away up a lane at the start and stay hidden until the meeting place.
+- Fixed Nick's playtest softlock in the mill yard (an enemy spawned inside the roof behind).
+
+## Cloud, 2026-10-04 (night): level 3, HOLLOW MOUNTAIN (branch claude/project-thread-l70xhx, not on main, not on itch)
+- Nick asked to keep building level 3 alongside the polish. It's in, with code art: `src/data/stageMine.js`, `src/view/MineView.js`, `src/view/CrusherView.js`. Gallows Wood now leads into it.
+- New systems: terrain blocks with a `tag` that a prop's `opens` removes (`Stage.openWay`: the portcullis and the fallen rock), the collapse chase (hazard `collapse`), rock-falls (beam hazards with `look: 'rock'`), war machines (`machine: true`: never flinch), fire grates can now wait on a boss phase (`when`).
+- The third king cutaway ('collapse': frustration, the war map hurled).
+- Art prompts: items 18-25 in `docs/campaign/art-levels-1-2.md` (the mine and the Ore Crusher). Crusher strips are wired (5 October 2026).
+- Checked: logic tests (every hero walks it, the gate, the collapse, both bosses) and headless screenshots. Not played by a person.
+
+## Cloud, 2026-10-05: level 4, THE SHATTERED ASCENT (branch claude/campaign-level-4-guc3fp, off the campaign branch; not on main, not on itch)
+- Built in its own thread while the campaign thread paints art; to be merged into `claude/project-thread-l70xhx`. Code art: `src/data/stageAscent.js`, `src/view/AscentView.js`. Hollow Mountain now leads into it; it names THE IRON GATES as next (not built).
+- New systems: the bombardment (hazard `bombard`: volleys aimed at the heroes, landing spots shown first, no stone within 170 px of a drop; `silence: '<tag>'` thins it per smashed prop; `when` works as for beams), the catapult prop, `section.needs` (the fight isn't won until every prop with that tag is broken) and the story key `broken:<tag>`.
+- The fourth king cutaway ('retreat': unease; horns, the captain burned to ash).
+- Art prompts: items 32-38 in `docs/campaign/art-levels-1-2.md` (the ascent's backdrop, four set pieces, the catapult). Orsk wears the Berserker's strips. Screens: project files `campaign/shattered-ascent/`.
+- Checked: logic tests (every hero walks it, the bombardment, the shelter, Orsk) and headless screenshots. Not played by a person.
+
+## Cloud, 2026-10-05: level 5, THE IRON GATES (branch claude/campaign-level-5-u65mi8, off the campaign branch; not on main, not on itch)
+- Built in its own thread while the campaign thread paints art; to be merged into `claude/project-thread-l70xhx`. Code art: `src/data/stageGates.js`, `src/view/GatesView.js`. The ascent now leads into it; it names THE BLACK KEEP as next (not built).
+- Route: the killing ground (thralls the King shut outside, as a horde), the gatehouse (pitch grates, the stair, the rotten floor), the winch room (THE GATE TWINS, Hask and Hrolf; break both winch chains and the gate rises), the gate yard (the counter-attack; the people saved earlier come back), the lower town (the King burning his own people: defend the townsfolk, free the granary), MALGOR, THE IRON MARSHAL (archers on the wall at two thirds, rage at one third), the Keep road.
+- New systems: `boss.twin` (two bosses; when one dies the other takes the HUD bar and fights harder, `boss.grief`; story key `twin:<section>`), props with the same `tag` and `opens` (the way opens only when all are broken), hazards with `if` / `unless` (story conditions), `bombard.friendly` (the rescued's slings: only hit the Ashen, never a boss), villagers with `if` (who stands at the Keep road depends on who was saved in levels 1-4), the `winch` prop.
+- The fifth king cutaway ('fear': Malgor's helm rolled to the dais, the fire in his hand gutters out, he orders the prison wing burned).
+- Art prompts: items 41-47 in `docs/campaign/art-levels-1-2.md`. The twins wear the Gladiator's strips, Malgor his own. Screens: project files `campaign/iron-gates/`.
+- Checked: logic tests (every hero walks it, the twins and the gate, the returning slings, Malgor's phases), the sweep bot from every checkpoint with every hero, headless screenshots. Not played by a person.
+
+## Paused, 2026-10-05 00:55 UTC (Nick out of usage until it refreshes)
+- Campaign branch `claude/project-thread-l70xhx` is pushed (latest: heads on pikes in the village); it's PR #12 into main, open, waiting on Nick's OK to merge.
+- **Art (committed from the PC, 2026-10-05 03:20 UTC)**: everything `levelArt.js` had a slot for before the `surfaces` commit is painted and pushed: items 1-7 and 9 (village backdrop, well, barn, stables, longhall, gate, wreckage, cart, horse gallop), 10-15 for the wood (backdrop, hanging tree, kennels, rockslide, convoy wagon, cage cart) and 18-24 for the mine (backdrop, furnace, shackle, counterweight, rubble). Checked loading in the game (muted). Cut-out pictures had the magenta unmixed into real alpha on the PC (smoke was coming out purple), so they're RGBA PNGs. ChatGPT chats: "BA · Level 1 · Burning Village", "BA · Level 2 · Gallows Wood", "BA · Level 3 · Hollow Mountain".
+- **Surface tiles (items 26-31) painted and committed too** (2026-10-05 ~03:50 UTC): all 11 `surf_*.png`, opaque; checked loading in the village (the beams show painted wood).
+- **Figures and pikes painted too** (2026-10-05 ~05:15 UTC, ChatGPT chat "BA · Campaign · Figures"): `pikes.png`, villager (8), mother (6), boy (6), elder (4), hound walk/atk1/react/doom and crusher walk/atk1/heavy/doom, at the frame counts in `SPRITE_SHEETS`. ChatGPT spaced figures unevenly, so each strip was re-packed on the PC into equal cells, one figure centred per cell, on black. All 12 `spr-*` textures build at boot (checked, muted). The hound's react poses are drawn rearing and larger than its run; the tallest-pose scaling may make it look smaller in those frames. Not watched in a fight.
+- **Art not done yet**: stream/log/stones (item 15, no slot), captive sheet (item 16, not wired). Mute any test load (`?mute=1`).
+- **itch**: a campaign build is zipped on the PC (`release\blood-axe-web.zip`); the upload was blocked by the PC's safety check and waits on Nick (upload it himself at itch.io/game/edit/5082289, or approve it on the PC). itch still runs 19540958.
+- **Play link**: publishing the web build as a private claude.ai page was blocked pending Nick's yes.
+- **Code next**: level 4, Shattered Ascent (the Siege Commander); wire villager, hound, Houndmaster and Crusher strips once their art exists; the king's art is in Nick's ChatGPT folder "Ashen King".
+
+## Cloud, 2026-10-05: hack-and-slash pillars (branch claude/combat-pillars-2znjh7, off the campaign branch)
+
+Code only, not on itch. Logic tests cover all of it.
+
+- **Air juggles** (`src/combat/Juggle.js`): Rurik's J, J, K is the RISING CLEAVE launcher
+  (`moves.launcher`, borrows light2's poses until a strip exists). Any hero's hit on a flying
+  enemy keeps him up; air attacks chain three a jump while they connect, the third spikes him
+  and he bounces once. Bosses and the Crusher are never juggled.
+- **Combo counter and style rank** (`src/combat/Style.js`, HUD `src/view/StyleMeter.js`):
+  D to SSS, right side of the HUD. The rank multiplies the blood each kill pays.
+- **Riposte** (`CombatSystem.js`, `RIPOSTE`): the first melee hit after a parry on that man is
+  a sure critical, x1.6 more, long freeze, "RIPOSTE!" call-out.
+- **Boss loot: trophies** (`src/data/trophies.js`, saved in `Progress.trophies`): every boss
+  drops his own legendary the first time; men with 130+ health drop a common/rare 12% of the
+  time. Three worn slots; O / RT on the skill screen opens the TROPHIES page (wear / take off).
+  The dropped reliquary is a code-drawn stand-in: prompts 39-40 in
+  `/mnt/project-files/campaign/art/art-levels-1-2.md` (icons are not wired in yet).
+- **Hordes**: a new fodder enemy, the Ashen Thrall (`ENEMIES.thrall`, 30 health, wears the
+  grunt's strips via `strips: 'grunt'`). One horde wave of 10-11 per campaign level (Market
+  Square, the Convoy, the Workings), announced "THE HORDE".
+
+## Cloud, 2026-10-05: animation smoothing (branch claude/animation-smoothing-6anlb4, not on itch)
+View-only, no sim or input timing changed: eased key-pose timing, squash and stretch on
+jumps, landings and hits, lean blended across state changes (src/view/animFeel.js).
+Painting notes for strips (key poses, frame counts): docs/animation-poses.md. Before/after
+GIFs: project files, animation/.
+
+## FOR THE PC, next time Nick wakes it (written 2026-10-05 13:55 UTC)
+Since the PC went offline the cloud merged into `claude/project-thread-l70xhx` (now 5444d91):
+level 4 THE SHATTERED ASCENT, the combat round (juggles, style rank, trophies, thralls), the
+animation pass, the playtest soft-lock fixes, the captive slot and level 5 THE IRON GATES (art
+items 41-47). The 5 October push from the PC never reached GitHub; the PC holds 3 unpushed art commits on the
+same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one go:
+1. `git pull --no-rebase origin claude/project-thread-l70xhx` (a merge, keep both sides;
+   on a conflict in docs keep both sections).
+2. `git push origin claude/project-thread-l70xhx`: the GitHub sign-in window opens and Nick
+   only clicks Sign in.
+3. Build with `tools/build-release.ps1` and upload to itch like build 19540958 (Nick approves
+   the prompt). Test the build muted (`?mute=1`) and close the tabs after.
+4. Then the painting queue in `/mnt/project-files/campaign/art/art-levels-1-2.md` (the shared
+   copy is newer than the repo's: Gallows Wood 10-17, Hollow Mountain 18-24, the ascent
+   32-38, trophies 39-40). Pose rules: `docs/animation-poses.md`.

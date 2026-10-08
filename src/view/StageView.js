@@ -160,6 +160,16 @@ export class StageView {
       c.fillRect(13, 18, 4, 10); c.fillRect(7, 28, 16, 5);
       c.fillStyle = '#ffe080'; c.fillRect(6, 4, 5, 8); c.fillStyle = '#c0161c'; c.fillRect(13, 8, 4, 4);
     });
+    // a boss's trophy (data/trophies.js): a gilded reliquary with a blood-red stone
+    // (a stand-in until the painted one arrives: docs/campaign art prompts)
+    this.canvasTex('pk-trophy', 34, 40, (c, w, h) => {
+      c.fillStyle = '#5a3a10'; c.fillRect(5, h - 8, w - 10, 6);
+      c.fillStyle = '#c89028'; c.beginPath(); c.moveTo(4, 10); c.lineTo(w - 4, 10); c.lineTo(w - 8, h - 8); c.lineTo(8, h - 8); c.closePath(); c.fill();
+      c.fillStyle = '#ffd870'; c.fillRect(7, 12, 4, h - 22);
+      c.fillStyle = '#e0b040'; c.beginPath(); c.moveTo(w / 2, 0); c.lineTo(w - 6, 10); c.lineTo(6, 10); c.closePath(); c.fill();
+      c.fillStyle = '#c0161c'; c.beginPath(); c.arc(w / 2, 21, 6, 0, 7); c.fill();
+      c.fillStyle = '#ff8a8a'; c.fillRect(w / 2 - 3, 17, 2, 3);
+    });
     this.canvasTex('pk-shrine', 70, 80, (c, w, h) => {
       c.fillStyle = '#3a302a'; c.fillRect(8, 40, w - 16, h - 40); c.fillStyle = '#5a4a40'; c.fillRect(4, 36, w - 8, 8);
       c.fillStyle = '#8a0a0a'; c.beginPath(); c.ellipse(w / 2, 36, 22, 7, 0, 0, 7); c.fill();
@@ -174,6 +184,146 @@ export class StageView {
       c.lineWidth = 3; for (let x = 18; x < w - 12; x += 13) { c.beginPath(); c.moveTo(x, 8); c.lineTo(x, h - 8); c.stroke(); }
       c.fillStyle = 'rgba(255,90,20,0.35)'; c.beginPath(); c.ellipse(w / 2, h / 2, w / 2 - 14, h / 2 - 12, 0, 0, 7); c.fill();
     });
+    // (the village) a burning cart: what its fires erupt from, instead of an iron grate
+    this.canvasTex('cartwreck', 128, 64, (c, w, h) => {
+      c.fillStyle = '#140c08'; c.beginPath(); c.ellipse(w / 2, h / 2 + 6, w / 2 - 4, h / 2 - 10, 0, 0, 7); c.fill();
+      c.fillStyle = '#3a2416'; c.fillRect(12, 18, w - 24, 22);
+      c.fillStyle = '#1a100a'; for (let x = 16; x < w - 16; x += 14) c.fillRect(x, 18, 3, 22);
+      c.strokeStyle = '#2a1a10'; c.lineWidth = 5; c.beginPath(); c.arc(28, 44, 14, 0, 7); c.stroke(); c.beginPath(); c.arc(w - 28, 44, 14, 0, 7); c.stroke();
+      c.fillStyle = 'rgba(255,110,30,0.45)'; c.fillRect(16, 22, w - 32, 4);
+    });
+    // (the village) a fallen burning beam across a door: smash it (PROPS.wreckage)
+    this.canvasTex('prop-wreckage', 176, 112, (c, w, h) => {
+      const beam = (x0, y0, x1, y1, t) => {
+        c.save(); c.translate(x0, y0); c.rotate(Math.atan2(y1 - y0, x1 - x0));
+        const L = Math.hypot(x1 - x0, y1 - y0);
+        c.fillStyle = '#2a1a10'; c.fillRect(0, -t / 2, L, t);
+        c.fillStyle = '#120a06'; c.fillRect(0, -t / 2, L, 4);
+        c.fillStyle = 'rgba(255,120,40,0.85)'; for (let x = 10; x < L - 6; x += 23) c.fillRect(x, -t / 2 + 6, 9, 3);
+        c.fillStyle = 'rgba(255,200,120,0.7)'; for (let x = 22; x < L - 6; x += 37) c.fillRect(x, 1, 5, 2);
+        c.restore();
+      };
+      beam(4, h - 20, w - 6, 26, 26);
+      beam(10, 30, w - 14, h - 14, 22);
+      c.fillStyle = '#1a120c'; c.fillRect(0, h - 14, w, 14);
+    });
+    // (the wood) the convoy's prisoner wagon: black iron plates, barred windows with faces
+    // at them, the king's black and crimson banner; and the same wrecked (PROPS.wagon)
+    const wagon = (c, w, h, wrecked) => {
+      c.save();
+      if (wrecked) { c.translate(w / 2, h); c.rotate(-0.12); c.translate(-w / 2, -h); }
+      const bed = h - 70;
+      c.fillStyle = '#18161a'; c.fillRect(22, 40, w - 44, bed - 40); // the box
+      c.fillStyle = '#26232a'; for (let x = 30; x < w - 40; x += 58) c.fillRect(x, 46, 50, bed - 52); // plates
+      c.fillStyle = '#0c0b0e'; for (let x = 30; x < w - 40; x += 58) for (const y of [52, bed - 18]) c.fillRect(x + 4, y, 3, 3); // rivets
+      // barred windows: dark, faces pressed to them while it rolls
+      for (let x = 70; x < w - 90; x += 110) {
+        c.fillStyle = wrecked ? '#000000' : '#2a1a14'; c.fillRect(x, 70, 54, 40);
+        if (!wrecked) { c.fillStyle = '#8a6a50'; c.beginPath(); c.arc(x + 18, 92, 9, 0, 7); c.fill(); c.beginPath(); c.arc(x + 38, 94, 8, 0, 7); c.fill(); }
+        c.fillStyle = '#4a4650'; for (let b = x + 6; b < x + 54; b += 12) c.fillRect(b, 70, 4, 40);
+      }
+      c.fillStyle = '#100e12'; c.fillRect(12, 30, w - 24, 14); c.fillRect(12, bed - 6, w - 24, 14); // roof rim and bed
+      // the banner on its pole at the front
+      c.fillStyle = '#2a1a10'; c.fillRect(w - 40, 0, 6, bed);
+      c.fillStyle = '#5a0a12'; c.fillRect(w - 76, 6, 36, 50); c.fillStyle = '#0a0808'; c.fillRect(w - 76, 22, 36, 10);
+      c.restore();
+      // the wheels (one smashed when wrecked)
+      const wheel = (x, broken) => {
+        c.strokeStyle = '#2a1e14'; c.lineWidth = 9; c.beginPath();
+        if (broken) c.arc(x, h - 30, 28, 0.6, 3.6); else c.arc(x, h - 30, 28, 0, 7);
+        c.stroke();
+        c.lineWidth = 4; for (let a = 0; a < (broken ? 3 : 8); a++) { c.beginPath(); c.moveTo(x, h - 30); c.lineTo(x + Math.cos(a * 0.8) * 26, h - 30 + Math.sin(a * 0.8) * 26); c.stroke(); }
+        c.fillStyle = '#4a4650'; c.beginPath(); c.arc(x, h - 30, 7, 0, 7); c.fill();
+      };
+      wheel(70, false); wheel(w - 80, wrecked);
+      if (wrecked) { c.fillStyle = '#000000'; c.fillRect(24, 48, 40, bed - 56); } // the back door hanging open
+    };
+    // (the mine) a post with a captive's chain on it; the stump once broken (PROPS.shackle)
+    this.canvasTex('prop-shackle', 80, 180, (c, w, h) => {
+      c.fillStyle = '#3a2616'; c.fillRect(w / 2 - 10, 10, 20, h - 10);
+      c.fillStyle = '#5a3c22'; c.fillRect(w / 2 + 4, 10, 4, h - 10);
+      c.fillStyle = '#6a6a72'; c.fillRect(w / 2 - 14, h - 70, 28, 10); // the iron band
+      c.strokeStyle = '#8a8a92'; c.lineWidth = 3; for (let i = 0; i < 4; i++) { c.beginPath(); c.ellipse(w / 2 + 14 + i * 8, h - 60 + i * 9, 5, 3, 0.6, 0, 7); c.stroke(); }
+    });
+    this.canvasTex('prop-shackle-broken', 80, 180, (c, w, h) => {
+      c.fillStyle = '#3a2616'; c.beginPath(); c.moveTo(w / 2 - 10, h); c.lineTo(w / 2 - 10, h - 50); c.lineTo(w / 2, h - 40); c.lineTo(w / 2 + 10, h - 58); c.lineTo(w / 2 + 10, h); c.fill();
+      c.fillStyle = '#6a6a72'; c.fillRect(w / 2 + 14, h - 8, 26, 6);
+    });
+    // (the mine) the counterweight: a dressed stone hung on a chain that runs up over a
+    // wheel to the portcullis; broken: the chain snapped, the stone dropped and split
+    this.canvasTex('prop-counterweight', 160, 260, (c, w, h) => {
+      c.fillStyle = '#7a7a82'; c.fillRect(w / 2 - 3, 0, 6, h - 120);
+      c.fillStyle = '#45464c'; c.fillRect(20, h - 130, w - 40, 120);
+      c.fillStyle = '#5a5b62'; c.fillRect(24, h - 126, w - 48, 10);
+      c.fillStyle = '#2a2b30'; for (let y = h - 100; y < h - 14; y += 30) c.fillRect(20, y, w - 40, 3);
+      c.fillStyle = '#8a8a92'; c.fillRect(w / 2 - 14, h - 140, 28, 14);
+    });
+    this.canvasTex('prop-counterweight-broken', 160, 260, (c, w, h) => {
+      c.fillStyle = '#45464c'; c.fillRect(10, h - 60, w / 2 - 14, 60); c.fillRect(w / 2 + 4, h - 50, w / 2 - 14, 50);
+      c.fillStyle = '#7a7a82'; c.fillRect(w / 2 - 2, h - 90, 4, 40);
+    });
+    // (the mine) a fall of rock in front of a passage; dug out: a few stones left
+    const rubble = (c, w, h, n, hi) => {
+      let k = 77; const r = () => { k = (k * 9301 + 49297) % 233280; return k / 233280; };
+      for (let i = 0; i < n; i++) {
+        const x = 20 + r() * (w - 40); const y = h - r() * hi; const rad = 12 + r() * 26;
+        c.fillStyle = r() < 0.5 ? '#3a3c42' : '#55565c'; c.beginPath(); c.arc(x, y, rad, 0, 7); c.fill();
+        c.fillStyle = 'rgba(255,255,255,0.08)'; c.beginPath(); c.arc(x - rad * 0.3, y - rad * 0.3, rad * 0.4, 0, 7); c.fill();
+      }
+    };
+    this.canvasTex('prop-rubble', 240, 190, (c, w, h) => rubble(c, w, h, 26, 150));
+    this.canvasTex('prop-rubble-broken', 240, 190, (c, w, h) => rubble(c, w, h, 8, 30));
+    // (the Shattered Ascent) a siege catapult: a timber frame on wheels, the throwing arm
+    // cocked back, a sling with a stone in it; wrecked: the frame split, the arm snapped
+    const catapult = (c, w, h, wrecked) => {
+      const base = h - 30;
+      c.fillStyle = '#3a2616';
+      if (!wrecked) {
+        c.fillRect(20, base - 16, w - 40, 16); // the bed
+        c.save(); c.translate(w * 0.42, base - 90); c.rotate(-0.15); c.fillRect(-10, 0, 20, 90); c.restore(); // the uprights
+        c.fillRect(w * 0.62, base - 80, 18, 80);
+        c.fillStyle = '#4a3220'; c.fillRect(w * 0.3, base - 96, w * 0.42, 12); // the crossbar
+        c.save(); c.translate(w * 0.56, base - 30); c.rotate(-1.05); // the arm, cocked back
+        c.fillStyle = '#5a3c22'; c.fillRect(-6, -150, 12, 170);
+        c.fillStyle = '#2a1c12'; c.beginPath(); c.ellipse(0, -156, 18, 10, 0, 0, 7); c.fill(); // the sling
+        c.fillStyle = '#6a6a72'; c.beginPath(); c.arc(0, -162, 13, 0, 7); c.fill(); // the stone in it
+        c.restore();
+        c.strokeStyle = '#8a7a60'; c.lineWidth = 2; c.beginPath(); c.moveTo(w * 0.3, base - 16); c.lineTo(w * 0.5, base - 40); c.stroke(); // the winch rope
+      } else {
+        c.fillRect(14, base - 10, w * 0.4, 12); c.fillRect(w * 0.52, base - 6, w * 0.4, 10);
+        c.save(); c.translate(w * 0.3, base - 14); c.rotate(-0.4); c.fillRect(0, -6, 110, 10); c.restore(); // the snapped arm
+        c.fillStyle = '#4a3220'; c.fillRect(w * 0.6, base - 40, 14, 34);
+        c.fillStyle = '#6a6a72'; c.beginPath(); c.arc(w * 0.82, base - 6, 12, 0, 7); c.fill();
+      }
+      const wheel = (x) => { c.fillStyle = '#2a1c12'; c.beginPath(); c.arc(x, base + 6, 22, 0, 7); c.fill(); c.fillStyle = '#4a3220'; c.beginPath(); c.arc(x, base + 6, 7, 0, 7); c.fill(); };
+      wheel(48); if (!wrecked) wheel(w - 52);
+    };
+    this.canvasTex('prop-catapult', 300, 260, (c, w, h) => catapult(c, w, h, false));
+    this.canvasTex('prop-catapult-broken', 300, 260, (c, w, h) => catapult(c, w, h, true));
+    // (the Iron Gates) the gate winch: an iron-bound drum on a timber frame, the gate chain
+    // wound on it and running up out of sight; broken: the frame split, the chain gone slack
+    const winch = (c, w, h, broken) => {
+      const base = h - 10;
+      c.fillStyle = '#3a2616';
+      if (!broken) {
+        c.fillRect(14, base - 110, 16, 110); c.fillRect(w - 30, base - 110, 16, 110); // the frame
+        c.fillRect(8, base - 12, w - 16, 12);
+        c.fillStyle = '#2a2a30'; c.fillRect(22, base - 96, w - 44, 50); // the drum
+        c.fillStyle = '#5a5a62'; for (let x = 26; x < w - 26; x += 8) c.fillRect(x, base - 94, 4, 46); // the chain wound on it
+        c.fillStyle = '#7a7a82'; c.fillRect(w / 2 - 4, 0, 8, base - 96); // the chain, taut, running up
+        c.fillStyle = '#8a8a92'; for (let y = 4; y < base - 96; y += 14) c.fillRect(w / 2 - 6, y, 12, 6);
+        c.fillStyle = '#4a3220'; c.fillRect(w - 26, base - 76, 34, 8); // the crank
+      } else {
+        c.fillRect(10, base - 40, 16, 40); c.save(); c.translate(w - 30, base); c.rotate(0.5); c.fillRect(0, -70, 16, 70); c.restore();
+        c.fillRect(8, base - 10, w * 0.5, 10);
+        c.fillStyle = '#2a2a30'; c.fillRect(30, base - 40, w - 70, 34);
+        c.strokeStyle = '#6a6a72'; c.lineWidth = 4; c.beginPath(); c.moveTo(w * 0.3, base - 4); c.quadraticCurveTo(w * 0.6, base - 30, w * 0.9, base - 2); c.stroke(); // the slack chain
+      }
+    };
+    this.canvasTex('prop-winch', 220, 300, (c, w, h) => winch(c, w, h, false));
+    this.canvasTex('prop-winch-broken', 220, 300, (c, w, h) => winch(c, w, h, true));
+    this.canvasTex('prop-wagon', 420, 240, (c, w, h) => wagon(c, w, h, false));
+    this.canvasTex('prop-wagon-broken', 420, 240, (c, w, h) => wagon(c, w, h, true));
     this.canvasTex('flame', 32, 64, (c, w, h) => {
       const g = c.createLinearGradient(0, h, 0, 0);
       g.addColorStop(0, 'rgba(255,240,180,1)'); g.addColorStop(0.35, 'rgba(255,150,40,0.95)'); g.addColorStop(0.75, 'rgba(220,40,10,0.6)'); g.addColorStop(1, 'rgba(120,10,0,0)');
@@ -248,7 +398,9 @@ export class StageView {
 
   makeProp(pr) {
     const key = `prop-${pr.kind}`;
-    const s = this.hd.has(key) ? 0.25 : 0.5;
+    // (a level's painted prop, data/levelArt.js: sized to the prop, whatever size it was painted)
+    const lvl = (this.scene.registry.get('levelArt') ?? []).includes(key);
+    const s = lvl ? (pr.w * 1.3) / this.scene.textures.get(key).getSourceImage().width : this.hd.has(key) ? 0.25 : 0.5;
     if (pr.kind === 'wall') {
       // set into the back wall: the alcove waits behind it
       const y = SETTINGS.world.floorTop - 4;
@@ -323,8 +475,8 @@ export class StageView {
     const live = new Set(this.stage.pickups);
     for (const pk of this.stage.pickups) {
       if (this.pickupSprites.has(pk)) continue;
-      const img = this.scene.add.image(pk.x, pk.z, `pk-${pk.kind}`).setOrigin(0.5, 1).setScale(pk.kind === 'shrine' ? 0.7 : 0.75);
-      const glow = this.scene.add.image(pk.x, pk.z - 12, 'glow').setScale(1.4).setTint(PICKUPS[pk.kind].color).setAlpha(0.6).setBlendMode(Phaser.BlendModes.ADD);
+      const img = this.scene.add.image(pk.x, pk.z, `pk-${pk.kind}`).setOrigin(0.5, 1).setScale(pk.kind === 'shrine' ? 0.7 : pk.kind === 'trophy' ? 1 : 0.75);
+      const glow = this.scene.add.image(pk.x, pk.z - 12, 'glow').setScale(pk.kind === 'trophy' ? 2.6 : 1.4).setTint(PICKUPS[pk.kind].color).setAlpha(0.6).setBlendMode(Phaser.BlendModes.ADD);
       this.pickupSprites.set(pk, { img, glow });
     }
     for (const [pk, v] of this.pickupSprites) {
@@ -339,6 +491,7 @@ export class StageView {
   }
 
   pickup({ pickup: pk, def }) {
+    if (def.trophy) { this.scene.gore.spark(pk.x, pk.z, 20, def.color, 30); return; } // (ArenaScene names the trophy)
     playSfx(this.scene, 'block', { volume: 0.4, pitch: 900, minGapMs: 0 });
     this.scene.gore.spark(pk.x, pk.z, 20, def.color, 14);
     const what = def.heal && def.mana ? 'FULLY RESTORED' : def.heal ? `+HEALTH  (${def.label})` : def.mana ? '+MANA' : def.label;
@@ -350,6 +503,9 @@ export class StageView {
   drawHazards() {
     const cam = this.scene.cameras.main.worldView;
     for (const hz of this.stage.hazards) {
+      if (hz.type === 'stampede') { this.drawStampede(hz, cam); continue; }
+      if (hz.type === 'collapse') { this.drawCollapse(hz, cam); continue; }
+      if (hz.type === 'bombard') { this.drawBombard(hz); continue; }
       if (hz.x < cam.x - 200 || hz.x > cam.right + 200) {
         hz.view?.setVisible(false);
         hz.hot?.setVisible(false);
@@ -359,6 +515,7 @@ export class StageView {
         continue;
       }
       if (hz.type === 'fire') this.drawFire(hz);
+      else if (hz.type === 'beam') this.drawBeam(hz);
       else {
         hz.g = hz.g ?? this.scene.add.graphics();
         this.drawBlade(hz.g.clear().setVisible(true), hz);
@@ -368,9 +525,10 @@ export class StageView {
 
   drawFire(hz) {
     if (!hz.view) {
-      hz.view = this.scene.add.image(hz.x, hz.z, 'grate').setDisplaySize(hz.w, hz.d * 0.75).setDepth(DEPTH.floor + 4);
+      const cart = hz.look === 'cart';
+      hz.view = this.scene.add.image(hz.x, hz.z, cart ? 'cartwreck' : 'grate').setDisplaySize(hz.w, hz.d * (cart ? 1 : 0.75)).setDepth(DEPTH.floor + 4);
       // (painted sheet: the same grate red-hot, faded in over the cold one as it heats)
-      if (this.painted.has('grate-hot')) hz.hot = this.scene.add.image(hz.x, hz.z, 'grate-hot').setDisplaySize(hz.w, hz.d * 0.75).setDepth(DEPTH.floor + 4.05).setAlpha(0);
+      if (!cart && this.painted.has('grate-hot')) hz.hot = this.scene.add.image(hz.x, hz.z, 'grate-hot').setDisplaySize(hz.w, hz.d * 0.75).setDepth(DEPTH.floor + 4.05).setAlpha(0);
       hz.glow = this.scene.add.image(hz.x, hz.z, 'glow').setDisplaySize(hz.w * 1.6, hz.d * 1.4).setTint(0xff6020)
         .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 4.1);
       hz.flames = Array.from({ length: 7 }, () => this.scene.add.image(hz.x, hz.z, 'flame').setOrigin(0.5, 1)
@@ -423,6 +581,229 @@ export class StageView {
       const hgt = (1 - life * 0.6) * (60 + Math.sin(t * 0.7 + i * 1.3) * 16);
       fl.setPosition(fx, fz).setDisplaySize(26 + Math.sin(t * 0.9 + i) * 6, hgt).setDepth(fz + 0.5).setAlpha(0.95);
     });
+  }
+
+  // A burning beam about to fall (Stage 'beam'): while it creaks, its shadow grows on the
+  // ground under it, embers fall, and a ring marks how far it reaches; then it crashes
+  // and lies there burning for a moment. Readable well before it lands.
+  drawBeam(hz) {
+    const g = hz.g = hz.g ?? this.scene.add.graphics();
+    g.clear().setVisible(true);
+    const live = this.stage.beamLive(hz);
+    const y = Math.max(0, this.stage.terrain?.groundAt(hz.x, hz.z) ?? 0);
+    const gy = hz.z - y;
+    g.setDepth(hz.z - 1);
+    if (!live) return;
+    const { phase, warnT, since } = this.stage.beamPhase(hz);
+    if (hz.look === 'rock') { this.drawRockfall(g, hz, gy, y, phase, warnT, since); return; }
+    if (phase === 'warn') {
+      // the shadow and the reach, growing and darkening
+      g.fillStyle(0x000000, 0.2 + 0.45 * warnT).fillEllipse(hz.x, gy, hz.w * (0.6 + 0.6 * warnT), hz.d * 0.5 * (0.6 + 0.6 * warnT));
+      g.lineStyle(2, 0xffa050, 0.35 + 0.5 * warnT).strokeEllipse(hz.x, gy, hz.w * 1.2, hz.d * 0.6);
+      // the beam itself, high up and shaking loose
+      const shake = Math.sin(hz.t * 1.3) * 3 * warnT;
+      const by = gy - 230 + warnT * 30;
+      g.fillStyle(0x2a1a10, 1).fillRect(hz.x - hz.w / 2 + shake, by, hz.w, 14);
+      g.fillStyle(0xff7a2a, 0.9).fillRect(hz.x - hz.w / 2 + 6 + shake, by + 4, hz.w - 12, 3);
+      if (hz.t % 4 === 0) {
+        this.scene.gore.spawn({ x: hz.x + rand(-hz.w / 2, hz.w / 2), z: hz.z, h: y + 220, vx: rand(-10, 10), vz: 0, vh: -rand(10, 60), tint: 0xffa040, scale: rand(0.25, 0.5), decal: false, life: 50 });
+      }
+    } else if (since < 70) {
+      // down: it lies across the ground, burning out
+      const a = 1 - since / 70;
+      g.fillStyle(0x2a1a10, a).fillRect(hz.x - hz.w / 2 - 8, gy - 10, hz.w + 16, 12);
+      g.fillStyle(0xff7a2a, a * 0.9).fillRect(hz.x - hz.w / 2, gy - 7, hz.w, 3);
+    }
+  }
+
+  // The mine's version of a falling beam (look 'rock'): grit trickling from a crack in the
+  // roof and a shadow spreading under it, then a slab of rock that shatters where it lands.
+  drawRockfall(g, hz, gy, y, phase, warnT, since) {
+    if (phase === 'warn') {
+      g.fillStyle(0x000000, 0.2 + 0.5 * warnT).fillEllipse(hz.x, gy, hz.w * (0.6 + 0.6 * warnT), hz.d * 0.5 * (0.6 + 0.6 * warnT));
+      g.lineStyle(2, 0xc8b8a0, 0.3 + 0.5 * warnT).strokeEllipse(hz.x, gy, hz.w * 1.2, hz.d * 0.6);
+      // the slab working loose overhead
+      const shake = Math.sin(hz.t * 1.7) * 3 * warnT;
+      const by = gy - 250 + warnT * 26;
+      g.fillStyle(0x2a2a30, 1).fillTriangle(hz.x - hz.w / 2 + shake, by, hz.x + hz.w / 2 + shake, by - 6, hz.x + shake + 8, by + 34);
+      g.fillStyle(0x4a4650, 1).fillTriangle(hz.x - hz.w / 2 + shake, by, hz.x + shake, by - 4, hz.x + shake - 6, by + 18);
+      if (hz.t % 3 === 0) {
+        this.scene.gore.spawn({ x: hz.x + rand(-hz.w / 3, hz.w / 3), z: hz.z, h: y + 230, vx: rand(-6, 6), vz: 0, vh: -rand(20, 80), tint: 0x8a8070, texture: 'px', scale: rand(0.5, 1), decal: false, life: 50 });
+      }
+    } else if (since < 80) {
+      // down: broken rock in a heap, the dust settling
+      const a = 1 - since / 80;
+      g.fillStyle(0x2a2a30, a);
+      for (let i = 0; i < 5; i++) {
+        const rx = hz.x - hz.w / 2 + (i + 0.5) * (hz.w / 5);
+        const rh = 10 + ((i * 7) % 4) * 5;
+        g.fillTriangle(rx - 16, gy, rx + 16, gy, rx + (i % 2 ? 4 : -4), gy - rh);
+      }
+      g.fillStyle(0x8a8070, a * 0.25).fillEllipse(hz.x, gy - 14, hz.w * 1.4, 40);
+    }
+  }
+
+  // The catapults' stones (Stage 'bombard'): where each will land, a shadow spreading on the
+  // ground and a red ring round its reach, then the stone itself, burning, dropping out of
+  // the sky onto the middle of it.
+  drawBombard(hz) {
+    const g = hz.g = hz.g ?? this.scene.add.graphics();
+    g.clear();
+    const shells = hz.shells ?? [];
+    g.setVisible(shells.length > 0);
+    if (shells.length) g.setDepth(Math.min(...shells.map((q) => q.z)) - 1); // (over a ledge's top, under the men on it)
+    if (!hz.stones) hz.stones = this.scene.add.graphics();
+    const st = hz.stones.clear();
+    for (const s of shells) {
+      s.gy ??= this.stage.terrain ? Math.max(0, this.stage.terrain.groundAt(s.x, s.z)) : 0;
+      const k = Math.max(0, Math.min(1, (hz.t - s.from) / Math.max(1, s.land - s.from)));
+      const gy = s.z - s.gy;
+      const R = hz.radius ?? 64;
+      g.fillStyle(0x000000, 0.15 + 0.5 * k).fillEllipse(s.x, gy, R * (0.5 + 1.1 * k), R * 0.38 * (0.5 + 1.1 * k));
+      g.lineStyle(2, hz.friendly ? 0xd8e8ff : 0xff5a3a, 0.25 + 0.55 * k).strokeEllipse(s.x, gy, R * 2, R * 0.75);
+      if (k < 0.45) continue;
+      if (hz.friendly) {
+        // (your own people's: plain sling stones, thrown from behind you, a flat arc)
+        const f = (k - 0.45) / 0.55;
+        const sx = s.x - 260 * (1 - f); const sy = gy - 260 * (1 - f) * f * 4 * 0.5 - 10;
+        st.setDepth(s.z + 1);
+        for (let i = 0; i < 3; i++) st.fillStyle(0x6a6a72, 1).fillCircle(sx + (i - 1) * 16, sy + (i % 2) * 8, 6);
+        continue;
+      }
+      // the stone: the last half of its flight, falling steeply onto the mark
+      const f = (k - 0.45) / 0.55;
+      const sy = gy - 720 * (1 - f) * (1 - f) - 12;
+      const sx = s.x - 120 * (1 - f);
+      st.setDepth(s.z + 1);
+      // (a pitch-soaked stone, burning: it reads against the sky and the Keep alike)
+      for (let k2 = 1; k2 <= 4; k2++) st.fillStyle(k2 < 3 ? 0xff7a30 : 0x6a6460, 0.35 - k2 * 0.06).fillCircle(sx - 26 * k2 * (1 - f * 0.6), sy - 60 * k2 * (1 - f * 0.6), 11 - k2);
+      st.fillStyle(0xffb050, 1).fillCircle(sx, sy, 17);
+      st.fillStyle(0x2a2420, 1).fillCircle(sx + 2, sy + 2, 13);
+      st.fillStyle(0xff8a30, 1).fillCircle(sx - 5, sy - 5, 5);
+    }
+  }
+
+  // The mine coming down behind you (Stage 'collapse'): a wall of falling rock at the front,
+  // boulders tumbling out of the roof, a fog of dust, and nothing but black behind it.
+  drawCollapse(hz, cam) {
+    const g = hz.g = hz.g ?? this.scene.add.graphics();
+    g.clear();
+    const on = hz.front != null && hz.front > cam.x - 300;
+    g.setVisible(on);
+    if (!on) return;
+    const t = this.scene.time.now / 16.7;
+    const fx = hz.front;
+    const moving = fx < hz.to;
+    g.setDepth(DEPTH.floor + 900); // (in front of the lane: it's the mountain falling)
+    const top = cam.y - 50; const bot = cam.bottom + 50;
+    // behind the front: dark, filled with rubble
+    g.fillStyle(0x050506, 0.96).fillRect(Math.min(cam.x - 50, fx - 2000), top, fx - 40 - Math.min(cam.x - 50, fx - 2000), bot - top);
+    // the ragged face of the fall
+    g.fillStyle(0x1a1a1e, 1);
+    for (let y = top; y < bot; y += 36) {
+      const j = Math.sin(y * 0.13 + t * (moving ? 0.4 : 0.05)) * 18;
+      g.fillTriangle(fx - 60, y, fx + j, y + 18, fx - 60, y + 40);
+    }
+    // boulders falling through the front
+    if (moving) {
+      for (let i = 0; i < 6; i++) {
+        const ph = ((t * 0.02 + i * 0.37) % 1);
+        const bx = fx - 30 + Math.sin(i * 4.1) * 30;
+        const byy = top + ph * (bot - top);
+        const r = 10 + (i % 3) * 7;
+        g.fillStyle(0x3a3640, 1).fillCircle(bx, byy, r);
+        g.fillStyle(0x56505a, 1).fillCircle(bx - r * 0.3, byy - r * 0.3, r * 0.45);
+      }
+      if (Math.floor(t) % 2 === 0) {
+        const z = rand(SETTINGS.world.floorTop, SETTINGS.world.floorBottom);
+        this.scene.gore.spawn({ x: fx + rand(0, 30), z, h: rand(0, 60), vx: rand(40, 160), vz: 0, vh: rand(20, 120), tint: 0x6a6258, scale: rand(0.8, 1.6), decal: false, life: 40 });
+      }
+      if (Math.floor(t) % 20 === 0 && Math.abs(this.scene.player.x - fx) < 800) this.scene.fx?.shake(2, 10);
+    }
+    // the dust cloud rolling ahead of it
+    g.fillStyle(0x8a8070, 0.18).fillRect(fx - 20, top, 90, bot - top);
+    g.fillStyle(0x8a8070, 0.08).fillRect(fx + 70, top, 90, bot - top);
+  }
+
+  // The stables' stampede (Stage 'stampede'): first dust boiling out of the stable door and
+  // hoofprints flashing along the lane it will take, then the horses themselves, flat out,
+  // manes streaming, embers on their backs. Painted gallop frames (assets/fx/horse_gallop.png)
+  // when they exist; drawn here until then.
+  drawStampede(hz, cam) {
+    const g = hz.g = hz.g ?? this.scene.add.graphics();
+    g.clear();
+    const S = this.stage.stampedeState(hz);
+    const on = S.phase !== 'idle' && hz.x1 > cam.x - 200 && hz.x0 < cam.right + 200;
+    g.setVisible(on);
+    for (const sp of hz.horseImgs ?? []) sp.setVisible(false);
+    if (!on) return;
+    const y = hz.z;
+    const t = this.scene.time.now / 16.7;
+    if (S.phase === 'warn') {
+      const w = S.warnT;
+      g.setDepth(hz.z - hz.d / 2);
+      // the lane: a band of churned ground, and arrows of hoofprints pulsing along it
+      g.fillStyle(0x000000, 0.12 + 0.18 * w).fillRect(hz.x0, y - hz.d / 2, hz.x1 - hz.x0, hz.d);
+      const dir = hz.dir ?? 1;
+      for (let x = hz.x0 + 40; x < hz.x1; x += 90) {
+        const a = 0.15 + 0.5 * w * (0.5 + 0.5 * Math.sin(t * 0.3 - x * 0.02 * dir));
+        g.fillStyle(0xffb070, a);
+        g.fillTriangle(x, y - 10, x, y + 10, x + 16 * dir, y);
+      }
+      // dust boiling out at the start
+      const sx = dir > 0 ? hz.x0 : hz.x1;
+      if (Math.floor(t) % 3 === 0) {
+        this.scene.gore.spawn({ x: sx + rand(-20, 40) * dir, z: y + rand(-hz.d / 2, hz.d / 2), h: rand(0, 30), vx: dir * rand(20, 90), vz: 0, vh: rand(10, 50), tint: 0x8a7a64, scale: rand(0.6, 1.2) * (0.5 + w), decal: false, life: 40 });
+      }
+      return;
+    }
+    const tex = this.scene.textures.exists('horse-gallop-0');
+    hz.horseImgs ??= [];
+    S.heads.forEach((hd, i) => {
+      const k = 1 + (hd.z - 400) / 900;
+      if (tex) {
+        const sp = hz.horseImgs[i] ??= this.scene.add.image(0, 0, 'horse-gallop-0').setOrigin(0.5, 1);
+        sp.setTexture(`horse-gallop-${Math.floor(t * 0.35 + i * 2) % 6}`).setPosition(hd.x, hd.z).setFlipX(S.dir < 0)
+          .setDisplaySize(170 * k, 120 * k).setDepth(hd.z).setVisible(true);
+      } else this.horse(g, hd.x, hd.z, k, S.dir, t * 0.45 + i * 1.7);
+      g.fillStyle(0x000000, 0.35).fillEllipse(hd.x, hd.z, 150 * k, 18 * k);
+      if (Math.floor(t + i) % 2 === 0) {
+        this.scene.gore.spawn({ x: hd.x - S.dir * 50, z: hd.z + rand(-8, 8), h: rand(0, 14), vx: -S.dir * rand(40, 120), vz: 0, vh: rand(30, 90), tint: 0x7a6a54, scale: rand(0.5, 1), decal: false, life: 30 });
+      }
+    });
+    g.setDepth(S.heads.length ? Math.max(...S.heads.map((h) => h.z)) + 0.5 : hz.z);
+  }
+
+  // a galloping horse, side on (feet at x, z), phase p: a heavy draught horse, flat out
+  horse(g, x, z, k, dir, p) {
+    const c = 0x24180f; const hi = 0x3a2818; const rim = 0xff8a3a;
+    const bob = Math.abs(Math.sin(p)) * 6 * k;
+    const by = z - 52 * k - bob; // the belly line
+    const X = (dx) => x + dx * dir * k;
+    // legs: thigh and cannon, the far pair darker; front pair reaching, back pair driving
+    const leg = (hx, ph, col, w) => {
+      const sw = Math.sin(p + ph);
+      const kx = X(hx + sw * 14); const ky = by + 26 * k - Math.max(0, sw) * 6 * k;
+      const fx = X(hx + sw * 26 - Math.max(0, -sw) * 10); const fy = z - Math.max(0, Math.cos(p + ph)) * 14 * k;
+      g.lineStyle(w * k, col, 1).lineBetween(X(hx), by - 4 * k, kx, ky).lineBetween(kx, ky, fx, fy);
+      g.fillStyle(0x0e0a06, 1).fillRect(fx - 5 * k, fy - 5 * k, 10 * k, 6 * k); // the hoof
+    };
+    leg(38, Math.PI, 0x170f09, 9); leg(-40, Math.PI * 1.5, 0x170f09, 11);
+    // the barrel of the body, the haunch and the chest
+    g.fillStyle(c, 1).fillEllipse(x, by - 22 * k, 130 * k, 56 * k);
+    g.fillCircle(X(-42), by - 28 * k, 30 * k).fillCircle(X(40), by - 26 * k, 27 * k);
+    // neck: a thick wedge stretched forward, and the head
+    g.fillTriangle(X(26), by - 50 * k, X(52), by - 6 * k, X(92), by - 70 * k);
+    g.fillTriangle(X(26), by - 50 * k, X(80), by - 80 * k, X(92), by - 70 * k);
+    g.fillEllipse(X(98), by - 70 * k, 44 * k, 22 * k);
+    g.fillTriangle(X(80), by - 82 * k, X(86), by - 98 * k, X(90), by - 80 * k); // an ear laid back
+    g.fillStyle(0xffd0a0, 1).fillRect(X(100) - 2 * k, by - 76 * k, 4 * k, 3 * k); // the white of an eye
+    leg(30, 0, c, 10); leg(-34, Math.PI * 0.5, c, 12);
+    // firelight along the back, the mane and the tail streaming behind
+    g.lineStyle(3 * k, rim, 0.7).lineBetween(X(-60), by - 46 * k, X(20), by - 50 * k);
+    g.lineStyle(6 * k, 0x120c08, 1).lineBetween(X(84), by - 84 * k, X(30), by - 54 * k + Math.sin(p * 2) * 4 * k);
+    g.lineStyle(7 * k, 0x120c08, 1).lineBetween(X(-64), by - 36 * k, X(-104), by - 42 * k + Math.sin(p * 2 + 1) * 8 * k);
+    g.lineStyle(2 * k, hi, 1).lineBetween(X(-30), by - 4 * k, X(30), by - 2 * k);
   }
 
   drawBlade(g, hz) {
@@ -630,6 +1011,59 @@ export class StageView {
     ev.on('hazardFire', ({ hazard }) => {
       if (Math.abs(this.scene.player.x - hazard.x) < 600) playSfx(this.scene, 'fireWhoosh', { volume: 0.5, minGapMs: 0 });
     });
+    ev.on('beamCrash', ({ hazard: hz }) => {
+      const y = hz.y ?? 0;
+      if (Math.abs(this.scene.player.x - hz.x) < 700) {
+        playSfx(this.scene, 'kick', { volume: 0.9, pitch: -1500, minGapMs: 0 });
+        playSfx(this.scene, 'fireWhoosh', { volume: 0.4, minGapMs: 0 });
+        this.scene.fx?.shake(6, 14);
+      }
+      this.scene.gore.spark(hz.x, hz.z, y + 10, 0xffa040, 26);
+      for (let i = 0; i < 18; i++) {
+        this.scene.gore.spawn({ x: hz.x + rand(-hz.w / 2, hz.w / 2), z: hz.z + rand(-6, 6), h: y + 4, vx: rand(-160, 160), vz: rand(-30, 30), vh: rand(80, 260), tint: i % 3 ? 0x3a2414 : 0xff8a30, texture: 'px', scale: rand(0.8, 1.8), decal: false, life: rand(30, 60) });
+      }
+    });
+    ev.on('stampedeWarn', ({ hazard: hz }) => {
+      if (this.scene.player.x > hz.x0 - 700 && this.scene.player.x < hz.x1 + 700) {
+        playSfx(this.scene, 'kick', { volume: 0.7, pitch: -2000, minGapMs: 0 });
+        this.scene.fx?.shake(3, 40);
+      }
+    });
+    ev.on('shellLaunch', ({ hazard: hz }) => {
+      // the catapults on the heights kick as they throw
+      const near = Math.abs(this.scene.player.x - (this.stage.section?.x0 ?? 0)) < 2400;
+      if (near) playSfx(this.scene, 'heavySwing', { volume: 0.5, pitch: -900, minGapMs: 0 });
+      for (const pr of this.stage.props) {
+        if (pr.kind !== 'catapult' || pr.broken || (hz.silence && pr.tag !== hz.silence)) continue;
+        const v = this.propSprites.get(pr.id);
+        if (v?.img) this.scene.tweens.add({ targets: v.img, angle: -4, duration: 90, yoyo: true, ease: 'Quad.easeOut' });
+      }
+    });
+    ev.on('shellLand', ({ shell: s }) => {
+      const y = s.y ?? 0;
+      if (Math.abs(this.scene.player.x - s.x) < 800) {
+        playSfx(this.scene, 'kick', { volume: 1, pitch: -1700, minGapMs: 0 });
+        this.scene.fx?.shake(7, 14);
+      }
+      this.scene.gore.spark(s.x, s.z, y + 10, 0xd8c8a8, 20);
+      for (let i = 0; i < 22; i++) {
+        this.scene.gore.spawn({ x: s.x + rand(-30, 30), z: s.z + rand(-8, 8), h: y + 4, vx: rand(-220, 220), vz: rand(-40, 40), vh: rand(120, 360), tint: i % 3 ? 0x4a4650 : 0x8a8070, texture: 'px', scale: rand(0.8, 2), decal: false, life: rand(30, 70) });
+      }
+      const ring = this.scene.add.ellipse(s.x, s.z - y, 30, 10).setStrokeStyle(3, 0xd8c8b0, 0.8).setDepth(DEPTH.shadows + 0.1);
+      this.scene.tweens.add({ targets: ring, scaleX: 5, scaleY: 5, alpha: 0, duration: 300, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+    });
+    ev.on('collapseStart', () => {
+      playSfx(this.scene, 'kick', { volume: 1, pitch: -2200, minGapMs: 0 });
+      this.scene.fx?.shake(10, 40);
+      this.scene.callout('RUN!', '#ffb070', 30);
+    });
+    ev.on('wayOpen', ({ block: b }) => {
+      playSfx(this.scene, 'block', { volume: 0.9, pitch: -900, minGapMs: 0 });
+      this.scene.fx?.shake(5, 16);
+      for (let i = 0; i < 16; i++) {
+        this.scene.gore.spawn({ x: rand(b.x0, b.x1), z: rand(b.z0 ?? 300, b.z1 ?? 500), h: rand(10, 120), vx: rand(-80, 80), vz: 0, vh: rand(40, 160), tint: 0x6a6258, texture: 'px', scale: rand(0.8, 1.6), decal: false, life: rand(30, 60) });
+      }
+    });
     ev.on('secretFound', ({ count, total }) => this.scene.callout(`SECRET FOUND  ${count}/${total}`, '#ffd24a', 26));
   }
 
@@ -645,7 +1079,30 @@ export class StageView {
     }
   }
 
+  // the convoy's wagon rolling up the road (Stage.updateRolling): it rocks on its wheels and
+  // throws up mud; gone round the bend once it escapes
+  syncRolling() {
+    for (const pr of this.stage.props) {
+      if (!pr.roll || pr.broken) continue;
+      const v = this.propSprites.get(pr.id);
+      if (!v?.img?.active) continue;
+      if (pr.escaped) {
+        if (!v.gone) { v.gone = true; this.scene.tweens.add({ targets: [v.img, v.shadow], alpha: 0, duration: 900 }); }
+        continue;
+      }
+      if (v.gone) { v.gone = false; v.img.setAlpha(1); v.shadow?.setAlpha(0.35); } // (back where it started: the checkpoint)
+      const moving = pr.x > (pr.roll.from ?? pr.x);
+      const t = this.scene.time.now / 16.7;
+      v.img.setPosition(pr.x, pr.z - (pr.y ?? 0) - (moving ? Math.abs(Math.sin(t * 0.25)) * 2 : 0)).setAngle(moving ? Math.sin(t * 0.13) * 0.8 : 0);
+      v.shadow?.setPosition(pr.x, pr.z - (pr.y ?? 0));
+      if (moving && Math.floor(t) % 6 === 0) {
+        this.scene.gore.spawn({ x: pr.x - pr.w / 2 + 10, z: pr.z + 4, h: 4, vx: -rand(20, 70), vz: 0, vh: rand(20, 60), tint: 0x3a2e22, scale: rand(0.4, 0.8), decal: false, life: 30 });
+      }
+    }
+  }
+
   update() {
+    this.syncRolling();
     this.syncKicked();
     this.syncPickups();
     this.drawHazards();

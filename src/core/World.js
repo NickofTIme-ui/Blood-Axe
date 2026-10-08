@@ -9,7 +9,9 @@ import { Projectile } from '../entities/Projectile.js';
 import { Barriers } from '../combat/Barrier.js';
 import { Mines } from '../combat/Mine.js';
 import { Quakes } from '../combat/Quake.js';
+import { Storms } from '../combat/Storm.js';
 import { installSkills } from '../combat/Skills.js';
+import { installStyle, tickStyle } from '../combat/Style.js';
 
 export class World {
   constructor({ seed } = {}) {
@@ -25,8 +27,10 @@ export class World {
     this.barriers = new Barriers(this); // the Mage's walls (combat/Barrier.js)
     this.mines = new Mines(this);       // the Rogue's widow mines (combat/Mine.js)
     this.quakes = new Quakes(this);     // a boss's ground shockwaves (combat/Quake.js)
+    this.storms = new Storms(this);     // Oryn's Stormcaller fields and strikes (combat/Storm.js)
     this.frame = 0;
     installSkills(this); // (skill-tree behaviours: combat/Skills.js; inert without skills)
+    installStyle(this);  // (the combo counter and style rank: combat/Style.js)
     // Dice. Every roll the simulation makes comes from roll(): a number fixed by the
     // seed, the tick, who's asking and what about — never Math.random — so two machines
     // given the same seed and the same button presses play out the same fight (online
@@ -93,6 +97,8 @@ export class World {
     this.mines.update();
     this.combat.update();
     this.quakes.update(); // (after the melee: whoever the slam itself hit, the wave passes by)
+    this.storms.update();
+    tickStyle(this);
 
     const gone = this.fighters.filter((f) => f.removeMe);
     if (gone.length) {
@@ -105,8 +111,9 @@ export class World {
 
   // Gently push standing fighters apart so they don't stack on top of each other.
   separate() {
-    // (nobody gets shoved out of an execution: it places both of them itself)
-    const fs = this.fighters.filter((f) => f.alive && f.grounded && !['dodge', 'blink', 'viper', 'vault', 'execute', 'executed'].includes(f.state));
+    // (nobody gets shoved out of an execution: it places both of them itself; a boss walking
+    // in isn't held back by a hero standing in his road, or he'd never arrive)
+    const fs = this.fighters.filter((f) => f.alive && f.grounded && !['dodge', 'blink', 'viper', 'vault', 'execute', 'executed', 'bossEntrance'].includes(f.state));
     for (let i = 0; i < fs.length; i++) {
       for (let j = i + 1; j < fs.length; j++) {
         const a = fs[i];

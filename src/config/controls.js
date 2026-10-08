@@ -37,8 +37,9 @@ export const CONTROLS = {
     mute:    ['M'],              // music on/off
     back:    ['ESC', 'B', 'BACKSPACE'], // leave a menu (the skill tree)
     // the D-pad's four buttons, free for whatever the game needs next (no keys yet)
+    // padUp: INTERACT (E): talk to a survivor, open a cage's lock (hold) — stage/Story.js
     // padDown: Rurik's 360 WHIRLWIND CLEAVE once he has Executioner's Arc (H on the keys)
-    padUp: [], padDown: ['H'], padLeft: [], padRight: [],
+    padUp: ['E'], padDown: ['H'], padLeft: [], padRight: [],
   },
 
   gamepad: {
@@ -75,6 +76,7 @@ export const CONTROLS_P2 = {
     attack: ['NUMPAD_ONE'], heavy: ['NUMPAD_TWO'], block: ['NUMPAD_THREE'],
     dodge: ['NUMPAD_ZERO'], kick: ['NUMPAD_FOUR'], magic: ['NUMPAD_FIVE'], jump: ['NUMPAD_SIX'], sprint: ['NUMPAD_SEVEN'],
     confirm: ['NUMPAD_ONE', 'ENTER'], pause: ['ENTER'], restart: [], menu: [], debug: [], gore: [], mute: [],
+    padUp: ['NUMPAD_EIGHT'],
   },
   gamepad: CONTROLS.gamepad,
   stickDeadzone: CONTROLS.stickDeadzone,

@@ -1,5 +1,9 @@
-// skills.js — The skill trees. One per hero; RURIK's is the first (the others are
-// sketched in docs/progression.md and come next).
+// skills.js — The skill trees. One per hero: RURIK's is whole; ORYN's has its first
+// branch (THE STORMCALLER), the other two are shown as planned (Stage 4 of the campaign
+// plan); VEXA's is still to come (all three are sketched in docs/progression.md).
+//
+// A branch with `planned: true` is a placeholder: its nodes are listed (so the tree reads
+// whole) but can't be taken (Progress.blocker says 'planned') and do nothing.
 //
 // A tree is three BRANCHES (columns) of three TIERS (rows). A node:
 //   id, name, cost (skill points), tier (1..3), req (node ids needed first),
@@ -13,6 +17,8 @@
 
 // the cuts a sword makes (Keen Edge): not the boot, not the fire
 const SWORD_CUTS = ['slash', 'chop', 'pierce'];
+
+import { STORM } from '../combat/Storm.js';
 
 export const SKILL_TREES = {
   warrior: {
@@ -98,8 +104,50 @@ export const SKILL_TREES = {
   },
 };
 
+SKILL_TREES.mage = {
+  hero: 'Oryn',
+  branches: [
+    {
+      id: 'stormcaller', name: 'THE STORMCALLER', color: 0x8ab8ff, blurb: 'Lightning through the crowd',
+      nodes: [
+        {
+          id: 'forkedBolt', name: 'Forked Bolt', cost: 1, tier: 1, req: [], kind: 'upgrade',
+          text: 'Chain lightning forks once more from every body it strikes, and leaps two more times.',
+          apply(s) { s.kit.bolt.branches += 1; s.kit.bolt.maxJumps += 2; },
+        },
+        {
+          id: 'staticCharge', name: 'Static Charge', cost: 2, tier: 2, req: ['forkedBolt'], kind: 'behaviour',
+          text: 'The 3rd strike of your lightning combo leaves a crackling field where it hit: whoever walks in is shocked.',
+          apply(s) { s.skills.staticCharge = { ...STORM.field }; },
+        },
+        {
+          id: 'thunderhead', name: 'Thunderhead', cost: 3, tier: 3, req: ['staticCharge'], kind: 'major',
+          text: 'A fully overcharged bolt calls a thunderbolt down on its first man: everyone close by is struck and thrown down.',
+          apply(s) { s.skills.thunderhead = { ...STORM.thunder }; },
+        },
+      ],
+    },
+    {
+      id: 'earthshaper', name: 'THE EARTHSHAPER', color: 0xb08a5a, blurb: 'Planned (Stage 4)', planned: true,
+      nodes: [
+        { id: 'secondWall', name: 'Second Wall', cost: 1, tier: 1, req: [], kind: 'upgrade', text: 'PLANNED: two barriers at once.' },
+        { id: 'shatter', name: 'Shatter', cost: 2, tier: 2, req: ['secondWall'], kind: 'behaviour', text: 'PLANNED: a wall that falls throws its slabs outward.' },
+        { id: 'livingRock', name: 'Living Rock', cost: 3, tier: 3, req: ['shatter'], kind: 'major', text: 'PLANNED: the wall walks forward, shoving them back.' },
+      ],
+    },
+    {
+      id: 'waywalker', name: 'THE WAYWALKER', color: 0xb070ff, blurb: 'Planned (Stage 4)', planned: true,
+      nodes: [
+        { id: 'blinkStrike', name: 'Blink Strike', cost: 1, tier: 1, req: [], kind: 'behaviour', text: 'PLANNED: blinking through a man hits him.' },
+        { id: 'longStep', name: 'Long Step', cost: 2, tier: 2, req: ['blinkStrike'], kind: 'mobility', text: 'PLANNED: the blink goes 30% further.' },
+        { id: 'phaseWalk', name: 'Phase Walk', cost: 3, tier: 3, req: ['longStep'], kind: 'major', text: 'PLANNED: two blinks before you land.' },
+      ],
+    },
+  ],
+};
+
 // Every node of a tree, by id.
 export function nodesOf(heroId) {
   const t = SKILL_TREES[heroId];
-  return t ? t.branches.flatMap((b) => b.nodes.map((n) => ({ ...n, branch: b.id }))) : [];
+  return t ? t.branches.flatMap((b) => b.nodes.map((n) => ({ ...n, branch: b.id, planned: !!b.planned }))) : [];
 }

@@ -14,6 +14,7 @@ import { FINISH, FINISHERS, CHAIN, IMPALE, impalePin, impalePierce, planFinisher
 import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher } from '../combat/Mage.js';
 import { rogueStates, rollMine,isRogueFinisher, rogueFinisherStart, runRogueFinisher, vaultTarget } from '../combat/Rogue.js';
 import { skillStates } from '../combat/Skills.js';
+import { JUGGLE, juggleLand, airMoveFor } from '../combat/Juggle.js';
 
 const FEEL = SETTINGS.feel;
 
@@ -406,7 +407,7 @@ export const FIGHTER_STATES = {
   },
 
   jump: {
-    enter(f) { f.airAttackUsed = false; },
+    enter(f) { f.airAttackUsed = false; f.airChain = 0; },
     update(f) {
       const c = f.controller;
       const s = f.stats;
@@ -449,7 +450,8 @@ export const FIGHTER_STATES = {
 
   airAttack: {
     enter(f) {
-      f.startMove(f.stats.moves.air);
+      f.airChain = (f.airChain ?? 0) + 1; // (the AIR CHAIN: combat/Juggle.js)
+      f.startMove(airMoveFor(f));
       f.world.events.emit('attackStart', { fighter: f, state: 'airAttack', move: f.move });
     },
     update(f, frame) {
@@ -459,6 +461,9 @@ export const FIGHTER_STATES = {
         return f.fsm.change('idle');
       }
       f.activeAttack = movePhase(m, frame) === 'active' ? f.attackInfo : null;
+      // AIR CHAIN: once this swing has landed, attack again for the next (the last spikes)
+      if (f.team === 'player' && f.airChain < JUGGLE.airHits && frame >= m.startup + JUGGLE.chainFrom &&
+          f.attackInfo?.hitList.size && f.controller.consume('attack')) return f.fsm.change('airAttack');
       // the Rogue can still dive out of an air slash
       const ah = f.stats.states?.airHeavy;
       if (ah && f.air >= (f.stats.kit?.dive?.minHeight ?? 0) && f.controller.consume('heavy')) f.fsm.change(ah);
@@ -472,6 +477,7 @@ export const FIGHTER_STATES = {
   light1: makeAttackState('light1'),
   light2: makeAttackState('light2'),
   light3: makeAttackState('light3'),
+  launcher: makeAttackState('launcher'), // (Rurik's J, J, K: combat/Juggle.js)
   light4: makeAttackState('light4'), // (the Rogue's fourth hit)
   heavy: makeAttackState('heavy'),
   kick: makeAttackState('kick'),
@@ -778,7 +784,9 @@ export const FIGHTER_STATES = {
       f.vz = 0;
       f.vx = Math.sign(E.toX - f.x) * E.speed;
       if (frame % E.stepEvery === 0) f.world.events.emit('bossStomp', { boss: f, x: f.x, z: f.z });
-      if (Math.abs(E.toX - f.x) <= E.speed / 60) {
+      // (held up on the way, by anything: he's there anyway once he should have been, and then some)
+      E.limit ??= Math.ceil((Math.abs(E.toX - f.x) / E.speed) * 60) + 120;
+      if (Math.abs(E.toX - f.x) <= E.speed / 60 || frame >= E.limit) {
         f.x = E.toX;
         f.vx = 0;
         f.unbounded = false;
@@ -805,6 +813,7 @@ export const FIGHTER_STATES = {
       if (f.lyingSince === null) {
         // Still flying through the air.
         if (f.grounded && frame > 1) {
+          if (f.health > 0 && juggleLand(f)) return; // (a spike: he bounces once — combat/Juggle.js)
           f.lyingSince = frame;
           f.world.events.emit('landHard', { fighter: f });
           if (f.health <= 0) return f.fsm.change('dead');

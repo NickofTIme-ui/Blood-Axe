@@ -15,6 +15,8 @@ import { FONT, epicFill } from '../view/fonts.js';
 import { hostRoom, joinRoom, newCode } from '../net/Link.js';
 import { simVersion } from '../net/Version.js';
 import { buildTime } from '../net/Link.js';
+import { STAGES } from '../data/stages.js';
+import { sharedProgress } from '../progression/Progress.js';
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -106,13 +108,25 @@ export class TitleScene extends Phaser.Scene {
   makeButtons(y) {
     const W = SETTINGS.width;
     // (the fourth: THE GALLOWS ASCENT, the platforming slice — data/stageGallows.js)
-    const acts = [() => this.go('solo'), () => this.go('local'), () => this.openLobby(), () => this.go('solo', null, 'gallows')];
+    // (the fifth: THE CAMPAIGN, level 1 THE BURNING VILLAGE — data/stageVillage.js)
+    // (the sixth, when the campaign has been started: CONTINUE from its last checkpoint)
+    const at = sharedProgress(this.registry).campaign.at;
+    const resume = at && STAGES[at.level] ? at : null;
+    const acts = [() => this.go('solo'), () => this.go('local'), () => this.openLobby(), () => this.go('solo', null, 'gallows'),
+      () => this.go('solo', null, 'village')];
     this.buttons = [
       this.makeButton(W / 2 - 250, y, '1 PLAYER', 220, acts[0]),
       this.makeButton(W / 2, y, '2 PLAYERS', 220, acts[1], 1650),
       this.makeButton(W / 2 + 250, y, 'ONLINE CO-OP', 240, acts[2], 1800),
-      this.makeButton(W / 2, y - 58, 'THE GALLOWS ASCENT (NEW)', 330, acts[3], 1950),
+      this.makeButton(W / 2 + 180, y - 58, 'THE GALLOWS ASCENT', 300, acts[3], 1950),
+      this.makeButton(W / 2 - 180, y - 58, resume ? 'CAMPAIGN: NEW' : 'CAMPAIGN: THE BURNING VILLAGE', 340, acts[4], 2050),
     ];
+    if (resume) {
+      const D = STAGES[resume.level];
+      const where = resume.section > 0 ? `  ·  ${D.sections[resume.section]?.name ?? ''}` : '';
+      acts.push(() => this.go('solo', null, resume.level, resume.section));
+      this.buttons.push(this.makeButton(W / 2, y - 116, `CONTINUE:  ${D.chapter}  ${D.name}${where}`, 520, acts[5], 2150));
+    }
     this.buttons.forEach((b, i) => { b.act = acts[i]; b.c.on('pointerover', () => this.pick(i)); });
     this.button = this.buttons[0];
     this.pick(0);
@@ -137,13 +151,13 @@ export class TitleScene extends Phaser.Scene {
     L.join.setAlpha(L.picked === 1 ? 1 : 0.6);
   }
 
-  go(mode = 'solo', net = null, stage = undefined) {
+  go(mode = 'solo', net = null, stage = undefined, section = undefined) {
     // (not before the buttons are shown — except when a friend has just connected)
     if (this.leaving || (mode !== 'net' && this.button.c.alpha < 0.5)) return;
     this.leaving = true;
     playSfx(this, 'swingAlt', { volume: 0.5, pitch: -300 });
     this.cameras.main.fadeOut(450, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Select', { mode, net, stage }));
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Select', { mode, net, stage, section }));
   }
 
   // ------------------------------------------------------------ online lobby

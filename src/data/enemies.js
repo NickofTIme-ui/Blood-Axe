@@ -97,6 +97,137 @@ export const ENEMIES = {
     },
   },
 
+  // =========================================================== THRALL (horde fodder)
+  // The press-ganged: a grunt's kit and none of his nerve. They come in HORDES of ten
+  // (stage/Stage.js announces a wave that big) to be cut down by the armful: little health,
+  // rarely block, wait their turn round you. Wear the grunt's painted strips (`strips`).
+  thrall: {
+    ...BASE,
+    id: 'thrall',
+    strips: 'grunt',
+    name: 'Ashen Thrall',
+    title: 'Chained to the Legion',
+    art: 'grunt',
+    body: { w: 44, h: 96 },
+    look: { color: 0x4a5428, accent: 0x666666, skin: 0x8a937a },
+    maxHealth: 30, maxStamina: 40,
+    walkSpeed: 128, depthSpeed: 92,
+    meleeMult: 0.8,
+    blockReduction: 0.6, guardEfficiency: 1.4,
+    knockdownFrames: 40, getupFrames: 18, staggerFrames: 50,
+    moves: {}, // (the grunt's: filled in below)
+    ai: {
+      attackRange: 66, minRange: 34, alignZ: 10,
+      waitRange: 170, maxCrowd: 3,
+      threatRange: 110,
+      attackCooldown: [60, 130],
+      heavyChance: 0.08, comboChance: 0.3,
+      blockChance: 0.05, blockHold: [16, 30],
+    },
+  },
+
+  // =========================================================== WAR HOUND (Gallows Wood)
+  // The Houndmaster's pack: a huge black mastiff in spiked plates. Low, fast, never blocks;
+  // a snapping bite and a leaping pounce that floors you. Few hits put one down. No painted
+  // strips yet (assets/enemies/strips/hound_*.png, docs/campaign/art-levels-1-2.md):
+  // drawn in code by view/HoundView.js. Not rigged, so it doesn't come apart.
+  hound: {
+    ...BASE,
+    id: 'hound',
+    name: 'War Hound',
+    title: 'Fed on the fallen',
+    view: 'hound',
+    body: { w: 70, h: 52 },
+    look: { color: 0x1a1614, accent: 0x5a5660, skin: 0x2a2220 },
+
+    maxHealth: 42, maxStamina: 60,
+    walkSpeed: 235, depthSpeed: 160,
+    meleeMult: 1.0,
+    blockReduction: 0, guardEfficiency: 1.0,
+    knockdownFrames: 34, getupFrames: 12, staggerFrames: 36,
+    jumpStrength: 600,
+
+    moves: {
+      light1: { // the snap: a short lunge, jaws first
+        anim: 'bite', cut: 'pierce',
+        startup: 9, active: 3, recovery: 18,
+        damage: 7, hitstun: 18, hitstop: 4, shake: 1,
+        knockback: { x: 60, y: 0 }, guardDamage: 10, lunge: 110,
+        hitbox: { x: 20, y: 14, w: 52, h: 30 },
+      },
+      heavy: { // the pounce: a long leap that bowls you over
+        anim: 'pounce', cut: 'pierce',
+        startup: 20, active: 7, recovery: 26,
+        damage: 13, hitstun: 26, hitstop: 7, shake: 3,
+        knockback: { x: 240, y: 240 }, knockdown: true,
+        guardDamage: 26, lunge: 340,
+        hitbox: { x: 16, y: 10, w: 64, h: 44 },
+      },
+    },
+
+    ai: {
+      attackRange: 80, minRange: 30, alignZ: 12,
+      waitRange: 230, maxCrowd: 3,
+      threatRange: 0,
+      attackCooldown: [26, 64],
+      heavyChance: 0.3, comboChance: 0,
+      blockChance: 0, blockHold: [0, 0],
+      specials: [],
+    },
+  },
+
+  // =========================================================== THE ORE CRUSHER (Hollow Mountain)
+  // A war machine: an iron hulk on rollers, a spiked drum in front and a pile-driver arm
+  // over it, a furnace in its belly; its crew stokes it. Slow, and iron doesn't flinch
+  // (`machine`: never staggered or knocked down, never blocks), so you hit it between its
+  // blows. The drum grinds whoever is in front of it; the arm comes down hard in front.
+  // Drawn in code by view/CrusherView.js until its art exists.
+  crusher: {
+    ...BASE,
+    id: 'crusher',
+    name: 'The Ore Crusher',
+    title: 'A war machine of the Ashen King',
+    view: 'crusher',
+    machine: true,
+    body: { w: 150, h: 170 },
+    look: { color: 0x2a2826, accent: 0x8a5a2a, skin: 0x3a3634 },
+
+    maxHealth: 220, maxStamina: 200,
+    walkSpeed: 52, depthSpeed: 40,
+    meleeMult: 1.0,
+    blockReduction: 0, guardEfficiency: 1.0,
+    knockdownFrames: 10, getupFrames: 10, staggerFrames: 10,
+    jumpStrength: 0,
+
+    moves: {
+      light1: { // the drum grinds forward
+        anim: 'grind', cut: 'crush',
+        startup: 16, active: 14, recovery: 22,
+        damage: 9, hitstun: 22, hitstop: 4, shake: 3,
+        knockback: { x: 220, y: 120 }, knockdown: true, guardDamage: 20, lunge: 60,
+        hitbox: { x: 40, y: 0, w: 90, h: 90 },
+      },
+      heavy: { // the pile-driver comes down in front of it
+        anim: 'slam', cut: 'crush',
+        startup: 44, active: 5, recovery: 36,
+        damage: 30, hitstun: 30, hitstop: 12, shake: 10,
+        knockback: { x: 260, y: 380 }, knockdown: true, breaksGuard: true,
+        guardDamage: 60, lunge: 0,
+        hitbox: { x: 60, y: 0, w: 150, h: 120, depth: 34 },
+      },
+    },
+
+    ai: {
+      attackRange: 150, minRange: 60, alignZ: 24,
+      waitRange: 260, maxCrowd: 1,
+      threatRange: 0,
+      attackCooldown: [40, 90],
+      heavyChance: 0.45, comboChance: 0,
+      blockChance: 0, blockHold: [0, 0],
+      specials: [],
+    },
+  },
+
   // =========================================================== 1. GORRAK THE FLAYER
   // Wild-haired butcher. Cleaver in the right hand, a chained meat hook in the left.
   // Hooks you in from range, then hacks. Kill the left arm and the hook is gone.
@@ -585,6 +716,12 @@ export const ENEMIES = {
 };
 
 // Wave line-ups for the test arena. After the last one, waves are random mixes.
+// the thrall swings the grunt's sword
+ENEMIES.thrall.moves = ENEMIES.grunt.moves;
+
+// A wave this big is a HORDE (stage/Stage.js announces it).
+export const HORDE_SIZE = 7;
+
 export const WAVES = [
   ['grunt', 'grunt', 'butcher'],
   ['stalker', 'grunt', 'ghoul'],

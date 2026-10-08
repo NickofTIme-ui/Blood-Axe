@@ -271,6 +271,8 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
           f.bolt = { plan, charged, at: frame, done: new Set() };
           f.boltFired = frame;
           f.world.events.emit('boltCast', { fighter: f, charged, level, plan, end: plan.end, stage: f.boltStage });
+          // THUNDERHEAD (Stormcaller): a full overcharge calls a strike down on its first man
+          if (charged && plan.hits.length && f.stats.skills?.thunderhead) f.world.storms.thunder(f, plan.hits[0].t, f.stats.skills.thunderhead);
           if (plan.hits.length) f.hitstop = (charged ? 6 : 3) + f.boltStage; // the kick of the release
         }
         // each generation of jumps a few frames after the last
@@ -279,6 +281,8 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
           if (b.done.has(h) || frame < b.at + h.gen * K.jumpFrames) continue;
           b.done.add(h);
           strikeWithLightning(f, h, K, b.charged, f.boltStage);
+          // STATIC CHARGE (Stormcaller): the combo's 3rd strike leaves a field where it hit
+          if (f.boltStage === 3 && h.gen === 0 && f.stats.skills?.staticCharge) f.world.storms.field(f, h.t.x, h.t.z, f.stats.skills.staticCharge);
         }
         const since = frame - f.boltFired;
         // the next strike of the three

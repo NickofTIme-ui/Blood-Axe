@@ -4,6 +4,7 @@
 //   ← → ↑ ↓ / D-pad   move between skills
 //   J / ENTER / A     take the skill (enough points, the one before it owned)
 //   R / Y             respec: every point back, free at a shrine
+//   O / RT            TROPHIES: the boss loot you carry (data/trophies.js): wear or take off
 //   ESC / B / BACKSPACE, or the pad's B / Back / Start, or the button: back to the fight
 //
 // TEMPORARY ART: plain panels and text. (The painted frame and icons are in
@@ -12,6 +13,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { InputManager } from '../core/InputManager.js';
 import { SKILL_TREES } from '../data/skills.js';
+import { TROPHIES, TROPHY_SLOTS, RARITY } from '../data/trophies.js';
 import { FONT, epicFill } from '../view/fonts.js';
 import { playSfx } from '../core/Sfx.js';
 
@@ -28,6 +30,8 @@ export class SkillScene extends Phaser.Scene {
     this.tree = SKILL_TREES[this.heroId];
     this.col = 0;
     this.row = 0;
+    this.mode = 'tree'; // or 'trophies'
+    this.pick = 0;      // the trophy under the cursor
   }
 
   create() {
@@ -48,12 +52,18 @@ export class SkillScene extends Phaser.Scene {
       .setOrigin(0.5).setStroke('#000000', 4).setInteractive({ useHandCursor: true });
     back.on('pointerdown', () => this.close());
     this.tweens.add({ targets: back, alpha: { from: 0.7, to: 1 }, duration: 700, yoyo: true, repeat: -1 });
+    this.title = title;
+    this.heroName = name;
+    this.buildTrophies();
     if (!this.tree) {
-      this.add.text(W / 2, H / 2, `${name}'s tree is not in this slice yet.\nRurik's is: play him to try it.\n(Planned trees: docs/progression.md)`,
+      this.treeless = this.add.text(W / 2, H / 2, `${name}'s tree is not built yet (Stage 4 of the campaign).\nRurik's and Oryn's are: play one of them to try it.\n(Planned trees: docs/progression.md)`,
         { fontFamily: FONT.ui, fontSize: '18px', color: '#e8d4b0', align: 'center' }).setOrigin(0.5);
+      this.treeObjs = [this.treeless];
       this.refreshHeader();
+      this.showMode();
       return;
     }
+    const before = new Set(this.children.list);
     this.cards = [];
     this.lines = this.add.graphics();
     const colW = 280;
@@ -74,7 +84,60 @@ export class SkillScene extends Phaser.Scene {
     });
     this.desc = this.add.text(W / 2, H - 70, '', { fontFamily: FONT.ui, fontSize: '15px', color: '#f0e0c0', align: 'center', wordWrap: { width: W - 120 } })
       .setOrigin(0.5);
+    this.treeObjs = this.children.list.filter((o) => !before.has(o));
     this.refresh();
+    this.showMode();
+  }
+
+  // ------------------------------------------------------------ trophies (boss loot)
+
+  buildTrophies() {
+    const W = SETTINGS.width;
+    const before = new Set(this.children.list);
+    this.trophyCards = Object.keys(TROPHIES).map((id, i) => {
+      const cx = W / 2 + ((i % 5) - 2) * 180;
+      const cy = 130 + Math.floor(i / 5) * 92;
+      const box = this.add.rectangle(cx, cy, 168, 76, 0x161210, 1).setStrokeStyle(2, 0x3a3028);
+      const label = this.add.text(cx, cy - 16, '', { fontFamily: FONT.ui, fontSize: '13px', color: '#e8d4b0', align: 'center', wordWrap: { width: 156 } }).setOrigin(0.5);
+      const sub = this.add.text(cx, cy + 20, '', { fontFamily: FONT.ui, fontSize: '11px', color: '#a89878' }).setOrigin(0.5);
+      return { id, box, label, sub };
+    });
+    this.trophyDesc = this.add.text(W / 2, SETTINGS.height - 76, '', { fontFamily: FONT.ui, fontSize: '15px', color: '#f0e0c0', align: 'center', wordWrap: { width: W - 120 } }).setOrigin(0.5);
+    this.trophyObjs = this.children.list.filter((o) => !before.has(o));
+  }
+
+  refreshTrophies() {
+    const P = this.progress;
+    const worn = P.worn();
+    this.header.setText(`TROPHIES  ${Object.keys(P.trophies.owned).length} / ${Object.keys(TROPHIES).length}    ·    WORN  ${worn.length} / ${TROPHY_SLOTS}    ·    bosses always drop one, big men sometimes`);
+    this.trophyCards.forEach((k, i) => {
+      const T = TROPHIES[k.id];
+      const R = RARITY[T.rarity];
+      const own = P.owns(k.id);
+      const on = worn.includes(k.id);
+      const sel = i === this.pick;
+      k.box.setFillStyle(on ? Phaser.Display.Color.ValueToColor(R.color).darken(60).color : 0x161210, 1);
+      k.box.setStrokeStyle(sel ? 4 : 2, sel ? 0xffe0a0 : own ? R.color : 0x3a3028);
+      k.label.setText(own ? T.name : '? ? ?').setColor(own ? (on ? '#ffffff' : R.css) : '#5a5048');
+      k.sub.setText(`${R.label}  ·  ${on ? 'WORN' : own ? 'carried' : T.boss ? `from ${T.boss}` : 'not found'}`);
+    });
+    const k = this.trophyCards[this.pick];
+    const T = TROPHIES[k.id];
+    this.trophyDesc.setText(P.owns(k.id)
+      ? `${T.name.toUpperCase()}\n${T.text}\n${worn.includes(k.id) ? 'J / A: take it off' : worn.length < TROPHY_SLOTS ? 'J / A: wear it' : 'Every slot is full: take one off first'}`
+      : `Not found yet.${T.boss ? ` ${T.boss} carries it.` : ' A big man might drop it.'}`);
+  }
+
+  showMode() {
+    const tro = this.mode === 'trophies';
+    for (const o of this.treeObjs ?? []) o.setVisible(!tro);
+    for (const o of this.trophyObjs) o.setVisible(tro);
+    this.title.setText(`${this.heroName.toUpperCase()}  ·  ${tro ? 'TROPHIES' : 'SKILLS'}`);
+    epicFill(this.title, tro ? ['#fff2b0', '#e0a530', '#6a3c08'] : ['#ffd2a0', '#d06030', '#5a1a06']);
+    this.footer.setText(tro ? 'J / A: wear or take off      O / RT: skills' : 'J / A: take    R / Y: respec    O / RT: trophies');
+    if (tro) this.refreshTrophies();
+    else if (this.tree) this.refresh();
+    else this.refreshHeader();
   }
 
   card(c, r) { return this.cards.find((k) => k.c === c && k.r === r); }
@@ -97,7 +160,7 @@ export class SkillScene extends Phaser.Scene {
       k.box.setFillStyle(owned ? Phaser.Display.Color.ValueToColor(col).darken(55).color : 0x161210, 1);
       k.box.setStrokeStyle(sel ? 4 : 2, sel ? 0xffe0a0 : owned ? col : why === null ? 0xb08a4a : 0x3a3028);
       k.label.setColor(owned ? '#ffffff' : why === null ? '#f0e0c0' : '#7a6e60');
-      const state = owned ? 'TAKEN' : why === 'excluded' ? 'SHUT: you chose the other' : why === 'locked' ? 'needs the one above' : why === 'points' ? 'not enough points' : 'ready';
+      const state = why === 'planned' ? 'PLANNED' : owned ? 'TAKEN' : why === 'excluded' ? 'SHUT: you chose the other' : why === 'locked' ? 'needs the one above' : why === 'points' ? 'not enough points' : 'ready';
       k.sub.setText(`${KIND_LABEL[k.n.kind] ?? ''}  ·  ${k.n.cost} pt${k.n.cost > 1 ? 's' : ''}  ·  ${state}`);
       if (k.r > 0) {
         const up = this.card(k.c, k.r - 1);
@@ -122,6 +185,25 @@ export class SkillScene extends Phaser.Scene {
     this.scene.stop();
   }
 
+  updateTrophies(c) {
+    const n = this.trophyCards.length;
+    const dx = (c.consume('right') ? 1 : 0) - (c.consume('left') ? 1 : 0);
+    const dy = (c.consume('down') ? 1 : 0) - (c.consume('up') ? 1 : 0);
+    if (dx || dy) {
+      this.pick = (this.pick + dx + dy * 5 + n * 5) % n;
+      playSfx(this, 'block', { volume: 0.2, pitch: 1200, minGapMs: 0 });
+      this.refreshTrophies();
+    }
+    if (c.consume('confirm') || c.consume('attack')) {
+      const id = this.trophyCards[this.pick].id;
+      const P = this.progress;
+      let ok = false;
+      if (P.worn().includes(id)) { P.unwear(id); ok = true; } else ok = P.wear(id);
+      if (ok) { playSfx(this, 'block', { volume: 0.7, pitch: 300, minGapMs: 0 }); this.arena.applySkills(); } else playSfx(this, 'kick', { volume: 0.3, pitch: -800, minGapMs: 0 });
+      this.refreshTrophies();
+    }
+  }
+
   update() {
     const c = this.controls;
     c.tick(false);
@@ -130,6 +212,12 @@ export class SkillScene extends Phaser.Scene {
     // Backspace on the keys, B / Back / Start on a pad)
     c.consume('pause');
     if (c.consume('back') || c.consume('menu') || c.consume('dodge')) return this.close();
+    if (c.consume('kick')) {
+      this.mode = this.mode === 'tree' ? 'trophies' : 'tree';
+      playSfx(this, 'block', { volume: 0.3, pitch: 900, minGapMs: 0 });
+      return this.showMode();
+    }
+    if (this.mode === 'trophies') return this.updateTrophies(c);
     if (!this.tree) { if (c.consume('confirm') || c.consume('attack')) this.close(); return; }
     const dx = (c.consume('right') ? 1 : 0) - (c.consume('left') ? 1 : 0);
     const dy = (c.consume('down') ? 1 : 0) - (c.consume('up') ? 1 : 0);

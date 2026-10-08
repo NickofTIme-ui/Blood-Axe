@@ -16,6 +16,7 @@ import { CHARACTERS } from '../data/characters.js';
 import { HUD_SRC, buildHudArt } from '../view/hudArt.js';
 import { preloadGrounds, buildGrounds, buildSky, buildPillars, buildParallax } from '../view/envArt.js';
 import { PARALLAX_LAYERS } from '../data/parallax.js';
+import { preloadLevelArt, buildLevelArt, isLevelArtKey } from '../view/levelArt.js';
 import { warmGore } from '../effects/goreArt.js';
 
 export class BootScene extends Phaser.Scene {
@@ -53,7 +54,8 @@ export class BootScene extends Phaser.Scene {
     preloadGrounds(this);
     // the layered backdrop (data/parallax.js): any layer not painted yet simply isn't there
     for (const L of PARALLAX_LAYERS) this.load.image(`plxsrc-${L.name}`, `assets/env/parallax/${L.file}`);
-    this.load.on('loaderror', (file) => { if (!file.key?.startsWith('plxsrc-') && file.key !== 'boss' && file.key !== 'fxsrc-earthwall') console.warn(`[boot] Could not load ${file.src}`); }); // (unpainted backdrop layers are expected)
+    preloadLevelArt(this); // (the campaign levels' painted art: data/levelArt.js)
+    this.load.on('loaderror', (file) => { if (!file.key?.startsWith('plxsrc-') && !isLevelArtKey(file.key) && file.key !== 'boss' && file.key !== 'fxsrc-earthwall') console.warn(`[boot] Could not load ${file.src}`); }); // (unpainted backdrop layers are expected)
 
     const bar = this.add.rectangle(480 - 150, 270, 0, 6, 0xc0161c).setOrigin(0, 0.5);
     this.add.rectangle(480, 270, 304, 10).setStrokeStyle(1, 0x5a3030);
@@ -112,6 +114,7 @@ export class BootScene extends Phaser.Scene {
     this.registry.set('sky', buildSky(this));
     this.registry.set('pillars', buildPillars(this));
     this.registry.set('parallax', buildParallax(this, PARALLAX_LAYERS));
+    this.registry.set('levelArt', buildLevelArt(this));
     this.buildHeroArt();
 
     this.scene.start('Title');

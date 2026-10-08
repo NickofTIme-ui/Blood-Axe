@@ -19,6 +19,13 @@
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { playSfx } from '../core/Sfx.js';
+import { VillageBackdrop } from './VillageView.js';
+import { WoodBackdrop } from './WoodView.js';
+import { MineBackdrop } from './MineView.js';
+import { AscentBackdrop } from './AscentView.js';
+import { GatesBackdrop } from './GatesView.js';
+import { artKey } from './levelArt.js';
+import { LEVEL_ART } from '../data/levelArt.js';
 
 const COL = {
   skyTop: 0x05070d, skyLow: 0x1c2733, mist: 0x8aa4b8,
@@ -29,6 +36,15 @@ const COL = {
   iron: 0x4a4e54, ironRim: 0xb8c2cc, ironDark: 0x1c1e22,
   rust: 0xa4502a, lantern: 0xffb050, secret: 0xb070ff, shrine: 0xff6a4a,
 };
+// THE BURNING VILLAGE (theme 'village'): roofs and timber instead of rock, charred boards
+// instead of rotten planks, burning cellars instead of the dark; oath shrines are pale stone
+// with a cold blue-white light
+const VIL = {
+  roofTop: 0x5a4a40, roofRim: 0xf0d0a8, roofFront: 0x2a1c16, roofSeam: 0x40342c, timber: 0x160e0a,
+  beamTop: 0x6a5038, beamRim: 0xf0c890, beamFront: 0x3a2618,
+  boardTop: 0x5a3420, boardRim: 0xffa860, boardFront: 0x2e180c, boardCrack: 0xff6a20,
+  cellarLip: 0xff6a2a, oath: 0x9ad0ff, oathStone: 0x6a7078,
+};
 
 export class TerrainView {
   constructor(scene, stage) {
@@ -37,7 +53,25 @@ export class TerrainView {
     this.terrain = stage.terrain;
     const data = stage.data;
     this.width = data.width ?? SETTINGS.world.width;
+    this.village = data.theme === 'village';
     if (data.theme === 'gallows') this.drawBackdrop();
+    if (this.village) this.backdrop = new VillageBackdrop(scene, stage);
+    // GALLOWS WOOD (theme 'wood'): pines and mist (view/WoodView.js); streams for pits,
+    // fallen logs for bridges, stone for the rest
+    this.wood = data.theme === 'wood';
+    if (this.wood) this.backdrop = new WoodBackdrop(scene, stage);
+    // HOLLOW MOUNTAIN (theme 'mine'): rock and torches (view/MineView.js); its pits are the
+    // underground river's cold black water, like the wood's streams
+    this.mine = data.theme === 'mine';
+    if (this.mine) this.backdrop = new MineBackdrop(scene, stage);
+    // THE SHATTERED ASCENT (theme 'ascent'): grey cliffs, wind, the Keep across the gorge
+    // (view/AscentView.js); its ledges are the cliff's own rock, its drops the gorge
+    if (data.theme === 'ascent') this.backdrop = new AscentBackdrop(scene, stage);
+    // THE IRON GATES (theme 'gates'): the iron wall and its gatehouse, the burning town, the
+    // Keep filling the sky (view/GatesView.js)
+    if (data.theme === 'gates') this.backdrop = new GatesBackdrop(scene, stage);
+    this.water = this.wood || this.mine;
+    this.theme = data.theme;
     this.drawFloor();
     this.drawPits();
     this.blockGfx = new Map();
@@ -124,9 +158,20 @@ export class TerrainView {
     const s = this.scene;
     for (const p of this.terrain?.pits ?? []) {
       const g = s.add.graphics().setDepth(DEPTH.floor + 4);
-      g.fillStyle(0x000000, 1).fillRect(p.x0, p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0), p.x1 - p.x0, p.z1 - p.z0 + (p.z0 <= SETTINGS.world.floorTop ? 50 : 0) + 40);
-      // a cold glow at the lip so the edge reads
-      g.lineStyle(2, 0x6a8aa8, 0.6);
+      g.fillStyle(this.water ? 0x0c1820 : 0x000000, 1).fillRect(p.x0, p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0), p.x1 - p.x0, p.z1 - p.z0 + (p.z0 <= SETTINGS.world.floorTop ? 50 : 0) + 40);
+      // a cold glow at the lip so the edge reads (in the village: a burning cellar, its fire far
+      // down; in the wood: a stream, black water running fast)
+      if (this.water) {
+        // (it runs down out of the trees at the back and on toward the camera)
+        g.lineStyle(1, 0x3a5a70, 0.5);
+        for (let y = p.z0 - 40; y < p.z1 + 30; y += 18) g.lineBetween(p.x0 + 6, y, p.x1 - 6, y + 4);
+        g.fillStyle(0x6a8aa0, 0.25).fillRect(p.x0, p.z0 - 50, p.x1 - p.x0, 6);
+      }
+      if (this.village) {
+        s.add.image((p.x0 + p.x1) / 2, p.z1 + 30, 'glow').setDisplaySize(p.x1 - p.x0, 90).setTint(VIL.cellarLip).setAlpha(0.45)
+          .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 4.2);
+      }
+      g.lineStyle(2, this.village ? VIL.cellarLip : 0x6a8aa8, 0.6);
       g.lineBetween(p.x0, p.z0, p.x0, p.z1 + 40);
       g.lineBetween(p.x1, p.z0, p.x1, p.z1 + 40);
       if (p.z0 > SETTINGS.world.floorTop) g.lineBetween(p.x0, p.z0, p.x1, p.z0);
@@ -154,18 +199,23 @@ export class TerrainView {
     const shake = b.shake ? Math.sin(b.shake * 1.7) * Math.min(3, b.shake / 6) : 0;
     const x0 = b.x0 + shake; const x1 = b.x1 + shake; const w = x1 - x0;
     const yTop0 = b.z0 - b.top; const yTop1 = b.z1 - b.top;
+    for (const t of Object.values(v.tiles ?? {})) t.setVisible(false); // (shown again below by whichever face is painted)
     if (!b.solid) {
       v.top.setVisible(false); v.front.setVisible(false);
       return;
     }
     v.top.setVisible(true); v.front.setVisible(true);
+    if (b.mat === 'iron' && b.kind === 'block') { this.drawPortcullis(v, x0, x1, yTop0, yTop1); return; }
+    if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
+    if (this.village || (this.water && b.mat === 'log')) { this.drawVillageBlock(v, x0, x1, w, yTop0, yTop1); return; } // (the wood's fallen trees: as the village's beams)
     const mat = b.kind === 'crumble' ? 'plank' : b.kind === 'lift' ? 'iron' : 'rock';
     const C = mat === 'plank' ? [COL.plankTop, COL.plankRim, COL.plankFront]
       : mat === 'iron' ? [COL.iron, COL.ironRim, COL.ironDark] : [COL.rockTop, COL.rockRim, COL.rockFront];
-    // top face (where you stand): the lightest surface around
-    top.fillStyle(C[0], 1).fillRect(x0, yTop0, w, yTop1 - yTop0);
-    if (mat === 'plank') { top.fillStyle(COL.plankCrack, 0.8); for (let x = x0 + 16; x < x1; x += 18) top.fillRect(x, yTop0, 2, yTop1 - yTop0); }
-    if (mat === 'rock') {
+    // top face (where you stand): the lightest surface around (painted, when its tile exists)
+    const topArt = mat !== 'iron' && this.surface(v, 'top', mat === 'plank' ? 'plank' : 'rock_top', x0, yTop0, w, yTop1 - yTop0, b.z0 - 0.6);
+    if (!topArt) top.fillStyle(C[0], 1).fillRect(x0, yTop0, w, yTop1 - yTop0);
+    if (mat === 'plank' && !topArt) { top.fillStyle(COL.plankCrack, 0.8); for (let x = x0 + 16; x < x1; x += 18) top.fillRect(x, yTop0, 2, yTop1 - yTop0); }
+    if (mat === 'rock' && !topArt) {
       // flagstones receding into the lane, darker toward the back: it reads as a floor, not a wall
       const depth = yTop1 - yTop0;
       top.fillStyle(0x000000, 0.25).fillRect(x0, yTop0, w, depth * 0.35);
@@ -184,10 +234,13 @@ export class TerrainView {
     // cage are thin things hanging in the air
     const depthDown = mat === 'plank' ? 12 : mat === 'iron' ? 16
       : Math.max(0, b.top) + (this.terrain.inPit((x0 + x1) / 2, b.z1 - 1) ? 120 : 0);
-    front.fillStyle(C[2], 1).fillRect(x0, yTop1 + 1, w, depthDown);
-    if (mat === 'rock') {
+    const frontArt = mat === 'rock' && this.surface(v, 'front', 'rock_front', x0, yTop1 + 1, w, depthDown, b.z1 + 0.4);
+    if (!frontArt) front.fillStyle(C[2], 1).fillRect(x0, yTop1 + 1, w, depthDown);
+    if (mat === 'rock' && !frontArt) {
       front.fillStyle(COL.rockShade, 1);
       for (let y = yTop1 + 14; y < floorY; y += 22) front.fillRect(x0, y, w, 2);
+    } else if (mat === 'rock') {
+      // (painted)
     } else if (mat === 'iron') {
       // the gibbet cage: bars and a chain up out of sight
       front.fillStyle(COL.ironRim, 0.7);
@@ -204,6 +257,110 @@ export class TerrainView {
     front.setDepth(b.z1 + 0.5);
   }
 
+  // A painted surface tile (data/levelArt.js `surfaces`) over one face of a block, lined up
+  // with the world so neighbouring blocks continue each other. False if it isn't painted.
+  surface(v, slot, name, x, y, w, h, depth) {
+    const key = artKey(this.theme, `surf-${name}`);
+    if (!name || w <= 0 || h <= 0 || !this.scene.textures.exists(key)) return false;
+    const conf = LEVEL_ART[this.theme]?.surfaces?.[name] ?? {};
+    v.tiles ??= {};
+    const t = v.tiles[slot] ??= this.scene.add.tileSprite(0, 0, 1, 1, key).setOrigin(0);
+    const img = this.scene.textures.get(key).getSourceImage();
+    const sc = (conf.fit ? h : conf.px ?? 128) / img.height;
+    t.setPosition(x, y).setSize(w, h).setDisplaySize(w, h).setTileScale(sc, sc).setDepth(depth).setVisible(true);
+    t.tilePositionX = x / sc;
+    return true;
+  }
+
+  // A portcullis (the mine): a tall iron grille across the lane, its chain running up out
+  // of sight to the counterweight; gone (raised) once that's broken (Stage.openWay).
+  drawPortcullis(v, x0, x1, yTop0, yTop1) {
+    const { top, front, b } = v;
+    const fy = b.z1; const h = b.top;
+    // seen side on it's a thin wall of bars down the whole lane, back to front
+    for (let z = b.z0; z <= b.z1; z += 26) {
+      front.fillStyle(COL.ironDark, 1).fillRect(x0, z - h, x1 - x0, 6);
+      front.fillStyle(COL.ironRim, 0.8).fillRect(x0 + 4, z - h, 4, h);
+      front.fillStyle(COL.iron, 1).fillRect(x0 + 12, z - h, 6, h);
+    }
+    front.fillStyle(COL.iron, 1).fillRect(x0, fy - h, x1 - x0, h * 0.04);
+    for (let y = fy - h + 30; y < fy; y += 46) front.fillStyle(COL.ironDark, 1).fillRect(x0 - 2, y, x1 - x0 + 4, 7);
+    front.fillStyle(0x8a7a5a, 0.9).fillRect((x0 + x1) / 2, fy - h - 500, 3, 500); // the chain
+    top.setDepth(b.z0 - 0.5);
+    front.setDepth(b.z1 + 0.5);
+  }
+
+  // A fall of rock choking a passage (the mine): boulders heaped to the roof; dug out
+  // (gone) once its rubble prop in front is broken.
+  drawRubble(v, x0, x1, yTop0, yTop1) {
+    const { front, b } = v;
+    let k = b.id * 97;
+    const r = () => { k = (k * 9301 + 49297) % 233280; return k / 233280; };
+    for (let i = 0; i < 46; i++) {
+      const z = b.z0 + r() * (b.z1 - b.z0);
+      const y = z - r() * b.top;
+      const rad = 14 + r() * 26;
+      front.fillStyle(r() < 0.5 ? COL.rockFront : COL.rockTop, 1).fillCircle(x0 + r() * (x1 - x0 + 40) - 20, y, rad);
+    }
+    front.setDepth(b.z1 + 0.5);
+  }
+
+  // The village's ground: a roof (shingles on top, a timber house front below), a fallen
+  // beam (a narrow log), a cart, or charred boards over a burning cellar (glowing cracks:
+  // they give way). The landing rim along the front edge is always the brightest line.
+  drawVillageBlock(v, x0, x1, w, yTop0, yTop1) {
+    const { top, front, b } = v;
+    const narrow = b.z1 - b.z0 < 80;
+    const mat = b.kind === 'crumble' ? 'board' : narrow || b.top <= 50 ? 'beam' : 'roof';
+    const C = mat === 'board' ? [VIL.boardTop, VIL.boardRim, VIL.boardFront]
+      : mat === 'beam' ? [VIL.beamTop, VIL.beamRim, VIL.beamFront] : [VIL.roofTop, VIL.roofRim, VIL.roofFront];
+    const depth = yTop1 - yTop0;
+    // painted tiles when they exist (the wood's fallen trees use its 'log', the village's 'beam')
+    const art = { roof: ['roof_top', 'roof_front'], beam: this.village ? ['beam', 'beam'] : ['log', 'log'], board: ['board', null] }[mat];
+    const topArt = this.surface(v, 'top', art[0], x0, yTop0, w, depth, b.z0 - 0.6);
+    if (!topArt) top.fillStyle(C[0], 1).fillRect(x0, yTop0, w, depth);
+    if (topArt) {
+      // (painted)
+    } else if (mat === 'roof') {
+      // shingle rows, darker toward the back
+      top.fillStyle(0x000000, 0.25).fillRect(x0, yTop0, w, depth * 0.35);
+      top.lineStyle(1, VIL.roofSeam, 1);
+      for (let y = yTop0 + 12; y < yTop1 - 3; y += 14) top.lineBetween(x0, y, x1, y);
+      for (let y = yTop0, row = 0; y < yTop1; y += 14, row++) {
+        for (let x = x0 + (row % 2) * 12 + 8; x < x1; x += 24) top.lineBetween(x, y, x, Math.min(yTop1, y + 14));
+      }
+    } else if (mat === 'beam') {
+      top.fillStyle(0x000000, 0.2);
+      for (let y = yTop0 + 6; y < yTop1; y += 9) top.fillRect(x0, y, w, 2); // the grain
+    } else {
+      top.fillStyle(VIL.boardCrack, 0.8);
+      for (let x = x0 + 14; x < x1; x += 17) top.fillRect(x, yTop0, 2, depth); // ember-lit cracks between the boards
+    }
+    top.lineStyle(2, C[1], 0.9).lineBetween(x0, yTop0, x1, yTop0);
+    front.fillStyle(C[1], 1).fillRect(x0, yTop1 - 2, w, 3);
+    const overPit = this.terrain.inPit((x0 + x1) / 2, b.z1 - 1);
+    const down = mat === 'board' ? 12 : mat === 'beam' && overPit ? 18 : Math.max(0, b.top) + (overPit ? 120 : 0);
+    const frontArt = art[1] && this.surface(v, 'front', art[1], x0, yTop1 + 1, w, down, b.z1 + 0.4);
+    if (!frontArt) front.fillStyle(C[2], 1).fillRect(x0, yTop1 + 1, w, down);
+    if (frontArt) {
+      // (painted)
+    } else if (mat === 'roof') {
+      // the house below: timber posts, a beam, a window with fire in it
+      front.fillStyle(VIL.timber, 1);
+      for (let x = x0; x < x1; x += 70) front.fillRect(x, yTop1 + 1, 6, down);
+      front.fillRect(x0, yTop1 + Math.min(down - 4, 34), w, 5);
+      if (down > 70) {
+        front.fillStyle(0xff7a2a, 0.8);
+        for (let x = x0 + 26; x < x1 - 30; x += 140) front.fillRect(x, yTop1 + 46, 18, 16);
+      }
+    } else if (mat === 'board') {
+      // hung over the dark on charred joists
+      front.fillStyle(VIL.timber, 1).fillRect(x0 + 6, yTop1 + 2, 5, 90).fillRect(x1 - 11, yTop1 + 2, 5, 90);
+    }
+    top.setDepth(b.z0 - 0.5);
+    front.setDepth(b.z1 + 0.5);
+  }
+
   // ------------------------------------------------------------ landmarks
 
   drawLanterns(list) {
@@ -211,6 +368,13 @@ export class TerrainView {
     for (const l of list) {
       const y0 = l.z - Math.max(0, this.terrain?.groundAt(l.x, l.z) ?? 0);
       const g = s.add.graphics().setDepth(l.z - 0.2);
+      if (this.village) {
+        // a torch on a post
+        g.fillStyle(0x1a1410, 1).fillRect(l.x - 2, y0 - 70, 4, 70);
+        s.add.image(l.x, y0 - 74, 'flame').setOrigin(0.5, 1).setScale(0.5, 0.7).setTint(COL.lantern).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
+        s.add.image(l.x, y0 - 80, 'glow').setScale(2.2).setTint(COL.lantern).setAlpha(0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
+        continue;
+      }
       g.fillStyle(0x1a1410, 1).fillRect(l.x - 2, y0 - 96, 4, 96);
       g.fillRect(l.x - 2, y0 - 96, 18, 3);
       g.fillStyle(COL.lantern, 1).fillRect(l.x + 10, y0 - 90, 10, 14);
@@ -227,6 +391,20 @@ export class TerrainView {
       if (!r) continue;
       const y0 = r.z - Math.max(0, this.terrain?.groundAt(r.x, r.z) ?? 0);
       const g = s.add.graphics().setDepth(r.z - 0.3);
+      if (r.kind === 'oath') {
+        // an OATH SHRINE: a standing stone with the oath's mark cut in it, candles, a cold light
+        g.fillStyle(0x3a3e44, 1).fillRect(r.x - 34, y0 - 10, 68, 10);
+        g.fillStyle(VIL.oathStone, 1).fillRect(r.x - 18, y0 - 78, 36, 70);
+        g.fillTriangle(r.x - 18, y0 - 78, r.x + 18, y0 - 78, r.x, y0 - 92);
+        g.fillStyle(0x4a5058, 1).fillRect(r.x + 10, y0 - 78, 8, 70);
+        g.lineStyle(3, VIL.oath, 0.9).lineBetween(r.x, y0 - 70, r.x, y0 - 30).lineBetween(r.x - 10, y0 - 58, r.x + 10, y0 - 58).strokeCircle(r.x, y0 - 44, 7);
+        g.fillStyle(0xf0e0c0, 1).fillRect(r.x - 30, y0 - 22, 4, 12).fillRect(r.x + 26, y0 - 22, 4, 12);
+        const glow = s.add.image(r.x, y0 - 50, 'glow').setScale(3).setTint(VIL.oath).setAlpha(0.5)
+          .setBlendMode(Phaser.BlendModes.ADD).setDepth(r.z - 0.2);
+        this.restGlows.push(glow);
+        s.tweens.add({ targets: glow, alpha: { from: 0.3, to: 0.65 }, duration: 1300, yoyo: true, repeat: -1 });
+        continue;
+      }
       // a blood altar: a slab, a basin, a candle each side (temporary art)
       g.fillStyle(0x2a1a1a, 1).fillRect(r.x - 30, y0 - 34, 60, 34);
       g.fillStyle(0x4a2a2a, 1).fillRect(r.x - 36, y0 - 40, 72, 8);
@@ -284,6 +462,7 @@ export class TerrainView {
   }
 
   update() {
-    for (const v of this.blockGfx.values()) if (v.b.kind !== 'block') this.drawBlock(v);
+    this.backdrop?.update();
+    for (const v of this.blockGfx.values()) if (v.b.kind !== 'block' || v.b.tag) this.drawBlock(v);
   }
 }
