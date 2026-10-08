@@ -1,9 +1,10 @@
 // CutawayScene.js — The king's scenes: short cuts to the Black Keep at the campaign's
 // milestones (docs/campaign/plan.md, "The king's arc"). Each one is a few lines over a
-// still, staged room, played on top of the arena once a level is won. TEMPORARY ART: the
-// throne room and KING VAURATH, THE ASHEN CROWN (working name; his art is being designed:
-// project files final-boss-mockups/) are drawn in code. Warlord Malgor, his champion,
-// stands at the throne in his own painted strips.
+// still, staged room, played on top of the arena once a level is won. KING VAURATH, THE
+// ASHEN CROWN stands before his throne in his painted art: assets/enemies/king_vaurath_stand.png,
+// the side view cut from Nick's approved concept sheet (the face version), facing right in
+// the file and flipped here to face the hall. The throne room is still drawn in code.
+// Warlord Malgor, his champion, stands at the throne in his own painted strips.
 //
 // SPACE / ENTER / J (pad A): next line.  ESC (pad B or Start): skip the scene. Skipping
 // changes nothing: the scene is only shown, and its outcome is the level's (already saved).
@@ -84,6 +85,11 @@ export const CUTAWAYS = {
   },
 };
 
+// the king's art (assets/enemies/king_vaurath_stand.png, cut at 419x830 from the concept
+// sheet): his height on screen, and his eye and the hands on his sword's pommel, where the
+// ember-fire gathers, in source pixels before the flip
+const KING_ART = { srcW: 419, srcH: 830, height: 250, eye: [283, 100], hand: [350, 330] };
+
 const SPEAKER = { VAURATH: '#ffb070', MALGOR: '#b8a0ff', MESSENGER: '#c8c0b0', CAPTAIN: '#c8c0b0' };
 
 export class CutawayScene extends Phaser.Scene {
@@ -142,11 +148,13 @@ export class CutawayScene extends Phaser.Scene {
     g.fillStyle(0x100e18, 1).fillRect(0, H - 150, W, 150);
     g.lineStyle(1, 0x1e1a2a, 1);
     for (let y = H - 150; y < H; y += 20) g.lineBetween(0, y, W, y);
-    // dais and throne
-    g.fillStyle(0x18142a, 1).fillRect(W * 0.58, H - 176, W * 0.4, 30);
-    g.fillStyle(0x241c38, 1).fillRect(W * 0.78, H - 330, 90, 160); // the throne: dark violet stone, so the king reads against it
-    g.fillTriangle(W * 0.78, H - 330, W * 0.78 + 90, H - 330, W * 0.78 + 45, H - 380);
-    g.fillStyle(0x6a50b0, 1).fillRect(W * 0.78 + 40, H - 300, 10, 10);
+    // dais and throne (wide and tall, so it frames the king standing before it)
+    const tx = W * 0.78 + 65;
+    g.fillStyle(0x18142a, 1).fillRect(W * 0.58, H - 176, W * 0.42, 30);
+    g.fillStyle(0x241c38, 1).fillRect(tx - 100, H - 400, 200, 230); // the throne: dark violet stone, so the king reads against it
+    g.fillTriangle(tx - 100, H - 400, tx + 100, H - 400, tx, H - 470);
+    g.fillStyle(0x1a1430, 1).fillRect(tx - 100, H - 250, 26, 80).fillRect(tx + 74, H - 250, 26, 80); // its arms
+    g.fillStyle(0x6a50b0, 1).fillRect(tx - 5, H - 440, 10, 10);
     this.root.add(g);
     this.torches = [];
     // violet torches
@@ -171,20 +179,35 @@ export class CutawayScene extends Phaser.Scene {
         .setScale(-1.1 / sheet.res, 1.1 / sheet.res);
       this.root.add(this.malgor);
     }
-    // KING VAURATH on the throne: a stand-in figure (tall, crowned, a long cape, ember eyes)
-    const k = this.add.graphics();
+    // KING VAURATH before his throne, facing the hall: his painted art (cut from the concept
+    // sheet, 830 px tall there; KING_ART below are points on it in those pixels, before the flip)
     const kx = W * 0.78 + 45; const ky = H - 176;
-    k.fillStyle(0x4a0e14, 1).fillTriangle(kx - 40, ky, kx + 40, ky, kx, ky - 150); // the cape, black and deep crimson
-    k.fillStyle(0x0c0a0e, 1).fillRect(kx - 22, ky - 120, 44, 92).fillRect(kx - 26, ky - 34, 20, 34).fillRect(kx + 6, ky - 34, 20, 34);
-    k.fillStyle(0x0c0a0e, 1).fillRect(kx - 13, ky - 146, 26, 28); // the closed helm
-    k.fillStyle(0x2a2210, 1); // the crown, black iron and old gold
-    for (let i = -3; i <= 3; i++) k.fillTriangle(kx + i * 4 - 3, ky - 146, kx + i * 4 + 3, ky - 146, kx + i * 4, ky - 160 - (i % 2 ? 0 : 6));
-    k.fillStyle(0xa08040, 1).fillRect(kx - 14, ky - 148, 28, 3);
-    k.fillStyle(0x806030, 1).fillRect(kx - 34, ky - 70, 8, 70); // the greatsword, point down beside him
-    k.fillStyle(0x5a4a70, 1).fillRect(kx + 19, ky - 120, 3, 92).fillRect(kx + 10, ky - 146, 3, 28); // a cold rim of torchlight
-    this.eyes = this.add.rectangle(kx, ky - 134, 16, 3, 0xffa040);
-    this.hand = this.add.image(kx - 30, ky - 84, 'glow').setScale(0).setTint(0xff8a30).setBlendMode(Phaser.BlendModes.ADD);
-    this.root.add([k, this.eyes, this.hand]);
+    if (this.textures.exists('king-vaurath')) {
+      const K = KING_ART; const s = K.height / K.srcH;
+      const at = ([x, y]) => [kx + ((K.srcW - x) - K.srcW / 2) * s, ky - (K.srcH - y) * s];
+      const king = this.add.image(kx, ky, 'king-vaurath').setOrigin(0.5, 1).setFlipX(true);
+      king.setScale(K.height / king.height);
+      this.king = king;
+      const [ex, ey] = at(K.eye); const [hx, hy] = at(K.hand);
+      this.eyes = this.add.rectangle(ex, ey, 6, 2, 0xffa040).setBlendMode(Phaser.BlendModes.ADD);
+      this.hand = this.add.image(hx, hy, 'glow').setScale(0).setTint(0xff8a30).setBlendMode(Phaser.BlendModes.ADD);
+      this.root.add([king, this.eyes, this.hand]);
+      // he breathes, slowly; nothing else about him moves
+      this.tweens.add({ targets: king, scaleY: king.scaleY * 1.006, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    } else {
+      // (the art failed to load: a code-drawn stand-in, tall, crowned, a long cape, ember eyes)
+      const k = this.add.graphics();
+      k.fillStyle(0x4a0e14, 1).fillTriangle(kx - 40, ky, kx + 40, ky, kx, ky - 150);
+      k.fillStyle(0x0c0a0e, 1).fillRect(kx - 22, ky - 120, 44, 92).fillRect(kx - 26, ky - 34, 20, 34).fillRect(kx + 6, ky - 34, 20, 34);
+      k.fillStyle(0x0c0a0e, 1).fillRect(kx - 13, ky - 146, 26, 28);
+      k.fillStyle(0x2a2210, 1);
+      for (let i = -3; i <= 3; i++) k.fillTriangle(kx + i * 4 - 3, ky - 146, kx + i * 4 + 3, ky - 146, kx + i * 4, ky - 160 - (i % 2 ? 0 : 6));
+      k.fillStyle(0xa08040, 1).fillRect(kx - 14, ky - 148, 28, 3);
+      k.fillStyle(0x806030, 1).fillRect(kx - 34, ky - 70, 8, 70);
+      this.eyes = this.add.rectangle(kx, ky - 134, 16, 3, 0xffa040);
+      this.hand = this.add.image(kx - 30, ky - 84, 'glow').setScale(0).setTint(0xff8a30).setBlendMode(Phaser.BlendModes.ADD);
+      this.root.add([k, this.eyes, this.hand]);
+    }
     this.tweens.add({ targets: this.eyes, alpha: { from: 0.6, to: 1 }, duration: 900, yoyo: true, repeat: -1 });
   }
 
@@ -247,7 +270,7 @@ export class CutawayScene extends Phaser.Scene {
     this.auto?.remove();
     this.who.setText(''); this.line.setText('');
     const W = SETTINGS.width; const H = SETTINGS.height;
-    const ax = W * 0.78 + 8; const ay = H - 238;
+    const ax = W * 0.78 + 65 + 86; const ay = H - 248; // the throne's arm, beside him
     this.time.delayedCall(500, () => {
       this.cameras.main.shake(300, 0.01);
       playSfx(this, 'kick', { volume: 1, pitch: -2000, minGapMs: 0 });

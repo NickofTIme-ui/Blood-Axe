@@ -55,6 +55,7 @@ export class BootScene extends Phaser.Scene {
     // the layered backdrop (data/parallax.js): any layer not painted yet simply isn't there
     for (const L of PARALLAX_LAYERS) this.load.image(`plxsrc-${L.name}`, `assets/env/parallax/${L.file}`);
     preloadLevelArt(this); // (the campaign levels' painted art: data/levelArt.js)
+    this.load.image('king-vaurath', 'assets/enemies/king_vaurath_stand.png'); // the king in his cutaways (scenes/CutawayScene.js)
     this.load.on('loaderror', (file) => { if (!file.key?.startsWith('plxsrc-') && !isLevelArtKey(file.key) && file.key !== 'boss' && file.key !== 'fxsrc-earthwall') console.warn(`[boot] Could not load ${file.src}`); }); // (unpainted backdrop layers are expected)
 
     const bar = this.add.rectangle(480 - 150, 270, 0, 6, 0xc0161c).setOrigin(0, 0.5);
