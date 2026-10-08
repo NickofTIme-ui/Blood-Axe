@@ -449,3 +449,6 @@ same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one 
   picks and the point milestones; keeps the campaign place, villagers and trophies).
 - No Node on this PC: `tests/browser.html` runs the logic tests in the browser (with
   `tests/node-fs-shim.js`). All pass.
+
+## PC, 2026-10-08: painted oath shrine
+- The kneel-shrine (`rest.kind: 'oath'`, all five campaign levels) is now painted: `assets/env/shrine_oath.png` (500×512 on magenta, cut out at load with `keyLayer`), drawn 170 px tall by `drawRests` in `src/view/TerrainView.js`; the code-drawn stone stays as the fallback. Kept PNG in `tools/build-release.ps1` (JPEG would smear the magenta). Chat "Paint Oath Shrine Prop" (6ac8090f-b6f8-83ea-8290-4b95d56efe8c). The Gallows blood altars are still code-drawn.

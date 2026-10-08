@@ -33,6 +33,7 @@ export class BootScene extends Phaser.Scene {
     for (const [key, file] of Object.entries(MUSIC)) this.load.audio(key, file);
     for (const [key, file] of Object.entries(SFX)) this.load.audio(key, file);
     preloadEnemyOverrides(this);
+    this.load.image('shrine-oath-src', 'assets/env/shrine_oath.png'); // the painted oath shrine (view/TerrainView.js drawRests)
     for (const [key, strips] of Object.entries(CHARACTER_STRIPS)) {
       for (const [name, s] of Object.entries(strips)) this.load.image(`strip-${key}-${name}`, s.file);
     }

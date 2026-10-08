@@ -26,6 +26,10 @@ import { AscentBackdrop } from './AscentView.js';
 import { GatesBackdrop } from './GatesView.js';
 import { artKey } from './levelArt.js';
 import { LEVEL_ART } from '../data/levelArt.js';
+import { keyLayer } from './envArt.js';
+
+// the painted oath shrine is drawn this tall (about twice a man)
+const SHRINE_H = 170;
 
 const COL = {
   skyTop: 0x05070d, skyLow: 0x1c2733, mist: 0x8aa4b8,
@@ -390,6 +394,16 @@ export class TerrainView {
       const r = sec.rest;
       if (!r) continue;
       const y0 = r.z - Math.max(0, this.terrain?.groundAt(r.x, r.z) ?? 0);
+      if (r.kind === 'oath' && s.textures.exists('shrine-oath-src')) {
+        // the painted OATH SHRINE (assets/env/shrine_oath.png, on magenta: cut out once)
+        if (!s.textures.exists('shrine-oath')) s.textures.addCanvas('shrine-oath', keyLayer(s.textures.get('shrine-oath-src').getSourceImage(), 'magenta'));
+        s.add.image(r.x, y0 + 4, 'shrine-oath').setOrigin(0.5, 0.985).setScale(SHRINE_H / 512).setDepth(r.z - 0.3);
+        const glow = s.add.image(r.x + 2, y0 - SHRINE_H * 0.6, 'glow').setScale(2.6).setTint(VIL.oath).setAlpha(0.4)
+          .setBlendMode(Phaser.BlendModes.ADD).setDepth(r.z - 0.2);
+        this.restGlows.push(glow);
+        s.tweens.add({ targets: glow, alpha: { from: 0.2, to: 0.5 }, duration: 1300, yoyo: true, repeat: -1 });
+        continue;
+      }
       const g = s.add.graphics().setDepth(r.z - 0.3);
       if (r.kind === 'oath') {
         // an OATH SHRINE: a standing stone with the oath's mark cut in it, candles, a cold light
