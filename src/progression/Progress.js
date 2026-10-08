@@ -8,8 +8,8 @@
 //     (picking Vexa after a run with Rurik, she has as many points as he had). Switching
 //     heroes never means grinding again.
 //   - First clear of each fight on a stage: +1 point. Each secret: +1. Each optional
-//     challenge won: +1. (So a full run of the Gallows earns ~7-8, the full tree costs 18:
-//     you choose.)
+//     challenge won: +1. Skills cost 2 / 4 / 6 by tier, so one hero's whole tree costs 36:
+//     you choose, and a major is a real saving-up.
 //   - Respec is free at any rest shrine.
 //   - Enemy health never scales with your level: a damage upgrade always shows.
 //
@@ -20,8 +20,8 @@ import { TROPHIES, TROPHY_SLOTS } from '../data/trophies.js';
 
 export const PROGRESS = {
   key: 'bloodaxe.progress.v1',
-  levelStep: 160,     // blood a level (a grunt is worth ~12, a brute ~25, an elite ~80)
-  startPoints: 1,     // one to spend at the first shrine
+  levelStep: 300,     // blood a level (a grunt is worth ~12, a brute ~25, an elite ~80)
+  startPoints: 2,     // enough for one first-tier skill at the first shrine
   bloodPer: 1 / 6,    // blood for a kill = the man's max health x this
 };
 

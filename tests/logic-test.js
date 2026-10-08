@@ -1921,7 +1921,7 @@ test('progress: blood makes levels, levels and milestones make points, each hero
   assert(P.addBlood(PROGRESS.levelStep) === 1 && P.level === 2, 'a level');
   assert(P.claim('gallows:yard') && !P.claim('gallows:yard'), 'a milestone pays once');
   const pts = P.earned;
-  assert(P.buy('warrior', 'keenEdge') && P.available('warrior') === pts - 1, 'Rurik spends one');
+  assert(P.buy('warrior', 'keenEdge') && P.available('warrior') === pts - 2, 'Rurik spends two');
   assert(P.available('rogue') === pts, 'Vexa still has them all: the pool is shared, the picks are not');
   assert(P.blocker('warrior', 'berserk') === 'locked', 'a major needs the one before it');
   P.respec('warrior');
@@ -1953,7 +1953,7 @@ test('progress: the two majors shut each other out; picks never touch the shared
   const s = P.statsFor('warrior', CHARACTERS.warrior);
   assert(s.moves.heavy.damage > CHARACTERS.warrior.moves.heavy.damage && JSON.stringify(CHARACTERS.warrior.moves.heavy) === base, 'a copy changed, not the original');
   const nodes = SKILL_TREES.warrior.branches.flatMap((b) => b.nodes);
-  assert(nodes.length === 9 && nodes.reduce((n, x) => n + x.cost, 0) === 18, 'nine skills, 18 points for all of them');
+  assert(nodes.length === 9 && nodes.reduce((n, x) => n + x.cost, 0) === 36, 'nine skills, 36 points for all of them');
 });
 
 test("rurik: Keen Edge sharpens every sword blow; Executioner's Arc is a 360 cleave on the D-pad", () => {

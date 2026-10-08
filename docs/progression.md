@@ -9,11 +9,11 @@ Code: `src/progression/Progress.js` (the rules, saving), `src/data/skills.js` (t
   (a grunt ~12, a brute ~25, an elite ~3x its health share). Every 160 blood is a level;
   every level is a skill point.
 - **Milestones pay once:** the first clear of each fight on a stage +1, each secret +1,
-  each optional challenge (the bell) +1. You start with 1 point to spend at the first shrine.
+  each optional challenge (the bell) +1. You start with 2 points to spend at the first shrine (300 blood a level).
 - **Skill points are shared; picks are per hero.** Each hero spends the whole pool on
   their own tree, so switching from Rurik to Vexa never means grinding again.
 - **Pace:** a full run of the Gallows Ascent earns about 7-8 points (4 fights, 1 secret,
-  1 challenge, 1-2 levels, the starting point). A whole tree costs 18. You choose: two
+  1 challenge, a level, the starting two). Skills cost 2 / 4 / 6 by tier; a whole tree costs 36. You choose: two
   branches to their middle, or one to the top and a taste of another.
 - **Respec is free** at any rest shrine (R / Y in the tree).
 - **No level scaling.** Enemy health and damage never grow with your level: an upgrade

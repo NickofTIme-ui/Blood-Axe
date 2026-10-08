@@ -24,6 +24,7 @@ export class SkillScene extends Phaser.Scene {
 
   // data: { arena, heroId, progress }
   init(data) {
+    this.closing = false; // (the scene is reused: a second shrine must be able to close it again)
     this.arena = data.arena;
     this.heroId = data.heroId;
     this.progress = data.progress;

@@ -28,14 +28,14 @@ export const SKILL_TREES = {
         id: 'butcher', name: 'THE BUTCHER', color: 0xd0302a, blurb: 'Bigger, crueller swings',
         nodes: [
           {
-            id: 'keenEdge', name: 'Keen Edge', cost: 1, tier: 1, req: [], kind: 'upgrade',
+            id: 'keenEdge', name: 'Keen Edge', cost: 2, tier: 1, req: [], kind: 'upgrade',
             text: 'Every blow of your sword hits 25% harder (the combo, the cleave, the air cut, the thrust).',
             apply(s) {
               for (const m of Object.values(s.moves)) if (SWORD_CUTS.includes(m.cut)) m.damage *= 1.25;
             },
           },
           {
-            id: 'executionersArc', name: "Executioner's Arc", cost: 2, tier: 2, req: ['keenEdge'], kind: 'active',
+            id: 'executionersArc', name: "Executioner's Arc", cost: 4, tier: 2, req: ['keenEdge'], kind: 'active',
             text: 'NEW MOVE — D-pad DOWN (H): the WHIRLWIND CLEAVE. One full turn of the blade: it cuts the men in front, then the men behind. Also out of your combo.',
             apply(s) {
               const h = s.moves.heavy;
@@ -54,7 +54,7 @@ export const SKILL_TREES = {
             },
           },
           {
-            id: 'berserk', name: 'Berserk', cost: 3, tier: 3, req: ['executionersArc'], excl: ['oathOfFury'], kind: 'major',
+            id: 'berserk', name: 'Berserk', cost: 6, tier: 3, req: ['executionersArc'], excl: ['oathOfFury'], kind: 'major',
             text: 'No more blocking. Every blow hits 30% harder and gives back 6 stamina.',
             apply(s) { s.meleeMult *= 1.3; s.skills.berserk = true; },
           },
@@ -64,17 +64,17 @@ export const SKILL_TREES = {
         id: 'oathguard', name: 'THE OATHGUARD', color: 0xd8b04a, blurb: 'Outlast them',
         nodes: [
           {
-            id: 'bloodrush', name: 'Bloodrush', cost: 1, tier: 1, req: [], kind: 'passive',
+            id: 'bloodrush', name: 'Bloodrush', cost: 2, tier: 1, req: [], kind: 'passive',
             text: 'Every kill gives back 20 stamina and 6 health.',
             apply(s) { s.skills.bloodrush = { stamina: 20, health: 6 }; },
           },
           {
-            id: 'ironWall', name: 'Iron Wall', cost: 2, tier: 2, req: ['bloodrush'], kind: 'behaviour',
+            id: 'ironWall', name: 'Iron Wall', cost: 4, tier: 2, req: ['bloodrush'], kind: 'behaviour',
             text: 'A parry hits back: 25 damage, and his guard is broken.',
             apply(s) { s.skills.ironWall = { damage: 25 }; },
           },
           {
-            id: 'oathOfFury', name: 'Oath of Fury', cost: 3, tier: 3, req: ['ironWall'], excl: ['berserk'], kind: 'major',
+            id: 'oathOfFury', name: 'Oath of Fury', cost: 6, tier: 3, req: ['ironWall'], excl: ['berserk'], kind: 'major',
             text: 'Under a third of your health: blows no longer stagger you, and 20% of the damage you deal heals you.',
             apply(s) { s.skills.fury = { below: 0.34, leech: 0.2 }; },
           },
@@ -84,17 +84,17 @@ export const SKILL_TREES = {
         id: 'skybreaker', name: 'THE SKYBREAKER', color: 0x6ab0ff, blurb: 'Own the air',
         nodes: [
           {
-            id: 'windStep', name: 'Wind Step', cost: 1, tier: 1, req: [], kind: 'mobility',
+            id: 'windStep', name: 'Wind Step', cost: 2, tier: 1, req: [], kind: 'mobility',
             text: 'A second jump in the air, and you steer twice as well. (Some high ledges hide things.)',
             apply(s) { s.airJumps = 1; s.airControl = Math.max(s.airControl, 0.3); },
           },
           {
-            id: 'leapSmash', name: 'Leap Smash', cost: 2, tier: 2, req: ['windStep'], kind: 'active',
+            id: 'leapSmash', name: 'Leap Smash', cost: 4, tier: 2, req: ['windStep'], kind: 'active',
             text: 'NEW: heavy in the air drives your blade straight down into the ground; the landing knocks down everyone close. It needs a moment to come back.',
             apply(s) { s.states = { ...(s.states ?? {}), airHeavy: 'plunge' }; s.kit = { ...(s.kit ?? {}), plunge: { speed: 1100, radius: 110, depth: 46, damage: 26, launch: 0, bounce: 0, minHeight: 30, hang: 7, cooldown: 90 } }; },
           },
           {
-            id: 'skyfall', name: 'Skyfall', cost: 3, tier: 3, req: ['leapSmash'], kind: 'major',
+            id: 'skyfall', name: 'Skyfall', cost: 6, tier: 3, req: ['leapSmash'], kind: 'major',
             text: 'Leap Smash lands 60% wider, throws them into the air, and bounces you back up to smash again.',
             apply(s) { Object.assign(s.kit.plunge, { radius: 176, launch: 520, bounce: 560 }); },
           },
@@ -111,17 +111,17 @@ SKILL_TREES.mage = {
       id: 'stormcaller', name: 'THE STORMCALLER', color: 0x8ab8ff, blurb: 'Lightning through the crowd',
       nodes: [
         {
-          id: 'forkedBolt', name: 'Forked Bolt', cost: 1, tier: 1, req: [], kind: 'upgrade',
+          id: 'forkedBolt', name: 'Forked Bolt', cost: 2, tier: 1, req: [], kind: 'upgrade',
           text: 'Chain lightning forks once more from every body it strikes, and leaps two more times.',
           apply(s) { s.kit.bolt.branches += 1; s.kit.bolt.maxJumps += 2; },
         },
         {
-          id: 'staticCharge', name: 'Static Charge', cost: 2, tier: 2, req: ['forkedBolt'], kind: 'behaviour',
+          id: 'staticCharge', name: 'Static Charge', cost: 4, tier: 2, req: ['forkedBolt'], kind: 'behaviour',
           text: 'The 3rd strike of your lightning combo leaves a crackling field where it hit: whoever walks in is shocked.',
           apply(s) { s.skills.staticCharge = { ...STORM.field }; },
         },
         {
-          id: 'thunderhead', name: 'Thunderhead', cost: 3, tier: 3, req: ['staticCharge'], kind: 'major',
+          id: 'thunderhead', name: 'Thunderhead', cost: 6, tier: 3, req: ['staticCharge'], kind: 'major',
           text: 'A fully overcharged bolt calls a thunderbolt down on its first man: everyone close by is struck and thrown down.',
           apply(s) { s.skills.thunderhead = { ...STORM.thunder }; },
         },
@@ -130,17 +130,17 @@ SKILL_TREES.mage = {
     {
       id: 'earthshaper', name: 'THE EARTHSHAPER', color: 0xb08a5a, blurb: 'Planned (Stage 4)', planned: true,
       nodes: [
-        { id: 'secondWall', name: 'Second Wall', cost: 1, tier: 1, req: [], kind: 'upgrade', text: 'PLANNED: two barriers at once.' },
-        { id: 'shatter', name: 'Shatter', cost: 2, tier: 2, req: ['secondWall'], kind: 'behaviour', text: 'PLANNED: a wall that falls throws its slabs outward.' },
-        { id: 'livingRock', name: 'Living Rock', cost: 3, tier: 3, req: ['shatter'], kind: 'major', text: 'PLANNED: the wall walks forward, shoving them back.' },
+        { id: 'secondWall', name: 'Second Wall', cost: 2, tier: 1, req: [], kind: 'upgrade', text: 'PLANNED: two barriers at once.' },
+        { id: 'shatter', name: 'Shatter', cost: 4, tier: 2, req: ['secondWall'], kind: 'behaviour', text: 'PLANNED: a wall that falls throws its slabs outward.' },
+        { id: 'livingRock', name: 'Living Rock', cost: 6, tier: 3, req: ['shatter'], kind: 'major', text: 'PLANNED: the wall walks forward, shoving them back.' },
       ],
     },
     {
       id: 'waywalker', name: 'THE WAYWALKER', color: 0xb070ff, blurb: 'Planned (Stage 4)', planned: true,
       nodes: [
-        { id: 'blinkStrike', name: 'Blink Strike', cost: 1, tier: 1, req: [], kind: 'behaviour', text: 'PLANNED: blinking through a man hits him.' },
-        { id: 'longStep', name: 'Long Step', cost: 2, tier: 2, req: ['blinkStrike'], kind: 'mobility', text: 'PLANNED: the blink goes 30% further.' },
-        { id: 'phaseWalk', name: 'Phase Walk', cost: 3, tier: 3, req: ['longStep'], kind: 'major', text: 'PLANNED: two blinks before you land.' },
+        { id: 'blinkStrike', name: 'Blink Strike', cost: 2, tier: 1, req: [], kind: 'behaviour', text: 'PLANNED: blinking through a man hits him.' },
+        { id: 'longStep', name: 'Long Step', cost: 4, tier: 2, req: ['blinkStrike'], kind: 'mobility', text: 'PLANNED: the blink goes 30% further.' },
+        { id: 'phaseWalk', name: 'Phase Walk', cost: 6, tier: 3, req: ['longStep'], kind: 'major', text: 'PLANNED: two blinks before you land.' },
       ],
     },
   ],
