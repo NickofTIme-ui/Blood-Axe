@@ -235,28 +235,38 @@ export class NpcView {
     v.shadow.setVisible(false);
     g.setVisible(true).setAlpha(1).setDepth(n.z);
     if (n.pose === 'cage') {
+      // the cage stays on its cart where it stood (home); only the prisoners run
+      const cx = n.home.x; const cz = n.home.z;
+      const cy = cz - (v.cageH ??= n.h);
+      const ck = depthScale(cz);
       const open = !['trapped'].includes(n.state);
+      const many = n.group ? 3 : 1;
       // the prisoners inside (cowering), then the bars in front; open: the door swung wide
       if (!open) {
-        const many = n.group ? 3 : 1;
-        for (let i = 0; i < many; i++) this.figure(g, n.x - (many - 1) * 12 + i * 24, y - 26, k * 0.85, i === many - 1 && SPRITES.captive ? 'grip' : 'cower', t + i * 5, tun(i), -1, SPRITES.captive ? 'captive' : undefined);
-      } else if (n.state === 'free') this.figure(g, n.x + 40, y, k, 'stand', t, tun(0), 1);
+        for (let i = 0; i < many; i++) this.figure(g, cx - (many - 1) * 12 + i * 24, cy - 26, ck * 0.85, i === many - 1 && SPRITES.captive ? 'grip' : 'cower', t + i * 5, tun(i), -1, SPRITES.captive ? 'captive' : undefined);
+      } else if (n.state === 'free') {
+        for (let i = 0; i < many; i++) this.figure(g, cx + 40 + i * 26, cy + (i % 2) * 6, ck, 'stand', t + i * 5, tun(i), 1);
+      } else if (n.state === 'fleeing' || n.state === 'gathered') {
+        const p = n.state === 'fleeing' ? 'run' : 'stand';
+        const dir = n.state === 'fleeing' ? n.dir ?? -1 : -1;
+        for (let i = 0; i < many; i++) this.figure(g, n.x - (many - 1) * 14 + i * 28, y + (i % 2) * 6, k * (many > 1 && i === 1 ? 0.85 : 1), p, t + i * 5, tun(i), dir);
+      }
       if (paintedCage(this.scene)) {
-        // the painted cage over them (its bars in front; the shut one, or broken open)
+        // the painted cage (its bars in front; the shut one, or broken open)
         v.cage ??= this.scene.add.image(0, 0, 'cage-shut').setOrigin(0.5, 1);
-        v.cage.setTexture(open ? 'cage-open' : 'cage-shut').setPosition(n.x, y - 20).setDepth(g.depth + 0.5).setVisible(true);
-        v.cage.setScale((CAGE_H * k * (n.group ? 1 : 0.85)) / v.cage.frame.height);
+        v.cage.setTexture(open ? 'cage-open' : 'cage-shut').setPosition(cx, cy - 20).setDepth(cz + 0.5).setVisible(true);
+        v.cage.setScale((CAGE_H * ck * (n.group ? 1 : 0.85)) / v.cage.frame.height);
         return;
       }
-      const w = (n.group ? 96 : 64) * k; const h = 70 * k;
-      g.fillStyle(0x2a2016, 1).fillRect(n.x - w / 2 - 4, y - 28, w + 8, 6); // its floor, on the cart
-      g.lineStyle(3, 0x4a4a52, 1).strokeRect(n.x - w / 2, y - 28 - h, w, h);
-      for (let x = n.x - w / 2 + 10; x < n.x + w / 2; x += 11) {
-        if (open && x > n.x - 6 && x < n.x + 22) continue; // (the door)
-        g.lineBetween(x, y - 28 - h, x, y - 28);
+      const w = (n.group ? 96 : 64) * ck; const h = 70 * ck;
+      g.fillStyle(0x2a2016, 1).fillRect(cx - w / 2 - 4, cy - 28, w + 8, 6); // its floor, on the cart
+      g.lineStyle(3, 0x4a4a52, 1).strokeRect(cx - w / 2, cy - 28 - h, w, h);
+      for (let x = cx - w / 2 + 10; x < cx + w / 2; x += 11) {
+        if (open && x > cx - 6 && x < cx + 22) continue; // (the door)
+        g.lineBetween(x, cy - 28 - h, x, cy - 28);
       }
-      if (open) g.lineBetween(n.x - 6, y - 28 - h, n.x - 30, y - 34 - h * 0.6).lineBetween(n.x - 30, y - 34 - h * 0.6, n.x - 30, y - 34 + h * 0.3);
-      else g.fillStyle(0xb08a4a, 1).fillRect(n.x + 2, y - 28 - h * 0.5, 8, 10); // the lock
+      if (open) g.lineBetween(cx - 6, cy - 28 - h, cx - 30, cy - 34 - h * 0.6).lineBetween(cx - 30, cy - 34 - h * 0.6, cx - 30, cy - 34 + h * 0.3);
+      else g.fillStyle(0xb08a4a, 1).fillRect(cx + 2, cy - 28 - h * 0.5, 8, 10); // the lock
       return;
     }
     // the noose: the rope from the tree's bough; he stands on a cart's tail with his hands
