@@ -48,6 +48,20 @@ export function startTitleTheme() {
   if (early?.paused) early.play().catch(() => {}); // blocked until the first key or click
 }
 
+// Fades run on their own clock, not on a scene's tweens: a scene's tweens die with it, and
+// the scene asking is often mid-change (a level restarting into the next one, the title
+// closing) — a fade-in that died there left the new track playing silently.
+function fade(snd, to, ms, done) {
+  clearInterval(snd.fadeTimer);
+  const from = snd.volume;
+  const t0 = performance.now();
+  snd.fadeTimer = setInterval(() => {
+    let t = Math.min(1, (performance.now() - t0) / ms);
+    try { snd.volume = from + (to - from) * t; } catch { t = 1; } // (destroyed under us)
+    if (t >= 1) { clearInterval(snd.fadeTimer); done?.(); }
+  }, 16);
+}
+
 export function playMusic(scene, key) {
   if (current?.key === key) return;
   if (key === 'title' && early) {
@@ -71,16 +85,12 @@ export function playMusic(scene, key) {
     if (current?.key !== key) return;
     const s = current.sound;
     s.play({ loop: true, volume: 0 });
-    // fade in on whichever scene is still running (the one that asked may have closed
-    // already — e.g. the very first click both unlocks sound and leaves the title screen)
-    const live = [scene, ...scene.game.scene.getScenes(true)].find((sc) => sc.sys.isActive());
-    if (live) live.tweens.add({ targets: s, volume: volume(), duration: 900 });
-    else s.setVolume(volume());
+    fade(s, volume(), 900);
   };
 
   if (current) {
     const old = current.sound;
-    scene.tweens.add({ targets: old, volume: 0, duration: 500, onComplete: () => old.destroy() });
+    fade(old, 0, 500, () => old.destroy());
   }
   current = { key, sound: sound.add(key) };
   if (sound.locked) sound.once('unlocked', start);
@@ -89,6 +99,6 @@ export function playMusic(scene, key) {
 
 export function toggleMute() {
   SETTINGS.audio.muted = !SETTINGS.audio.muted;
-  if (current?.sound) current.sound.volume = volume();
+  if (current?.sound) { clearInterval(current.sound.fadeTimer); current.sound.volume = volume(); }
   return SETTINGS.audio.muted;
 }
