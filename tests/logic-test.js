@@ -805,6 +805,24 @@ test('waves: every enemy starts off every screen and walks on (no popping in)', 
   }
 });
 
+test('waves: a man stuck walking on is never spirited away while he can be seen', () => {
+  const world = new World({ seed: 3 });
+  const hero = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 300, z: 430, controller: new TickController() }));
+  const stage = new Stage(world);
+  stage.start([hero]);
+  for (const f of world.fighters) if (f.team === 'enemy') f.removeMe = true;
+  world.tick();
+  const b = world.bounds;
+  hero.x = (b.minX + b.maxX) / 2;
+  // on screen, behind the hero, further than ENTER.onScreen: still 'entering', and stuck
+  const x = hero.x - 440;
+  const e = createEnemy(world, 'grunt', x, 430, { entering: true });
+  e.controller = new Controller();
+  for (let i = 0; i < 60 * 8; i++) { hero.health = hero.stats.maxHealth; world.tick(); stage.update(); }
+  assert(e.alive && !e.removeMe && !e.broughtRound && Math.abs(e.x - x) < 2, `stays where he's seen (x ${e.x.toFixed(0)}, was ${x.toFixed(0)})`);
+  assert(!e.entering, 'and has simply arrived');
+});
+
 // ---------------------------------------------------------------- the Mage
 
 // A Mage on an empty floor with grunts where we put them (all standing still unless told).

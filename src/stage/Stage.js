@@ -50,7 +50,7 @@
 
 import { STAGE, PICKUPS, PROPS } from '../data/stage.js';
 import { ENEMIES, HORDE_SIZE } from '../data/enemies.js';
-import { createEnemy, offscreenX } from '../entities/Enemy.js';
+import { createEnemy, offscreenX, inView } from '../entities/Enemy.js';
 import { toWorldBox, overlaps } from '../combat/Boxes.js';
 import { Terrain, PIT_LOST } from './Terrain.js';
 import { Story } from './Story.js';
@@ -377,8 +377,11 @@ export class Stage {
 
   // A man walking on from off-screen who can't get here (a stream or a ledge between him and
   // the heroes) would hold the fight open for good, out of sight. Stuck too long, he's
-  // brought round to the other side; stuck there as well, he's let go.
+  // brought round to the other side; stuck there as well, he's let go. Stuck where someone
+  // can see him (he's 'entering' until within ENTER.onScreen of a hero, less than half a
+  // screen), he's simply arrived: he'd vanish before their eyes otherwise.
   updateLatecomers() {
+    const heroes = this.players.filter((p) => p.alive);
     for (const e of this.world.fighters) {
       if (e.team !== 'enemy' || !e.alive || !e.entering || e.state === 'bossEntrance') continue;
       const moved = Math.abs(e.x - (e.enterX ?? NaN)) > 1;
@@ -386,9 +389,14 @@ export class Stage {
       e.enterStill = moved ? 0 : (e.enterStill ?? 0) + 1;
       if (e.enterStill < STUCK_AFTER) continue;
       e.enterStill = 0;
+      if (inView(this.world, heroes, e.x)) {
+        const b = this.world.bounds;
+        e.x = Math.max(b.minX, Math.min(b.maxX, e.x));
+        e.entering = false; e.unbounded = false;
+        continue;
+      }
       if (e.broughtRound) { e.removeMe = true; e.health = 0; continue; }
       e.broughtRound = true;
-      const heroes = this.players.filter((p) => p.alive);
       const side = Math.sign(e.x - (this.player?.x ?? e.x)) || 1;
       e.x = offscreenX(this.world, heroes, -side, 0);
       e.enterX = e.x;

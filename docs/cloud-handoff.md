@@ -463,3 +463,6 @@ same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one 
 
 ## Cloud, 2026-10-09: the cage stays put when its prisoners run
 - Fixed: opening a cage (Gallows Wood's tanner's boys and Old Wenna) made the cage run off to the flee point while the prisoners vanished. `drawCaptive` (`src/view/NpcView.js`) drew the cage at the NPC's live `x/z`; it now anchors the cage at `n.home` and draws the prisoners themselves (three for a `group`) standing by the door, running to `flee`, then waiting at `gather`.
+## Cloud, 2026-10-09: enemies no longer vanish on screen (not on itch)
+- Nick: "bad guys sometimes come in from the left it seems and dissapear". A man walking on stays `entering` until he's within 400 px of a hero (`ENTER.onScreen`), but half a screen is 480, so he can be in view and still entering. Stuck there 3 s (usually behind a stream or ledge the heroes just crossed, so on the left), `Stage.updateLatecomers` teleported him to the other side, and a second time deleted him: he vanished in plain sight.
+- Now a stuck latecomer that any hero's screen can show (`inView` in `src/entities/Enemy.js`) simply arrives where he stands (`entering` off, held inside the bounds) and fights as normal. Only men out of sight are brought round or let go. Logic test added. Sim change: both online players need the new build.

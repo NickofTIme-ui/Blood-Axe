@@ -40,6 +40,15 @@ export function offscreenX(world, heroes, side, k = 0) {
   return edge + side * (ENTER.margin + k * ENTER.stagger);
 }
 
+// Could anyone see a man standing at x? (any hero's screen, worked out as above, plus
+// half a body's width so a man half on the edge counts as seen)
+export function inView(world, heroes, x) {
+  if (!heroes.length) return false;
+  const lo = offscreenX(world, heroes, -1) + ENTER.margin - 40;
+  const hi = offscreenX(world, heroes, 1) - ENTER.margin + 40;
+  return x > lo && x < hi;
+}
+
 const ATTACK_STATES = ['light1', 'light2', 'light3', 'light4', 'heavy', 'kick', 'viper', 'sweep', 'bolt', 'force'];
 const COMBO_STATES = ['light1', 'light2'];
 
