@@ -11,6 +11,7 @@
 //   airControl                           0..1, how quickly you can steer in the air
 //   airJumps                             extra jumps in mid-air (1 = double jump)
 //   meleeMult / magicMult                damage multipliers
+//   manaOnMelee                          mana gained per point of damage a clean melee hit deals (0/absent = none)
 //   blockReduction                       0..1, share of damage blocked (0.8 = take 20%)
 //   guardEfficiency                      multiplies stamina lost when blocking (lower = better)
 //   dodge { iframes, duration, recovery, speed, cost }
@@ -209,6 +210,7 @@ export const CHARACTERS = {
     jumpStrength: 650, gravity: 1300, airControl: 0.2, airJumps: 0, // (rises ~162 px: just under Vexa)
     sprint: { speed: 1.7 },  // he flies: laid forward along the staff, robes streaming
     meleeMult: 0.85, magicMult: 1.25, // (spell damage below is before this x1.25)
+    manaOnMelee: 1, // his staff blows refill his mana: 1 mana per point of damage dealt
     blockReduction: 0.72, guardEfficiency: 1.15,
     // the blink's timing (the dodge numbers the rest of the game reads): invulnerable for
     // `iframes`, gone for duration, then `recovery`

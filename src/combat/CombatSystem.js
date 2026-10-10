@@ -209,6 +209,10 @@ export class CombatSystem {
     def.health = Math.max(def.spare ? 1 : 0, def.health - damage); // (spare: a boss beaten to his knees, not killed: stage/Sequence.js)
     def.flash = 6;
     if (attacker) def.lastAttacker = attacker; // (a kick off a ledge into a pit is his kill)
+    // the Mage's staff refills him: mana equal to the health his melee blow took (data/characters.js manaOnMelee)
+    if (melee && attacker?.stats.manaOnMelee && attacker.alive) {
+      attacker.mana = Math.min(attacker.stats.maxMana, attacker.mana + (healthBefore - def.health) * attacker.stats.manaOnMelee);
+    }
     const armored = hasSuperArmor(def);
     if (!armored) def.faceToward(ctx.fromX);
     event.damage = damage;

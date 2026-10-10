@@ -1760,6 +1760,21 @@ test('balance: the Mage and Rogue pay for their spells', () => {
   noForce.p.mana = M.moves.kick.manaCost - 1;
   noForce.run(4);
   assert(noForce.p.state !== 'force', `no mana: no force blast (${noForce.p.state})`);
+  // his melee pays him back: mana equal to the damage the blow dealt, never past max; spells don't
+  const staff = mageSetup({ script: {}, foes: [[700]] });
+  const foe = staff.es[0];
+  foe.health = 1e4; foe.stats = { ...foe.stats, maxHealth: 1e4 };
+  staff.p.mana = 10;
+  const before = foe.health;
+  staff.world.combat.resolve(staff.p, foe, M.moves.light1, { kind: 'melee', fromX: staff.p.x, dir: 1, contact: { x: foe.x, h: 60 } });
+  const dealt = before - foe.health;
+  assert(dealt > 0 && Math.abs(staff.p.mana - (10 + dealt)) < 1e-9, `a staff blow gives ${dealt.toFixed(1)} mana (now ${staff.p.mana.toFixed(1)})`);
+  staff.p.mana = M.maxMana - 1;
+  staff.world.combat.resolve(staff.p, foe, M.moves.light1, { kind: 'melee', fromX: staff.p.x, dir: 1, contact: { x: foe.x, h: 60 } });
+  assert(staff.p.mana === M.maxMana, `melee mana caps at max (${staff.p.mana})`);
+  staff.p.mana = 10;
+  staff.world.combat.resolve(staff.p, foe, M.moves.light1, { kind: 'magic', fromX: staff.p.x, dir: 1, contact: { x: foe.x, h: 60 } });
+  assert(staff.p.mana === 10, `spells give no mana (${staff.p.mana})`);
   // Widow Mine: mana per mine, none without it
   const R = CHARACTERS.rogue;
   const mine = rogueSetup({ script: { 1: ['magic'] }, foes: [] });
