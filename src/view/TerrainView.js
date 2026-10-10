@@ -27,6 +27,7 @@ import { GatesBackdrop } from './GatesView.js';
 import { artKey } from './levelArt.js';
 import { LEVEL_ART } from '../data/levelArt.js';
 import { keyLayer } from './envArt.js';
+import { applyAtmosphere, gradient } from './atmosphere.js';
 
 // the painted oath shrine is drawn this tall (about twice a man)
 const SHRINE_H = 170;
@@ -122,6 +123,7 @@ export class TerrainView {
     if (data.theme === 'gates') this.backdrop = new GatesBackdrop(scene, stage);
     this.water = this.wood || this.mine;
     this.theme = data.theme;
+    applyAtmosphere(scene, data.theme, this.width); // (depth: the backdrop recedes, the lane stays crisp)
     this.drawFloor();
     this.drawPits();
     this.blockGfx = new Map();
@@ -221,26 +223,81 @@ export class TerrainView {
         ws.setMask(wm.createGeometryMask()); // (its banks worn, not ruled)
         s.tweens.add({ targets: ws, tilePositionY: -1024, duration: 9000, repeat: -1 });
         s.tweens.add({ targets: ws, tilePositionX: { from: 0, to: 18 }, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+        this.waterDepth(p, top, wm.createGeometryMask());
       } else if (this.water) {
         // (it runs down out of the trees at the back and on toward the camera)
         g.lineStyle(1, 0x3a5a70, 0.5);
         for (let y = p.z0 - 40; y < p.z1 + 30; y += 18) g.lineBetween(p.x0 + 6, y, p.x1 - 6, y + 4);
         g.fillStyle(0x6a8aa0, 0.25).fillRect(p.x0, p.z0 - 50, p.x1 - p.x0, 6);
       }
-      if (this.village) {
-        // a burning cellar, not a black hole: the dark warms to red-hot embers toward the bottom,
-        // and its glow breathes
-        const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0); const bot = p.z1 + 40; const H = bot - top;
-        for (let i = 0; i < 32; i++) g.fillStyle(i < 16 ? 0x3a0c04 : 0x8a2008, (i / 32) ** 1.6 * 0.9).fillRect(p.x0, top + (H * i) / 32, p.x1 - p.x0, H / 32 + 1);
-        const glow = s.add.image((p.x0 + p.x1) / 2, bot - 20, 'glow').setDisplaySize((p.x1 - p.x0) * 1.1, H * 0.9).setTint(VIL.cellarLip).setAlpha(0.55)
-          .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 4.2);
-        s.tweens.add({ targets: glow, alpha: 0.3, duration: 900 + (p.x0 % 5) * 120, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
-      }
-      if (!paintedWater) g.lineStyle(2, this.village ? VIL.cellarLip : 0x6a8aa8, 0.6);
-      if (!paintedWater) g.lineBetween(p.x0, p.z0, p.x0, p.z1 + 40);
-      if (!paintedWater) g.lineBetween(p.x1, p.z0, p.x1, p.z1 + 40);
-      if (!paintedWater && p.z0 > SETTINGS.world.floorTop) g.lineBetween(p.x0, p.z0, p.x1, p.z0);
+      if (this.village) this.burningCellar(p, g);
+      // (a ruled lip only where nothing painted marks the edge: the village's cellars read by
+      // their own fire and shadowed walls)
+      const ruled = !paintedWater && !this.village;
+      if (ruled) g.lineStyle(2, 0x6a8aa8, 0.6);
+      if (ruled) g.lineBetween(p.x0, p.z0, p.x0, p.z1 + 40);
+      if (ruled) g.lineBetween(p.x1, p.z0, p.x1, p.z1 + 40);
+      if (ruled && p.z0 > SETTINGS.world.floorTop) g.lineBetween(p.x0, p.z0, p.x1, p.z0);
     }
+  }
+
+  // The stream's body over the painted tile (it runs toward the camera): deep and dark down
+  // the middle, shallower toward the banks, wet dark mud just outside them, and a broken line
+  // of foam along each bank running with the water. Masked to the same worn banks; no shimmer.
+  waterDepth(p, top, mask) {
+    const s = this.scene;
+    const w = p.x1 - p.x0; const H = p.z1 + 40 - top; const d = DEPTH.floor + 4.1;
+    const deep = gradient(s, 'water-deep', [[0, 0x2a3a30, 0.25], [0.22, 0x0a1620, 0.1], [0.5, 0x040a12, 0.45], [0.78, 0x0a1620, 0.1], [1, 0x2a3a30, 0.25]], true);
+    s.add.image(p.x0, top, deep).setOrigin(0).setDisplaySize(w, H).setDepth(d + 0.02).setMask(mask);
+    // (wet mud: the ground darkens toward the water, outside the stream)
+    const wet = gradient(s, 'water-wet', [[0, 0x000000, 0], [1, 0x05080a, 0.55]], true);
+    s.add.image(p.x0 - 16, top, wet).setOrigin(0).setDisplaySize(18, H).setDepth(DEPTH.floor + 3.9);
+    s.add.image(p.x1 - 2, top, wet).setOrigin(0).setDisplaySize(18, H).setFlipX(true).setDepth(DEPTH.floor + 3.9);
+    if (!s.textures.exists('water-foam')) {
+      const cv = document.createElement('canvas');
+      cv.width = 32; cv.height = 256;
+      const c = cv.getContext('2d');
+      let k = 7; const r = () => { k = (k * 9301 + 49297) % 233280; return k / 233280; };
+      for (let i = 0; i < 46; i++) {
+        const x = r() * 22 + 2; const y = r() * 256; const l = 4 + r() * 16;
+        c.fillStyle = `rgba(220,232,236,${0.25 + r() * 0.5})`;
+        c.beginPath(); c.ellipse(x, y, 1 + r() * 2, l / 2, 0, 0, Math.PI * 2); c.fill();
+      }
+      s.textures.addCanvas('water-foam', cv);
+    }
+    for (const [x, flip] of [[p.x0, false], [p.x1 - 16, true]]) {
+      const f = s.add.tileSprite(x, top, 16, H, 'water-foam').setOrigin(0).setFlipX(flip).setAlpha(0.55).setDepth(d + 0.04).setMask(mask);
+      s.tweens.add({ targets: f, tilePositionY: -256, duration: 2250 + (x % 7) * 60, repeat: -1 });
+    }
+  }
+
+  // A burning cellar, not a black hole (the village's pits): the dark falls smoothly to
+  // red-hot embers at the bottom, its side walls fall into shadow (so its edges read without
+  // drawn lines), the glow breathes, and a few sparks climb out of it.
+  burningCellar(p, g) {
+    const s = this.scene;
+    const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0); const bot = p.z1 + 40; const H = bot - top; const w = p.x1 - p.x0;
+    const d = DEPTH.floor + 4;
+    const heat = gradient(s, 'cellar-heat', [[0, 0x000000, 0], [0.42, 0x1e0603, 0.6], [0.78, 0x6a1606, 0.85], [1, 0xa8320c, 0.95]]);
+    s.add.image(p.x0, top, heat).setOrigin(0).setDisplaySize(w, H).setDepth(d + 0.05);
+    const wall = gradient(s, 'cellar-wall', [[0, 0x000000, 0.85], [1, 0x000000, 0]], true);
+    const ww = Math.min(26, w * 0.2);
+    s.add.image(p.x0, top, wall).setOrigin(0).setDisplaySize(ww, H).setDepth(d + 0.1);
+    s.add.image(p.x1, top, wall).setOrigin(0).setDisplaySize(ww, H).setFlipX(true).setDepth(d + 0.1).setX(p.x1 - ww);
+    const glow = s.add.image((p.x0 + p.x1) / 2, bot - 20, 'glow').setDisplaySize(w * 1.1, H * 0.9).setTint(VIL.cellarLip).setAlpha(0.5)
+      .setBlendMode(Phaser.BlendModes.ADD).setDepth(d + 0.2);
+    s.tweens.add({ targets: glow, alpha: 0.28, duration: 900 + (p.x0 % 5) * 120, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    // sparks: few and small, so they never hide a man on the boards above
+    const n = Math.max(2, Math.min(7, Math.round(w / 45)));
+    for (let i = 0; i < n; i++) {
+      const sx = p.x0 + ww + ((i + 0.5) / n) * (w - ww * 2);
+      const sp = s.add.image(sx, bot - 10, 'glow').setScale(0.09).setTint(0xffb060).setBlendMode(Phaser.BlendModes.ADD).setDepth(d + 0.3).setAlpha(0);
+      s.tweens.add({
+        targets: sp, y: top + H * 0.25, x: sx + ((i * 37) % 30) - 15, alpha: { from: 0.9, to: 0 },
+        duration: 1600 + ((i * 53) % 900), delay: (i * 410) % 1700, repeat: -1, ease: 'Quad.out',
+      });
+    }
+    g.setDepth(d);
   }
 
   // ------------------------------------------------------------ blocks

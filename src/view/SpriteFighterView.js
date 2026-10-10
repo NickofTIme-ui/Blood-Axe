@@ -18,6 +18,7 @@ import { IMPALE, CHAIN } from '../combat/Finisher.js';
 import { Heading, headingAnim } from './Heading.js';
 import { BodyFeel, easedSpread } from './animFeel.js';
 import { PLUNGE_LAND } from '../combat/Skills.js';
+import { softShadow } from './atmosphere.js';
 
 const ATTACKS = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'airAttack', 'kick', 'thrust', 'spin'];
 
@@ -71,7 +72,7 @@ export class SpriteFighterView {
     const m = this.meta;
     const w = fighter.stats.body.w;
 
-    this.shadow = scene.add.ellipse(fighter.x, fighter.z, w * 1.4, 14, 0x000000, 0.35).setDepth(DEPTH.shadows);
+    this.shadow = softShadow(scene, fighter.x, fighter.z, w * 1.4, 14, 0.35).setDepth(DEPTH.shadows);
     this.sprite = scene.add.image(fighter.x, fighter.z, spriteKey, 'f0')
       .setOrigin(m.anchorX / m.frameWidth, m.anchorY / m.frameHeight);
     this.smear = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD);

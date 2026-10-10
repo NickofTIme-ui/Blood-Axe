@@ -24,6 +24,7 @@ import { DEPTH, depthScale } from './depths.js';
 import { movePhase } from '../combat/MoveRunner.js';
 import { MAGE_FINISHERS } from '../combat/Mage.js';
 import { Heading } from './Heading.js';
+import { softShadow } from './atmosphere.js';
 
 const TAU = Math.PI * 2;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -149,7 +150,7 @@ export class MageView {
     this.scene = scene;
     this.f = fighter;
     this.pal = fighter.tint ? { ...MAGE_PAL, ...ALT } : MAGE_PAL;
-    this.shadow = scene.add.ellipse(fighter.x, fighter.z, 50, 12, 0x000000, 0.32).setDepth(DEPTH.shadows);
+    this.shadow = softShadow(scene, fighter.x, fighter.z, 50, 12, 0.32).setDepth(DEPTH.shadows);
     this.g = scene.add.graphics();
     this.fx = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
     this.heading = new Heading();

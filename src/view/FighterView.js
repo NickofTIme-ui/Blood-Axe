@@ -8,6 +8,7 @@
 
 import { DEPTH } from './depths.js';
 import { movePhase } from '../combat/MoveRunner.js';
+import { softShadow } from './atmosphere.js';
 
 const ATTACKS = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'airAttack', 'kick'];
 
@@ -21,7 +22,7 @@ export class FighterView {
     this.h = h;
     this.look = look;
 
-    this.shadow = scene.add.ellipse(fighter.x, fighter.z, w * 1.3, 14, 0x000000, 0.35).setDepth(DEPTH.shadows);
+    this.shadow = softShadow(scene, fighter.x, fighter.z, w * 1.3, 14, 0.35).setDepth(DEPTH.shadows);
 
     // Built facing right; the container is mirrored when facing left.
     this.root = scene.add.container(fighter.x, fighter.z);

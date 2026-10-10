@@ -13,6 +13,7 @@ import { DEPTH } from './depths.js';
 import { movePhase } from '../combat/MoveRunner.js';
 import { SPRITES, haveSprites } from './levelArt.js';
 import { phaseCell } from './animFeel.js';
+import { softShadow } from './atmosphere.js';
 
 // the painted attack strips' cells by phase (the strike cells on screen exactly while the
 // hitbox is out): the drum 1 drawn back, 2-3 shoved out spinning, 4 pulled in; the hammer
@@ -26,7 +27,7 @@ export class CrusherView {
   constructor(scene, fighter) {
     this.scene = scene;
     this.f = fighter;
-    this.shadow = scene.add.ellipse(fighter.x, fighter.z, 200, 26, 0x000000, 0.45).setDepth(DEPTH.shadows);
+    this.shadow = softShadow(scene, fighter.x, fighter.z, 200, 26, 0.45).setDepth(DEPTH.shadows);
     this.g = scene.add.graphics();
     this.glow = scene.add.image(fighter.x, fighter.z, 'glow').setTint(C.fire).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.5);
     if (fighter.team === 'enemy') {

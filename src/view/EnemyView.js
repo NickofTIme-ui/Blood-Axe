@@ -15,6 +15,8 @@ import { movePhase } from '../combat/MoveRunner.js';
 import { ENEMY_ART, P } from './enemyArt.js';
 import { woundTex } from '../effects/goreArt.js';
 import { FONT } from './fonts.js';
+import { softShadow } from './atmosphere.js';
+import { DANGER } from './dangerCue.js';
 
 const D2R = Math.PI / 180;
 const ATTACKS = ['light1', 'light2', 'light3', 'heavy', 'special1', 'special2', 'airAttack'];
@@ -87,7 +89,7 @@ export class EnemyView {
     this.age = 0;
     this.visFacing = fighter.facing;
 
-    this.shadow = scene.add.ellipse(fighter.x, fighter.z, fighter.stats.body.w * 1.5, 14, 0x000000, 0.4).setDepth(DEPTH.shadows);
+    this.shadow = softShadow(scene, fighter.x, fighter.z, fighter.stats.body.w * 1.5, 14, 0.4).setDepth(DEPTH.shadows);
     this.root = scene.add.container(fighter.x, fighter.z);
     this.parts = {};
 
@@ -346,7 +348,7 @@ export class EnemyView {
       if (early || (f.hitstop === 0 && this.age % 4 < 2)) { tint = 0xffffff; fill = true; }
       else tint = 0xff8a7a;
     }
-    else if (ATTACKS.includes(st) && m && (st === 'heavy' || m.superArmor || m.chain) && fr <= m.startup && Math.floor(fr / 3) % 2 === 0) tint = 0xffa060;
+    else if (ATTACKS.includes(st) && m && (st === 'heavy' || m.superArmor || m.chain) && fr <= m.startup && Math.floor(fr / 3) % 2 === 0) tint = DANGER.tint;
     else if ((st === 'stagger' || st === 'guardBreak') && Math.floor(fr / 4) % 2 === 0) tint = 0xffe080;
     else if (f.parryActive) tint = 0xcfe6ff;
     this.prevFlash = f.flash;

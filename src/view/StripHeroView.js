@@ -13,6 +13,7 @@ import { Heading, headingAnim } from './Heading.js';
 import { MageHover } from '../effects/MageHover.js';
 import { HERO_STRIPS } from '../data/heroStrips.js';
 import { BodyFeel, easedSpread, swingBody } from './animFeel.js';
+import { softShadow } from './atmosphere.js';
 
 const spread = (list, t) => list[Math.min(list.length - 1, Math.max(0, Math.floor(t * list.length)))];
 const FLIP_FRAMES = 40; // ticks the double-jump flip takes (about the time she's rising and turning over)
@@ -29,7 +30,7 @@ export class StripHeroView {
     this.A = sheet.anims;
     this.heading = new Heading(); // which way he's seen from on the move (back / front views)
     const first = this.A.idle.frames[0].split(':');
-    this.shadow = scene.add.ellipse(fighter.x, fighter.z, fighter.stats.body.w * 1.4, 13, 0x000000, 0.35).setDepth(DEPTH.shadows);
+    this.shadow = softShadow(scene, fighter.x, fighter.z, fighter.stats.body.w * 1.4, 13, 0.35).setDepth(DEPTH.shadows);
     this.sprite = scene.add.image(fighter.x, fighter.z, `${sheet.key}-${first[0]}`, `f${first[1]}`)
       .setOrigin(sheet.ax / sheet.fw, sheet.ay / sheet.fh);
     this.last = null;

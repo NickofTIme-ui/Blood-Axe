@@ -20,6 +20,7 @@ import { Heading, headingAnim } from './Heading.js';
 import { applyBurn } from '../effects/Burn.js';
 import { IMPALE } from '../combat/Finisher.js';
 import { BodyFeel, easedSpread, swingBody } from './animFeel.js';
+import { DANGER, dangerGlint } from './dangerCue.js';
 
 const ATTACKS = ['light1', 'light2', 'light3', 'heavy', 'special1', 'special2', 'airAttack'];
 
@@ -289,10 +290,14 @@ export class SpriteEnemyView {
       if (this.flashAge <= 4 || (f.hitstop === 0 && P.age % 4 < 2)) s.setTintFill(0xffffff);
       else s.setTint(0xff8a7a);
     } else if (ATTACKS.includes(st) && m && (st === 'heavy' || m.superArmor || m.chain) && fr <= m.startup && Math.floor(fr / 3) % 2 === 0) {
-      s.setTint(0xffa060);
+      s.setTint(DANGER.tint);
     } else if ((st === 'stagger' || st === 'guardBreak') && Math.floor(fr / 4) % 2 === 0) {
       s.setTint(0xffe080);
     }
+    // ...and the danger glint at its start (view/dangerCue.js): a shape, not only a colour
+    const winding = ATTACKS.includes(st) && m && (st === 'heavy' || m.superArmor || m.chain) && fr <= m.startup;
+    if (winding && !this.wasWinding && f.alive) dangerGlint(this.scene, f, m.startup);
+    this.wasWinding = winding;
     this.prevFlash = f.flash;
     // scorched / roasting / charred (effects/Burn.js): his own art, darkened in stages,
     // from the side that's in the fire

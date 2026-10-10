@@ -11,6 +11,7 @@ import { DEPTH } from './depths.js';
 import { movePhase } from '../combat/MoveRunner.js';
 import { SPRITES, haveSprites } from './levelArt.js';
 import { phaseCell } from './animFeel.js';
+import { softShadow } from './atmosphere.js';
 
 // the painted attack strip's cells by phase: 1 crouch (held through the wind-up),
 // 2 the leaping lunge and 3 the bite while the hitbox is out, 4 landing
@@ -22,7 +23,7 @@ export class HoundView {
   constructor(scene, fighter) {
     this.scene = scene;
     this.f = fighter;
-    this.shadow = scene.add.ellipse(fighter.x, fighter.z, 90, 14, 0x000000, 0.35).setDepth(DEPTH.shadows);
+    this.shadow = softShadow(scene, fighter.x, fighter.z, 90, 14, 0.35).setDepth(DEPTH.shadows);
     this.g = scene.add.graphics();
     if (fighter.team === 'enemy') {
       this.hpBg = scene.add.rectangle(0, 0, 44, 5, 0x000000, 0.7).setOrigin(0, 0.5);
