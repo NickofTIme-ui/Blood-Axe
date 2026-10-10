@@ -41,7 +41,10 @@ export const HERO_STRIPS = {
       // block, light hit, heavy hit, flying, lying, rising flat, tilting up, hover
       react: strip('mage', 'react', 8, { ref: 7, ground: 'drawn' }),
       // sprint (optional): flying flat out along the staff
-      dash: strip('mage', 'dash', 8, { align: 'median', ref: 0, target: 66 }),
+      // (drawn at about 0.68 the scale of the glide: his hood is 50 px wide here, 75 there.
+      // So pose 0, 196 px tall on the sheet, is 196 x 0.68 x 132/450 ≈ 85 px, not shorter,
+      // or he shrinks the moment he breaks into a run)
+      dash: strip('mage', 'dash', 8, { align: 'median', ref: 0, target: 85 }),
     },
   },
   rogue: {
