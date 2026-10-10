@@ -470,3 +470,7 @@ same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one 
 
 ## Cloud, 2026-10-10: the Mage's staff blows refill his mana (not on itch)
 - Nick: "when the mage hits with his melee he earns mana ... the amount of damage he inflicts with the hit in mana". New stat `manaOnMelee` (`src/data/characters.js`, Mage: 1): on a clean melee hit, `CombatSystem.resolve` gives the attacker mana equal to the health the blow took (so no overkill on a kill), capped at `maxMana`. Spells, blocked hits and parried swings give nothing. Logic test added. Sim change: both online players need the new build.
+
+## Cloud, 2026-10-10: story lines moved to a bottom subtitle strip (not on itch)
+- Nick: the conversation lines sat in the middle of the screen over the fight. `HUDScene.makeDialogue` now draws them as a full-width strip along the bottom edge (`DIALOGUE_H` 46 px): the speaker's name in his colour (`SPEAKER`), the line beside it, "SPACE / J — next" bottom-right on held scenes. It sits over the bottom letterbox bar in held scenes.
+- While a line is up, the enemy health strip and the co-op "waiting for your partner" text step up by the strip's height (`this.lift`), and the controls hint at the bottom is hidden. Checked in the browser with 2 players in the Burning Village. HUD only, no sim change.

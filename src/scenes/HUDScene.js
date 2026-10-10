@@ -27,6 +27,7 @@ function calloutStops(color) {
   return ['#ff7a5a', '#d0101a', '#3d0004'];                                // blood
 }
 const MAX_ENEMY_BARS = 4;
+const DIALOGUE_H = 46; // the story subtitle strip along the bottom edge
 
 // who's speaking: each voice its own colour (the Oath Keepers as their kits; enemies hot; the king cold)
 const SPEAKER = {
@@ -64,7 +65,7 @@ export class HUDScene extends Phaser.Scene {
     this.debugText = this.add.text(12, 112, '', { ...style, fontFamily: 'monospace', fontStyle: '', fontSize: '11px', color: '#7fffa0' });
 
     // controls hint: shown for a few seconds, then gets out of the way
-    const hint = this.add.text(SETTINGS.width / 2, SETTINGS.height - 8,
+    const hint = this.hint = this.add.text(SETTINGS.width / 2, SETTINGS.height - 8,
       'J light  J J K launch  K heavy  O kick  L block (+←/→ turn)  Shift roll  U firebolt  Space jump  |  P pause  G gore  M music',
       { ...style, fontSize: '11px', color: '#b0a590' }).setOrigin(0.5, 1).setStroke('#000000', 3);
     this.tweens.add({ targets: hint, alpha: 0, delay: 7000, duration: 1500 });
@@ -131,15 +132,18 @@ export class HUDScene extends Phaser.Scene {
       this.add.rectangle(0, 0, W, 30, 0x000000).setOrigin(0).setAlpha(0).setDepth(-1),
       this.add.rectangle(0, H, W, 30, 0x000000).setOrigin(0, 1).setAlpha(0).setDepth(-1),
     ];
-    // up in the sky over the street, clear of the fight on the floor
-    const y = 184;
-    const panel = this.add.rectangle(W / 2, y, 640, 66, 0x050304, 0.78).setStrokeStyle(1, 0x6a5a48);
-    const who = this.add.text(W / 2 - 304, y - 26, '', { fontFamily: FONT.display, fontSize: '15px', color: '#e8c890' }).setStroke('#000000', 4);
-    const text = this.add.text(W / 2 - 304, y - 6, '', { fontFamily: FONT.body, fontSize: '16px', color: '#f0e6d6', wordWrap: { width: 600 } })
+    // a subtitle strip along the bottom edge, so the fight in the middle stays in view;
+    // the speaker's name (in his colour) leads the line
+    const h = DIALOGUE_H;
+    const y = H - h;
+    const panel = this.add.rectangle(0, y, W, h, 0x050304, 0.82).setOrigin(0);
+    const rule = this.add.rectangle(0, y, W, 1, 0x6a5a48).setOrigin(0);
+    const who = this.add.text(16, y + 7, '', { fontFamily: FONT.display, fontSize: '14px', color: '#e8c890' }).setStroke('#000000', 4);
+    const text = this.add.text(118, y + 6, '', { fontFamily: FONT.body, fontSize: '15px', color: '#f0e6d6', wordWrap: { width: W - 118 - 92 } })
       .setStroke('#000000', 3);
-    const next = this.add.text(W / 2 + 312, y + 26, 'SPACE / J  —  next', { fontFamily: FONT.ui, fontSize: '10px', color: '#a89880' })
+    const next = this.add.text(W - 12, H - 5, 'SPACE / J  —  next', { fontFamily: FONT.ui, fontSize: '10px', color: '#a89880' })
       .setOrigin(1, 1).setStroke('#000000', 3);
-    this.dialogue = { box: this.add.container(0, 0, [panel, who, text, next]).setDepth(61).setAlpha(0), who, text, next, key: null };
+    this.dialogue = { box: this.add.container(0, 0, [panel, rule, who, text, next]).setDepth(61).setAlpha(0), who, text, next, key: null };
   }
 
   updateDialogue() {
@@ -147,15 +151,22 @@ export class HUDScene extends Phaser.Scene {
     const line = this.arena.stage?.story?.line;
     const hold = !!this.arena.stage?.story?.holding;
     for (const b of this.bars2) b.setAlpha(Phaser.Math.Linear(b.alpha, hold ? 1 : 0, 0.12));
-    if (!line) { D.box.setAlpha(Math.max(0, D.box.alpha - 0.08)); D.key = null; return; }
-    const key = `${line.beat}:${line.index}`;
-    if (key !== D.key) {
-      D.key = key;
-      D.who.setText(line.who).setColor(SPEAKER[line.who] ?? '#d8d0c0');
-      D.text.setText(line.text);
-      D.next.setVisible(line.hold);
+    if (!line) { D.box.setAlpha(Math.max(0, D.box.alpha - 0.08)); D.key = null; }
+    else {
+      const key = `${line.beat}:${line.index}`;
+      if (key !== D.key) {
+        D.key = key;
+        D.who.setText(line.who).setColor(SPEAKER[line.who] ?? '#d8d0c0');
+        // (a long name pushes its line along rather than running into it)
+        D.text.setX(Math.max(118, 16 + D.who.width + 12));
+        D.text.setText(line.text);
+        D.next.setVisible(line.hold);
+      }
+      D.box.setAlpha(Math.min(1, D.box.alpha + 0.15));
+      if (this.hint.alpha > 0) { this.tweens.killTweensOf(this.hint); this.hint.setAlpha(0); }
     }
-    D.box.setAlpha(Math.min(1, D.box.alpha + 0.15));
+    // what lives along the bottom edge (the enemy strip, the partner wait) steps up over the strip
+    this.lift = D.box.alpha * DIALOGUE_H;
   }
 
   sectionCard(index, section) {
@@ -356,6 +367,7 @@ export class HUDScene extends Phaser.Scene {
         : this.add.rectangle(x, y, w, 7, 0xc0282d).setOrigin(0),
       w, shown: 1, id: null,
     };
+    bar.baseY = Object.fromEntries(['name', 'rim', 'trail', 'fill'].map((k) => [k, bar[k].y]));
     this.enemyBars[i] = bar;
     return bar;
   }
@@ -373,7 +385,7 @@ export class HUDScene extends Phaser.Scene {
       const bar = f || i < this.enemyBars.length ? this.enemyBar(i) : null;
       if (!bar) continue;
       const vis = !!f;
-      for (const k of ['name', 'rim', 'trail', 'fill']) bar[k].setVisible(vis);
+      for (const k of ['name', 'rim', 'trail', 'fill']) bar[k].setVisible(vis).setY(bar.baseY[k] - (this.lift ?? 0));
       if (!f) continue;
       if (bar.id !== f.id) { bar.id = f.id; bar.shown = f.health / f.stats.maxHealth; }
       const ratio = Math.max(0, f.health / f.stats.maxHealth);
@@ -425,9 +437,10 @@ export class HUDScene extends Phaser.Scene {
     this.waitText.setText(!sess?.waiting ? '' : sess.stall > 240 ? 'Your partner is not responding  —  press R to carry on alone' : 'waiting for your partner…');
 
     this.styleMeter.update(p);
+    this.updateDialogue();
     this.updateEnemyStrip();
     this.updateBoss();
-    this.updateDialogue();
+    this.waitText.setY(SETTINGS.height - 40 - this.lift);
     if (this.go.visible) this.go.setAlpha(0.55 + 0.45 * Math.sin(this.time.now * 0.008)).setX(SETTINGS.width - 24 + Math.sin(this.time.now * 0.008) * 6);
 
     const st = this.arena.stage;
