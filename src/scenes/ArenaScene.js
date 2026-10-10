@@ -40,6 +40,7 @@ import { StageView } from '../view/StageView.js';
 import { TerrainView } from '../view/TerrainView.js';
 import { STAGES, nextLevel } from '../data/stages.js';
 import { NpcView } from '../view/NpcView.js';
+import { SpeakerMarker } from '../view/SpeakerMarker.js';
 import { sharedProgress } from '../progression/Progress.js';
 import { CHARACTERS } from '../data/characters.js';
 import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
@@ -357,6 +358,7 @@ export class ArenaScene extends Phaser.Scene {
     this.terrainView = this.stage.terrain || this.stageData.theme ? new TerrainView(this, this.stage) : null;
     // a campaign level's villagers, its dead and the other Oath Keepers (view/NpcView.js)
     this.npcView = this.stage.story ? new NpcView(this, this.stage) : null;
+    this.speakerMarker = this.stage.story ? new SpeakerMarker(this) : null; // over whoever is talking
     this.cutawayOn = false;
     this.scene.stop('Cutaway');
     this.setupStageEvents(ev);
@@ -1134,6 +1136,7 @@ export class ArenaScene extends Phaser.Scene {
     this.liftShadows();
     this.terrainView?.update();
     this.npcView?.update();
+    this.speakerMarker?.update();
     this.parallax.update(Math.min(delta, 100) / 1000 * (this.paused ? 0 : 1));
     this.mageFX.update();
     this.rogueFX.update();

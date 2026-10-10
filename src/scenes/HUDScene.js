@@ -15,6 +15,7 @@ import { HUD_ART } from '../view/hudArt.js';
 import { FONT, epicFill } from '../view/fonts.js';
 import { DeathScreen } from '../view/DeathScreen.js';
 import { StyleMeter } from '../view/StyleMeter.js';
+import { speakerColor } from '../view/SpeakerMarker.js';
 
 const SERIF = FONT.ui;
 
@@ -29,11 +30,6 @@ function calloutStops(color) {
 const MAX_ENEMY_BARS = 4;
 const DIALOGUE_H = 46; // the story subtitle strip along the bottom edge
 
-// who's speaking: each voice its own colour (the Oath Keepers as their kits; enemies hot; the king cold)
-const SPEAKER = {
-  RURIK: '#f0d0a0', ORYN: '#8ad8e8', VEXA: '#d49aff',
-  VAREK: '#ff8a6a', CINDER: '#ff8a6a', MALGOR: '#b8a0ff',
-};
 
 export class HUDScene extends Phaser.Scene {
   constructor() {
@@ -141,7 +137,7 @@ export class HUDScene extends Phaser.Scene {
     const who = this.add.text(16, y + 7, '', { fontFamily: FONT.display, fontSize: '14px', color: '#e8c890' }).setStroke('#000000', 4);
     const text = this.add.text(118, y + 6, '', { fontFamily: FONT.body, fontSize: '15px', color: '#f0e6d6', wordWrap: { width: W - 118 - 92 } })
       .setStroke('#000000', 3);
-    const next = this.add.text(W - 12, H - 5, 'SPACE / J  —  next', { fontFamily: FONT.ui, fontSize: '10px', color: '#a89880' })
+    const next = this.add.text(W - 12, H - 5, '', { fontFamily: FONT.ui, fontSize: '10px', color: '#a89880' })
       .setOrigin(1, 1).setStroke('#000000', 3);
     this.dialogue = { box: this.add.container(0, 0, [panel, rule, who, text, next]).setDepth(61).setAlpha(0), who, text, next, key: null };
   }
@@ -156,11 +152,11 @@ export class HUDScene extends Phaser.Scene {
       const key = `${line.beat}:${line.index}`;
       if (key !== D.key) {
         D.key = key;
-        D.who.setText(line.who).setColor(SPEAKER[line.who] ?? '#d8d0c0');
+        D.who.setText(line.who).setColor(speakerColor(line.who));
         // (a long name pushes its line along rather than running into it)
         D.text.setX(Math.max(118, 16 + D.who.width + 12));
         D.text.setText(line.text);
-        D.next.setVisible(line.hold);
+        D.next.setText(line.hold ? 'D-PAD ▶ / N  next     D-PAD ◀ / X  skip     (or SPACE / J)' : 'D-PAD ▶ / N  next     D-PAD ◀ / X  skip');
       }
       D.box.setAlpha(Math.min(1, D.box.alpha + 0.15));
       if (this.hint.alpha > 0) { this.tweens.killTweensOf(this.hint); this.hint.setAlpha(0); }

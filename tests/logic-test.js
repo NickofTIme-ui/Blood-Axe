@@ -2287,6 +2287,21 @@ test('village: a held scene stops the heroes; a press of jump skips to the next 
   assert(p.state !== 'jump' || p.grounded, 'the skip press did not also make him jump');
 });
 
+test('story: D-pad right moves any line on; D-pad left skips the whole conversation', () => {
+  const world = new World({ seed: 2 });
+  const first = STAGE_VILLAGE.story[0].delay ?? LINE.gap;
+  const c = new Pressing({ [first + 30]: ['padRight'], [first + 60]: ['padLeft'] }, {});
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 150, z: 440, controller: c }));
+  const st = new Stage(world, STAGE_VILLAGE);
+  st.start(p);
+  for (let i = 0; i < first + 25; i++) { world.tick(); st.update(); }
+  assert(st.story.line?.beat === 'opening' && st.story.line.index === 0, 'the opening is playing');
+  for (let i = 0; i < 10; i++) { world.tick(); st.update(); }
+  assert(st.story.line.index === 1, `D-pad right moved it on (line ${st.story.line?.index})`);
+  for (let i = 0; i < 30; i++) { world.tick(); st.update(); }
+  assert(st.story.done.has('opening') && st.story.line?.beat !== 'opening', 'D-pad left skipped the rest of it');
+});
+
 test('village: the barn: smashing the burning beam off its door frees the people inside', () => {
   const world = new World({ seed: 3 });
   const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 5260, z: 300, controller: new Scripted() }));

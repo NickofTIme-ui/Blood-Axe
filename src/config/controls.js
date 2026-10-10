@@ -39,7 +39,8 @@ export const CONTROLS = {
     // the D-pad's four buttons, free for whatever the game needs next (no keys yet)
     // padUp: INTERACT (E): talk to a survivor, open a cage's lock (hold) — stage/Story.js
     // padDown: Rurik's 360 WHIRLWIND CLEAVE once he has Executioner's Arc (H on the keys)
-    padUp: ['E'], padDown: ['H'], padLeft: [], padRight: [],
+    // padRight / padLeft: a story line — on to the next (N) / skip the conversation (X)
+    padUp: ['E'], padDown: ['H'], padLeft: ['X'], padRight: ['N'],
   },
 
   gamepad: {
@@ -57,7 +58,7 @@ export const CONTROLS = {
     restart: [3],    // Y — only acts when dead, paused or after winning (it's the heavy button in a fight)
     menu:    [8],    // Back / View
     back:    [1, 8, 9], // B, Back or Start: leave a menu (the skill tree)
-    padUp: [12], padDown: [13], padLeft: [14], padRight: [15], // the D-pad: Down = the 360 swing (a skill); the rest free
+    padUp: [12], padDown: [13], padLeft: [14], padRight: [15], // the D-pad: Up = interact, Down = the 360 swing (a skill), Right / Left = next / skip a story line
   },
 
   stickDeadzone: 0.3,
@@ -76,7 +77,7 @@ export const CONTROLS_P2 = {
     attack: ['NUMPAD_ONE'], heavy: ['NUMPAD_TWO'], block: ['NUMPAD_THREE'],
     dodge: ['NUMPAD_ZERO'], kick: ['NUMPAD_FOUR'], magic: ['NUMPAD_FIVE'], jump: ['NUMPAD_SIX'], sprint: ['NUMPAD_SEVEN'],
     confirm: ['NUMPAD_ONE', 'ENTER'], pause: ['ENTER'], restart: [], menu: [], debug: [], gore: [], mute: [],
-    padUp: ['NUMPAD_EIGHT'],
+    padUp: ['NUMPAD_EIGHT'], padRight: ['NUMPAD_NINE'], padLeft: ['NUMPAD_ADD'],
   },
   gamepad: CONTROLS.gamepad,
   stickDeadzone: CONTROLS.stickDeadzone,

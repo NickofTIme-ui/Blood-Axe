@@ -176,6 +176,14 @@ export class Story {
     if (c.beat.hold && c.age >= LINE.minSkip) {
       for (const p of heroes) if (p.controller.consume('jump', 4) || p.controller.consume('attack', 4)) next = true;
     }
+    // any line, in a fight too: D-pad right (N) on to the next, D-pad left (X) skips the
+    // whole conversation (the fight buttons stay the fight's)
+    if (c.age >= LINE.minSkip) {
+      for (const p of heroes) {
+        if (p.controller.consume('padRight', 4)) next = true;
+        if (p.controller.consume('padLeft', 4)) { next = true; c.index = c.beat.lines.length - 1; }
+      }
+    }
     if (!next) return;
     c.index++;
     c.age = 0;
@@ -185,7 +193,7 @@ export class Story {
     this.current = null;
     if (c.beat.hold) {
       // (what was pressed to skip the last line doesn't carry into the fight)
-      for (const p of this.stage.players) { p.awe = 0; for (const a of ['jump', 'attack']) p.controller.consume(a, 99); }
+      for (const p of this.stage.players) { p.awe = 0; for (const a of ['jump', 'attack', 'padRight', 'padLeft']) p.controller.consume(a, 99); }
     }
     this.world.events.emit('storyBeatDone', { beat: c.beat });
   }
