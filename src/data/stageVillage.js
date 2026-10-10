@@ -81,7 +81,7 @@ export const STAGE_VILLAGE = {
       id: 'roofs', name: 'THE BURNING ROOFS', x0: 2700, x1: 4300,
       spawn: { x: 2760, z: 440 },
       objective: 'Over the roofs',
-      hint: 'Charred boards give way: keep moving',
+      hint: 'Beams fall where the ground glows red; charred boards give way',
       // two of them waiting up on the second roof: a fight on a ledge over the fire
       fightAt: 3420,
       waves: [['stalker', 'grunt']],
@@ -173,12 +173,13 @@ export const STAGE_VILLAGE = {
   exit: { x: 9280, after: 'vow' },
 
   terrain: [
-    // ---- I THE ASHEN ROAD: a cart to hop (or walk round), a fallen beam across the road
-    { kind: 'block', x0: 470, x1: 560, z0: 390, z1: 470, top: 40 },
-    { kind: 'block', x0: 780, x1: 815, ...FULL, top: 42 },
+    // ---- I THE ASHEN ROAD: a cart to hop (or walk round), a line of burnt
+    // wreckage across the road (look: painted, view/TerrainView.js drawPaintedBlock)
+    { kind: 'block', x0: 470, x1: 560, z0: 390, z1: 470, top: 40, look: 'cart' },
+    { kind: 'block', x0: 780, x1: 815, ...FULL, top: 42, look: 'wreckage' },
 
     // ---- III THE BURNING ROOFS
-    { kind: 'block', x0: 2900, x1: 2990, z0: 330, z1: 520, top: 45 },   // a cart against the house: a hop
+    { kind: 'block', x0: 2900, x1: 2990, z0: 330, z1: 520, top: 45, look: 'cart' }, // a cart against the house: a hop
     { kind: 'block', x0: 2990, x1: 3330, ...FULL, top: 120 },           // +75: a held jump onto the first roof
     { kind: 'pit', x0: 3330, x1: 3480, ...FULL },                      // the burning cellar under the beam
     { kind: 'block', x0: 3330, x1: 3480, z0: 385, z1: 440, top: 120 },  // the fallen roof beam: walk it

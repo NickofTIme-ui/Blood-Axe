@@ -512,6 +512,7 @@ export class StageView {
         hz.bladeImg?.setVisible(false);
         hz.glow?.setVisible(false);
         hz.g?.setVisible(false);
+        hz.log?.setVisible(false); hz.logGlow?.setVisible(false);
         continue;
       }
       if (hz.type === 'fire') this.drawFire(hz);
@@ -593,27 +594,60 @@ export class StageView {
     const y = Math.max(0, this.stage.terrain?.groundAt(hz.x, hz.z) ?? 0);
     const gy = hz.z - y;
     g.setDepth(hz.z - 1);
+    hz.log?.setVisible(false); hz.logGlow?.setVisible(false);
     if (!live) return;
     const { phase, warnT, since } = this.stage.beamPhase(hz);
     if (hz.look === 'rock') { this.drawRockfall(g, hz, gy, y, phase, warnT, since); return; }
+    const log = this.beamLog(hz);
     if (phase === 'warn') {
-      // the shadow and the reach, growing and darkening
+      // where it will land: a shadow growing and darkening, and a pulsing ring round its reach
       g.fillStyle(0x000000, 0.2 + 0.45 * warnT).fillEllipse(hz.x, gy, hz.w * (0.6 + 0.6 * warnT), hz.d * 0.5 * (0.6 + 0.6 * warnT));
-      g.lineStyle(2, 0xffa050, 0.35 + 0.5 * warnT).strokeEllipse(hz.x, gy, hz.w * 1.2, hz.d * 0.6);
-      // the beam itself, high up and shaking loose
-      const shake = Math.sin(hz.t * 1.3) * 3 * warnT;
-      const by = gy - 230 + warnT * 30;
-      g.fillStyle(0x2a1a10, 1).fillRect(hz.x - hz.w / 2 + shake, by, hz.w, 14);
-      g.fillStyle(0xff7a2a, 0.9).fillRect(hz.x - hz.w / 2 + 6 + shake, by + 4, hz.w - 12, 3);
-      if (hz.t % 4 === 0) {
-        this.scene.gore.spawn({ x: hz.x + rand(-hz.w / 2, hz.w / 2), z: hz.z, h: y + 220, vx: rand(-10, 10), vz: 0, vh: -rand(10, 60), tint: 0xffa040, scale: rand(0.25, 0.5), decal: false, life: 50 });
+      g.lineStyle(3, 0xff5a20, 0.4 + 0.5 * warnT * (0.75 + 0.25 * Math.sin(hz.t * 0.5))).strokeEllipse(hz.x, gy, hz.w * 1.2, hz.d * 0.6);
+      // the burning beam overhead, shaking loose; in the last fifth of the warning it drops,
+      // landing on the frame it strikes (Stage.updateBeam)
+      const shake = Math.sin(hz.t * 1.3) * 3 * Math.min(warnT, 0.8);
+      const hang = gy - 175 + Math.min(warnT, 0.8) * 25;
+      const f = Math.max(0, (warnT - 0.8) / 0.2);
+      const by = hang + (gy - 12 - hang) * f * f;
+      if (log) {
+        log.setPosition(hz.x + shake * (1 - f), by).setRotation(Math.sin(hz.t * 0.21) * 0.08 * (1 - f)).setAlpha(1).setVisible(true);
+        hz.logGlow.setPosition(hz.x, by).setAlpha(0.75 + Math.sin(hz.t * 0.7) * 0.2).setVisible(true);
+      } else {
+        g.fillStyle(0x2a1a10, 1).fillRect(hz.x - hz.w / 2 + shake, by, hz.w, 14);
+        g.fillStyle(0xff7a2a, 0.9).fillRect(hz.x - hz.w / 2 + 6 + shake, by + 4, hz.w - 12, 3);
+      }
+      if (hz.t % 4 === 0 && f === 0) {
+        this.scene.gore.spawn({ x: hz.x + rand(-hz.w / 2, hz.w / 2), z: hz.z, h: gy - by + y - 10, vx: rand(-10, 10), vz: 0, vh: -rand(10, 60), tint: 0xffa040, scale: rand(0.25, 0.5), decal: false, life: 50 });
       }
     } else if (since < 70) {
       // down: it lies across the ground, burning out
       const a = 1 - since / 70;
-      g.fillStyle(0x2a1a10, a).fillRect(hz.x - hz.w / 2 - 8, gy - 10, hz.w + 16, 12);
-      g.fillStyle(0xff7a2a, a * 0.9).fillRect(hz.x - hz.w / 2, gy - 7, hz.w, 3);
+      if (log) {
+        log.setPosition(hz.x, gy - 12).setRotation(0.04).setAlpha(a).setVisible(true);
+        hz.logGlow.setPosition(hz.x, gy - 12).setAlpha(0.5 * a).setVisible(true);
+      } else {
+        g.fillStyle(0x2a1a10, a).fillRect(hz.x - hz.w / 2 - 8, gy - 10, hz.w + 16, 12);
+        g.fillStyle(0xff7a2a, a * 0.9).fillRect(hz.x - hz.w / 2, gy - 7, hz.w, 3);
+      }
     }
+  }
+
+  // The falling beam, painted: one charred, iron-strapped log cut from the burnt-out half of
+  // the village's wreckage (prop_wreckage.png), with a fire glow round it. Null if unpainted.
+  beamLog(hz) {
+    if (hz.log) return hz.log;
+    const T = this.scene.textures;
+    if (!T.exists('prop-wreckage-broken')) return null;
+    const tex = T.get('prop-wreckage-broken');
+    const src = tex.getSourceImage();
+    if (src.width < 400) return null;
+    const k = src.width / 887; // (the crop measured on the 887 px half)
+    if (!tex.has('beamlog')) tex.add('beamlog', 0, 116 * k, 432 * k, 355 * k, 140 * k);
+    hz.log = this.scene.add.image(hz.x, hz.z, 'prop-wreckage-broken', 'beamlog').setOrigin(0.5, 0.6).setDepth(hz.z + 0.5);
+    hz.log.setScale((hz.w * 1.5) / hz.log.frame.width);
+    hz.logGlow = this.scene.add.image(hz.x, hz.z, 'glow').setDisplaySize(hz.w * 2.2, hz.w * 1.2).setTint(0xff6020)
+      .setBlendMode(Phaser.BlendModes.ADD).setDepth(hz.z + 0.4);
+    return hz.log;
   }
 
   // The mine's version of a falling beam (look 'rock'): grit trickling from a crack in the

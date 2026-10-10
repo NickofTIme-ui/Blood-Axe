@@ -228,8 +228,13 @@ export class TerrainView {
         g.fillStyle(0x6a8aa0, 0.25).fillRect(p.x0, p.z0 - 50, p.x1 - p.x0, 6);
       }
       if (this.village) {
-        s.add.image((p.x0 + p.x1) / 2, p.z1 + 30, 'glow').setDisplaySize(p.x1 - p.x0, 90).setTint(VIL.cellarLip).setAlpha(0.45)
+        // a burning cellar, not a black hole: the dark warms to red-hot embers toward the bottom,
+        // and its glow breathes
+        const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0); const bot = p.z1 + 40; const H = bot - top;
+        for (let i = 0; i < 32; i++) g.fillStyle(i < 16 ? 0x3a0c04 : 0x8a2008, (i / 32) ** 1.6 * 0.9).fillRect(p.x0, top + (H * i) / 32, p.x1 - p.x0, H / 32 + 1);
+        const glow = s.add.image((p.x0 + p.x1) / 2, bot - 20, 'glow').setDisplaySize((p.x1 - p.x0) * 1.1, H * 0.9).setTint(VIL.cellarLip).setAlpha(0.55)
           .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 4.2);
+        s.tweens.add({ targets: glow, alpha: 0.3, duration: 900 + (p.x0 % 5) * 120, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
       }
       if (!paintedWater) g.lineStyle(2, this.village ? VIL.cellarLip : 0x6a8aa8, 0.6);
       if (!paintedWater) g.lineBetween(p.x0, p.z0, p.x0, p.z1 + 40);
@@ -261,7 +266,7 @@ export class TerrainView {
     const yTop0 = b.z0 - b.top; const yTop1 = b.z1 - b.top;
     for (const t of Object.values(v.tiles ?? {})) t.setVisible(false); // (shown again below by whichever face is painted)
     if (!b.solid) {
-      v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); // (gone: broken through, or fallen)
+      v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); v.arts?.forEach((a) => a.setVisible(false)); // (gone: broken through, or fallen)
       return;
     }
     v.top.setVisible(true); v.front.setVisible(true);
@@ -393,8 +398,12 @@ export class TerrainView {
   // they give way). The landing rim along the front edge is always the brightest line.
   drawVillageBlock(v, x0, x1, w, yTop0, yTop1) {
     const { top, front, b } = v;
+    const painted = { cart: 'cartwreck', wreckage: 'prop-wreckage-broken' }[b.look];
+    if (painted && this.scene.textures.exists(painted)) { this.drawPaintedBlock(v, x0, x1, painted); return; }
     const narrow = b.z1 - b.z0 < 80;
-    const mat = b.kind === 'crumble' ? 'board' : narrow || b.top <= 50 ? 'beam' : 'roof';
+    const overPit = this.terrain.inPit((x0 + x1) / 2, b.z1 - 1);
+    // (a narrow block is a beam only where it spans a cellar: the boy's high roof is a roof)
+    const mat = b.kind === 'crumble' ? 'board' : (narrow && overPit) || b.top <= 50 ? 'beam' : 'roof';
     const C = mat === 'board' ? [VIL.boardTop, VIL.boardRim, VIL.boardFront]
       : mat === 'beam' ? [VIL.beamTop, VIL.beamRim, VIL.beamFront] : [VIL.roofTop, VIL.roofRim, VIL.roofFront];
     const depth = yTop1 - yTop0;
@@ -419,9 +428,16 @@ export class TerrainView {
       top.fillStyle(VIL.boardCrack, 0.8);
       for (let x = x0 + 14; x < x1; x += 17) top.fillRect(x, yTop0, 2, depth); // ember-lit cracks between the boards
     }
-    if (!topArt) raggedLine(top, x0, x1, yTop0, C[1], 0.75, 2, b.x0);
-    raggedLine(front, x0, x1, yTop1 - 0.5, C[1], 0.9, 3, b.x0 + 7);
-    const overPit = this.terrain.inPit((x0 + x1) / 2, b.z1 - 1);
+    // the edges, so you can tell where you can stand, in light and shade rather than drawn
+    // lines: a soft dark falloff behind the back edge parts it from the backdrop, the walkable
+    // top is warm with firelight and brightest toward the front lip where you land
+    const fade = (g, x, y, ww, hh, color, a0, a1, n = 12) => {
+      for (let i = 0; i < n; i++) g.fillStyle(color, a0 + ((a1 - a0) * i) / (n - 1)).fillRect(x, y + (hh * i) / n, ww, hh / n + 0.5);
+    };
+    fade(top, x0 - 4, yTop0 - 22, w + 8, 22, 0x000000, 0, 0.7);
+    top.fillStyle(0xff9a50, 0.12).fillRect(x0, yTop0, w, depth);
+    fade(top, x0, yTop0, w, Math.min(18, depth * 0.3), 0x000000, 0.35, 0);
+    fade(top, x0, yTop1 - Math.min(26, depth * 0.4), w, Math.min(26, depth * 0.4), 0xffc890, 0, 0.22);
     const down = mat === 'board' ? 12 : mat === 'beam' && overPit ? 18 : Math.max(0, b.top) + (overPit ? 120 : 0);
     const frontArt = art[1] && this.surface(v, 'front', art[1], x0, yTop1 + 1, w, down, b.z1 + 0.4);
     if (!frontArt) front.fillStyle(C[2], 1).fillRect(x0, yTop1 + 1, w, down);
@@ -437,11 +453,43 @@ export class TerrainView {
         for (let x = x0 + 26; x < x1 - 30; x += 140) front.fillRect(x, yTop1 + 46, 18, 16);
       }
     } else if (mat === 'board') {
-      // hung over the dark on charred joists
-      front.fillStyle(VIL.timber, 1).fillRect(x0 + 6, yTop1 + 2, 5, 90).fillRect(x1 - 11, yTop1 + 2, 5, 90);
+      // the stubs of the charred joists it rests on, burnt through below
+      for (const jx of [x0 + 6, x1 - 13]) {
+        front.fillStyle(VIL.timber, 1).fillTriangle(jx, yTop1 + 2, jx + 7, yTop1 + 2, jx + 3, yTop1 + 30);
+        front.fillStyle(VIL.boardCrack, 0.9).fillCircle(jx + 3, yTop1 + 26, 2);
+      }
     }
+    // and the face below the lip falls into shadow, so the edge stands out against it
+    fade(front, x0, yTop1 + 1, w, Math.min(30, down), 0x000000, 0.6, 0);
     top.setDepth(b.z0 - 0.5);
     front.setDepth(b.z1 + 0.5);
+  }
+
+  // Painted wreckage to hop in the village, in place of a box: `look` 'cart', a wrecked hay
+  // cart (prop_cart.png, its whole half: the fire hazards burn the same cart), a second one
+  // behind it, turned the other way, on a deep block; 'wreckage', a low line of charred
+  // timbers and rubble right across the road (prop_wreckage.png, its burnt-out half, the smoke
+  // cropped off), heaped all the way down the lane. A little wider than the block, so it reads.
+  drawPaintedBlock(v, x0, x1, tex) {
+    const { top, b } = v;
+    const s = this.scene;
+    const frame = s.textures.getFrame(tex);
+    const cart = b.look === 'cart';
+    const painted = frame.width > 200; // (else the small code cart, StageView)
+    const n = cart ? (b.z1 - b.z0 > 120 ? 2 : 1) : Math.max(2, Math.round((b.z1 - b.z0) / 30));
+    const wide = x1 - x0 + (cart ? 70 : 60); const cx = (x0 + x1) / 2;
+    v.arts ??= [];
+    top.fillStyle(0x000000, 0.4);
+    for (let i = 0; i < n; i++) {
+      const z = cart ? b.z0 + ((b.z1 - b.z0) * (i + 1)) / n : b.z0 + 16 + ((b.z1 - b.z0 - 16) * i) / (n - 1);
+      const flip = cart ? i !== n - 1 : i % 2 === 1;
+      const dx = cart ? 0 : ((i * 7) % 3 - 1) * 4;
+      top.fillEllipse(cx + dx + 4, z - 2, wide * 0.9, cart ? 22 : 16);
+      const img = v.arts[i] ??= s.add.image(0, 0, tex).setOrigin(0.5, painted ? 0.97 : 1);
+      if (!cart) img.setCrop(0, frame.height * 0.42, frame.width, frame.height * 0.58);
+      img.setPosition(cx + dx, z + 4).setScale(wide / frame.width).setFlipX(flip).setDepth(z + 0.5).setVisible(true);
+    }
+    top.setDepth(b.z0 - 0.5);
   }
 
   // ------------------------------------------------------------ landmarks
