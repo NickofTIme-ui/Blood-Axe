@@ -485,3 +485,7 @@ same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one 
 ## Cloud, 2026-10-10: the last missing level art is painted (not on itch)
 - Painted in ChatGPT on Nick's PC (desktop app, thread "Paint Stream Texture" in the Bloody Axe project) from the prompts in project files `campaign/art/art-still-missing.md`, and committed as found: `assets/env/ascent/ground.png` and all eleven `assets/env/gates/*.png` (sky, far, mid, wall, ground, gatehouse, winch_room, town, inner_wall, keep_road, prop_winch). They plug in by file name through `src/data/levelArt.js`; no code changed. Not yet looked at in play: check the magenta cut-outs for fringe and the sizes in the Iron Gates.
 - Every picture `levelArt.js` loads now exists. Still not loaded by the game (so not painted): the wood's stream/log/stones and the trophy icons.
+
+## Cloud, 2026-10-10: level 2 music, again (not on itch)
+- Nick: Gallows Wood's music still didn't start on arriving from level 1. Main (with the Oct 9 fix, `b537a4e`) was run headless: level 1 into level 2 and level 2 started directly both bring Wilderness up to full volume, so a build from before Oct 9 still has the old fault. Rebuild and upload to get the fix.
+- Hardened anyway: `fade()` in `src/core/Music.js` now steps on the game's `step` event (every frame, whatever the scenes do) instead of a 16 ms timer that a busy level can starve, and starts from the volume last set rather than the audio thread's lagging reading.
