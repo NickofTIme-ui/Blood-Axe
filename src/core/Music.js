@@ -48,18 +48,22 @@ export function startTitleTheme() {
   if (early?.paused) early.play().catch(() => {}); // blocked until the first key or click
 }
 
-// Fades run on their own clock, not on a scene's tweens: a scene's tweens die with it, and
-// the scene asking is often mid-change (a level restarting into the next one, the title
-// closing) — a fade-in that died there left the new track playing silently.
-function fade(snd, to, ms, done) {
-  clearInterval(snd.fadeTimer);
-  const from = snd.volume;
+// Fades run on the game's own step, not on a scene's tweens or a timer: a scene's tweens
+// die with it, and the scene asking is often mid-change (a level restarting into the next
+// one, the title closing); a timer gets starved while a heavy level loads and draws, which
+// left the new track sitting at volume 0. The game steps every frame whatever the scenes do.
+function fade(game, snd, to, ms, done) {
+  snd.stopFade?.();
+  // (a Phaser sound's `volume` reads the audio thread, which lags; its config is what was set)
+  const from = snd.currentConfig?.volume ?? snd.volume;
   const t0 = performance.now();
-  snd.fadeTimer = setInterval(() => {
+  const step = () => {
     let t = Math.min(1, (performance.now() - t0) / ms);
     try { snd.volume = from + (to - from) * t; } catch { t = 1; } // (destroyed under us)
-    if (t >= 1) { clearInterval(snd.fadeTimer); done?.(); }
-  }, 16);
+    if (t >= 1) { snd.stopFade(); done?.(); }
+  };
+  snd.stopFade = () => { game.events.off('step', step); snd.stopFade = null; };
+  game.events.on('step', step);
 }
 
 export function playMusic(scene, key) {
@@ -85,12 +89,12 @@ export function playMusic(scene, key) {
     if (current?.key !== key) return;
     const s = current.sound;
     s.play({ loop: true, volume: 0 });
-    fade(s, volume(), 900);
+    fade(scene.game, s, volume(), 900);
   };
 
   if (current) {
     const old = current.sound;
-    fade(old, 0, 500, () => old.destroy());
+    fade(scene.game, old, 0, 500, () => old.destroy());
   }
   current = { key, sound: sound.add(key) };
   if (sound.locked) sound.once('unlocked', start);
@@ -99,6 +103,6 @@ export function playMusic(scene, key) {
 
 export function toggleMute() {
   SETTINGS.audio.muted = !SETTINGS.audio.muted;
-  if (current?.sound) { clearInterval(current.sound.fadeTimer); current.sound.volume = volume(); }
+  if (current?.sound) { current.sound.stopFade?.(); current.sound.volume = volume(); }
   return SETTINGS.audio.muted;
 }
