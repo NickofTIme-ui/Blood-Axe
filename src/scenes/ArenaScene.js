@@ -50,6 +50,7 @@ import { playSfx } from '../core/Sfx.js';
 import { runTickJobs } from '../core/TickJobs.js';
 import { styleMult } from '../combat/Style.js';
 import { TROPHIES, RARITY, LOOT, pickTrophy } from '../data/trophies.js';
+import { TEST, toggleTestMode, applyTestMode, levelAfter, showTestTag } from '../config/testMode.js';
 
 // Number keys spawn a specific enemy next to you (for testing the roster).
 const SPAWN_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'];
@@ -394,6 +395,7 @@ export class ArenaScene extends Phaser.Scene {
       this.wavesOn = !this.wavesOn;
       this.popup(this.player.x, this.player.z - 150, this.wavesOn ? 'WAVES ON' : 'WAVES OFF', '#e0c080');
     }));
+    this.setupTestKeys();
     // Pause: P / Enter / Start — and by itself whenever the window loses focus or the tab
     // is hidden, so nothing happens to you while you're away.
     this.paused = false;
@@ -649,6 +651,38 @@ export class ArenaScene extends Phaser.Scene {
       if (!this.sys.isActive()) return;
       this.cutawayOn = true;
       this.scene.launch('Cutaway', { kind: D.cutaway, onDone: () => { this.cutawayOn = false; tally(); } });
+    });
+  }
+
+  // TEST MODE (config/testMode.js): SHIFT+F9 turns it on or off; while on, END is the next
+  // checkpoint and PAGE UP / PAGE DOWN the previous / next level. Never online.
+  setupTestKeys() {
+    showTestTag();
+    const key = (name, fn) => {
+      const h = (e) => {
+        if (this.session.net || this.cutawayOn || this.skillOpen) return;
+        e.preventDefault?.(); // (F9 is Reader View in some browsers)
+        fn(e);
+      };
+      this.input.keyboard.on(`keydown-${name}`, h);
+      this.events.once('shutdown', () => this.input.keyboard.off(`keydown-${name}`, h));
+    };
+    key('F9', (e) => {
+      if (!e.shiftKey) return;
+      const on = toggleTestMode();
+      if (!on) applyTestMode(this.players);
+      this.callout(on ? 'TEST MODE ON' : 'TEST MODE OFF', '#ffd27a', 24);
+    });
+    const go = (stage, section = 0) => {
+      if (!TEST.on) return;
+      this.setPaused(false);
+      this.scene.restart({ ...this.restartData(), stage, section });
+    };
+    key('PAGE_DOWN', () => go(levelAfter(this.stageId, 1)));
+    key('PAGE_UP', () => go(levelAfter(this.stageId, -1)));
+    key('END', () => {
+      const i = this.stage.index + 1;
+      go(...(i < this.stage.sections.length ? [this.stageId, i] : [levelAfter(this.stageId, 1)]));
     });
   }
 
@@ -1119,6 +1153,7 @@ export class ArenaScene extends Phaser.Scene {
       if (this.systemKeys(recs)) return; // (the scene is changing)
       if (this.paused) continue;         // paused: ticks still pass (and buttons are read), the world holds still
       feedPlayers(this.players, recs);
+      if (!s.net) applyTestMode(this.players); // (test mode: can't die, mana never runs out)
       this.world.tick();
       this.keepTogether();
       this.stage.update();

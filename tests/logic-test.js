@@ -36,6 +36,7 @@ import { runTickJobs } from '../src/core/TickJobs.js';
 import { JUGGLE } from '../src/combat/Juggle.js';
 import { STYLE, styleMult } from '../src/combat/Style.js';
 import { TROPHIES, TROPHY_SLOTS, pickTrophy, bossTrophy } from '../src/data/trophies.js';
+import { TEST, applyTestMode, levelOrder, levelAfter } from '../src/config/testMode.js';
 
 // A controller driven by a script: { frameNumber: ['attack'] } presses,
 // plus `hold` for held buttons.
@@ -117,6 +118,32 @@ test('critical hits: every hero can land one (more damage, flagged on the hit); 
   t.run(60);
   SETTINGS.feel.critChance = 0;
   assert(hits.some((h) => h.defender === t.p) && !hits.some((h) => h.crit), 'enemy hits are never critical');
+});
+
+test('test mode: off by default; on, a hero is never killed and never runs dry; levels in campaign order', () => {
+  assert(TEST.on === false, 'off unless asked for');
+  // an enemy hammering a hero on 1 health: he lives, and is topped up every tick
+  TEST.on = true;
+  const t = setup({ player: 'mage', dummyScript: { 1: ['attack'], 30: ['heavy'], 70: ['attack'] }, gap: 50 });
+  let lowest = Infinity;
+  for (let i = 0; i < 120; i++) {
+    applyTestMode([t.p]);
+    t.p.health = 1; // (the worst case: any blow would be the last)
+    t.p.mana = 0;
+    t.world.tick();
+    lowest = Math.min(lowest, t.p.health);
+  }
+  assert(t.log.includes('hit'), 'the enemy landed blows');
+  assert(t.p.alive && lowest >= 1, `never killed (lowest ${lowest})`);
+  applyTestMode([t.p]);
+  assert(t.p.health === t.p.stats.maxHealth && t.p.mana === t.p.stats.maxMana, 'topped up');
+  TEST.on = false;
+  applyTestMode([t.p]);
+  assert(!t.p.immortal, 'off again: mortal');
+  const order = levelOrder();
+  assert(order.slice(0, 5).join() === 'village,gallowsWood,hollowMountain,shatteredAscent,ironGates', order.join());
+  assert(order.length === Object.keys(STAGES).length, 'every stage once');
+  assert(levelAfter('village', 1) === 'gallowsWood' && levelAfter('village', -1) === order.at(-1), 'steps and wraps');
 });
 
 test('3-hit combo chains and the finisher knocks down', () => {

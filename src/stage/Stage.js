@@ -1003,10 +1003,10 @@ export class Stage {
   // A hazard hurting anyone (players and enemies alike).
   hurt(hz, f, dmg, dir, kind) {
     if (!f.alive || f.invincible || f.entering || f.state === 'executed' || f.state === 'execute' || hz.cool.has(f.id)) return;
-    if (f.spare && f.health - dmg < 1) dmg = Math.max(0, f.health - 1); // (beaten to his knees, never killed: Sequence.js)
+    if ((f.spare || f.immortal) && f.health - dmg < 1) dmg = Math.max(0, f.health - 1); // (beaten to his knees, never killed: Sequence.js; immortal: config/testMode.js)
     if (kind === 'fire' && f.state === 'knockdown' && f.lyingSince === null) return; // already thrown clear
     hz.cool.set(f.id, kind === 'fire' ? FIRE.tick * 3 : 50);
-    f.health = Math.max(f.spare ? 1 : 0, f.health - dmg);
+    f.health = Math.max(f.spare || f.immortal ? 1 : 0, f.health - dmg);
     f.flash = 6;
     const lethal = f.health <= 0;
     // an enemy the fire kills doesn't get thrown clear: he burns where he stands, then

@@ -489,3 +489,8 @@ same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one 
 ## Cloud, 2026-10-10: level 2 music, again (not on itch)
 - Nick: Gallows Wood's music still didn't start on arriving from level 1. Main (with the Oct 9 fix, `b537a4e`) was run headless: level 1 into level 2 and level 2 started directly both bring Wilderness up to full volume, so a build from before Oct 9 still has the old fault. Rebuild and upload to get the fix.
 - Hardened anyway: `fade()` in `src/core/Music.js` now steps on the game's `step` event (every frame, whatever the scenes do) instead of a 16 ms timer that a busy level can starve, and starts from the volume last set rather than the audio thread's lagging reading.
+
+## Cloud, 2026-10-10: TEST MODE for playtesting (not on itch)
+- Nick: "a test mode in the game i can skip levels and have infinite health mana". `src/config/testMode.js`. On with `?test=1` on the game's address (e.g. `index.html?test=1`), or SHIFT+F9 in a fight (again to turn it off). Off in normal play and never online. A "TEST MODE" tag in the top-right corner shows while it's on.
+- While on: heroes are topped up to full health, mana and stamina every tick, and can't be killed (`f.immortal` floors damage at 1 health in `CombatSystem.resolve` and `Stage.hurt`; pits still knock you back to the checkpoint). Keys in a fight: END next checkpoint (from the last, the next level), PAGE DOWN / PAGE UP next / previous level, in campaign order then the Oath Road and the Gallows Ascent (`levelOrder`). Bound in `ArenaScene.setupTestKeys`.
+- Skill points and the campaign save still count in test mode. Logic test added; checked headless in the browser (refill, END, PAGE UP/DOWN, SHIFT+F9 off). Local only, so no sim change for online.
