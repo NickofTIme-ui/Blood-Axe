@@ -1636,6 +1636,35 @@ test('boss: the Warlord walks in from off-screen, stomping, heroes frozen; untou
   assert(t.stage.livingFoes().length === 1, 'no helpers yet (they come at half health)');
 });
 
+test('boss: while he walks in, the whole field freezes: foes mid-swing, his escort, knives in flight, traps', () => {
+  const t = stageSetup();
+  const sec = t.stage.sections.length - 1;
+  t.stage.enterSection(sec, true);
+  t.stage.waveIndex = 99; t.stage.waveDelay = 0;
+  // a grunt right beside the hero, about to swing
+  const g = createEnemy(t.world, 'grunt', t.p.x + 50, t.p.z);
+  g.controller = new Scripted({ 2: ['attack'], 6: ['attack'], 12: ['attack'] });
+  g.facing = -1;
+  t.stage.spawnBoss(); // (with a man still standing: a phase's adds, a straggler)
+  assert(t.stage.boss && t.world.hold, 'the boss is walking in, the field held');
+  // a knife already in the air, and a man who arrives while he walks (like his escort)
+  const knife = t.world.spawnProjectile(g, { w: 10, h: 6, speed: 0, damage: 20, lifetime: 600, y: 40 }, { x: t.p.x + 200, z: t.p.z, h: 40, vx: -300 });
+  t.stage.spawnWave(['grunt']);
+  const late = t.world.fighters[t.world.fighters.length - 1];
+  const hp = t.p.health; const gx = g.x; const kx = knife.x; const lx = late.x;
+  const hazards = t.stage.hazards.map((hz) => hz.t);
+  t.run(90);
+  assert(t.p.health === hp, `nobody hurts the frozen hero (${hp} -> ${t.p.health})`);
+  assert(g.x === gx && g.state === 'idle', `the grunt beside him stands still (${g.state})`);
+  assert(knife.x === kx && knife.alive, 'the knife hangs in the air');
+  assert(late.x === lx, 'the newcomer waits');
+  assert(t.stage.hazards.every((hz, i) => hz.t === hazards[i]), 'the traps wait');
+  assert(t.stage.boss.state === 'bossEntrance' && t.stage.boss.x < t.stage.boss.entrance.toX + 999, 'only the boss moves');
+  t.run(600);
+  assert(!t.world.hold && t.p.awe === 0 && g.awe === 0, 'then the fight resumes');
+  assert(knife.x !== kx || !knife.alive, 'the knife flies on');
+});
+
 test('stage: the throne spawns the boss, he rages at half health, killing him wins', () => {
   const t = stageSetup();
   t.stage.enterSection(t.stage.sections.length - 1, true);

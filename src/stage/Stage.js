@@ -214,6 +214,7 @@ export class Stage {
   // Died: back to the last checkpoint, healed, with the section's fight reset.
   respawn() {
     this.stats.deaths++;
+    this.world.hold = null;
     for (const f of this.world.fighters) if (f.team === 'enemy') f.removeMe = true;
     this.world.barriers?.clear();
     this.world.mines?.clear();
@@ -483,13 +484,10 @@ export class Stage {
       const toX = Math.max(this.world.bounds.minX + 60, sec.x1 - E.to);
       boss.fsm.change('bossEntrance', { toX, speed: E.speed, stepEvery: E.stepEvery });
       if (this.twins) this.twins[1].fsm.change('bossEntrance', { toX: toX + 70, speed: E.speed, stepEvery: E.stepEvery });
-      // the heroes stand frozen while he comes (and a moment after)
+      // the whole field stands frozen while he comes (and a moment after): heroes, every
+      // other foe (his escort too), arrows in flight, traps (World.holdStill)
       const frames = Math.ceil(((x - toX) / E.speed) * 60) + (E.awe ?? 0);
-      // (and every other foe on the field: nobody gets free hits on a frozen hero)
-      if (E.freeze !== false) {
-        for (const p of this.players) if (p.alive) p.awe = frames;
-        for (const f of this.world.fighters) if (f.team === 'enemy' && f.alive && f !== boss && !this.twins?.includes(f)) { f.awe = frames; f.vx = f.vz = 0; }
-      }
+      if (E.freeze !== false) this.world.holdStill(frames, this.twins ?? [boss]);
     }
     if (def.escort?.length) this.spawnWave(def.escort); // (the men or dogs he brings with him)
     this.world.events.emit('bossSpawn', { boss, entrance: !!E });
@@ -536,11 +534,11 @@ export class Stage {
     this.updateFalls();
     this.updateRests();
     this.updateChallenge();
-    if (!this.hazardsOff) this.updateHazards();
+    if (!this.hazardsOff && !this.world.hold) this.updateHazards(); // (held still while a boss walks in)
     this.updateProps();
     this.updatePickups();
     this.updateDowned();
-    this.updateLatecomers();
+    if (!this.world.hold) this.updateLatecomers(); // (standing still while a boss walks in is not being stuck)
     this.story?.update();
     // a scripted ending running: it has the stage until it's done
     if (this.sequence?.update()) return;
