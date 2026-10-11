@@ -115,3 +115,24 @@ Do them in this order (the ones seen most first). File name: same as the old one
 Save as `assets/sprites/strips/ulric_wrath.png`. It is not wired in yet: Kingsfire borrows
 the cleave's poses (`SpriteFighterView`, state `kingsfire`). Once it exists, the cloud adds
 it to `src/data/spriteStrips.js` and keys poses 2-3 to the gathering and 4-6 to the release.
+
+## 5. NEW strip: the Shoulder Smash (attach the approved references and `ulric_sprint.png`)
+
+> A new animation strip of RURIK (match the second image's style and size exactly),
+> carrying OATHKEEPER in his right hand, blade trailing low behind him. Six poses in one
+> row, all facing right, feet on one baseline, plain black background, wide gaps,
+> 2172 x 724, no text:
+> 1. Flat-out sprint (like the third image), the last stride before the hit.
+> 2. He drops his LEFT shoulder and lowers his head behind it, the armoured pauldron
+>    leading, his whole weight thrown forward, the back leg driving off the floor.
+> 3. Impact: shoulder rammed forward at chest height, body braced and compact, cape
+>    flung forward over his back by the stop, dust kicking up off his boots.
+> 4. Still driving through: a long, low, powerful stride, shoulder still leading.
+> 5. Digging his heels in to stop: leaning back, front foot skidding, sword arm out for
+>    balance.
+> 6. Standing tall again in his ready stance, Oathkeeper raised a little, chin up.
+
+Save as `assets/sprites/strips/ulric_shoulder.png`. Until it exists the smash uses his
+sprint and kick poses (`src/data/spriteStrips.js`, `shoulder`). Once it exists, the cloud
+adds it to `ULRIC_STRIPS` and points the `shoulder` override at it: poses 1-2 the wind-up,
+3-4 the run through, 5-6 the skid.

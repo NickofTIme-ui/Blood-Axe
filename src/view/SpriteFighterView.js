@@ -20,7 +20,7 @@ import { BodyFeel, easedSpread } from './animFeel.js';
 import { PLUNGE_LAND, kingsfireOf } from '../combat/Skills.js';
 import { softShadow } from './atmosphere.js';
 
-const ATTACKS = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'airAttack', 'kick', 'thrust', 'spin'];
+const ATTACKS = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'airAttack', 'kick', 'thrust', 'spin', 'shoulder'];
 
 // How hard each swing reads in the body (view only — gameplay timing is untouched):
 //   k      overall amplitude of the anticipation / drive / settle
@@ -94,6 +94,7 @@ export class SpriteFighterView {
     if (st === 'kick') return a.light1; // no kick strip yet
     if (st === 'launcher') return a.light2; // the Rising Cleave: the upward return stroke (no strip yet)
     if (st === 'spin') return a.heavy;  // the Whirlwind Cleave: the cleave's poses, turned round (no strip yet)
+    if (st === 'shoulder') return a.kick ?? a.light1; // (a hero with no shoulder poses)
     return null;
   }
 
@@ -410,6 +411,35 @@ export class SpriteFighterView {
         if (fr === m.startup + 1 && fr !== this.kickDust) {
           this.kickDust = fr;
           this.scene.gore?.spark(f.x - f.facing * 26, f.z, 2, 0x9a8a70, 12); // heel drives off the floor
+        }
+      }
+    }
+
+    // SHOULDER SMASH (sprint + J): the shoulder drops and he sinks into it on the plant,
+    // runs bent double behind it, jars on every man he hits, then skids up out of it
+    if (st === 'shoulder' && f.move) {
+      const m = f.move;
+      const end = m.startup + m.active;
+      if (fr <= m.startup) {
+        const t = easeInOut(fr / m.startup);
+        lean += 5 * t; bob += 4 * t; push += 4 * t;
+        sx *= 1 + 0.05 * t; sy *= 1 - 0.04 * t;
+      } else if (fr <= end) {
+        const stride = Math.abs(Math.sin(((fr - m.startup) / 4) * Math.PI));
+        lean += 5; bob += 4 - stride * 2.5; push += 4;
+        sx *= 1.05; sy *= 0.96;
+        if (f.hitstop > 0) { sx *= 0.9; sy *= 1.07; push -= 4; lean -= 2; } // jarred on the impact
+        if (fr % 3 === 0 && fr !== this.runDust) { // his boots tearing up the floor
+          this.runDust = fr;
+          this.scene.gore?.spark(f.x - f.facing * 20, f.z, 2, 0x8a7a60, 5);
+        }
+      } else {
+        const t = Math.min(1, (fr - end) / m.recovery);
+        lean += 5 * (1 - easeOut(t)) - 7 * Math.sin(t * Math.PI); // dug in heels, rocks back, rights himself
+        bob += 4 * (1 - t);
+        if (fr - end < 9 && fr % 2 === 0 && fr !== this.runDust) { // the skid
+          this.runDust = fr;
+          this.scene.gore?.spark(f.x + f.facing * 14, f.z, 2, 0x9a8a70, 7);
         }
       }
     }

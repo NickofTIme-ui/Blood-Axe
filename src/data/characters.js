@@ -134,6 +134,20 @@ export const CHARACTERS = {
         ],
       },
       kick: { ...SPARTA_KICK },
+      // SPRINT + J: the SHOULDER SMASH. He drops his shoulder and runs straight through
+      // them: nothing stops him once he's going (armoured to the end of the run), every man
+      // in his path is hit once and thrown ahead of him, bowling over whoever is behind,
+      // a raised guard is smashed open, crates and barrels burst. The run spends itself in
+      // a skid; a slash, cleave or roll can come out of the skid.
+      shoulder: {
+        cut: 'blunt', fx: 'shoulder', shoulder: true, bowl: true, pierce: true, superArmor: true,
+        startup: 6, active: 16, recovery: 20,
+        damage: 16, hitstun: 30, hitstop: 9, shake: 7,
+        knockback: { x: 860, y: 380 }, knockdown: true, breaksGuard: true, guardDamage: 80,
+        staminaCost: 14, lunge: 480,
+        hitbox: { x: 8, y: 26, w: 58, h: 74, depth: 26 },
+        cancels: [{ from: 30, to: 42, into: ['attack', 'heavy', 'dodge', 'block'] }],
+      },
       // J, J, K — the RISING CLEAVE: an upward rip that throws him straight into the air.
       // Jump out of it and keep him up there (combat/Juggle.js).
       launcher: {

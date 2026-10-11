@@ -158,6 +158,12 @@ export function tryActions(f, allowed = null) {
       return true;
     }
   }
+  // SHOULDER SMASH (Rurik): attack while sprinting on his feet
+  if (ok('attack') && f.sprinting && f.state === 'walk' && usable(f, s.moves.shoulder) && c.peek('attack') && ready(f, s.moves.shoulder, 'shoulder')) {
+    c.consume('attack');
+    f.fsm.change('shoulder');
+    return true;
+  }
   if (ok('attack') && c.consume('attack')) {
     // Lost the arm that throws the opener? Skip straight to the next hit.
     f.fsm.change(usable(f, s.moves.light1) || !s.moves.light2 ? 'light1' : 'light2');
@@ -481,6 +487,7 @@ export const FIGHTER_STATES = {
   light4: makeAttackState('light4'), // (the Rogue's fourth hit)
   heavy: makeAttackState('heavy'),
   kick: makeAttackState('kick'),
+  shoulder: makeAttackState('shoulder'), // (Rurik's sprint + J)
   special1: makeAttackState('special1'),
   special2: makeAttackState('special2'),
 

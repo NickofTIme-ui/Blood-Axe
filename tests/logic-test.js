@@ -2089,6 +2089,46 @@ test("rurik: Kingsfire: a tap is still the bolt, a hold drives the sword down an
   assert(low.world.projectiles.length === 1, 'short of mana: the bolt');
 });
 
+test('rurik: SHOULDER SMASH: sprint + J runs through a line of men, throws them flying, and armour carries him through', () => {
+  // sprinting right (C, then hold right), J once he's up to speed
+  const run = (foes, attackAt = 20) => {
+    const t = skillSetup(CHARACTERS.warrior, { script: { 2: ['sprint'], [attackAt]: ['attack'] }, hold: { right: true }, foes, x: 200 });
+    t.p.facing = 1;
+    return t;
+  };
+  const t = run([[420], [470], [520]]);
+  let saw = false;
+  let st0 = null;
+  for (let i = 0; i < 80; i++) { t.run(1); if (t.p.state === 'shoulder') { if (!saw) st0 = t.p.stamina; saw = true; } }
+  assert(saw, 'sprint + J: the shoulder smash');
+  assert(st0 <= t.p.stats.maxStamina - 14 + 1, `it costs stamina (${st0})`);
+  assert(t.es.every((e) => e.health < e.stats.maxHealth), `all three men in the line hit (${t.es.map((e) => e.health)})`);
+  assert(t.es.every((e) => ['knockdown', 'getup', 'dead'].includes(e.state) || e.knockedDown), `all three thrown down (${t.es.map((e) => e.state)})`);
+  assert(t.p.x > 320, `he ran on through them (${t.p.x.toFixed(0)})`);
+  // walking, not sprinting: J is the plain slash
+  const w = skillSetup(CHARACTERS.warrior, { script: { 10: ['attack'] }, hold: { right: true } });
+  let shoulder = false;
+  for (let i = 0; i < 20; i++) { w.run(1); if (w.p.state === 'shoulder') shoulder = true; }
+  assert(!shoulder && w.p.state === 'light1', `walking: the slash (${w.p.state})`);
+  // a guard is smashed open
+  const g = run([[440]]);
+  g.es[0].controller.hold = { block: true };
+  let broke = false;
+  g.world.events.on('guardBreak', () => { broke = true; });
+  g.run(70);
+  assert(broke || g.es[0].health < g.es[0].stats.maxHealth, 'the guard caved');
+  // a man's swing doesn't stop him mid-run (super armour)
+  const a = run([[470]], 14);
+  let stopped = false;
+  let swung = false;
+  for (let i = 0; i < 60; i++) {
+    a.run(1);
+    if (a.p.state === 'shoulder' && a.p.fsm.frame === 3 && !swung) swung = a.world.combat.resolve(a.es[0], a.p, { ...ENEMIES.grunt.moves.light1 }, { kind: 'melee', fromX: a.es[0].x, dir: -1, contact: { x: a.p.x, h: 60 } }) ?? true;
+    if (['hitstun', 'stagger', 'knockdown'].includes(a.p.state)) stopped = a.p.state;
+  }
+  assert(swung && !stopped, `armoured through the run (${stopped})`);
+});
+
 test("rurik: a sword kill feeds Kingsfire 5 mana; without the skill it doesn't", () => {
   const fed = (stats) => {
     const t = skillSetup(stats, { script: { 1: ['attack'] }, foes: [[450]] });
