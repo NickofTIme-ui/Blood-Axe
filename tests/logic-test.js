@@ -3027,23 +3027,60 @@ test('mine: the portcullis holds until its counterweight is broken; then the way
   assert(p.x > gate.x1, `he walks on through (x ${Math.round(p.x)})`);
 });
 
-test('mine: the collapse chases you: it hurts and throws on whoever it catches, stops short of the passage, and starts again behind you on a respawn', () => {
-  const { world, p, st, run } = mineSetup(MINE_SEC('collapse'), { x: 7400, z: 440 });
+test('mine: the collapse chases you: it hurts whoever it catches and throws him on ahead, onto firm ground (over the drop, never into it), and stops short of the passage', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('collapse'), { x: 7640, z: 420 });
   const hz = st.hazards.find((h) => h.type === 'collapse');
   let started = 0; world.events.on('collapseStart', () => started++);
-  let hits = 0; world.events.on('hazardHit', (e) => { if (e.fighter === p) hits++; });
+  let hits = 0; world.events.on('hazardHit', (e) => { if (e.fighter === p && e.hazard === hz) hits++; });
+  let falls = 0; world.events.on('pitFall', (e) => { if (e.fighter === p) falls++; });
   p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
   run(2);
-  assert(hz.front != null && hz.front < 7300, `the rock starts behind him (${hz.front})`);
-  run(200, () => { p.health = p.stats.maxHealth; });
-  assert(hits >= 1 && p.x > hz.front, `caught, hurt and thrown ahead of it (${hits} hits, x ${Math.round(p.x)} front ${Math.round(hz.front)})`);
-  run(60 * 20, () => { p.health = p.stats.maxHealth; });
-  assert(hz.front === hz.to, `it stops at ${hz.to} (${hz.front})`);
-  const rubble = st.props.find((pr) => pr.opens === 'passage');
-  assert(hz.to + 30 < rubble.x - rubble.w / 2, 'the fallen rock can be dug out in front of it');
+  assert(started === 1 && hz.front != null && hz.front < 7300, `the rock starts behind him (${hz.front})`);
+  for (let i = 0; i < 60 * 12 && !hits; i++) run(1, () => { p.health = p.stats.maxHealth; });
+  run(90, () => { p.health = p.stats.maxHealth; });
+  const chasm = st.terrain.pits.find((q) => q.x0 === 7700);
+  assert(hits >= 1 && falls === 0 && p.x > chasm.x1, `caught, hurt and thrown clear over the chasm (${hits} hits, ${falls} falls, x ${Math.round(p.x)})`);
+  // the last stretch's rock stops at the chasm; the passage is dug out beyond it
+  const L = mineSetup(MINE_SEC('leap'), { x: 10780, z: 420 });
+  const last = L.st.hazards.find((h) => h.type === 'collapse' && h.section === MINE_SEC('leap'));
+  L.p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  L.run(60 * 20, () => { L.p.health = L.p.stats.maxHealth; });
+  assert(last.front === last.to, `it stops at ${last.to} (${last.front})`);
+  const rubble = L.st.props.find((pr) => pr.opens === 'passage');
+  assert(last.to + 30 < rubble.x - rubble.w / 2, 'the fallen rock can be dug out in front of it');
+});
+
+test('mine: the chase runs on through three stretches: each picks the rock up where it was, runs faster, and a death puts it back behind that stretch\'s start', () => {
+  const ids = ['collapse', 'gallery', 'leap'];
+  const walls = ids.map((id) => STAGE_MINE.sections[MINE_SEC(id)].hazards.find((h) => h.type === 'collapse'));
+  assert(walls.every((w) => w) && walls[0].speed < walls[1].speed && walls[1].speed < walls[2].speed, 'one in each, each faster');
+  const T = new Terrain(new World(), STAGE_MINE.terrain);
+  for (const id of ids) {
+    const sec = STAGE_MINE.sections[MINE_SEC(id)];
+    const w = sec.hazards.find((h) => h.type === 'collapse');
+    assert(w.x0 < sec.spawn.x - 60 && T.safeAt(sec.spawn.x, sec.spawn.z), `${id}: you start on firm ground ahead of the rock`);
+  }
+  const { world, p, st, run } = mineSetup(MINE_SEC('collapse'), { x: 7400, z: 440 });
+  const [a, b] = ids.slice(0, 2).map((id) => st.hazards.find((h) => h.type === 'collapse' && h.section === MINE_SEC(id)));
+  const chained = []; world.events.on('collapseStart', (e) => chained.push(e.chained));
+  p.invincible = true;
+  run(120);
+  const was = a.front;
+  // he runs on into the broken gallery
+  p.x = 8950; p.z = 420; st.placeOnGround(p);
+  run(2);
+  assert(st.section.id === 'gallery', st.section.id);
+  assert(a.front == null && b.front != null && b.front < was + 10, `the rock comes on from where it was (${Math.round(was)} -> ${Math.round(b.front)})`);
+  assert(chained.join() === 'false,true', `RUN!, then FASTER! (${chained})`);
+  // it doesn't drop out of sight: far behind, it catches up
+  p.x = 9700; p.z = 420; st.placeOnGround(p);
+  const f0 = b.front;
+  run(60);
+  assert(b.front - f0 > b.speed * 1.5, `it closes on him (${Math.round(b.front - f0)} px in a second)`);
+  // dead here: back to this stretch's start, the rock behind it
   st.respawn();
   run(2);
-  assert(hz.front < 7300, `back behind the start after a respawn (${hz.front})`);
+  assert(b.front <= b.x0 + 10 && p.x > b.front + 60 && a.front == null, `back behind the start (${Math.round(b.front)}, hero ${Math.round(p.x)})`);
 });
 
 test('mine: the Ore Crusher is iron: no blow staggers it or knocks it down; it vents its furnace, then brings the roof down', () => {

@@ -23,9 +23,13 @@
 //                             channel; THE CHAIN WARDEN on the far bank
 //   V   THE CRUSHER HALL      a shrine; THE ORE CRUSHER, the war machine: its furnace vents at
 //                             two thirds, the roof starts coming down at one third
-//   VI  THE COLLAPSE          the mine coming down behind you: run, over planks, under falling
-//                             rock, to the escape passage, and dig it out (the miners inside)
-//   VII THE FAR SIDE          daylight on the mountain's far face; the saved gather; on
+//   VI  THE COLLAPSE          the mine coming down behind you, a wall of rock spikes: run, over
+//                             planks, over a spur of rock, under falling rock
+//   VII THE BROKEN GALLERY    still running: up onto the old gallery and pillar to pillar over the
+//                             drop, the rotten ones giving way
+//   VIII THE LAST LEAP        through a rain of rock, over the chasm on planks that climb to the
+//                             far bank; dig out the escape passage (the miners inside)
+//   IX  THE FAR SIDE          daylight on the mountain's far face; the saved gather; on
 
 const FULL = { z0: 282, z1: 520 };
 
@@ -35,12 +39,12 @@ export const STAGE_MINE = {
   chapter: 'III',
   next: { id: 'shatteredAscent', name: 'THE SHATTERED ASCENT', chapter: 'IV' },
   doneTitle: 'OUT OF THE MOUNTAIN',
-  width: 9400,
+  width: 11700,
   theme: 'mine',
   tall: true,
   castle: { x: 760, scale: 0.8, detail: 0.6 }, // (seen only from the far side, at the end)
   music: 'caves', // (core/Music.js)
-  companions: { leaveAfter: 'opening', meet: 8800, farewell: 'daylight' },
+  companions: { leaveAfter: 'opening', meet: 11100, farewell: 'daylight' },
 
   sections: [
     {
@@ -131,26 +135,64 @@ export const STAGE_MINE = {
         ],
       },
     },
+    // ---- THE CHASE (VI-VIII): the mine coming down behind you, a wall of rock spikes that
+    // never stops. Three stretches, each a checkpoint and each faster than the last; the wall
+    // picks up where it was when you run into the next one (Stage.updateCollapse), and it
+    // lurches forward in surges. Planks that give way, a broken gallery of pillars over the
+    // drop, a gauntlet of falling rock, and a last leap over the chasm to the passage.
     {
-      id: 'collapse', name: 'THE COLLAPSE', x0: 7300, x1: 8700,
+      id: 'collapse', name: 'THE COLLAPSE', x0: 7300, x1: 8600,
       spawn: { x: 7380, z: 440 },
-      objective: 'Run! Dig out the escape passage',
-      hint: 'Do not stop. Break the fallen rock at the end',
+      objective: 'Run! Outrun the falling mountain',
+      hint: 'Do not stop. The rock will not',
       waves: [],
-      props: [
-        // the escape passage, choked with fallen rock: the last miners are behind it
-        { kind: 'rubble', tag: 'passage', x: 8340, z: 400, opens: 'passage', drop: null },
-      ],
+      props: [],
       hazards: [
-        { type: 'collapse', x0: 7280, to: 8200, speed: 64 },
+        { type: 'collapse', x0: 7280, to: 8900, speed: 95, surge: { every: 300, for: 50, mult: 1.7 } },
         { type: 'beam', look: 'rock', x: 7560, z: 420, w: 80, d: 80, period: 170, warn: 70, phase: 60 },
-        { type: 'beam', look: 'rock', x: 7980, z: 360, w: 80, d: 80, period: 170, warn: 70, phase: 120 },
-        { type: 'beam', look: 'rock', x: 8120, z: 470, w: 80, d: 80, period: 190, warn: 70, phase: 10 },
+        { type: 'beam', look: 'rock', x: 7980, z: 360, w: 80, d: 80, period: 150, warn: 60, phase: 120 },
+        { type: 'beam', look: 'rock', x: 8230, z: 420, w: 90, d: 90, period: 140, warn: 60, phase: 10 },
+        { type: 'beam', look: 'rock', x: 8460, z: 460, w: 80, d: 80, period: 160, warn: 60, phase: 90 },
       ],
     },
     {
-      id: 'far', name: 'THE FAR SIDE', x0: 8700, x1: 9400,
-      spawn: { x: 8760, z: 440 },
+      id: 'gallery', name: 'THE BROKEN GALLERY', x0: 8600, x1: 9900,
+      spawn: { x: 8680, z: 440 },
+      objective: 'Run! Leap the broken gallery',
+      hint: 'Pillar to pillar. The rotten ones fall away under you',
+      waves: [],
+      props: [],
+      hazards: [
+        { type: 'collapse', x0: 8560, to: 9900, speed: 105, damage: 28, surge: { every: 260, for: 50, mult: 1.7 } },
+        { type: 'beam', look: 'rock', x: 8820, z: 420, w: 90, d: 90, period: 150, warn: 60, phase: 30 },
+        { type: 'beam', look: 'rock', x: 9700, z: 415, w: 90, d: 100, period: 130, warn: 55, phase: 70 },
+        { type: 'beam', look: 'rock', x: 9840, z: 400, w: 90, d: 100, period: 140, warn: 60, phase: 0 },
+      ],
+    },
+    {
+      id: 'leap', name: 'THE LAST LEAP', x0: 9900, x1: 11000,
+      spawn: { x: 9980, z: 440 },
+      objective: 'Run! Over the chasm, dig out the passage',
+      hint: 'Through the falling rock, over the chasm. Break the fallen rock at the end',
+      waves: [],
+      props: [
+        // the escape passage, choked with fallen rock: the last miners are behind it
+        { kind: 'rubble', tag: 'passage', x: 10820, z: 400, opens: 'passage', drop: null },
+      ],
+      hazards: [
+        { type: 'collapse', x0: 9860, to: 10620, speed: 118, damage: 30, surge: { every: 220, for: 50, mult: 1.7 } },
+        // the gauntlet: the roof coming down in a rain of rock
+        { type: 'beam', look: 'rock', x: 10020, z: 340, w: 90, d: 90, period: 110, warn: 50, phase: 0 },
+        { type: 'beam', look: 'rock', x: 10090, z: 450, w: 90, d: 90, period: 110, warn: 50, phase: 35 },
+        { type: 'beam', look: 'rock', x: 10160, z: 380, w: 90, d: 90, period: 110, warn: 50, phase: 70 },
+        { type: 'beam', look: 'rock', x: 10230, z: 470, w: 90, d: 90, period: 110, warn: 50, phase: 15 },
+        // (and on whoever stops to dig at the passage)
+        { type: 'beam', look: 'rock', x: 10780, z: 415, w: 80, d: 100, period: 120, warn: 55, phase: 50 },
+      ],
+    },
+    {
+      id: 'far', name: 'THE FAR SIDE', x0: 11000, x1: 11700,
+      spawn: { x: 11060, z: 440 },
       objective: 'Out into the light',
       hint: '',
       waves: [],
@@ -160,7 +202,7 @@ export const STAGE_MINE = {
   ],
 
   // out onto the mountain's far face once the last words are said
-  exit: { x: 9200, after: 'daylight' },
+  exit: { x: 11500, after: 'daylight' },
 
   terrain: [
     // ---- I THE MINE MOUTH: an ore cart on its rails to hop (or walk round)
@@ -187,17 +229,39 @@ export const STAGE_MINE = {
     { kind: 'pit', x0: 5000, x1: 5180, ...FULL },
     { kind: 'block', x0: 4980, x1: 5200, z0: 380, z1: 470, top: 10, mat: 'log' },
 
-    // ---- VI THE COLLAPSE: a chasm with planks over it, then the choked passage
+    // ---- VI THE COLLAPSE: a chasm with planks over it, then up over a spur of rock and down
     { kind: 'pit', x0: 7700, x1: 7900, ...FULL },
     { kind: 'crumble', x0: 7740, x1: 7800, z0: 350, z1: 480, top: 0, fall: 30, back: 160 }, // gap 40
     { kind: 'crumble', x0: 7845, x1: 7900, z0: 350, z1: 480, top: 0, fall: 30, back: 160 }, // gap 45
-    { kind: 'block', tag: 'passage', mat: 'rubble', x0: 8400, x1: 8470, ...FULL, top: 320 },
+    { kind: 'block', x0: 8100, x1: 8180, ...FULL, top: 60 },              // +60
+    { kind: 'block', x0: 8180, x1: 8330, ...FULL, top: 130 },             // +70: the spur
+    { kind: 'block', x0: 8330, x1: 8400, ...FULL, top: 60 },              // down
+
+    // ---- VII THE BROKEN GALLERY: up onto the old gallery, then pillar to pillar over the drop
+    { kind: 'block', x0: 8780, x1: 8870, ...FULL, top: 70 },              // +70
+    { kind: 'block', x0: 8870, x1: 9000, ...FULL, top: 140 },             // +70: the gallery
+    { kind: 'pit', x0: 9000, x1: 9520, ...FULL },                         // the drop
+    { kind: 'block', x0: 9050, x1: 9110, z0: 350, z1: 480, top: 140 },    // gap 50
+    { kind: 'crumble', x0: 9165, x1: 9220, z0: 350, z1: 480, top: 140, fall: 26, back: 180 }, // gap 55
+    { kind: 'block', x0: 9275, x1: 9335, z0: 350, z1: 480, top: 140 },   // gap 55
+    { kind: 'crumble', x0: 9390, x1: 9445, z0: 350, z1: 480, top: 140, fall: 26, back: 180 }, // gap 55
+    { kind: 'block', x0: 9500, x1: 9640, ...FULL, top: 140 },             // gap 55: the far end
+    { kind: 'block', x0: 9640, x1: 9740, ...FULL, top: 70 },              // down
+
+    // ---- VIII THE LAST LEAP: the rain of rock, then the chasm on planks that climb to the far
+    // bank, and the choked passage
+    { kind: 'pit', x0: 10400, x1: 10660, ...FULL },
+    { kind: 'crumble', x0: 10450, x1: 10505, z0: 350, z1: 480, top: 0, fall: 24, back: 160 },   // gap 50
+    { kind: 'crumble', x0: 10560, x1: 10610, z0: 350, z1: 480, top: 40, fall: 24, back: 160 },  // gap 55, +40
+    { kind: 'block', x0: 10660, x1: 10740, ...FULL, top: 40 },            // gap 50: the far bank
+    { kind: 'block', tag: 'passage', mat: 'rubble', x0: 10880, x1: 10950, ...FULL, top: 320 },
   ],
 
   // torches on the walls marking the way
   lanterns: [
     { x: 500, z: 290 }, { x: 1500, z: 290 }, { x: 2700, z: 290 }, { x: 3200, z: 290 }, { x: 4140, z: 290 },
-    { x: 4900, z: 290 }, { x: 5900, z: 290 }, { x: 7300, z: 290 }, { x: 8300, z: 290 },
+    { x: 4900, z: 290 }, { x: 5900, z: 290 }, { x: 7300, z: 290 }, { x: 8000, z: 290 }, { x: 8800, z: 290 },
+    { x: 9700, z: 290 }, { x: 10360, z: 290 }, { x: 10780, z: 290 },
   ],
 
   // the dead (view only): worked to death and left where they fell
@@ -206,22 +270,22 @@ export const STAGE_MINE = {
   npcs: [
     {
       id: 'tobin', name: 'Old Tobin', x: 1900, z: 312, pose: 'chained', rescue: 'wreckage', tag: 'tobin',
-      flee: { x: 1400, z: 480 }, gather: { x: 8960, z: 470 },
+      flee: { x: 1400, z: 480 }, gather: { x: 11260, z: 470 },
     },
     {
       id: 'hilde', name: 'Hilde', x: 2160, z: 312, pose: 'chained', rescue: 'wreckage', tag: 'hilde',
-      flee: { x: 1400, z: 400 }, gather: { x: 9040, z: 380 },
+      flee: { x: 1400, z: 400 }, gather: { x: 11340, z: 380 },
     },
     {
       id: 'miners', name: 'the chained miners', x: 2440, z: 312, pose: 'chained', group: true, rescue: 'wreckage', tag: 'miners',
-      flee: { x: 1400, z: 330 }, gather: { x: 8900, z: 330 },
+      flee: { x: 1400, z: 330 }, gather: { x: 11200, z: 330 },
     },
     // (optional: left on the high ledge when the lift was cut; reach him)
-    { id: 'pip', name: 'Pip', x: 3600, z: 300, pose: 'child', rescue: 'reach', flee: null, gather: { x: 9100, z: 330 } },
+    { id: 'pip', name: 'Pip', x: 3600, z: 300, pose: 'child', rescue: 'reach', flee: null, gather: { x: 11400, z: 330 } },
     // behind the fallen rock in the escape passage
     {
-      id: 'passage', name: 'the miners in the passage', x: 8520, z: 400, pose: 'group', rescue: 'wreckage', tag: 'passage',
-      flee: { x: 8980, z: 500 }, gather: { x: 9000, z: 500 },
+      id: 'passage', name: 'the miners in the passage', x: 10990, z: 400, pose: 'group', rescue: 'wreckage', tag: 'passage',
+      flee: { x: 11280, z: 500 }, gather: { x: 11300, z: 500 },
     },
   ],
 
@@ -251,11 +315,13 @@ export const STAGE_MINE = {
       id: 'collapse', on: 'clear:crusher', calm: true,
       lines: [['RURIK', 'The roof is coming down. Run!']],
     },
-    { id: 'passageCry', at: 8100, lines: [['VOICE', 'Here! The passage, behind the rocks! We are trapped!']] },
+    { id: 'gallery', at: 8720, lines: [['RURIK', 'The gallery is broken through! Jump, and do not look down!']] },
+    { id: 'leap', at: 10000, lines: [['VOICE', '(the whole mountain groaning) It is all coming down! Faster!']] },
+    { id: 'passageCry', at: 10300, lines: [['VOICE', 'Here! The passage, behind the rocks! We are trapped!']] },
     { id: 'passage', on: 'rescued:passage', lines: [['MINER', 'Light! I can see daylight through there! Go, go!']] },
-    { id: 'gathered', at: 8860, calm: true, if: 'rescued:tobin', lines: [['TOBIN', 'Every one of us that walks out of that mountain owes it to you.']] },
+    { id: 'gathered', at: 11160, calm: true, if: 'rescued:tobin', lines: [['TOBIN', 'Every one of us that walks out of that mountain owes it to you.']] },
     {
-      id: 'daylight', at: 9000, calm: true, hold: true,
+      id: 'daylight', at: 11300, calm: true, hold: true,
       lines: [
         ['VEXA', 'Daylight. And there, across the gorge... the Black Keep.'],
         ['ORYN', 'The convoy went up the old road. The cliffs are all that is left between us and the gates.'],

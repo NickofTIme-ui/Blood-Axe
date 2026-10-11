@@ -718,45 +718,82 @@ export class StageView {
   }
 
   // The mine coming down behind you (Stage 'collapse'): a wall of falling rock at the front,
-  // boulders tumbling out of the roof, a fog of dust, and nothing but black behind it.
+  // its face bristling with spikes of broken rock, boulders tumbling out of the roof, a fog of
+  // dust, and nothing but black behind it. When it surges the spikes thrust out and glow hot
+  // at the tips and the ground shakes harder; when it's at a hero's heels the edge of the
+  // screen behind him pulses red.
   drawCollapse(hz, cam) {
     const g = hz.g = hz.g ?? this.scene.add.graphics();
     g.clear();
     const on = hz.front != null && hz.front > cam.x - 300;
     g.setVisible(on);
+    this.drawCollapseWarning(hz, cam, on);
     if (!on) return;
     const t = this.scene.time.now / 16.7;
     const fx = hz.front;
     const moving = fx < hz.to;
+    const surge = moving && hz.surging;
     g.setDepth(DEPTH.floor + 900); // (in front of the lane: it's the mountain falling)
     const top = cam.y - 50; const bot = cam.bottom + 50;
     // behind the front: dark, filled with rubble
     g.fillStyle(0x050506, 0.96).fillRect(Math.min(cam.x - 50, fx - 2000), top, fx - 40 - Math.min(cam.x - 50, fx - 2000), bot - top);
-    // the ragged face of the fall
-    g.fillStyle(0x1a1a1e, 1);
-    for (let y = top; y < bot; y += 36) {
-      const j = Math.sin(y * 0.13 + t * (moving ? 0.4 : 0.05)) * 18;
-      g.fillTriangle(fx - 60, y, fx + j, y + 18, fx - 60, y + 40);
+    // the dust cloud rolling ahead of it (under the spikes)
+    g.fillStyle(0x8a8070, surge ? 0.24 : 0.16).fillRect(fx + 10, top, 90, bot - top);
+    g.fillStyle(0x8a8070, surge ? 0.12 : 0.07).fillRect(fx + 100, top, 90, bot - top);
+    // the face of the fall: a ragged wall of rock bristling with spikes, long and short, each
+    // its own length (they don't move as one), thrusting out further while it surges. Each
+    // spike a shard: a lit upper facet, a dark lower one.
+    g.fillStyle(0x121216, 1).fillRect(fx - 44, top, 40, bot - top);
+    const thrust = surge ? 1.45 : 1;
+    for (let y = top - 10, i = 0; y < bot; y += 30, i++) {
+      const seed = Math.sin(i * 12.9898) * 43758.5453;
+      const r = seed - Math.floor(seed);
+      const len = (38 + r * 62) * thrust + Math.sin(i * 1.7 + t * (moving ? 0.25 : 0.03)) * 9;
+      const half = 13 + r * 8;
+      const mid = y + (r - 0.5) * 10;
+      const tipX = fx + len; const tipY = mid + (r - 0.5) * 12;
+      g.fillStyle(0x4a4450, 1).fillTriangle(fx - 10, mid - half, tipX, tipY, fx - 10, mid);          // lit facet
+      g.fillStyle(0x1e1d22, 1).fillTriangle(fx - 10, mid, tipX, tipY, fx - 10, mid + half);          // shadowed facet
+      g.lineStyle(2, 0x7a7280, 0.9).lineBetween(fx - 6, mid - half + 2, tipX, tipY);                  // its sharp upper edge
+      if (surge) g.fillStyle(0xff6a20, 0.6 + 0.3 * Math.sin(t * 0.8 + i)).fillCircle(tipX - 4, tipY, 3.5);
     }
     // boulders falling through the front
     if (moving) {
       for (let i = 0; i < 6; i++) {
-        const ph = ((t * 0.02 + i * 0.37) % 1);
-        const bx = fx - 30 + Math.sin(i * 4.1) * 30;
+        const ph = ((t * (surge ? 0.035 : 0.02) + i * 0.37) % 1);
+        const bx = fx - 20 + Math.sin(i * 4.1) * 24;
         const byy = top + ph * (bot - top);
         const r = 10 + (i % 3) * 7;
         g.fillStyle(0x3a3640, 1).fillCircle(bx, byy, r);
         g.fillStyle(0x56505a, 1).fillCircle(bx - r * 0.3, byy - r * 0.3, r * 0.45);
       }
-      if (Math.floor(t) % 2 === 0) {
+      if (Math.floor(t) % (surge ? 1 : 2) === 0) {
         const z = rand(SETTINGS.world.floorTop, SETTINGS.world.floorBottom);
-        this.scene.gore.spawn({ x: fx + rand(0, 30), z, h: rand(0, 60), vx: rand(40, 160), vz: 0, vh: rand(20, 120), tint: 0x6a6258, scale: rand(0.8, 1.6), decal: false, life: 40 });
+        this.scene.gore.spawn({ x: fx + rand(0, 30), z, h: rand(0, 60), vx: rand(40, surge ? 260 : 160), vz: 0, vh: rand(20, 120), tint: 0x6a6258, scale: rand(0.8, 1.6), decal: false, life: 40 });
       }
-      if (Math.floor(t) % 20 === 0 && Math.abs(this.scene.player.x - fx) < 800) this.scene.fx?.shake(2, 10);
+      const near = Math.abs(this.scene.player.x - fx) < 800;
+      if (surge && !hz.wasSurging && near) {
+        playSfx(this.scene, 'kick', { volume: 0.9, pitch: -2600, minGapMs: 0 });
+        this.scene.fx?.shake(6, 30);
+      } else if (Math.floor(t) % (surge ? 6 : 20) === 0 && near) this.scene.fx?.shake(surge ? 4 : 2, 10);
     }
-    // the dust cloud rolling ahead of it
-    g.fillStyle(0x8a8070, 0.18).fillRect(fx - 20, top, 90, bot - top);
-    g.fillStyle(0x8a8070, 0.08).fillRect(fx + 70, top, 90, bot - top);
+    hz.wasSurging = surge;
+  }
+
+  // The red at the screen's edge while the collapse is close behind a hero (along the
+  // camera's left edge, under the HUD): stronger the closer it is, pulsing faster when it's on him.
+  drawCollapseWarning(hz, cam, on) {
+    const w = hz.warnG = hz.warnG ?? this.scene.add.graphics().setDepth(DEPTH.floor + 905);
+    w.clear();
+    if (!on || hz.front >= hz.to) return;
+    const heroes = this.scene.players ?? [this.scene.player];
+    const gap = Math.min(...heroes.filter((p) => p?.alive).map((p) => p.x - hz.front));
+    const k = Math.max(0, Math.min(1, 1 - (gap - 40) / 220));
+    if (k <= 0) return;
+    const t = this.scene.time.now / 16.7;
+    const a = k * (0.35 + 0.25 * Math.sin(t * (0.15 + k * 0.25)));
+    const W = cam.width; const H = cam.height;
+    for (let i = 0; i < 6; i++) w.fillStyle(0xc01808, a * (1 - i / 6)).fillRect(cam.x + i * W * 0.03, cam.y, W * 0.03, H);
   }
 
   // The stables' stampede (Stage 'stampede'): first dust boiling out of the stable door and
@@ -1086,10 +1123,10 @@ export class StageView {
       const ring = this.scene.add.ellipse(s.x, s.z - y, 30, 10).setStrokeStyle(3, 0xd8c8b0, 0.8).setDepth(DEPTH.shadows + 0.1);
       this.scene.tweens.add({ targets: ring, scaleX: 5, scaleY: 5, alpha: 0, duration: 300, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
     });
-    ev.on('collapseStart', () => {
+    ev.on('collapseStart', ({ chained }) => {
       playSfx(this.scene, 'kick', { volume: 1, pitch: -2200, minGapMs: 0 });
       this.scene.fx?.shake(10, 40);
-      this.scene.callout('RUN!', '#ffb070', 30);
+      this.scene.callout(chained ? 'FASTER!' : 'RUN!', '#ffb070', 30); // (chained: the next stretch of the chase, the rock still coming)
     });
     ev.on('wayOpen', ({ block: b }) => {
       playSfx(this.scene, 'block', { volume: 0.9, pitch: -900, minGapMs: 0 });

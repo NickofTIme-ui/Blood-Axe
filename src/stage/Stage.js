@@ -86,8 +86,11 @@ const KICKED = { kinds: ['crate', 'chest'], speed: 620, range: 560, lane: 26, ra
 // The stables' stampede: px a frame, the space between horses, how close a horse must be
 // to run you down (each side of him), the damage
 const STAMPEDE = { period: 330, warn: 80, speed: 13, gap: 120, reach: 46, damage: 26 };
-// The mine's collapse: how far ahead of the falling rock it still hits you, the damage
-const COLLAPSE = { reach: 30, damage: 24 };
+// The mine's collapse: how far ahead of the falling rock it still hits you, the damage,
+// how far on it throws him (and how much firm ground there must be: the knockdown carries him
+// on), and how far behind the hindmost hero it falls before it runs at `chaseMult` its speed
+// to catch up (it stays on screen, at your back)
+const COLLAPSE = { reach: 30, damage: 24, throw: 170, land: 120, chase: 420, chaseMult: 2.2 };
 const BEAM = { period: 230, warn: 80, damage: 22, lethalH: 60 };
 // The Shattered Ascent's catapults (hazard 'bombard'): a volley every `period` frames, each
 // stone aimed at a hero (a little off where he stands), its landing spot shown for `warn`
@@ -221,7 +224,7 @@ export class Stage {
     for (const p of this.players) this.restore(p, 1);
     const won = this.cleared === this.checkpoint; // died (a trap) after the fight here was already won
     this.story?.resetSection(this.checkpoint);
-    for (const hz of this.hazards) if (hz.type === 'collapse' && hz.section === this.checkpoint) hz.front = null; // (the rock starts again behind you)
+    for (const hz of this.hazards) if (hz.type === 'collapse' && hz.section <= this.checkpoint) hz.front = null; // (the rock starts again behind you)
     for (const hz of this.hazards) if (hz.type === 'bombard') hz.shells = []; // (nothing left in the air)
     // (a wagon still rolling here goes back to where it started, its people still in it)
     for (const pr of this.props) {
@@ -863,18 +866,52 @@ export class Stage {
   }
 
   // The mine coming down behind you (Hollow Mountain): once its section starts, a front of
-  // falling rock runs from x0 toward `to` at `speed` px/s. Anyone it catches is battered
-  // and thrown on ahead of it; it stops at `to` (the way on is up to you from there).
+  // falling rock runs from x0 toward `to` at `speed` px/s, lurching on at `surge.mult` times
+  // that for `surge.for` frames every `surge.every`. Anyone it catches is battered and thrown
+  // on ahead of it, onto firm ground (never into the drop); it stops at `to` (the way on is up
+  // to you from there). The chase runs over several sections, one collapse in each: the next
+  // one picks up where the last one's rock was (it doesn't jump ahead), and a death puts it
+  // back at its own x0.
   updateCollapse(hz) {
     if (hz.section !== this.index) { if (hz.section > this.index) hz.front = null; return; }
-    if (hz.front == null) { hz.front = hz.x0; this.world.events.emit('collapseStart', { hazard: hz }); }
-    if (this.story?.holding) return; // (not while a held scene plays)
-    hz.front = Math.min(hz.to, hz.front + hz.speed / 60);
-    for (const f of this.world.fighters) {
-      if (!f.alive || f.x > hz.front + COLLAPSE.reach) continue;
-      this.hurt(hz, f, hz.damage ?? COLLAPSE.damage, 1, 'beam');
-      f.x = Math.max(f.x, hz.front + COLLAPSE.reach + 4);
+    if (hz.front == null) {
+      hz.front = hz.x0;
+      hz.run = 0;
+      // (taking over from the last stretch's rock, which goes with it)
+      for (const o of this.hazards) {
+        if (o.type !== 'collapse' || o === hz || o.front == null) continue;
+        hz.front = Math.min(hz.front, o.front);
+        o.front = null;
+      }
+      this.world.events.emit('collapseStart', { hazard: hz, chained: hz.front < hz.x0 });
     }
+    if (this.story?.holding) return; // (not while a held scene plays)
+    hz.surging = !!hz.surge && hz.run % hz.surge.every >= hz.surge.every - hz.surge.for;
+    hz.run++;
+    const C = COLLAPSE;
+    const last = Math.min(...this.players.filter((q) => q.alive).map((q) => q.x));
+    const k = (hz.surging ? hz.surge.mult : 1) * (last - hz.front > C.chase ? C.chaseMult : 1);
+    hz.front = Math.min(hz.to, hz.front + hz.speed * k / 60);
+    for (const f of this.world.fighters) {
+      if (!f.alive || f.x > hz.front + C.reach) continue;
+      const hit = !hz.cool.has(f.id) && !f.invincible;
+      this.hurt(hz, f, hz.damage ?? C.damage, 1, 'beam');
+      f.x = this.collapseLanding(f, hz.front + C.reach + (hit ? C.throw : 4));
+    }
+  }
+
+  // Where the collapse throws a man it caught: the first spot at or past x with firm ground
+  // under him wide enough to land on (not a drop, not a rotten plank).
+  collapseLanding(f, x) {
+    const T = this.terrain;
+    if (!T) return Math.max(f.x, x);
+    const firm = (at) => T.safeAt(at, f.z) && T.groundAt(at, f.z) >= 0;
+    let at = Math.max(f.x, x);
+    for (let k = 0; k < 120 && !(firm(at) && firm(at + COLLAPSE.land)); k++) at += 10;
+    // (onto a ledge: stood on it, not inside it)
+    const g = T.groundAt(at, f.z);
+    if (g > f.h) { f.h = f.floor = g; f.floorBlock = T.blockAt(at, f.z); }
+    return at;
   }
 
   // How many stones a bombardment throws a volley right now: its `shots`, but never more
