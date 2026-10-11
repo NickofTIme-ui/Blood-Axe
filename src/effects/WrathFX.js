@@ -232,7 +232,7 @@ export class WrathFX {
       G.blade.setPosition(f.x + f.facing * 6, f.z - f.h - 150).setDepth(f.z + 0.6).setScale(0.6 + t * 1.4 + Math.random() * 0.2).setAlpha(0.6 + 0.4 * t);
       if (G.wrath) {
         const cam = s.cameras.main;
-        this.dim.setVisible(true).setPosition(cam.midPoint.x, cam.midPoint.y).setAlpha(0.5 * t);
+        this.dim.setVisible(true).setPosition(cam.midPoint.x, cam.midPoint.y).setAlpha(0.62 * t);
         s.fx.shake(1 + 4 * t, 3);
       }
     } else if (this.dim.visible) {
