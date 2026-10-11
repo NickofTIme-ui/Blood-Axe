@@ -516,3 +516,12 @@ same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one 
 ## Cloud, 2026-10-11: boss entrances freeze the whole field (not on itch)
 - Nick: while a boss walked in and the hero stood frozen, other enemies still hit him. The bosses' escorts (Malgor, Orsk, the Houndmaster's hounds, the Ore Crusher's grunt) were spawned after the freeze was handed out, so they walked in and attacked; knives and arrows in flight, traps and mines also kept going.
 - Now `World.holdStill(frames, keep)` (called from `Stage.spawnBoss` for every boss whose entrance doesn't say `freeze: false`) holds every fighter but the boss (and his twin), projectiles, walls, mines, quakes, storms and hit checks until he has arrived; anyone spawned meanwhile is held too. The stage's traps and its stuck-latecomer check wait as well. Dying clears it. Test: "boss: while he walks in, the whole field freezes". Not checked on screen.
+
+## Magnific on the level grounds (11 October 2026)
+
+Magnific can't be reached from the cloud, so it runs on the local machine. The guide with
+settings and prompts per level is in the project files (`magnific-ground/magnific-ground-guide.md`).
+After running a ground through Magnific, `python tools/ground-fit.py <magnific.png> <level>`
+shrinks it back to 2172 x 724, matches its colour to the original and writes
+`assets/env/<level>/ground.png` (the game shows the ground at about 1:1 at 1080p, so the gain is
+crispness, not size). Nothing has been run through Magnific yet; start with the village.
