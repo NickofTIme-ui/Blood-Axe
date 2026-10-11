@@ -29,6 +29,9 @@ export class World {
     this.quakes = new Quakes(this);     // a boss's ground shockwaves (combat/Quake.js)
     this.storms = new Storms(this);     // Oryn's Stormcaller fields and strikes (combat/Storm.js)
     this.frame = 0;
+    // A boss making his entrance (stage/Stage.js spawnBoss): the whole field holds still
+    // for `frames` ticks, all but the `keep` (the boss, his twin) walking in. See holdStill().
+    this.hold = null;
     installSkills(this); // (skill-tree behaviours: combat/Skills.js; inert without skills)
     installStyle(this);  // (the combo counter and style rank: combat/Style.js)
     // Dice. Every roll the simulation makes comes from roll(): a number fixed by the
@@ -85,10 +88,28 @@ export class World {
     return p;
   }
 
+  // Freeze everyone and everything but `keep` for `frames` ticks: every fighter (heroes,
+  // foes, and any who arrive meanwhile, like a boss's escort), every projectile in flight,
+  // every wall, mine, shockwave and storm, mid-swing blows too. Nobody gets a free hit on
+  // a hero who can't move.
+  holdStill(frames, keep = []) {
+    this.hold = { frames, keep: new Set(keep) };
+    for (const f of this.fighters) if (!this.hold.keep.has(f)) f.vx = f.vz = 0;
+  }
+
   // One fixed step (1/60 s).
   tick() {
     this.frame++;
     this.terrain?.update(); // lifts move, planks give way (stage/Terrain.js)
+    if (this.hold) {
+      // (held: only the boss walks; the rest is a still picture, resumed where it stopped)
+      for (const f of this.fighters) {
+        if (!this.hold.keep.has(f)) f.awe = Math.max(f.awe ?? 0, this.hold.frames);
+        f.update();
+      }
+      if (--this.hold.frames <= 0) this.hold = null;
+      return;
+    }
     for (const f of this.fighters) f.update();
     for (const p of this.projectiles) p.update(this.bounds);
     this.separate();
