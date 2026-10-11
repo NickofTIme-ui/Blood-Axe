@@ -2013,7 +2013,79 @@ test('progress: the two majors shut each other out; picks never touch the shared
   const s = P.statsFor('warrior', CHARACTERS.warrior);
   assert(s.moves.heavy.damage > CHARACTERS.warrior.moves.heavy.damage && JSON.stringify(CHARACTERS.warrior.moves.heavy) === base, 'a copy changed, not the original');
   const nodes = SKILL_TREES.warrior.branches.flatMap((b) => b.nodes);
-  assert(nodes.length === 9 && nodes.reduce((n, x) => n + x.cost, 0) === 36, 'nine skills, 36 points for all of them');
+  assert(nodes.length === 12 && nodes.reduce((n, x) => n + x.cost, 0) === 48, 'twelve skills in four branches, 48 points for all of them');
+});
+
+test("rurik: Oathbrand Wakes makes the Firebolt a Hearthfire Bolt: cheaper, through two men, and a man it kills blows up", () => {
+  const t = skillSetup(rurikWith('oathbrandWakes'), { script: { 1: ['magic'] }, foes: [[520], [600]] });
+  t.p.facing = 1;
+  t.p.mana = t.p.stats.maxMana;
+  t.es[0].health = 5;
+  const kills = [];
+  t.world.events.on('kill', (e) => kills.push(e.fatality));
+  t.run(70);
+  assert(t.p.stats.maxMana === 60 && t.p.mana < 60 && t.p.mana >= 40, `one bolt, 20 mana (${t.p.mana.toFixed(1)} of ${t.p.stats.maxMana})`);
+  assert(kills[0] === 'explode', `the first man blew apart (${kills})`);
+  assert(t.es[1].health < t.es[1].stats.maxHealth, 'and it burned on into the man behind him');
+});
+
+test("rurik: Kingsfire: a tap is still the bolt, a hold drives the sword down and a road of fire runs out ahead", () => {
+  const rk = () => rurikWith('oathbrandWakes', 'kingsfire');
+  const tap = skillSetup(rk(), { script: { 1: ['magic'] }, foes: [[560]] });
+  tap.p.facing = 1; tap.p.mana = 60;
+  tap.run(16);
+  assert(tap.world.projectiles.length === 1 && tap.p.state !== 'kingsfire', `tapped: a bolt (${tap.p.state})`);
+  const t = skillSetup(rk(), { script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 30 }), foes: [[470], [560], [640, 430], [300]] });
+  t.p.facing = 1; t.p.mana = 60;
+  let pillars = 0;
+  t.world.events.on('wrathPillar', () => pillars++);
+  let saw = false;
+  for (let i = 0; i < 70; i++) { t.run(1); if (t.p.state === 'kingsfire') saw = true; }
+  assert(saw && t.world.projectiles.length === 0, 'held: Kingsfire, no bolt');
+  assert(t.p.mana <= 60 - 40 + 3.5, `40 mana, less what came back meanwhile (${t.p.mana.toFixed(1)})`);
+  assert(pillars === 6, `six pillars (${pillars})`);
+  assert(t.es.slice(0, 3).every((e) => e.health < e.stats.maxHealth), 'all three men ahead caught');
+  assert(t.es[3].health === t.es[3].stats.maxHealth, 'the man behind him untouched (only the wrath burns both ways)');
+  // a man the fire kills blows up
+  const k = skillSetup(rk(), { script: { 1: ['magic'] }, hold: (n) => ({ magic: n < 30 }), foes: [[480]] });
+  k.p.facing = 1; k.p.mana = 60; k.es[0].health = 10;
+  let how = null;
+  k.world.events.on('kill', (e) => { how = e.fatality; });
+  k.run(60);
+  assert(how === 'explode', `blown apart (${how})`);
+  // not enough mana for it: the hold just throws the bolt
+  const low = skillSetup(rk(), { script: { 1: ['magic'] }, hold: { magic: true } });
+  low.p.facing = 1; low.p.mana = 25;
+  low.run(20);
+  assert(low.world.projectiles.length === 1, 'short of mana: the bolt');
+});
+
+test("rurik: a sword kill feeds Kingsfire 5 mana; without the skill it doesn't", () => {
+  const fed = (stats) => {
+    const t = skillSetup(stats, { script: { 1: ['attack'] }, foes: [[450]] });
+    t.es[0].health = 1; t.p.mana = 0;
+    t.run(20);
+    return t.p.mana;
+  };
+  const plain = fed(CHARACTERS.warrior);
+  const kf = fed(rurikWith('oathbrandWakes', 'kingsfire'));
+  assert(kf - plain >= 4.9, `fed (${plain.toFixed(1)} -> ${kf.toFixed(1)})`);
+});
+
+test("rurik: the King's Wrath bursts out both ways, and every man it kills sets off the men round him", () => {
+  const t = skillSetup(rurikWith('oathbrandWakes', 'kingsfire', 'kingsWrath'), { script: { 1: ['magic'] }, hold: { magic: true }, foes: [[300], [480], [700], [745]] });
+  t.p.facing = 1; t.p.mana = 70;
+  // the far pair: the first goes up, his blast takes the second (who is out of the road's reach in depth)
+  t.es[2].health = 5;
+  t.es[3].z = 462; // (just out of the road's depth: only a blast can reach him)
+  let nova = 0; let blasts = 0; let invincible = false;
+  t.world.events.on('wrathNova', () => nova++);
+  t.world.events.on('wrathBlast', () => blasts++);
+  for (let i = 0; i < 90; i++) { t.run(1); if (t.p.state === 'kingsfire' && t.p.invincible) invincible = true; }
+  assert(nova === 1 && invincible, 'one ring, and nothing touches him while he roars');
+  assert(t.es[0].health < t.es[0].stats.maxHealth && t.es[1].health < t.es[1].stats.maxHealth, 'the men on both sides burned');
+  assert(blasts >= 1 && t.es[3].health < t.es[3].stats.maxHealth, `the dead man's blast reached his neighbour (${blasts} blasts)`);
+  assert(t.p.mana < 70 - 50 + 5, `50 mana (${t.p.mana.toFixed(1)})`);
 });
 
 test("rurik: Keen Edge sharpens every sword blow; Executioner's Arc is a 360 cleave on the D-pad", () => {

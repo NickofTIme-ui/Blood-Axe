@@ -245,7 +245,7 @@ export class CombatSystem {
       if (attacker?.stats.killHeal && attacker.alive) attacker.health = Math.min(attacker.stats.maxHealth, attacker.health + attacker.stats.killHeal);
       // How do they come apart? (only rigged enemies can be dismembered)
       if (def.stats.art && superCrit) event.fatality = 'explode'; // heavy carnage
-      else if (def.stats.art && move.fatality) event.fatality = move.fatality; // (a mine says how)
+      else if (def.stats.art && move.fatality && !(def.stats.boss && move.cut === 'fire')) event.fatality = move.fatality; // (a mine says how; Rurik's fire never blows a boss apart: his death is his own)
       else if (def.stats.art) {
         event.fatality = chooseFatality({
           cut: move.cut,

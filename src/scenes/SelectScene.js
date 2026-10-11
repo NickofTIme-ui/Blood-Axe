@@ -332,7 +332,7 @@ export class SelectScene extends Phaser.Scene {
     this.pName.setText(c.name.toUpperCase());
     epicFill(this.pName, ['#fff2c8', '#e0b060', '#7a4a10']);
     this.pDesc.setText(c.description);
-    this.pSpell.setText(`SPELL: ${(c.spell?.name ?? '—').toUpperCase()}`);
+    this.pSpell.setText(`SPELL: ${(c.spell?.name ?? '—').toUpperCase()}${c.blade ? `   ·   BLADE: ${c.blade.toUpperCase()}` : ''}`);
     const t = this.heroTexture(c, h.id);
     const src = this.textures.get(t.key).getSourceImage();
     this.portrait.setTexture(t.key, t.frame);

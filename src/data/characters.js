@@ -60,7 +60,9 @@ export const CHARACTERS = {
     id: 'warrior',
     name: 'Rurik',
     className: 'Warrior',
-    description: 'The Ashen Oath. Slow, tanky, brutal heavy attacks. Weak magic.',
+    title: "THE PEOPLE'S KING", // (data/oathbrand.js: his sword, its lore)
+    blade: 'Oathbrand',
+    description: "The people's king. Oathbrand was forged from every hearth in the valley. Slow, heavy, unbreakable. His fire is his fury.",
     sprite: 'ulric',          // pixel-art sheet (see data/sprites.js); remove to use placeholder shapes
     body: { w: 46, h: 108 },
     look: { color: 0x8a3b2e, accent: 0xc8c8c8, skin: 0xd8a57c },

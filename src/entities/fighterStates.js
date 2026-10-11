@@ -874,4 +874,4 @@ export const FIGHTER_STATES = {
 Object.assign(FIGHTER_STATES, mageStates({ tryActions, stopMoving, friction, faceInput, aimTurn }));
 // ...and the Rogue's (combat/Rogue.js)
 Object.assign(FIGHTER_STATES, rogueStates({ tryActions, stopMoving, friction, faceInput, makeAttackState }));
-Object.assign(FIGHTER_STATES, skillStates({ tryActions, stopMoving, friction, movePhase })); // (the skill tree's moves: combat/Skills.js)
+Object.assign(FIGHTER_STATES, skillStates({ tryActions, stopMoving, friction, movePhase, faceInput, aimTurn, inWindow })); // (the skill tree's moves: combat/Skills.js)

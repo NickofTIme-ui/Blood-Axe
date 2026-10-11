@@ -17,7 +17,7 @@ import { drawSmear, smearSparks } from './Smear.js';
 import { IMPALE, CHAIN } from '../combat/Finisher.js';
 import { Heading, headingAnim } from './Heading.js';
 import { BodyFeel, easedSpread } from './animFeel.js';
-import { PLUNGE_LAND } from '../combat/Skills.js';
+import { PLUNGE_LAND, kingsfireOf } from '../combat/Skills.js';
 import { softShadow } from './atmosphere.js';
 
 const ATTACKS = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'airAttack', 'kick', 'thrust', 'spin'];
@@ -184,6 +184,19 @@ export class SpriteFighterView {
         const anim = (f.dodgeDir === 'up' && a.dodgeUp) || (f.dodgeDir === 'down' && a.dodgeDown) || a.dodge;
         return easedSpread(anim.frames, fr / (d.duration + d.recovery));
       }
+      // KINGSFIRE / THE KING'S WRATH (combat/Skills.js), on the cleave's poses: Oathbrand
+      // lifted overhead while the fire gathers (the wrath holds it there through his roar),
+      // driven point-first into the floor on the release and held there while the road
+      // of fire runs, then wrenched free
+      case 'kingsfire': {
+        const ph = a.heavy?.phases;
+        const K = kingsfireOf(f);
+        if (!ph || !K) return a.cast.frames[0];
+        if (fr < K.startup - 3) return ph.startup[Math.min(ph.startup.length - 1, Math.floor((fr / Math.max(1, K.startup - 3)) * ph.startup.length))];
+        if (fr < K.startup + K.recovery - 6) return ph.active[0];
+        return ph.recovery.at(-1);
+      }
+      case 'kingcast':
       case 'cast': {
         const sp = f.stats.spell;
         const fs = a.cast.frames; // 2 wind-up frames, then 2 impact frames
@@ -397,6 +410,23 @@ export class SpriteFighterView {
         if (fr === m.startup + 1 && fr !== this.kickDust) {
           this.kickDust = fr;
           this.scene.gore?.spark(f.x - f.facing * 26, f.z, 2, 0x9a8a70, 12); // heel drives off the floor
+        }
+      }
+    }
+
+    // Kingsfire: he sinks behind the blade as it goes into the floor; the wrath shakes
+    // him through the roar
+    if (st === 'kingsfire') {
+      const K = kingsfireOf(f);
+      if (K) {
+        if (fr < K.startup) {
+          const t = fr / K.startup;
+          lean -= 7 * t;
+          if (f.wrathOn) { push += (Math.random() - 0.5) * 2.4 * t; sy *= 1 + 0.04 * t; }
+        } else {
+          const t = Math.max(0, 1 - (fr - K.startup) / 8);
+          sx *= 1 + 0.14 * t; sy *= 1 - 0.14 * t;
+          bob += 4 * Math.min(1, (fr - K.startup) / 3);
         }
       }
     }

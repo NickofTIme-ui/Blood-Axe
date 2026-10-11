@@ -24,6 +24,7 @@ import { HoundView } from '../view/HoundView.js';
 import { CrusherView } from '../view/CrusherView.js';
 import { RogueFX } from '../effects/RogueFX.js';
 import { QuakeFX } from '../effects/QuakeFX.js';
+import { WrathFX } from '../effects/WrathFX.js';
 import { ProjectileView } from '../view/ProjectileView.js';
 import { DebugDraw } from '../view/DebugDraw.js';
 import { DEPTH } from '../view/depths.js';
@@ -146,6 +147,7 @@ export class ArenaScene extends Phaser.Scene {
       if (e.move.fx === 'kick') this.kickImpact(e.x, e.z, e.h, e.dir);
       if (e.move.cut === 'fire') this.fireImpact(e.x, e.z, e.h);
       if (e.move.impale) this.impaleFX(e);
+      if (e.kind === 'melee' && e.attacker?.stats.blade) this.oathbrandBite(e);
     });
     // hold-attack power thrust: a scrape of steel as both hands lock on, a ring when full
     ev.on('chargeStart', ({ fighter }) => {
@@ -179,6 +181,7 @@ export class ArenaScene extends Phaser.Scene {
     this.mageFX = new MageFX(this); // the Mage's spells and barriers (effects/MageFX.js)
     this.rogueFX = new RogueFX(this); // the Rogue's mines, marks and steel (effects/RogueFX.js)
     this.quakeFX = new QuakeFX(this); // the Warlord's Earthbreaker slam and its shockwave (effects/QuakeFX.js)
+    this.wrathFX = new WrathFX(this); // Rurik's Kingsfire and the King's Wrath, and men blown apart by his fire (effects/WrathFX.js)
     ev.on('kill', (e) => {
       this.kills++;
       if (e.finisher) return; // executions do their own gore (setupFinishers)
@@ -519,6 +522,25 @@ export class ArenaScene extends Phaser.Scene {
     else g.spark(e.x, e.z, e.h, 0xffd080, 14);
   }
 
+  // OATHBRAND biting (Rurik's sword, data/oathbrand.js): the weight of it in the hit. A
+  // deep thud under the steel, hearth-embers knocked out of the blade at the contact, and
+  // on the big cuts (the overhand, the cleave, the thrust, the whirlwind) the camera dips
+  // with the blow and a ring of gold sparks. View only: the frame data is untouched.
+  oathbrandBite(e) {
+    const big = (e.move.hitstop ?? 0) >= 10 || e.move.knockdown;
+    playSfx(this, 'kick', { volume: big ? 0.55 : 0.3, pitch: big ? -1700 : -1300, spread: 60, minGapMs: 40 });
+    this.gore.spark(e.x, e.z, e.h, 0xffd070, big ? 14 : 6);
+    this.gore.spark(e.x, e.z, e.h, 0xff7a1a, big ? 10 : 4);
+    if (!big) return;
+    this.fx.shake((e.move.shake ?? 4) + 3, 10);
+    const cam = this.cameras.main;
+    cam.zoomTo(this.baseZoom * 1.025, 50, 'Quad.easeOut', true);
+    this.time.delayedCall(90, () => cam.zoomTo(this.baseZoom, 220, 'Quad.easeOut', true));
+    const ring = this.add.ellipse(e.x, e.z - e.h, 30, 30, 0xffd070, 0).setStrokeStyle(3, 0xffe0a0, 0.9)
+      .setDepth(DEPTH.popups - 2).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: ring, scale: 2.6, alpha: 0, duration: 200, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+  }
+
   // Firebolt hit: burst of flame and embers.
   fireImpact(x, z, h) {
     const boom = this.add.circle(x, z - h, 14, 0xffa030, 0.9).setDepth(DEPTH.popups - 2).setBlendMode(Phaser.BlendModes.ADD);
@@ -797,6 +819,8 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.stage.bossSpawned) playMusic(this, this.stageData.music ?? 'battle'); // (died to the boss: back to the battle track)
     this.cuts.clear();
     this.burning.clear();
+    this.wrathFX.clear();
+    this.world.wraths.clear();
     this.timeScale = 1;
     this.slowUntil = 0;
     this.cameras.main.zoomTo(this.baseZoom, 400, 'Sine.easeOut', true);
@@ -1176,6 +1200,7 @@ export class ArenaScene extends Phaser.Scene {
     this.mageFX.update();
     this.rogueFX.update();
     this.quakeFX.update();
+    this.wrathFX.update();
     this.updateCamFocus();
     this.updateFinisherMarker();
     this.stageView.update();

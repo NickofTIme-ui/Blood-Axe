@@ -61,7 +61,7 @@ The table above is **Rurik's** kit. The Mage and the Rogue use the same buttons 
 | Heavy (K) | Cleave | **Chain Lightning**: leaps from body to body; hold to overcharge | **Viper Strike**: bursts through up to 3 men; exposes |
 | Kick (O) | Sparta kick | **Force Blast**: a cone of force that hurls men back | Crescent kick; **down + O** = sweep; nobody close = **throwing knife** |
 | Dodge (Shift / I) | Roll | **Blink**: teleport | Acrobatic evade. Slip a blow at the last instant (**Shadow Window**) and your next hit exposes that man |
-| Magic (U) | Firebolt | **Arcane Barrier**: tap = Infernal Wall (fire), hold = Earthen Bulwark (stone) | **Widow Mine**: dropped without stopping (2 at once) |
+| Magic (U) | Firebolt (with the KINGSFIRE skill: **hold** U for the road of fire) | **Arcane Barrier**: tap = Infernal Wall (fire), hold = Earthen Bulwark (stone) | **Widow Mine**: dropped without stopping (2 at once) |
 | Jump (Space) | Jump | Levitate | Jump / double jump. Run at a teammate and jump to **Ally Vault** off him |
 | In the air | J: air slash | J: staff chop | J: slash, **O: Shuriken Fan** (at the top of a vault: **Death From Above**), **K: Falling Viper** |
 

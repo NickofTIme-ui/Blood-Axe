@@ -81,7 +81,7 @@ export class FighterView {
     } else if (st === 'dodge') {
       scaleY = 0.55;
       alpha = f.invincible ? 0.45 : 1;
-    } else if (st === 'cast') {
+    } else if (st === 'cast' || st === 'kingcast' || st === 'kingsfire') {
       wAngle = -80;
       wColor = f.stats.spell?.projectile.color ?? look.accent;
       if (Math.floor(fr / 3) % 2 === 0) torsoColor = 0xffffff;

@@ -10,6 +10,7 @@ import { Barriers } from '../combat/Barrier.js';
 import { Mines } from '../combat/Mine.js';
 import { Quakes } from '../combat/Quake.js';
 import { Storms } from '../combat/Storm.js';
+import { Wraths } from '../combat/Wrath.js';
 import { installSkills } from '../combat/Skills.js';
 import { installStyle, tickStyle } from '../combat/Style.js';
 
@@ -28,6 +29,7 @@ export class World {
     this.mines = new Mines(this);       // the Rogue's widow mines (combat/Mine.js)
     this.quakes = new Quakes(this);     // a boss's ground shockwaves (combat/Quake.js)
     this.storms = new Storms(this);     // Oryn's Stormcaller fields and strikes (combat/Storm.js)
+    this.wraths = new Wraths(this);     // Rurik's Kingsfire and the King's Wrath (combat/Wrath.js)
     this.frame = 0;
     installSkills(this); // (skill-tree behaviours: combat/Skills.js; inert without skills)
     installStyle(this);  // (the combo counter and style rank: combat/Style.js)
@@ -98,6 +100,7 @@ export class World {
     this.combat.update();
     this.quakes.update(); // (after the melee: whoever the slam itself hit, the wave passes by)
     this.storms.update();
+    this.wraths.update();
     tickStyle(this);
 
     const gone = this.fighters.filter((f) => f.removeMe);

@@ -1,11 +1,12 @@
-// skills.js — The skill trees. One per hero: RURIK's is whole; ORYN's has its first
+// skills.js — The skill trees. One per hero: RURIK's is whole (four branches: his fire,
+// THE KING'S WRATH, is the fourth); ORYN's has its first
 // branch (THE STORMCALLER), the other two are shown as planned (Stage 4 of the campaign
 // plan); VEXA's is still to come (all three are sketched in docs/progression.md).
 //
 // A branch with `planned: true` is a placeholder: its nodes are listed (so the tree reads
 // whole) but can't be taken (Progress.blocker says 'planned') and do nothing.
 //
-// A tree is three BRANCHES (columns) of three TIERS (rows). A node:
+// A tree is three or four BRANCHES (columns) of three TIERS (rows). A node:
 //   id, name, cost (skill points), tier (1..3), req (node ids needed first),
 //   excl (nodes it can't be taken with — the choice at the top of the tree),
 //   kind  'upgrade' | 'behaviour' | 'active' | 'passive' | 'mobility' | 'major'
@@ -97,6 +98,43 @@ export const SKILL_TREES = {
             id: 'skyfall', name: 'Skyfall', cost: 6, tier: 3, req: ['leapSmash'], kind: 'major',
             text: 'Leap Smash lands 60% wider, throws them into the air, and bounces you back up to smash again.',
             apply(s) { Object.assign(s.kit.plunge, { radius: 176, launch: 520, bounce: 560 }); },
+          },
+        ],
+      },
+      {
+        // His fire is the hearth-fire in Oathbrand (data/oathbrand.js), and his anger. The
+        // logic is combat/Wrath.js and combat/Skills.js, the look effects/WrathFX.js.
+        id: 'kingswrath', name: "THE KING'S WRATH", color: 0xff7a1a, blurb: 'Let the fire out',
+        nodes: [
+          {
+            id: 'oathbrandWakes', name: 'Oathbrand Wakes', cost: 2, tier: 1, req: [], kind: 'upgrade',
+            text: 'The Firebolt becomes a HEARTHFIRE BOLT: half again as big and fast, it burns clean through the first man into the next, hits twice as hard, and costs less (20). More mana (60), and it comes back faster. A man it kills is blown apart.',
+            apply(s) {
+              s.maxMana = Math.max(s.maxMana, 60);
+              s.magicMult = Math.max(s.magicMult, 1);
+              s.manaRegen = Math.max(s.manaRegen, 2.5);
+              const sp = s.spell;
+              sp.name = 'Hearthfire Bolt';
+              sp.cost = 20;
+              Object.assign(sp.projectile, {
+                look: 'hearthfire', damage: 34, speed: 760, w: 64, h: 40, pierce: true,
+                hitstop: 11, shake: 7, knockback: { x: 380, y: 360 }, fatality: 'explode',
+              });
+            },
+          },
+          {
+            id: 'kingsfire', name: 'Kingsfire', cost: 4, tier: 2, req: ['oathbrandWakes'], kind: 'active',
+            text: 'NEW: HOLD the spell button (U / LB). He drives Oathbrand into the ground and a road of fire erupts ahead of him, pillar after pillar: every man in it is thrown up burning, and a man it kills blows up. 40 mana; a tap still throws the bolt. Every sword kill gives back 5 mana.',
+            apply(s) {
+              s.states = { ...(s.states ?? {}), cast: 'kingcast' };
+              s.skills.kingsfire = true;
+              s.skills.swordMana = 5;
+            },
+          },
+          {
+            id: 'kingsWrath', name: "The King's Wrath", cost: 6, tier: 3, req: ['kingsfire'], kind: 'major',
+            text: 'Kingsfire becomes his WRATH (50 mana): he roars and nothing touches him, fire bursts out of him in a ring, then the road runs both ways, twice as far. Every man the fire kills goes up like a powder keg and sets off the men around him.',
+            apply(s) { s.skills.wrathChain = true; s.maxMana = Math.max(s.maxMana, 70); },
           },
         ],
       },

@@ -37,6 +37,18 @@ const ENEMY_LAYERS = [
   { color: 0xffffff, w: 0.12, a: 0.9 },
 ];
 const ENEMY_EMBERS = [0xffffff, 0xc8c8d0, 0xb0202a, 0x7a0a10];
+// OATHBRAND (Rurik's blade, data/oathbrand.js): a heavier, darker mass behind the cut and
+// a white-gold edge, the hearth-fire in it — the swing reads as weight, not a flick.
+const OATH_LAYERS = [
+  { color: 0x2a0402, w: 1.55, a: 0.6 },   // the mass of it: a deep, wide shadow
+  { color: 0xa8200a, w: 1.08, a: 0.65 },  // ember red
+  { color: 0xff7a1a, w: 0.72, a: 0.75 },  // hearth orange
+  { color: 0xffd070, w: 0.4, a: 0.9 },    // gold
+  { color: 0xfffbe8, w: 0.16, a: 1.0 },   // white-gold edge
+];
+const OATH_EMBERS = [0xfffbe8, 0xffd070, 0xffb040, 0xff7a1a];
+const layersFor = (f, sm) => (sm.enemy ? ENEMY_LAYERS : f.stats?.blade ? OATH_LAYERS : LAYERS);
+const embersFor = (f, sm) => (sm.enemy ? ENEMY_EMBERS : f.stats?.blade ? OATH_EMBERS : EMBERS);
 
 // Where the smear is this frame (null = not showing).
 function smearState(f, move, frame) {
@@ -66,10 +78,10 @@ export function drawSmear(g, f, move, frame) {
   const r = sm.r;
   const pt = (deg, rad) => ({ x: px + Math.cos(deg * D2R) * rad * f.facing, y: py + Math.sin(deg * D2R) * rad });
   const alpha = 1 - s.fade;
-  const thick = sm.w * (sm.heavy ? 1.15 : 1);
+  const thick = sm.w * (sm.heavy ? 1.15 : 1) * (f.stats?.blade ? 1.12 : 1);
 
   const N = 20;
-  for (const L of (sm.enemy ? ENEMY_LAYERS : LAYERS)) {
+  for (const L of layersFor(f, sm)) {
     for (let i = 0; i < N; i++) {
       const t0 = i / N;
       const t1 = (i + 1) / N;
@@ -117,7 +129,7 @@ export function smearSparks(gore, f, move, frame) {
     gore.spawn({
       x: tipX + (Math.random() - 0.5) * 6, z: f.z + (Math.random() - 0.5) * 6, h: f.z - tipY,
       vx, vz: (Math.random() - 0.5) * 30, vh: -vy + 40,
-      tint: (sm.enemy ? ENEMY_EMBERS : EMBERS)[Math.floor(Math.random() * (sm.enemy ? ENEMY_EMBERS : EMBERS).length)],
+      tint: embersFor(f, sm)[Math.floor(Math.random() * embersFor(f, sm).length)],
       scale: 0.18 + Math.random() * (sm.heavy ? 0.35 : 0.25),
       decal: false, life: 10 + Math.floor(Math.random() * 14),
     });

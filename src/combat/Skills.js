@@ -12,6 +12,12 @@
 //   BERSERK: no blocking; every blow gives back stamina (the damage is in meleeMult)
 //   OATH OF FURY: low on health, blows don't stagger him (CombatSystem's super armor
 //     asks furyArmor) and his damage heals him
+//   KINGSFIRE / THE KING'S WRATH (state 'kingcast', then 'kingsfire'): the spell button
+//     tapped throws the Firebolt as ever; HELD (WRATH.hold frames) he plants Oathbrand and
+//     the fire comes out of the ground (combat/Wrath.js). A sword kill feeds the fire
+//     (WRATH.swordMana).
+
+import { WRATH } from './Wrath.js';
 
 // Low on health with the Oath of Fury: he shrugs blows off.
 export function furyArmor(f) {
@@ -28,8 +34,64 @@ export function spinSide(f, frame) {
 }
 
 // The states the skills add (merged into FIGHTER_STATES by fighterStates.js).
-export function skillStates({ tryActions, stopMoving, friction, movePhase } = {}) {
+export function skillStates({ tryActions, stopMoving, friction, movePhase, faceInput, aimTurn, inWindow } = {}) {
   return {
+    // The spell button with KINGSFIRE: a tap is the Firebolt (paid for when it's known to
+    // be a tap), a hold with the mana for it turns into the road of fire.
+    kingcast: {
+      enter(f) {
+        stopMoving?.(f);
+        faceInput?.(f);
+        f.kingHeld = true;
+        f.kingBolt = false;
+      },
+      update(f, frame) {
+        const sp = f.stats.spell;
+        const K = kingsfireOf(f);
+        if (frame < sp.startup) aimTurn?.(f);
+        if (!f.controller.isDown('magic')) f.kingHeld = false;
+        if (frame === WRATH.hold) {
+          if (f.kingHeld && K && f.mana >= K.cost) return f.fsm.change('kingsfire');
+          f.mana = Math.max(0, f.mana - sp.cost);
+          f.kingBolt = true;
+        }
+        if (frame === sp.startup && f.kingBolt) f.world.spawnSpell(f, sp);
+        for (const win of sp.cancels ?? []) {
+          if (inWindow(win, frame) && tryActions(f, win.into)) return;
+        }
+        if (frame >= sp.startup + sp.recovery) f.fsm.change('idle');
+      },
+    },
+    // Oathbrand into the floor, and the fire answers. With the King's Wrath he roars first
+    // (nothing can touch him while he does), the ring bursts out of him, then the road
+    // runs both ways.
+    kingsfire: {
+      enter(f) {
+        const K = kingsfireOf(f);
+        const wrath = !!f.stats.skills.wrathChain;
+        f.mana = Math.max(0, f.mana - K.cost);
+        f.vx = 0; f.vz = 0;
+        f.wrathOn = wrath;
+        f.world.events.emit('wrathStart', { fighter: f, wrath });
+      },
+      update(f, frame) {
+        const K = kingsfireOf(f);
+        f.vx = 0; f.vz = 0;
+        f.invincible = f.wrathOn && frame <= K.startup + 4;
+        if (frame === K.startup) {
+          const W = f.world.wraths;
+          if (f.wrathOn) {
+            W.nova(f, K);
+            W.road(f, K, 1, true);
+            W.road(f, K, -1, true);
+          } else W.road(f, K, f.facing, false);
+          f.world.events.emit('wrathRelease', { fighter: f, wrath: f.wrathOn, x: f.x, z: f.z });
+        }
+        if (frame > K.startup + 12 && tryActions(f, ['dodge'])) return;
+        if (frame >= K.startup + K.recovery) f.fsm.change('idle');
+      },
+      exit(f) { f.invincible = false; f.wrathOn = false; },
+    },
     spin: {
       enter(f) {
         stopMoving?.(f);
@@ -92,6 +154,13 @@ export function skillStates({ tryActions, stopMoving, friction, movePhase } = {}
   };
 }
 
+// The fire he holds: Kingsfire's, or the King's Wrath's once he has it (null: neither).
+export function kingsfireOf(f) {
+  const S = f.stats.skills;
+  if (!S?.kingsfire) return null;
+  return S.wrathChain ? WRATH.wrath : WRATH.kingsfire;
+}
+
 // How long the blade stays buried after the landing (the view keys its poses to this).
 export const PLUNGE_LAND = 22;
 
@@ -120,6 +189,13 @@ function smash(f, K) {
 // The skills that answer to events. Once per world.
 export function installSkills(world) {
   const ev = world.events;
+  ev.on('kill', (e) => {
+    // KINGSFIRE: a sword kill feeds the fire
+    const k = e.attacker;
+    if (k?.stats?.skills?.swordMana && k.alive && e.kind === 'melee' && e.defender?.team !== k.team) {
+      k.mana = Math.min(k.stats.maxMana, k.mana + k.stats.skills.swordMana);
+    }
+  });
   ev.on('kill', (e) => {
     const a = e.attacker;
     const B = a?.stats?.skills?.bloodrush;
