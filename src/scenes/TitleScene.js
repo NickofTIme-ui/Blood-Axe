@@ -16,6 +16,7 @@ import { hostRoom, joinRoom, newCode } from '../net/Link.js';
 import { simVersion } from '../net/Version.js';
 import { buildTime } from '../net/Link.js';
 import { STAGES } from '../data/stages.js';
+import { TEST, toggleTestMode, showTestTag } from '../config/testMode.js';
 import { sharedProgress } from '../progression/Progress.js';
 
 export class TitleScene extends Phaser.Scene {
@@ -141,7 +142,8 @@ export class TitleScene extends Phaser.Scene {
       entries.push([W / 2 + 270, y - 116, 'ONLINE CO-OP', 230, () => this.openLobby()]);
       entries.push([W / 2 - 190, y - 58, 'THE GALLOWS ASCENT', 300, () => this.go('solo', null, 'gallows')]);
       entries.push([W / 2 + 190, y - 58, this.resetText(), 330, () => this.resetLevel()]);
-      entries.push([W / 2, y, 'BACK', 200, () => this.closeCut()]);
+      entries.push([W / 2 - 150, y, this.testText(), 260, () => this.toggleTest(), { size: 19 }]);
+      entries.push([W / 2 + 150, y, 'BACK', 200, () => this.closeCut()]);
     }
     this.buttons = entries.map(([x, by, label, w, act, opts], i) => {
       const b = this.makeButton(x, by, label, w, act, delay + i * 80, opts);
@@ -151,8 +153,21 @@ export class TitleScene extends Phaser.Scene {
     });
     this.button = this.buttons[0];
     this.resetBtn = page === 'cut' ? this.buttons[4] : null;
+    this.testBtn = page === 'cut' ? this.buttons[5] : null;
+    showTestTag();
     this.armedReset = false;
     this.pick(0);
+  }
+
+  // TEST MODE (config/testMode.js): can't die, full mana, keys to skip levels. Remembered.
+  testText() { return `TEST MODE:  ${TEST.on ? 'ON' : 'OFF'}`; }
+
+  toggleTest() {
+    const b = this.testBtn;
+    if (this.buttons[this.picked] !== b) this.pick(this.buttons.indexOf(b)); // (clicked)
+    toggleTestMode();
+    playSfx(this, TEST.on ? 'finisher' : 'block', { volume: 0.5, pitch: TEST.on ? 200 : -400 });
+    b.label.setText(this.testText());
   }
 
   resetText() { return `RESET HERO LEVEL  (LV ${sharedProgress(this.registry).level})`; }
