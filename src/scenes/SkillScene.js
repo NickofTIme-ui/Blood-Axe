@@ -260,8 +260,32 @@ export class SkillScene extends Phaser.Scene {
   // ------------------------------------------------------------ the blade (Rurik's Oathkeeper)
 
   buildBlade() {
-    const W = SETTINGS.width;
     const before = new Set(this.children.list);
+    if (this.textures.exists('oathkeeper-art')) this.paintedBlade(210, 38, 464);
+    else this.drawnBlade();
+    this.bladeWords(before);
+  }
+
+  // The painted Oathkeeper (assets/ui/oathkeeper.png, Nick's pick from the ChatGPT mock-ups):
+  // point down, its light breathing, the sun in its guard and the pommel stone pulsing.
+  paintedBlade(cx, top, h) {
+    const src = this.textures.get('oathkeeper-art').getSourceImage();
+    const k = h / src.height;
+    const at = (x, y) => ({ x: cx + (x - src.width / 2) * k, y: top + y * k }); // (a point on the painting)
+    this.add.ellipse(cx, top + h * 0.56, 90, h * 0.85, 0xffd890, 0.03).setBlendMode(Phaser.BlendModes.ADD);
+    this.add.image(cx + 6, top + 6, 'oathkeeper-art').setOrigin(0.5, 0).setScale(k).setTint(0x000000).setAlpha(0.45);
+    this.add.image(cx, top, 'oathkeeper-art').setOrigin(0.5, 0).setScale(k);
+    const light = this.add.image(cx, top, 'oathkeeper-art').setOrigin(0.5, 0).setScale(k).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+    this.tweens.add({ targets: light, alpha: 0.32, duration: 1300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    for (const [x, y, r] of [[143, 245, 16], [143, 45, 13]]) {
+      const p = at(x, y);
+      const sun = this.add.circle(p.x, p.y, r, 0xfff0c0, 0.5).setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({ targets: sun, scale: { from: 0.7, to: 1.3 }, alpha: { from: 0.25, to: 0.6 }, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
+  }
+
+  // The code-drawn stand-in (only if the painting is missing).
+  drawnBlade() {
     const B = OATHKEEPER;
     const g = this.add.graphics();
     // the sword, point down, drawn large down the left: long fullered blade with the ember
@@ -306,18 +330,22 @@ export class SkillScene extends Phaser.Scene {
     g.fillStyle(0x7a1a08, 1).fillCircle(cx, guardY - 92, 8);
     this.stone = this.add.circle(cx, guardY - 92, 6, B.colors.ember, 0.9).setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({ targets: this.stone, scale: { from: 0.8, to: 1.25 }, duration: 1100, yoyo: true, repeat: -1 });
-    // the words
+  }
+
+  bladeWords(before) {
+    const W = SETTINGS.width;
+    const B = OATHKEEPER;
     const tx = 360;
     const name = this.add.text(tx, 100, B.name, { fontFamily: FONT.display, fontSize: '40px' }).setStroke('#000000', 6);
     name.setLetterSpacing?.(8);
-    epicFill(name, ['#fff2c8', '#ffa040', '#7a2006']);
+    epicFill(name, ['#ffffff', '#ffe08a', '#8a5a10']);
     this.add.text(tx + 4, 146, B.title.toUpperCase(), { fontFamily: FONT.ui, fontSize: '14px', color: '#d8b04a' }).setStroke('#000000', 3).setLetterSpacing?.(4);
     let y = 182;
     for (const para of B.lore) {
       const t = this.add.text(tx, y, para, { fontFamily: FONT.ui, fontSize: '15px', color: '#f0e0c0', wordWrap: { width: W - tx - 50 }, lineSpacing: 3 }).setStroke('#000000', 2);
       y += t.height + 12;
     }
-    this.add.text(tx, y + 4, "Its fire is THE KING'S WRATH, the fourth branch of his tree.", { fontFamily: FONT.ui, fontSize: '13px', color: '#ff9a4a' }).setStroke('#000000', 3);
+    this.add.text(tx, y + 4, "Its fire is THE KING'S WRATH, the fourth branch of his tree.", { fontFamily: FONT.ui, fontSize: '13px', color: '#ffc860' }).setStroke('#000000', 3);
     this.bladeObjs = this.children.list.filter((o) => !before.has(o));
   }
 

@@ -58,6 +58,7 @@ export class BootScene extends Phaser.Scene {
     // character select (scenes/SelectScene.js): the cathedral, and each hero's full-body art
     this.load.image('select-bg', 'assets/ui/select-bg.jpg');
     for (const id of Object.keys(CHARACTERS)) this.load.image(`hero-src-${id}`, `assets/ui/hero-${id}.png`);
+    this.load.image('oathkeeper-art', 'assets/ui/oathkeeper.png'); // Rurik's blade, painted (the skill screen's lore page)
     this.load.image('props-hd-src', 'assets/env/props-hd.png'); // the breakables, repainted
     this.load.image('props-src', 'assets/env/props.png'); // painted props & traps (view/propSheet.js)
     preloadGrounds(this);

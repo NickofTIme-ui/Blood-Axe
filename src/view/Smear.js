@@ -37,16 +37,16 @@ const ENEMY_LAYERS = [
   { color: 0xffffff, w: 0.12, a: 0.9 },
 ];
 const ENEMY_EMBERS = [0xffffff, 0xc8c8d0, 0xb0202a, 0x7a0a10];
-// OATHKEEPER (Rurik's blade, data/oathkeeper.js): a heavier, darker mass behind the cut and
-// a white-gold edge, the hearth-fire in it — the swing reads as weight, not a flick.
+// OATHKEEPER (Rurik's blade, data/oathkeeper.js): a heavier, darker mass behind the cut, then
+// gold and the white-gold light of its fuller — the swing reads as weight, not a flick.
 const OATH_LAYERS = [
-  { color: 0x2a0402, w: 1.55, a: 0.6 },   // the mass of it: a deep, wide shadow
-  { color: 0xa8200a, w: 1.08, a: 0.65 },  // ember red
-  { color: 0xff7a1a, w: 0.72, a: 0.75 },  // hearth orange
-  { color: 0xffd070, w: 0.4, a: 0.9 },    // gold
-  { color: 0xfffbe8, w: 0.16, a: 1.0 },   // white-gold edge
+  { color: 0x1e1406, w: 1.55, a: 0.6 },   // the mass of it: a deep, wide shadow
+  { color: 0x8a6418, w: 1.08, a: 0.6 },   // old gold
+  { color: 0xe0b450, w: 0.72, a: 0.75 },  // gold
+  { color: 0xffe6a0, w: 0.4, a: 0.9 },    // the light in the fuller
+  { color: 0xffffff, w: 0.16, a: 1.0 },   // white edge
 ];
-const OATH_EMBERS = [0xfffbe8, 0xffd070, 0xffb040, 0xff7a1a];
+const OATH_EMBERS = [0xffffff, 0xfff0c0, 0xffd070, 0xe0b450];
 const layersFor = (f, sm) => (sm.enemy ? ENEMY_LAYERS : f.stats?.blade ? OATH_LAYERS : LAYERS);
 const embersFor = (f, sm) => (sm.enemy ? ENEMY_EMBERS : f.stats?.blade ? OATH_EMBERS : EMBERS);
 

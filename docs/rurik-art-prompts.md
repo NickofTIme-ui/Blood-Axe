@@ -6,20 +6,23 @@ the weapon to give it some weight".
 
 The code side is done (see `docs/cloud-handoff.md`, 11 October): the sword is
 **OATHKEEPER, the Hearthfire Blade** (`src/data/oathkeeper.js`, lore page on the skill
-screen), his swings are drawn in its gold-and-ember colours, and his fire is the new
+screen), his swings are drawn in its silver-and-gold colours, and his fire is the new
 fourth branch of his tree, THE KING'S WRATH. What code can't do is repaint him. These
 prompts do.
 
 ## The design in one paragraph (use it everywhere)
 
-Oathkeeper is a broad, heavy longsword, a hand-and-a-half blade, wider and thicker than his
-current plain sword, so it reads as WEIGHT from across the screen. Dark forged steel with
-a hammered, slightly uneven surface (it was forged from the valley's ploughshares, hinges
-and cookpots). A deep fuller runs down the middle, and in it a line of living ember
-glows orange-gold, brightest near the guard. A broad, flat cross-guard of aged gold shaped
-like two open hands, palms up. A worn leather grip bound with iron wire. A round pommel
-holding a smouldering ember-red hearth-stone. No skulls, no spikes, no blood caked on it:
-it is the people's sword, not a butcher's.
+**Approved (11 October 2026):** Nick picked sword 1 of the ChatGPT sheet
+`docs/art-refs/oathkeeper_mockups.png`; the crop is `docs/art-refs/oathkeeper_ref.png` and
+the cut-out the game shows on his lore page is `assets/ui/oathkeeper.png`. Attach
+`oathkeeper_ref.png` whenever Oathkeeper is in a prompt.
+
+Oathkeeper is a broad, heavy greatsword that reads as WEIGHT and as LIGHT from across the
+screen: a wide, faceted silver blade with a white-gold glow running down its fuller,
+brightest from the guard to the point. The cross-guard is aged gold shaped like two open
+hands reaching up round a glowing golden sun boss. A crimson grip wrapped in a diamond
+pattern with gold bands. A round gold sun pommel with a glowing heart. No skulls, no
+spikes, no blood caked on it: it is the people's sword, a hero's sword, not a butcher's.
 
 Rurik himself stays Rurik (attach `assets/ui/hero-warrior.png` every time): long dark hair,
 beard, scarred face, dark plate with bronze trim, crimson cape. What changes is how he
@@ -50,31 +53,10 @@ dark iron circlet at most, and only if it looks right.
 
 ---
 
-## 1. Oathkeeper concept sheet (attach `hero-warrior.png`)
+## 1. Oathkeeper concept sheet: DONE
 
-> This is RURIK, the hero of my brutal 16-bit dark-fantasy hack-and-slash. Match the art
-> style exactly: painted pixel art, dark plate, bronze and gold trim, grim tone.
->
-> Design his legendary sword, **OATHKEEPER, the Hearthfire Blade**. Before there was any
-> king, the people of his valley swore an oath that every hearth would stand for every
-> other. When the enemy came, every family gave iron (ploughshares, hinges, cookpots, the
-> bell of the longhall) and the smiths forged it into one blade and quenched it in the
-> fire of every home in the valley, one after another, through a whole night. An ember
-> caught in the blade and never went out.
->
-> The sword: a broad, heavy hand-and-a-half longsword, clearly heavier and wider than the
-> plain sword in the reference. Dark forged steel with a hammered, slightly uneven
-> surface. A deep fuller down the middle with a line of glowing orange-gold ember inside
-> it, brightest near the guard. A broad flat cross-guard of aged gold shaped like two open
-> hands, palms up. Worn leather grip bound with iron wire. A round pommel set with a
-> smouldering ember-red stone. No skulls, no spikes, no blood.
->
-> Make a WEAPON CONCEPT SHEET on a plain dark grey background: the sword large, point
-> down, full length; a close-up of the guard and pommel; a close-up of the ember in the
-> fuller; and the sword held by Rurik in a side view facing right, at the size it would
-> be in the game. No text labels.
-
-Save as `docs/art-refs/oathkeeper_ref.png`.
+Approved and saved as `docs/art-refs/oathkeeper_ref.png` (full sheet:
+`oathkeeper_mockups.png`). Prompts 2 to 4 attach it as "the Oathkeeper sheet".
 
 ## 2. Rurik, the People's King (attach `hero-warrior.png` and the Oathkeeper sheet)
 
@@ -82,7 +64,7 @@ Save as `docs/art-refs/oathkeeper_ref.png`.
 > scars, the same dark plate with bronze trim, the same build), now carrying OATHKEEPER
 > from the second image. He stands upright and protective, chest open, chin level, the
 > sword planted point-down in front of him with both hands resting on the pommel, the
-> ember in the blade lighting his face from below. His crimson cape is whole and heavy,
+> light in the blade lighting his face from below. His crimson cape is whole and heavy,
 > falling in deep folds. On his tabard and cape a simple sigil in aged gold: a flame
 > rising out of an open hand. Far less blood on him than the reference; a few dents and
 > scratches in the armour. He wears no crown. Full body, front three-quarter view, on a
@@ -100,8 +82,8 @@ Send this once per strip, attaching the old strip and the two approved reference
 > same number of poses, in the same order, the same positions, the same size, the same
 > feet on the same baseline, on the same plain black background, all facing right. Change
 > only two things. 1) His sword becomes OATHKEEPER from the second image: the broad, heavy
-> dark blade with the glowing ember in its fuller, the gold open-hands guard and the ember
-> pommel, the same length in every pose; because it's heavier, let the arms and shoulders
+> silver blade with the white-gold light in its fuller, the gold open-hands guard round the
+> glowing sun, the crimson grip and the gold sun pommel, the same length in every pose; because it's heavier, let the arms and shoulders
 > show the effort a little more on the big swings. 2) He matches the third image: the
 > gold hearth sigil on his tabard and cape, the cape whole, less blood on him. 2172 x 724.
 
@@ -122,7 +104,7 @@ Do them in this order (the ones seen most first). File name: same as the old one
 > carrying OATHKEEPER. Six poses in one row, all facing right, feet on one baseline, plain
 > black background, wide gaps, 2172 x 724, no text:
 > 1. Ready: feet planted wide, Oathkeeper held two-handed low in front.
-> 2. He lifts it two-handed straight up over his head, point to the sky, the ember in the
+> 2. He lifts it two-handed straight up over his head, point to the sky, the light in the
 >    blade blazing.
 > 3. The top: head thrown back in a ROAR, fire beginning to wreath the raised blade.
 > 4. Driving it down point-first, his whole body behind it.

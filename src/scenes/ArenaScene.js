@@ -529,8 +529,8 @@ export class ArenaScene extends Phaser.Scene {
   oathkeeperBite(e) {
     const big = (e.move.hitstop ?? 0) >= 10 || e.move.knockdown;
     playSfx(this, 'kick', { volume: big ? 0.55 : 0.3, pitch: big ? -1700 : -1300, spread: 60, minGapMs: 40 });
-    this.gore.spark(e.x, e.z, e.h, 0xffd070, big ? 14 : 6);
-    this.gore.spark(e.x, e.z, e.h, 0xff7a1a, big ? 10 : 4);
+    this.gore.spark(e.x, e.z, e.h, 0xfff0c0, big ? 14 : 6);
+    this.gore.spark(e.x, e.z, e.h, 0xe0b450, big ? 10 : 4);
     if (!big) return;
     this.fx.shake((e.move.shake ?? 4) + 3, 10);
     const cam = this.cameras.main;
