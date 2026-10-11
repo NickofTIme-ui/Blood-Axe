@@ -42,12 +42,12 @@ Berserk and Oath of Fury shut each other out: the choice at the top of the tree.
 can go with either.
 
 The fourth branch (11 October 2026), **THE KING'S WRATH** (let the fire out): his fire is
-the hearth-fire in his sword, Oathbrand (`src/data/oathbrand.js`).
+the hearth-fire in his sword, Oathkeeper (`src/data/oathkeeper.js`).
 
 | | THE KING'S WRATH |
 |---|---|
-| 2 pts | **Oathbrand Wakes** — the Firebolt becomes the Hearthfire Bolt: bigger, faster, twice the damage, through the first man into the next, 20 mana; 60 max mana, faster regen; a man it kills is blown apart (upgrade) |
-| 4 pts | **Kingsfire** — NEW: hold the spell button: Oathbrand into the floor, a road of six fire pillars runs out ahead (44 each, throws them up burning; a kill blows up). 40 mana; a tap is still the bolt. A sword kill gives 5 mana (active) |
+| 2 pts | **Oathkeeper Wakes** — the Firebolt becomes the Hearthfire Bolt: bigger, faster, twice the damage, through the first man into the next, 20 mana; 60 max mana, faster regen; a man it kills is blown apart (upgrade) |
+| 4 pts | **Kingsfire** — NEW: hold the spell button: Oathkeeper into the floor, a road of six fire pillars runs out ahead (44 each, throws them up burning; a kill blows up). 40 mana; a tap is still the bolt. A sword kill gives 5 mana (active) |
 | 6 pts | **The King's Wrath** — the hold becomes his wrath (50 mana, 70 max): he roars untouchable, a ring of fire bursts out of him, the road runs both ways and twice as far; every man the fire kills goes up and his blast hits the men round him, up to three deep (major) |
 
 A whole tree now costs 48 points.

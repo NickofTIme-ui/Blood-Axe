@@ -37,7 +37,7 @@ const ENEMY_LAYERS = [
   { color: 0xffffff, w: 0.12, a: 0.9 },
 ];
 const ENEMY_EMBERS = [0xffffff, 0xc8c8d0, 0xb0202a, 0x7a0a10];
-// OATHBRAND (Rurik's blade, data/oathbrand.js): a heavier, darker mass behind the cut and
+// OATHKEEPER (Rurik's blade, data/oathkeeper.js): a heavier, darker mass behind the cut and
 // a white-gold edge, the hearth-fire in it — the swing reads as weight, not a flick.
 const OATH_LAYERS = [
   { color: 0x2a0402, w: 1.55, a: 0.6 },   // the mass of it: a deep, wide shadow

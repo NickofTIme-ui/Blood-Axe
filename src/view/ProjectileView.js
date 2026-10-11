@@ -3,7 +3,7 @@
 // that animation — e.g. Ulric's Firebolt — with a glow and a trail of embers.
 // Everything else is a glowing placeholder box.
 //
-// 'hearthfire' (Rurik's Oathbrand Wakes, data/skills.js) is the Firebolt's strip grown
+// 'hearthfire' (Rurik's Oathkeeper Wakes, data/skills.js) is the Firebolt's strip grown
 // half again, with a white-gold heart and a thicker trail of gold embers.
 
 import { DEPTH } from './depths.js';

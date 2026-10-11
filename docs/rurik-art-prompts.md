@@ -5,14 +5,14 @@ hero vibe", and his sword "does not feel special at all ... needs lore and a red
 the weapon to give it some weight".
 
 The code side is done (see `docs/cloud-handoff.md`, 11 October): the sword is
-**OATHBRAND, the Hearthfire Blade** (`src/data/oathbrand.js`, lore page on the skill
+**OATHKEEPER, the Hearthfire Blade** (`src/data/oathkeeper.js`, lore page on the skill
 screen), his swings are drawn in its gold-and-ember colours, and his fire is the new
 fourth branch of his tree, THE KING'S WRATH. What code can't do is repaint him. These
 prompts do.
 
 ## The design in one paragraph (use it everywhere)
 
-Oathbrand is a broad, heavy longsword, a hand-and-a-half blade, wider and thicker than his
+Oathkeeper is a broad, heavy longsword, a hand-and-a-half blade, wider and thicker than his
 current plain sword, so it reads as WEIGHT from across the screen. Dark forged steel with
 a hammered, slightly uneven surface (it was forged from the valley's ploughshares, hinges
 and cookpots). A deep fuller runs down the middle, and in it a line of living ember
@@ -34,7 +34,7 @@ dark iron circlet at most, and only if it looks right.
 1. In the "Bloody Axe" ChatGPT project, open a new chat **BA · Hero · Rurik King** and send
    every prompt from that one chat, in order.
 2. Attach `assets/ui/hero-warrior.png` to prompts 1 and 2. For the strips, attach the old
-   strip being repainted AND the approved Oathbrand sheet from prompt 1.
+   strip being repainted AND the approved Oathkeeper sheet from prompt 1.
 3. Save results to `assets/incoming/rurik/` first (never straight over live files), then
    replace the live file once it looks right in the game. The file names and sizes below
    are what the game loads: same names, same sizes, and nothing else needs to change in code.
@@ -45,17 +45,17 @@ dark iron circlet at most, and only if it looks right.
 - One row, **plain black background** like his current strips, wide gaps, every figure
   facing RIGHT, feet on one baseline, same scale in every cell, no text, no motion lines.
 - **2172 x 724** (3:1), the same pose count and order as the strip being replaced.
-- Oathbrand is the same length in every cell. It's a big blade: about as long as from his
+- Oathkeeper is the same length in every cell. It's a big blade: about as long as from his
   boots to his belt.
 
 ---
 
-## 1. Oathbrand concept sheet (attach `hero-warrior.png`)
+## 1. Oathkeeper concept sheet (attach `hero-warrior.png`)
 
 > This is RURIK, the hero of my brutal 16-bit dark-fantasy hack-and-slash. Match the art
 > style exactly: painted pixel art, dark plate, bronze and gold trim, grim tone.
 >
-> Design his legendary sword, **OATHBRAND, the Hearthfire Blade**. Before there was any
+> Design his legendary sword, **OATHKEEPER, the Hearthfire Blade**. Before there was any
 > king, the people of his valley swore an oath that every hearth would stand for every
 > other. When the enemy came, every family gave iron (ploughshares, hinges, cookpots, the
 > bell of the longhall) and the smiths forged it into one blade and quenched it in the
@@ -74,12 +74,12 @@ dark iron circlet at most, and only if it looks right.
 > fuller; and the sword held by Rurik in a side view facing right, at the size it would
 > be in the game. No text labels.
 
-Save as `docs/art-refs/oathbrand_ref.png`.
+Save as `docs/art-refs/oathkeeper_ref.png`.
 
-## 2. Rurik, the People's King (attach `hero-warrior.png` and the Oathbrand sheet)
+## 2. Rurik, the People's King (attach `hero-warrior.png` and the Oathkeeper sheet)
 
 > Repaint this character as the PEOPLE'S KING: the same man (same face, hair, beard,
-> scars, the same dark plate with bronze trim, the same build), now carrying OATHBRAND
+> scars, the same dark plate with bronze trim, the same build), now carrying OATHKEEPER
 > from the second image. He stands upright and protective, chest open, chin level, the
 > sword planted point-down in front of him with both hands resting on the pommel, the
 > ember in the blade lighting his face from below. His crimson cape is whole and heavy,
@@ -92,14 +92,14 @@ If Nick likes it, it replaces the select-screen portrait `assets/ui/hero-warrior
 (same size and background as the old one) and becomes the reference for every
 strip below. Save the approved one as `docs/art-refs/rurik_king_ref.png` too.
 
-## 3. Repaint his strips with Oathbrand (one prompt per strip)
+## 3. Repaint his strips with Oathkeeper (one prompt per strip)
 
 Send this once per strip, attaching the old strip and the two approved references:
 
 > The first image is an animation strip of RURIK. Repaint it pose for pose: exactly the
 > same number of poses, in the same order, the same positions, the same size, the same
 > feet on the same baseline, on the same plain black background, all facing right. Change
-> only two things. 1) His sword becomes OATHBRAND from the second image: the broad, heavy
+> only two things. 1) His sword becomes OATHKEEPER from the second image: the broad, heavy
 > dark blade with the glowing ember in its fuller, the gold open-hands guard and the ember
 > pommel, the same length in every pose; because it's heavier, let the arms and shoulders
 > show the effort a little more on the big swings. 2) He matches the third image: the
@@ -119,9 +119,9 @@ Do them in this order (the ones seen most first). File name: same as the old one
 ## 4. NEW strip: the King's Wrath (attach the approved references)
 
 > A new animation strip of RURIK (match the second image's style and size exactly),
-> carrying OATHBRAND. Six poses in one row, all facing right, feet on one baseline, plain
+> carrying OATHKEEPER. Six poses in one row, all facing right, feet on one baseline, plain
 > black background, wide gaps, 2172 x 724, no text:
-> 1. Ready: feet planted wide, Oathbrand held two-handed low in front.
+> 1. Ready: feet planted wide, Oathkeeper held two-handed low in front.
 > 2. He lifts it two-handed straight up over his head, point to the sky, the ember in the
 >    blade blazing.
 > 3. The top: head thrown back in a ROAR, fire beginning to wreath the raised blade.

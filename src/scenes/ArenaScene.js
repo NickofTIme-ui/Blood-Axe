@@ -147,7 +147,7 @@ export class ArenaScene extends Phaser.Scene {
       if (e.move.fx === 'kick') this.kickImpact(e.x, e.z, e.h, e.dir);
       if (e.move.cut === 'fire') this.fireImpact(e.x, e.z, e.h);
       if (e.move.impale) this.impaleFX(e);
-      if (e.kind === 'melee' && e.attacker?.stats.blade) this.oathbrandBite(e);
+      if (e.kind === 'melee' && e.attacker?.stats.blade) this.oathkeeperBite(e);
     });
     // hold-attack power thrust: a scrape of steel as both hands lock on, a ring when full
     ev.on('chargeStart', ({ fighter }) => {
@@ -522,11 +522,11 @@ export class ArenaScene extends Phaser.Scene {
     else g.spark(e.x, e.z, e.h, 0xffd080, 14);
   }
 
-  // OATHBRAND biting (Rurik's sword, data/oathbrand.js): the weight of it in the hit. A
+  // OATHKEEPER biting (Rurik's sword, data/oathkeeper.js): the weight of it in the hit. A
   // deep thud under the steel, hearth-embers knocked out of the blade at the contact, and
   // on the big cuts (the overhand, the cleave, the thrust, the whirlwind) the camera dips
   // with the blow and a ring of gold sparks. View only: the frame data is untouched.
-  oathbrandBite(e) {
+  oathkeeperBite(e) {
     const big = (e.move.hitstop ?? 0) >= 10 || e.move.knockdown;
     playSfx(this, 'kick', { volume: big ? 0.55 : 0.3, pitch: big ? -1700 : -1300, spread: 60, minGapMs: 40 });
     this.gore.spark(e.x, e.z, e.h, 0xffd070, big ? 14 : 6);

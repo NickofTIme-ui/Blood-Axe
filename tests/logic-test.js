@@ -2016,8 +2016,8 @@ test('progress: the two majors shut each other out; picks never touch the shared
   assert(nodes.length === 12 && nodes.reduce((n, x) => n + x.cost, 0) === 48, 'twelve skills in four branches, 48 points for all of them');
 });
 
-test("rurik: Oathbrand Wakes makes the Firebolt a Hearthfire Bolt: cheaper, through two men, and a man it kills blows up", () => {
-  const t = skillSetup(rurikWith('oathbrandWakes'), { script: { 1: ['magic'] }, foes: [[520], [600]] });
+test("rurik: Oathkeeper Wakes makes the Firebolt a Hearthfire Bolt: cheaper, through two men, and a man it kills blows up", () => {
+  const t = skillSetup(rurikWith('oathkeeperWakes'), { script: { 1: ['magic'] }, foes: [[520], [600]] });
   t.p.facing = 1;
   t.p.mana = t.p.stats.maxMana;
   t.es[0].health = 5;
@@ -2030,7 +2030,7 @@ test("rurik: Oathbrand Wakes makes the Firebolt a Hearthfire Bolt: cheaper, thro
 });
 
 test("rurik: Kingsfire: a tap is still the bolt, a hold drives the sword down and a road of fire runs out ahead", () => {
-  const rk = () => rurikWith('oathbrandWakes', 'kingsfire');
+  const rk = () => rurikWith('oathkeeperWakes', 'kingsfire');
   const tap = skillSetup(rk(), { script: { 1: ['magic'] }, foes: [[560]] });
   tap.p.facing = 1; tap.p.mana = 60;
   tap.run(16);
@@ -2068,12 +2068,12 @@ test("rurik: a sword kill feeds Kingsfire 5 mana; without the skill it doesn't",
     return t.p.mana;
   };
   const plain = fed(CHARACTERS.warrior);
-  const kf = fed(rurikWith('oathbrandWakes', 'kingsfire'));
+  const kf = fed(rurikWith('oathkeeperWakes', 'kingsfire'));
   assert(kf - plain >= 4.9, `fed (${plain.toFixed(1)} -> ${kf.toFixed(1)})`);
 });
 
 test("rurik: the King's Wrath bursts out both ways, and every man it kills sets off the men round him", () => {
-  const t = skillSetup(rurikWith('oathbrandWakes', 'kingsfire', 'kingsWrath'), { script: { 1: ['magic'] }, hold: { magic: true }, foes: [[300], [480], [700], [745]] });
+  const t = skillSetup(rurikWith('oathkeeperWakes', 'kingsfire', 'kingsWrath'), { script: { 1: ['magic'] }, hold: { magic: true }, foes: [[300], [480], [700], [745]] });
   t.p.facing = 1; t.p.mana = 70;
   // the far pair: the first goes up, his blast takes the second (who is out of the road's reach in depth)
   t.es[2].health = 5;

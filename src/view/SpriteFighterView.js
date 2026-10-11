@@ -184,7 +184,7 @@ export class SpriteFighterView {
         const anim = (f.dodgeDir === 'up' && a.dodgeUp) || (f.dodgeDir === 'down' && a.dodgeDown) || a.dodge;
         return easedSpread(anim.frames, fr / (d.duration + d.recovery));
       }
-      // KINGSFIRE / THE KING'S WRATH (combat/Skills.js), on the cleave's poses: Oathbrand
+      // KINGSFIRE / THE KING'S WRATH (combat/Skills.js), on the cleave's poses: Oathkeeper
       // lifted overhead while the fire gathers (the wrath holds it there through his roar),
       // driven point-first into the floor on the release and held there while the road
       // of fire runs, then wrenched free

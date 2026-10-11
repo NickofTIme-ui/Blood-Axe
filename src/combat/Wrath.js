@@ -2,7 +2,7 @@
 // Pure logic on the World (effects/WrathFX.js draws it from the events), so the tests
 // can drive it and online stays in step.
 //
-//   KINGSFIRE        HOLD the spell button: he drives Oathbrand into the floor and a road
+//   KINGSFIRE        HOLD the spell button: he drives Oathkeeper into the floor and a road
 //                    of fire erupts ahead of him, pillar after pillar marching out. Every
 //                    man a pillar catches is thrown up burning; a man it kills BLOWS UP.
 //                    (A tap still throws the Firebolt: the 'kingcast' state decides.)

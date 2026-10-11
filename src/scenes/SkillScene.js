@@ -6,7 +6,7 @@
 //   R / Y             respec: every point back, free at a shrine
 //   O / RB            the next page: SKILLS → TROPHIES (the boss loot you carry,
 //                     data/trophies.js: wear or take off) → the hero's blade, when he has
-//                     one (Rurik's OATHBRAND, data/oathbrand.js) → SKILLS
+//                     one (Rurik's OATHKEEPER, data/oathkeeper.js) → SKILLS
 //   ESC / B / BACKSPACE, or the pad's B / Back / Start, or the button: back to the fight
 //
 // The look is drawn in code: the hero's portrait looming out of the dark behind the tree,
@@ -19,7 +19,7 @@ import { SETTINGS } from '../config/settings.js';
 import { InputManager } from '../core/InputManager.js';
 import { SKILL_TREES } from '../data/skills.js';
 import { TROPHIES, TROPHY_SLOTS, RARITY } from '../data/trophies.js';
-import { OATHBRAND } from '../data/oathbrand.js';
+import { OATHKEEPER } from '../data/oathkeeper.js';
 import { CHARACTERS } from '../data/characters.js';
 import { FONT, epicFill } from '../view/fonts.js';
 import { playSfx } from '../core/Sfx.js';
@@ -257,12 +257,12 @@ export class SkillScene extends Phaser.Scene {
       : `Not found yet.${T.boss ? ` ${T.boss} carries it.` : ' A big man might drop it.'}`);
   }
 
-  // ------------------------------------------------------------ the blade (Rurik's Oathbrand)
+  // ------------------------------------------------------------ the blade (Rurik's Oathkeeper)
 
   buildBlade() {
     const W = SETTINGS.width;
     const before = new Set(this.children.list);
-    const B = OATHBRAND;
+    const B = OATHKEEPER;
     const g = this.add.graphics();
     // the sword, point down, drawn large down the left: long fullered blade with the ember
     // in it, a broad gold cross-guard, a leather grip, a pommel set with a hearth-stone

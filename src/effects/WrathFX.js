@@ -2,7 +2,7 @@
 // and the way a man his fire kills goes up. It only listens to world events and draws;
 // nothing here changes the fight.
 //
-//   the gathering   Oathbrand flares overhead, embers stream up off the floor toward it, a
+//   the gathering   Oathkeeper flares overhead, embers stream up off the floor toward it, a
 //                   heat glow swells behind him; the wrath also darkens the world around
 //                   him (not the fighters), shakes harder and harder, and shouts its name
 //   the release     a white-gold flash where the point goes in, the floor cracks glowing

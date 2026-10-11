@@ -13,7 +13,7 @@
 //   OATH OF FURY: low on health, blows don't stagger him (CombatSystem's super armor
 //     asks furyArmor) and his damage heals him
 //   KINGSFIRE / THE KING'S WRATH (state 'kingcast', then 'kingsfire'): the spell button
-//     tapped throws the Firebolt as ever; HELD (WRATH.hold frames) he plants Oathbrand and
+//     tapped throws the Firebolt as ever; HELD (WRATH.hold frames) he plants Oathkeeper and
 //     the fire comes out of the ground (combat/Wrath.js). A sword kill feeds the fire
 //     (WRATH.swordMana).
 
@@ -62,7 +62,7 @@ export function skillStates({ tryActions, stopMoving, friction, movePhase, faceI
         if (frame >= sp.startup + sp.recovery) f.fsm.change('idle');
       },
     },
-    // Oathbrand into the floor, and the fire answers. With the King's Wrath he roars first
+    // Oathkeeper into the floor, and the fire answers. With the King's Wrath he roars first
     // (nothing can touch him while he does), the ring bursts out of him, then the road
     // runs both ways.
     kingsfire: {

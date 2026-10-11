@@ -102,12 +102,12 @@ export const SKILL_TREES = {
         ],
       },
       {
-        // His fire is the hearth-fire in Oathbrand (data/oathbrand.js), and his anger. The
+        // His fire is the hearth-fire in Oathkeeper (data/oathkeeper.js), and his anger. The
         // logic is combat/Wrath.js and combat/Skills.js, the look effects/WrathFX.js.
         id: 'kingswrath', name: "THE KING'S WRATH", color: 0xff7a1a, blurb: 'Let the fire out',
         nodes: [
           {
-            id: 'oathbrandWakes', name: 'Oathbrand Wakes', cost: 2, tier: 1, req: [], kind: 'upgrade',
+            id: 'oathkeeperWakes', name: 'Oathkeeper Wakes', cost: 2, tier: 1, req: [], kind: 'upgrade',
             text: 'The Firebolt becomes a HEARTHFIRE BOLT: half again as big and fast, it burns clean through the first man into the next, hits twice as hard, and costs less (20). More mana (60), and it comes back faster. A man it kills is blown apart.',
             apply(s) {
               s.maxMana = Math.max(s.maxMana, 60);
@@ -123,8 +123,8 @@ export const SKILL_TREES = {
             },
           },
           {
-            id: 'kingsfire', name: 'Kingsfire', cost: 4, tier: 2, req: ['oathbrandWakes'], kind: 'active',
-            text: 'NEW: HOLD the spell button (U / LB). He drives Oathbrand into the ground and a road of fire erupts ahead of him, pillar after pillar: every man in it is thrown up burning, and a man it kills blows up. 40 mana; a tap still throws the bolt. Every sword kill gives back 5 mana.',
+            id: 'kingsfire', name: 'Kingsfire', cost: 4, tier: 2, req: ['oathkeeperWakes'], kind: 'active',
+            text: 'NEW: HOLD the spell button (U / LB). He drives Oathkeeper into the ground and a road of fire erupts ahead of him, pillar after pillar: every man in it is thrown up burning, and a man it kills blows up. 40 mana; a tap still throws the bolt. Every sword kill gives back 5 mana.',
             apply(s) {
               s.states = { ...(s.states ?? {}), cast: 'kingcast' };
               s.skills.kingsfire = true;
