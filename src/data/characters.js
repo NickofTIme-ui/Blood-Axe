@@ -62,6 +62,9 @@ export const CHARACTERS = {
     className: 'Warrior',
     title: "THE PEOPLE'S KING", // (data/oathkeeper.js: his sword, its lore)
     blade: 'Oathkeeper',
+    // a beaten boss's sentence (stage/Sentence.js): the people's king passes it and swings
+    // Oathkeeper himself, the brutal downward cleave through the neck
+    sentence: { move: 'heavy', fatality: 'decap', cut: 'chop', as: 'Rurik, the people\'s king' },
     description: "The people's king. Oathkeeper was forged from every hearth in the valley. Slow, heavy, unbreakable. His fire is his fury.",
     sprite: 'ulric',          // pixel-art sheet (see data/sprites.js); remove to use placeholder shapes
     body: { w: 46, h: 108 },
@@ -212,6 +215,9 @@ export const CHARACTERS = {
     className: 'Mage',
     description: 'War sorcerer. Floats, blinks, chains lightning through crowds and splits the field with barriers. Frail up close.',
     archetype: 'mage', // (view, sounds and finishers pick his own versions by this)
+    // a beaten boss's sentence (stage/Sentence.js): no blade, so the staff's spinning slam,
+    // full on the skull
+    sentence: { move: 'light3', fatality: 'headPop', cut: 'blunt' },
     body: { w: 40, h: 96 },
     look: { color: 0x1c2550, accent: 0x6a4a2a, skin: 0xd8b494 },
     // the buttons his kit replaces: dodge = BLINK, heavy = CHAIN LIGHTNING,
@@ -382,6 +388,9 @@ export const CHARACTERS = {
     className: 'Rogue',
     description: 'The fastest killer alive. Slips every blow, mines the field, vaults off allies and rains steel from above. Light armour.',
     archetype: 'rogue',
+    // a beaten boss's sentence (stage/Sentence.js): the spinning double-blade cross, both
+    // daggers through the neck at once
+    sentence: { move: 'light3', fatality: 'decap', cut: 'slash' },
     body: { w: 36, h: 92 }, // (her hurtbox matches the picture: petite, under a grunt's 96)
     look: { color: 0x4a2a5e, accent: 0xb0b8c0, skin: 0xd2a07a },
     // the buttons her kit replaces (fighterStates.js stateFor):

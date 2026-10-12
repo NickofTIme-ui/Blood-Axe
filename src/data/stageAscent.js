@@ -144,6 +144,16 @@ export const STAGE_ASCENT = {
       boss: {
         type: 'berserker', name: 'Siege Commander Orsk', health: 3.0, damage: 1.15, escort: ['grunt', 'grunt'],
         entrance: { from: 160, to: 360, speed: 70, stepEvery: 28, awe: 30 },
+        // beaten: his crimes and his sentence (stage/Sentence.js)
+        sentence: {
+          speaker: 'ORSK',
+          crimes: [
+            'You loosed your stones on miners pinned under the rock.',
+            'You chained Bram to your catapults and worked him like a mule.',
+            'You burned the road behind us, and your own men with it.',
+          ],
+          last: 'The King sent me to bury you. He will send another.',
+        },
         phases: [
           { id: 'barrage', at: 0.66, adds: ['grunt', 'stalker'] },
           { id: 'berserk', at: 0.33, rage: true, adds: ['butcher'], damage: 1.25, speed: 1.2, ai: { attackCooldown: [20, 50] } },

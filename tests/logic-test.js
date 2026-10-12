@@ -3533,6 +3533,138 @@ test('loot: trophies are kept, worn in a few slots, and change the hero', () => 
   }
 });
 
+
+// ---- THE SENTENCE (stage/Sentence.js): every captain beaten kneels, hears his crimes, and loses his head
+const blowOf = (world, p, b, damage = 9999) => world.combat.resolve(p, b, { cut: 'slash', damage, hitstun: 10, hitstop: 4, knockback: { x: 100, y: 0 } }, { kind: 'melee', fromX: p.x, dir: Math.sign(b.x - p.x) || 1, contact: { x: b.x, h: 60 } });
+function sentenceSetup(hero = 'warrior', data = STAGE_VILLAGE, sectionId = 'hall', x = 7450) {
+  const world = new World({ seed: 7 });
+  const c = new Pressing();
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x, z: 440, controller: c }));
+  const st = new Stage(world, data);
+  st.start(p, { section: data.sections.findIndex((q) => q.id === sectionId) });
+  hush(st);
+  p.x = x;
+  st.fightOn = true; st.waveIndex = 99; // (straight to the boss)
+  const ev = { kill: [], strike: [], done: [], lines: [] };
+  world.events.on('kill', (e) => ev.kill.push(e));
+  world.events.on('sentenceStrike', (e) => ev.strike.push(e));
+  world.events.on('sentenceDone', (e) => ev.done.push(e));
+  const run = (n, each) => {
+    for (let i = 0; i < n; i++) {
+      world.tick(); st.update(); p.health = p.stats.maxHealth;
+      const l = st.story.line;
+      if (l && l.age === 1) ev.lines.push(`${l.who}: ${l.text}`);
+      each?.(i);
+    }
+  };
+  // the waves out of the way, the boss walked in
+  for (let i = 0; i < 3000 && !(st.boss && st.boss.state !== 'bossEntrance'); i++) {
+    world.tick(); st.update(); p.health = p.stats.maxHealth;
+    for (const e of st.livingFoes()) if (!e.stats.boss) { e.health = 0; e.removeMe = true; }
+  }
+  run(30);
+  return { world, p, c, st, ev, run };
+}
+
+test('sentence: a beaten captain is not killed; he kneels, the field stands still, the hero walks to him and proclaims his crimes; the blow takes his head; his men run; then the way on', () => {
+  const { world, p, st, ev, run } = sentenceSetup('warrior');
+  const b = st.boss;
+  assert(b?.stats.name === 'Varek, the Ash Captain' && b.spare, 'the Ash Captain, spared until his sentence');
+  b.health = b.stats.maxHealth * 0.4; run(2); // (he rages: his men come)
+  const men = st.livingFoes().filter((e) => e !== b);
+  assert(men.length > 0, 'his men are here');
+  blowOf(world, p, b);
+  assert(b.alive && b.health === 1, `the blow that beats him doesn't kill him (${b.health})`);
+  run(3);
+  assert(world.hold && st.sentence.running, 'the field holds still');
+  const at = men.map((e) => e.x);
+  run(60);
+  assert(b.state === 'kneel', `on his knees (${b.state})`);
+  assert(men.every((e, i) => Math.abs(e.x - at[i]) < 1 && e.awe > 0), 'his men stand frozen, watching');
+  run(60 * 4);
+  assert(Math.abs(p.z - b.z) < 5 && Math.abs(p.x - b.x) < 140 && p.facing === Math.sign(b.x - p.x) && b.facing === -p.facing, `the hero at his side, face to face (${Math.round(p.x)} / ${Math.round(b.x)})`);
+  run(60 * 30);
+  const said = ev.lines.join(' | ');
+  for (const t of ['RURIK: Varek, the Ash Captain. On your knees, hear your crimes.', 'RURIK: You led the Ashen to our gates at dusk.', 'VAREK: Swing, then.', 'sentence you to die.'])
+    assert(said.includes(t), `"${t}" said (${said})`);
+  assert(ev.strike.length === 1 && ev.kill.length === 1, `one blow, one death (${ev.kill.length})`);
+  const k = ev.kill[0];
+  assert(k.defender === b && k.attacker === p && k.fatality === 'decap' && k.sentence && !b.alive, 'his head comes off, by the hero\'s hand');
+  assert(ev.done.length === 1 && ev.done[0].routed.length === men.length, 'his men break and run');
+  assert(!world.hold && !p.scripted && !st.sentence.running, 'the field lets go; the hero is his own again');
+  run(60 * 8);
+  assert(men.every((e) => e.removeMe || !world.fighters.includes(e)), 'they ran off the edge of the room');
+  assert(st.phase !== 'fight', `the way on opens (${st.phase})`);
+  assert(ev.kill.length === 1 && ev.strike.length === 1, 'nothing twice');
+});
+
+test('sentence: every hero passes it with his own killing blow (Rurik: Oathkeeper\'s cleave; Oryn: the staff on the skull; Vexa: both blades)', () => {
+  const want = { warrior: ['heavy', 'decap', 'Rurik, the people\'s king'], mage: ['light3', 'headPop', 'Oryn of the Oath Keepers'], rogue: ['light3', 'decap', 'Vexa of the Oath Keepers'] };
+  for (const [hero, [state, fatality, as]] of Object.entries(want)) {
+    const { world, p, st, ev, run } = sentenceSetup(hero);
+    const b = st.boss;
+    let during = null;
+    world.events.on('sentenceStrike', () => { during = p.state; });
+    blowOf(world, p, b);
+    run(60 * 40);
+    assert(ev.kill.length === 1 && ev.kill[0].fatality === fatality && during === state, `${hero}: ${state} -> ${fatality} (${during}, ${ev.kill[0]?.fatality})`);
+    assert(ev.lines.some((l) => l.includes(`I, ${as}, sentence you to die`)), `${hero}: in his own name (${ev.lines.at(-1)})`);
+  }
+});
+
+test('sentence: the words skip line by line like any held scene (same end); presses while he walks up never swing early', () => {
+  const { world, p, c, st, ev, run } = sentenceSetup('warrior');
+  const b = st.boss;
+  blowOf(world, p, b);
+  let early = false;
+  run(90, () => { c.script = { [c.t + 1]: ['attack', 'heavy'] }; if (!['idle', 'walk'].includes(p.state)) early = true; });
+  assert(!early && b.alive, `no blow before the sentence (${p.state})`);
+  let f = 0;
+  for (; f < 60 * 12 && !ev.kill.length; f += 20) run(20, (i) => { if (i === 0) c.script = { [c.t + 1]: ['attack'] }; });
+  assert(ev.kill.length === 1 && ev.kill[0].sentence, 'sentenced all the same');
+  assert(f < 60 * 9, `quicker than sitting through it (${(f / 60).toFixed(1)} s)`);
+});
+
+test('sentence: the twins: the first to fall dies fighting; the one left standing kneels for both of them', () => {
+  const { world, p, st, ev, run } = sentenceSetup('warrior', STAGE_GATES, 'winch', 3800);
+  st.fightOn = true; st.waveIndex = 99;
+  run(60, () => { p.awe = 0; });
+  const [hask, hrolf] = st.twins ?? [];
+  assert(hask && hrolf && !hask.spare && !hrolf.spare, 'both up: neither spared');
+  blowOf(world, p, hask);
+  run(2);
+  assert(!hask.alive && !st.sentence.running, 'Hask dies where he stands');
+  run(30);
+  assert(st.boss === hrolf && hrolf.spare, 'Hrolf is spared for his sentence');
+  blowOf(world, p, hrolf);
+  run(60 * 40, () => { p.health = p.stats.maxHealth; });
+  assert(ev.strike.length === 1 && ev.strike[0].boss === hrolf, 'Hrolf kneels and is executed');
+  assert(ev.lines.some((l) => l.startsWith('HROLF: ')), `his own last words (${ev.lines})`);
+});
+
+test('sentence: a machine is no man: the Ore Crusher is simply destroyed', () => {
+  const { world, p, st, ev, run } = sentenceSetup('warrior', STAGE_MINE, 'crusher', 6000);
+  const b = st.boss;
+  assert(b?.stats.machine && !b.spare, `the Crusher is not spared (${b?.stats.name}, ${b?.spare}, ${st.section.id})`);
+  blowOf(world, p, b);
+  run(10);
+  assert(!b.alive && !st.sentence.running && ev.strike.length === 0, 'destroyed, no sentence');
+});
+
+test('sentence: every boss in the game has his crimes (the machine none); the Oath Keepers swear it at the start', () => {
+  for (const [id, data] of Object.entries(STAGES)) {
+    for (const sec of data.sections) {
+      const B = sec.boss;
+      if (!B) continue;
+      if (ENEMIES[B.type]?.machine) { assert(B.sentence === false, `${id}: ${B.name} is a machine: no sentence`); continue; }
+      assert(B.sentence?.crimes?.length >= 2 && B.sentence.crimes.every((t) => t.length <= 100), `${id}: ${B.name} has his crimes`);
+      assert(B.sentence.last, `${id}: ${B.name} has his last words`);
+    }
+  }
+  const opening = STAGE_VILLAGE.story.find((b) => b.id === 'opening').lines.map((l) => l[1]).join(' ');
+  assert(opening.includes('Each of them kneels, hears his crimes, and pays for them.'), 'the pledge');
+});
+
 for (const [name, fn] of later) {
   try { await fn(); console.log(`  ok   ${name}`); } catch (e) { failed++; console.log(`  FAIL ${name}\n       ${e.message}`); }
 }
