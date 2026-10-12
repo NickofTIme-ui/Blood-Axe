@@ -191,10 +191,11 @@ export const STAGE_VILLAGE = {
   exit: { x: 9280, after: 'vow' },
 
   terrain: [
-    // ---- I THE ASHEN ROAD: a cart to hop (or walk round), a line of burnt
-    // wreckage across the road (look: painted, view/TerrainView.js drawPaintedBlock)
+    // ---- I THE ASHEN ROAD: a cart to hop (or walk round), a heap of burnt timbers at
+    // the back of the road (look: painted, view/TerrainView.js drawPaintedBlock). (It was a
+    // line right across the road: the same timbers stamped eight times read as fake.)
     { kind: 'block', x0: 470, x1: 560, z0: 390, z1: 470, top: 40, look: 'cart' },
-    { kind: 'block', x0: 780, x1: 815, ...FULL, top: 42, look: 'wreckage' },
+    { kind: 'block', x0: 780, x1: 830, z0: 290, z1: 380, top: 42, look: 'wreckage' },
 
     // ---- III THE BURNING ROOFS
     { kind: 'block', x0: 2900, x1: 2990, z0: 330, z1: 520, top: 45, look: 'cart' }, // a cart against the house: a hop

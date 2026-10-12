@@ -20,8 +20,8 @@ const GOLD = ['#fff2b0', '#e8b040', '#8a5410'];
 const M = 8; // the gap under the box
 // (a panel centred along the bottom edge, well short of the screen's width)
 export const BOX = {
-  full: { w: 600, h: 84, pic: 64, name: 16, text: 15 },
-  compact: { w: 520, h: 46, pic: 34, name: 12, text: 12 },
+  full: { w: 420, h: 96, pic: 64, name: 16, text: 14 },
+  compact: { w: 380, h: 58, pic: 36, name: 12, text: 12 },
 };
 
 export class DialogueBox {
@@ -73,7 +73,7 @@ export class DialogueBox {
     const tw = W - M - tx - (mode === 'full' ? 26 : 20);
     this.name.setVisible(!!sp).setFontSize(B.name).setText(sp ? sp.name.toUpperCase() : '');
     if (sp) epicFill(this.name, GOLD);
-    this.text.setFontSize(B.text).setFontStyle(sp ? '600' : 'italic 600').setWordWrapWidth(tw).setText(text);
+    this.text.setFontSize(B.text).setLineSpacing(mode === 'full' ? 2 : -1).setFontStyle(sp ? '600' : 'italic 600').setWordWrapWidth(tw).setText(text);
     if (mode === 'full') {
       this.name.setPosition(tx, y0 + 9);
       this.text.setPosition(tx, sp ? y0 + 30 : y0 + 14);
@@ -82,7 +82,8 @@ export class DialogueBox {
       this.text.setPosition(tx, sp ? y0 + 20 : y0 + 9);
     }
     // (a long line in the slim strip shrinks to fit rather than spilling out of it)
-    for (let f = B.text; f > 10 && this.text.height > B.h - (this.text.y - y0) - 4; f--) this.text.setFontSize(f);
+    const room = B.h - (this.text.y - y0) - 5;
+    for (let f = B.text; this.text.height > room && f > 9;) this.text.setFontSize(--f);
     this.arrowX = W - M - (mode === 'full' ? 12 : 9);
     this.arrow.setPosition(this.arrowX, H - M - (mode === 'full' ? 7 : 4)).setFontSize(mode === 'full' ? 15 : 12);
     // (the controls ride just above the box, small, so they cost the box no room)
