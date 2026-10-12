@@ -273,6 +273,34 @@ grey daylight and the Black Keep across a gorge.
   > slams down in front. doom: 1-5 it tips, the furnace goes out, smoke pours out. No text.
   The Crusher switches over once all four strips are in.
 
+### 48-50. The spike chase (on magenta): the wall of the collapse and the falling rock
+The chase after the Ore Crusher is the level's main event: a wall of rock bristling with
+spikes that runs you down through three stretches. Attach a screenshot of it in the game
+(project files `spike-chase/after.png`). Each plugs in alone; until it exists the game draws
+that piece in code. The wall and the spikes switch over together.
+
+- **48.** `assets/env/mine/collapse_wall.png` (about 1024 x 3072, TALL)
+  > Same style. The face of a mine collapsing, seen straight on: a tall solid wall of
+  > broken black rock, shattered timber props and snapped ore-cart rails jammed in it,
+  > dust pouring off it, the faintest blue ore glint. It fills the LEFT two thirds of the
+  > picture, edge to edge top to bottom; its RIGHT edge is ragged and jagged (this is the
+  > front of the wall). The TOP and BOTTOM edges must join seamlessly (it repeats
+  > downward). Everything to the right of the ragged edge is FLAT PURE MAGENTA. No spikes
+  > sticking far out (they are separate), no people, no text.
+- **49.** `assets/env/mine/collapse_spikes.png` (about 3072 x 1024, six pieces side by side)
+  > Same style. Six separate long spikes of broken black rock, each one a sharp shard
+  > pointing RIGHT, lying horizontally, lit warm on the upper facet and dark underneath,
+  > with a few cracks and one or two with a sliver of blue ore. Different lengths and
+  > thicknesses: two long and thin, two medium, two short and thick. Evenly spaced in one
+  > row, each in its own sixth of the picture, nothing touching, the BLUNT end at the left
+  > of its sixth. FLAT PURE MAGENTA background. No text.
+- **50.** `assets/env/mine/rockfall.png` (about 2048 x 1024, two pictures side by side)
+  > Same style. Left half: a heavy slab of mine roof breaking loose, a jagged chunk of
+  > black rock with a stalactite or two, cracked, dust and grit trickling off it, seen from
+  > the side. Right half: the same rock smashed on the floor in a low heap of broken
+  > stones and dust. FLAT PURE MAGENTA background. No text.
+  (Used for the falling rock in the chase and in the Crusher Hall.)
+
 ---
 
 ## LEVEL 4: THE SHATTERED ASCENT

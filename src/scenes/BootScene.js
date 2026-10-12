@@ -42,6 +42,9 @@ export class BootScene extends Phaser.Scene {
     this.load.image('bridge-log-src', 'assets/env/bridge_log.png'); // the painted log bridge (view/TerrainView.js drawBlock)
     this.load.image('bodies-src', 'assets/env/bodies.png'); // the painted fallen villagers (view/NpcView.js drawBodies)
     this.load.image('rubble-wall-src', 'assets/env/mine/rubble_wall.png'); // the cave's boulder wall (view/TerrainView.js drawRubble)
+    this.load.image('collapse-wall-src', 'assets/env/mine/collapse_wall.png'); // the mine's spike chase: the wall's face (view/StageView.js paintedCollapse)
+    this.load.image('collapse-spikes-src', 'assets/env/mine/collapse_spikes.png'); // ...and its six spikes
+    this.load.image('rockfall-src', 'assets/env/mine/rockfall.png'); // the falling rock: the slab and its heap (view/StageView.js paintedRockfall)
     for (const [key, strips] of Object.entries(CHARACTER_STRIPS)) {
       for (const [name, s] of Object.entries(strips)) this.load.image(`strip-${key}-${name}`, s.file);
     }

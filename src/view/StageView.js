@@ -12,6 +12,7 @@ import { playSfx } from '../core/Sfx.js';
 import { buildPropSheet, PROP_HD } from './propSheet.js';
 import { FX } from './stripImporter.js';
 import { BladeChain } from './BladeChain.js';
+import { cutPieces, keyLayer } from './envArt.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -594,7 +595,7 @@ export class StageView {
     const y = Math.max(0, this.stage.terrain?.groundAt(hz.x, hz.z) ?? 0);
     const gy = hz.z - y;
     g.setDepth(hz.z - 1);
-    hz.log?.setVisible(false); hz.logGlow?.setVisible(false);
+    hz.log?.setVisible(false); hz.logGlow?.setVisible(false); hz.slab?.setVisible(false); hz.heap?.setVisible(false);
     if (!live) return;
     const { phase, warnT, since } = this.stage.beamPhase(hz);
     if (hz.look === 'rock') { this.drawRockfall(g, hz, gy, y, phase, warnT, since); return; }
@@ -653,6 +654,7 @@ export class StageView {
   // The mine's version of a falling beam (look 'rock'): grit trickling from a crack in the
   // roof and a shadow spreading under it, then a slab of rock that shatters where it lands.
   drawRockfall(g, hz, gy, y, phase, warnT, since) {
+    if (this.paintedRockfall(g, hz, gy, y, phase, warnT, since)) return;
     if (phase === 'warn') {
       g.fillStyle(0x000000, 0.2 + 0.5 * warnT).fillEllipse(hz.x, gy, hz.w * (0.6 + 0.6 * warnT), hz.d * 0.5 * (0.6 + 0.6 * warnT));
       g.lineStyle(2, 0xc8b8a0, 0.3 + 0.5 * warnT).strokeEllipse(hz.x, gy, hz.w * 1.2, hz.d * 0.6);
@@ -675,6 +677,34 @@ export class StageView {
       }
       g.fillStyle(0x8a8070, a * 0.25).fillEllipse(hz.x, gy - 14, hz.w * 1.4, 40);
     }
+  }
+
+  // The falling rock, painted (assets/env/mine/rockfall.png, on magenta: the slab of roof
+  // working loose, then the same rock smashed into a heap): the slab shakes overhead while
+  // its shadow grows, drops in the warning's last fifth, and lies broken while the dust
+  // settles. False (the code drawing) until the picture exists.
+  paintedRockfall(g, hz, gy, y, phase, warnT, since) {
+    if (!cutPieces(this.scene, 'rockfall-src', ['rockfall-slab', 'rockfall-heap'])) return false;
+    const s = this.scene;
+    hz.slab ??= s.add.image(0, 0, 'rockfall-slab').setOrigin(0.5, 1);
+    hz.heap ??= s.add.image(0, 0, 'rockfall-heap').setOrigin(0.5, 1);
+    const fit = (img, w) => img.setScale(w / img.frame.width);
+    if (phase === 'warn') {
+      g.fillStyle(0x000000, 0.2 + 0.5 * warnT).fillEllipse(hz.x, gy, hz.w * (0.6 + 0.6 * warnT), hz.d * 0.5 * (0.6 + 0.6 * warnT));
+      g.lineStyle(2, 0xc8b8a0, 0.3 + 0.5 * warnT).strokeEllipse(hz.x, gy, hz.w * 1.2, hz.d * 0.6);
+      const f = Math.max(0, (warnT - 0.8) / 0.2);
+      const shake = Math.sin(hz.t * 1.7) * 3 * Math.min(warnT, 0.8) * (1 - f);
+      const hang = gy - 220 + Math.min(warnT, 0.8) * 26;
+      fit(hz.slab, hz.w * 1.1).setPosition(hz.x + shake, hang + (gy - hang) * f * f).setDepth(hz.z + 1).setVisible(true);
+      if (hz.t % 3 === 0 && f === 0) {
+        s.gore.spawn({ x: hz.x + rand(-hz.w / 3, hz.w / 3), z: hz.z, h: y + 200, vx: rand(-6, 6), vz: 0, vh: -rand(20, 80), tint: 0x8a8070, texture: 'px', scale: rand(0.5, 1), decal: false, life: 50 });
+      }
+    } else if (since < 80) {
+      const a = 1 - since / 80;
+      fit(hz.heap, hz.w * 1.3).setPosition(hz.x, gy + 6).setDepth(hz.z - 0.5).setAlpha(Math.min(1, a * 2)).setVisible(true);
+      g.fillStyle(0x8a8070, a * 0.25).fillEllipse(hz.x, gy - 14, hz.w * 1.4, 40);
+    }
+    return true;
   }
 
   // The catapults' stones (Stage 'bombard'): where each will land, a shadow spreading on the
@@ -728,7 +758,7 @@ export class StageView {
     const on = hz.front != null && hz.front > cam.x - 300;
     g.setVisible(on);
     this.drawCollapseWarning(hz, cam, on);
-    if (!on) return;
+    if (!on) { hz.wallArt?.setVisible(false); for (const sp of hz.spikes ?? []) sp.setVisible(false); return; }
     const t = this.scene.time.now / 16.7;
     const fx = hz.front;
     const moving = fx < hz.to;
@@ -743,8 +773,11 @@ export class StageView {
     // the face of the fall: a ragged wall of rock bristling with spikes, long and short, each
     // its own length (they don't move as one), thrusting out further while it surges. Each
     // spike a shard: a lit upper facet, a dark lower one.
-    g.fillStyle(0x121216, 1).fillRect(fx - 44, top, 40, bot - top);
     const thrust = surge ? 1.45 : 1;
+    if (this.paintedCollapse(hz, fx, top, bot, t, moving, surge, thrust)) {
+      // (painted: assets/env/mine/collapse_wall.png and collapse_spikes.png)
+    } else {
+    g.fillStyle(0x121216, 1).fillRect(fx - 44, top, 40, bot - top);
     for (let y = top - 10, i = 0; y < bot; y += 30, i++) {
       const seed = Math.sin(i * 12.9898) * 43758.5453;
       const r = seed - Math.floor(seed);
@@ -756,6 +789,7 @@ export class StageView {
       g.fillStyle(0x1e1d22, 1).fillTriangle(fx - 10, mid, tipX, tipY, fx - 10, mid + half);          // shadowed facet
       g.lineStyle(2, 0x7a7280, 0.9).lineBetween(fx - 6, mid - half + 2, tipX, tipY);                  // its sharp upper edge
       if (surge) g.fillStyle(0xff6a20, 0.6 + 0.3 * Math.sin(t * 0.8 + i)).fillCircle(tipX - 4, tipY, 3.5);
+    }
     }
     // boulders falling through the front
     if (moving) {
@@ -778,6 +812,39 @@ export class StageView {
       } else if (Math.floor(t) % (surge ? 6 : 20) === 0 && near) this.scene.fx?.shake(surge ? 4 : 2, 10);
     }
     hz.wasSurging = surge;
+  }
+
+  // The wall of the collapse, painted: the rock face (collapse_wall.png, on magenta, a tall
+  // picture whose top and bottom join, its ragged right edge the front) repeated down the
+  // screen, and the spikes (collapse_spikes.png, six shards side by side on magenta,
+  // pointing right) set along it in rows, each its own length, thrusting out further while
+  // it surges, a hot glow at their tips. False (the code drawing) until both pictures exist.
+  paintedCollapse(hz, fx, top, bot, t, moving, surge, thrust) {
+    const s = this.scene; const T = s.textures;
+    const names = [0, 1, 2, 3, 4, 5].map((i) => `collapse-spike-${i}`);
+    if (!T.exists('collapse-wall-src') || !cutPieces(s, 'collapse-spikes-src', names)) {
+      hz.wallArt?.setVisible(false); for (const sp of hz.spikes ?? []) sp.setVisible(false);
+      return false;
+    }
+    if (!T.exists('collapse-wall')) T.addCanvas('collapse-wall', keyLayer(T.get('collapse-wall-src').getSourceImage(), 'magenta'));
+    const WIDE = 240; // (px of wall face shown in front of the dark)
+    const fr = T.get('collapse-wall').getSourceImage();
+    const k = WIDE / fr.width;
+    hz.wallArt ??= s.add.tileSprite(0, 0, WIDE, bot - top, 'collapse-wall').setOrigin(1, 0).setTileScale(k, k);
+    if (hz.wallArt.height !== bot - top) hz.wallArt.setSize(WIDE, bot - top);
+    hz.wallArt.setPosition(fx + 10, top).setTilePosition(0, moving ? -t * 1.2 / k : 0).setDepth(DEPTH.floor + 900.2).setVisible(true); // (the rock pouring down)
+    hz.spikes ??= [];
+    let i = 0;
+    for (let y = top - 10; y < bot; y += 44, i++) {
+      const seed = Math.sin(i * 12.9898) * 43758.5453;
+      const r = seed - Math.floor(seed);
+      const sp = hz.spikes[i] ??= s.add.image(0, 0, names[Math.floor(r * 6)]).setOrigin(0, 0.5);
+      const len = (60 + r * 70) * thrust + Math.sin(i * 1.7 + t * (moving ? 0.25 : 0.03)) * 9;
+      sp.setScale(len / sp.frame.width).setPosition(fx - 30, y + (r - 0.5) * 14).setDepth(DEPTH.floor + 900.4).setVisible(true)
+        .setTint(surge ? 0xffc8a0 : 0xffffff);
+    }
+    for (; i < hz.spikes.length; i++) hz.spikes[i].setVisible(false);
+    return true;
   }
 
   // The red at the screen's edge while the collapse is close behind a hero (along the
