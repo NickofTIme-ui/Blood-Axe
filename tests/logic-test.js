@@ -22,6 +22,7 @@ import { STAGE_ASCENT } from '../src/data/stageAscent.js';
 import { STAGE_GATES } from '../src/data/stageGates.js';
 import { STAGES } from '../src/data/stages.js';
 import { LINE, NPC } from '../src/stage/Story.js';
+import { SPEAKERS, NARRATION, PORTRAIT_IDS, speakerInfo } from '../src/data/speakers.js';
 import { Progress, PROGRESS } from '../src/progression/Progress.js';
 import { SKILL_TREES } from '../src/data/skills.js';
 import { BladeChain, CHAIN_PHYS } from '../src/view/BladeChain.js';
@@ -3700,6 +3701,17 @@ test('sentence: every boss in the game has his crimes (the machine none); the Oa
   }
   const opening = STAGE_VILLAGE.story.find((b) => b.id === 'opening').lines.map((l) => l[1]).join(' ');
   assert(opening.includes('Each of them kneels, hears his crimes, and pays for them.'), 'the pledge');
+});
+
+test('dialogue: every voice in every level has a name and a portrait (or is narration); Nick\'s names on the nameless', () => {
+  for (const [id, data] of Object.entries(STAGES)) {
+    const whos = (data.story ?? []).flatMap((b) => b.lines.map((l) => l[0]));
+    for (const sec of data.sections) if (sec.boss?.sentence?.speaker) whos.push(sec.boss.sentence.speaker);
+    for (const w of whos) assert(NARRATION.has(w) || SPEAKERS[w], `${id}: ${w} has an entry in data/speakers.js`);
+  }
+  for (const k of ['MINER', 'PRISONER', 'REEVE', 'TOWNSMAN', 'MILLER', 'PILGRIM']) assert(!/^[A-Z]+$/.test(SPEAKERS[k].name), `${k} has a name`);
+  assert(speakerInfo('VOICE') === null && speakerInfo('MILLER').name === 'Irvolino' && speakerInfo('RURIK').portrait === 'rurik', 'lookups');
+  assert(PORTRAIT_IDS.includes('daniel') && !PORTRAIT_IDS.includes('miner'), 'portrait files by name');
 });
 
 for (const [name, fn] of later) {

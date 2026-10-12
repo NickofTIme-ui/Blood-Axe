@@ -566,3 +566,17 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - Nick ran the village street through Magnific (Image Editor, Creative mode: crisper mud, stones and straw, clean puddles; it redrew the layout) and approved it for the campaign: `assets/env/village/ground.png` is the new one (1448 x 724, colour-matched to the old one with `tools/ground-fit.py`; the old one is in git history). Before/after in project files `magnific-ground/results/`.
 - Also tried: Rurik's walk frame through Magnific (project files `magnific-rurik/`).
 - **Saved for later (not in the game)**: Magnific grounds for Gallows Wood, Iron Gates, Shattered Ascent and the Mine, already fitted (project files `magnific-ground/results/fitted/<level>-ground.png`; side by side in `four-levels-second-pass.jpg`). Ascent and Mine were redone with a "photorealistic, not cartoony" prompt after Nick found the first pass too cartoony. To use one: copy it over `assets/env/<level>/ground.png`. Not checked in the game yet (the headless browser couldn't start Iron Gates or the Mine).
+
+## Cloud, 12 October 2026: dialogue boxes with portraits (art to do on the PC)
+
+- Every story line now shows in `src/view/DialogueBox.js`: navy panel, gold frame, the
+  speaker's portrait on the left, their name in gold, a pulsing ▸. Quiet ground, held
+  scenes and the king's cutaways get the full box; a line said while enemies are alive
+  gets a slim strip (64 px) on the bottom edge so the fight stays in view. Off-screen
+  cries and sounds (`VOICE`) show as italic narration with no portrait.
+- Names and portrait files: `src/data/speakers.js`. Nick's names went to the voices that
+  only had a trade: Daniel (MINER), Alex (PRISONER), Vincent (REEVE), Mathew (TOWNSMAN),
+  Irvolino (MILLER), Nicholas (PILGRIM). The `who` keys in the stage data are unchanged.
+- **Art for the PC**: portraits drop in as `assets/ui/portraits/<file>.png` (square). Only
+  `rurik`, `oryn`, `vexa`, `vaurath` exist (cut from existing art); everyone else shows a
+  hooded stand-in until painted. Prompts per character: `docs/portrait-art-prompts.md`.
