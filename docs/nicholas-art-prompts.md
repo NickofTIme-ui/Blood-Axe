@@ -51,10 +51,14 @@ so the style matches the rest.
 ## 2. The sprite sheet: `assets/sprites/npc/nicholas.png`
 
 One row of **9 poses on plain black**, facing right, nothing touching, in the same painted style
-and size as `assets/sprites/npc/villager.png` (attach it, and the photo). The game cuts the row by
-the gaps between the poses and scales it by the tallest one, so the poses can be slightly
-different sizes. The order matters: the first eight are the villager sheet's order, so he
-walks on the villager sheet until his own is in.
+and size as `assets/sprites/npc/villager.png` (attach it, and the photo). The game cuts the row
+into 9 equal cells, so ChatGPT's picture has to be repacked first: each pose is centred in its
+own cell, on the picture's own baseline. The order matters: the first eight are the villager
+sheet's order, so he walks on the villager sheet until his own is in.
+
+**Done 12 October 2026**: both images were made in ChatGPT from the photo (chats "Create Pixel
+Portrait" and "Create Nicholas Sprite Strip"). The portrait was cut to 256 x 256, and the
+strip was repacked into 9 equal cells (3312 x 353).
 
 1. standing, staff in hand, looking ahead
 2. braced, staff held across his body in both hands (while a fight is on)
