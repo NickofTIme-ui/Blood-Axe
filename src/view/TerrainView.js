@@ -326,6 +326,8 @@ export class TerrainView {
       v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); v.arts?.forEach((a) => a.setVisible(false)); // (gone: broken through, or fallen)
       return;
     }
+    // (a painted set piece stands in for it: the wood's rockslide, view/WoodView.js)
+    if (b.hideArt) { v.top.setVisible(false); v.front.setVisible(false); return; }
     v.top.setVisible(true); v.front.setVisible(true);
     // a log bridge over the water: its walkway is the bark tile as before, and its front the
     // painted fallen tree (assets/env/bridge_log.png), roots and broken end past the banks

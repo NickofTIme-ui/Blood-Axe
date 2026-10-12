@@ -202,8 +202,11 @@ export class AscentBackdrop {
     if (pass) {
       const g = s.add.graphics().setDepth(DEPTH.floor - 0.99);
       const x0 = pass.x0 + 150; const x1 = this.width + this.pad;
+      // (painted: the view runs on to the level's end, its near edge melting into the cliff
+      // wall, so the painted backdrop is never cut off by a flat block of colour)
+      if (this.art.piece('gates_view', x0 - 120, this.width + 40, { bottom: -20, feather: { left: 0.22, top: 0.08 } })) return;
       g.fillGradientStyle(COL.skyLow, COL.skyLow, COL.peakFar, COL.peakFar, 1).fillRect(x0, top - CLIFF - 40, x1 - x0, CLIFF + 40);
-      if (!this.art.piece('gates_view', x0 + 50, x0 + 650, { bottom: -20 })) {
+      { // (not painted yet)
         // far below: the valley floor, the wall across it and the gatehouse, small with distance
         const gx = x0 + 350; const gy = top - 40;
         g.fillStyle(0x5a626c, 1).fillRect(x0, gy - 10, x1 - x0, 50);

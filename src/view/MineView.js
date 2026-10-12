@@ -43,7 +43,7 @@ export class MineBackdrop {
     if (art.has('sky')) art.layer('sky', DEPTH.sky); else this.drawDark();
     if (art.has('far')) art.layer('far', DEPTH.far - 1); else this.drawGalleries();
     if (art.has('mid')) art.layer('mid', DEPTH.far + 2); else this.drawPillars();
-    if (art.has('wall')) art.wall(); else this.drawWall();
+    if (art.has('wall')) art.wall(Math.min(this.width, this.dayX + 60)); else this.drawWall();
     if (art.has('ground')) art.ground(); else this.drawFloor();
     this.drawDaylight();
     this.drawSetPieces();
@@ -153,6 +153,7 @@ export class MineBackdrop {
     if (this.dayX > this.width) return;
     const s = this.scene;
     const top = SETTINGS.world.floorTop - 50;
+    if (this.paintedDaylight(top)) return;
     const g = s.add.graphics().setDepth(DEPTH.floor - 1.2);
     g.fillGradientStyle(COL.day, COL.day, COL.dayLow, COL.dayLow, 1).fillRect(this.dayX, -400, this.width - this.dayX + this.pad, top + 400);
     const c = s.add.graphics().setDepth(DEPTH.floor - 1.1);
@@ -164,6 +165,36 @@ export class MineBackdrop {
     const glow = s.add.image(this.dayX + 80, top - 120, 'glow').setScale(10, 8).setTint(0xdfe8f0).setAlpha(0.3)
       .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor - 0.8);
     this.flickers.push({ img: glow, base: 0.28, amp: 0.02, rate: 0.01 });
+  }
+
+  // (painted) the far side opens on the next level's own painted mountains (THE SHATTERED
+  // ASCENT's sky and far peaks, data/levelArt.js), so the light you walk out into is the
+  // country the next level starts in; the cave's dark fades off the tunnel mouth into it.
+  paintedDaylight(top) {
+    const next = new PaintedLevel(this.scene, 'ascent', this.width);
+    if (!this.art.has('wall') || !next.has('sky')) return false;
+    const s = this.scene;
+    const x0 = this.dayX; const w = this.width + this.pad - x0;
+    const strip = (name, depth) => {
+      const L = next.A.layers.find((q) => q.name === name);
+      const key = `lvl-ascent-${name}`;
+      const img = s.textures.get(key).getSourceImage();
+      const sc = L.height / img.height;
+      return s.add.tileSprite(x0, top - L.bottom - L.height, w, L.height, key).setOrigin(0).setTileScale(sc, sc).setDepth(depth);
+    };
+    strip('sky', DEPTH.floor - 1.3);
+    if (next.has('far')) strip('far', DEPTH.floor - 1.25);
+    if (next.has('mid')) strip('mid', DEPTH.floor - 1.2);
+    // the tunnel mouth: the cave's dark thinning out into the light, on the wall and the floor
+    const g = s.add.graphics().setDepth(DEPTH.floor - 0.97);
+    g.fillGradientStyle(0x05070a, 0x05070a, 0x05070a, 0x05070a, 1, 0, 1, 0).fillRect(x0 - 40, -420, 260, top + 420);
+    const floor = s.add.graphics().setDepth(DEPTH.floor + 0.5);
+    floor.fillGradientStyle(COL.day, COL.day, COL.day, COL.day, 0, 0.18, 0, 0.18).fillRect(x0, top, 300, SETTINGS.height - top + 40);
+    floor.fillStyle(COL.day, 0.18).fillRect(x0 + 300, top, w - 300, SETTINGS.height - top + 40);
+    const glow = s.add.image(x0 + 160, top - 120, 'glow').setScale(10, 8).setTint(0xdfe8f0).setAlpha(0.22)
+      .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor - 0.8);
+    this.flickers.push({ img: glow, base: 0.2, amp: 0.02, rate: 0.01 });
+    return true;
   }
 
   // set pieces painted later (the crusher hall's furnace mouth); drips from the roof now
