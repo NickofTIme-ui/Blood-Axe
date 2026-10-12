@@ -7,7 +7,6 @@ import { DEPTH } from './depths.js';
 import { LEVEL_ART, SPRITE_SHEETS } from '../data/levelArt.js';
 import { keyLayer, makeSeamless } from './envArt.js';
 import { importFxStrip } from './stripImporter.js';
-import { GROUND_TRY } from '../config/groundTry.js';
 
 // the painted figures that loaded (data/levelArt.js SPRITE_SHEETS): name -> { key, count, fw, fh }
 export const SPRITES = {};
@@ -23,7 +22,6 @@ export function preloadLevelArt(scene) {
     for (const L of A.layers ?? []) load(L.name, `${L.name}.png`);
     if (A.wall) load('wall', 'wall.png');
     if (A.ground) load('ground', 'ground.png');
-    if (A.groundTry) load('ground-try', A.groundTry);
     for (const p of A.pieces ?? []) load(p, `${p}.png`);
     for (const [k, p] of Object.entries(A.props ?? {})) load(`prop-${k}`, p.file);
     for (const [k, s] of Object.entries(A.strips ?? {})) load(`strip-${k}`, s.file);
@@ -53,8 +51,8 @@ export function buildLevelArt(scene) {
         T.addCanvas(tmp, L.key === 'opaque' ? part(T.get(src(theme, L.name)).getSourceImage(), 0, T.get(src(theme, L.name)).getSourceImage().width) : keyed(src(theme, L.name), L.key));
         if (makeSeamless(scene, tmp, artKey(theme, L.name), 0.08)) made.push(artKey(theme, L.name));
       }
-      for (const [name, kind, flag] of [['wall', 'magenta', 'wall'], ['ground', 'opaque', 'ground'], ['ground-try', 'opaque', 'groundTry']]) {
-        if (!A[flag] || !have(name)) continue;
+      for (const [name, kind] of [['wall', 'magenta'], ['ground', 'opaque']]) {
+        if (!A[name] || !have(name)) continue;
         const tmp = `${src(theme, name)}-cut`;
         if (T.exists(tmp)) T.remove(tmp);
         const img = T.get(src(theme, name)).getSourceImage();
@@ -135,9 +133,8 @@ export class PaintedLevel {
   }
 
   // the street itself, from the back wall down past the bottom of the screen
-  // (the Director's Cut NEW GROUND switch swaps in the level's candidate, if it has one)
   ground() {
-    const key = artKey(this.theme, GROUND_TRY.on && this.has('ground-try') ? 'ground-try' : 'ground');
+    const key = artKey(this.theme, 'ground');
     const img = this.scene.textures.get(key).getSourceImage();
     const top = SETTINGS.world.floorTop - 50;
     const h = SETTINGS.height - top + 40;

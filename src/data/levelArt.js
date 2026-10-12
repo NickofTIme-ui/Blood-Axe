@@ -9,8 +9,6 @@
 //            away at load: 'magenta' / 'black'). Each repeats sideways.
 //   wall     the street's back wall (repeats along the level), `height` drawn
 //   ground   the street under the fight (repeats), opaque
-//   groundTry a candidate ground (file name) the Director's Cut NEW GROUND switch swaps in
-//            for testing (config/groundTry.js)
 //   pieces   set pieces drawn over the back wall where the level's own spot for them is
 //            (the barn, the stables...); `pair: true` = two pictures side by side (whole,
 //            and broken/open)
@@ -31,7 +29,6 @@ export const LEVEL_ART = {
     ],
     wall: { height: 250 },
     ground: true,
-    groundTry: 'ground_magnific.png', // Magnific pass (2026-10-12), on trial
     pieces: ['well', 'barn', 'stables', 'longhall', 'gate', 'pikes'],
     props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' } },
     surfaces: { roof_top: { fit: true }, roof_front: { px: 180 }, beam: { px: 40 }, board: { fit: true } },

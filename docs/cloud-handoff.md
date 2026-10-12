@@ -562,8 +562,6 @@ shrinks it back to 2172 x 724, matches its colour to the original and writes
 `assets/env/<level>/ground.png` (the game shows the ground at about 1:1 at 1080p, so the gain is
 crispness, not size). Nothing has been run through Magnific yet; start with the village.
 
-## Cloud, 2026-10-12: NEW GROUND switch in the Director's Cut (not on itch)
-- Nick ran the Burning Village street through Magnific (Image Editor, Creative mode) and wants to try it in the game. It is `assets/env/village/ground_magnific.png` (colour-matched to the old one with `tools/ground-fit.py`); the live `ground.png` is unchanged.
-- The Director's Cut has a NEW GROUND: ON / OFF button (`TitleScene.toggleGround`, remembered on that computer: `localStorage` key `bloodAxe.groundTry`, `src/config/groundTry.js`). While on, a level whose `LEVEL_ART` entry has `groundTry` draws that file as its street (`PaintedLevel.ground`); only the village has one. Checked in a headless browser: the switch, the stored choice, the village drawing the new street.
-- If Nick keeps it: copy `ground_magnific.png` over `ground.png` and drop `groundTry`. If not: delete the file and the `groundTry` line.
-- Also tried: Rurik's walk frame through Magnific (project files `magnific-rurik/`). Nick didn't like it; nothing wired in.
+## Cloud, 2026-10-12: the Burning Village street, Magnific pass (not on itch)
+- Nick ran the village street through Magnific (Image Editor, Creative mode: crisper mud, stones and straw, clean puddles; it redrew the layout) and approved it for the campaign: `assets/env/village/ground.png` is the new one (1448 x 724, colour-matched to the old one with `tools/ground-fit.py`; the old one is in git history). Before/after in project files `magnific-ground/results/`.
+- Also tried: Rurik's walk frame through Magnific (project files `magnific-rurik/`).
