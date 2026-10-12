@@ -159,7 +159,7 @@ export function drawScorpion(sv, hz) {
     } else engine(g, ex, y, ek, hz.aim ? Math.max(0, Math.min(1, (hz.t - hz.aim.from) / Math.max(1, hz.aim.fire - hz.aim.from))) : 1, !hz.recoil || hz.recoil < 4);
     // Vincent at the back of it: winding it, aiming, pulling the lever; at ease between shots
     const pose = hz.recoil > 0 ? 'loose' : hz.aim ? (hz.t - hz.aim.from < (hz.aim.fire - hz.aim.from) * 0.55 ? 'crank' : 'aim') : 'stand';
-    drawVincent(s, hz, g, ex - 46 * ek, y + 2, k, pose, t, 1, z + 0.2);
+    drawVincent(s, hz, g, ex - (SPRITES.scorpion ? 125 * k : 46 * ek), y + 2, k, pose, t, 1, z + 0.2);
   }
   // the bolts in flight
   for (const b of hz.bolts ?? []) {

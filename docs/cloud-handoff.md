@@ -612,11 +612,11 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
   into the Black Keep, for when that level is built.
 - The reeve who was called Vincent is now **Aldric** (`data/speakers.js`, portrait renamed to
   `aldric.png`).
-- **Art to make on the PC (ChatGPT, from his photo, project files `vincent-npc/vincent-photo.png`):**
-  `assets/ui/portraits/vincent.png` and a 9-pose strip `assets/sprites/npc/vincent.png`.
-  Prompts in `docs/vincent-art-prompts.md`. Until they're in he's a code-drawn stand-in
-  (`view/VincentView.js`) and a hooded "V" in the dialogue box. The scorpion needs a
-  ChatGPT image too (`assets/sprites/npc/scorpion.png`, prompt in the same file). Nick: all
-  art is made in ChatGPT; the cloud doesn't draw art in code.
+- **Art (made in ChatGPT from his photo, 12 October 2026, in the chat "Create Pixel Portrait"):**
+  `assets/ui/portraits/vincent.png` (cut to 256 square), `assets/sprites/npc/vincent.png` (9 poses;
+  re-spaced into even cells for the importer) and `assets/sprites/npc/scorpion.png` (the closed-in
+  black pockets made transparent). Raw downloads are on the PC in `assets\incoming\vincent`.
+  Prompts: `docs/vincent-art-prompts.md`. Nick: all art is made in ChatGPT; the cloud doesn't
+  draw art in code (the code-drawn stand-ins are only a fallback if a file is missing).
 - Tests: three new "gates: Vincent" tests; the Iron Gates walker now frees him. Checked in a
   headless browser (the cage, the yard, three Ashen on one bolt); nobody has played it yet.
