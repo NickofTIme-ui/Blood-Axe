@@ -3,9 +3,10 @@
 
 Magnific returns the ground 2x (or 4x) bigger and usually a little brighter and more
 saturated than the painting it started from. This fits it back:
-  1. resizes it to the original's size (the game shows the ground at about 1:1 on a
-     1080p screen, so the extra pixels would only cost download size; shrinking the
-     2x result down is what makes it crisper than the original),
+  1. resizes it to the original's height, keeping its own width-to-height shape (the
+     game fits the ground's height to the floor band and repeats it sideways, so any
+     width works; the game shows it at about 1:1 on a 1080p screen, so extra pixels
+     would only cost download size, and shrinking a 2x result down makes it crisper),
   2. matches its colour and brightness to the original's (each channel's mean and
      spread), so the level keeps its mood and fighters and blood still read on top,
   3. optionally mixes a little of the original back in (--keep) to tame anything
@@ -52,9 +53,10 @@ def match_colour(img, ref, strength):
 
 def preview(before, after, path):
     """A 1:1 crop of each (what a 1080p screen shows), side by side."""
-    w, h = before.size
-    box = (w // 2 - 500, h - 480, w // 2 + 500, h)
-    b, a = before.crop(box), after.crop(box)
+    def crop(im):
+        w, h = im.size
+        return im.crop((w // 2 - 500, h - 480, w // 2 + 500, h))
+    b, a = crop(before), crop(after)
     sheet = Image.new('RGB', (b.width, b.height * 2 + 8), (20, 20, 20))
     sheet.paste(b, (0, 0))
     sheet.paste(a, (0, b.height + 8))
@@ -71,10 +73,13 @@ def main():
     args = p.parse_args()
 
     ref = original(args.level)
-    img = Image.open(args.enhanced).convert('RGB').resize(ref.size, Image.LANCZOS)
+    img = Image.open(args.enhanced).convert('RGB')
+    img = img.resize((round(img.width * ref.height / img.height), ref.height), Image.LANCZOS)
     if args.match > 0:
         img = match_colour(img, ref, args.match)
     if args.keep > 0:
+        if img.size != ref.size:
+            p.error('--keep needs the Magnific image to have the same shape as the original')
         img = Image.blend(img, ref, args.keep)
 
     out = args.out or os.path.join(ROOT, f'assets/env/{args.level}/ground.png')
