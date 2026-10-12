@@ -200,7 +200,7 @@ export class Sentence {
   place(b, h) {
     const m = this.blowOf.frames;
     const hb = m.hitbox ?? { x: 0, w: 60 };
-    const gap = Math.max(80, (hb.x ?? 0) + (hb.w ?? 60) * 0.75 + b.stats.body.w * 0.4);
+    const gap = Math.max(92, (hb.x ?? 0) + (hb.w ?? 60) * 0.75 + b.stats.body.w * 0.4);
     const B = this.world.bounds;
     let side = Math.sign(h.x - b.x) || -b.facing || -1;
     const fits = (s) => b.x + s * gap > B.minX + 20 && b.x + s * gap < B.maxX - 20;
