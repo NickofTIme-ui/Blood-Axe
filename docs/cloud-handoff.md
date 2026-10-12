@@ -523,3 +523,8 @@ same branch (villagers, hounds, Crusher, pikes). On Nick's next message, in one 
 - **Look**: no painted strip yet, so it uses his sprint poses for the run (two frames each) and the kick's planted pose for the skid (`ANIM_OVERRIDES.ulric.shoulder` in `src/data/spriteStrips.js`), with a lean, a sink and an impact jolt laid over them in `SpriteFighterView`, plus dust off his boots. Each hit: a deep crunch and a plate clang, camera jolt and zoom punch on the first man, a gold ring, debris flying ahead, and a "SHOULDER SMASH!" / "RAN THROUGH N!" call-out (`ArenaScene.shoulderImpact`). The HUD hint and README list it.
 - **Art (Nick's PC)**: prompt 5 in `docs/rurik-art-prompts.md` makes `ulric_shoulder.png` (6 poses); the cloud wires it once it exists.
 - Logic test added (the line goes down, stamina, plain slash when not sprinting, guard break, armour). Sim change: online players both need the new build.
+
+## Cloud, 2026-10-12: the impale finisher's victim hangs like a ragdoll (not on itch)
+- Nick: in Rurik's back-stab lift "the feet dangling really bad", make the body "more like a ragdoll".
+- View only (`src/view/ImpaledRig.js`), no sim change. Once his boots leave the floor his legs are a two-link pendulum (thigh on the hips, shin on the knee) under gravity, thrown about by how the blade moves him; knees only bend backwards. The legs are now the straight, together legs of his lying pose, cut at the knee and hung from the hips (the old code cut the wrong end of the lying pose, so it fell back on the striding hit-pose legs). Which end of the lying pose is the feet is measured (the thinner end). Torso and head also rock with the heave.
+- Before/after: project files `rurik/impale-ragdoll-before-after.png`. Logic tests all pass.
