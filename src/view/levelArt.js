@@ -122,14 +122,14 @@ export class PaintedLevel {
       .setTileScale(s, s).setScrollFactor(L.scroll, 0.8).setDepth(depth);
   }
 
-  // the street's back wall, along the whole level
-  wall() {
+  // the street's back wall, along the whole level (or up to x1: where it opens out)
+  wall(x1 = this.width) {
     const key = artKey(this.theme, 'wall');
     const img = this.scene.textures.get(key).getSourceImage();
     const h = this.A.wall.height;
     const top = SETTINGS.world.floorTop - 50;
     const s = h / img.height;
-    return this.scene.add.tileSprite(0, top - h + 8, this.width, h, key).setOrigin(0).setTileScale(s, s).setDepth(DEPTH.floor - 1);
+    return this.scene.add.tileSprite(0, top - h + 8, x1, h, key).setOrigin(0).setTileScale(s, s).setDepth(DEPTH.floor - 1);
   }
 
   // the street itself, from the back wall down past the bottom of the screen
@@ -144,11 +144,38 @@ export class PaintedLevel {
 
   // a set piece standing on the street's back edge between x0 and x1 (its own height
   // follows its picture). Returns false if it isn't painted (draw the stand-in then).
-  piece(name, x0, x1, { depth = DEPTH.floor - 0.98, bottom = 8 } = {}) {
+  // `feather`: { left, right } shares of its width faded out at that edge, so a painting
+  // with a hard edge melts into what's around it instead of ending on a straight line.
+  piece(name, x0, x1, { depth = DEPTH.floor - 0.98, bottom = 8, feather = null } = {}) {
     if (!this.has(name)) return false;
     const top = SETTINGS.world.floorTop - 50;
-    const img = this.scene.add.image((x0 + x1) / 2, top + bottom, artKey(this.theme, name)).setOrigin(0.5, 1).setDepth(depth);
+    const key = feather ? featheredKey(this.scene, artKey(this.theme, name), feather) : artKey(this.theme, name);
+    const img = this.scene.add.image((x0 + x1) / 2, top + bottom, key).setOrigin(0.5, 1).setDepth(depth);
     img.setScale((x1 - x0) / img.width);
     return img;
   }
+}
+
+// A copy of a texture with its left / right edges faded to nothing (made once per look).
+export function featheredKey(scene, key, { left = 0, right = 0, top = 0 } = {}) {
+  const out = `${key}-fade-${left}-${right}-${top}`;
+  const T = scene.textures;
+  if (T.exists(out)) return out;
+  const img = T.get(key).getSourceImage();
+  const c = document.createElement('canvas');
+  c.width = img.width; c.height = img.height;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  ctx.globalCompositeOperation = 'destination-out';
+  const fade = (x0, y0, x1, y1, w, h, x, y) => {
+    const gr = ctx.createLinearGradient(x0, y0, x1, y1);
+    gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gr; ctx.fillRect(x, y, w, h);
+  };
+  const W = c.width; const H = c.height;
+  if (left) fade(0, 0, W * left, 0, W * left, H, 0, 0);
+  if (right) fade(W, 0, W * (1 - right), 0, W * right, H, W * (1 - right), 0);
+  if (top) fade(0, 0, 0, H * top, W, H * top, 0, 0);
+  T.addCanvas(out, c);
+  return out;
 }

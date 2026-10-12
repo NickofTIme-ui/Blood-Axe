@@ -46,7 +46,7 @@ import { sharedProgress } from '../progression/Progress.js';
 import { CHARACTERS } from '../data/characters.js';
 import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
-import { playMusic, toggleMute } from '../core/Music.js';
+import { playMusic, playCue, stopMusic, toggleMute } from '../core/Music.js';
 import { playSfx } from '../core/Sfx.js';
 import { runTickJobs } from '../core/TickJobs.js';
 import { styleMult } from '../combat/Style.js';
@@ -58,6 +58,7 @@ const SPAWN_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'];
 const SPAWN_ORDER = [...BAD_GUYS, 'grunt'];
 
 const STEP_MS = 1000 / 60;
+const LEVEL_FADE_MS = 700; // out of one campaign level and up into the next (goNextLevel)
 
 // The stages a run can be (data.stage): data/stages.js. The campaign's levels
 // (docs/campaign/plan.md) are stages too: 'village' is level 1, 'gallowsWood' level 2.
@@ -87,6 +88,7 @@ export class ArenaScene extends Phaser.Scene {
     // walked out of the last level with (shares of their max, in player order)
     this.startSection = data.section ?? 0;
     this.carry = data.carry ?? null;
+    this.leaving = false;
     this.campaign = !!(this.stageData.exit || this.stageData.sequence);
   }
 
@@ -355,6 +357,7 @@ export class ArenaScene extends Phaser.Scene {
     this.camFocus = this.add.zone(this.player.x, this.player.z, 1, 1);
     this.cameras.main.startFollow(this.camFocus, true, 0.12, this.stageData.tall ? 0.09 : 0);
     this.cameras.main.roundPixels = true;
+    if (this.carry) this.cameras.main.fadeIn(LEVEL_FADE_MS * 1.4, 0, 0, 0); // (on from the last level: up out of its black)
 
     // THE OATH ROAD (data/stage.js): sections, hazards, breakables, checkpoints, the boss.
     // The old endless waves stay on key 9 for testing, off by default.
@@ -751,13 +754,20 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   // On to the campaign's next level: the same heroes, the health they walked out with.
+  // The level and its tally fade to black first, and the next fades up out of it (create),
+  // so one level's art never cuts straight onto the next's. (No ticks pass meanwhile:
+  // update, so both online machines leave on the same one.)
   goNextLevel() {
     const N = nextLevel(this.stageData);
-    if (!N) return;
+    if (!N || this.leaving) return;
     this.nextReady = false;
-    this.setPaused(false);
+    this.leaving = true;
     const carry = { health: this.players.map((p) => p.health / p.stats.maxHealth) };
-    this.scene.restart({ ...this.restartData(), stage: this.stageData.next.id, section: 0, carry });
+    const go = () => { this.setPaused(false); this.scene.restart({ ...this.restartData(), stage: this.stageData.next.id, section: 0, carry }); };
+    const hudCam = this.scene.get('HUD')?.cameras?.main;
+    hudCam?.fadeOut(LEVEL_FADE_MS, 0, 0, 0);
+    this.cameras.main.fadeOut(LEVEL_FADE_MS, 0, 0, 0);
+    this.time.delayedCall(LEVEL_FADE_MS + 60, go);
   }
 
   // ------------------------------------------------------------ progression
@@ -852,7 +862,11 @@ export class ArenaScene extends Phaser.Scene {
     this.camL += (tl - this.camL) * 0.06;
     this.camR += (tr - this.camR) * 0.15;
     if (Math.abs(tl - this.camL) < 0.5) this.camL = tl;
-    this.cameras.main.setBounds(this.camL, this.camTop, Math.max(SETTINGS.width, this.camR - this.camL), SETTINGS.height - this.camTop);
+    // (a stretch narrower than the screen, like a level's last few steps: the view widens
+    // to the left, never past the level's end, where nothing is drawn)
+    const w = Math.max(SETTINGS.width, this.camR - this.camL);
+    const x = Math.max(0, Math.min(this.camL, this.stageWidth - w));
+    this.cameras.main.setBounds(x, this.camTop, w, SETTINGS.height - this.camTop);
   }
 
   // Fell: rise at the section's start, healed, with its fight reset.
@@ -953,7 +967,9 @@ export class ArenaScene extends Phaser.Scene {
   setupSentence(ev) {
     const cam = this.cameras.main;
     ev.on('sentenceStart', ({ boss: b }) => {
-      this.slowmo(0.3, 650);
+      // (no slow motion: the scene runs on the music's time, see syncSentenceMusic)
+      stopMusic(this, 700);
+      this.sentenceSong = null;
       this.fx.shake(5, 14);
       this.rumble(0.8, 0.4, 260);
       cam.zoomTo(this.baseZoom * 1.12, 1100, 'Quad.easeInOut', true);
@@ -1005,6 +1021,22 @@ export class ArenaScene extends Phaser.Scene {
       if (this.sentenceCam) { cam.zoomTo(this.baseZoom, 700, 'Quad.easeInOut', true); this.sentenceCam = false; }
       if (routed.length) this.callout('HIS MEN BREAK AND RUN', '#ffd24a', 24);
     });
+  }
+
+  // The sentence's music (stage/Sentence.js `clock`): it starts when the clock reaches
+  // its first note and is kept on the clock (a skipped line jumps it on) until the blade
+  // falls; then it plays out its fall on its own, and the stage's track comes back.
+  syncSentenceMusic() {
+    const S = this.stage.sentence;
+    if (!S?.running || S.step === 'after' || this.paused) return;
+    const want = S.clock / 60;
+    if (want < 0) return;
+    const s = this.sentenceSong;
+    if (!s) {
+      this.sentenceSong = playCue(this, 'sentence', want, () => {
+        if (this.sys.isActive()) playMusic(this, this.stageData.music ?? 'battle');
+      }) ?? false;
+    } else if (s.isPlaying && Math.abs(s.seek - want) > 0.15) s.setSeek(want);
   }
 
   finisherFX(beat) {
@@ -1249,6 +1281,7 @@ export class ArenaScene extends Phaser.Scene {
   // ------------------------------------------------------------ main loop
 
   update(_time, delta) {
+    if (this.leaving) return; // (fading out to the next level: goNextLevel)
     this.localKeys();
     const s = this.session;
 
@@ -1294,6 +1327,7 @@ export class ArenaScene extends Phaser.Scene {
       s.afterTick?.(tick, () => snapshot(this.world));
     }
 
+    this.syncSentenceMusic();
     for (const v of this.views.values()) v.update();
     this.liftShadows();
     this.terrainView?.update();

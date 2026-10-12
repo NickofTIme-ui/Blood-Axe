@@ -180,8 +180,12 @@ export class WoodBackdrop {
     if (pass) {
       // the rockslide: boulders heaped across the pass, higher than anyone can climb
       const slide = D.terrain.find((t) => t.kind === 'block' && t.x0 >= pass.x0 && t.top >= 200);
-      if (slide && this.art.piece('rockslide', slide.x0 - 120, slide.x1 + 160, { depth: DEPTH.floor - 0.5, bottom: 60 })) {
-        // (painted)
+      // (painted: the heap fills the road's end from the back wall to the front of the
+      // lane, in front of everyone, and the rock block under it isn't drawn; the camera
+      // never looks past the level's end, so it reads as the road buried)
+      if (slide && this.art.piece('rockslide', slide.x0 - 70, slide.x1 + 420, { depth: slide.z1 + 2, bottom: SETTINGS.height + 10 - top })) {
+        const b = this.stage.terrain?.blocks.find((q) => q.x0 === slide.x0 && q.top === slide.top);
+        if (b) b.hideArt = true;
       } else if (slide) {
         const g = s.add.graphics().setDepth(DEPTH.floor - 0.5);
         const r = rng(91);
