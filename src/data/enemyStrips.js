@@ -59,13 +59,16 @@ const set = (id) => ({
   // crouch. Hopping DOWN off a ledge: 0 stepping off (looking down), 1 dropping (legs
   // reaching for the ground), 2 landing. Optional: without them his own frames are bent
   // into the shapes (view/SpriteEnemyView.js). Prompts: docs/enemy-jump-art-prompts.md
-  jump: { file: `${DIR}/${id}_jump.png`, frames: 4, ref: 0, ground: 'drawn', optional: true },
-  drop: { file: `${DIR}/${id}_drop.png`, frames: 3, ref: 0, ground: 'drawn', optional: true },
+  // (no pose stands up straight, so each is sized from a pose of known height: the
+  // push-off is nearly a standing man, the drop's legs-down pose about a standing man)
+  jump: { file: `${DIR}/${id}_jump.png`, frames: 4, refFrac: [1, 0.95], ground: 'drawn', optional: true },
+  drop: { file: `${DIR}/${id}_drop.png`, frames: 3, refFrac: [1, 1], ground: 'drawn', optional: true },
   // beaten, on his knees for his sentence (stage/Sentence.js; bosses only): 0 dropping onto
   // one knee, 1 on both knees, head bowed, 2 on his knees, head raised (his last words).
   // Optional: without it his standing pose is sunk to the knee. Prompts:
   // docs/kneel-art-prompts.md
-  kneel: { file: `${DIR}/${id}_kneel.png`, frames: 3, ref: 0, ground: 'drawn', optional: true },
+  // (sized from pose 1, on both knees with his head bowed: about 0.68 of him standing)
+  kneel: { file: `${DIR}/${id}_kneel.png`, frames: 3, refFrac: [1, 0.68], ground: 'drawn', optional: true },
 });
 
 // The scared set of animations for a one-armed enemy (side = 'B' or 'F').
@@ -103,10 +106,12 @@ export const ENEMY_STRIPS = {
     atk1: { erase: [[1146, 560, 1172, 618], [1098, 612, 1150, 640]] },
   }),
   stalker: fix(set('stalker'), {
+    drop: { erase: [[0, 458, 158, 724], [0, 484, 300, 724], [236, 466, 300, 724]] }, // the cliff edge he steps off
     react: { erase: [[1690, 210, 1800, 320]] }, // dagger flung from the knocked-down pose
     special: { own: [[280, 150, 420, 330, 1]] },  // the swung sickle belongs to pose 2
   }),
   penitent: fix(set('penitent'), {
+    drop: { erase: [[0, 474, 196, 724], [0, 488, 340, 724], [298, 476, 340, 724]] }, // the cliff edge he steps off
     // the little surprise ticks drawn round his helmet (no marks over heads: body language
     // only), and the gaps closed off by the flail's chain
     doom: { holes: [[721, 280], [1244, 276], [1781, 326], [210, 283], [1404, 283]], erase: [[737, 96, 757, 130], [712, 118, 736, 136], [767, 113, 788, 141], [751, 134, 759, 145], [739, 142, 751, 154], [711, 147, 738, 160], [732, 165, 748, 174],

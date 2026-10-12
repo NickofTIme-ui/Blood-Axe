@@ -185,16 +185,17 @@ export class SpriteFighterView {
         const anim = (f.dodgeDir === 'up' && a.dodgeUp) || (f.dodgeDir === 'down' && a.dodgeDown) || a.dodge;
         return easedSpread(anim.frames, fr / (d.duration + d.recovery));
       }
-      // KINGSFIRE / THE KING'S WRATH (combat/Skills.js), on the cleave's poses: Oathkeeper
+      // KINGSFIRE / THE KING'S WRATH (combat/Skills.js), on his wrath strip (else the cleave's poses): Oathkeeper
       // lifted overhead while the fire gathers (the wrath holds it there through his roar),
       // driven point-first into the floor on the release and held there while the road
       // of fire runs, then wrenched free
       case 'kingsfire': {
-        const ph = a.heavy?.phases;
+        const ph = a.kingsfire?.phases ?? a.heavy?.phases; // (his own strip when it's in)
         const K = kingsfireOf(f);
         if (!ph || !K) return a.cast.frames[0];
         if (fr < K.startup - 3) return ph.startup[Math.min(ph.startup.length - 1, Math.floor((fr / Math.max(1, K.startup - 3)) * ph.startup.length))];
-        if (fr < K.startup + K.recovery - 6) return ph.active[0];
+        if (fr < K.startup) return ph.active[0];
+        if (fr < K.startup + K.recovery - 6) return ph.active.at(a.kingsfire ? -1 : 0);
         return ph.recovery.at(-1);
       }
       case 'kingcast':

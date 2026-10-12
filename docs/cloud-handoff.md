@@ -634,3 +634,9 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
   - `jump` and `kneel` in `src/data/enemyStrips.js` use `ref: 0`, so the whole strip is scaled until pose 0 is a standing man's height. Pose 0 is a crouch (jump) or a half-kneel (kneel), so those strips come out about 1.4-1.6x too big next to the walk. Suggest `ref: 1` for jump (the push-off is near standing height), or a fixed scale taken from the enemy's walk for both.
   - The stalker and penitent `_drop` pose 1 have a small stray dark block at the bottom left (the `erase` spec can paint it out).
   - `ulric_wrath.png` still needs wiring into `src/data/spriteStrips.js` (see `docs/rurik-art-prompts.md` section 4).
+
+## Cloud, 2026-10-12: the new ChatGPT strips wired and sized (not on itch)
+- `jump`, `drop` and `kneel` (`src/data/enemyStrips.js`) were sized from pose 0 (a crouch / a half-kneel), so they came out about 1.5x too big. New importer option `refFrac: [pose, share]` (`src/view/stripImporter.js`): that pose is `share` of a standing man. jump `[1, 0.95]`, drop `[1, 1]`, kneel `[1, 0.68]`. Checked in `tools/strip-check.html` for every enemy: now the walk's size.
+- The stalker's and penitent's `_drop` pose 0 had the cliff edge he steps off drawn under him; painted out with `erase`.
+- `ulric_wrath.png` is wired: strip `wrath` (`src/data/spriteStrips.js`, sized from pose 5, standing) and the `kingsfire` anim (poses 0-2 over the gathering/roar, 3 on the release, 4 buried while the fire runs, 5 wrenched free). `SpriteFighterView` uses it over the borrowed cleave poses. Not watched in a fight.
+- Audit of art still not made in ChatGPT: project files `art-audit/non-chatgpt-art.md` (left: Orsk's and the Gate Twins' own strip sets, Rurik's launcher and Oathkeeper repaint, the Gallows Ascent, the Rogue's mine, the cutaway messenger, spell projectiles).

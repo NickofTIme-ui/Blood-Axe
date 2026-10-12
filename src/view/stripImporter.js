@@ -291,7 +291,7 @@ function downscale(src, tw, th) {
   return out;
 }
 
-// spec: { frames, target?, ref?, scale?, air?, bg?, nudge?: [[dx,dy],...], res? }
+// spec: { frames, target?, ref?, refFrac?, scale?, air?, bg?, nudge?: [[dx,dy],...], res? }
 // res = texture resolution multiplier (2 = frames twice as detailed; draw them at 0.5 scale).
 // Returns { canvas, count, scale, fw, fh } — frames laid out left to right, fw x fh each.
 export function importCharacterStrip(img, spec, palette) {
@@ -360,6 +360,9 @@ function importStrip(img, spec, palette) {
   const heights = figs.map((f) => f.y1 - f.y0);
   let stand = Math.max(...heights);
   if (spec.ref != null) stand = spec.ref > 20 ? spec.ref : heights[spec.ref];
+  // refFrac: [pose, share]: that pose stands `share` of a standing man's height (a strip
+  // with no standing pose: a crouch, a kneel), so the strip matches the walk's size
+  if (spec.refFrac) stand = heights[spec.refFrac[0]] / spec.refFrac[1];
   const s = spec.scale ?? ((spec.target ?? 112) * R) / stand;
   // ground: 'drawn' keeps every pose at the height it was drawn on the sheet's shared
   // baseline (the median of the poses' lowest points), so a dangling mace or debris
