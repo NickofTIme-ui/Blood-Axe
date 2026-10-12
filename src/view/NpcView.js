@@ -64,6 +64,9 @@ const CELLS = {
   elder: { stand: 0, sit: 1, wave: 2, kneel: 3 },
   // the wood's captives: bound on the rope, hanging, in the cage, at its bars, limping
   captive: { bound: 0, hang: 1, cower: 2, grip: 3, limp: [4, 5], stand: 4, run: [4, 5] },
+  // Nicholas, the guide: the villager's order (wave: he points the way on; cower: braced),
+  // and a ninth: lying dead
+  nicholas: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7, lie: 8 },
 };
 // the mine's prisoners: the same sheets cut bigger (data/levelArt.js); the old man has no
 // run, so he hobbles on his standing pose (sinking on each step, like the run)
@@ -145,6 +148,7 @@ export class NpcView {
   // level's NPC can name its own with `art`)
   figure(g, x, y, k, pose, t, tunic, dir = 1, who) {
     who ??= 'villager';
+    if (who === 'nicholas' && !SPRITES.nicholas) who = 'villager'; // (until his sheet is painted)
     if (this.sprite(g, x, y, k, pose, t, dir, who)) return true;
     const sc = k;
     const bob = pose === 'run' ? Math.abs(Math.sin(t * 0.4)) * 3 : pose === 'cower' ? Math.sin(t * 0.25) * 1 : 0;
@@ -209,7 +213,9 @@ export class NpcView {
     g.setDepth(n.z);
     const tun = (i) => TUNIC[(v.seed + i) % TUNIC.length];
     const pose = n.state === 'fleeing' ? 'run' : n.state === 'threatened' || n.cower ? 'cower' : n.state === 'trapped' ? 'wave' : 'stand';
-    if (n.state === 'lost') { this.fallen(g, n.x, y, k, tun(0)); return; }
+    if (n.state === 'dead' && SPRITES.nicholas && n.art === 'nicholas') { this.figure(g, n.x, y, k, 'lie', t, 0, 1, 'nicholas'); return; }
+    if (n.state === 'lost' || n.state === 'dead') { this.fallen(g, n.x, y, k, tun(0)); return; }
+    if (n.guide) { this.drawGuide(n, v, g, y, k, t, dir); return; }
     if (n.pose === 'wounded') return this.figure(g, n.x, y, k, 'sit', t, tun(0), 1, n.art);
     if (n.pose === 'lame') {
       // limping on a crutch (a stick under one arm), slow
@@ -230,6 +236,16 @@ export class NpcView {
       return;
     }
     this.figure(g, n.x, y, k, pose, t, tun(0), dir, n.art);
+  }
+
+  // The guide (Nicholas, stage/Story.js `guide`): walking on ahead, or waiting, turned to
+  // the heroes, pointing the way on; braced while a fight is on; struck down, he sits
+  // against the rock. Where he went round by his own way he fades back in.
+  drawGuide(n, v, g, y, k, t, dir) {
+    const who = SPRITES.nicholas ? 'nicholas' : SPRITES.miner ? 'miner' : 'villager'; // (the stand-in: the villager cut at the heroes' height)
+    const pose = n.state === 'dying' ? 'sit' : n.moving ? 'run' : n.braced ? 'cower' : Math.floor(t / 150) % 3 === 2 ? 'wave' : 'stand';
+    g.setAlpha(1 - (n.fade ?? 0) / 30);
+    this.figure(g, n.x, y, k, pose, n.moving ? t * 1.2 : t, 0x7a3a30, pose === 'sit' ? 1 : dir, who);
   }
 
   // At the ore face, chained by the ankle to a post (the shackle prop): each man in his own

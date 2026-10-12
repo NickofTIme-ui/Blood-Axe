@@ -45,6 +45,16 @@
 //   gather: { x, z }    where he waits later (the gate at the end of the level)
 //   if / unless         only there if that holds ('saved:<npcId>': someone saved in an
 //                       earlier level, come back to stand with you)
+//   guide: { section, falls: [keys], cry, words }   A GUIDE (Nicholas on the Shattered Ascent):
+//                       he walks the road a little ahead of the leading hero (never past a
+//                       fight that isn't won yet; in a fight he keeps back behind the heroes),
+//                       climbs ledges, and where he can't walk (a drop, broken planks) he
+//                       takes his own way round and turns up ahead again. The first of
+//                       `falls` (event keys, as beats' `on`) strikes him down (state
+//                       'dying'; `cry`: the beat he calls out as he falls); once the beat
+//                       `words` (his last) has played he is dead.
+//                       Rising at a checkpoint in his `section` before then: he's back on
+//                       his feet; starting past it, he is gone.
 // States: idle (a survivor), threatened / trapped / escort -> free (says his line) ->
 // fleeing -> safe (gone from here) -> gathered (at his gather point); or lost. Saved ones
 // are reported with 'npcRescued' (the arena keeps them in the campaign save), the lost with
@@ -62,6 +72,9 @@ export const NPC = {
   nerve: 100, threat: 110, threatDepth: 50, fear: 0.12, // escort: his nerve, how near a foe frightens him, the drain per foe a frame
   follow: 80, keep: 50,                // escort: he follows when this far behind, and stops this far back
 };
+// A guide: how far ahead of the leading hero he walks, how far back he keeps in a fight,
+// how near a fight line he waits, his pace, and when he gives up on the road and goes round
+export const GUIDE = { ahead: 170, back: 150, wait: 60, speed: 150, settle: 12, stuck: 20, far: 520, fight: 520, fade: 30 };
 export const INTERACT = 'padUp';
 
 export class Story {
@@ -71,7 +84,7 @@ export class Story {
     this.beats = (data.story ?? []).map((b) => ({ ...b, fired: false }));
     this.npcs = (data.npcs ?? []).map((n) => ({
       ...n,
-      state: n.rescue === 'defend' || n.rescue === 'execution' ? 'threatened' : n.rescue ? 'trapped' : 'idle',
+      state: n.guide ? 'guide' : n.rescue === 'defend' || n.rescue === 'execution' ? 'threatened' : n.rescue ? 'trapped' : 'idle',
       x: n.x, z: n.z, h: 0, t: 0, home: { x: n.x, z: n.z }, clock: 0, pick: 0, nerve: n.hp ?? NPC.nerve,
     }));
     this.prompts = [];
@@ -135,6 +148,13 @@ export class Story {
 
   trigger(key) {
     for (const b of this.beats) if (b.on === key) b.fire = true; // (fired on the next tick, with its calm check)
+    for (const n of this.npcs) if (n.state === 'guide' && n.guide.falls?.includes(key)) this.strike(n);
+  }
+
+  // The guide is struck down (he lives until his last words are said).
+  strike(n) {
+    n.state = 'dying'; n.t = 0; n.moving = false; n.stuck = 0;
+    this.world.events.emit('npcStruck', { npc: n });
   }
 
   // Fire one beat by its id (a sequence's scene: stage/Sequence.js).
@@ -193,6 +213,9 @@ export class Story {
     // the beat is over
     this.done.add(c.beat.id);
     this.current = null;
+    for (const n of this.npcs) {
+      if (n.state === 'dying' && n.guide.words === c.beat.id) { n.state = 'dead'; n.t = 0; this.world.events.emit('npcDied', { npc: n }); }
+    }
     if (c.beat.hold) {
       // (what was pressed to skip the last line doesn't carry into the fight)
       for (const p of this.stage.players) { p.awe = 0; for (const a of ['jump', 'attack', 'padRight', 'padLeft']) p.controller.consume(a, 99); }
@@ -241,6 +264,7 @@ export class Story {
           this.trigger(`follow:${n.id}`);
         }
       } else if (n.state === 'escort') this.updateEscort(n, heroes);
+      else if (n.state === 'guide') this.updateGuide(n, heroes);
       else if (n.state === 'free') {
         if (n.t >= NPC.freeFor) { n.state = n.flee ? 'fleeing' : 'safe'; n.t = 0; }
       } else if (n.state === 'fleeing') {
@@ -356,6 +380,66 @@ export class Story {
     n.x = to[0]; n.z = to[1]; n.h = Math.max(0, T ? T.groundAt(n.x, n.z) : 0); n.dir = Math.sign(dx) || n.dir; n.moving = true;
   }
 
+  // The guide: a little ahead of the leading hero on the road, held at a fight line until
+  // that fight is won, back behind the heroes while one is on. He climbs (any ledge); he
+  // won't step into a drop or onto rotten planks: blocked there (or left far behind), he
+  // goes round by his own way and turns up again where he means to be.
+  updateGuide(n, heroes) {
+    const st = this.stage;
+    const T = st.terrain;
+    const G = GUIDE;
+    if (n.fade > 0) n.fade--;
+    const lead = heroes.reduce((a, p) => (!a || p.x > a.x ? p : a), null);
+    if (!lead || this.holding) { n.moving = false; return; }
+    const sec = st.section;
+    const fight = st.livingFoes().some((f) => Math.abs(f.x - n.x) < G.fight);
+    n.braced = fight;
+    let tx = fight ? lead.x - G.back : lead.x + G.ahead;
+    // (not past the place a fight starts until it's won)
+    if (!fight && sec?.fightAt != null && (st.cleared ?? -1) < st.index) tx = Math.min(tx, sec.fightAt - G.wait);
+    const tz = Math.max(300, Math.min(500, lead.z - 20));
+    const ok = (x, z) => !T || T.safeAt(x, z);
+    const dx = tx - n.x;
+    if (Math.abs(dx) <= G.settle) { n.moving = false; n.stuck = 0; n.dir = Math.sign(lead.x - n.x) || n.dir; return; }
+    const step = G.speed / 60;
+    const nx = n.x + Math.sign(dx) * Math.min(step, Math.abs(dx));
+    const nz = n.z + Math.sign(tz - n.z) * Math.min(step * 0.5, Math.abs(tz - n.z));
+    if (ok(nx, nz) && Math.abs(n.x - lead.x) <= G.far) {
+      n.x = nx; n.z = nz; n.stuck = 0;
+    } else if (ok(nx, n.z) && Math.abs(n.x - lead.x) <= G.far) {
+      n.x = nx; n.stuck = 0;
+    } else if (++n.stuck >= G.stuck || Math.abs(n.x - lead.x) > G.far) {
+      // round by his own way: he turns up at the nearest firm ground by where he's going
+      const spot = this.firmNear(tx, tz);
+      if (spot) { n.x = spot.x; n.z = spot.z; n.fade = G.fade; this.world.events.emit('npcRound', { npc: n }); }
+      n.stuck = 0;
+    }
+    n.h = T ? Math.max(0, T.groundAt(n.x, n.z)) : 0;
+    n.dir = Math.sign(dx) || n.dir;
+    n.moving = true;
+  }
+
+  // the nearest firm spot (no drop, no rotten plank) to x, z along the lane
+  firmNear(x, z) {
+    const T = this.stage.terrain;
+    if (!T) return { x, z };
+    for (let d = 0; d <= 400; d += 10) {
+      for (const sx of d ? [x - d, x + d] : [x]) {
+        for (const sz of [z, 440, 360, 480]) if (T.safeAt(sx, sz) && T.safeAt(sx + 20, sz) && T.safeAt(sx - 20, sz)) return { x: sx, z: sz };
+      }
+    }
+    return null;
+  }
+
+  // the guide, put back at the start of section k (he walks on with you from there)
+  placeGuide(n, k) {
+    const T = this.stage.terrain;
+    const sp = this.stage.sections[k].spawn ?? { x: this.stage.sections[k].x0 + 60, z: 440 };
+    const spot = this.firmNear(sp.x + GUIDE.ahead, sp.z - 20) ?? { x: sp.x, z: sp.z };
+    n.state = 'guide'; n.x = spot.x; n.z = spot.z; n.h = T ? Math.max(0, T.groundAt(n.x, n.z)) : 0;
+    n.t = 0; n.stuck = 0; n.moving = false; n.fade = GUIDE.fade;
+  }
+
   lose(n) {
     n.state = 'lost';
     n.t = 0;
@@ -385,6 +469,16 @@ export class Story {
     }
     this.started = true;
     for (const n of this.npcs) {
+      if (n.guide) {
+        // the guide: walking on with you, or (starting past the place he fell) gone, his
+        // last words spent
+        const fell = S.findIndex((s) => s.id === n.guide.section);
+        if (fell >= 0 && k > fell) {
+          n.state = 'gone';
+          for (const b of this.beats) if (b.id === n.guide.words || b.id === n.guide.cry) { b.fired = true; this.done.add(b.id); }
+        } else this.placeGuide(n, k);
+        continue;
+      }
       if (!earlyNpc.has(n.id)) continue;
       n.talked = true;
       if (this.rescued.has(n.id)) n.state = 'safe'; // (and on to his gather point, if he has one)
@@ -396,6 +490,14 @@ export class Story {
   // or an escort (put back as they were when you came in).
   resetSection(k) {
     for (const n of this.npcs) {
+      if (n.guide) {
+        // (struck down in a fight you then lost: he's up again, the fight to do again)
+        if (n.state === 'guide' || n.state === 'dying') {
+          this.placeGuide(n, k);
+          for (const b of this.beats) if (b.id === n.guide.cry || b.id === n.guide.words) { b.fired = false; b.fire = false; this.done.delete(b.id); }
+        }
+        continue;
+      }
       if (this.sectionOf(n) !== k || this.rescued.has(n.id)) continue;
       if (!['execution', 'escort', 'convoy'].includes(n.rescue)) continue;
       this.lost.delete(n.id);

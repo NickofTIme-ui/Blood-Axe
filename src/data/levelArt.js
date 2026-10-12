@@ -120,6 +120,11 @@ export const SPRITE_SHEETS = {
   'prisoner-a': { file: 'assets/sprites/npc/prisoner_a.png', frames: 7, height: 210 },
   'prisoner-b': { file: 'assets/sprites/npc/prisoner_b.png', frames: 7, height: 205 },
   'prisoner-c': { file: 'assets/sprites/npc/prisoner_c.png', frames: 7, height: 200 },
+  // Nicholas, the mountain guide (Nick in the game; docs/nicholas-art-prompts.md): 9 poses,
+  // the villager sheet's order (point the way where the villager waves, brace where he
+  // cowers, sit wounded) and a ninth, lying dead. Until it's painted he walks on the
+  // villager sheet.
+  nicholas: { file: 'assets/sprites/npc/nicholas.png', frames: 9, height: 210 },
   'hound-walk': { file: 'assets/enemies/strips/hound_walk.png', frames: 6, height: 120 },
   'hound-atk1': { file: 'assets/enemies/strips/hound_atk1.png', frames: 4, height: 120 },
   'hound-react': { file: 'assets/enemies/strips/hound_react.png', frames: 3, height: 120 },
