@@ -36,7 +36,8 @@
 // SENTENCE.slice, and that is the frame the blade lands: the lines share out the time
 // left once the executioner stands at his side, and the swing starts so that its first
 // active frame falls on the crest. When the words would need more time than the track
-// gives, the track starts later (clock < 0: silence while he drops to his knees). A line
+// gives, the track starts a little later (clock < 0: silence while he drops to his
+// knees) and the words run quicker. A line
 // skipped moves the clock (and so the music) on with it.
 //
 // Events: sentenceStart { boss, hero }, sentenceKneel { boss, hero },
@@ -57,7 +58,8 @@ export const SENTENCE = {
   edge: 160,       // a routed man is gone this far past the edge of the room
   slice: 993,      // the music's crest (16.55 s into the track): the blade lands on it
   arrive: 200,     // about how long he takes to drop and be walked up to (to start the track)
-  pace: 0.8,       // the words may run this much faster than the story's reading pace
+  pace: 0.6,       // the words may run this much faster than the story's reading pace
+  late: 120,       // the track starts at most this late (a short silence as he drops), however many the words
   minLine: 60,     // but no line shorter than this
 };
 
@@ -238,7 +240,7 @@ export class Sentence {
     this.natural = lines.map(([, text]) => this.stage.story?.frames(text) ?? 120);
     const need = Math.round(this.natural.reduce((a, n) => a + n, 0) * SENTENCE.pace);
     const budget = this.speechEnd - SENTENCE.arrive - SENTENCE.stand;
-    this.clock = -Math.max(0, need - budget);
+    this.clock = -Math.min(SENTENCE.late, Math.max(0, need - budget));
     this.off = null;
     this.sb = null;
     this.go('fall');
