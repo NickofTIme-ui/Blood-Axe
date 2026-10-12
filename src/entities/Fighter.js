@@ -106,6 +106,14 @@ export class Fighter {
     // hitstop, or awe (frozen in place while a boss makes his entrance)
     const frozen = this.hitstop > 0 || this.awe > 0;
     this.controller.tick(frozen);
+    // a scene has his legs (a boss's sentence, stage/Sentence.js): the pad's stick and
+    // buttons count for nothing; with `mute` his presses are dropped too
+    const sc = this.scripted;
+    if (sc) {
+      const c = this.controller;
+      c.moveX = sc.moveX; c.moveZ = sc.moveZ; c.held = {};
+      if (sc.mute) for (const a in c.pressAge) c.pressAge[a] = Infinity;
+    }
     if (frozen) {
       if (this.hitstop > 0) this.hitstop--;
       else this.awe--;
@@ -119,6 +127,7 @@ export class Fighter {
     if (this.exposed > 0 && --this.exposed === 0) this.exposeCool = this.exposeCoolFrames ?? 0; // (the Rogue's EXPOSED)
     else if (this.exposeCool > 0) this.exposeCool--;
     this.fsm.update();
+    if (sc?.planted) { this.vx = 0; this.vz = 0; } // (the killing blow: feet planted, no lunge)
     if (this.pitGuard > 0) { this.pitGuard--; this.invincible = true; } // (just climbed out of a fall)
     this.justLanded = false;
     this.integrate();

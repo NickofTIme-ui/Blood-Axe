@@ -111,7 +111,16 @@ export const STAGE_VILLAGE = {
       // the rear guard: the Iron Penitent's kind, grown into a sub-boss. He walks in from
       // the north road without freezing anyone
       boss: { type: 'penitent', name: 'Brother Cinder, the Rear Guard', health: 2.4, damage: 1, size: 1.3, adds: ['grunt', 'grunt'],
-        entrance: { from: 140, to: 330, speed: 70, stepEvery: 30, awe: 0, freeze: false } },
+        entrance: { from: 140, to: 330, speed: 70, stepEvery: 30, awe: 0, freeze: false },
+        // beaten: his crimes and his sentence (stage/Sentence.js)
+        sentence: {
+          speaker: 'CINDER',
+          crimes: [
+            'You held the road while the village burned behind you.',
+            'You drove the families who ran back into the flames.',
+          ],
+          last: 'The fire was a mercy. Your king will show you none.',
+        } },
     },
     {
       // the stables burning at the back of the yard, the horses screaming inside: smash the
@@ -156,7 +165,16 @@ export const STAGE_VILLAGE = {
       // the man who directed the attack: Pitlord Kragg's kind (mace and spiked shield), a captain
       boss: { type: 'gladiator', name: 'Varek, the Ash Captain', health: 3.4, damage: 1.15,
         adds: ['grunt', 'stalker', 'grunt', 'berserker'],
-        entrance: { from: 140, to: 320, speed: 58, stepEvery: 34, awe: 30 } },
+        entrance: { from: 140, to: 320, speed: 58, stepEvery: 34, awe: 30 },
+        sentence: {
+          speaker: 'VAREK',
+          crimes: [
+            'You led the Ashen to our gates at dusk.',
+            'You put our homes to the torch, and you laughed while they burned.',
+            'You chained our people and drove them north to the Keep.',
+          ],
+          last: 'Swing, then. My king will hang every one of you from his walls.',
+        } },
     },
     {
       id: 'gate', name: 'THE NORTH GATE', x0: 8400, x1: 9400,
@@ -236,7 +254,12 @@ export const STAGE_VILLAGE = {
       lines: [
         ['RURIK', 'Smoke. Over the village... no.'],
         ['VEXA', 'They thought we died at the ford. They thought no one was left to stop them.'],
-        ['ORYN', 'Then they were wrong. Split up. Find whoever still lives.'],
+        ['ORYN', 'Then they were wrong.'],
+        // (the pledge every boss's sentence pays off: stage/Sentence.js)
+        ['RURIK', 'Every captain who led them here. Every one of them, up to the king who gave the order.'],
+        ['RURIK', 'Swear it with me. Each of them kneels, hears his crimes, and pays for them.'],
+        ['VEXA', 'On my blades.'],
+        ['ORYN', 'On my staff. Now split up. Find whoever still lives.'],
       ],
     },
     {
@@ -288,6 +311,7 @@ export const STAGE_VILLAGE = {
         ['VEXA', 'They burned our home because they thought we were dead.'],
         ['RURIK', 'We stand for our people. We stand for our home.'],
         ['RURIK', 'Whoever brings harm to either will answer to us.'],
+        ['VEXA', 'Their captain knelt. The rest of them will kneel too.'],
       ],
     },
   ],

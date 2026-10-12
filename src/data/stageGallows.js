@@ -114,7 +114,16 @@ export const STAGE_GALLOWS = {
       hazards: [{ type: 'fire', x: 6300, z: 470, w: 120, d: 70, phase: 0 }],
       rest: { x: 5800, z: 330 },
       // the elite: a berserker grown huge on the gallows, his men come at half health
-      boss: { type: 'berserker', name: 'Hruk the Hangman', health: 2.6, damage: 1.1, adds: ['stalker', 'grunt', 'grunt'] },
+      boss: { type: 'berserker', name: 'Hruk the Hangman', health: 2.6, damage: 1.1, adds: ['stalker', 'grunt', 'grunt'],
+        // beaten: his crimes and his sentence (stage/Sentence.js)
+        sentence: {
+          speaker: 'HRUK',
+          crimes: [
+            'You hanged our people from the gallows on this road.',
+            'You left them there for the crows.',
+          ],
+          last: 'The rope will have you yet.',
+        } },
     },
   ],
 

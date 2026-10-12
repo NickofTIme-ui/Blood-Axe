@@ -178,6 +178,7 @@ export class ArenaScene extends Phaser.Scene {
       this.gore.spark(f.x + f.facing * 18, f.z, 70, 0xdfe8ff, 10);
     });
     this.setupFinishers(ev);
+    this.setupSentence(ev);
     this.mageFX = new MageFX(this); // the Mage's spells and barriers (effects/MageFX.js)
     this.rogueFX = new RogueFX(this); // the Rogue's mines, marks and steel (effects/RogueFX.js)
     this.quakeFX = new QuakeFX(this); // the Warlord's Earthbreaker slam and its shockwave (effects/QuakeFX.js)
@@ -552,7 +553,7 @@ export class ArenaScene extends Phaser.Scene {
   // Big dismemberment: shout it, punch the camera.
   fatalityFX(e) {
     const label = FATALITY_LABELS[e.fatality];
-    if (label) this.popup(e.defender.x, e.z - e.defender.stats.body.h - 40, label, '#ff2a1a', 26);
+    if (label && !e.sentence) this.popup(e.defender.x, e.z - e.defender.stats.body.h - 40, label, '#ff2a1a', 26); // (a sentence says its own word)
     const cam = this.cameras.main;
     if (['halfH', 'halfV', 'explode', 'decap'].includes(e.fatality)) {
       cam.zoomTo(this.baseZoom * 1.07, 90, 'Quad.easeOut', true);
@@ -901,6 +902,67 @@ export class ArenaScene extends Phaser.Scene {
         this.cuts.launch(pieces.upper, dir * (160 + w(0) * 140) * up, (320 + w(1) * 160) * up, dir * (8 + w(2) * 8) * up);
       }
       // waistPerch: the top half just sits there on its legs — waiting for the boot
+    });
+  }
+
+  // A beaten boss's sentence (stage/Sentence.js): the field goes still and the camera
+  // closes in while he drops to his knees; the words are the story strip's; the blow is
+  // the hardest thing in the game: a long freeze, slow motion, a white-red flash, the
+  // heaviest shake and sounds, the head flying and the neck pumping; then his men run.
+  setupSentence(ev) {
+    const cam = this.cameras.main;
+    ev.on('sentenceStart', ({ boss: b }) => {
+      this.slowmo(0.3, 650);
+      this.fx.shake(5, 14);
+      this.rumble(0.8, 0.4, 260);
+      cam.zoomTo(this.baseZoom * 1.12, 1100, 'Quad.easeInOut', true);
+      this.sentenceCam = true;
+      playSfx(this, 'swingAlt', { volume: 0.5, pitch: -1100, spread: 30, minGapMs: 0 });
+      this.popup(b.x, b.z - b.h - b.stats.body.h * (b.stats.size ?? 1) - 40, 'BEATEN', '#d8c8b0', 22);
+    });
+    ev.on('sentenceKneel', ({ boss: b }) => {
+      // the knees hit the ground
+      this.time.delayedCall(260, () => {
+        if (!this.sys.isActive()) return;
+        playSfx(this, 'kick', { volume: 0.9, pitch: -1900, minGapMs: 0 });
+        this.fx.shake(3, 8);
+        for (const s of [-1, 1]) this.gore.spark(b.x + s * 16, b.z, 4, 0x8a7a60, 8);
+      });
+    });
+    ev.on('sentenceStrike', ({ boss: b, hero: h, dir }) => {
+      const H = b.stats.body.h * (b.stats.size ?? 1);
+      const kneck = H * 0.57; // (the neck of a man on his knees)
+      const neck = b.z - b.h - kneck;
+      this.slowmo(0.14, 1300);
+      this.fx.shake(14, 26);
+      this.rumble(1, 1, 450);
+      cam.flash(120, 255, 210, 200);
+      cam.zoomTo(this.baseZoom * 1.24, 110, 'Quad.easeOut', true);
+      this.time.delayedCall(1500, () => { if (this.sys.isActive()) cam.zoomTo(this.baseZoom * 1.12, 900, 'Quad.easeInOut', true); });
+      playSfx(this, 'heavySwing', { volume: 1, spread: 30, minGapMs: 0 });
+      playSfx(this, 'finisher', { volume: 1, pitch: -650, spread: 30, minGapMs: 0 });
+      playSfx(this, 'kick', { volume: 0.9, pitch: -1400, minGapMs: 0 });
+      playSfx(this, 'bloodSplatter', { volume: 1, spread: 40, minGapMs: 0 });
+      this.slashStreak(b.x, neck, b.stats.body.w * 1.6, dir, b.z);
+      this.gore.spark(b.x, b.z, b.h + kneck, 0xffffff, 26);
+      const g = this.gore;
+      if (g.level > 0) {
+        // a fountain from the neck, straight up and over, for the length of the slow motion
+        const amt = g.amount ?? 1;
+        g.burst(b.x, b.z, b.h + kneck, dir, Math.round(80 * amt), 1.9);
+        g.mist(b.x, b.z, b.h + kneck, 10);
+        this.everyTick(70, (t) => {
+          if (t % 2) return;
+          const r = (lo, hi) => lo + Math.random() * (hi - lo);
+          g.spawn({ x: b.x + r(-4, 4), z: b.z + r(-2, 2), h: b.h + kneck - 4, vx: dir * r(20, 140), vz: r(-15, 15), vh: r(180, 380) * (1 - t / 90), tint: 0x8a0303, scale: r(0.4, 0.8) });
+          if (t % 12 === 0) g.splat(b.x + dir * r(10, 70), b.z + r(-5, 5), r(1.2, 2.4));
+        });
+      }
+      this.callout('RETRIBUTION', '#ff2a1a', 46);
+    });
+    ev.on('sentenceDone', ({ routed }) => {
+      if (this.sentenceCam) { cam.zoomTo(this.baseZoom, 700, 'Quad.easeInOut', true); this.sentenceCam = false; }
+      if (routed.length) this.callout('HIS MEN BREAK AND RUN', '#ffd24a', 24);
     });
   }
 

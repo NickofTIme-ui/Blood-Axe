@@ -683,6 +683,13 @@ export const FIGHTER_STATES = {
     exit(f) { f.liftH = 0; f.shock = 0; },
   },
 
+  // Beaten, on his knees, hearing his sentence (stage/Sentence.js). Nothing moves him and
+  // nothing touches him until the blow; the views sink him onto his knees.
+  kneel: {
+    enter(f) { stopMoving(f); f.activeAttack = null; f.move = null; f.liftH = 0; },
+    update(f) { f.invincible = true; f.vx = 0; f.vz = 0; },
+  },
+
   // Holding block. Hits from the front deal reduced damage and drain stamina.
   // Pressing left/right while blocking swings the guard round to that side.
   block: {

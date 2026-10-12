@@ -210,6 +210,11 @@ export class EnemyView {
       pose = mix(pose, { lean: -6, head: -20, aF: -150, aB: -130, wF: 40, crouch: 0 }, 1);
     } else if (st === 'jump' || st === 'airAttack') {
       pose = mix(pose, { crouch: -1, aF: rest.aF - 20 }, 1);
+    } else if (st === 'kneel') {
+      // on his knees for his sentence (stage/Sentence.js): hips dropped a shin's length,
+      // bowed over, arms and weapon hanging (head lifted for his last words)
+      const k = easeOut(clamp01(fr / 30));
+      pose = mix(pose, { lean: 16, head: f.defiant ? -12 : 24, aF: 8, wF: 50, aB: 14, crouch: rest.crouch + this.art.rig.shin * 0.85 }, k);
     }
     return pose;
   }
