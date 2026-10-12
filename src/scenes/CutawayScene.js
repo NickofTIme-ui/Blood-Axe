@@ -21,6 +21,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { FONT, epicFill } from '../view/fonts.js';
 import { playSfx } from '../core/Sfx.js';
+import { DialogueBox } from '../view/DialogueBox.js';
 
 export const CUTAWAYS = {
   learns: {
@@ -90,7 +91,6 @@ export const CUTAWAYS = {
 // ember-fire gathers, in source pixels before the flip
 const KING_ART = { srcW: 419, srcH: 830, height: 250, eye: [283, 100], hand: [350, 330] };
 
-const SPEAKER = { VAURATH: '#ffb070', MALGOR: '#b8a0ff', MESSENGER: '#c8c0b0', CAPTAIN: '#c8c0b0' };
 
 export class CutawayScene extends Phaser.Scene {
   constructor() { super('Cutaway'); }
@@ -115,10 +115,9 @@ export class CutawayScene extends Phaser.Scene {
     cap.setLetterSpacing?.(6);
     epicFill(cap, ['#e8e0ff', '#a890e0', '#40306a']);
     this.root.add(cap);
-    this.who = this.add.text(70, H - 92, '', { fontFamily: FONT.display, fontSize: '15px' }).setStroke('#000000', 4);
-    this.line = this.add.text(70, H - 72, '', { fontFamily: FONT.body, fontSize: '18px', color: '#f0e6d6', wordWrap: { width: W - 140 } }).setStroke('#000000', 4);
-    const hint = this.add.text(W - 14, H - 10, 'SPACE  next      ESC  skip', { fontFamily: FONT.ui, fontSize: '11px', color: '#9a8a7a' }).setOrigin(1, 1);
-    this.root.add([this.who, this.line, hint]);
+    // the line: the story's framed box, with the speaker's portrait (view/DialogueBox.js)
+    this.box = new DialogueBox(this);
+    this.root.add(this.box.root);
     this.tweens.add({ targets: this.root, alpha: 1, duration: 700, onComplete: () => this.next() });
 
     const k = this.input.keyboard;
@@ -216,6 +215,16 @@ export class CutawayScene extends Phaser.Scene {
     this.tweens.add({ targets: this.eyes, alpha: { from: 0.6, to: 1 }, duration: 900, yoyo: true, repeat: -1 });
   }
 
+  update(time) { this.box?.update(time); }
+
+  // a line in the box (who null: the box goes)
+  say(who, text = '') {
+    this.tweens.killTweensOf(this.box.root);
+    if (!who) { this.box.setAlpha(0); return; }
+    this.box.show(who, text, 'full', 'SPACE  next      ESC  skip').setAlpha(0);
+    this.tweens.add({ targets: this.box.root, alpha: 1, duration: 250 });
+  }
+
   next() {
     if (this.finished || this.busy) return;
     this.step++;
@@ -228,9 +237,7 @@ export class CutawayScene extends Phaser.Scene {
     if (b.act === 'kill') { this.kill(); return; }
     if (b.act === 'helm') { this.helm(); return; }
     if (b.act === 'gutter') { this.gutter(); return; }
-    this.who.setText(b.who).setColor(SPEAKER[b.who] ?? '#d8d0c0');
-    this.line.setText(b.text).setAlpha(0);
-    this.tweens.add({ targets: this.line, alpha: 1, duration: 250 });
+    this.say(b.who, b.text);
     // lines move on by themselves too
     this.auto?.remove();
     this.auto = this.time.delayedCall(1800 + b.text.length * 45, () => this.next());
@@ -241,7 +248,7 @@ export class CutawayScene extends Phaser.Scene {
   ember() {
     this.busy = true;
     this.auto?.remove();
-    this.who.setText(''); this.line.setText('');
+    this.say(null);
     const W = SETTINGS.width; const H = SETTINGS.height;
     this.tweens.add({ targets: this.hand, scale: 2.6, alpha: 1, duration: 1200, ease: 'Sine.easeIn' });
     playSfx(this, 'fireWhoosh', { volume: 0.5, pitch: -600, minGapMs: 0 });
@@ -273,7 +280,7 @@ export class CutawayScene extends Phaser.Scene {
   strike() {
     this.busy = true;
     this.auto?.remove();
-    this.who.setText(''); this.line.setText('');
+    this.say(null);
     const W = SETTINGS.width; const H = SETTINGS.height;
     const ax = W * 0.78 + 65 + 86; const ay = H - 248; // the throne's arm, beside him
     this.time.delayedCall(500, () => {
@@ -295,7 +302,7 @@ export class CutawayScene extends Phaser.Scene {
   hurl() {
     this.busy = true;
     this.auto?.remove();
-    this.who.setText(''); this.line.setText('');
+    this.say(null);
     const W = SETTINGS.width; const H = SETTINGS.height;
     const tx = W * 0.62; const ty = H - 200;
     const table = this.add.graphics();
@@ -322,8 +329,7 @@ export class CutawayScene extends Phaser.Scene {
   horns() {
     this.busy = true;
     this.auto?.remove();
-    this.who.setText('(horns, long and low, from the walls)').setColor('#9a8a7a');
-    this.line.setText('');
+    this.say('VOICE', '(horns, long and low, from the walls)');
     for (let i = 0; i < 3; i++) {
       this.time.delayedCall(200 + i * 900, () => {
         playSfx(this, 'fireWhoosh', { volume: 0.7, pitch: -2400, minGapMs: 0 });
@@ -340,7 +346,7 @@ export class CutawayScene extends Phaser.Scene {
   kill() {
     this.busy = true;
     this.auto?.remove();
-    this.who.setText(''); this.line.setText('');
+    this.say(null);
     const W = SETTINGS.width; const H = SETTINGS.height;
     const mx = W * 0.3 + (this.messenger.x ?? 0); const my = H - 140;
     this.tweens.add({ targets: this.hand, scale: 1.6, alpha: 1, duration: 500, ease: 'Sine.easeIn' });
@@ -382,8 +388,7 @@ export class CutawayScene extends Phaser.Scene {
   helm() {
     this.busy = true;
     this.auto?.remove();
-    this.who.setText('(a helm rolls across the floor)').setColor('#9a8a7a');
-    this.line.setText('');
+    this.say('VOICE', '(a helm rolls across the floor)');
     const W = SETTINGS.width; const H = SETTINGS.height;
     const h = this.add.graphics();
     h.fillStyle(0x2a2a30, 1).fillCircle(0, 0, 16).fillRect(-16, 0, 32, 10);
@@ -409,7 +414,7 @@ export class CutawayScene extends Phaser.Scene {
   gutter() {
     this.busy = true;
     this.auto?.remove();
-    this.who.setText(''); this.line.setText('');
+    this.say(null);
     this.tweens.add({ targets: this.hand, scale: 1.8, alpha: 1, duration: 900, ease: 'Sine.easeIn' });
     playSfx(this, 'fireWhoosh', { volume: 0.4, pitch: -900, minGapMs: 0 });
     this.time.delayedCall(950, () => {

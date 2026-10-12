@@ -15,7 +15,7 @@ import { HUD_ART } from '../view/hudArt.js';
 import { FONT, epicFill } from '../view/fonts.js';
 import { DeathScreen } from '../view/DeathScreen.js';
 import { StyleMeter } from '../view/StyleMeter.js';
-import { speakerColor } from '../view/SpeakerMarker.js';
+import { DialogueBox } from '../view/DialogueBox.js';
 
 const SERIF = FONT.ui;
 
@@ -28,7 +28,6 @@ function calloutStops(color) {
   return ['#ff7a5a', '#d0101a', '#3d0004'];                                // blood
 }
 const MAX_ENEMY_BARS = 4;
-const DIALOGUE_H = 46; // the story subtitle strip along the bottom edge
 
 
 export class HUDScene extends Phaser.Scene {
@@ -128,41 +127,29 @@ export class HUDScene extends Phaser.Scene {
       this.add.rectangle(0, 0, W, 30, 0x000000).setOrigin(0).setAlpha(0).setDepth(-1),
       this.add.rectangle(0, H, W, 30, 0x000000).setOrigin(0, 1).setAlpha(0).setDepth(-1),
     ];
-    // a subtitle strip along the bottom edge, so the fight in the middle stays in view;
-    // the speaker's name (in his colour) leads the line
-    const h = DIALOGUE_H;
-    const y = H - h;
-    const panel = this.add.rectangle(0, y, W, h, 0x050304, 0.82).setOrigin(0);
-    const rule = this.add.rectangle(0, y, W, 1, 0x6a5a48).setOrigin(0);
-    const who = this.add.text(16, y + 7, '', { fontFamily: FONT.display, fontSize: '14px', color: '#e8c890' }).setStroke('#000000', 4);
-    const text = this.add.text(118, y + 6, '', { fontFamily: FONT.body, fontSize: '15px', color: '#f0e6d6', wordWrap: { width: W - 118 - 92 } })
-      .setStroke('#000000', 3);
-    const next = this.add.text(W - 12, H - 5, '', { fontFamily: FONT.ui, fontSize: '10px', color: '#a89880' })
-      .setOrigin(1, 1).setStroke('#000000', 3);
-    this.dialogue = { box: this.add.container(0, 0, [panel, rule, who, text, next]).setDepth(61).setAlpha(0), who, text, next, key: null };
+    // the story's text box (view/DialogueBox.js): the full framed box with the speaker's
+    // portrait on quiet ground, a slim strip of it mid-fight so the fight stays in view
+    this.dialogue = new DialogueBox(this, 61);
   }
 
   updateDialogue() {
     const D = this.dialogue;
-    const line = this.arena.stage?.story?.line;
-    const hold = !!this.arena.stage?.story?.holding;
+    const story = this.arena.stage?.story;
+    const line = story?.line;
+    const hold = !!story?.holding;
     for (const b of this.bars2) b.setAlpha(Phaser.Math.Linear(b.alpha, hold ? 1 : 0, 0.12));
-    if (!line) { D.box.setAlpha(Math.max(0, D.box.alpha - 0.08)); D.key = null; }
+    if (!line) D.setAlpha(Math.max(0, D.alpha - 0.08));
     else {
-      const key = `${line.beat}:${line.index}`;
-      if (key !== D.key) {
-        D.key = key;
-        D.who.setText(line.who).setColor(speakerColor(line.who));
-        // (a long name pushes its line along rather than running into it)
-        D.text.setX(Math.max(118, 16 + D.who.width + 12));
-        D.text.setText(line.text);
-        D.next.setText(line.hold ? 'D-PAD ▶ / N  next     D-PAD ◀ / X  skip     (or SPACE / J)' : 'D-PAD ▶ / N  next     D-PAD ◀ / X  skip');
-      }
-      D.box.setAlpha(Math.min(1, D.box.alpha + 0.15));
+      // (a fight on: the slim strip; held scenes and quiet ground: the full box)
+      const fight = !hold && (this.arena.stage.livingFoes?.().length ?? 0) > 0;
+      D.show(line.who, line.text, fight ? 'compact' : 'full',
+        line.hold ? 'D-PAD ▶ / N  next     D-PAD ◀ / X  skip     (or SPACE / J)' : 'D-PAD ▶ / N  next     D-PAD ◀ / X  skip');
+      D.setAlpha(Math.min(1, D.alpha + 0.15));
       if (this.hint.alpha > 0) { this.tweens.killTweensOf(this.hint); this.hint.setAlpha(0); }
     }
-    // what lives along the bottom edge (the enemy strip, the partner wait) steps up over the strip
-    this.lift = D.box.alpha * DIALOGUE_H;
+    D.update(this.time.now);
+    // what lives along the bottom edge (the enemy strip, the partner wait) steps up over the box
+    this.lift = D.alpha * D.height;
   }
 
   sectionCard(index, section) {

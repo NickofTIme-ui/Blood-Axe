@@ -573,6 +573,21 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - **Saved for later (not in the game)**: Magnific grounds for Gallows Wood, Iron Gates, Shattered Ascent and the Mine, already fitted (project files `magnific-ground/results/fitted/<level>-ground.png`; side by side in `four-levels-second-pass.jpg`). Ascent and Mine were redone with a "photorealistic, not cartoony" prompt after Nick found the first pass too cartoony. To use one: copy it over `assets/env/<level>/ground.png`. Not checked in the game yet (the headless browser couldn't start Iron Gates or the Mine).
 - **HUD bars (health, stamina, magic)**: `assets/ui/hud-source.png` is now a Magnific pass (Image Editor, Creative, "photorealistic, gritty, weathered, not cartoony"), resized to the old 1672x941. The bars landed in the same place, so `src/view/hudArt.js` BARS needed no change. The three fill strips were then saturation/contrast boosted because Magnific's fills read grey at game size. Raw output and before/after in project files `magnific-hud/`.
 
+## Cloud, 12 October 2026: dialogue boxes with portraits (art to do on the PC)
+
+- Every story line now shows in `src/view/DialogueBox.js`: navy panel, gold frame, the
+  speaker's portrait on the left, their name in gold, a pulsing ▸. Quiet ground, held
+  scenes and the king's cutaways get the full box; a line said while enemies are alive
+  gets a slim strip (380 x 58) on the bottom edge (the full box is 420 x 96, centred) so the fight stays in view. Off-screen
+  cries and sounds (`VOICE`) show as italic narration with no portrait.
+- Names and portrait files: `src/data/speakers.js`. Nick's names went to the voices that
+  only had a trade: Daniel (MINER), Alex (PRISONER), Vincent (REEVE), Mathew (TOWNSMAN),
+  Irvolino (MILLER), Nicholas (PILGRIM). The `who` keys in the stage data are unchanged.
+- **Art for the PC**: portraits drop in as `assets/ui/portraits/<file>.png` (square). Only
+  `rurik`, `oryn`, `vexa`, `vaurath` exist (cut from existing art); everyone else shows a
+  hooded stand-in until painted. Prompts per character: `docs/portrait-art-prompts.md`.
+- The Ashen Road's wreckage is now two heaps at the back of the road (it was the same timbers stamped eight times across the lane; Nick found it fake).
+
 ## Cloud, 2026-10-12: level ends blend into the next level (not on itch)
 - **The camera no longer looks past a level's end** (`ArenaScene.updateStageCamera`): a last stretch narrower than the screen (Gallows Wood, Hollow Mountain, Shattered Ascent) used to widen the view to the right, into black void and flat placeholder colour. It now widens to the left instead.
 - **Fade between levels** (`ArenaScene.goNextLevel`, `LEVEL_FADE_MS`): ENTER on the tally fades the level and tally to black, and the next level fades up out of it, instead of a hard cut. No ticks pass while it fades, so online both machines still leave on the same tick.

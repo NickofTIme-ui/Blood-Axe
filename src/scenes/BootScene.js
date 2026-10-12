@@ -1,6 +1,7 @@
 // BootScene.js — Runs first. Loads sprite sheets (listed in data/sprites.js) and
 // creates the tiny placeholder textures used for blood and particles.
 
+import { PORTRAIT_IDS } from '../data/speakers.js';
 import { SPRITES } from '../data/sprites.js';
 import { SETTINGS } from '../config/settings.js';
 import { MUSIC } from '../core/Music.js';
@@ -69,7 +70,9 @@ export class BootScene extends Phaser.Scene {
     for (const L of PARALLAX_LAYERS) this.load.image(`plxsrc-${L.name}`, `assets/env/parallax/${L.file}`);
     preloadLevelArt(this); // (the campaign levels' painted art: data/levelArt.js)
     this.load.image('king-vaurath', 'assets/enemies/king_vaurath_stand.png'); // the king in his cutaways (scenes/CutawayScene.js)
-    this.load.on('loaderror', (file) => { if (!file.key?.startsWith('plxsrc-') && !isLevelArtKey(file.key) && file.key !== 'boss' && file.key !== 'fxsrc-earthwall') console.warn(`[boot] Could not load ${file.src}`); }); // (unpainted backdrop layers are expected)
+    // the speakers' portraits for the dialogue box (data/speakers.js; one not painted yet gets a stand-in)
+    for (const id of PORTRAIT_IDS) this.load.image(`portrait-${id}`, `assets/ui/portraits/${id}.png`);
+    this.load.on('loaderror', (file) => { if (!file.key?.startsWith('plxsrc-') && !file.key?.startsWith('portrait-') && !isLevelArtKey(file.key) && file.key !== 'boss' && file.key !== 'fxsrc-earthwall') console.warn(`[boot] Could not load ${file.src}`); }); // (unpainted backdrop layers are expected)
 
     const bar = this.add.rectangle(480 - 150, 270, 0, 6, 0xc0161c).setOrigin(0, 0.5);
     this.add.rectangle(480, 270, 304, 10).setStrokeStyle(1, 0x5a3030);
