@@ -626,3 +626,11 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
   draw art in code (the code-drawn stand-ins are only a fallback if a file is missing).
 - Tests: three new "gates: Vincent" tests; the Iron Gates walker now frees him. Checked in a
   headless browser (the cage, the yard, three Ashen on one bolt); nobody has played it yet.
+## PC, 2026-10-12: ChatGPT art for the spike chase, prisoners, kneels, jumps and Kingsfire (not on itch)
+- **Landed (30 files, no code change; each loads by its file name):** `assets/env/mine/collapse_wall.png`, `collapse_spikes.png`, `rockfall.png` (on magenta, Hollow Mountain chat); `assets/sprites/npc/prisoner_tobin|hilde|bram|a|b|c.png` (7 poses each, new chat "BA · Mine prisoners"); `assets/enemies/strips/<enemy>_kneel.png` for berserker, gladiator, stalker, penitent, ghoul (each enemy's own chat) and warlord (new chat "BA · Enemy · Malgor (warlord)", on magenta); `<enemy>_jump.png` + `_drop.png` for grunt, butcher, berserker, gladiator, stalker, penitent, ghoul; `assets/sprites/strips/ulric_wrath.png` (new chat "BA · Hero · Rurik King", with the Oathkeeper ref).
+- **Skipped:** nothing. Some sheets came out 1774 x 887 instead of 2172 x 724; the importer doesn't mind.
+- **Checked** in `tools/strip-check.html` for every enemy: every strip splits into the right number of poses. **Not run:** `npm test` (no Node on the PC; only PNGs were added). Not watched in a fight.
+- **For the cloud:**
+  - `jump` and `kneel` in `src/data/enemyStrips.js` use `ref: 0`, so the whole strip is scaled until pose 0 is a standing man's height. Pose 0 is a crouch (jump) or a half-kneel (kneel), so those strips come out about 1.4-1.6x too big next to the walk. Suggest `ref: 1` for jump (the push-off is near standing height), or a fixed scale taken from the enemy's walk for both.
+  - The stalker and penitent `_drop` pose 1 have a small stray dark block at the bottom left (the `erase` spec can paint it out).
+  - `ulric_wrath.png` still needs wiring into `src/data/spriteStrips.js` (see `docs/rurik-art-prompts.md` section 4).
