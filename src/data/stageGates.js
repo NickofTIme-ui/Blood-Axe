@@ -17,16 +17,26 @@
 // Built for the weakest jumper, walking, no upgrades (ups of 85 at most, gaps of 60 at
 // most); a test walks it with every hero.
 //
+// VINCENT, THE GATEWRIGHT (Nick's friend Vincent in the game; his art prompts are in
+// docs/vincent-art-prompts.md): the young engineer who built the gates, the winch and the
+// Gate Scorpion on the tower. When the King shut the gates on his own men, Vincent unbarred
+// the sally port for them ("live and let live") and was caged in the guardroom to hang at
+// dawn. The heroes free him (the gatehouse isn't won until they do); he raises the gate with
+// them, works his Gate Scorpion in the yard (Stage hazard 'ballista': a bolt down the lane
+// with the most Ashen in it), puts Malgor on his back with one bolt when he "will not fall",
+// and stands at the Keep road with the way into the Keep.
+//
 // THE ROUTE
 //   I   THE KILLING GROUND  the road to the shut gates under the wall's stones; the men the
 //                           King locked out (thralls in chains) thrown at you as a horde
 //   II  THE GATEHOUSE       in by the sally port: pitch through the murder holes, the stair
 //                           up inside the wall, the rotten floor over the oubliette, the
-//                           guardroom landing. A shrine
+//                           guardroom landing and Vincent's cage. A shrine
 //   III THE WINCH ROOM      the twins, Hask and Hrolf, keep the winch: kill them, break both
 //                           chains, and the gate goes up
 //   IV  THE GATE YARD       they come to take the gate back (a horde); through it behind you
-//                           come the people you saved, and the miners' slings from the wall
+//                           come the people you saved, and the miners' slings from the wall;
+//                           Vincent rolls out his Gate Scorpion
 //   V   THE LOWER TOWN      the King is burning his own town to slow you: the townsfolk in
 //                           the square, a family barred in the burning granary. A shrine
 //   VI  THE MARSHAL'S YARD  MALGOR, THE IRON MARSHAL. At two thirds the archers on the inner
@@ -68,9 +78,10 @@ export const STAGE_GATES = {
     {
       id: 'gatehouse', name: 'THE GATEHOUSE', x0: 1500, x1: 3200,
       spawn: { x: 1560, z: 440 },
-      objective: 'Climb the gatehouse',
+      objective: 'Climb the gatehouse. Free the Gatewright',
       hint: 'Pitch through the murder holes: go round the grates when they glow',
       fightAt: 2500,
+      frees: 'vincent', // (Vincent's cage on the landing: the way on waits for him)
       // the guardroom on the landing
       spawns: [[{ x: 2580, z: 380, inPlace: true }, { x: 2640, z: 440, inPlace: true }, { x: 2660, z: 370, inPlace: true }], [{ x: 2660, z: 380 }, { x: 2660, z: 470 }]],
       waves: [['grunt', 'stalker', 'grunt'], ['butcher', 'penitent']],
@@ -139,6 +150,8 @@ export const STAGE_GATES = {
         // ascent), the convoy's prisoners with stones (saved in the wood)
         { type: 'bombard', friendly: true, if: 'saved:shelter', period: 150, warn: 50, shots: 2, damage: 22, radius: 52 },
         { type: 'bombard', friendly: true, if: 'saved:convoy', period: 210, warn: 50, shots: 1, damage: 22, radius: 52, phase: 70 },
+        // Vincent's Gate Scorpion, rolled out through the gate (Stage 'ballista')
+        { type: 'ballista', crew: 'vincent', if: 'saved:vincent', x: 4960, z: 400 },
       ],
     },
     {
@@ -177,6 +190,9 @@ export const STAGE_GATES = {
         { type: 'bombard', when: 'phase:walls', period: 180, warn: 70, shots: 2, damage: 16 },
         // and the miners on the wall behind you answer them, at his men
         { type: 'bombard', friendly: true, if: 'saved:shelter', when: 'phase:walls', period: 160, warn: 50, shots: 1, damage: 22, radius: 52 },
+        // Vincent's scorpion, dragged up from the gate: at his men once the archers loose, and
+        // one bolt for HIM when he will not fall
+        { type: 'ballista', crew: 'vincent', if: 'saved:vincent', x: 8060, z: 400, when: 'phase:walls', bossShot: 'iron' },
       ],
       // the King's champion: Warlord Malgor's own strips and Earthbreaker
       boss: {
@@ -244,6 +260,14 @@ export const STAGE_GATES = {
   bodies: [{ x: 300, z: 480, pose: 1 }, { x: 860, z: 470, pose: 0 }, { x: 1180, z: 330, pose: 2 }, { x: 5600, z: 480, pose: 1 }, { x: 6600, z: 330, pose: 0 }, { x: 7200, z: 490, pose: 2 }],
 
   npcs: [
+    // VINCENT, THE GATEWRIGHT: caged on the guardroom landing; freed, he goes up to the gate
+    // tower (his line when the gate rises), then works the scorpion in the yards, and waits
+    // at the Keep road
+    {
+      id: 'vincent', name: 'Vincent', x: 2470, z: 330, pose: 'gatewright', rescue: 'cage', section: 'gatehouse', hold: 70,
+      gather: { x: 4900, z: 400 },
+      posts: [{ section: 'yard', x: 4900, z: 400 }, { section: 'marshal', x: 8000, z: 400 }, { section: 'keep', x: 9660, z: 420 }],
+    },
     // the townsfolk in the square, the Ashen driving them into the fire
     {
       id: 'townsfolk', name: 'the townsfolk', x: 7100, z: 320, pose: 'group', rescue: 'defend', section: 'town', wave: 1,
@@ -277,6 +301,19 @@ export const STAGE_GATES = {
     { id: 'shut', on: 'clear:field', calm: true, lines: [['VEXA', '(from the tower\'s foot) He left them out here to die slowing us down. The sally port is open. In!']] },
     { id: 'pitch', at: 1580, lines: [['ORYN', '(from inside the wall) Murder holes! Pitch on the grates. Go round when they glow.']] },
     { id: 'floor', at: 2100, calm: true, lines: [['VEXA', '(from below) The guardroom floor is rotten, over the oubliette. Do not stand on it.']] },
+    // Vincent, in his cage on the landing
+    { id: 'caged', at: 2380, lines: [['VINCENT', '(from a cage on the landing) Oath Keepers! Up here! Get me out and I will get you through that gate.']] },
+    { id: 'cageAgain', on: 'clear:gatehouse', unless: 'rescued:vincent', lines: [['VINCENT', 'Hey! The lock! Hold it till it gives. I am not hanging for a door.']] },
+    {
+      id: 'vincent', on: 'rescued:vincent', hold: true,
+      lines: [
+        ['VINCENT', 'Vincent. I built these gates. The winch, the chains, the scorpion on the tower. Twelve years of my life.'],
+        ['VINCENT', 'He shut them on his own men and told me to watch. So I unbarred the sally port for them. Live and let live.'],
+        ['VINCENT', 'The Marshal did not agree. I hang at dawn, apparently.'],
+        ['RURIK', 'Not today. Can you open it?'],
+        ['VINCENT', 'Two chains on the winch. Break both and she goes up. I will be on the tower. I left something up there for the Marshal.'],
+      ],
+    },
     { id: 'winchRoom', on: 'enter:winch', lines: [['ORYN', '(from the stair) The winch room. Break the chains on the drums and the gate goes up.']] },
     {
       id: 'twins', on: 'boss:winch',
@@ -284,6 +321,7 @@ export const STAGE_GATES = {
     },
     { id: 'grief', on: 'twin:winch', lines: [['VOICE', '(a roar, the twin over his brother) BROTHER! I will tear you apart!']] },
     { id: 'gateUp', on: 'broken:winch', lines: [['VOICE', '(iron grinding, chains running, the great gate rising)'], ['RURIK', 'The gate is up! Down to the yard!']] },
+    { id: 'tower', on: 'broken:winch', if: 'rescued:vincent', lines: [['VINCENT', '(from the gate tower) Twelve years to build her. Two minutes to open her. Down you go, I have you covered!']] },
     // the rescued come back: who answers depends on who was saved
     { id: 'answer', at: 5000, lines: [['VOICE', '(behind you, through the open gate) OATH KEEPERS!']] },
     { id: 'miners', at: 5060, if: 'saved:shelter', lines: [['MINER', 'We followed you down from the pass! Up on the wall, lads! Slings!']] },
@@ -291,7 +329,10 @@ export const STAGE_GATES = {
     { id: 'joren', at: 5180, if: 'saved:joren', lines: [['JOREN', 'Mira sent me after you. I was not going to sit this out.']] },
     { id: 'alone', at: 5060, unless: 'saved:shelter', lines: [['RURIK', 'Nobody behind us. Then we hold it ourselves.']] },
     { id: 'retake', on: 'enter:yard', lines: [['VOICE', '(drums from the town) Take back the gate! Take it back!']] },
+    { id: 'scorpion', on: 'enter:yard', if: 'rescued:vincent', lines: [['VINCENT', '(at the scorpion) Meet the Gate Scorpion. Six feet of ash and iron. When a lane glows, step out of it!']] },
+    { id: 'skewer', on: 'bolt:many', lines: [['VINCENT', 'Lined up like geese! Never gets old.']] },
     { id: 'held', on: 'clear:yard', calm: true, lines: [['RURIK', 'The gate is ours. The town next.']] },
+    { id: 'drag', on: 'clear:yard', calm: true, if: 'rescued:vincent', lines: [['VINCENT', 'Not one of them touched my gate. Go on. I will drag her up behind you.']] },
     { id: 'fires', at: 6560, lines: [['ORYN', '(from the rooftops) He is burning his own town. To slow us down.']] },
     { id: 'granaryCry', at: 6900, lines: [['VOICE', 'The granary! They barred the door! My children are in there!']] },
     { id: 'townsfolk', on: 'rescued:townsfolk', lines: [['TOWNSMAN', 'You are the ones he warned us of... and you stopped for us?']] },
@@ -311,6 +352,8 @@ export const STAGE_GATES = {
     { id: 'walls', on: 'phase:marshal:walls', lines: [['MALGOR', 'Archers! Loose on the yard! On all of us! I will stand in it!']] },
     { id: 'slings', on: 'phase:marshal:walls', if: 'saved:shelter', lines: [['MINER', '(from the outer wall) Their archers! Slings on the inner wall!']] },
     { id: 'iron', on: 'phase:marshal:iron', lines: [['MALGOR', 'I have never lost a fight under this banner. Not one!']] },
+    { id: 'everyone', on: 'phase:marshal:iron', if: 'rescued:vincent', lines: [['VINCENT', '(behind the scorpion) Everybody falls, Marshal. Even you. Hold still.']] },
+    { id: 'felled', on: 'bolt:boss', lines: [['VINCENT', 'He is down! Finish him!']] },
     {
       id: 'fallen', on: 'clear:marshal', calm: true,
       lines: [
@@ -321,6 +364,14 @@ export const STAGE_GATES = {
     { id: 'returned', at: 9560, calm: true, if: 'saved:shelter', lines: [['MINER', 'The gate stays open behind you. Nobody shuts it again. We will see to that.']] },
     { id: 'bramHilde', at: 9800, calm: true, if: 'saved:bram', lines: [['BRAM', 'Hilde and I hold the gatehouse. Go. Bring the rest of them home.']] },
     { id: 'reeve', at: 9900, calm: true, if: 'rescued:granary', lines: [['REEVE', 'There is a prison wing on the Keep\'s east side. Our sons are in there too.']] },
+    {
+      id: 'postern', at: 9620, calm: true, if: 'rescued:vincent',
+      lines: [
+        ['VINCENT', 'The Keep has a postern on its north face. Under the old well. I built that too, before I knew who for.'],
+        ['VINCENT', 'I will be there when you need it opened. Live and let live, I always said. He never learned it.'],
+        ['RURIK', 'Then we teach him the other half.'],
+      ],
+    },
     {
       id: 'keep', at: 10000, calm: true, hold: true,
       lines: [

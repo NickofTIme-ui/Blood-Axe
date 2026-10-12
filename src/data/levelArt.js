@@ -120,6 +120,9 @@ export const SPRITE_SHEETS = {
   'prisoner-a': { file: 'assets/sprites/npc/prisoner_a.png', frames: 7, height: 210 },
   'prisoner-b': { file: 'assets/sprites/npc/prisoner_b.png', frames: 7, height: 205 },
   'prisoner-c': { file: 'assets/sprites/npc/prisoner_c.png', frames: 7, height: 200 },
+  // Vincent, the Gatewright (view/VincentView.js; made in ChatGPT from his photo:
+  // docs/vincent-art-prompts.md): stand, grip the bars, crank, aim, loose, walk x3, wave
+  vincent: { file: 'assets/sprites/npc/vincent.png', frames: 9, height: 205 },
   'hound-walk': { file: 'assets/enemies/strips/hound_walk.png', frames: 6, height: 120 },
   'hound-atk1': { file: 'assets/enemies/strips/hound_atk1.png', frames: 4, height: 120 },
   'hound-react': { file: 'assets/enemies/strips/hound_react.png', frames: 3, height: 120 },

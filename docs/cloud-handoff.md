@@ -581,7 +581,7 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
   gets a slim strip (380 x 58) on the bottom edge (the full box is 420 x 96, centred) so the fight stays in view. Off-screen
   cries and sounds (`VOICE`) show as italic narration with no portrait.
 - Names and portrait files: `src/data/speakers.js`. Nick's names went to the voices that
-  only had a trade: Daniel (MINER), Alex (PRISONER), Vincent (REEVE), Mathew (TOWNSMAN),
+  only had a trade: Daniel (MINER), Alex (PRISONER), Aldric (REEVE; was Vincent until Vincent became his own character), Mathew (TOWNSMAN),
   Irvolino (MILLER), Nicholas (PILGRIM). The `who` keys in the stage data are unchanged.
 - **Portraits**: every speaker has one in `assets/ui/portraits/<file>.png` (256 square): the
   three heroes cut from their select art, the other 31 made in ChatGPT (prompts and how in
@@ -595,3 +595,27 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - **Hollow Mountain's end**: the painted mine wall stops at the far side, and the tunnel mouth opens on THE SHATTERED ASCENT's own painted sky and peaks, with the cave's dark fading into the light (`MineView.paintedDaylight`). Before, the mine wall ran to the end and "out into the light" showed no light.
 - **Shattered Ascent's end**: the painted view of the Iron Gates runs to the level's end and fades into the cliff wall on its left (`PaintedLevel.piece` takes `feather` now); the flat grey gradient and code-drawn cliff edge are only drawn when the view isn't painted.
 - No new art was needed. Before/after captures in project files `level-ends/`. Checked in a headless browser, not played by a person.
+
+## Cloud, 2026-10-12: Vincent, the Gatewright (Iron Gates; art to do on the PC)
+- Nick's friend **Vincent** is a major ally in THE IRON GATES (level 5), the other end of the
+  campaign from Nicholas (Gallows Wood and the Ascent). He's the young engineer who built the
+  gates, the winch and the Gate Scorpion; the King caged him for unbarring the sally port for
+  the men shut outside ("live and let live"). Full write-up: `docs/vincent-art-prompts.md`.
+- **Gatehouse:** caged on the guardroom landing; a hero holds INTERACT at the lock. The
+  gatehouse isn't won until he's out (`section.frees`, `stage/Stage.js`). A held scene after.
+- **Gate yard:** his **Gate Scorpion** (Stage hazard `ballista`, `updateBallista`): it picks the
+  lane with the most Ashen, rolls to it while the lane glows, and looses a bolt down the whole
+  yard that skewers every Ashen man in that lane (never a hero, never a boss).
+- **Marshal's yard:** when Malgor "will not fall", one bolt for him (`bossShot`): knocked flat,
+  15% of his health, never the kill.
+- **Keep road:** he waits (`npcs[].posts`, `stage/Story.js`) and tells them about a postern
+  into the Black Keep, for when that level is built.
+- The reeve who was called Vincent is now **Aldric** (`data/speakers.js`, portrait renamed to
+  `aldric.png`).
+- **Art to make on the PC (ChatGPT, from his photo, project files `vincent-npc/vincent-photo.png`):**
+  `assets/ui/portraits/vincent.png` and a 9-pose strip `assets/sprites/npc/vincent.png`.
+  Prompts in `docs/vincent-art-prompts.md`. Until they're in he's a code-drawn stand-in
+  (`view/VincentView.js`) and a hooded "V" in the dialogue box. The scorpion is code-drawn;
+  an optional painted prompt is there too.
+- Tests: three new "gates: Vincent" tests; the Iron Gates walker now frees him. Checked in a
+  headless browser (the cage, the yard, three Ashen on one bolt); nobody has played it yet.

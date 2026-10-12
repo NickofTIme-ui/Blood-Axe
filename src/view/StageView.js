@@ -13,6 +13,7 @@ import { buildPropSheet, PROP_HD } from './propSheet.js';
 import { FX } from './stripImporter.js';
 import { BladeChain } from './BladeChain.js';
 import { cutPieces, keyLayer } from './envArt.js';
+import { drawScorpion, listenScorpion } from './VincentView.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -507,6 +508,7 @@ export class StageView {
       if (hz.type === 'stampede') { this.drawStampede(hz, cam); continue; }
       if (hz.type === 'collapse') { this.drawCollapse(hz, cam); continue; }
       if (hz.type === 'bombard') { this.drawBombard(hz); continue; }
+      if (hz.type === 'ballista') { drawScorpion(this, hz); continue; }
       if (hz.x < cam.x - 200 || hz.x > cam.right + 200) {
         hz.view?.setVisible(false);
         hz.hot?.setVisible(false);
@@ -1126,6 +1128,7 @@ export class StageView {
 
   listen() {
     const ev = this.scene.world.events;
+    listenScorpion(this);
     ev.on('propHit', ({ prop, dir }) => this.propHit(prop, dir));
     ev.on('propBreak', ({ prop, dir, blast }) => this.propBreak(prop, dir, blast));
     ev.on('bladeStruck', ({ hazard, dir, force }) => {

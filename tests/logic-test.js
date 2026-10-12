@@ -3320,7 +3320,12 @@ function gatesSetup(section, { x, z, hero = 'warrior', opts = {} } = {}) {
   return { world, p, st, run };
 }
 // (the walker smashes what a player would: the winch chains, the granary's bar)
-const gatesBreaker = (w, st, p) => { for (const pr of st.props) if (!pr.broken && (pr.kind === 'winch' || pr.kind === 'wreckage') && Math.abs(pr.x - p.x) < 160) st.breakProp(pr, 1); };
+const gatesBreaker = (w, st, p) => {
+  for (const pr of st.props) if (!pr.broken && (pr.kind === 'winch' || pr.kind === 'wreckage') && Math.abs(pr.x - p.x) < 160) st.breakProp(pr, 1);
+  // (and opens Vincent's cage, as a player at its lock would)
+  const v = st.story.npc('vincent');
+  if (v?.state === 'trapped' && Math.abs(v.x - p.x) < 200 && !st.livingFoes().length) st.story.free(v);
+};
 const EVERYONE = ['shelter', 'bram', 'hilde', 'joren', 'convoy'];
 // a fighter killed the way a blow kills him (Stage listens for 'kill')
 const slay = (world, f) => { f.health = 0; world.events.emit('kill', { defender: f, attacker: null }); };
@@ -3339,8 +3344,8 @@ test('gates: every hero walks the Iron Gates (no upgrades), without a fall, rais
       onTick: (w, st, p) => { gatesBreaker(w, st, p); p.health = p.stats.maxHealth; },
     });
     assert(r.won === 1 && r.falls === 0, `${hero}: ${r.won ? 'out' : `stuck at x ${Math.round(r.x)} (${r.stage.section.id}, ${r.stage.phase})`} in ${r.secs.toFixed(0)} s, ${r.falls} falls`);
-    for (const id of ['townsfolk', 'granary']) assert(r.rescued.includes(id), `${hero}: ${id} saved (${r.rescued})`);
-    for (const id of ['opening', 'gateUp', 'miners', 'convoy', 'joren', 'malgor', 'fallen', 'returned', 'bramHilde', 'keep']) assert(r.beats.includes(id), `${hero}: ${id} played (${r.beats})`);
+    for (const id of ['townsfolk', 'granary', 'vincent']) assert(r.rescued.includes(id), `${hero}: ${id} saved (${r.rescued})`);
+    for (const id of ['caged', 'vincent', 'tower', 'scorpion', 'postern', 'opening', 'gateUp', 'miners', 'convoy', 'joren', 'malgor', 'fallen', 'returned', 'bramHilde', 'keep']) assert(r.beats.includes(id), `${hero}: ${id} played (${r.beats})`);
     assert(!r.beats.includes('alone'), `${hero}: not alone with the miners back (${r.beats})`);
   }
   // nobody saved on the way: nobody comes back
@@ -3418,6 +3423,96 @@ test('gates: Malgor, the Iron Marshal: the archers loose at two thirds (the mine
   b.health = b.stats.maxHealth * 0.2;
   run(2, () => { p.health = p.stats.maxHealth; });
   assert(phases.join() === 'walls,iron' && b.raged, `he will not fall (${phases})`);
+});
+
+test('gates: Vincent, the Gatewright: caged on the landing, the gatehouse waits for him, his lock opens; the reeve is Aldric now', () => {
+  assert(SPEAKERS.VINCENT?.name === 'Vincent' && SPEAKERS.REEVE.name !== 'Vincent' && speakerInfo('REEVE').portrait === 'aldric', 'one Vincent, and the reeve renamed');
+  const sec = GATE_SEC('gatehouse');
+  const { world, p, st, run } = gatesSetup(sec, { x: 2470, z: 330 });
+  const v = st.story.npc('vincent');
+  st.fightOn = true; st.waveIndex = 99;
+  run(120, () => { p.health = p.stats.maxHealth; });
+  assert(v && v.state === 'trapped' && v.h === 140, `in his cage on the landing (${v?.state}, ${v?.h})`);
+  assert(st.phase === 'fight', 'the guardroom is empty, but the gatehouse is not won while he is caged');
+  p.controller.sample = function () { this.held = { padUp: true }; this.moveX = 0; this.moveZ = 0; };
+  run(60 * 3, () => { p.health = p.stats.maxHealth; p.x = 2470; p.z = 330; });
+  assert(st.story.isRescued('vincent'), 'holding at his lock frees him');
+  run(60 * 3, () => { p.health = p.stats.maxHealth; });
+  assert(st.phase !== 'fight', `then the way on opens (${st.phase})`);
+  assert(v.state === 'gathered' && v.x === 4900, `he goes ahead to the gate (${v.state}, ${v.x})`);
+});
+
+// the yard with Vincent saved (or not), the fight on, the hero at the back of it
+function scorpionSetup(saved) {
+  const t = gatesSetup(GATE_SEC('yard'), { x: 5000, z: 300, opts: { saved } });
+  t.st.fightOn = true; t.st.waveIndex = 99;
+  t.p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  const add = (type, x, z, boss) => {
+    const e = createEnemy(t.world, type, x, z); e.entering = false; e.controller = new Controller();
+    if (boss) e.stats = { ...e.stats, boss: true };
+    e.stats = { ...e.stats, maxHealth: 1000 }; e.health = 1000; // (they stand there and take it)
+    return e;
+  };
+  return { ...t, add, hz: t.st.hazards.find((h) => h.type === 'ballista' && h.section === GATE_SEC('yard')) };
+}
+
+test('gates: Vincent\'s Gate Scorpion picks the lane with the most Ashen, warns, and skewers every man in it: never a hero, never a boss', () => {
+  const { world, st, p, run, add, hz } = scorpionSetup(['vincent']);
+  const lane = [add('grunt', 5500, 460), add('grunt', 5800, 465), add('thrall', 6100, 455)];
+  const lone = add('grunt', 5600, 320);
+  const big = add('gladiator', 5900, 462, true);
+  p.x = 5300; p.z = 460; // (a hero in the lane too)
+  const aims = []; world.events.on('boltAim', (e) => aims.push({ z: hz.aim.z, t: hz.t }));
+  const looses = []; world.events.on('boltLoose', (e) => looses.push(hz.t));
+  const hits = []; world.events.on('boltHit', (e) => hits.push(e.fighter));
+  const beats = []; world.events.on('storyBeat', (e) => beats.push(e.beat.id));
+  st.story.beats.find((b) => b.id === 'skewer').fired = false;
+  run(60 * 4, () => {
+    p.health = p.stats.maxHealth; p.x = 5300; p.z = 460;
+    for (const e of [...lane, lone, big]) { if (e.state === 'knockdown') continue; e.vx = e.vz = 0; }
+  });
+  assert(aims.length >= 1 && Math.abs(aims[0].z - 460) <= 30, `it aims down the crowded lane (${aims.map((a) => a.z)})`);
+  assert(looses.length >= 1 && looses[0] - aims[0].t >= 60, 'after a warning');
+  for (const e of lane) assert(hits.includes(e) && e.health < 1000, 'every man in the lane is skewered');
+  assert(!hits.includes(lone) && !hits.includes(big) && !hits.includes(p), 'not the man in the other lane, not the boss, not the hero');
+  assert(p.health === p.stats.maxHealth, 'the hero is untouched');
+  assert(beats.includes('skewer'), `Vincent enjoys it (${beats})`);
+  // not saved: nobody at the scorpion
+  const b = scorpionSetup([]);
+  b.add('grunt', 5500, 460); b.add('grunt', 5800, 460);
+  let shots = 0; b.world.events.on('boltLoose', () => shots++);
+  b.run(60 * 6, () => { b.p.health = b.p.stats.maxHealth; });
+  assert(shots === 0 && !b.hz.manned, 'no Vincent, no scorpion');
+});
+
+test('gates: when Malgor will not fall, Vincent\'s one bolt knocks him flat and takes a share of his health, never the last of it', () => {
+  const { world, p, st, run } = gatesSetup(GATE_SEC('marshal'), { x: 8300, z: 440, opts: { saved: ['vincent'] } });
+  bossUp(st, run, p);
+  const b = st.boss;
+  const hz = st.hazards.find((h) => h.type === 'ballista' && h.section === GATE_SEC('marshal'));
+  const hits = []; world.events.on('boltHit', (e) => hits.push(e.fighter));
+  const beats = []; world.events.on('storyBeat', (e) => beats.push(e.beat.id));
+  st.story.beats.find((q) => q.id === 'felled').fired = false;
+  run(60 * 3, () => { p.health = p.stats.maxHealth; p.x = 8300; });
+  assert(!hits.length, 'nothing at him before he will not fall');
+  b.health = b.stats.maxHealth * 0.3;
+  let lowest = b.health; let floored = false;
+  run(60 * 5, () => {
+    p.health = p.stats.maxHealth; p.x = 8300; p.invincible = true;
+    for (const e of st.livingFoes()) if (e !== b) { e.health = 0; e.removeMe = true; }
+    if (b.state === 'knockdown') floored = true;
+    lowest = Math.min(lowest, b.health);
+  });
+  assert(hits.filter((f) => f === b).length === 1, `one bolt for him (${hits.length})`);
+  assert(floored && b.alive, 'he goes down, and gets up');
+  assert(Math.abs(b.stats.maxHealth * 0.3 - lowest - b.stats.maxHealth * 0.15) < 1, `a share of his health (${lowest.toFixed(1)} of ${b.stats.maxHealth})`);
+  assert(beats.includes('felled'), `"He is down! Finish him!" (${beats})`);
+  // at death's door the bolt still leaves him to you
+  const t2 = gatesSetup(GATE_SEC('marshal'), { x: 8300, z: 440, opts: { saved: ['vincent'] } });
+  bossUp(t2.st, t2.run, t2.p);
+  const b2 = t2.st.boss; b2.health = 3;
+  t2.run(60 * 5, () => { t2.p.health = t2.p.stats.maxHealth; t2.p.invincible = true; b2.health = Math.min(b2.health, 3); });
+  assert(b2.alive && b2.health >= 1, 'never the last of it: the kill is yours');
 });
 
 // ---------------------------------------------------------------- hack-and-slash pillars

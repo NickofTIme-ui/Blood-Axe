@@ -9,7 +9,8 @@
 //   on: key      fires on an event: 'start', 'clear:<sectionId>', 'enter:<sectionId>',
 //                'boss:<sectionId>' (he appears), 'rage:<sectionId>', 'rescued:<npcId>',
 //                'broken:<tag>' (the last prop with that tag smashed), 'twin:<sectionId>'
-//                (one of the twins down)
+//                (one of the twins down), 'bolt:many' (a scorpion bolt through two men or
+//                more), 'bolt:boss' (one through the boss)
 //   (neither: fired by a villager's `talk` when a hero comes near him)
 //   calm: true   waits until no enemy is alive (essential lines are said on safe ground)
 //   hold: true   a held scene: the heroes stand still while it plays (never in a fight);
@@ -43,6 +44,9 @@
 //    him; with `ask: true` only when a hero near him presses INTERACT)
 //   flee: { x, z }      where he runs once free (null: he slips away out of sight)
 //   gather: { x, z }    where he waits later (the gate at the end of the level)
+//   posts: [{ section, x, z }]   once gathered, where he stands as the level goes on: the
+//                       last post whose section has been reached (Vincent at his scorpion,
+//                       then at the Keep road)
 //   if / unless         only there if that holds ('saved:<npcId>': someone saved in an
 //                       earlier level, come back to stand with you)
 // States: idle (a survivor), threatened / trapped / escort -> free (says his line) ->
@@ -91,6 +95,7 @@ export class Story {
     ev.on('bossPhase', ({ phase }) => this.trigger(`phase:${stage.section?.id}:${phase.id}`));
     ev.on('propsDown', ({ tag }) => this.trigger(`broken:${tag}`));
     ev.on('twinFall', () => this.trigger(`twin:${stage.section?.id}`));
+    ev.on('boltHit', ({ bolt, fighter }) => this.trigger(fighter.stats.boss ? 'bolt:boss' : bolt.hit.size >= 2 ? 'bolt:many' : 'bolt:one'));
   }
 
   // ------------------------------------------------------------ queries
@@ -254,7 +259,19 @@ export class Story {
         n.state = 'gathered'; n.x = n.gather.x; n.z = n.gather.z;
         n.h = T ? Math.max(0, T.groundAt(n.x, n.z)) : 0;
       }
+      if (n.state === 'gathered' && n.posts) this.toPost(n);
     }
+  }
+
+  // Where a gathered man with posts stands now: the last post whose section is reached.
+  toPost(n) {
+    const S = this.stage.sections;
+    let post = null;
+    for (const q of n.posts) if (S.findIndex((s) => s.id === q.section) <= this.stage.index) post = q;
+    if (!post || (n.x === post.x && n.z === post.z)) return;
+    const T = this.stage.terrain;
+    n.x = post.x; n.z = post.z; n.h = T ? Math.max(0, T.groundAt(n.x, n.z)) : 0;
+    n.post = post.section;
   }
 
   // A survivor with something to say: he says it when a hero comes near (or, `ask`, when

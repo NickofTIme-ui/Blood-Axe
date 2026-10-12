@@ -28,7 +28,8 @@ Then add one character line:
 |---|---|---|
 | `daniel` | Daniel (the miners' foreman) | A broad, soot-blackened miner in his 40s, close-cropped dark beard, leather cap with a candle stub, rope over one shoulder, a scar through one eyebrow, determined and steady. |
 | `alex` | Alex (freed from the Keep convoy) | A young man in his 20s, gaunt, rope burns on his wrists, torn linen shirt, short messy fair hair, a bruised cheek, defiant eyes. |
-| `vincent` | Vincent (the reeve of the lower town) | A grey-haired town reeve in his 50s, trimmed grey beard, worn dark-green wool coat with a tarnished chain of office, singed sleeve, grief and anger in his face. |
+| `aldric` | Aldric (the reeve of the lower town; was named Vincent until 12 October 2026) | A grey-haired town reeve in his 50s, trimmed grey beard, worn dark-green wool coat with a tarnished chain of office, singed sleeve, grief and anger in his face. |
+| `vincent` | Vincent, the Gatewright (from his photo) | See `docs/vincent-art-prompts.md`: made from Vincent's photo, like Nicholas. |
 | `mathew` | Mathew (a townsman) | A thin townsman in his 30s, hollow cheeks, brown hair tied back, patched brown tunic, a carpenter's apron, wary and astonished. |
 | `irvolino` | Irvolino (the miller) | A heavy-set miller in his 40s, round face, thick black moustache, flour and soot on his face and apron, red-rimmed eyes from smoke, coughing relief. |
 | `nicholas` | Nicholas (the pilgrim) | A weathered pilgrim in his 60s, hooded grey travelling cloak, long white beard, a wooden pilgrim's token on a cord, a bandage round his head. |

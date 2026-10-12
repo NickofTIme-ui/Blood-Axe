@@ -49,10 +49,12 @@ export const SPEAKERS = {
   // (named by Nick: the voices that had only a trade)
   MINER: { name: 'Daniel', portrait: 'daniel' },     // the miners' foreman (Hollow Mountain on)
   PRISONER: { name: 'Alex', portrait: 'alex' },      // off the Keep convoy (Gallows Wood)
-  REEVE: { name: 'Vincent', portrait: 'vincent' },   // the reeve of the lower town (Iron Gates)
+  REEVE: { name: 'Aldric', portrait: 'aldric' },     // the reeve of the lower town (Iron Gates)
   TOWNSMAN: { name: 'Mathew', portrait: 'mathew' },  // a townsman (Iron Gates)
   MILLER: { name: 'Irvolino', portrait: 'irvolino' }, // the miller, shut in the barn (Burning Village)
   PILGRIM: { name: 'Nicholas', portrait: 'nicholas' }, // the pilgrim on the wood road (Gallows Wood)
+  // Nick's friend Vincent: the Gatewright, who built the Iron Gates (data/stageGates.js)
+  VINCENT: { name: 'Vincent' },
 };
 
 const cap = (w) => w.charAt(0) + w.slice(1).toLowerCase();

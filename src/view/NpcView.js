@@ -21,6 +21,7 @@ import { Controller } from '../core/Controller.js';
 import { createPlayer } from '../entities/Player.js';
 import { SPRITES } from './levelArt.js';
 import { keyLayer, cutPieces } from './envArt.js';
+import { drawVincent, hideVincent } from './VincentView.js';
 
 const TUNIC = [0x5a6a5a, 0x6a5a48, 0x4a5468, 0x6a4a4a, 0x5a5048, 0x58586a];
 const SKIN = 0xc8a080;
@@ -192,6 +193,7 @@ export class NpcView {
     const t = this.scene.time.now / 16.7;
     this.drawPrompt(n, v);
     if (n.pose === 'noose' || n.pose === 'cage') { this.drawCaptive(n, v, t); return; }
+    if (n.pose === 'gatewright') { this.drawGatewright(n, v, t); return; }
     // (the horses are drawn in their stable, view/VillageView.js; the group is inside the barn)
     const show = !['safe', 'gone'].includes(n.state) && !(n.pose === 'group' && n.state === 'trapped') && n.pose !== 'horses'
       && !(n.pose === 'convoy' && (n.state === 'trapped' || n.state === 'lost')); // (inside the wagon, or carried off in it)
@@ -349,6 +351,56 @@ export class NpcView {
     if (n.state === 'safe' || n.state === 'gone') { g.setVisible(false); return; }
     if (n.state === 'gathered') { this.figure(g, n.x, y, k, 'stand', t, tun(0), -1); return; }
     this.figure(g, n.x, y, k, n.state === 'fleeing' ? 'run' : 'cower', t, tun(0), n.dir ?? -1);
+  }
+
+  // Vincent, the Gatewright (the Iron Gates): in his cage on the guardroom landing, gripping
+  // the bars; freed, he stands by it a moment and is off to the gate tower; at his scorpion
+  // in the yards he's drawn with it (view/VincentView.js); at the Keep road he waits.
+  drawGatewright(n, v, t) {
+    const g = v.g;
+    const s = this.scene;
+    const k = depthScale(n.z);
+    const y = n.z - n.h;
+    const caged = n.state === 'trapped';
+    const atEngine = this.stage.hazards.some((hz) => hz.type === 'ballista' && hz.crew === n.id && hz.manned);
+    const show = !['safe', 'gone', 'lost'].includes(n.state) && !atEngine;
+    v.halo.setVisible(caged).setPosition(n.home.x, y - 60).setDepth(n.z - 0.6).setAlpha(caged ? 0.25 + 0.2 * Math.sin(t * 0.12) : 0);
+    v.shadow.setVisible(show && !caged).setPosition(n.x, y).setDepth(n.h > 0 ? n.z - 0.4 : DEPTH.shadows);
+    g.setVisible(true).setAlpha(n.state === 'free' ? Math.max(0, 1 - Math.max(0, n.t - 30) / 20) : 1).setDepth(n.z);
+    const inCage = caged || n.state === 'free';
+    if (inCage) {
+      // the cage (painted, or iron bars drawn) where he was held
+      const cx = n.home.x;
+      const open = !caged;
+      if (paintedCage(s)) {
+        v.cage ??= s.add.image(0, 0, 'cage-shut').setOrigin(0.5, 1);
+        // (behind him: its back panel is solid; the bars in front of him are drawn below)
+        v.cage.setTexture(open ? 'cage-open' : 'cage-shut').setPosition(cx, y + 4).setDepth(n.z - 0.3).setVisible(true);
+        v.cage.setScale((CAGE_H * k * 1.25) / v.cage.frame.height);
+        if (caged) {
+          const fg = (v.fg ??= s.add.graphics()).setDepth(n.z + 0.5);
+          const w = v.cage.displayWidth * 0.62; const h = v.cage.displayHeight * 0.72;
+          for (let x = cx - w / 2; x <= cx + w / 2 + 1; x += w / 5) {
+            fg.lineStyle(3.2, 0x3a3a42, 0.95).lineBetween(x, y - h, x, y - 4);
+            fg.lineStyle(1, 0x8a8a96, 0.7).lineBetween(x - 1, y - h, x - 1, y - 4);
+          }
+          fg.lineStyle(4, 0x3a3a42, 1).lineBetween(cx - w / 2, y - h * 0.55, cx + w / 2, y - h * 0.55);
+        }
+      } else {
+        const w = 90 * k; const h = 130 * k;
+        const fg = (v.fg ??= s.add.graphics()).setDepth(n.z + 0.5);
+        fg.lineStyle(3, 0x4a4a52, 1).strokeRect(cx - w / 2, y - h, w, h);
+        for (let x = cx - w / 2 + 9; x < cx + w / 2; x += 10) {
+          if (open && x > cx - 6 && x < cx + 18) continue;
+          fg.lineBetween(x, y - h, x, y);
+        }
+        if (!open) fg.fillStyle(0xb08a4a, 1).fillRect(cx + 2, y - h * 0.5, 8, 10);
+      }
+    } else v.cage?.setVisible(false);
+    if (!show) { hideVincent(v); return; }
+    const pose = caged ? 'grip' : n.state === 'free' ? 'wave' : 'stand';
+    const x = caged ? n.home.x : n.state === 'free' ? n.home.x + 70 : n.x;
+    drawVincent(s, v, g, x, y, k, pose, t, caged ? -1 : n.state === 'free' ? 1 : -1, n.z + 0.1);
   }
 
   // What a hero near him can do now, and the meter that goes with it.

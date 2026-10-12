@@ -45,6 +45,17 @@
 //                       executed by the hero who beat him (stage/Sentence.js); false: no
 //                       sentence (a machine)
 //   sequence            a scripted ending (stage/Sequence.js: the judgment)
+//   section.frees: '<npcId>'      its fight isn't won until that villager is freed (Vincent's
+//                       cage on the Iron Gates' guardroom landing)
+//   hazard 'ballista'   VINCENT'S GATE SCORPION (the Iron Gates): a great crossbow on a cart,
+//                       manned by the man you freed (`if: 'saved:vincent'`). In a fight it
+//                       picks the lane with the most Ashen in it, rolls round to it (the
+//                       lane glows for `warn` frames), and looses a bolt that flies the
+//                       length of the yard and skewers every Ashen man in that lane (never a
+//                       hero, never a boss). `bossShot: '<phase id>'`: once the boss reaches
+//                       that phase, one bolt for HIM: it knocks him flat and takes `share` of
+//                       his health (never the last of it: the kill is yours). Emits boltAim,
+//                       boltLoose { hazard, bolt }, boltHit { hazard, bolt, fighter }
 //
 // new Stage(world, data, opts): opts.rescued / opts.lost (villagers already saved / lost in
 // this level: a saved checkpoint), opts.saved (every level's saved, from the campaign save),
@@ -101,6 +112,11 @@ const BEAM = { period: 230, warn: 80, damage: 22, lethalH: 60 };
 // frames; what it hits (either side) within `radius` along the lane and `depth` across it.
 // No stone is aimed within `pitClear` px of a drop (nobody is shelled off a bridge or a ledge).
 const BOMBARD = { period: 200, warn: 75, shots: 2, radius: 64, depth: 46, damage: 20, spread: 110, pitClear: 170 };
+// Vincent's Gate Scorpion (hazard 'ballista'): frames between shots, the lane's warning, the
+// bolt's speed (px a frame) and reach, how near the lane a man must be to be skewered (and how
+// high he can be), the damage; the cart's roll across the yard (px a frame); the boss shot's
+// warning and its share of his health
+const BALLISTA = { period: 240, warn: 70, speed: 30, range: 1700, depth: 30, high: 110, damage: 80, roll: 4, bossWarn: 90, share: 0.15, first: 90 };
 // A twin whose brother falls: harder and faster (boss.grief overrides)
 const GRIEF = { damage: 1.3, speed: 1.2 };
 
@@ -233,6 +249,7 @@ export class Stage {
     this.story?.resetSection(this.checkpoint);
     for (const hz of this.hazards) if (hz.type === 'collapse' && hz.section <= this.checkpoint) hz.front = null; // (the rock starts again behind you)
     for (const hz of this.hazards) if (hz.type === 'bombard') hz.shells = []; // (nothing left in the air)
+    for (const hz of this.hazards) if (hz.type === 'ballista') { hz.bolts = []; hz.aim = null; hz.next = null; hz.bossDone = false; } // (and the scorpion reloads)
     // (a wagon still rolling here goes back to where it started, its people still in it)
     for (const pr of this.props) {
       if (pr.roll?.from == null || pr.section !== this.checkpoint || pr.broken) continue;
@@ -577,6 +594,7 @@ export class Stage {
       }
       if (sec.boss && !this.bossSpawned) { this.spawnBoss(); return; }
       if (sec.needs && this.props.some((pr) => pr.tag === sec.needs && !pr.broken)) return; // (the catapults still stand)
+      if (sec.frees && this.story && !this.story.isRescued(sec.frees)) return; // (he's still in his cage)
       this.clearSection();
     } else if (this.phase === 'clear') {
       const next = this.sections[this.index + 1];
@@ -767,6 +785,7 @@ export class Stage {
       else if (hz.type === 'stampede') this.updateStampede(hz);
       else if (hz.type === 'collapse') this.updateCollapse(hz);
       else if (hz.type === 'bombard') this.updateBombard(hz);
+      else if (hz.type === 'ballista') this.updateBallista(hz);
       else this.updateBlade(hz);
     }
   }
@@ -979,6 +998,77 @@ export class Stage {
     hz.shells = hz.shells.filter((s) => s.land > hz.t);
   }
 
+  // Vincent's Gate Scorpion (see the top). Its cart stands at hz.x, rolling up and down
+  // the yard (hz.carZ) to the lane it aims along. (No dice: the same on every machine.)
+  updateBallista(hz) {
+    const B = BALLISTA;
+    hz.bolts ??= [];
+    hz.carZ ??= hz.z;
+    this.flyBolts(hz);
+    // manned: the man who works it was saved, and we're in its yard (the view draws him at it)
+    hz.manned = hz.section === this.index && (!(hz.if || hz.unless) || !this.story || this.story.ok(hz));
+    if (!hz.manned || !this.fightOn || this.story?.holding) { hz.aim = null; return; }
+    const b = this.boss;
+    if (hz.aim) {
+      if (hz.aim.boss) hz.aim.z = b?.alive ? b.z : hz.aim.z; // (it follows him)
+      const dz = hz.aim.z - hz.carZ;
+      hz.carZ += Math.sign(dz) * Math.min(Math.abs(dz), B.roll);
+      if (hz.t >= hz.aim.fire) this.looseBolt(hz);
+      return;
+    }
+    hz.next ??= hz.t + (hz.first ?? B.first);
+    if (hz.t < hz.next) return;
+    if (hz.bossShot && !hz.bossDone && b?.alive && !b.entering && this.bossInPhase(hz.bossShot)) {
+      hz.bossDone = true;
+      hz.aim = { z: b.z, from: hz.t, fire: hz.t + (hz.bossWarn ?? B.bossWarn), boss: true };
+      this.world.events.emit('boltAim', { hazard: hz, boss: true });
+      return;
+    }
+    if (!this.beamLive(hz)) return;
+    // the lane with the most of them in it, ahead of the cart
+    const foes = this.livingFoes().filter((e) => !e.entering && !e.stats.boss && e.x > hz.x + 40);
+    let best = null; let most = 0;
+    for (const e of foes) {
+      const n = foes.filter((q) => Math.abs(q.z - e.z) <= B.depth).length;
+      if (n > most) { most = n; best = e.z; }
+    }
+    if (best == null) return;
+    hz.aim = { z: best, from: hz.t, fire: hz.t + (hz.warn ?? B.warn), count: most };
+    this.world.events.emit('boltAim', { hazard: hz, boss: false });
+  }
+
+  looseBolt(hz) {
+    const a = hz.aim;
+    hz.aim = null;
+    hz.carZ = a.z;
+    hz.next = hz.t + (hz.period ?? BALLISTA.period);
+    const bolt = { x: hz.x + 90, z: a.z, h: 56, from: hz.t, boss: !!a.boss, hit: new Set(), done: false };
+    hz.bolts.push(bolt);
+    this.world.events.emit('boltLoose', { hazard: hz, bolt });
+  }
+
+  // The bolts in flight: each sweeps on along its lane, through every Ashen man in it.
+  flyBolts(hz) {
+    const B = BALLISTA;
+    const maxX = Math.min(hz.x + B.range, (this.world.bounds?.maxX ?? Infinity) + 80);
+    for (const bolt of hz.bolts) {
+      const x0 = bolt.x;
+      bolt.x += B.speed;
+      for (const f of this.world.fighters) {
+        if (f.team !== 'enemy' || !f.alive || f.entering || bolt.hit.has(f.id)) continue;
+        if (f.stats.boss && !bolt.boss) continue; // (he's yours)
+        if (f.x < x0 - 20 || f.x > bolt.x + 20 || Math.abs(f.z - bolt.z) > B.depth || f.h > B.high) continue;
+        bolt.hit.add(f.id);
+        const dmg = f.stats.boss ? Math.min(f.stats.maxHealth * (hz.share ?? B.share), f.health - 1) : hz.damage ?? B.damage;
+        if (f.stats.boss) hz.cool.delete(f.id);
+        this.hurt(hz, f, Math.max(0, dmg), 1, 'bolt');
+        this.world.events.emit('boltHit', { hazard: hz, bolt, fighter: f });
+      }
+      if (bolt.x >= maxX) bolt.done = true;
+    }
+    hz.bolts = hz.bolts.filter((q) => !q.done);
+  }
+
   // Is there a drop (a pit) within BOMBARD.pitClear of this spot along the lane?
   nearDrop(x, z) {
     const T = this.terrain;
@@ -1059,11 +1149,11 @@ export class Stage {
     else {
       f.fsm.change('knockdown', kind === 'fire' || kind === 'beam'
         ? { vx: dir * 160, vh: 260 }
-        : kind === 'trample' ? { vx: dir * 620, vh: 380 } : { vx: dir * 420, vh: 320 });
+        : kind === 'trample' ? { vx: dir * 620, vh: 380 } : kind === 'bolt' ? { vx: dir * 760, vh: 240 } : { vx: dir * 420, vh: 320 });
     }
     const e = {
       attacker: null, defender: f, dir, kind: 'hazard', hazard: kind,
-      move: { cut: kind === 'fire' ? 'fire' : kind === 'crate' || kind === 'beam' || kind === 'trample' ? 'blunt' : 'slash', damage: dmg, hitstop: 6 },
+      move: { cut: kind === 'fire' ? 'fire' : kind === 'bolt' ? 'pierce' : kind === 'crate' || kind === 'beam' || kind === 'trample' ? 'blunt' : 'slash', damage: dmg, hitstop: 6 },
       x: f.x, z: f.z, h: f.h + f.stats.body.h * 0.5, damage: dmg, fatality: 'none',
     };
     this.world.events.emit('hazardHit', { hazard: hz, fighter: f, kind });
