@@ -583,9 +583,9 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - Names and portrait files: `src/data/speakers.js`. Nick's names went to the voices that
   only had a trade: Daniel (MINER), Alex (PRISONER), Vincent (REEVE), Mathew (TOWNSMAN),
   Irvolino (MILLER), Nicholas (PILGRIM). The `who` keys in the stage data are unchanged.
-- **Art for the PC**: portraits drop in as `assets/ui/portraits/<file>.png` (square). Only
-  `rurik`, `oryn`, `vexa`, `vaurath` exist (cut from existing art); everyone else shows a
-  hooded stand-in until painted. Prompts per character: `docs/portrait-art-prompts.md`.
+- **Portraits**: every speaker has one in `assets/ui/portraits/<file>.png` (256 square): the
+  three heroes cut from their select art, the other 31 made in ChatGPT (prompts and how in
+  `docs/portrait-art-prompts.md`). A speaker added later without one gets a hooded stand-in.
 - The Ashen Road's wreckage is now two heaps at the back of the road (it was the same timbers stamped eight times across the lane; Nick found it fake).
 
 ## Cloud, 2026-10-12: level ends blend into the next level (not on itch)

@@ -6,8 +6,10 @@ plenty). Drop a file in with the name below and the game uses it on the next loa
 then the box draws a hooded stand-in with the speaker's initial. Names and files are in
 `src/data/speakers.js`.
 
-Already in: `rurik`, `oryn`, `vexa` (cut from the select-screen art) and `vaurath` (cut
-from his standing art, low resolution: worth repainting).
+All in (12 October 2026): `rurik`, `oryn`, `vexa` are cut from the select-screen art; every
+other one was made in ChatGPT from the prompts below, four to nine to a grid (the grids are
+on Nick's PC in `docs/art-refs/portraits-grid-1..4.png`, not in git) and cut apart into
+256 x 256 squares. To redo one, generate it alone and drop it over its file.
 
 ## The style (paste this first, every time)
 
