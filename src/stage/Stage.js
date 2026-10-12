@@ -41,6 +41,9 @@
 //                       hazards `when: 'phase:<id>'` only run from that phase on. `rage: true`
 //                       also counts as his rage (bossRage, `when: 'rage'`). Without phases a
 //                       boss has one: at half health he rages and calls his `adds`.
+//   boss.sentence: { speaker, last, crimes }   beaten, he kneels, hears these charges and is
+//                       executed by the hero who beat him (stage/Sentence.js); false: no
+//                       sentence (a machine)
 //   sequence            a scripted ending (stage/Sequence.js: the judgment)
 //
 // new Stage(world, data, opts): opts.rescued / opts.lost (villagers already saved / lost in
@@ -55,6 +58,7 @@ import { toWorldBox, overlaps } from '../combat/Boxes.js';
 import { Terrain, PIT_LOST } from './Terrain.js';
 import { Story } from './Story.js';
 import { Sequence } from './Sequence.js';
+import { Sentence } from './Sentence.js';
 import { LOOT } from '../data/trophies.js';
 
 const PAD = 30;           // keep everyone this far inside the section's ends
@@ -113,9 +117,12 @@ export class Stage {
     this.terrain = data.terrain ? new Terrain(world, data.terrain) : null;
     world.terrain = this.terrain;
     // dialogue and villagers (stage/Story.js): campaign levels only
-    this.story = data.story || data.npcs ? new Story(this, data) : null;
+    // (a stage with a boss has a story too: his sentence is spoken, stage/Sentence.js)
+    this.story = data.story || data.npcs || data.sections.some((sec) => sec.boss) ? new Story(this, data) : null;
     // a scripted ending (the judgment): stage/Sequence.js
     this.sequence = data.sequence ? new Sequence(this, data.sequence, opts.flags ?? {}) : null;
+    // every captain beaten kneels, hears his crimes and is executed (stage/Sentence.js)
+    this.sentence = new Sentence(this);
     this.stats = { kills: 0, finishers: 0, secrets: 0, deaths: 0, frames: 0 };
     let id = 1;
     for (const [si, sec] of this.sections.entries()) {
@@ -542,6 +549,8 @@ export class Stage {
     this.story?.update();
     // a scripted ending running: it has the stage until it's done
     if (this.sequence?.update()) return;
+    // a beaten boss on his knees, hearing his sentence: the fight stands still
+    if (this.sentence.update()) return;
 
     const b = this.boss;
     if (b && b.alive) this.updateBossPhases(b);

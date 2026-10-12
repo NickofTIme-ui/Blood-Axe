@@ -158,6 +158,12 @@ export function tryActions(f, allowed = null) {
       return true;
     }
   }
+  // SHOULDER SMASH (Rurik): attack while sprinting on his feet
+  if (ok('attack') && f.sprinting && f.state === 'walk' && usable(f, s.moves.shoulder) && c.peek('attack') && ready(f, s.moves.shoulder, 'shoulder')) {
+    c.consume('attack');
+    f.fsm.change('shoulder');
+    return true;
+  }
   if (ok('attack') && c.consume('attack')) {
     // Lost the arm that throws the opener? Skip straight to the next hit.
     f.fsm.change(usable(f, s.moves.light1) || !s.moves.light2 ? 'light1' : 'light2');
@@ -481,6 +487,7 @@ export const FIGHTER_STATES = {
   light4: makeAttackState('light4'), // (the Rogue's fourth hit)
   heavy: makeAttackState('heavy'),
   kick: makeAttackState('kick'),
+  shoulder: makeAttackState('shoulder'), // (Rurik's sprint + J)
   special1: makeAttackState('special1'),
   special2: makeAttackState('special2'),
 
@@ -681,6 +688,13 @@ export const FIGHTER_STATES = {
       if (f.execBy?.state !== 'execute') f.fsm.change(f.health > 0 ? 'idle' : 'dead');
     },
     exit(f) { f.liftH = 0; f.shock = 0; },
+  },
+
+  // Beaten, on his knees, hearing his sentence (stage/Sentence.js). Nothing moves him and
+  // nothing touches him until the blow; the views sink him onto his knees.
+  kneel: {
+    enter(f) { stopMoving(f); f.activeAttack = null; f.move = null; f.liftH = 0; },
+    update(f) { f.invincible = true; f.vx = 0; f.vz = 0; },
   },
 
   // Holding block. Hits from the front deal reduced damage and drain stamina.

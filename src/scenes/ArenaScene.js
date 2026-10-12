@@ -147,7 +147,16 @@ export class ArenaScene extends Phaser.Scene {
       if (e.move.fx === 'kick') this.kickImpact(e.x, e.z, e.h, e.dir);
       if (e.move.cut === 'fire') this.fireImpact(e.x, e.z, e.h);
       if (e.move.impale) this.impaleFX(e);
-      if (e.kind === 'melee' && e.attacker?.stats.blade) this.oathkeeperBite(e);
+      if (e.move.shoulder) this.shoulderImpact(e);
+      else if (e.kind === 'melee' && e.attacker?.stats.blade) this.oathkeeperBite(e);
+    });
+    // the SHOULDER SMASH sets off: a grunt, the plant, dust off his back foot
+    ev.on('attackStart', ({ fighter: f, state }) => {
+      if (state !== 'shoulder') return;
+      const loud = f.team === 'player' ? 1 : 0.4;
+      playSfx(this, 'heavySwing', { volume: 0.55 * loud, pitch: -700, spread: 80 });
+      playSfx(this, 'jump', { volume: 0.6 * loud, pitch: -300, minGapMs: 0 });
+      this.gore.spark(f.x - f.facing * 24, f.z, 2, 0x8a7a60, 12);
     });
     // hold-attack power thrust: a scrape of steel as both hands lock on, a ring when full
     ev.on('chargeStart', ({ fighter }) => {
@@ -178,6 +187,7 @@ export class ArenaScene extends Phaser.Scene {
       this.gore.spark(f.x + f.facing * 18, f.z, 70, 0xdfe8ff, 10);
     });
     this.setupFinishers(ev);
+    this.setupSentence(ev);
     this.mageFX = new MageFX(this); // the Mage's spells and barriers (effects/MageFX.js)
     this.rogueFX = new RogueFX(this); // the Rogue's mines, marks and steel (effects/RogueFX.js)
     this.quakeFX = new QuakeFX(this); // the Warlord's Earthbreaker slam and its shockwave (effects/QuakeFX.js)
@@ -420,6 +430,38 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   // Sparta kick landing: shockwave ring, dust off the floor, heavy shake.
+  // SHOULDER SMASH: plate into a man at a full run. A deep armoured crunch, a jolt of the
+  // camera, a gold ring, the dust and bits of him knocked flying ahead; the first man calls
+  // the move, every man after him counts up.
+  shoulderImpact(e) {
+    const f = e.attacker;
+    const n = f?.attackInfo?.hitList.size ?? 1;
+    const dir = e.dir;
+    playSfx(this, 'kick', { volume: 1, pitch: -900, spread: 80, minGapMs: 30 });
+    playSfx(this, 'block', { volume: 0.5, pitch: -1300, spread: 80, minGapMs: 30 }); // plate on plate
+    this.fx.shake(n === 1 ? 11 : 7, 16);
+    if (n === 1) {
+      const cam = this.cameras.main;
+      cam.zoomTo(this.baseZoom * 1.035, 50, 'Quad.easeOut', true);
+      this.time.delayedCall(110, () => cam.zoomTo(this.baseZoom, 260, 'Quad.easeOut', true));
+    }
+    const y = e.z - e.h;
+    const ring = this.add.ellipse(e.x, y, 34, 34, 0xffd070, 0).setStrokeStyle(4, 0xffe6a0, 0.95)
+      .setDepth(DEPTH.popups - 2).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: ring, scaleX: 3.4, scaleY: 2.4, alpha: 0, duration: 240, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+    const flash = this.add.circle(e.x, y, 16, 0xfff0c0, 0.5).setDepth(DEPTH.popups - 2).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: flash, scale: 2.2, alpha: 0, duration: 110, onComplete: () => flash.destroy() });
+    this.gore.spark(e.x, e.z, e.h, 0xffd070, 10);
+    for (let i = 0; i < 14; i++) {
+      this.gore.spawn({
+        x: e.x, z: e.z + (Math.random() - 0.5) * 14, h: 2 + Math.random() * 10,
+        vx: dir * (160 + Math.random() * 260), vz: (Math.random() - 0.5) * 80, vh: 80 + Math.random() * 160,
+        tint: 0x8a7a60, scale: 0.6 + Math.random() * 0.7, decal: false, life: 24,
+      });
+    }
+    if (f?.team === 'player') this.callout(n === 1 ? 'SHOULDER SMASH!' : `RAN THROUGH ${n}!`, '#ffd24a');
+  }
+
   kickImpact(x, z, h, dir) {
     playSfx(this, 'kick', { volume: 1, spread: 90, minGapMs: 60 });
     this.fx.shake(9, 16);
@@ -552,7 +594,7 @@ export class ArenaScene extends Phaser.Scene {
   // Big dismemberment: shout it, punch the camera.
   fatalityFX(e) {
     const label = FATALITY_LABELS[e.fatality];
-    if (label) this.popup(e.defender.x, e.z - e.defender.stats.body.h - 40, label, '#ff2a1a', 26);
+    if (label && !e.sentence) this.popup(e.defender.x, e.z - e.defender.stats.body.h - 40, label, '#ff2a1a', 26); // (a sentence says its own word)
     const cam = this.cameras.main;
     if (['halfH', 'halfV', 'explode', 'decap'].includes(e.fatality)) {
       cam.zoomTo(this.baseZoom * 1.07, 90, 'Quad.easeOut', true);
@@ -901,6 +943,67 @@ export class ArenaScene extends Phaser.Scene {
         this.cuts.launch(pieces.upper, dir * (160 + w(0) * 140) * up, (320 + w(1) * 160) * up, dir * (8 + w(2) * 8) * up);
       }
       // waistPerch: the top half just sits there on its legs — waiting for the boot
+    });
+  }
+
+  // A beaten boss's sentence (stage/Sentence.js): the field goes still and the camera
+  // closes in while he drops to his knees; the words are the story strip's; the blow is
+  // the hardest thing in the game: a long freeze, slow motion, a white-red flash, the
+  // heaviest shake and sounds, the head flying and the neck pumping; then his men run.
+  setupSentence(ev) {
+    const cam = this.cameras.main;
+    ev.on('sentenceStart', ({ boss: b }) => {
+      this.slowmo(0.3, 650);
+      this.fx.shake(5, 14);
+      this.rumble(0.8, 0.4, 260);
+      cam.zoomTo(this.baseZoom * 1.12, 1100, 'Quad.easeInOut', true);
+      this.sentenceCam = true;
+      playSfx(this, 'swingAlt', { volume: 0.5, pitch: -1100, spread: 30, minGapMs: 0 });
+      this.popup(b.x, b.z - b.h - b.stats.body.h * (b.stats.size ?? 1) - 40, 'BEATEN', '#d8c8b0', 22);
+    });
+    ev.on('sentenceKneel', ({ boss: b }) => {
+      // the knees hit the ground
+      this.time.delayedCall(260, () => {
+        if (!this.sys.isActive()) return;
+        playSfx(this, 'kick', { volume: 0.9, pitch: -1900, minGapMs: 0 });
+        this.fx.shake(3, 8);
+        for (const s of [-1, 1]) this.gore.spark(b.x + s * 16, b.z, 4, 0x8a7a60, 8);
+      });
+    });
+    ev.on('sentenceStrike', ({ boss: b, hero: h, dir }) => {
+      const H = b.stats.body.h * (b.stats.size ?? 1);
+      const kneck = H * 0.57; // (the neck of a man on his knees)
+      const neck = b.z - b.h - kneck;
+      this.slowmo(0.14, 1300);
+      this.fx.shake(14, 26);
+      this.rumble(1, 1, 450);
+      cam.flash(120, 255, 210, 200);
+      cam.zoomTo(this.baseZoom * 1.24, 110, 'Quad.easeOut', true);
+      this.time.delayedCall(1500, () => { if (this.sys.isActive()) cam.zoomTo(this.baseZoom * 1.12, 900, 'Quad.easeInOut', true); });
+      playSfx(this, 'heavySwing', { volume: 1, spread: 30, minGapMs: 0 });
+      playSfx(this, 'finisher', { volume: 1, pitch: -650, spread: 30, minGapMs: 0 });
+      playSfx(this, 'kick', { volume: 0.9, pitch: -1400, minGapMs: 0 });
+      playSfx(this, 'bloodSplatter', { volume: 1, spread: 40, minGapMs: 0 });
+      this.slashStreak(b.x, neck, b.stats.body.w * 1.6, dir, b.z);
+      this.gore.spark(b.x, b.z, b.h + kneck, 0xffffff, 26);
+      const g = this.gore;
+      if (g.level > 0) {
+        // a fountain from the neck, straight up and over, for the length of the slow motion
+        const amt = g.amount ?? 1;
+        g.burst(b.x, b.z, b.h + kneck, dir, Math.round(80 * amt), 1.9);
+        g.mist(b.x, b.z, b.h + kneck, 10);
+        this.everyTick(70, (t) => {
+          if (t % 2) return;
+          const r = (lo, hi) => lo + Math.random() * (hi - lo);
+          g.spawn({ x: b.x + r(-4, 4), z: b.z + r(-2, 2), h: b.h + kneck - 4, vx: dir * r(20, 140), vz: r(-15, 15), vh: r(180, 380) * (1 - t / 90), tint: 0x8a0303, scale: r(0.4, 0.8) });
+          if (t % 12 === 0) g.splat(b.x + dir * r(10, 70), b.z + r(-5, 5), r(1.2, 2.4));
+        });
+      }
+      this.callout('RETRIBUTION', '#ff2a1a', 46);
+    });
+    ev.on('sentenceDone', ({ routed }) => {
+      if (this.sentenceCam) { cam.zoomTo(this.baseZoom, 700, 'Quad.easeInOut', true); this.sentenceCam = false; }
+      if (routed.length) this.callout('HIS MEN BREAK AND RUN', '#ffd24a', 24);
     });
   }
 

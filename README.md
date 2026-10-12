@@ -37,6 +37,8 @@ from files opened directly, so the game needs that little server.
 | Block (hold) / **Parry** (tap just before a hit) | L | RT |
 | Turn your guard while blocking | ← / → while holding block | stick while holding RT |
 | Dodge roll (invincible at the start; up/down rolls into or out of the screen) | Shift or I (+ direction) | B |
+| Sprint on / off (while moving) | C | Click the left stick |
+| Rurik's **Shoulder Smash** (runs through a line of men, armoured, breaks guards) | J while sprinting | X while sprinting |
 | Magic | U | LB or LT |
 | Jump (Rogue: press again for double jump) | Space | A |
 | Attack while jumping | J in the air | X in the air |

@@ -105,6 +105,15 @@ export class EnemyBrain extends Controller {
       f.unbounded = false;
     }
 
+    // His captain knelt and lost his head in front of him (stage/Sentence.js): he throws
+    // the fight and runs for the edge of the room (`routed`: -1 left, 1 right)
+    if (this.routed) {
+      this.facingHint = this.routed;
+      this.comboLeft = 0;
+      this.blockTimer = 0;
+      if (f.state === 'idle' || f.state === 'walk') this.moveX = this.routed;
+      return;
+    }
     // Lost an arm: the fight has gone out of him — he tries to run.
     if (f.maimed?.armF || f.maimed?.armB) return this.panic(target);
 

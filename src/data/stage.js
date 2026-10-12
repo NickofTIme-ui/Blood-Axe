@@ -90,7 +90,16 @@ export const STAGE = {
       // he walks in slowly, the ground shaking, the heroes frozen (Stage.spawnBoss);
       // at half health he calls Pitlord Kragg and his dogs (adds)
       boss: { type: 'warlord', name: 'Warlord Malgor, the Oathbreaker', health: 6, damage: 1.15, adds: ['gladiator', 'grunt', 'grunt', 'stalker', 'gladiator', 'grunt', 'grunt', 'stalker'],
-        entrance: { from: 140, to: 300, speed: 58, stepEvery: 34, awe: 30 } },
+        entrance: { from: 140, to: 300, speed: 58, stepEvery: 34, awe: 30 },
+        // beaten: his crimes and his sentence (stage/Sentence.js)
+        sentence: {
+          speaker: 'MALGOR',
+          crimes: [
+            'You broke the oath you swore to our people.',
+            'You burned the villages you were sworn to guard.',
+          ],
+          last: 'An oath is only words. Words burn.',
+        } },
       waves: [],
       props: [{ kind: 'barrel', x: 4780, z: 501, drop: 'meat' }],
       hazards: [],

@@ -61,6 +61,11 @@ const set = (id) => ({
   // into the shapes (view/SpriteEnemyView.js). Prompts: docs/enemy-jump-art-prompts.md
   jump: { file: `${DIR}/${id}_jump.png`, frames: 4, ref: 0, ground: 'drawn', optional: true },
   drop: { file: `${DIR}/${id}_drop.png`, frames: 3, ref: 0, ground: 'drawn', optional: true },
+  // beaten, on his knees for his sentence (stage/Sentence.js; bosses only): 0 dropping onto
+  // one knee, 1 on both knees, head bowed, 2 on his knees, head raised (his last words).
+  // Optional: without it his standing pose is sunk to the knee. Prompts:
+  // docs/kneel-art-prompts.md
+  kneel: { file: `${DIR}/${id}_kneel.png`, frames: 3, ref: 0, ground: 'drawn', optional: true },
 });
 
 // The scared set of animations for a one-armed enemy (side = 'B' or 'F').
@@ -86,8 +91,8 @@ const fix = (strips, extra) => {
 
 export const ENEMY_STRIPS = {
   // the fodder: no special move, so no special strip
-  grunt: (({ special, ...rest }) => rest)(set('grunt')),
-  butcher: fix(set('butcher'), {
+  grunt: (({ special, kneel, ...rest }) => rest)(set('grunt')), // (never a boss: no kneel either)
+  butcher: fix((({ kneel, ...rest }) => rest)(set('butcher')), {
     doom: { holes: [[182, 279]] }, // the gap between the hook's chain and his leg
   }),
   berserker: fix(set('berserker'), {
@@ -111,7 +116,7 @@ export const ENEMY_STRIPS = {
   ghoul: set('ghoul'),
   // the boss: painted on magenta (his black cape would vanish into a black background),
   // and the standard six strips only (he can't be maimed, so no scared sets)
-  warlord: Object.fromEntries(['walk', 'react', 'atk1', 'atk2', 'heavy', 'special'].map((n) => [n, { ...set('warlord')[n], bg: 'magenta' }])),
+  warlord: Object.fromEntries(['walk', 'react', 'atk1', 'atk2', 'heavy', 'special', 'kneel'].map((n) => [n, { ...set('warlord')[n], bg: 'magenta' }])),
 };
 
 const seq = (strip, ids) => ids.map((i) => `${strip}:${i}`);
@@ -140,6 +145,8 @@ const COMMON = {
   // ledges (stage/Terrain.js): the painted jump and drop, when they exist
   jump: { needs: ['jump'], frames: seq('jump', [0, 1, 2, 3]) },
   drop: { needs: ['drop'], frames: seq('drop', [0, 1, 2]) },
+  // on his knees for his sentence, when painted (picked in SpriteEnemyView)
+  kneel: { needs: ['kneel'], frames: seq('kneel', [0, 1, 2]) },
 };
 
 export const ENEMY_ANIMS = {

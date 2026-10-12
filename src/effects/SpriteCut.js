@@ -55,7 +55,12 @@ export class SpriteCuts {
     const yc = (top + yCut) / 2;                                 // centre of the top piece
     const key = s.texture.key;
     const frame = s.frame.name;
-    const feetY = f.z - f.h;
+    // on his knees without painted kneeling art (view/SpriteEnemyView.js): the standing
+    // frame sunk into the floor, cropped at the knee — the pieces are cut the same way
+    const kn = view.kneelCut;
+    const sink = kn?.sink ?? 0;
+    const kneeRow = kn ? kn.row : sh.fh;
+    const feetY = f.z - f.h + sink;
     const perch = cut === 'waistPerch';
 
     // The two pieces are his own picture, divided along the cut line and nothing else:
@@ -65,12 +70,13 @@ export class SpriteCuts {
     const baked = this.bake(s.frame, sh, yCut, slope, cut, f.stats.body.w * res);
     const mk = (texKey, cropY, cropH, oy) => {
       const img = texKey ? this.scene.add.image(f.x, feetY, texKey) : this.scene.add.image(f.x, feetY, key, frame).setCrop(0, cropY, sh.fw, cropH);
+      if (texKey && kn && cropY > 0) img.setCrop(0, 0, sh.fw, kneeRow); // (the shins stay under the floor)
       return img.setOrigin(sh.ax / sh.fw, oy / sh.fh).setScale(k * face, k).setDepth(f.z);
     };
     const bandX = baked?.midX ?? sh.ax;
 
     const upper = this.add({
-      img: mk(baked?.upper, 0, yCut, yc), tex: baked?.upper, x: f.x, z: f.z, h: f.h + (sh.ay - yc) * k, mode: perch ? 'perch' : 'fly',
+      img: mk(baked?.upper, 0, yCut, yc), tex: baked?.upper, x: f.x, z: f.z, h: f.h + (sh.ay - yc) * k - sink, mode: perch ? 'perch' : 'fly',
       vx: 0, vh: 0, rot: s.rotation, spin: 0, face, k, dir,
       edge: (yCut - yc) * k,   // cut face: this far below the piece's centre
       rest: (yCut - yc) * k,   // lands standing on its cut
@@ -78,7 +84,7 @@ export class SpriteCuts {
       bandOff: { x: (bandX - sh.ax) * k * face, y: (yCut - yc) * k },
     });
     const lower = this.add({
-      img: mk(baked?.lower, yCut, sh.fh - yCut, sh.ay), tex: baked?.lower, x: f.x, z: f.z, h: f.h, mode: 'stand',
+      img: mk(baked?.lower, yCut, Math.max(1, kneeRow - yCut), sh.ay), tex: baked?.lower, x: f.x, z: f.z, h: f.h - sink, mode: 'stand',
       vx: 0, vh: 0, rot: s.rotation, spin: 0, face, k, dir,
       edge: -(sh.ay - yCut) * k, // cut face: this far above the feet
       // legs: the sweep knocks them straight over (the torso drops where they stood);
@@ -89,6 +95,11 @@ export class SpriteCuts {
     });
     upper.other = lower;
     lower.other = upper;
+    if (kn) {
+      // beheaded on his knees: the body stays kneeling a long moment, the neck pumping,
+      // then slumps forward onto its own front (not over: it's kneeling)
+      lower.stand = 46; lower.toppleSpeed = 0.003; lower.fallDir = face; lower.toppleTo = 0.42; lower.bleed = 320;
+    }
     return { upper, lower };
   }
 
@@ -395,7 +406,7 @@ export class SpriteCuts {
         if (--p.stand <= 0) { p.mode = 'topple'; p.toppleV = 0; }
       } else if (p.mode === 'topple') {
         p.toppleV += p.toppleSpeed ?? 0.006;
-        const target = p.fallDir * Math.PI / 2 * 0.96;
+        const target = p.fallDir * (p.toppleTo ?? Math.PI / 2 * 0.96);
         p.rot += Math.sign(target - p.rot) * p.toppleV;
         if (Math.abs(p.rot) >= Math.abs(target)) {
           p.rot = target; p.mode = 'down';
