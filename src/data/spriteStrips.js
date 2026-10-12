@@ -63,6 +63,11 @@ export const ANIM_OVERRIDES = {
     sprint: { needs: ['sprint'], frames: seq('sprint', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 16, loop: true },
     dodgeUp: { needs: ['rollUp'], frames: seq('rollUp', [0, 1, 2, 3, 4, 5]) },
     dodgeDown: { needs: ['rollDown'], frames: seq('rollDown', [0, 1, 2, 3, 4, 5]) },
+    // SHOULDER SMASH (sprint + J): the last strides into the plant, flat out through the men
+    // (the charge's own poses, at double speed under the lean the view adds), then planted
+    // back on his heels into the ready stance. (A painted strip, ulric_shoulder.png, would
+    // replace this: docs/rurik-art-prompts.md.)
+    shoulder: { needs: ['sprint', 'kick', 'combo1'], phases: { startup: seq('sprint', [6, 7]), active: seq('sprint', [0, 1, 2, 3, 4, 5, 6, 7]), recovery: [...seq('kick', [4, 4]), ...seq('combo1', [0])] } },
     // Sparta kick: short ready beat, a long coiled chamber (the recoil), then the drive
     kick: { needs: ['kick'], phases: { startup: seq('kick', [0, 1, 1, 1]), active: seq('kick', [2, 3]), recovery: seq('kick', [3, 4, 5]) } },
     // 1st tap: cross slash (high front -> low behind the back hip)

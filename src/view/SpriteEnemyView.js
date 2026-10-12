@@ -21,6 +21,11 @@ import { applyBurn } from '../effects/Burn.js';
 import { IMPALE } from '../combat/Finisher.js';
 import { BodyFeel, easedSpread, swingBody } from './animFeel.js';
 import { DANGER, dangerGlint } from './dangerCue.js';
+import { SENTENCE } from '../stage/Sentence.js';
+
+// On his knees for his sentence (stage/Sentence.js) without painted kneeling art: his
+// standing frame sinks this share of his height into the floor, cropped at the knee.
+const KNEE = 0.27;
 
 const ATTACKS = ['light1', 'light2', 'light3', 'heavy', 'special1', 'special2', 'airAttack'];
 
@@ -137,6 +142,12 @@ export class SpriteEnemyView {
       case 'knockdown': return f.lyingSince === null ? A.air.frames[0] : A.lying.frames[0];
       case 'getup': return easedSpread(A.getup.frames, fr / f.stats.getupFrames);
       case 'dead': return A.lying.frames[0];
+      // beaten, on his knees for his sentence (stage/Sentence.js): the painted kneel when
+      // there is one (0 going down, 1 head bowed, 2 head raised for his last words), else
+      // a jolt of the hit pose, then his standing pose sunk to the knee (update())
+      case 'kneel':
+        if (A.kneel) return A.kneel.frames[fr < SENTENCE.drop * 0.5 ? 0 : f.defiant ? 2 : 1];
+        return fr < 8 ? A.hit.frames[0] : A.idle.frames[0];
       case 'jump': return A.air.frames[0];
       // held by an executioner: struggling in his grip / run through / frozen in terror
       case 'executed':
@@ -426,6 +437,22 @@ export class SpriteEnemyView {
     const shape = this.feel.step({ land: !L });
     tall *= shape.sy; wide *= shape.sx;
     dx += push;
+    // on his knees (frameFor): sunk and cropped at the knee unless the kneel is painted;
+    // the head bowed toward the man with the blade (lifted for his last words), shaking
+    let kneel = null;
+    if (st === 'kneel') {
+      const t = Math.min(1, fr / SENTENCE.drop);
+      const e = 1 - (1 - t) ** 3;
+      const sink = A.kneel ? 0 : f.stats.body.h * KNEE * depthScale(f.z) * (f.stats.size ?? 1) * e;
+      kneel = { sink, row: A.kneel ? this.sheet.fh : Math.round(this.sheet.ay - f.stats.body.h * KNEE * this.res * e) };
+      dy = sink;
+      angle = A.kneel ? 0 : (f.defiant ? -3 : 9) * e;
+      dx = t >= 1 && f.hitstop === 0 ? (Math.random() - 0.5) * 0.9 : 0;
+      tall = 1; wide = 1;
+    }
+    this.kneelCut = kneel; // (effects/SpriteCut.js cuts him where he kneels)
+    if (kneel && kneel.row < this.sheet.fh) { s.setCrop(0, 0, this.sheet.fw, kneel.row); this.cropped = true; }
+    else if (this.cropped) { s.setCrop(); this.cropped = false; }
     const k = depthScale(f.z) / this.res * (f.stats?.size ?? 1); // (a boss can be drawn bigger: makeBoss)
     s.setPosition(f.x + dx * f.facing, f.z - f.h + dy).setDepth(f.z);
     s.setScale(k * face * (1 - breathe * 0.006) * wide, k * (1 + breathe * 0.014) * tall);

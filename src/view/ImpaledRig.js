@@ -8,6 +8,11 @@
 //   lift   the torso rises with the blade; the legs trail: heels, then toes, leave the floor
 //   aloft  spine folded over the blade, head lolling, legs swinging like a pendulum
 //
+// Once his boots leave the floor he is a RAGDOLL: thighs hang from the hips and shins from
+// the knees, each a real pendulum under gravity, shoved about by how the blade moves (the
+// heave up and back, the hold, the boot), the knees giving only the way knees bend, the
+// legs falling together as they go dead.
+//
 // Where the fighter is (x, h) is decided by the game (fighterStates 'execute'): this only
 // draws him.
 
@@ -26,6 +31,7 @@ function measure(scene, key, name) {
   const w = fr.cutWidth;
   const h = fr.cutHeight;
   let rows = null;
+  let cols = null; // (solid pixels down each column)
   try {
     const c = document.createElement('canvas');
     c.width = w; c.height = h;
@@ -33,16 +39,17 @@ function measure(scene, key, name) {
     ctx.drawImage(fr.source.image, fr.cutX, fr.cutY, w, h, 0, 0, w, h);
     const d = ctx.getImageData(0, 0, w, h).data;
     rows = [];
+    cols = new Array(w).fill(0);
     for (let y = 0; y < h; y++) {
       let x0 = -1;
       let x1 = -1;
       for (let x = 0; x < w; x++) {
-        if (d[(y * w + x) * 4 + 3] > 40) { if (x0 < 0) x0 = x; x1 = x; }
+        if (d[(y * w + x) * 4 + 3] > 40) { if (x0 < 0) x0 = x; x1 = x; cols[x]++; }
       }
       rows.push(x0 < 0 ? null : [x0, x1]);
     }
   } catch { rows = null; }
-  const m = { rows, top: rows ? Math.max(0, rows.findIndex((r) => r)) : 0 };
+  const m = { rows, cols: rows ? cols : null, top: rows ? Math.max(0, rows.findIndex((r) => r)) : 0 };
   if (rows) { // the figure's box (for the lying pose)
     m.y0 = m.top;
     m.y1 = rows.length - 1 - [...rows].reverse().findIndex((r) => r);
@@ -78,7 +85,8 @@ export class ImpaledRig {
     this.scene = scene;
     this.sheet = sheet;
     this.legs = scene.add.image(0, 0, '__DEFAULT').setVisible(false);
-    this.dang = scene.add.image(0, 0, '__DEFAULT').setVisible(false);
+    this.thigh = scene.add.image(0, 0, '__DEFAULT').setVisible(false);
+    this.shin = scene.add.image(0, 0, '__DEFAULT').setVisible(false);
     this.torso = scene.add.image(0, 0, '__DEFAULT').setVisible(false);
     this.head = scene.add.image(0, 0, '__DEFAULT').setVisible(false);
     this.sT = new Spring();
@@ -113,20 +121,40 @@ export class ImpaledRig {
     this.legs.setTexture(key, name).setCrop(0, yHip - OVERLAP, sh.fw, sh.fh - yHip + OVERLAP).setOrigin(xHip / sh.fw, yHip / sh.fh);
     this.torso.setTexture(key, name).setCrop(0, yNeck - OVERLAP, sh.fw, yHip - yNeck + OVERLAP * 2).setOrigin(xPierce / sh.fw, yPierce / sh.fh);
     this.head.setTexture(key, name).setCrop(0, 0, sh.fw, yNeck + OVERLAP).setOrigin(xNeck / sh.fw, yNeck / sh.fh);
-    // hanging legs: the legs of his LYING pose (straight, together, limp), turned to
-    // hang from the hips — a striding pair of legs in mid-air reads as a man jumping
-    this.hang = null;
+    // the ragdoll's legs: the same legs cut again at the knee
+    const knee = H * 0.25;
+    const yKnee = sh.ay - knee;
+    const xKnee = midAt(m, yKnee, sh.ax);
+    this.J.knee = knee;
+    this.thigh.setTexture(key, name).setCrop(0, yHip - OVERLAP, sh.fw, yKnee - yHip + OVERLAP * 2).setOrigin(xHip / sh.fw, yHip / sh.fh);
+    this.shin.setTexture(key, name).setCrop(0, yKnee - OVERLAP, sh.fw, sh.fh - yKnee + OVERLAP).setOrigin(xKnee / sh.fw, yKnee / sh.fh);
+    this.legX = (xKnee - xHip); // (the drawn knee's offset from the hip, frame px)
+    this.flat = null;
+    // better: the legs of his LYING pose (straight, together, limp), cut at the knee and
+    // hung from the hips. A striding pair of legs in mid-air reads as a man jumping.
     if (lying) {
       const [ls, li] = lying.split(':');
       const lk = `${sh.key}-${ls}`;
       const ln = `f${li}`;
       const lm = measure(this.scene, lk, ln);
       if (lm.rows && lm.x1 - lm.x0 > (lm.y1 - lm.y0) * 1.6) { // really is lying flat
-        const len = (lm.x1 - lm.x0) * 0.47;                    // feet (left end) to hips
-        const xCut = lm.x0 + len;
+        // which end are the feet? the thinner one (the painted dead mostly lie head-left)
+        const thick = (x) => lm.cols[Math.round(x)] ?? 0;
+        const W = lm.x1 - lm.x0;
+        const th = (t) => { let a = 0; for (let j = -3; j <= 3; j++) a += thick(lm.x0 + W * (t + j * 0.02)); return a; };
+        const feetRight = !(th(0.12) < th(0.88) * 0.8);
+        const len = W * 0.47;                       // feet to hips
+        const s = feetRight ? 1 : -1;
+        const xFeet = feetRight ? lm.x1 : lm.x0;
+        const xH = xFeet - s * len;
+        const xK = xFeet - s * len * 0.5;
         const yMid = (lm.y0 + lm.y1) / 2 + (lm.y1 - lm.y0) * 0.08;
-        this.dang.setTexture(lk, ln).setCrop(0, 0, xCut + OVERLAP, sh.fh).setOrigin(xCut / sh.fw, yMid / sh.fh);
-        this.hang = { scale: hip / len };
+        const lo = (a, b) => Math.min(a, b);
+        const span = (a, b) => Math.abs(b - a);
+        // thigh: hips to knee; shin: knee to the end of the boots
+        this.thigh.setTexture(lk, ln).setCrop(lo(xH, xK) - OVERLAP, 0, span(xH, xK) + OVERLAP * 2, sh.fh).setOrigin(xH / sh.fw, yMid / sh.fh);
+        this.shin.setTexture(lk, ln).setCrop(feetRight ? xK - OVERLAP : 0, 0, feetRight ? sh.fw - xK + OVERLAP : xK + OVERLAP, sh.fh).setOrigin(xK / sh.fw, yMid / sh.fh);
+        this.flat = { s, scale: hip / len };        // (s: which way they point in the frame)
       }
     }
   }
@@ -144,15 +172,31 @@ export class ImpaledRig {
       this.sT.a = 0; this.sT.v = 14 * 0.6;
       this.sH.a = 0; this.sH.v = -9;
       this.sL.a = 0; this.sL.v = 0;
-      this.lastX = f.x;
       this.free = 0;
+      this.doll = null;
+      this.pinP = null;
+      this.pinV = null;
+      this.tick = tick;
     }
+    const steps = Math.max(0, Math.min(4, tick - this.tick)); // game frames since the last draw
+    this.tick = tick;
     const t = by.fsm.frame - IMPALE.stab;          // game frames since the blade went in
     const lifting = by.fsm.frame >= IMPALE.liftFrom;
     const aloft = by.fsm.frame >= IMPALE.raised;
     const sway = Math.sin(tick * 0.11);
-    const pinVx = (f.x - this.lastX) * dir;         // the blade's own motion drags the loose parts
-    this.lastX = f.x;
+    this.facingSign = face; // (his knees bend back from the way he's drawn facing)
+
+    // the blade heaving him about throws his loose weight around: the torso rocks on the
+    // steel and the head flops after it (both ragdoll-ish, on top of their poses)
+    const pin = { x: f.x, y: f.z - f.h };
+    if (this.pinP && steps) {
+      const v = { x: (pin.x - this.pinP.x) / steps, y: (pin.y - this.pinP.y) / steps };
+      const acc = { x: v.x - (this.pinV?.x ?? v.x), y: v.y - (this.pinV?.y ?? v.y) };
+      this.pinV = v;
+      this.sT.v -= acc.x * dir * 1.6;
+      this.sH.v -= acc.x * dir * 3.2 - acc.y * 1.8;
+    }
+    this.pinP = pin;
 
     // torso: chest punched forward by the thrust, then folded over the blade as it takes his weight
     const tT = t < 3 ? 15 : !lifting ? 7 : aloft ? 13 + sway * 1.6 : 10;
@@ -189,45 +233,114 @@ export class ImpaledRig {
       sL = Math.max(0.82, Math.min(1.1, reach / L));
     } else {
       this.free++;
-      if (this.free === 1) { this.sL.a = Math.max(-25, Math.min(25, this.sL.a)); this.sL.v = 0; }
-      this.sL.v -= pinVx * 0.45;
-      aL = Math.max(-32, Math.min(32, this.sL.step(-3 + Math.sin(tick * 0.13) * 1.2, 0.03, 0.965)));
-      sL = 1.04; // toes pointing at the floor
+      aL = this.sL.a;
+      sL = 1;
     }
     // dead legs hang together: draw the stride narrower the longer he hangs
-    const narrow = 1 - Math.min(0.3, this.free * 0.02);
+    const narrow = this.narrow = 1 - Math.min(0.3, this.free * 0.02);
 
     const depth = f.z + 0.3; // in front of Ulric: his blade goes in the back and out the chest
     const shake = t < 2 ? (Math.random() - 0.5) * 3 : by.fsm.frame < IMPALE.liftFrom ? (Math.random() - 0.5) * 1.4 : 0;
-    const dangle = this.free > 0 && this.hang;
-    this.legs.setVisible(!dangle).setPosition(hipP.x, hipP.y).setScale(k * face * narrow, k * sL).setDepth(depth).setAngle(aL * dir);
-    this.dang.setVisible(!!dangle);
-    if (dangle) {
-      // (his lying legs point away from the hips along -x: a quarter turn hangs them down)
-      const s = k * this.hang.scale;
-      this.dang.setPosition(hipP.x, hipP.y - 2).setScale(s * face * 1.03, s).setDepth(depth).setAngle((-90 + aL) * face);
+    const hanging = this.free > 0;
+    this.legs.setVisible(!hanging);
+    this.thigh.setVisible(hanging);
+    this.shin.setVisible(hanging);
+    if (!hanging) {
+      this.legs.setPosition(hipP.x, hipP.y).setScale(k * face * narrow, k * sL).setDepth(depth).setAngle(aL * dir);
+    } else {
+      const D = this.ragdoll(hipP, aL * dir, steps, k);
+      if (this.flat) {
+        // lying legs point along the frame's x: turn them to hang along each link
+        const s = k * this.flat.scale * 1.03;
+        const base = this.flat.s * face > 0 ? 0 : 180;
+        const ang = (a) => Math.atan2(Math.cos(a), Math.sin(a)) / RAD - base;
+        this.thigh.setPosition(hipP.x, hipP.y - 2).setScale(s * face, s).setDepth(depth).setAngle(ang(D.a1));
+        this.shin.setPosition(D.knee.x, D.knee.y).setScale(s * face, s).setDepth(depth - 0.001).setAngle(ang(D.a2));
+      } else {
+        const sx = k * face * narrow;
+        this.thigh.setPosition(hipP.x, hipP.y).setScale(sx, k * 1.04).setDepth(depth).setAngle(-D.a1 / RAD);
+        this.shin.setPosition(D.knee.x, D.knee.y).setScale(sx, k * 1.04).setDepth(depth - 0.001).setAngle(-D.a2 / RAD);
+      }
     }
     this.torso.setVisible(true).setPosition(px + shake, py).setScale(k * face, k).setDepth(depth + 0.01).setAngle(aT * dir);
     this.head.setVisible(true).setPosition(neckP.x + shake, neckP.y).setScale(k * face, k).setDepth(depth + 0.02).setAngle((aT + aH) * dir);
     return { px, py };
   }
 
+  // The hanging legs, a two-link pendulum hung from the hips. Angles are from straight
+  // down, positive toward screen +x; the hips' own acceleration (the blade heaving him
+  // about) is what sets them swinging.
+  ragdoll(hip, startDeg, steps, k) {
+    const J = this.J;
+    const L1 = this.flat ? J.hip * 0.5 * k * 1.03 : (J.hip - J.knee) * k * 1.04;
+    const L2 = this.flat ? J.hip * 0.5 * k * 1.03 : J.knee * k * 1.04;
+    const ox = this.flat ? 0 : this.legX * this.facingSign * k * this.narrow; // (the drawn knee sits a little off the hip's line)
+    const kneeOf = (d) => ({
+      x: hip.x + ox * Math.cos(d.a1) + L1 * Math.sin(d.a1),
+      y: hip.y - ox * Math.sin(d.a1) + L1 * Math.cos(d.a1),
+    });
+    let d = this.doll;
+    if (!d) {
+      // picked up from where the planted legs were: no pop
+      const a = -startDeg * RAD;
+      d = this.doll = { a1: a, v1: 0, a2: a, v2: 0, hip: { ...hip }, hv: { x: 0, y: 0 }, knee: null };
+      d.knee = kneeOf(d);
+      d.kv = { x: 0, y: 0 };
+    }
+    const G = 0.55;                 // px / frame², in screen px (it hangs heavy)
+    for (let i = 0; i < steps; i++) {
+      // the hips' acceleration this frame (spread over the frames since the last draw)
+      const vx = (hip.x - d.hip.x) / steps;
+      const vy = (hip.y - d.hip.y) / steps;
+      const ax = vx - d.hv.x;
+      const ay = vy - d.hv.y;
+      d.hv = { x: vx, y: vy };
+      // thigh: pendulum on the hips
+      const gx = -ax;
+      const gy = G - ay;
+      d.v1 += (gx * Math.cos(d.a1) - gy * Math.sin(d.a1)) / L1;
+      d.v1 *= 0.965;
+      d.a1 += d.v1;
+      d.a1 = Math.max(-1.1, Math.min(1.1, d.a1));
+      // shin: pendulum on the knee, pushed by how the knee itself is thrown about
+      const kn = kneeOf(d);
+      const kvx = kn.x - d.knee.x;
+      const kvy = kn.y - d.knee.y;
+      const kax = kvx - d.kv.x;
+      const kay = kvy - d.kv.y;
+      d.kv = { x: kvx, y: kvy };
+      d.knee = kn;
+      d.v2 += (-kax * Math.cos(d.a2) - (G - kay) * Math.sin(d.a2)) / L2;
+      d.v2 *= 0.95;
+      d.a2 += d.v2;
+      // a knee only bends one way: the heel swings back behind him, never forward past straight
+      const rel = (d.a2 - d.a1) * this.facingSign;
+      if (rel > 0.06) { d.a2 = d.a1 + 0.06 * this.facingSign; d.v2 = d.v1; }
+      if (rel < -1.3) { d.a2 = d.a1 - 1.3 * this.facingSign; d.v2 = d.v1; }
+    }
+    d.hip = { ...hip };
+    d.knee = kneeOf(d);
+    return d;
+  }
+
   tint(fill) {
-    for (const p of [this.legs, this.dang, this.torso, this.head]) { if (fill) p.setTintFill(0xffffff); else p.clearTint(); }
+    for (const p of [this.legs, this.thigh, this.shin, this.torso, this.head]) { if (fill) p.setTintFill(0xffffff); else p.clearTint(); }
   }
 
   hide() {
     if (!this.on && !this.legs.visible) return;
     this.on = false;
     this.legs.setVisible(false);
-    this.dang.setVisible(false);
+    this.thigh.setVisible(false);
+    this.shin.setVisible(false);
     this.torso.setVisible(false);
     this.head.setVisible(false);
   }
 
   destroy() {
     this.legs.destroy();
-    this.dang.destroy();
+    this.thigh.destroy();
+    this.shin.destroy();
     this.torso.destroy();
     this.head.destroy();
   }

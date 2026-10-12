@@ -104,6 +104,15 @@ export const STAGE_MINE = {
       boss: {
         type: 'ghoul', name: 'The Chain Warden', health: 2.6, damage: 1.1,
         entrance: { from: 140, to: 320, speed: 66, stepEvery: 30, awe: 20 },
+        // beaten: his crimes and his sentence (stage/Sentence.js)
+        sentence: {
+          speaker: 'WARDEN',
+          crimes: [
+            'You chained our people in the dark and worked them for the King\'s iron.',
+            'You whipped the old until they fell, and left them where they fell.',
+          ],
+          last: 'Every chain in this mountain is mine. Even now.',
+        },
         phases: [
           { id: 'chains', at: 0.5, rage: true, adds: ['ghoul', 'grunt'], damage: 1.2, speed: 1.15 },
         ],
@@ -129,6 +138,7 @@ export const STAGE_MINE = {
       boss: {
         type: 'crusher', name: 'The Ore Crusher', health: 1.3, damage: 1, escort: ['grunt'],
         entrance: { from: 160, to: 360, speed: 40, stepEvery: 40, awe: 40 },
+        sentence: false, // (a machine answers for nothing: its overseer ran; stage/Sentence.js)
         phases: [
           { id: 'furnace', at: 0.66, adds: ['grunt', 'grunt'] },
           { id: 'overdrive', at: 0.33, rage: true, adds: ['stalker'], damage: 1.2, speed: 1.5, ai: { attackCooldown: [24, 60] } },

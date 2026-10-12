@@ -108,6 +108,14 @@ export const STAGE_GATES = {
         type: 'gladiator', name: 'Hask of the Gate', health: 1.8, damage: 1.1,
         twin: { type: 'gladiator', name: 'Hrolf of the Gate', health: 1.8, damage: 1.1 },
         grief: { damage: 1.3, speed: 1.2 },
+        // beaten: the one left standing hears his crimes and his sentence (stage/Sentence.js)
+        sentence: {
+          crimes: [
+            'You held this gate while your king left his own people outside it to die.',
+            'You threw them at our blades to slow us down.',
+          ],
+          last: 'Brother... wait for me.',
+        },
         phases: [], // (no phases: the twins have each other)
       },
     },
@@ -174,6 +182,16 @@ export const STAGE_GATES = {
       boss: {
         type: 'warlord', name: 'Malgor, the Iron Marshal', health: 4.0, damage: 1.1, escort: ['grunt', 'grunt'],
         entrance: { from: 160, to: 340, speed: 58, stepEvery: 34, awe: 30 },
+        // beaten: his crimes and his sentence (stage/Sentence.js)
+        sentence: {
+          speaker: 'MALGOR',
+          crimes: [
+            'Three times you begged your king for our heads.',
+            'You loosed his archers on your own men to reach us.',
+            'You held his gates while he burned his own town behind them.',
+          ],
+          last: 'I asked him for one thing. To face you. Make it clean.',
+        },
         phases: [
           { id: 'walls', at: 0.66, adds: ['thrall', 'thrall', 'thrall', 'thrall'], callout: 'ARCHERS ON THE WALLS!' },
           { id: 'iron', at: 0.33, rage: true, adds: ['gladiator'], damage: 1.2, speed: 1.15, callout: 'HE WILL NOT FALL!', ai: { attackCooldown: [25, 55], specialEvery: 18 } },
