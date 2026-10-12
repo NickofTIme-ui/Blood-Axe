@@ -120,6 +120,11 @@ export const SPRITE_SHEETS = {
   'prisoner-a': { file: 'assets/sprites/npc/prisoner_a.png', frames: 7, height: 210 },
   'prisoner-b': { file: 'assets/sprites/npc/prisoner_b.png', frames: 7, height: 205 },
   'prisoner-c': { file: 'assets/sprites/npc/prisoner_c.png', frames: 7, height: 200 },
+  // Nicholas, the mountain guide (Nick in the game; docs/nicholas-art-prompts.md): 9 poses,
+  // the villager sheet's order (point the way where the villager waves, brace where he
+  // cowers, sit wounded) and a ninth, lying dead. Until it's painted he walks on the
+  // villager sheet.
+  nicholas: { file: 'assets/sprites/npc/nicholas.png', frames: 9, height: 210 },
   // Vincent, the Gatewright (view/VincentView.js; made in ChatGPT from his photo:
   // docs/vincent-art-prompts.md): stand, grip the bars, crank, aim, loose, walk x3, wave
   vincent: { file: 'assets/sprites/npc/vincent.png', frames: 9, height: 205 },

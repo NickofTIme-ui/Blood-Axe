@@ -52,7 +52,10 @@ export const SPEAKERS = {
   REEVE: { name: 'Aldric', portrait: 'aldric' },     // the reeve of the lower town (Iron Gates)
   TOWNSMAN: { name: 'Mathew', portrait: 'mathew' },  // a townsman (Iron Gates)
   MILLER: { name: 'Irvolino', portrait: 'irvolino' }, // the miller, shut in the barn (Burning Village)
-  PILGRIM: { name: 'Nicholas', portrait: 'nicholas' }, // the pilgrim on the wood road (Gallows Wood)
+  PILGRIM: { name: 'Nicholas', portrait: 'nicholas' }, // (the wood road's pilgrim speaks as NICHOLAS now)
+  // Nick in the game: the mountain guide. The pilgrim on the wood road (Gallows Wood); he
+  // leads the heroes up the Shattered Ascent and dies there (docs/nicholas-art-prompts.md)
+  NICHOLAS: { name: 'Nicholas', portrait: 'nicholas' },
   // Nick's friend Vincent: the Gatewright, who built the Iron Gates (data/stageGates.js)
   VINCENT: { name: 'Vincent' },
 };

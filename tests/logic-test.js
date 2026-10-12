@@ -22,7 +22,7 @@ import { STAGE_MINE } from '../src/data/stageMine.js';
 import { STAGE_ASCENT } from '../src/data/stageAscent.js';
 import { STAGE_GATES } from '../src/data/stageGates.js';
 import { STAGES } from '../src/data/stages.js';
-import { LINE, NPC } from '../src/stage/Story.js';
+import { LINE, NPC, GUIDE } from '../src/stage/Story.js';
 import { SPEAKERS, NARRATION, PORTRAIT_IDS, speakerInfo } from '../src/data/speakers.js';
 import { Progress, PROGRESS } from '../src/progression/Progress.js';
 import { SKILL_TREES } from '../src/data/skills.js';
@@ -3305,6 +3305,84 @@ test('ascent: Siege Commander Orsk has the Keep fire on his own camp at two thir
   assert(phases.join() === 'barrage,berserk' && b.raged, `berserk (${phases})`);
 });
 
+
+test('ascent: Nicholas (Nick) guides every hero up the mountain, ahead of the lead, back in a fight, and dies in Orsk\'s camp after his last words', () => {
+  for (const hero of ['warrior', 'mage', 'rogue']) {
+    let worst = 0; let ahead = 0; let samples = 0; let died = 0;
+    const r = campaignRun(STAGE_ASCENT, hero, {
+      frames: 60 * 420,
+      onTick: (w, st, p, f) => {
+        if (f === 0) w.events.on('npcDied', (e) => { if (e.npc.id === 'nicholas') died++; });
+        ascentBreaker(w, st, p); p.health = p.stats.maxHealth;
+        const n = st.story.npc('nicholas');
+        if (n.state !== 'guide' || f < 200) return;
+        assert(st.terrain.safeAt(n.x, n.z), `${hero}: he stands on firm ground (x ${Math.round(n.x)}, z ${Math.round(n.z)})`);
+        worst = Math.max(worst, Math.abs(n.x - p.x)); samples++; if (n.x > p.x) ahead++;
+      },
+    });
+    const n = r.stage.story.npc('nicholas');
+    assert(r.won === 1, `${hero}: out of the level (stuck at ${Math.round(r.x)})`);
+    for (const id of ['guide', 'rocks', 'stair', 'stones', 'bridge', 'lastWords', 'gates']) assert(r.beats.includes(id), `${hero}: ${id} played (${r.beats})`);
+    assert(r.beats.indexOf('lastWords') < r.beats.indexOf('gates'), 'his last words before the gates');
+    assert(n.state === 'dead' && died === 1, `${hero}: dead once his words are said (${n.state})`);
+    assert(worst <= GUIDE.far + 300, `${hero}: never far from the hero (${Math.round(worst)} px)`);
+    assert(ahead / samples > 0.4, `${hero}: he leads, mostly (${ahead}/${samples} ahead)`);
+  }
+});
+
+test('ascent: the guide waits short of a fight that is not won, keeps behind the heroes in one, and the Keep\'s barrage strikes him down', () => {
+  {
+    // the cliff road: he stops short of where its fight starts
+    const { st, p, run } = ascentSetup(0, { x: 900, z: 420 });
+    const n = st.story.npc('nicholas');
+    const fightAt = STAGE_ASCENT.sections[0].fightAt;
+    p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+    run(60 * 8, () => { p.health = p.stats.maxHealth; });
+    assert(n.state === 'guide' && n.x <= fightAt - GUIDE.wait + 1 && n.x > p.x, `he waits at the fight line (${Math.round(n.x)}, fight at ${fightAt})`);
+    // a man on the road: he keeps back behind the hero
+    const e = createEnemy(st.world, 'grunt', p.x + 100, p.z); e.entering = false; e.controller = new Controller(); st.placeOnGround(e);
+    run(60 * 4, () => { p.health = p.stats.maxHealth; if (e.alive) e.health = e.stats.maxHealth; });
+    assert(n.x < p.x - GUIDE.back * 0.6, `back behind the hero in a fight (${Math.round(n.x)} vs ${Math.round(p.x)})`);
+  }
+  {
+    const { world, p, st, run } = ascentSetup(ASC_SEC('camp'), { x: 8000, z: 440 });
+    const n = st.story.npc('nicholas');
+    assert(n.state === 'guide', `rising in the camp, he is with you (${n.state})`);
+    for (const b of st.story.beats) if (['struck', 'lastWords'].includes(b.id)) { b.fired = false; st.story.done.delete(b.id); }
+    const beats = []; world.events.on('storyBeat', (e) => beats.push(e.beat.id));
+    bossUp(st, run, p);
+    st.boss.health = st.boss.stats.maxHealth * 0.6;
+    run(4, () => { p.health = p.stats.maxHealth; });
+    assert(n.state === 'dying', `the Keep's stones strike him down (${n.state})`);
+    // the hero falls in the fight: back at the checkpoint he is on his feet again
+    st.respawn();
+    assert(n.state === 'guide' && !st.story.done.has('struck'), `up again for the fight again (${n.state})`);
+    p.x = 8000; st.placeOnGround(p);
+    bossUp(st, run, p);
+    st.boss.health = st.boss.stats.maxHealth * 0.6;
+    run(4, () => { p.health = p.stats.maxHealth; });
+    assert(n.state === 'dying', 'struck again');
+    run(60 * 60, () => { p.health = p.stats.maxHealth; killFoes(world); for (const pl of st.players) pl.controller.registerPress?.('padRight'); });
+    assert(beats.includes('struck') && beats.includes('lastWords'), `his cry and his last words (${beats})`);
+    assert(n.state === 'dead', `then he is gone (${n.state})`);
+  }
+  {
+    // starting past the camp, he is already gone; starting before it, he walks on with you
+    const { st } = ascentSetup(ASC_SEC('pass'));
+    assert(st.story.npc('nicholas').state === 'gone' && st.story.done.has('lastWords'), 'past the camp: gone, his words spent');
+    const b = ascentSetup(ASC_SEC('battery'));
+    const n = b.st.story.npc('nicholas');
+    assert(n.state === 'guide' && Math.abs(n.x - STAGE_ASCENT.sections[ASC_SEC('battery')].spawn.x) < 500, `at the battery: with you (${n.state} at ${Math.round(n.x)})`);
+  }
+});
+
+test('wood: the pilgrim is Nicholas (Nick), who says he will meet them on the far side of the mountain', () => {
+  const pg = STAGE_WOOD.npcs.find((n) => n.id === 'pilgrim');
+  const beat = STAGE_WOOD.story.find((b) => b.id === 'pilgrim');
+  assert(pg.name === 'Nicholas' && pg.art === 'nicholas' && beat.lines.every(([w]) => w === 'NICHOLAS'), 'his name, his art, his voice');
+  assert(speakerInfo('NICHOLAS').name === 'Nicholas' && speakerInfo('NICHOLAS').portrait === 'nicholas', 'his portrait file');
+  assert(STAGE_ASCENT.npcs.some((n) => n.id === 'nicholas' && n.guide), 'and he guides them on the ascent');
+});
 
 // ------------------------------------------------------------ The Iron Gates (level 5)
 

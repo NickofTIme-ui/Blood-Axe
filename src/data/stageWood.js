@@ -204,7 +204,8 @@ export const STAGE_WOOD = {
       id: 'convoy', name: 'the prisoners in the wagon', x: 6080, z: 320, pose: 'convoy', rescue: 'convoy', tag: 'convoy',
       flee: { x: 5700, z: 500 }, gather: { x: 8520, z: 480 },
     },
-    { id: 'pilgrim', name: 'a pilgrim', x: 8550, z: 470, pose: 'wounded', talk: 'pilgrim', ask: true },
+    // (Nicholas, the mountain guide: he meets them again on the Shattered Ascent)
+    { id: 'pilgrim', name: 'Nicholas', art: 'nicholas', x: 8550, z: 470, pose: 'wounded', talk: 'pilgrim', ask: true },
   ],
 
   story: [
@@ -234,7 +235,14 @@ export const STAGE_WOOD = {
     { id: 'pack', on: 'phase:kennels:pack', lines: [['HOUNDMASTER', 'Up, my pack! Up! Pull them down!']] },
     { id: 'frenzy', on: 'phase:kennels:frenzy', lines: [['HOUNDMASTER', 'Then I will feed you to them myself!']] },
     { id: 'gathered', at: 8580, calm: true, if: 'rescued:joren', lines: [['JOREN', 'We followed you. Where the Oath Keepers walk, the road is safe.']] },
-    { id: 'pilgrim', calm: true, lines: [['PILGRIM', 'The rocks came down at dawn. Their own men did it, to close the pass behind them.'], ['PILGRIM', 'The carts went into the old mine. Under the mountain.']] },
+    {
+      id: 'pilgrim', calm: true,
+      lines: [
+        ['NICHOLAS', 'The rocks came down at dawn. Their own men did it, to close the pass behind them.'],
+        ['NICHOLAS', 'The carts went into the old mine. Under the mountain.'],
+        ['NICHOLAS', 'I am Nicholas. I guide folk over this mountain, or I did. Go under it. I will find you on the far side.'],
+      ],
+    },
     {
       id: 'turn', at: 8780, calm: true, hold: true,
       lines: [

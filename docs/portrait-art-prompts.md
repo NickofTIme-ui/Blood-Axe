@@ -32,7 +32,7 @@ Then add one character line:
 | `vincent` | Vincent, the Gatewright (from his photo) | See `docs/vincent-art-prompts.md`: made from Vincent's photo, like Nicholas. |
 | `mathew` | Mathew (a townsman) | A thin townsman in his 30s, hollow cheeks, brown hair tied back, patched brown tunic, a carpenter's apron, wary and astonished. |
 | `irvolino` | Irvolino (the miller) | A heavy-set miller in his 40s, round face, thick black moustache, flour and soot on his face and apron, red-rimmed eyes from smoke, coughing relief. |
-| `nicholas` | Nicholas (the pilgrim) | A weathered pilgrim in his 60s, hooded grey travelling cloak, long white beard, a wooden pilgrim's token on a cord, a bandage round his head. |
+| `nicholas` | Nicholas, the mountain guide (Nick himself) | Painted from Nick's photo: use the prompt in `docs/nicholas-art-prompts.md` and attach the photo (project files `nick-npc/nick-photo.jpeg`). |
 | `hale` | Hale the smith | A big blacksmith in his 50s, bald, thick grey beard, leather apron, burned forearms, wounded and bleeding at the shoulder. |
 | `mira` | Mira | A village mother in her 30s, long dark-brown hair loose and wild, plain russet dress, ash on her face, fierce and frightened. |
 | `tam` | Tam | A village boy about 10, mop of red-brown hair, soot all over his face, oversized tunic, brave grin. |
