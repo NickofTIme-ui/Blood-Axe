@@ -572,7 +572,7 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - Every story line now shows in `src/view/DialogueBox.js`: navy panel, gold frame, the
   speaker's portrait on the left, their name in gold, a pulsing ▸. Quiet ground, held
   scenes and the king's cutaways get the full box; a line said while enemies are alive
-  gets a slim strip (64 px) on the bottom edge so the fight stays in view. Off-screen
+  gets a slim strip (46 px, 520 wide) on the bottom edge (the full box is 600 x 84, centred) so the fight stays in view. Off-screen
   cries and sounds (`VOICE`) show as italic narration with no portrait.
 - Names and portrait files: `src/data/speakers.js`. Nick's names went to the voices that
   only had a trade: Daniel (MINER), Alex (PRISONER), Vincent (REEVE), Mathew (TOWNSMAN),
