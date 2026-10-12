@@ -17,6 +17,7 @@ import { simVersion } from '../net/Version.js';
 import { buildTime } from '../net/Link.js';
 import { STAGES } from '../data/stages.js';
 import { TEST, toggleTestMode, showTestTag } from '../config/testMode.js';
+import { GROUND_TRY, toggleGroundTry } from '../config/groundTry.js';
 import { sharedProgress } from '../progression/Progress.js';
 
 export class TitleScene extends Phaser.Scene {
@@ -108,7 +109,8 @@ export class TitleScene extends Phaser.Scene {
   // it has been started), then a new campaign, two players on one machine, and the
   // DIRECTOR'S CUT: the earlier builds and modes — the Oath Road (the first stage, one or
   // two players), online co-op (it plays the Oath Road) and THE GALLOWS ASCENT (the
-  // platforming slice, data/stageGallows.js) — and RESET HERO LEVEL (Progress.resetLevel).
+  // platforming slice, data/stageGallows.js) — RESET HERO LEVEL (Progress.resetLevel), TEST MODE
+  // and NEW GROUND (config/groundTry.js).
   makeButtons(y, page = 'main', delay = 1500) {
     const W = SETTINGS.width;
     for (const b of this.buttons ?? []) b.c.destroy();
@@ -142,8 +144,9 @@ export class TitleScene extends Phaser.Scene {
       entries.push([W / 2 + 270, y - 116, 'ONLINE CO-OP', 230, () => this.openLobby()]);
       entries.push([W / 2 - 190, y - 58, 'THE GALLOWS ASCENT', 300, () => this.go('solo', null, 'gallows')]);
       entries.push([W / 2 + 190, y - 58, this.resetText(), 330, () => this.resetLevel()]);
-      entries.push([W / 2 - 150, y, this.testText(), 260, () => this.toggleTest(), { size: 19 }]);
-      entries.push([W / 2 + 150, y, 'BACK', 200, () => this.closeCut()]);
+      entries.push([W / 2 - 270, y, this.testText(), 230, () => this.toggleTest(), { size: 19 }]);
+      entries.push([W / 2, y, this.groundText(), 250, () => this.toggleGround(), { size: 19 }]);
+      entries.push([W / 2 + 270, y, 'BACK', 200, () => this.closeCut()]);
     }
     this.buttons = entries.map(([x, by, label, w, act, opts], i) => {
       const b = this.makeButton(x, by, label, w, act, delay + i * 80, opts);
@@ -154,6 +157,7 @@ export class TitleScene extends Phaser.Scene {
     this.button = this.buttons[0];
     this.resetBtn = page === 'cut' ? this.buttons[4] : null;
     this.testBtn = page === 'cut' ? this.buttons[5] : null;
+    this.groundBtn = page === 'cut' ? this.buttons[6] : null;
     showTestTag();
     this.armedReset = false;
     this.pick(0);
@@ -168,6 +172,17 @@ export class TitleScene extends Phaser.Scene {
     toggleTestMode();
     playSfx(this, TEST.on ? 'finisher' : 'block', { volume: 0.5, pitch: TEST.on ? 200 : -400 });
     b.label.setText(this.testText());
+  }
+
+  // NEW GROUND (config/groundTry.js): a level's candidate ground painting instead of its own.
+  groundText() { return `NEW GROUND:  ${GROUND_TRY.on ? 'ON' : 'OFF'}`; }
+
+  toggleGround() {
+    const b = this.groundBtn;
+    if (this.buttons[this.picked] !== b) this.pick(this.buttons.indexOf(b)); // (clicked)
+    toggleGroundTry();
+    playSfx(this, GROUND_TRY.on ? 'finisher' : 'block', { volume: 0.5, pitch: GROUND_TRY.on ? 200 : -400 });
+    b.label.setText(this.groundText());
   }
 
   resetText() { return `RESET HERO LEVEL  (LV ${sharedProgress(this.registry).level})`; }
