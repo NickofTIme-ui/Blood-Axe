@@ -123,7 +123,7 @@ export function drawScorpion(sv, hz) {
   const cam = s.cameras.main.worldView;
   const on = !!hz.manned;
   g.setVisible(on);
-  if (!on) hideVincent(hz);
+  if (!on) { hideVincent(hz); hz.eimg?.setVisible(false); }
   const T = sv.stage.terrain;
   const ground = (x, z) => (T ? Math.max(0, T.groundAt(x, z)) : 0);
   const t = s.time.now / 16.7;
@@ -151,7 +151,12 @@ export function drawScorpion(sv, hz) {
     const kick = Math.max(0, (hz.recoil ?? 0)) * 1.2;
     hz.recoil = Math.max(0, (hz.recoil ?? 0) - 1);
     const ex = hz.x - kick;
-    engine(g, ex, y, ek, hz.aim ? Math.max(0, Math.min(1, (hz.t - hz.aim.from) / Math.max(1, hz.aim.fire - hz.aim.from))) : 1, !hz.recoil || hz.recoil < 4);
+    if (SPRITES.scorpion) {
+      // the painted scorpion (made in ChatGPT: docs/vincent-art-prompts.md)
+      const S = SPRITES.scorpion;
+      hz.eimg ??= s.add.image(0, 0, S.key, 'f0').setOrigin(0.5, 1);
+      hz.eimg.setPosition(ex, y + 2).setScale(k * 0.5).setDepth(z).setVisible(true);
+    } else engine(g, ex, y, ek, hz.aim ? Math.max(0, Math.min(1, (hz.t - hz.aim.from) / Math.max(1, hz.aim.fire - hz.aim.from))) : 1, !hz.recoil || hz.recoil < 4);
     // Vincent at the back of it: winding it, aiming, pulling the lever; at ease between shots
     const pose = hz.recoil > 0 ? 'loose' : hz.aim ? (hz.t - hz.aim.from < (hz.aim.fire - hz.aim.from) * 0.55 ? 'crank' : 'aim') : 'stand';
     drawVincent(s, hz, g, ex - 46 * ek, y + 2, k, pose, t, 1, z + 0.2);

@@ -615,7 +615,8 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - **Art to make on the PC (ChatGPT, from his photo, project files `vincent-npc/vincent-photo.png`):**
   `assets/ui/portraits/vincent.png` and a 9-pose strip `assets/sprites/npc/vincent.png`.
   Prompts in `docs/vincent-art-prompts.md`. Until they're in he's a code-drawn stand-in
-  (`view/VincentView.js`) and a hooded "V" in the dialogue box. The scorpion is code-drawn;
-  an optional painted prompt is there too.
+  (`view/VincentView.js`) and a hooded "V" in the dialogue box. The scorpion needs a
+  ChatGPT image too (`assets/sprites/npc/scorpion.png`, prompt in the same file). Nick: all
+  art is made in ChatGPT; the cloud doesn't draw art in code.
 - Tests: three new "gates: Vincent" tests; the Iron Gates walker now frees him. Checked in a
   headless browser (the cage, the yard, three Ashen on one bolt); nobody has played it yet.

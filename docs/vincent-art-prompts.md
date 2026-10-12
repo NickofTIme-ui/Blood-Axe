@@ -93,12 +93,12 @@ slightly different sizes. The order matters (`view/VincentView.js` `VINCENT_CELL
 > trigger lever with both hands; 6-8 a confident walk (three frames); 9 one arm up, waving
 > the others on, grinning. No text, nothing touching, no ground line.
 
-## 3. (Optional) the Gate Scorpion: `assets/sprites/npc/scorpion.png`
+## 3. The Gate Scorpion: `assets/sprites/npc/scorpion.png`
 
-The scorpion is drawn in code for now (`view/VincentView.js` `engine`). If Nick wants it
-painted, this is the prompt; wiring it in is a small cloud job afterwards.
+All art comes from ChatGPT (Nick, 12 October 2026). The game already looks for this file
+(`data/levelArt.js` `SPRITE_SHEETS.scorpion`) and uses it in place of the placeholder.
 
-> A single game sprite on plain magenta (#FF00FF), side view facing right, same painted
+> A single game sprite on plain black, side view facing right, same painted
 > dark-fantasy pixel style as the attached villager strip: a medieval siege crossbow (a
 > "scorpion") on a two-wheeled wooden cart. A long oak stock with a winch drum and handle at
 > the back, two curved iron bow arms at the front, a taut string, a heavy iron-headed bolt in
@@ -110,6 +110,6 @@ painted, this is the prompt; wiring it in is a small cloud job afterwards.
 1. Use the "Bloody Axe" ChatGPT project. Do the portrait in the portraits chat, and the sheet
    in a new chat called **BA · Vincent**, with the photo and `villager.png` attached.
 2. Save each one with the file name above it, put it in the folder, and commit it. The game
-   picks up both files on the next load (`data/speakers.js` finds `vincent.png` by his key;
+   picks up all three files on the next load (`data/speakers.js` finds `vincent.png` by his key;
    `data/levelArt.js` `SPRITE_SHEETS.vincent`). Until then he shows as a code-drawn stand-in
    and the dialogue box shows a hooded bust with a V.
