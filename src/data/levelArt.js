@@ -106,6 +106,20 @@ export const SPRITE_SHEETS = {
   boy: { file: 'assets/sprites/npc/boy.png', frames: 6, height: 110 },
   elder: { file: 'assets/sprites/npc/elder.png', frames: 4, height: 150 },
   captive: { file: 'assets/sprites/npc/captive.png', frames: 6, height: 250 }, // (big: the hanging pose's rope makes it the tallest, and a standing man must still match the heroes)
+  // the mine's chained prisoners (view/NpcView.js PRISONERS): the villager and elder sheets
+  // again, cut at the heroes' height (a standing man as tall as the captive above) and so
+  // at more of their painted detail, instead of the village's smaller cut
+  miner: { file: 'assets/sprites/npc/villager.png', frames: 8, height: 205 },
+  'miner-old': { file: 'assets/sprites/npc/elder.png', frames: 4, height: 192 },
+  // ...until each prisoner has his own sheet (docs/mine-prisoner-art-prompts.md; picked up
+  // as soon as the file is in the folder): 7 poses, kneel at the chain, plead, cower,
+  // run x3, stand
+  'prisoner-tobin': { file: 'assets/sprites/npc/prisoner_tobin.png', frames: 7, height: 205 },
+  'prisoner-hilde': { file: 'assets/sprites/npc/prisoner_hilde.png', frames: 7, height: 195 },
+  'prisoner-bram': { file: 'assets/sprites/npc/prisoner_bram.png', frames: 7, height: 215 },
+  'prisoner-a': { file: 'assets/sprites/npc/prisoner_a.png', frames: 7, height: 210 },
+  'prisoner-b': { file: 'assets/sprites/npc/prisoner_b.png', frames: 7, height: 205 },
+  'prisoner-c': { file: 'assets/sprites/npc/prisoner_c.png', frames: 7, height: 200 },
   'hound-walk': { file: 'assets/enemies/strips/hound_walk.png', frames: 6, height: 120 },
   'hound-atk1': { file: 'assets/enemies/strips/hound_atk1.png', frames: 4, height: 120 },
   'hound-react': { file: 'assets/enemies/strips/hound_react.png', frames: 3, height: 120 },

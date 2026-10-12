@@ -124,6 +124,16 @@ export const STAGE_WOOD = {
       boss: {
         type: 'stalker', name: 'The Houndmaster', health: 3.6, damage: 1.1, escort: ['hound', 'hound'],
         entrance: { from: 140, to: 330, speed: 72, stepEvery: 28, awe: 30 },
+        // beaten: his crimes and his sentence (stage/Sentence.js)
+        sentence: {
+          speaker: 'HOUNDMASTER',
+          crimes: [
+            'You ran the convoy that dragged our people north in cages.',
+            'You hanged them from the trees, one by one, to keep the rest afraid.',
+            'You fed the ones who ran to your dogs.',
+          ],
+          last: 'My dogs will howl for me tonight. Let them find you.',
+        },
         phases: [
           { id: 'pack', at: 0.66, adds: ['hound', 'hound', 'hound'], ai: { attackCooldown: [24, 56] } },
           { id: 'frenzy', at: 0.33, rage: true, adds: ['hound', 'hound', 'stalker'], damage: 1.25, speed: 1.2, ai: { attackCooldown: [16, 40], comboChance: 0.8 } },

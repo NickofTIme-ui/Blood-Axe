@@ -12,7 +12,7 @@ import { furyArmor } from './Skills.js';
 import { juggles, juggleHit } from './Juggle.js';
 
 const FEEL = SETTINGS.feel;
-const ATTACK_STATES = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'special1', 'special2'];
+const ATTACK_STATES = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'special1', 'special2', 'shoulder'];
 
 // RIPOSTE: a hero who parries a blow has a moment to answer it. His next hit on the man
 // he parried is a riposte: a sure critical, harder still, with a long freeze.

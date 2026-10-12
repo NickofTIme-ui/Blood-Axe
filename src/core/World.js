@@ -99,6 +99,15 @@ export class World {
     for (const f of this.fighters) if (!this.hold.keep.has(f)) f.vx = f.vz = 0;
   }
 
+  // Let a hold go before its time (a boss's sentence, stage/Sentence.js): everyone it
+  // froze moves again on the next tick.
+  release() {
+    const h = this.hold;
+    this.hold = null;
+    if (!h) return;
+    for (const f of this.fighters) if (!h.keep.has(f)) f.awe = 0;
+  }
+
   // One fixed step (1/60 s).
   tick() {
     this.frame++;
