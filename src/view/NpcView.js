@@ -63,8 +63,33 @@ const CELLS = {
   boy: { stand: 0, cower: 1, wave: 2, run: RUN },
   elder: { stand: 0, sit: 1, wave: 2, kneel: 3 },
   // the wood's captives: bound on the rope, hanging, in the cage, at its bars, limping
-  captive: { bound: 0, hang: 1, cower: 2, grip: 3, limp: [4, 5], stand: 4 },
+  captive: { bound: 0, hang: 1, cower: 2, grip: 3, limp: [4, 5], stand: 4, run: [4, 5] },
 };
+// the mine's prisoners: the same sheets cut bigger (data/levelArt.js); the old man has no
+// run, so he hobbles on his standing pose (sinking on each step, like the run)
+const HOBBLE = [0, 0, 0, 0];
+CELLS.miner = CELLS.villager;
+CELLS['miner-old'] = { stand: 0, sit: 1, wave: 2, kneel: 3, run: HOBBLE };
+const PRISONER = { kneel: 0, wave: 1, cower: 2, run: RUN, stand: 6, bound: 0 };
+for (const id of ['tobin', 'hilde', 'bram', 'a', 'b', 'c']) CELLS[`prisoner-${id}`] = PRISONER;
+
+// Who is chained at the ore face (stageMine.js / stageAscent.js npcs with pose 'chained'),
+// one look per man: his sheet, a tint (soot, torchlight, a pale one who hasn't seen the
+// sun in a year), his size, and the two poses he moves between while he's chained (each
+// on his own beat). `art`: his own painted sheet, used (untinted, full size) once it's in
+// the folder. Anyone not listed gets the first miner's look.
+const PRISONERS = {
+  tobin: [{ art: 'prisoner-tobin', who: 'miner-old', tint: 0xd8d0c4, s: 0.97, poses: ['kneel', 'wave'] }],
+  hilde: [{ art: 'prisoner-hilde', who: 'captive', tint: 0xe6d6c4, s: 0.94, poses: ['bound', 'cower'] }],
+  bram: [{ art: 'prisoner-bram', who: 'captive', tint: 0xd0c8c0, s: 1.02, poses: ['bound', 'cower'] }],
+  miners: [
+    { art: 'prisoner-a', who: 'miner', tint: 0xc8bcae, s: 1.04, poses: ['wave', 'stand'], dz: 0 },
+    { art: 'prisoner-b', who: 'captive', tint: 0xbab6bc, s: 0.96, poses: ['cower', 'bound'], dz: 6 },
+    { art: 'prisoner-c', who: 'miner', tint: 0xe2d2bc, s: 0.92, poses: ['kneel', 'cower'], dz: -4 },
+  ],
+};
+const IRON = 0x5e5e66;
+const IRON_LIT = 0x9a9aa4;
 
 export class NpcView {
   constructor(scene, stage) {
@@ -100,7 +125,7 @@ export class NpcView {
     const c = CELLS[who][pose] ?? CELLS[who].stand;
     const beat = Math.floor(t / 7);
     const i = Array.isArray(c) ? c[beat % c.length] : c;
-    if (c === RUN) y += RUN_BOB[beat % 4] * k;
+    if (c === RUN || c === HOBBLE) y += RUN_BOB[beat % 4] * k;
     let img = v.imgs[this.curN];
     if (!img) v.imgs.push(img = this.scene.add.image(x, y, S.key, 'f0').setOrigin(0.5, 1));
     this.curN++;
@@ -108,10 +133,10 @@ export class NpcView {
     // cowering), each man on his own beat
     const now = this.scene.time.now; const ph = (v.seed ?? 0) * 0.9 + this.curN * 1.7;
     const br = c === RUN ? 0 : Math.sin(now * 0.0026 + ph);
-    const sway = c === RUN ? 0 : pose === 'hang' ? 3.5 * Math.sin(now * 0.0017 + ph) : pose === 'cower' ? 0.9 * Math.sin(now * 0.021 + ph) : 1.1 * Math.sin(now * 0.0011 + ph);
+    const sway = c === RUN ? 0 : c === HOBBLE ? 4 + 2 * (beat % 2) : pose === 'hang' ? 3.5 * Math.sin(now * 0.0017 + ph) : pose === 'cower' ? 0.9 * Math.sin(now * 0.021 + ph) : 1.1 * Math.sin(now * 0.0011 + ph);
     img.setTexture(S.key, `f${Math.min(i, S.count - 1)}`).setPosition(x, y).setScale(k * 0.5 * (1 - 0.008 * br), k * 0.5 * (1 + 0.018 * br))
       .setAngle(dir < 0 ? -sway : sway)
-      .setFlipX(dir < 0).setDepth(g.depth + 0.01 * this.curN).setAlpha(g.alpha).setVisible(true);
+      .setFlipX(dir < 0).setDepth(g.depth + 0.01 * this.curN).setAlpha(g.alpha).setTint(this.tint ?? 0xffffff).setVisible(true);
     return true;
   }
 
@@ -163,6 +188,7 @@ export class NpcView {
     const g = v.g.clear();
     this.cur = v; this.curN = 0;
     for (const img of v.imgs) img.setVisible(false);
+    v.fg?.clear();
     const t = this.scene.time.now / 16.7;
     this.drawPrompt(n, v);
     if (n.pose === 'noose' || n.pose === 'cage') { this.drawCaptive(n, v, t); return; }
@@ -198,23 +224,57 @@ export class NpcView {
       if (!this.figure(g, n.x, y, k, pose, t, tun(2), dir, 'mother')) this.figure(g, n.x + 22 * dir * -1, y + 4, k * 0.68, pose, t + 7, tun(3), dir);
       return;
     }
-    if (n.pose === 'chained') {
-      // at the ore face, chained by the ankle to a post (the shackle prop): bent over a
-      // pick until a hero comes, then pulling at the chain
-      const many = n.group ? 3 : 1;
-      for (let i = 0; i < many; i++) {
-        const fx = n.x + 26 + i * 24; const fy = y + (i % 2) * 5;
-        const p = n.state === 'trapped' ? (i === 0 ? 'wave' : 'cower') : pose;
-        this.figure(g, fx, fy, k * (i === 1 ? 0.9 : 1), p, t + i * 6, tun(i + 2), n.state === 'trapped' ? -1 : dir);
-        if (n.state === 'trapped') g.lineStyle(2 * k, 0x8a8a90, 0.9).lineBetween(fx - 3 * k, fy - 2 * k, n.x + 4, y - 30 * k);
-      }
-      return;
-    }
+    if (n.pose === 'chained') { this.drawChained(n, v, g, y, k, t, pose, dir); return; }
     if (n.pose === 'group' || n.pose === 'convoy') {
       for (let i = 0; i < 3; i++) this.figure(g, n.x - 30 + i * 28, y + (i % 2) * 6, k * (i === 1 ? 0.75 : 1), pose, t + i * 5, tun(i + 4), dir);
       return;
     }
     this.figure(g, n.x, y, k, pose, t, tun(0), dir, n.art);
+  }
+
+  // At the ore face, chained by the ankle to a post (the shackle prop): each man in his own
+  // look (PRISONERS), moving between his two poses (on his knees, pulling at the chain,
+  // pleading) until the post is broken; then up and away like the rest.
+  drawChained(n, v, g, y, k, t, pose, dir) {
+    const looks = PRISONERS[n.id] ?? PRISONERS.miners.slice(0, n.group ? 3 : 1);
+    const fg = (v.fg ??= this.scene.add.graphics()).setDepth(n.z + 0.5).setAlpha(g.alpha); // (the chains, over his feet)
+    const chained = n.state === 'trapped';
+    const now = this.scene.time.now;
+    looks.forEach((L, i) => {
+      const fx = (chained ? n.x + 34 : n.x) + i * 40 - (chained ? 0 : (looks.length - 1) * 20);
+      const fy = y + (L.dz ?? 0);
+      const own = !!SPRITES[L.art];
+      const sheet = own ? L.art : SPRITES[L.who] ? L.who : SPRITES.captive ? 'captive' : undefined;
+      // (a slow beat of his own: some seconds on his knees, some pulling and calling out)
+      const beat = Math.floor((now / 2600) + v.seed * 0.37 + i * 1.3);
+      const p = chained ? L.poses[beat % L.poses.length] : pose === 'cower' || pose === 'wave' ? 'stand' : pose;
+      this.tint = own ? undefined : L.tint;
+      const drawn = this.figure(g, fx, fy, k * (own ? 1 : L.s), p, t + i * 6, TUNIC[(v.seed + i + 2) % TUNIC.length], chained ? -1 : dir, sheet);
+      this.tint = undefined;
+      if (chained) this.chain(fg, fx + (drawn ? 6 : -3) * k, fy - 4 * k, n.x + 6 * k, y - 34 * k, k, p === 'wave' || p === 'stand');
+    });
+  }
+
+  // an iron chain from a man's ankle to the post: a cuff, then links, alternately face-on
+  // and edge-on, hanging slack (taut while he pulls on it)
+  chain(g, ax, ay, px, py, k, taut) {
+    const sag = (taut ? 3 : 9) * k;
+    const d = Math.hypot(px - ax, py - ay);
+    const n = Math.max(3, Math.round(d / (7 * k)));
+    const at = (u) => [ax + (px - ax) * u, ay + (py - ay) * u + sag * 4 * u * (1 - u)];
+    for (let i = 0; i < n; i++) {
+      const [x0, y0] = at(i / n); const [x1, y1] = at((i + 1) / n);
+      const mx = (x0 + x1) / 2; const my = (y0 + y1) / 2;
+      if (i % 2 === 0) {
+        g.lineStyle(2.2 * k, IRON, 1).strokeEllipse(mx, my, 8 * k, 5 * k);
+        g.lineStyle(1 * k, IRON_LIT, 0.8).beginPath().arc(mx, my - 0.6 * k, 3.2 * k, Math.PI * 1.1, Math.PI * 1.9).strokePath();
+      } else {
+        g.lineStyle(2.4 * k, IRON, 1).lineBetween(x0 + (x1 - x0) * 0.15, y0 + (y1 - y0) * 0.15, x1 - (x1 - x0) * 0.15, y1 - (y1 - y0) * 0.15);
+      }
+    }
+    // the cuff round his ankle
+    g.fillStyle(0x3e3e44, 1).fillRoundedRect(ax - 5 * k, ay - 3 * k, 10 * k, 6 * k, 2 * k);
+    g.fillStyle(IRON_LIT, 0.7).fillRect(ax - 4 * k, ay - 3 * k, 8 * k, 1.2 * k);
   }
 
   // someone who didn't make it: on the ground, still
