@@ -13,12 +13,13 @@ export const MUSIC = {
   wilderness: 'assets/audio/wilderness.mp3',        // Gallows Wood (a stage's `music` picks its track)
   caves: 'assets/audio/caves.mp3',                  // the Hollow Mountain ("Fiends Path")
   cliffs: 'assets/audio/cliffs.mp3',                // the Shattered Ascent, the cliff roads ("Turtle Village II")
+  sentence: 'assets/audio/sentence.mp3',            // a beaten boss's execution, played once ("Black Cell": stage/Sentence.js)
 };
 
 // Per-track level, so every track sits as loud as the battle track (measured RMS:
 // battle -18.5 dB, wilderness -11.0 dB, caves -11.6 dB, cliffs -13.1 dB; title is
 // 5.3 dB hotter than battle)
-const GAIN = { wilderness: 0.42, caves: 0.45, cliffs: 0.54, title: 0.55 };
+const GAIN = { wilderness: 0.42, caves: 0.45, cliffs: 0.54, title: 0.55, sentence: 0.85 }; // (sentence: -15.7 dB, left a touch hot)
 
 let current = null; // { key, sound }
 let early = null;   // the title theme the opening cinematic started, before Phaser exists
@@ -99,6 +100,26 @@ export function playMusic(scene, key) {
   current = { key, sound: sound.add(key) };
   if (sound.locked) sound.once('unlocked', start);
   else start();
+}
+
+// The looped track fades out (a silence, before a cue).
+export function stopMusic(scene, ms = 500) {
+  if (!current) return;
+  const old = current.sound;
+  current = null;
+  fade(scene.game, old, 0, ms, () => old.destroy());
+}
+
+// A cue played once from `at` seconds in (the sentence's music), in place of the looped
+// track; the caller keeps it on time with its setSeek. onEnd when it has played out.
+export function playCue(scene, key, at = 0, onEnd) {
+  if (!scene.cache.audio.exists(key)) return null;
+  stopMusic(scene, 250);
+  const s = scene.sound.add(key);
+  current = { key, sound: s };
+  s.once('complete', () => { if (current?.sound === s) onEnd?.(); });
+  s.play({ loop: false, volume: volume(key), seek: at });
+  return s;
 }
 
 export function toggleMute() {

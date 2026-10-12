@@ -46,7 +46,7 @@ import { sharedProgress } from '../progression/Progress.js';
 import { CHARACTERS } from '../data/characters.js';
 import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
-import { playMusic, toggleMute } from '../core/Music.js';
+import { playMusic, playCue, stopMusic, toggleMute } from '../core/Music.js';
 import { playSfx } from '../core/Sfx.js';
 import { runTickJobs } from '../core/TickJobs.js';
 import { styleMult } from '../combat/Style.js';
@@ -953,7 +953,9 @@ export class ArenaScene extends Phaser.Scene {
   setupSentence(ev) {
     const cam = this.cameras.main;
     ev.on('sentenceStart', ({ boss: b }) => {
-      this.slowmo(0.3, 650);
+      // (no slow motion: the scene runs on the music's time, see syncSentenceMusic)
+      stopMusic(this, 700);
+      this.sentenceSong = null;
       this.fx.shake(5, 14);
       this.rumble(0.8, 0.4, 260);
       cam.zoomTo(this.baseZoom * 1.12, 1100, 'Quad.easeInOut', true);
@@ -1005,6 +1007,22 @@ export class ArenaScene extends Phaser.Scene {
       if (this.sentenceCam) { cam.zoomTo(this.baseZoom, 700, 'Quad.easeInOut', true); this.sentenceCam = false; }
       if (routed.length) this.callout('HIS MEN BREAK AND RUN', '#ffd24a', 24);
     });
+  }
+
+  // The sentence's music (stage/Sentence.js `clock`): it starts when the clock reaches
+  // its first note and is kept on the clock (a skipped line jumps it on) until the blade
+  // falls; then it plays out its fall on its own, and the stage's track comes back.
+  syncSentenceMusic() {
+    const S = this.stage.sentence;
+    if (!S?.running || S.step === 'after' || this.paused) return;
+    const want = S.clock / 60;
+    if (want < 0) return;
+    const s = this.sentenceSong;
+    if (!s) {
+      this.sentenceSong = playCue(this, 'sentence', want, () => {
+        if (this.sys.isActive()) playMusic(this, this.stageData.music ?? 'battle');
+      }) ?? false;
+    } else if (s.isPlaying && Math.abs(s.seek - want) > 0.15) s.setSeek(want);
   }
 
   finisherFX(beat) {
@@ -1294,6 +1312,7 @@ export class ArenaScene extends Phaser.Scene {
       s.afterTick?.(tick, () => snapshot(this.world));
     }
 
+    this.syncSentenceMusic();
     for (const v of this.views.values()) v.update();
     this.liftShadows();
     this.terrainView?.update();

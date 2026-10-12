@@ -109,6 +109,9 @@ export class Story {
   isRescued(id) { return this.rescued.has(id); }
 
   frames(text) { return Math.min(LINE.max, Math.round(LINE.base + text.length * LINE.perChar)); }
+  // How long line i of a beat stays up: the beat's own `times` if it has them (the
+  // sentence, timed to its music), else by its length.
+  lineFrames(beat, i) { return beat.times?.[i] ?? this.frames(beat.lines[i][1]); }
 
   // ------------------------------------------------------------ firing beats
 
@@ -171,8 +174,7 @@ export class Story {
       for (const p of this.stage.players) if (p.alive) { p.awe = Math.max(p.awe ?? 0, 2); p.vx = p.vz = 0; }
     }
     if (c.age < 0) return;
-    const [, text] = c.beat.lines[c.index];
-    let next = c.age >= this.frames(text);
+    let next = c.age >= this.lineFrames(c.beat, c.index);
     if (c.beat.hold && c.age >= LINE.minSkip) {
       for (const p of heroes) if (p.controller.consume('jump', 4) || p.controller.consume('attack', 4)) next = true;
     }
@@ -203,7 +205,7 @@ export class Story {
     const c = this.current;
     if (!c?.beat.hold) return;
     c.index = c.beat.lines.length - 1;
-    c.age = this.frames(c.beat.lines[c.index][1]);
+    c.age = this.lineFrames(c.beat, c.index);
   }
 
   // ------------------------------------------------------------ villagers

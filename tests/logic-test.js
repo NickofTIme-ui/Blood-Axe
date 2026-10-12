@@ -12,6 +12,7 @@ import { CHARACTERS } from '../src/data/characters.js';
 import { ENEMIES, WAVES } from '../src/data/enemies.js';
 import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.js';
 import { Stage } from '../src/stage/Stage.js';
+import { SENTENCE } from '../src/stage/Sentence.js';
 import { STAGE, PROPS } from '../src/data/stage.js';
 import { Terrain, STEP, PIT_LOST } from '../src/stage/Terrain.js';
 import { STAGE_GALLOWS } from '../src/data/stageGallows.js';
@@ -3660,6 +3661,35 @@ test('sentence: the words skip line by line like any held scene (same end); pres
   for (; f < 60 * 12 && !ev.kill.length; f += 20) run(20, (i) => { if (i === 0) c.script = { [c.t + 1]: ['attack'] }; });
   assert(ev.kill.length === 1 && ev.kill[0].sentence, 'sentenced all the same');
   assert(f < 60 * 9, `quicker than sitting through it (${(f / 60).toFixed(1)} s)`);
+});
+
+test('sentence: timed to its music: every hero\'s blade lands on the swell\'s crest; each line gets its share; a skipped line takes the music on with it', () => {
+  for (const hero of ['warrior', 'mage', 'rogue']) {
+    const { world, p, st, ev, run } = sentenceSetup(hero);
+    const b = st.boss;
+    blowOf(world, p, b);
+    const S = st.sentence;
+    let at = null, prev = null, steady = true;
+    world.events.on('sentenceStrike', () => { at = S.clock; });
+    run(60 * 30, () => { if (at == null && prev != null && S.clock !== prev + 1) steady = false; prev = S.clock; });
+    assert(ev.strike.length === 1, `${hero}: executed`);
+    assert(Math.abs(at - SENTENCE.slice) <= 2, `${hero}: the blade lands on the crest (${at} vs ${SENTENCE.slice})`);
+    assert(steady, `${hero}: watched through, the music runs on unbroken (no jumps)`);
+    const beat = st.story.beats.find((x) => x.id === S.beatId) ?? st.story.beats.at(-1);
+    assert(beat.times?.every((t) => t >= SENTENCE.minLine), `${hero}: every line has time to be read (${beat.times})`);
+  }
+  // skipped: the clock jumps on, and the blade still lands on the crest
+  const { world, p, c, st, ev, run } = sentenceSetup('warrior');
+  blowOf(world, p, st.boss);
+  const S = st.sentence;
+  let at = null, jumped = false, prev = null;
+  world.events.on('sentenceStrike', () => { at = S.clock; });
+  run(60 * 30, (i) => {
+    if (S.step === 'speak' && i % 30 === 0) c.script = { [c.t + 1]: ['attack'] };
+    if (prev != null && S.clock > prev + 5) jumped = true;
+    prev = S.clock;
+  });
+  assert(jumped && Math.abs(at - SENTENCE.slice) <= 2, `skipped: the music jumps on, the blade still on the crest (${at})`);
 });
 
 test('sentence: the twins: the first to fall dies fighting; the one left standing kneels for both of them', () => {

@@ -30,6 +30,15 @@
 //   swing  the killing move; on its first active frame his head comes off (a 'kill')
 //   after  the field stays still a moment longer; then it lets go and his men run
 //
+// THE MUSIC (assets/audio/sentence.mp3, Nick's "Black Cell"): the scene is timed to it.
+// `clock` counts the scene's frames on the music's own timeline (frame 0 = the track's
+// first note; the arena plays the track and keeps it on `clock`). Its swell crests at
+// SENTENCE.slice, and that is the frame the blade lands: the lines share out the time
+// left once the executioner stands at his side, and the swing starts so that its first
+// active frame falls on the crest. When the words would need more time than the track
+// gives, the track starts later (clock < 0: silence while he drops to his knees). A line
+// skipped moves the clock (and so the music) on with it.
+//
 // Events: sentenceStart { boss, hero }, sentenceKneel { boss, hero },
 //         sentenceStrike { boss, hero, fatality, dir }, sentenceDone { boss, hero, routed }
 
@@ -46,6 +55,10 @@ export const SENTENCE = {
   after: 80,       // the field stays still after the head falls
   hold: 1e9,       // (the field is held until it's let go)
   edge: 160,       // a routed man is gone this far past the edge of the room
+  slice: 993,      // the music's crest (16.55 s into the track): the blade lands on it
+  arrive: 200,     // about how long he takes to drop and be walked up to (to start the track)
+  pace: 0.8,       // the words may run this much faster than the story's reading pace
+  minLine: 60,     // but no line shorter than this
 };
 
 // The charges when a boss has none of his own.
@@ -66,6 +79,7 @@ export class Sentence {
     this.boss = null;
     this.hero = null;
     this.count = 0;
+    this.clock = 0;
   }
 
   get running() { return this.step !== 'watch'; }
@@ -99,6 +113,24 @@ export class Sentence {
     this.t = 0;
   }
 
+  // He stands at his side: the words share out the time left before the swing (each in
+  // proportion to its length), so the last word ends a breath before the blade falls.
+  timeLines() {
+    const beat = this.stage.story?.beats.find((x) => x.id === this.beatId);
+    if (!beat) return;
+    const nat = this.natural;
+    const sum = nat.reduce((a, n) => a + n, 0);
+    const least = SENTENCE.minLine * nat.length;
+    let left = this.speechEnd - this.clock - 1;
+    // (walked up too late for even the shortest lines: the music steps back to make room)
+    if (left < least) { this.clock -= least - left; left = least; }
+    const times = nat.map((n) => Math.max(SENTENCE.minLine, Math.floor(n * left / sum)));
+    times[times.length - 1] += left - times.reduce((a, n) => a + n, 0); // (the sentence itself takes what's over)
+    beat.times = times;
+    this.off = [0];
+    for (const t of times) this.off.push(this.off.at(-1) + t);
+  }
+
   // Runs every frame. Returns true while it has the stage (the fight logic stands aside).
   update() {
     this.updateRouted();
@@ -110,6 +142,7 @@ export class Sentence {
       if (!this.begin(b)) return false;
     }
     this.t++;
+    this.clock++;
     const b = this.boss;
     const h = this.hero;
     if (!h.alive) { this.abandon(); return false; }
@@ -138,15 +171,22 @@ export class Sentence {
       }
     } else if (this.step === 'speak') {
       const story = this.stage.story;
-      if (this.t === SENTENCE.stand) story?.cue(this.beatId);
+      if (this.t === SENTENCE.stand) { this.timeLines(); story?.cue(this.beatId); }
       // (his own line: he lifts his head to say it)
       b.defiant = story?.line?.who === this.speaker;
+      // the clock follows the words (a skipped line takes the music on with it)
+      const c = story?.current;
+      if (this.off && c?.beat.id === this.beatId && c.age >= 0) {
+        this.sb ??= this.clock - this.off[c.index] - c.age;
+        this.clock = this.sb + this.off[c.index] + c.age;
+      }
       if (this.t > SENTENCE.stand && (!story || story.done.has(this.beatId))) {
+        if (this.sb != null) this.clock = this.sb + this.off.at(-1);
         b.defiant = false;
         this.go('raise');
       }
     } else if (this.step === 'raise') {
-      if (this.t >= SENTENCE.raise) {
+      if (this.clock >= this.swingAt && this.t >= 12) {
         h.facing = Math.sign(b.x - h.x) || h.facing;
         h.fsm.change(this.blowOf.state);
         this.go('swing');
@@ -189,7 +229,18 @@ export class Sentence {
     const def = this.stage.section?.boss?.sentence ?? {};
     this.speaker = def.speaker ?? speakerOf(b.stats.name);
     this.beatId = `sentence:${this.stage.section?.id ?? 'boss'}:${this.count}`;
-    this.stage.story?.beats.push({ id: this.beatId, hold: true, lines: sentenceLines(b, h, def, this.speaker) });
+    const lines = sentenceLines(b, h, def, this.speaker);
+    this.stage.story?.beats.push({ id: this.beatId, hold: true, delay: 0, lines });
+    // the music: the swing starts so its first active frame lands on the crest; the
+    // words fill the time before it. Too many words for the track: it starts later.
+    this.swingAt = SENTENCE.slice - (this.blowOf.frames.startup ?? 0) - 1;
+    this.speechEnd = this.swingAt - SENTENCE.raise;
+    this.natural = lines.map(([, text]) => this.stage.story?.frames(text) ?? 120);
+    const need = Math.round(this.natural.reduce((a, n) => a + n, 0) * SENTENCE.pace);
+    const budget = this.speechEnd - SENTENCE.arrive - SENTENCE.stand;
+    this.clock = -Math.max(0, need - budget);
+    this.off = null;
+    this.sb = null;
     this.go('fall');
     W.events.emit('sentenceStart', { boss: b, hero: h });
     return true;
