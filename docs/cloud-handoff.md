@@ -702,3 +702,7 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - Live on the page, embedded and checked in the running build (boots, Nicholas's walk sheet loads). 333 MB zip, 37 parts, same chunked Chrome upload as before.
 - Includes the first-execution softlock fix and Nicholas's 8-pose walk. Rurik's repaint in `assets/incoming/rurik/` is in the repo but not loaded, so it isn't live.
 - Online play: the softlock fix changed the sim, so both players need this build (refresh the page).
+
+## PC, 2026-10-15: Nick's story change, Rurik earns Oathkeeper (for the cloud)
+- Nick: "so he starts the game with his same sword he has had, and no fire power until receiving the sword and power. passed down by his family bloodline for eons". Rurik starts with his old sword and none of the Oathkeeper/King's Wrath fire powers. Partway through the story he receives Oathkeeper and its power, an heirloom of his bloodline handed down for ages. That's when the fire powers unlock and his look changes.
+- Art: keep the current live `ulric_*` strips (old sword) for before he has it. The repainted set in `assets/incoming/rurik/` becomes his look after he receives it (a second strip set, swapped in at that moment, not a replacement). Where and how he receives it (scene, who hands it over) is still to be decided with Nick.
