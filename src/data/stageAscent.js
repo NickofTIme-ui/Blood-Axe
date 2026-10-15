@@ -142,7 +142,7 @@ export const STAGE_ASCENT = {
       rest: { x: 7680, z: 320, kind: 'oath' },
       // the King's Siege Commander: the Berserker's kind, in a commander's plate
       boss: {
-        type: 'berserker', name: 'Siege Commander Orsk', health: 3.0, damage: 1.15, escort: ['grunt', 'grunt'],
+        type: 'berserker', look: 'orsk', name: 'Siege Commander Orsk', health: 3.0, damage: 1.15, escort: ['grunt', 'grunt'],
         entrance: { from: 160, to: 360, speed: 70, stepEvery: 28, awe: 30 },
         // beaten: his crimes and his sentence (stage/Sentence.js)
         sentence: {

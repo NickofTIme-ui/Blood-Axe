@@ -10,7 +10,7 @@ import { buildEnemyArt, preloadEnemyOverrides } from '../view/enemyArt.js';
 import { CHARACTER_STRIPS, ANIM_OVERRIDES, FX_STRIPS } from '../data/spriteStrips.js';
 import { importFxStrip, paletteFrom, FX, FRAME } from '../view/stripImporter.js';
 import { cutStrip } from '../view/stripCache.js';
-import { ENEMY_STRIPS, ENEMY_ANIMS, scaredAnims } from '../data/enemyStrips.js';
+import { ENEMY_STRIPS, ENEMY_ANIMS, LOOKS, scaredAnims } from '../data/enemyStrips.js';
 import { HERO_STRIPS, HERO_ANIMS } from '../data/heroStrips.js';
 import { ENEMIES } from '../data/enemies.js';
 import { CHARACTERS } from '../data/characters.js';
@@ -174,8 +174,9 @@ export class BootScene extends Phaser.Scene {
     const RES = 2;
     const sheets = {};
     for (const [id, strips] of Object.entries(ENEMY_STRIPS)) {
-      const target = Math.round((ENEMIES[id]?.body.h ?? 110) * 1.07); // Ulric: 108 body -> 116 art
-      const cell = ENEMIES[id]?.cell ?? 1;
+      const E = ENEMIES[id] ?? ENEMIES[LOOKS[id]]; // (a boss's own look: his kind's size)
+      const target = Math.round((E?.body.h ?? 110) * 1.07); // Ulric: 108 body -> 116 art
+      const cell = E?.cell ?? 1;
       const have = new Set();
       let fw = 0; let fh = 0;
       for (const [name, s] of Object.entries(strips)) {

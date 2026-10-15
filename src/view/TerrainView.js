@@ -24,7 +24,7 @@ import { WoodBackdrop } from './WoodView.js';
 import { MineBackdrop } from './MineView.js';
 import { AscentBackdrop } from './AscentView.js';
 import { GatesBackdrop } from './GatesView.js';
-import { artKey } from './levelArt.js';
+import { artKey, PaintedLevel } from './levelArt.js';
 import { LEVEL_ART } from '../data/levelArt.js';
 import { keyLayer } from './envArt.js';
 import { applyAtmosphere, gradient } from './atmosphere.js';
@@ -149,6 +149,9 @@ export class TerrainView {
     s.add.circle(SETTINGS.width * 0.72, 60, 46, 0xd8e4ea, 0.85).setDepth(DEPTH.sky + 1).setScrollFactor(0.05, 0.3);
     s.add.image(SETTINGS.width * 0.72, 60, 'glow').setScale(9).setTint(0x8aa4b8).setAlpha(0.35).setBlendMode(Phaser.BlendModes.ADD)
       .setDepth(DEPTH.sky + 1).setScrollFactor(0.05, 0.3);
+    // the painted layers where they exist (data/levelArt.js 'gallows'), else drawn here
+    const art = this.art = new PaintedLevel(s, 'gallows', W);
+    if (art.has('sky')) art.layer('sky', DEPTH.sky + 0.5);
     // far cliffs with gibbets on them, then nearer crags (parallax)
     const ridge = (g, base, amp, step, seed, color, gibbets) => {
       g.fillStyle(color, 1);
@@ -173,10 +176,10 @@ export class TerrainView {
         }
       }
     };
-    const far = s.add.graphics().setDepth(DEPTH.far).setScrollFactor(0.25, 0.6);
-    ridge(far, 230, 150, 90, 7, COL.cliffFar, true);
-    const mid = s.add.graphics().setDepth(DEPTH.far + 2).setScrollFactor(0.5, 0.8);
-    ridge(mid, 270, 110, 70, 21, COL.cliffMid, false);
+    if (art.has('far')) art.layer('far', DEPTH.far);
+    else ridge(s.add.graphics().setDepth(DEPTH.far).setScrollFactor(0.25, 0.6), 230, 150, 90, 7, COL.cliffFar, true);
+    if (art.has('mid')) art.layer('mid', DEPTH.far + 2);
+    else ridge(s.add.graphics().setDepth(DEPTH.far + 2).setScrollFactor(0.5, 0.8), 270, 110, 70, 21, COL.cliffMid, false);
     // mist bands
     for (let i = 0; i < 3; i++) {
       s.add.rectangle(-pad, 170 + i * 50, W + pad * 2, 30, COL.mist, 0.05 + i * 0.02).setOrigin(0)
@@ -184,6 +187,7 @@ export class TerrainView {
     }
     // the cliff face behind the lane (what the ledges are cut from)
     // (a low wall of rock: above it the sky and the far cliffs show)
+    if (art.has('wall')) { art.wall(); return; }
     const wallTop = SETTINGS.world.floorTop - 50 - 150;
     const wall = s.add.graphics().setDepth(DEPTH.floor - 1);
     wall.fillStyle(0x161c22, 1).fillRect(0, wallTop, W, 150);
@@ -195,6 +199,7 @@ export class TerrainView {
 
   drawFloor() {
     if (this.stage.data.theme !== 'gallows') return;
+    if (this.art?.has('ground')) { this.art.ground(); return; } // (painted)
     const s = this.scene;
     const top = SETTINGS.world.floorTop - 50;
     const g = s.add.graphics().setDepth(DEPTH.floor);

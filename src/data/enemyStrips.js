@@ -87,6 +87,7 @@ export function scaredAnims(side) {
 }
 
 // per-strip fixes on top of the standard set
+const bossSet = (id) => Object.fromEntries(['walk', 'react', 'atk1', 'atk2', 'heavy', 'special', 'kneel', 'jump', 'drop'].map((n) => [n, set(id)[n]]));
 const fix = (strips, extra) => {
   for (const [k, v] of Object.entries(extra)) strips[k] = { ...strips[k], ...v };
   return strips;
@@ -122,6 +123,12 @@ export const ENEMY_STRIPS = {
   // the boss: painted on magenta (his black cape would vanish into a black background),
   // and the standard six strips only (he can't be maimed, so no scared sets)
   warlord: Object.fromEntries(['walk', 'react', 'atk1', 'atk2', 'heavy', 'special', 'kneel'].map((n) => [n, { ...set('warlord')[n], bg: 'magenta' }])),
+  // bosses with their own look over another kind's moves (a boss's `look`, data/stage*.js):
+  // Orsk (the Berserker's moves) and the Gate Twins (the Gladiator's), the same strips laid
+  // out the same way. Until all six are in, he wears his kind's. Prompts:
+  // docs/boss-look-art-prompts.md
+  orsk: bossSet('orsk'),
+  twin: bossSet('twin'),
 };
 
 const seq = (strip, ids) => ids.map((i) => `${strip}:${i}`);
@@ -205,3 +212,7 @@ export const ENEMY_ANIMS = {
     special1: { needs: ['special'], phases: { startup: seq('special', [0, 1]), active: seq('special', [2, 3, 4, 2, 3, 5]), recovery: seq('special', [5, 1]) } },
   },
 };
+
+// a boss's own look -> the kind whose moves (and size) he has
+export const LOOKS = { orsk: 'berserker', twin: 'gladiator' };
+for (const [look, kind] of Object.entries(LOOKS)) ENEMY_ANIMS[look] = ENEMY_ANIMS[kind];

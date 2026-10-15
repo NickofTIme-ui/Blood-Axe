@@ -116,8 +116,8 @@ export const STAGE_GATES = {
       hazards: [],
       // the Gate Twins: the Gladiator's kind, two of them, the keepers of the winch
       boss: {
-        type: 'gladiator', name: 'Hask of the Gate', health: 1.8, damage: 1.1,
-        twin: { type: 'gladiator', name: 'Hrolf of the Gate', health: 1.8, damage: 1.1 },
+        type: 'gladiator', look: 'twin', name: 'Hask of the Gate', health: 1.8, damage: 1.1,
+        twin: { type: 'gladiator', look: 'twin', name: 'Hrolf of the Gate', health: 1.8, damage: 1.1 },
         grief: { damage: 1.3, speed: 1.2 },
         // beaten: the one left standing hears his crimes and his sentence (stage/Sentence.js)
         sentence: {

@@ -17,14 +17,14 @@
 <script type="module">
 const bust = `?t=${Date.now()}`; // always the latest code, never a cached copy
 const { importCharacterStrip } = await import('../src/view/stripImporter.js' + bust);
-const { ENEMY_STRIPS } = await import('../src/data/enemyStrips.js' + bust);
+const { ENEMY_STRIPS, LOOKS } = await import('../src/data/enemyStrips.js' + bust);
 const { ENEMIES } = await import('../src/data/enemies.js' + bust);
 const only = new URLSearchParams(location.search).get('id');
 const out = document.getElementById('out');
 const load = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
 for (const [id, strips] of Object.entries(ENEMY_STRIPS)) {
   if (only && only !== id) continue;
-  const target = Math.round(ENEMIES[id].body.h * 1.07);
+  const target = Math.round((ENEMIES[id] ?? ENEMIES[LOOKS[id]]).body.h * 1.07);
   for (const [name, s] of Object.entries(strips)) {
     const row = document.createElement('div'); row.className = 'row';
     const lab = document.createElement('div'); lab.className = 'lab'; lab.textContent = `${id} ${name}`; row.appendChild(lab);

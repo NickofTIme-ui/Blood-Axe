@@ -92,7 +92,7 @@ export class SpriteFighterView {
     const a = this.meta.anims;
     if (a[st]) return a[st];
     if (st === 'kick') return a.light1; // no kick strip yet
-    if (st === 'launcher') return a.light2; // the Rising Cleave: the upward return stroke (no strip yet)
+    if (st === 'launcher') return a.light2; // the Rising Cleave: the upward return stroke (until ulric_launcher.png)
     if (st === 'spin') return a.heavy;  // the Whirlwind Cleave: the cleave's poses, turned round (no strip yet)
     if (st === 'shoulder') return a.kick ?? a.light1; // (a hero with no shoulder poses)
     return null;

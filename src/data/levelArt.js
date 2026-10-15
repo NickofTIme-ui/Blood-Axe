@@ -87,6 +87,20 @@ export const LEVEL_ART = {
     pieces: ['gatehouse', 'winch_room', 'town', 'inner_wall', 'keep_road'],
     props: { winch: { file: 'prop_winch.png', pair: true } },
   },
+  // THE GALLOWS ASCENT (the night climb, view/TerrainView.js): its painted backdrop, cliff
+  // wall, floor and ledge faces. Prompts: docs/gallows-art-prompts.md. (The code-drawn sky
+  // stays behind everything: the camera climbs higher than a painted sky reaches.)
+  gallows: {
+    dir: 'assets/env/gallows/',
+    layers: [
+      { name: 'sky', key: 'opaque', scroll: 0.04, bottom: -40, height: 420 },
+      { name: 'far', key: 'magenta', scroll: 0.12, bottom: -10, height: 240 },
+      { name: 'mid', key: 'magenta', scroll: 0.45, bottom: -20, height: 220 },
+    ],
+    wall: { height: 150 },
+    ground: true,
+    surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, plank: { fit: true } },
+  },
   fx: {
     dir: 'assets/fx/',
     strips: { 'horse-gallop': { file: 'horse_gallop.png', frames: 6, key: 'black' } },

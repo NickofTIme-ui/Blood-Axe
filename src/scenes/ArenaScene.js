@@ -1217,7 +1217,9 @@ export class ArenaScene extends Phaser.Scene {
     if (f.stats.view === 'hound') return new HoundView(this, f); // (code-drawn until its strips exist)
     if (f.stats.view === 'crusher') return new CrusherView(this, f);
     // named enemies with hand-animated strips (data/enemyStrips.js); the doll runs underneath
-    const sheet = f.team === 'enemy' && !this.dollsOnly && this.registry.get('enemySprites')?.[f.stats.strips ?? f.stats.id]; // (strips: wears another's)
+    // (strips: wears another's; a boss's own set (`look`) once it's painted, else his kind's)
+    const sheets = this.registry.get('enemySprites');
+    const sheet = f.team === 'enemy' && !this.dollsOnly && (sheets?.[f.stats.look] ?? sheets?.[f.stats.strips ?? f.stats.id]);
     if (sheet && f.stats.art && ENEMY_ART[f.stats.art]) return new SpriteEnemyView(this, f, sheet);
     if (f.stats.art && ENEMY_ART[f.stats.art]) return new EnemyView(this, f);
     // the Mage and the Rogue, once their painted strips are all in (data/heroStrips.js)

@@ -46,6 +46,9 @@ export const CHARACTER_STRIPS = {
     // KINGSFIRE / THE KING'S WRATH: ready, Oathkeeper raised, the roar, driven down, buried
     // (on one knee), wrenched free (last pose = standing tall)
     wrath:   { file: 'assets/sprites/strips/ulric_wrath.png', frames: 6, ref: 5, target: 116, ground: 'drawn' },
+    // the RISING CLEAVE (J, J, K): ready, sinking low, the blade ripping up through the man,
+    // high follow-through on his toes, recover (first pose = ready stance)
+    launcher: { file: 'assets/sprites/strips/ulric_launcher.png', frames: 5, ref: 0, target: 116, ground: 'drawn' },
   },
 };
 
@@ -90,6 +93,7 @@ export const ANIM_OVERRIDES = {
     //          aloft, knee up, stamp-kick him off at 104 (IMPALE in combat/Finisher.js)
     fin_impale: { needs: ['finImpale'], keys: [[0, 'finImpale:0'], [18, 'finImpale:1'], [20, 'finImpale:2'], [41, 'finImpale:3'], [53, 'finImpale:4'], [92, 'finImpale:5'], [103, 'finImpale:6'], [122, 'finImpale:7']] },
     fin_throat: { needs: ['finThroat'], keys: [[0, 'finThroat:0'], [4, 'finThroat:1'], [10, 'finThroat:2'], [24, 'finThroat:3'], [30, 'finThroat:4'], [52, 'finThroat:5'], [60, 'finThroat:6'], [68, 'finThroat:7']] },
+    launcher: { needs: ['launcher'], phases: { startup: seq('launcher', [0, 1]), active: seq('launcher', [2, 3]), recovery: seq('launcher', [4]) } },
     // Kingsfire (SpriteFighterView): the startup poses spread over the gathering, the
     // drive and the buried blade on the release, wrenched free at the end
     kingsfire: { needs: ['wrath'], phases: { startup: seq('wrath', [0, 1, 2]), active: seq('wrath', [3, 4]), recovery: seq('wrath', [5]) } },
