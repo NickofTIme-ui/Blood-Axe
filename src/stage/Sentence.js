@@ -196,6 +196,9 @@ export class Sentence {
     } else if (this.step === 'speak') {
       const story = this.stage.story;
       if (this.t === SENTENCE.stand) { this.timeLines(); story?.cue(this.beatId); }
+      // (nothing else is said now: a line left up from the fight would wait forever for
+      // a press his scripted pad drops; see Story.cutShort)
+      story?.cutShort(this.beatId);
       // (his own line: he lifts his head to say it)
       b.defiant = story?.line?.who === this.speaker && story.line.text !== SILENCE;
       // the clock follows the words (a skipped line takes the music on with it)
@@ -258,6 +261,7 @@ export class Sentence {
     this.beatId = `sentence:${this.stage.section?.id ?? 'boss'}:${this.count}`;
     const lines = sentenceLines(b, h, def, this.speaker);
     this.stage.story?.beats.push({ id: this.beatId, hold: true, delay: 0, lines });
+    this.stage.story?.cutShort(this.beatId); // (his taunts end where he kneels)
     // the music: the swing starts so its first active frame lands on the crest; the
     // words fill the time before it. Too many words for the track: it starts later.
     this.swingAt = SENTENCE.slice - (this.blowOf.frames.startup ?? 0) - 1;

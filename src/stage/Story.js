@@ -180,6 +180,21 @@ export class Story {
     if (b) b.fire = true;
   }
 
+  // Cut every line but the beat `keep` short: the one up ends on the next tick (as if
+  // skipped), the ones waiting are spent. A beaten boss's sentence (stage/Sentence.js)
+  // clears the floor this way: the hero's presses are the scene's then, so a taunt left
+  // up from the fight could never be moved on.
+  cutShort(keep) {
+    const c = this.current;
+    if (c && c.beat.id !== keep) { c.index = c.beat.lines.length - 1; c.age = Math.max(c.age, 0); c.skip = true; }
+    this.queue = this.queue.filter((b) => {
+      if (b.id === keep) return true;
+      this.done.add(b.id);
+      this.world.events.emit('storyBeatDone', { beat: b });
+      return false;
+    });
+  }
+
   // ------------------------------------------------------------ per frame
 
   update() {

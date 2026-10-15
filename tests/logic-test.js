@@ -3931,6 +3931,16 @@ test('sentence: its lines wait for a press; the music plays on through the words
   assert(!back, 'the music never steps back');
 }));
 
+test('sentence: beaten while his own taunt is still up (it waits for a press), the taunt is cut short and the sentence plays out (no softlock)', waiting(() => {
+  const { world, p, c, st, ev, run } = sentenceSetup('warrior');
+  const up = () => st.story.current?.beat.id;
+  if (up() !== 'captain') { st.story.done.delete('captain'); const b = st.story.beats.find((x) => x.id === 'captain'); b.fired = false; b.fire = true; run(30); }
+  assert(up() === 'captain', `his taunt is up (${up()})`);
+  blowOf(world, p, st.boss);
+  run(60 * 60, (i) => { if (i % 30 === 0) c.script = { [c.t + 1]: ['padRight'] }; });
+  assert(ev.strike.length === 1, `the sentence plays out (${st.sentence.step}, line up: ${up()})`);
+}));
+
 test('sentence: the twins: the first to fall dies fighting; the one left standing kneels for both of them', () => {
   const { world, p, st, ev, run } = sentenceSetup('warrior', STAGE_GATES, 'winch', 3800);
   st.fightOn = true; st.waveIndex = 99;
