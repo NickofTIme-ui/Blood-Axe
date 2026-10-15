@@ -664,3 +664,6 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - **Checked:** `tools/strip-check.html?id=orsk` and `?id=twin` show every strip split into the right number of poses. The Gallows pictures weren't looked at in the level. `npm test` not run (no Node on the PC). Not watched in a fight.
 - **Skipped:** the optional `orsk_`/`twin_` jump and drop strips (not in this pass). The Twins came out dark iron with warm torchlight rather than pure cold grey.
 - **For the cloud:** the kneel scale note from 12 October applies to `orsk_kneel` and `twin_kneel` too. `surf_rock_top.png` shows a strip of the ledge's front face along its near edge.
+
+## Cloud, 2026-10-15: second ChatGPT batch checked (not on itch)
+- Orsk's and the Gate Twins' strips (76318a4) cut cleanly in `tools/strip-check.html` at their kinds' size; tests pass. `assets/env/gallows/ground.png` had a 170 px pure-black band along its top (ChatGPT's empty "far edge"); cropped off so the floor starts at the slate. The Gallows layers have their magenta skylines; not yet seen inside the level (the headless browser still can't boot the game in time).
