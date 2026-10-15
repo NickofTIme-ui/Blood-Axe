@@ -488,6 +488,8 @@ export class NpcView {
     ids.forEach((id, i) => {
       const f = createPlayer(this.puppets, new Controller(), id, at.x + 70 + i * 55, at.z + (i ? 50 : -60));
       f.facing = 1;
+      // (as the save has them: Rurik with his old sword until Oathkeeper is his)
+      if (this.scene.progress) f.stats = this.scene.progress.statsFor(id, f.stats);
       const view = this.scene.makeView(f);
       this.companions.push({ id, f, view, mode: 'start', i });
     });

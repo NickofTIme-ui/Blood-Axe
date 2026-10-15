@@ -13,4 +13,9 @@ export const SPRITES = {
     image: 'assets/sprites/ulric.png',
     data: 'assets/sprites/ulric.json',
   },
+  // Rurik once Oathkeeper is his: the same sheet under the repainted strips (data/spriteStrips.js)
+  ulricOath: {
+    image: 'assets/sprites/ulric.png',
+    data: 'assets/sprites/ulric.json',
+  },
 };

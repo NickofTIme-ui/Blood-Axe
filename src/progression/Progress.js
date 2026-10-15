@@ -31,6 +31,8 @@ const freshTrophies = () => ({ owned: {}, worn: [] });
 // THE CAMPAIGN (docs/campaign/plan.md): levels finished, the villagers saved (by id: they
 // show up later) and lost, where to CONTINUE from (`at`: the level and the section whose
 // checkpoint was reached last), and the one-time flags (a sequence's steps: the judgment)
+// flags that a finished level stands in for (saves from before the flag existed)
+const FLAG_BY_LEVEL = { oathkeeper: 'village' };
 const freshCampaign = () => ({ levels: {}, rescued: {}, lost: {}, at: null, flags: {} });
 
 // The one Progress the game shares (kept in the Phaser registry; saved in the browser).
@@ -127,6 +129,10 @@ export class Progress {
     return true;
   }
 
+  // Is this flag set? A few were added after saves already went past them, so a level
+  // finished counts for its flag (Oathkeeper: anyone past level 1 already has it).
+  hasFlag(key) { return !!this.campaign.flags[key] || !!(FLAG_BY_LEVEL[key] && this.campaign.levels[FLAG_BY_LEVEL[key]]); }
+
   // A level walked out of: CONTINUE now starts the next one. Returns true the first time.
   finishLevel(id, next = null) {
     if (next) this.campaign.at = { level: next, section: 0 };
@@ -178,6 +184,7 @@ export class Progress {
     const n = nodesOf(heroId).find((x) => x.id === id);
     if (!n) return 'unknown';
     if (n.planned) return 'planned'; // (a placeholder branch: shown, not built yet)
+    if (n.needs && !this.hasFlag(n.needs)) return 'sealed'; // (Rurik's fire, before Oathkeeper is his)
     if (this.has(heroId, id)) return 'owned';
     const missing = (n.req ?? []).filter((r) => !this.has(heroId, r));
     if (missing.length) return 'locked';
@@ -211,13 +218,17 @@ export class Progress {
   // ------------------------------------------------------------ the hero's stats
 
   // The hero's stats with his picks and worn trophies applied (a deep copy: the shared data is never touched).
+  // His birthright (data/characters.js): before the flag he wears `before` (Rurik: the old
+  // sword, no fire), and the picks in a branch that needs it lie dormant until it's set.
   statsFor(heroId, base) {
     const picks = SKILL_TREES[heroId] ? this.picks(heroId) : [];
     const worn = this.worn();
-    if (!picks.length && !worn.length) return base;
+    const bare = base.birthright && !this.hasFlag(base.birthright.flag);
+    if (!picks.length && !worn.length && !bare) return base;
     const s = deepCopy(base);
     s.skills = {};
-    for (const n of nodesOf(heroId)) if (picks.includes(n.id) && n.apply) n.apply(s);
+    if (bare) Object.assign(s, deepCopy(base.birthright.before));
+    for (const n of nodesOf(heroId)) if (picks.includes(n.id) && n.apply && !(n.needs && !this.hasFlag(n.needs))) n.apply(s);
     for (const id of worn) TROPHIES[id].apply(s); // (worn trophies: data/trophies.js)
     return s;
   }

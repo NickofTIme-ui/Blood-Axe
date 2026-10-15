@@ -104,7 +104,8 @@ export const SKILL_TREES = {
       {
         // His fire is the hearth-fire in Oathkeeper (data/oathkeeper.js), and his anger. The
         // logic is combat/Wrath.js and combat/Skills.js, the look effects/WrathFX.js.
-        id: 'kingswrath', name: "THE KING'S WRATH", color: 0xff7a1a, blurb: 'Let the fire out',
+        // (needs: shut until Oathkeeper is his, the end of level 1: data/characters.js birthright)
+        id: 'kingswrath', name: "THE KING'S WRATH", color: 0xff7a1a, blurb: 'Let the fire out', needs: 'oathkeeper',
         nodes: [
           {
             id: 'oathkeeperWakes', name: 'Oathkeeper Wakes', cost: 2, tier: 1, req: [], kind: 'upgrade',
@@ -187,5 +188,5 @@ SKILL_TREES.mage = {
 // Every node of a tree, by id.
 export function nodesOf(heroId) {
   const t = SKILL_TREES[heroId];
-  return t ? t.branches.flatMap((b) => b.nodes.map((n) => ({ ...n, branch: b.id, planned: !!b.planned }))) : [];
+  return t ? t.branches.flatMap((b) => b.nodes.map((n) => ({ ...n, branch: b.id, planned: !!b.planned, needs: n.needs ?? b.needs }))) : [];
 }

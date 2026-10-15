@@ -16,6 +16,8 @@
 // Campaign levels (data/stageVillage.js) add, all optional:
 //   story / npcs        dialogue and villagers to save (stage/Story.js)
 //   section.fightAt     its waves hold until a hero gets this far (walk in, look, then fight)
+//   section.fightAfter  ...and (or) until this story beat has played (the north gate's
+//                       stragglers come only once Oathkeeper is in Rurik's hand)
 //   exit: { x, after }  the level ends when a hero walks out here, once the last section
 //                       is won and the beat `after` has played (not the moment it's won)
 //   boss.entrance.freeze: false   he walks in without freezing the heroes (a sub-boss)
@@ -193,7 +195,7 @@ export class Stage {
     this.phase = 'fight';
     this.bossSpawned = false;
     this.boss = null;
-    this.fightOn = sec.fightAt == null; // (a section with fightAt: its waves wait for you)
+    this.fightOn = sec.fightAt == null && sec.fightAfter == null; // (a section with fightAt / fightAfter: its waves wait)
     this.lockBounds(sec.x0, sec.x1);
     if (teleport) {
       // (a section can name where its heroes stand: on a stage with ledges and pits the
@@ -579,7 +581,8 @@ export class Stage {
     if (this.phase === 'fight') {
       const sec = this.section;
       if (!this.fightOn) {
-        if (!this.players.some((q) => q.alive && q.x >= sec.fightAt)) return;
+        if (sec.fightAt != null && !this.players.some((q) => q.alive && q.x >= sec.fightAt)) return;
+        if (sec.fightAfter && !this.story?.done.has(sec.fightAfter)) return;
         this.fightOn = true;
         this.waveDelay = Math.min(this.waveDelay, 10);
         this.world.events.emit('fightStart', { index: this.index, section: sec });

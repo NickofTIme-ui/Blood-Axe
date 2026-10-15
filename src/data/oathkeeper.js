@@ -4,19 +4,21 @@
 // two open hands round a sun, a crimson grip, a gold sun pommel.
 //
 // Shown on the skill screen's OATHKEEPER page (scenes/SkillScene.js, O / RB) and on the
-// hero select. Its fire is THE KING'S WRATH branch of his tree (data/skills.js).
+// hero select. Its fire is THE KING'S WRATH branch of his tree (data/skills.js), and his
+// Firebolt: neither is his until Elder Brann gives him the blade at the end of level 1
+// (data/characters.js birthright). Before that he fights with his old soldier's sword.
 
 export const OATHKEEPER = {
   name: 'OATHKEEPER',
-  title: 'The Hearthfire Blade',
+  title: 'The Blade of His Blood',
   // one line, for the select screen
-  tagline: 'Forged from every hearth in the valley. The light in it has never gone out.',
-  // the lore page, a paragraph a block
+  tagline: 'Handed down his bloodline since the first fire. In any other hand it is only steel.',
+  // the lore page, a paragraph a block (told in full at the end of level 1, data/stageVillage.js 'elder')
   lore: [
-    'Before the Ashen Crown, the valley had no king. It had an oath: every hearth would stand for every other.',
-    'When the first Ashen men came over the pass, the smiths asked each house for iron. Ploughshares, hinges, cookpots, a child\'s first knife, the bell from the longhall. All of it went into one blade, and it was quenched in the fire of every home in the valley, one after another, through a whole night.',
-    'A spark of every hearth caught in the fuller, and it has never gone out. When the people it was made from are in danger, it blazes white-gold.',
-    'Oathkeeper is not handed down from father to son. It goes to the one the valley chooses. King Vaurath wears a crown. Rurik carries the hearths of his people.',
+    'Oathkeeper was forged in the first fire the valley ever lit, by the first of Rurik\'s line, who swore that his blood would stand for every hearth that came after.',
+    'It has passed from parent to child ever since, further back than any song remembers. It goes to the heir only when the one who carries it dies.',
+    'In any other hand it is only steel. In the hand of that blood, the fire in its fuller wakes, and every one who carried it before stands with the one who carries it now.',
+    'Rurik\'s father Hakon held the north gate with it the night the Ashen came, alone, until the last child was through. Dying, he put it in Elder Brann\'s hands: "Give it to my son."',
   ],
   // the blade's look, for the code that draws it (smears, sparks, the light in the fuller)
   colors: {

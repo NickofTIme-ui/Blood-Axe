@@ -23,7 +23,8 @@
 //   V   THE STABLES        a fight round the burning stables; smash the gate bar and the
 //                          horses stampede across the yard, trampling both sides
 //   VI  THE LONGHALL       a shrine; Varek the Ash Captain; at half health the hall's beams fall
-//   VII THE NORTH GATE     the saved gather; the elder; the vow; out of the gate
+//   VII THE NORTH GATE     the saved gather; the elder gives Rurik Oathkeeper, his father's
+//                          sword, and its fire wakes; stragglers to burn; the vow; out
 
 const FULL = { z0: 282, z1: 520 };
 
@@ -181,7 +182,9 @@ export const STAGE_VILLAGE = {
       spawn: { x: 8460, z: 440 },
       objective: 'The road north',
       hint: '',
-      waves: [],
+      // the stragglers, once Oathkeeper is his: the first men his fire burns
+      fightAfter: 'elder',
+      waves: [['grunt', 'grunt', 'grunt'], ['stalker', 'grunt']],
       props: [],
       hazards: [],
     },
@@ -297,12 +300,25 @@ export const STAGE_VILLAGE = {
     },
     { id: 'collapse', on: 'rage:hall', lines: [['VAREK', 'Bring it down! Bring the whole hall down on them!']] },
     { id: 'gathered', at: 8580, calm: true, if: 'rescued:mira', lines: [['MIRA', 'You came back for us. Every one of us here owes you their life.']] },
+    // HIS BIRTHRIGHT: the elder gives Rurik his dead father's sword, Oathkeeper, and its fire
+    // wakes in his hand (the cue sets the campaign flag: his look and his fire change on the
+    // spot, scenes/ArenaScene.js oathkeeperGiven; data/characters.js birthright). Then the
+    // Ashen stragglers come back for the elder, and he burns them (the gate's fightAfter).
     {
-      id: 'elder', at: 8720, calm: true,
+      id: 'elder', at: 8720, calm: true, hold: true,
       lines: [
         ['BRANN', 'They chained the young and the strong... and drove them up the north road.'],
         ['BRANN', 'To the Black Keep. To the king who ordered this.'],
-        ['BRANN', 'Bring them home.'],
+        ['RURIK', 'Brann. Where is my father?'],
+        ['BRANN', 'Hakon held this gate alone, so the children could get out behind him. He did not fall until the last of them was through.'],
+        ['BRANN', 'He was still breathing when I reached him. He put this in my hands and said: give it to my son.'],
+        ['BRANN', 'Oathkeeper. The blade of your blood, Rurik. Your father\'s, and his mother\'s, and back and back, further than any song remembers.'],
+        ['BRANN', 'It was forged in the first fire this valley ever lit. In any other hand it is only steel. In the hand of your blood, it burns.'],
+        ['RURIK', '...It is warm. As if he only just let go of it.', { flag: 'oathkeeper' }],
+        ['BRANN', 'Do you feel them? Every one who carried it before you. They stand with you now.'],
+        ['RURIK', 'Then they will stand with me all the way to the Black Keep.'],
+        ['VEXA', 'Ashen! Their stragglers, coming back for the old man!'],
+        ['RURIK', 'Get behind me, Brann. Let them see what my father left me.'],
       ],
     },
     {

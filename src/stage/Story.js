@@ -24,6 +24,9 @@
 //       'done:<beatId>'     only after that beat has played
 //   unless: (the same keys)
 //   delay: frames    a pause before its first line (default LINE.gap)
+// A line can carry a cue as its third item, done the moment the line comes up:
+//   ['RURIK', '...', { flag: 'oathkeeper' }]   sets a campaign flag (campaignFlag { key },
+//                    the arena saves it: Rurik is handed Oathkeeper) and emits storyCue
 // A beat fires once. Beats queue: one plays at a time.
 //
 // VILLAGERS (stage data `npcs`): { id, name, x, z, rescue?, ... }
@@ -189,6 +192,8 @@ export class Story {
     if (c && c.beat.id !== keep) { c.index = c.beat.lines.length - 1; c.age = Math.max(c.age, 0); c.skip = true; }
     this.queue = this.queue.filter((b) => {
       if (b.id === keep) return true;
+      const c = { beat: b };
+      for (let i = 0; i < b.lines.length; i++) this.lineCue(c, i);
       this.done.add(b.id);
       this.world.events.emit('storyBeatDone', { beat: b });
       return false;
@@ -219,6 +224,7 @@ export class Story {
       if (!b) return;
       c = this.current = { beat: b, index: 0, age: -(b.delay ?? LINE.gap) };
       this.world.events.emit('storyBeat', { beat: b });
+      this.lineCue(c);
     }
     c.age++;
     if (c.beat.hold) {
@@ -241,8 +247,9 @@ export class Story {
     if (!next) return;
     c.index++;
     c.age = 0;
-    if (c.index < c.beat.lines.length) return;
+    if (c.index < c.beat.lines.length) { this.lineCue(c); return; }
     // the beat is over
+    for (let i = 0; i < c.beat.lines.length; i++) this.lineCue(c, i);
     this.done.add(c.beat.id);
     this.current = null;
     for (const n of this.npcs) {
@@ -253,6 +260,16 @@ export class Story {
       for (const p of this.stage.players) { p.awe = 0; for (const a of ['jump', 'attack', 'padRight', 'padLeft']) p.controller.consume(a, 99); }
     }
     this.world.events.emit('storyBeatDone', { beat: c.beat });
+  }
+
+  // The line up now carries a cue (a line's third item): do it.
+  // (a skipped scene still does its cues, at its end: what it changes isn't skippable)
+  lineCue(c, i = c.index) {
+    const q = c.beat.lines[i]?.[2];
+    if (!q || c.cued?.has(i)) return;
+    (c.cued ??= new Set()).add(i);
+    if (q.flag) this.world.events.emit('campaignFlag', { key: q.flag });
+    this.world.events.emit('storyCue', { beat: c.beat, cue: q });
   }
 
   // Skip the held scene playing now, whole (its outcome is the same as watching it).

@@ -154,7 +154,8 @@ export class SkillScene extends Phaser.Scene {
       const head = this.add.text(cx, L.top + 12, br.name, { fontFamily: FONT.display, fontSize: n > 3 ? '16px' : '18px', color: css(tint(br.color, 12)) })
         .setOrigin(0.5).setStroke('#000000', 5);
       head.setLetterSpacing?.(1);
-      this.add.text(cx, L.top + 30, br.blurb, { fontFamily: FONT.ui, fontSize: '11px', color: '#c8b088' }).setOrigin(0.5).setStroke('#000000', 3);
+      const sealed = br.needs && !this.progress.hasFlag(br.needs); // (Rurik's fire, before Oathkeeper is his)
+      this.add.text(cx, L.top + 30, sealed ? 'Sealed: the blade of his blood' : br.blurb, { fontFamily: FONT.ui, fontSize: '11px', color: '#c8b088' }).setOrigin(0.5).setStroke('#000000', 3);
       br.nodes.forEach((node, r) => {
         const cy = L.top + 74 + r * L.rowGap;
         const frame = this.add.graphics();
@@ -345,7 +346,8 @@ export class SkillScene extends Phaser.Scene {
       const t = this.add.text(tx, y, para, { fontFamily: FONT.ui, fontSize: '15px', color: '#f0e0c0', wordWrap: { width: W - tx - 50 }, lineSpacing: 3 }).setStroke('#000000', 2);
       y += t.height + 12;
     }
-    this.add.text(tx, y + 4, "Its fire is THE KING'S WRATH, the fourth branch of his tree.", { fontFamily: FONT.ui, fontSize: '13px', color: '#ffc860' }).setStroke('#000000', 3);
+    const his = this.progress.hasFlag('oathkeeper');
+    this.add.text(tx, y + 4, his ? "Its fire is THE KING'S WRATH, the fourth branch of his tree." : 'Not his yet. It waits for him at the north gate, and its fire with it.', { fontFamily: FONT.ui, fontSize: '13px', color: '#ffc860' }).setStroke('#000000', 3);
     this.bladeObjs = this.children.list.filter((o) => !before.has(o));
   }
 
@@ -386,7 +388,7 @@ export class SkillScene extends Phaser.Scene {
       this.drawCard(k, owned ? 'owned' : why === null ? 'ready' : 'shut', sel);
       k.glow.setFillStyle(k.br.color, owned ? 0.16 : 0);
       k.label.setColor(owned ? '#ffffff' : why === null ? '#f0e0c0' : '#7a6e60');
-      const state = why === 'planned' ? 'PLANNED' : owned ? 'TAKEN' : why === 'excluded' ? 'SHUT' : why === 'locked' ? 'needs the one above' : why === 'points' ? 'not enough points' : 'ready';
+      const state = why === 'planned' ? 'PLANNED' : why === 'sealed' ? 'when Oathkeeper is his' : owned ? 'TAKEN' : why === 'excluded' ? 'SHUT' : why === 'locked' ? 'needs the one above' : why === 'points' ? 'not enough points' : 'ready';
       k.sub.setText(`${KIND_LABEL[k.n.kind] ?? ''}  ·  ${k.n.cost} pt${k.n.cost > 1 ? 's' : ''}  ·  ${state}`).setColor(owned ? '#ffe0b0' : '#a89878');
       if (k.r > 0) {
         // chain links down the banner, lit in the branch's colour once the one above is taken

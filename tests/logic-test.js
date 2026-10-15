@@ -1998,6 +1998,7 @@ const memStore = () => { const m = new Map(); return { getItem: (k) => m.get(k) 
 function rurikWith(...ids) {
   const P = new Progress(memStore());
   P.data.bonus = 99;
+  P.setFlag('oathkeeper'); // (his fire is Oathkeeper's: the end of level 1)
   for (const id of ids) assert(P.buy('warrior', id), `bought ${id} (${P.blocker('warrior', id)})`);
   return P.statsFor('warrior', CHARACTERS.warrior);
 }
@@ -2376,7 +2377,7 @@ class Pressing extends Controller {
 // A bot that walks the village (no fighting: enemies are cleared as they come), jumping
 // walls and gaps like the gallows bot. Reports the stage's end, falls and the story.
 function villageRun(hero, opts = {}) { return campaignRun(STAGE_VILLAGE, hero, opts); }
-function campaignRun(data, hero, { kill = true, frames = 60 * 300, onTick = null, opts = {}, section = 0 } = {}) {
+function campaignRun(data, hero, { kill = true, frames = 60 * 300, onTick = null, setup = null, opts = {}, section = 0 } = {}) {
   class Bot extends Controller {
     sample(frozen) {
       if (frozen) return;
@@ -2415,6 +2416,7 @@ function campaignRun(data, hero, { kill = true, frames = 60 * 300, onTick = null
   world.events.on('stageWon', () => won++);
   world.events.on('storyBeat', (e) => beats.push(e.beat.id));
   world.events.on('npcRescued', (e) => rescued.push(e.npc.id));
+  setup?.(world, stage, p);
   let f = 0;
   for (; f < frames && !won; f++) {
     if (kill) for (const e of world.fighters) if (e.team === 'enemy') { e.health = 0; e.removeMe = true; }
@@ -2652,6 +2654,7 @@ test("oryn's tree: the Stormcaller can be taken in order; the planned branches a
   assert(SKILL_TREES.mage.branches.length === 3 && SKILL_TREES.mage.branches.filter((b) => b.planned).length === 2, 'three columns, two placeholders');
   const s = P.statsFor('mage', CHARACTERS.mage);
   assert(s.kit.bolt.branches === CHARACTERS.mage.kit.bolt.branches + 1 && CHARACTERS.mage.kit.bolt.maxJumps === 4, 'his copy changes, the shared data does not');
+  P.setFlag('oathkeeper'); // (before it, his stats are his old sword's: a copy)
   assert(P.statsFor('warrior', CHARACTERS.warrior) === CHARACTERS.warrior, "Rurik's picks are his own");
 });
 
@@ -2974,6 +2977,7 @@ test('campaign: no section\'s fight is held open by a man stuck off-screen (the 
       for (; f < 60 * 120 && st.phase === 'fight'; f++) {
         if (st.story) { st.story.current = null; st.story.queue = []; }
         if (f === 1 && sec.fightAt != null) { p.x = Math.max(p.x, sec.fightAt + 5); if (st.terrain) p.floor = p.h = Math.max(0, st.terrain.groundAt(p.x, p.z)); }
+        if (f === 1 && sec.fightAfter) st.story?.done.add(sec.fightAfter); // (the scene it waits for, played)
         if (f === 1 && sec.needs) for (const pr of st.props) if (pr.tag === sec.needs) st.breakProp(pr, 1); // (what the hero must smash, smashed)
         // the hero fights whoever has arrived; nobody walks over to fetch a straggler
         if (f % 60 === 0) for (const e of world.fighters) if (e.team === 'enemy' && e.alive && !e.entering && e.state !== 'bossEntrance') { e.health = 0; e.removeMe = true; }
@@ -4022,6 +4026,50 @@ test('dialogue: every voice in every level has a name and a portrait (or is narr
   for (const k of ['MINER', 'PRISONER', 'REEVE', 'TOWNSMAN', 'MILLER', 'PILGRIM']) assert(!/^[A-Z]+$/.test(SPEAKERS[k].name), `${k} has a name`);
   assert(speakerInfo('VOICE') === null && speakerInfo('MILLER').name === 'Irvolino' && speakerInfo('RURIK').portrait === 'rurik', 'lookups');
   assert(PORTRAIT_IDS.includes('daniel') && !PORTRAIT_IDS.includes('miner'), 'portrait files by name');
+});
+
+// ------------------------------------------------------------ Rurik's birthright: Oathkeeper
+
+test("birthright: Rurik starts with his old sword and no fire; the King's Wrath is sealed; Oathkeeper changes both", () => {
+  const P = new Progress(memStore());
+  P.data.bonus = 99;
+  const before = P.statsFor('warrior', CHARACTERS.warrior);
+  assert(before.sprite === 'ulric' && before.spell === null && !before.blade, 'the old sword, no Firebolt');
+  assert(CHARACTERS.warrior.spell && CHARACTERS.warrior.sprite === 'ulricOath', 'the shared data untouched');
+  assert(P.blocker('warrior', 'oathkeeperWakes') === 'sealed' && !P.buy('warrior', 'oathkeeperWakes'), 'his fire: not for sale yet');
+  assert(P.blocker('warrior', 'windStep') !== 'sealed', 'his other branches are open');
+  assert(P.setFlag('oathkeeper') && P.hasFlag('oathkeeper'), 'given');
+  const after = P.statsFor('warrior', CHARACTERS.warrior);
+  assert(after.sprite === 'ulricOath' && after.spell?.name === 'Firebolt' && after.blade === 'Oathkeeper', 'Oathkeeper, and its fire');
+  assert(P.buy('warrior', 'oathkeeperWakes') && P.statsFor('warrior', CHARACTERS.warrior).spell.name === 'Hearthfire Bolt', 'the branch opens');
+  // a save from before the flag existed, already past level 1: he has it
+  const old = new Progress(memStore());
+  old.finishLevel('village', 'gallowsWood');
+  assert(old.hasFlag('oathkeeper') && old.statsFor('warrior', CHARACTERS.warrior).spell, 'past level 1 = his');
+  // the other heroes are untouched
+  assert(P.statsFor('rogue', CHARACTERS.rogue).spell === CHARACTERS.rogue.spell, 'Vexa as ever');
+});
+
+test('birthright: the elder gives it at the north gate (the flag is set on the line, even if the scene is skipped); the stragglers come only after', () => {
+  for (const skip of [false, true]) {
+    const flags = [];
+    let foesBefore = 0; let foesAfter = 0;
+    const r = villageRun('warrior', {
+      kill: false,
+      onTick: (w, st) => {
+        if (!st.story.done.has('elder') && st.section.id === 'gate') foesBefore += st.livingFoes().length;
+        else if (st.section.id === 'gate') foesAfter += st.livingFoes().length;
+        if (skip && st.story.current?.beat.id === 'elder') st.story.skipScene();
+        for (const e of w.fighters) if (e.team === 'enemy') { e.health = 0; e.removeMe = true; }
+      },
+      setup: (w) => w.events.on('campaignFlag', ({ key }) => flags.push(key)),
+    });
+    assert(r.won === 1, `${skip ? 'skipped' : 'watched'}: out of the gate`);
+    assert(flags.filter((k) => k === 'oathkeeper').length === 1, `${skip ? 'skipped' : 'watched'}: given once (${flags})`);
+    assert(foesBefore === 0 && foesAfter > 0, `no stragglers before the sword, then they come (${foesBefore}, ${foesAfter})`);
+  }
+  const elder = STAGE_VILLAGE.story.find((b) => b.id === 'elder');
+  assert(elder.hold && elder.lines.some((l) => l[2]?.flag === 'oathkeeper'), 'a held scene, with the cue');
 });
 
 for (const [name, fn] of later) {

@@ -52,6 +52,17 @@ export const CHARACTER_STRIPS = {
   },
 };
 
+// OATHKEEPER IN HIS HAND: Nick's repaint of the strips above with the blade of his blood.
+// His look from the moment Elder Brann puts it in his hands at the end of level 1
+// (data/stageVillage.js, the 'elder' scene; Progress.statsFor picks the sheet). Until then
+// he carries his old sword (ulric). A strip not repainted yet (the wrath, the rising
+// cleave) is the old one.
+const OATH_DIR = 'assets/sprites/strips/oathkeeper/';
+const REPAINTED = new Set(['walk2', 'walkU', 'walkD', 'walkUD', 'walkDD', 'rollUp', 'rollDown', 'kick', 'slash', 'combo1', 'combo2', 'combo3', 'cleave', 'charge', 'thrust', 'chargeWalk', 'sprint', 'finThroat', 'finImpale']);
+CHARACTER_STRIPS.ulricOath = Object.fromEntries(Object.entries(CHARACTER_STRIPS.ulric).map(([name, s]) => (
+  [name, REPAINTED.has(name) ? { ...s, file: OATH_DIR + s.file.split('/').pop() } : s]
+)));
+
 const seq = (strip, ids) => ids.map((i) => `${strip}:${i}`);
 
 export const ANIM_OVERRIDES = {
@@ -101,6 +112,7 @@ export const ANIM_OVERRIDES = {
     thrust: { needs: ['thrust'], phases: { startup: seq('thrust', [0, 1]), active: seq('thrust', [2, 3, 3, 3]), recovery: seq('thrust', [3, 3, 4, 5]) } },
   },
 };
+ANIM_OVERRIDES.ulricOath = ANIM_OVERRIDES.ulric; // (the same moves, the same poses)
 
 // Effects strips: equal cells, trimmed and scaled to `height` px.
 export const FX_STRIPS = {

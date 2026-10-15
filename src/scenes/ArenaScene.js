@@ -385,6 +385,7 @@ export class ArenaScene extends Phaser.Scene {
     this.scene.stop('Cutaway');
     this.setupStageEvents(ev);
     this.setupProgressEvents(ev);
+    this.setupBirthright(ev);
     this.stage.start(this.players, { section: this.startSection });
     this.nextReady = false;
     ev.on('revive', ({ fighter }) => {
@@ -788,7 +789,10 @@ export class ArenaScene extends Phaser.Scene {
     for (const p of this.players) {
       const id = this.heroIds[p.seat] ?? this.characterId;
       const share = fresh ? 1 : p.health / p.stats.maxHealth;
+      const was = p.stats.sprite;
       p.stats = this.progress.statsFor(id, CHARACTERS[id]);
+      // (another sheet: Rurik's old sword, or Oathkeeper once it's his)
+      if (p.stats.sprite !== was && this.views?.has(p.id)) { this.views.get(p.id).destroy(); this.views.set(p.id, this.makeView(p)); }
       p.health = Math.max(1, p.stats.maxHealth * share);
       p.airJumpsLeft = Math.min(p.airJumpsLeft, p.stats.airJumps ?? 0);
     }
@@ -848,6 +852,82 @@ export class ArenaScene extends Phaser.Scene {
     // an ending sequence's steps (the judgment), saved the moment they happen
     ev.on('campaignFlag', ({ key }) => P.setFlag(key));
     ev.on('sequenceAward', ({ reward }) => { if (reward && P.claim(reward)) gain('+1 SKILL POINT'); });
+  }
+
+  // ------------------------------------------------------------ Rurik's birthright
+
+  // OATHKEEPER IS HIS (data/stageVillage.js 'elder', data/characters.js birthright): Elder
+  // Brann gives Rurik his dead father's sword at the north gate. The scene is lit like a
+  // sentence (the room goes dark round the two of them, the music falls away), and on the
+  // line he takes it the blade wakes: a column of fire round him, a white-gold flash, the
+  // ground shaking, its name over the screen, and he stands there with Oathkeeper in his
+  // hand (his look and his fire change on the spot: Progress.statsFor).
+  setupBirthright(ev) {
+    const gives = (beat) => beat.lines.some((l) => l[2]?.flag === 'oathkeeper');
+    const cam = this.cameras.main;
+    ev.on('storyBeat', ({ beat }) => {
+      if (!gives(beat) || !this.spotlight) return;
+      const R = this.rurikNow();
+      const brann = this.stage.story?.npcs.find((n) => n.id === 'brann');
+      if (!R || !brann) return;
+      stopMusic(this, 1800);
+      this.spotlight.start({ x: brann.x, z: brann.z, h: 0, stats: { body: { h: 70 } } }, R.f);
+      cam.zoomTo(this.baseZoom * 1.1, 1800, 'Sine.easeInOut', true);
+      this.birthrightCam = true;
+    });
+    ev.on('campaignFlag', ({ key }) => { if (key === 'oathkeeper') this.oathkeeperGiven(); });
+    ev.on('storyBeatDone', ({ beat }) => {
+      if (!gives(beat)) return;
+      this.spotlight?.stop();
+      if (this.birthrightCam) { cam.zoomTo(this.baseZoom, 900, 'Quad.easeInOut', true); this.birthrightCam = false; }
+      this.birthGlow?.forEach((g) => this.tweens.add({ targets: g, alpha: 0, duration: 900, onComplete: () => g.destroy() }));
+      this.birthGlow = null;
+      playMusic(this, this.stageData.music ?? 'battle');
+    });
+  }
+
+  // Rurik on the field: the hero (if he's played) or the companion beside you.
+  rurikNow() {
+    const p = this.players.find((q) => (this.heroIds?.[q.seat] ?? this.characterId) === 'warrior');
+    if (p) return { f: p, played: true, swap: () => {} }; // (applySkills changed his sheet)
+    const c = this.npcView?.companions?.find((k) => k.id === 'warrior');
+    if (c) return { f: c.f, played: false, swap: () => { c.view.destroy(); c.f.stats = this.progress?.statsFor('warrior', CHARACTERS.warrior) ?? c.f.stats; c.view = this.makeView(c.f); } };
+    return null;
+  }
+
+  oathkeeperGiven() {
+    this.applySkills(); // (his fire, his look)
+    const R = this.rurikNow();
+    if (!R) return;
+    R.swap();
+    const f = R.f;
+    const W = this.wrathFX;
+    const y = f.z - (f.h ?? 0);
+    const hilt = y - 72;
+    this.cameras.main.flash(260, 255, 214, 140);
+    this.fx.shake(8, 40);
+    this.rumble(1, 0.8, 700);
+    playSfx(this, 'block', { volume: 1, pitch: 900, minGapMs: 0 });     // the ring of the steel
+    playSfx(this, 'fireWhoosh', { volume: 1, pitch: -1000, minGapMs: 0 });
+    playSfx(this, 'kick', { volume: 0.9, pitch: -2000, minGapMs: 0 });
+    W.flare(f.x, hilt, 3);
+    W.pillar(f.x, f.z, f.h ?? 0, 1.35);
+    this.time.delayedCall(260, () => this.sys.isActive() && W.pillar(f.x, f.z, f.h ?? 0, 1.1));
+    // embers rising off the ground all round him, drawn up into the blade
+    for (let k = 0; k < 46; k++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 40 + Math.random() * 90;
+      W.flame(f.x + Math.cos(a) * r, f.z + Math.sin(a) * r * 0.35, 0, -Math.cos(a) * 40, 0, 120 + Math.random() * 160, 0.15 + Math.random() * 0.2, 50 + Math.random() * 50, -140);
+    }
+    // the light it gives off, on him for the rest of the scene
+    const glow = W.sprite(0xffc850).setPosition(f.x, hilt + 20).setScale(2.6).setAlpha(0).setDepth(DEPTH.popups - 5);
+    const heart = W.sprite(0xfffbe8).setPosition(f.x, hilt + 20).setScale(1.1).setAlpha(0).setDepth(DEPTH.popups - 5);
+    this.tweens.add({ targets: glow, alpha: { from: 0.55, to: 0.25 }, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.tweens.add({ targets: heart, alpha: { from: 0.5, to: 0.2 }, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.birthGlow = [glow, heart];
+    this.callout('OATHKEEPER', '#ffe08a', 52);
+    this.time.delayedCall(1700, () => this.sys.isActive() && this.callout('THE BLADE OF HIS BLOOD  ·  HIS FIRE IS AWAKE', '#ffc860', 22));
+    if (R.played) this.time.delayedCall(3600, () => this.sys.isActive() && this.callout("FIREBOLT  ·  U / LB      THE KING'S WRATH IS OPEN ON HIS TREE", '#ff9a30', 18));
   }
 
   openSkills() {

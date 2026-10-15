@@ -65,8 +65,14 @@ export const CHARACTERS = {
     // a beaten boss's sentence (stage/Sentence.js): the people's king passes it and swings
     // Oathkeeper himself, the brutal downward cleave through the neck
     sentence: { move: 'heavy', fatality: 'decap', cut: 'chop', as: 'Rurik, the people\'s king' },
-    description: "The people's king. Oathkeeper was forged from every hearth in the valley. Slow, heavy, unbreakable. His fire is his fury.",
-    sprite: 'ulric',          // pixel-art sheet (see data/sprites.js); remove to use placeholder shapes
+    description: "The people's king. Oathkeeper, the blade of his blood, burns in his hand alone. Slow, heavy, unbreakable. His fire is his fury.",
+    sprite: 'ulricOath',      // pixel-art sheet (see data/sprites.js); remove to use placeholder shapes
+    // HIS BIRTHRIGHT: in the campaign he starts with his old soldier's sword and no fire. At
+    // the end of level 1 Elder Brann gives him Oathkeeper, his dead father's blade (the
+    // campaign flag below: data/stageVillage.js 'elder'); its fire is his from then on.
+    // Until then Progress.statsFor lays `before` over him and the branches that need the
+    // flag (data/skills.js THE KING'S WRATH) stay shut.
+    birthright: { flag: 'oathkeeper', before: { sprite: 'ulric', spell: null, blade: null } },
     body: { w: 46, h: 108 },
     look: { color: 0x8a3b2e, accent: 0xc8c8c8, skin: 0xd8a57c },
 
