@@ -82,6 +82,12 @@ console.log('Blood Axe — combat logic tests');
 const CRIT_CHANCE = SETTINGS.feel.critChance;
 SETTINGS.feel.critChance = 0;
 
+// Story lines wait for a press in the game (stage/Story.js LINE.wait). The bots that walk
+// whole levels don't read: here the lines time out by their length, as a player pressing
+// on at reading pace would move them. The tests of the wait turn it back on.
+LINE.wait = false;
+const waiting = (fn) => () => { LINE.wait = true; try { fn(); } finally { LINE.wait = false; } };
+
 // (async tests: run after the rest, results printed at the end)
 const later = [];
 function testAsync(name, fn) { later.push([name, fn]); }
@@ -2472,6 +2478,48 @@ test('story: D-pad right moves any line on; D-pad left skips the whole conversat
   assert(st.story.done.has('opening') && st.story.line?.beat !== 'opening', 'D-pad left skipped the rest of it');
 });
 
+test('story: a line never moves on by itself; one press (D-pad right / N / a click) moves it on', waiting(() => {
+  const world = new World({ seed: 2 });
+  const first = STAGE_VILLAGE.story[0].delay ?? LINE.gap;
+  const c = new Pressing({}, {});
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 150, z: 440, controller: c }));
+  const st = new Stage(world, STAGE_VILLAGE);
+  st.start(p);
+  const run = (n) => { for (let i = 0; i < n; i++) { world.tick(); st.update(); } };
+  run(first + LINE.max * 4);
+  assert(st.story.line?.beat === 'opening' && st.story.line.index === 0, `still the first line, long after its time (${st.story.line?.index})`);
+  c.script = { [c.t + 1]: ['padRight'] };
+  run(10);
+  assert(st.story.line.index === 1, `a press moved it on (line ${st.story.line?.index})`);
+  run(LINE.max * 4);
+  assert(st.story.line.index === 1, 'and the next line waits too');
+  st.story.skipScene();
+  run(2);
+  assert(st.story.done.has('opening'), 'skipping the scene still ends it');
+}));
+
+test('story: mid-fight lines wait too; and the cutaways\' lines never move on by themselves', waiting(() => {
+  const world = new World({ seed: 2 });
+  const c = new Pressing({}, {});
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 150, z: 440, controller: c }));
+  const st = new Stage(world, STAGE_VILLAGE);
+  st.start(p);
+  hush(st);
+  st.story.beats.push({ id: 'shout', lines: [['RURIK', 'Behind you!'], ['RURIK', 'Again!']], fired: false });
+  st.story.cue('shout');
+  const run = (n) => { for (let i = 0; i < n; i++) { world.tick(); st.update(); } };
+  run(LINE.max * 3);
+  assert(st.story.line?.beat === 'shout' && st.story.line.index === 0 && !st.story.holding, 'the line stays up');
+  c.script = { [c.t + 1]: ['padRight'] };
+  run(5);
+  c.script = { [c.t + LINE.minSkip + 5]: ['padRight'] };
+  run(LINE.minSkip + 10);
+  assert(st.story.done.has('shout'), 'two presses, two lines');
+  const src = readFileSync(new URL('../src/scenes/CutawayScene.js', import.meta.url), 'utf8');
+  assert(!/delayedCall\([^)]*text\.length/.test(src) && !src.includes('this.auto'), 'no line in a cutaway is on a timer');
+  assert(src.includes("this.input.on('pointerdown', () => this.next())"), 'a click moves a cutaway on');
+}));
+
 test('village: the barn: smashing the burning beam off its door frees the people inside', () => {
   const world = new World({ seed: 3 });
   const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 5260, z: 300, controller: new Scripted() }));
@@ -3865,6 +3913,23 @@ test('sentence: timed to its music: every hero\'s blade lands on the swell\'s cr
   });
   assert(jumped && Math.abs(at - SENTENCE.slice) <= 2, `skipped: the music jumps on, the blade still on the crest (${at})`);
 });
+
+test('sentence: its lines wait for a press; the music plays on through the words\' share and holds there; the blade still lands on the crest', waiting(() => {
+  const { world, p, c, st, ev, run } = sentenceSetup('warrior');
+  blowOf(world, p, st.boss);
+  const S = st.sentence;
+  let at = null, back = false, prev = null;
+  world.events.on('sentenceStrike', () => { at = S.clock; });
+  const watch = () => { if (prev != null && S.clock < prev) back = true; prev = S.clock; };
+  run(60 * 40, watch);
+  assert(S.step === 'speak' && S.waiting && !ev.strike.length, `unread, the words wait and the music holds (${S.step}, ${S.clock})`);
+  const held = S.clock;
+  run(120, watch);
+  assert(S.clock === held, 'held still');
+  run(60 * 20, (i) => { watch(); if (S.step === 'speak' && i % 30 === 0) c.script = { [c.t + 1]: ['attack'] }; });
+  assert(ev.strike.length === 1 && Math.abs(at - SENTENCE.slice) <= 2, `read on: the blade lands on the crest (${at})`);
+  assert(!back, 'the music never steps back');
+}));
 
 test('sentence: the twins: the first to fall dies fighting; the one left standing kneels for both of them', () => {
   const { world, p, st, ev, run } = sentenceSetup('warrior', STAGE_GATES, 'winch', 3800);

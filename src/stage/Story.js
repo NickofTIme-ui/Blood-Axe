@@ -15,6 +15,9 @@
 //   calm: true   waits until no enemy is alive (essential lines are said on safe ground)
 //   hold: true   a held scene: the heroes stand still while it plays (never in a fight);
 //                any hero's jump or attack moves to the next line
+// A line stays up until a player moves it on (LINE.wait): D-pad right / N (or a mouse
+// click, scenes/ArenaScene.js) in any line, jump / attack too in a held scene; D-pad
+// left / X skips the conversation. Either player can do it.
 //   if: 'rescued:<npcId>'   only if that villager was saved (by now, in this level)
 //       'lost:<npcId>'      only if he was lost (an execution or an escort gone wrong)
 //       'saved:<npcId>'     saved in this level or any level before (the campaign save)
@@ -68,7 +71,9 @@
 // INTERACT is the D-pad's up button (`padUp`; E on the keys). `prompts` lists what a hero
 // standing near someone can do right now, for the view.
 
-export const LINE = { base: 70, perChar: 2.4, max: 330, minSkip: 16, gap: 14 };
+// (wait: a line never moves on by itself — Nick: the text went by too fast. false: lines
+// time out by their length, as they used to)
+export const LINE = { base: 70, perChar: 2.4, max: 330, minSkip: 16, gap: 14, wait: true };
 export const NPC = {
   speed: 110, reach: 44, depth: 32, height: 34, talkReach: 90, talkDepth: 260, freeFor: 50,
   askReach: 70, askDepth: 50,          // how near a hero must be to ask (INTERACT)
@@ -199,7 +204,7 @@ export class Story {
       for (const p of this.stage.players) if (p.alive) { p.awe = Math.max(p.awe ?? 0, 2); p.vx = p.vz = 0; }
     }
     if (c.age < 0) return;
-    let next = c.age >= this.lineFrames(c.beat, c.index);
+    let next = c.skip || (!LINE.wait && c.age >= this.lineFrames(c.beat, c.index));
     if (c.beat.hold && c.age >= LINE.minSkip) {
       for (const p of heroes) if (p.controller.consume('jump', 4) || p.controller.consume('attack', 4)) next = true;
     }
@@ -233,7 +238,8 @@ export class Story {
     const c = this.current;
     if (!c?.beat.hold) return;
     c.index = c.beat.lines.length - 1;
-    c.age = this.lineFrames(c.beat, c.index);
+    c.age = Math.max(0, c.age);
+    c.skip = true;
   }
 
   // ------------------------------------------------------------ villagers

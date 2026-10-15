@@ -651,3 +651,10 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - **Rurik's Rising Cleave:** strip `launcher` (`assets/sprites/strips/ulric_launcher.png`, 5 poses) and its anim in `src/data/spriteStrips.js`; until it exists the launcher borrows light2. Prompt in the same doc.
 - **The Gallows Ascent:** `LEVEL_ART.gallows` (`assets/env/gallows/`: sky, far, mid, wall, ground, surf_rock_top, surf_rock_front, surf_plank). `TerrainView.drawBackdrop`/`drawFloor` draw each painted piece where it exists, the code art elsewhere (the code sky always stays behind: the camera climbs). Prompts: `docs/gallows-art-prompts.md`. Its set pieces (cage lift, scaffold, bell, roost, altar) still need code before art would show.
 - Tests pass. The headless browser couldn't boot the game in time this session, so the Gallows hook isn't checked on screen.
+
+## Cloud, 2026-10-15: story text waits for a button (not on itch)
+- Nick: "the text in the game goes way too fast, you must click a button for text to progress." No line moves on by itself any more (`LINE.wait` in `src/stage/Story.js`).
+- In a level, any player moves a line on with a mouse click, D-pad right or N. In a held scene SPACE / J (pad A / X) work too. D-pad left or X still skips the whole conversation. During a fight SPACE and J stay jump and attack, so it's click, N or D-pad right there. The click goes through the player's button record (`ArenaScene` pointerdown → `padRight`), so it works online. The box hint now says CLICK.
+- The sentence (`src/stage/Sentence.js`): the music plays on through the words' share of the track, then pauses (`Sentence.waiting`, `ArenaScene.syncSentenceMusic`) until the last line is moved on. It never steps back, and the blade still lands on the crest.
+- The king's cutaways: lines wait for a click, SPACE, ENTER, J or pad A. His acts (the ember wave, the fist, the horns...) still play out by themselves.
+- Tests: the level-walking bots still time lines out (`LINE.wait = false` at the top of `tests/logic-test.js`). Three new tests check the wait. Not tried in the browser.

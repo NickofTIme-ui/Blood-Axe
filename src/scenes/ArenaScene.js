@@ -412,6 +412,11 @@ export class ArenaScene extends Phaser.Scene {
       this.popup(this.player.x, this.player.z - 150, this.wavesOn ? 'WAVES ON' : 'WAVES OFF', '#e0c080');
     }));
     this.setupTestKeys();
+    // A click moves a story line on, as D-pad right / N does (stage/Story.js: the lines wait
+    // for a press). It rides in this machine's buttons, so online both games see it.
+    const clickLine = () => { if (!this.paused && this.stage.story?.line) this.controls?.registerPress('padRight'); };
+    this.input.on('pointerdown', clickLine);
+    this.events.once('shutdown', () => this.input.off('pointerdown', clickLine));
     // Pause: P / Enter / Start — and by itself whenever the window loses focus or the tab
     // is hidden, so nothing happens to you while you're away.
     this.paused = false;
@@ -1036,7 +1041,13 @@ export class ArenaScene extends Phaser.Scene {
       this.sentenceSong = playCue(this, 'sentence', want, () => {
         if (this.sys.isActive()) playMusic(this, this.stageData.music ?? 'battle');
       }) ?? false;
-    } else if (s.isPlaying && Math.abs(s.seek - want) > 0.15) s.setSeek(want);
+    } else {
+      // (the words' share of the track is played out and the last line not yet moved on:
+      // the music waits with it)
+      if (S.waiting && s.isPlaying) s.pause();
+      else if (!S.waiting && s.isPaused) s.resume();
+      if (s.isPlaying && Math.abs(s.seek - want) > 0.15) s.setSeek(want);
+    }
   }
 
   finisherFX(beat) {

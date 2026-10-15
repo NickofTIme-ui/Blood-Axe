@@ -38,7 +38,8 @@
 // active frame falls on the crest. When the words would need more time than the track
 // gives, the track starts a little later (clock < 0: silence while he drops to his
 // knees) and the words run quicker. A line
-// skipped moves the clock (and so the music) on with it.
+// skipped moves the clock (and so the music) on with it; the lines wait for a press
+// (stage/Story.js LINE.wait), so a slow reader holds the music at the words' end.
 //
 // Events: sentenceStart { boss, hero }, sentenceKneel { boss, hero },
 //         sentenceStrike { boss, hero, fatality, dir }, sentenceDone { boss, hero, routed }
@@ -85,6 +86,9 @@ export class Sentence {
   }
 
   get running() { return this.step !== 'watch'; }
+  // The words have had their share of the track and the last line is still up: the music
+  // waits (scenes/ArenaScene.js syncSentenceMusic).
+  get waiting() { return this.step === 'speak' && this.sb != null && this.clock >= this.sb + this.off.at(-1); }
 
   // Is this the man the sentence waits for? (the section's boss, the last twin standing)
   eligible(b) {
@@ -180,7 +184,10 @@ export class Sentence {
       const c = story?.current;
       if (this.off && c?.beat.id === this.beatId && c.age >= 0) {
         this.sb ??= this.clock - this.off[c.index] - c.age;
-        this.clock = this.sb + this.off[c.index] + c.age;
+        // (the lines wait for a press, the music doesn't: it plays on through the words'
+        // share of the track and holds at its end until the last line is moved on; it
+        // never steps back for a line read slowly)
+        this.clock = Math.min(Math.max(this.clock, this.sb + this.off[c.index] + c.age), this.sb + this.off.at(-1));
       }
       if (this.t > SENTENCE.stand && (!story || story.done.has(this.beatId))) {
         if (this.sb != null) this.clock = this.sb + this.off.at(-1);

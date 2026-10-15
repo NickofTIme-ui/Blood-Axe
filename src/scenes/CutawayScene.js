@@ -6,7 +6,8 @@
 // the file and flipped here to face the hall. The throne room is still drawn in code.
 // Warlord Malgor, his champion, stands at the throne in his own painted strips.
 //
-// SPACE / ENTER / J (pad A): next line.  ESC (pad B or Start): skip the scene. Skipping
+// SPACE / ENTER / J (pad A) or a click: next line (a line waits for it; the king's acts
+// play out by themselves).  ESC (pad B or Start): skip the scene. Skipping
 // changes nothing: the scene is only shown, and its outcome is the level's (already saved).
 //
 // Scenes (CUTAWAYS): 'learns' (after the village: he hears they survived; confidence),
@@ -221,7 +222,7 @@ export class CutawayScene extends Phaser.Scene {
   say(who, text = '') {
     this.tweens.killTweensOf(this.box.root);
     if (!who) { this.box.setAlpha(0); return; }
-    this.box.show(who, text, 'full', 'SPACE  next      ESC  skip').setAlpha(0);
+    this.box.show(who, text, 'full', 'CLICK / SPACE  next      ESC  skip').setAlpha(0);
     this.tweens.add({ targets: this.box.root, alpha: 1, duration: 250 });
   }
 
@@ -237,17 +238,14 @@ export class CutawayScene extends Phaser.Scene {
     if (b.act === 'kill') { this.kill(); return; }
     if (b.act === 'helm') { this.helm(); return; }
     if (b.act === 'gutter') { this.gutter(); return; }
+    // (a line waits for a press: it never moves on by itself)
     this.say(b.who, b.text);
-    // lines move on by themselves too
-    this.auto?.remove();
-    this.auto = this.time.delayedCall(1800 + b.text.length * 45, () => this.next());
   }
 
   // his power, shown: ember-fire gathers in his open hand; he closes it, and a wave of ash
   // and embers rolls down the hall, puts out every torch and throws the messenger flat
   ember() {
     this.busy = true;
-    this.auto?.remove();
     this.say(null);
     const W = SETTINGS.width; const H = SETTINGS.height;
     this.tweens.add({ targets: this.hand, scale: 2.6, alpha: 1, duration: 1200, ease: 'Sine.easeIn' });
@@ -279,7 +277,6 @@ export class CutawayScene extends Phaser.Scene {
   // the hall shakes, the messenger flinches back
   strike() {
     this.busy = true;
-    this.auto?.remove();
     this.say(null);
     const W = SETTINGS.width; const H = SETTINGS.height;
     const ax = W * 0.78 + 65 + 86; const ay = H - 248; // the throne's arm, beside him
@@ -301,7 +298,6 @@ export class CutawayScene extends Phaser.Scene {
   // scatter down the hall past the messenger
   hurl() {
     this.busy = true;
-    this.auto?.remove();
     this.say(null);
     const W = SETTINGS.width; const H = SETTINGS.height;
     const tx = W * 0.62; const ty = H - 200;
@@ -328,7 +324,6 @@ export class CutawayScene extends Phaser.Scene {
   // shiver with each; the king's eyes narrow
   horns() {
     this.busy = true;
-    this.auto?.remove();
     this.say('VOICE', '(horns, long and low, from the walls)');
     for (let i = 0; i < 3; i++) {
       this.time.delayedCall(200 + i * 900, () => {
@@ -345,7 +340,6 @@ export class CutawayScene extends Phaser.Scene {
   // kneels and there is only ash left (a stand-in figure: the messenger's)
   kill() {
     this.busy = true;
-    this.auto?.remove();
     this.say(null);
     const W = SETTINGS.width; const H = SETTINGS.height;
     const mx = W * 0.3 + (this.messenger.x ?? 0); const my = H - 140;
@@ -387,7 +381,6 @@ export class CutawayScene extends Phaser.Scene {
   // the foot of the dais, where it rocks and stops; the hall goes still
   helm() {
     this.busy = true;
-    this.auto?.remove();
     this.say('VOICE', '(a helm rolls across the floor)');
     const W = SETTINGS.width; const H = SETTINGS.height;
     const h = this.add.graphics();
@@ -413,7 +406,6 @@ export class CutawayScene extends Phaser.Scene {
   // goes out, and the torches with it, one by one; only his eyes are left
   gutter() {
     this.busy = true;
-    this.auto?.remove();
     this.say(null);
     this.tweens.add({ targets: this.hand, scale: 1.8, alpha: 1, duration: 900, ease: 'Sine.easeIn' });
     playSfx(this, 'fireWhoosh', { volume: 0.4, pitch: -900, minGapMs: 0 });
@@ -432,7 +424,6 @@ export class CutawayScene extends Phaser.Scene {
   finish() {
     if (this.finished) return;
     this.finished = true;
-    this.auto?.remove();
     this.tweens.add({
       targets: this.root, alpha: 0, duration: 500,
       onComplete: () => { const done = this.onDone; this.scene.stop(); done?.(); },

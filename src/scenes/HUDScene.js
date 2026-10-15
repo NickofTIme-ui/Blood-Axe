@@ -143,7 +143,7 @@ export class HUDScene extends Phaser.Scene {
       // (a fight on: the slim strip; held scenes and quiet ground: the full box)
       const fight = !hold && (this.arena.stage.livingFoes?.().length ?? 0) > 0;
       D.show(line.who, line.text, fight ? 'compact' : 'full',
-        line.hold ? 'D-PAD ▶ / N  next     D-PAD ◀ / X  skip     (or SPACE / J)' : 'D-PAD ▶ / N  next     D-PAD ◀ / X  skip');
+        line.hold ? 'CLICK / D-PAD ▶ / N  next     D-PAD ◀ / X  skip     (or SPACE / J)' : 'CLICK / D-PAD ▶ / N  next     D-PAD ◀ / X  skip');
       D.setAlpha(Math.min(1, D.alpha + 0.15));
       if (this.hint.alpha > 0) { this.tweens.killTweensOf(this.hint); this.hint.setAlpha(0); }
     }
