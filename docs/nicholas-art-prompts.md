@@ -91,6 +91,8 @@ strip was repacked into 9 equal cells (3312 x 353).
 
 ## 3. His walk: `assets/sprites/npc/nicholas_walk.png` (asked for 15 October 2026)
 
+**Done 15 October 2026** in the "Create Nicholas Sprite Strip" chat, with `ulric_walk2.png` attached; repacked into 8 equal cells (2400 x 724).
+
 Nick: "his animation is horrible, and his art in the game doesn't match up with the rest."
 The sheet's three walk poses (4-6) came out as the same stride drawn three times, so his
 legs barely move while he crosses the ground. This strip replaces them while he walks. The

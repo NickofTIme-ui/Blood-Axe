@@ -77,6 +77,7 @@ const CELLS = {
 // run, so he hobbles on his standing pose (sinking on each step, like the run)
 const HOBBLE = [0, 0, 0, 0];
 const GUIDE_STEP = 24; // px of road a beat of the guide's walk covers (at depth scale 1)
+const WALK_STEP = 16;  // ...a frame of his own eight-frame walk (a full stride: 128 px)
 CELLS.miner = CELLS.villager;
 CELLS['miner-old'] = { stand: 0, sit: 1, wave: 2, kneel: 3, run: HOBBLE };
 const PRISONER = { kneel: 0, wave: 1, cower: 2, run: RUN, stand: 6, bound: 0 };
@@ -257,11 +258,11 @@ export class NpcView {
     const point = n.pointing && Math.floor((t + v.seed * 40) / 170) % 3 === 2;
     const pose = n.state === 'dying' ? 'sit' : n.moving ? 'run' : n.braced ? 'cower' : point ? 'wave' : 'stand';
     g.setAlpha(n.going > 0 ? n.going / GUIDE.fade : 1 - (n.fade ?? 0) / GUIDE.fade);
-    // (his own walk cycle once it's painted: eight beats to the stride, two to a step)
+    // (his own walk cycle, eight frames to the stride, four to a step)
     const cycle = n.moving && who === 'nicholas' && SPRITES['nicholas-walk'] ? 'nicholas-walk' : who;
-    const per = cycle === 'nicholas-walk' ? 2 : 1; // beats to a footfall
-    const beat = (n.stride ?? 0) / (GUIDE_STEP * k) * per;
-    const sink = n.moving ? Math.abs(Math.cos(beat * Math.PI / (2 * per))) * 2.2 * k : 0;
+    const own = cycle === 'nicholas-walk';
+    const beat = (n.stride ?? 0) / ((own ? WALK_STEP : GUIDE_STEP) * k);
+    const sink = n.moving ? Math.abs(Math.cos(beat * Math.PI / (own ? 4 : 2))) * 2.2 * k : 0; // (a footfall every 4 / 2 beats)
     this.smooth = true;
     this.figure(g, n.x, y + sink, k, pose, n.moving ? beat * 7 : t, 0x7a3a30, pose === 'sit' ? 1 : dir, cycle);
     this.smooth = false;

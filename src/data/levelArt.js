@@ -144,7 +144,7 @@ export const SPRITE_SHEETS = {
   nicholas: { file: 'assets/sprites/npc/nicholas.png', frames: 9, height: 235, centre: true, grade: { contrast: 1.16, saturation: 1.22, outline: 2, rim: 0.5 } },
   // his walk: an eight-pose cycle (docs/nicholas-art-prompts.md, "walk"); until it's in he
   // walks on the sheet's three stride poses. (height: tune it on screen next to his stand)
-  'nicholas-walk': { file: 'assets/sprites/npc/nicholas_walk.png', frames: 8, height: 230, centre: true, grade: { contrast: 1.16, saturation: 1.22, outline: 2, rim: 0.5 } },
+  'nicholas-walk': { file: 'assets/sprites/npc/nicholas_walk.png', frames: 8, height: 232, centre: true, grade: { contrast: 1.04, saturation: 1.05, outline: 0, rim: 0.25 } },
   // Irvolino, the miller (made in ChatGPT from his photo: docs/irvolino-art-prompts.md): the
   // villager sheet's 8 poses. He leads the miller's people out of the barn; until he's
   // painted he's the villager.
