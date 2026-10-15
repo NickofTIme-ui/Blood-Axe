@@ -111,15 +111,15 @@ export const SPRITE_SHEETS = {
   // at more of their painted detail, instead of the village's smaller cut
   miner: { file: 'assets/sprites/npc/villager.png', frames: 8, height: 205 },
   'miner-old': { file: 'assets/sprites/npc/elder.png', frames: 4, height: 192 },
-  // ...until each prisoner has his own sheet (docs/mine-prisoner-art-prompts.md; picked up
-  // as soon as the file is in the folder): 7 poses, kneel at the chain, plead, cower,
-  // run x3, stand
-  'prisoner-tobin': { file: 'assets/sprites/npc/prisoner_tobin.png', frames: 7, height: 205 },
-  'prisoner-hilde': { file: 'assets/sprites/npc/prisoner_hilde.png', frames: 7, height: 195 },
-  'prisoner-bram': { file: 'assets/sprites/npc/prisoner_bram.png', frames: 7, height: 215 },
-  'prisoner-a': { file: 'assets/sprites/npc/prisoner_a.png', frames: 7, height: 210 },
-  'prisoner-b': { file: 'assets/sprites/npc/prisoner_b.png', frames: 7, height: 205 },
-  'prisoner-c': { file: 'assets/sprites/npc/prisoner_c.png', frames: 7, height: 200 },
+  // ...until each prisoner has his own sheet (docs/mine-prisoner-art-prompts.md): 7 poses,
+  // kneel at the chain, plead, cower, run x3, stand; re-laid one figure per equal cell,
+  // feet on one line. Heights put a standing man at about 90-102 px (Bram the biggest)
+  'prisoner-tobin': { file: 'assets/sprites/npc/prisoner_tobin.png', frames: 7, height: 215 },
+  'prisoner-hilde': { file: 'assets/sprites/npc/prisoner_hilde.png', frames: 7, height: 213 },
+  'prisoner-bram': { file: 'assets/sprites/npc/prisoner_bram.png', frames: 7, height: 250 },
+  'prisoner-a': { file: 'assets/sprites/npc/prisoner_a.png', frames: 7, height: 233 },
+  'prisoner-b': { file: 'assets/sprites/npc/prisoner_b.png', frames: 7, height: 225 },
+  'prisoner-c': { file: 'assets/sprites/npc/prisoner_c.png', frames: 7, height: 205 },
   // Nicholas, the mountain guide (Nick in the game; docs/nicholas-art-prompts.md): 9 poses,
   // the villager sheet's order (point the way where the villager waves, brace where he
   // cowers, sit wounded) and a ninth, lying dead. Until it's painted he walks on the

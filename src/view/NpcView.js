@@ -259,7 +259,7 @@ export class NpcView {
     const chained = n.state === 'trapped';
     const now = this.scene.time.now;
     looks.forEach((L, i) => {
-      const fx = (chained ? n.x + 34 : n.x) + i * 40 - (chained ? 0 : (looks.length - 1) * 20);
+      const fx = (chained ? n.x + 34 : n.x) + i * 46 - (chained ? 0 : (looks.length - 1) * 23);
       const fy = y + (L.dz ?? 0);
       const own = !!SPRITES[L.art];
       const sheet = own ? L.art : SPRITES[L.who] ? L.who : SPRITES.captive ? 'captive' : undefined;
