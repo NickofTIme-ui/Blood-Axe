@@ -658,3 +658,9 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - The sentence (`src/stage/Sentence.js`): the music plays on through the words' share of the track, then pauses (`Sentence.waiting`, `ArenaScene.syncSentenceMusic`) until the last line is moved on. It never steps back, and the blade still lands on the crest.
 - The king's cutaways: lines wait for a click, SPACE, ENTER, J or pad A. His acts (the ember wave, the fist, the horns...) still play out by themselves.
 - Tests: the level-walking bots still time lines out (`LINE.wait = false` at the top of `tests/logic-test.js`). Three new tests check the wait. Not tried in the browser.
+
+## PC, 2026-10-15: ChatGPT art for Orsk, the Gate Twins, the Rising Cleave and the Gallows Ascent (not on itch)
+- **Landed (23 files, no code change):** `assets/enemies/strips/orsk_walk|react|atk1|atk2|heavy|special|kneel.png` (chat "BA · Boss · Orsk"), `twin_walk|react|atk1|atk2|heavy|special|kneel.png` (chat "BA · Boss · Gate Twins"), `assets/sprites/strips/ulric_launcher.png` ("BA · Hero · Rurik King"), and `assets/env/gallows/sky|far|mid|wall|ground|surf_rock_top|surf_rock_front|surf_plank.png` ("BA · Level · Gallows Ascent"; far, mid and wall on magenta).
+- **Checked:** `tools/strip-check.html?id=orsk` and `?id=twin` show every strip split into the right number of poses. The Gallows pictures weren't looked at in the level. `npm test` not run (no Node on the PC). Not watched in a fight.
+- **Skipped:** the optional `orsk_`/`twin_` jump and drop strips (not in this pass). The Twins came out dark iron with warm torchlight rather than pure cold grey.
+- **For the cloud:** the kneel scale note from 12 October applies to `orsk_kneel` and `twin_kneel` too. `surf_rock_top.png` shows a strip of the ledge's front face along its near edge.
