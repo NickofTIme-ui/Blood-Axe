@@ -667,3 +667,10 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 
 ## Cloud, 2026-10-15: second ChatGPT batch checked (not on itch)
 - Orsk's and the Gate Twins' strips (76318a4) cut cleanly in `tools/strip-check.html` at their kinds' size; tests pass. `assets/env/gallows/ground.png` had a 170 px pure-black band along its top (ChatGPT's empty "far edge"); cropped off so the floor starts at the slate. The Gallows layers have their magenta skylines; not yet seen inside the level (the headless browser still can't boot the game in time).
+
+## Cloud, 2026-10-15: Irvolino redrawn from his photo (not on itch)
+- Nick sent a photo of the real Irvolino (the miller, `MILLER` in `src/data/speakers.js`, Burning Village barn) and asked for his art to look like him.
+- **Portrait** `assets/ui/portraits/irvolino.png`: redone in ChatGPT on Nick's PC from the photo (chat "Create Pixel Art Portrait"), cut to 256 square.
+- **New sprite** `assets/sprites/npc/irvolino.png`: 8 poses in the villager sheet's order (stand, cower, wave, run x3, sit, kneel), same chat, re-packed one figure per equal cell with the feet on one line. `SPRITE_SHEETS.irvolino` (`src/data/levelArt.js`), `CELLS.irvolino` (`src/view/NpcView.js`). He's now the front man of the three who come out of the barn (the `group` pose for npc `barn`); the other two stay villagers, and without the file he falls back to the villager.
+- Raw downloads and the photo are on the PC in `assets\incoming\irvolino` (the photo is also in project files `irvolino-npc/`, not in the repo). Prompts: `docs/irvolino-art-prompts.md`.
+- Tests pass; in a headless browser both files load at boot. He hasn't been seen coming out of the barn in play yet.

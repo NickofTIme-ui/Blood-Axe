@@ -68,6 +68,8 @@ const CELLS = {
   // Nicholas, the guide: the villager's order (wave: he points the way on; cower: braced),
   // and a ninth: lying dead
   nicholas: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7, lie: 8 },
+  // Irvolino, the miller: the villager's order
+  irvolino: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7 },
 };
 // the mine's prisoners: the same sheets cut bigger (data/levelArt.js); the old man has no
 // run, so he hobbles on his standing pose (sinking on each step, like the run)
@@ -149,7 +151,7 @@ export class NpcView {
   // level's NPC can name its own with `art`)
   figure(g, x, y, k, pose, t, tunic, dir = 1, who) {
     who ??= 'villager';
-    if (who === 'nicholas' && !SPRITES.nicholas) who = 'villager'; // (until his sheet is painted)
+    if ((who === 'nicholas' || who === 'irvolino') && !SPRITES[who]) who = 'villager'; // (until his sheet is painted)
     if (this.sprite(g, x, y, k, pose, t, dir, who)) return true;
     const sc = k;
     const bob = pose === 'run' ? Math.abs(Math.sin(t * 0.4)) * 3 : pose === 'cower' ? Math.sin(t * 0.25) * 1 : 0;
@@ -234,7 +236,8 @@ export class NpcView {
     }
     if (n.pose === 'chained') { this.drawChained(n, v, g, y, k, t, pose, dir); return; }
     if (n.pose === 'group' || n.pose === 'convoy') {
-      for (let i = 0; i < 3; i++) this.figure(g, n.x - 30 + i * 28, y + (i % 2) * 6, k * (i === 1 ? 0.75 : 1), pose, t + i * 5, tun(i + 4), dir);
+      // (the barn's group is the miller's people: Irvolino leads them, data/speakers.js MILLER)
+      for (let i = 0; i < 3; i++) this.figure(g, n.x - 30 + i * 28, y + (i % 2) * 6, k * (i === 1 ? 0.75 : 1), pose, t + i * 5, tun(i + 4), dir, i === 0 && n.id === 'barn' ? 'irvolino' : undefined);
       return;
     }
     this.figure(g, n.x, y, k, pose, t, tun(0), dir, n.art);
