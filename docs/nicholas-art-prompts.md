@@ -88,3 +88,32 @@ strip was repacked into 9 equal cells (3312 x 353).
    a new chat called **BA · Nicholas**, with the photo and `villager.png` attached.
 2. Save each one with the file name above it, put it in the folder, and commit it. The game picks
    up both files on the next load (`data/speakers.js`, `data/levelArt.js` `SPRITE_SHEETS.nicholas`).
+
+## 3. His walk: `assets/sprites/npc/nicholas_walk.png` (asked for 15 October 2026)
+
+Nick: "his animation is horrible, and his art in the game doesn't match up with the rest."
+The sheet's three walk poses (4-6) came out as the same stride drawn three times, so his
+legs barely move while he crosses the ground. This strip replaces them while he walks. The
+game picks it up by its file name (`data/levelArt.js` `'nicholas-walk'`), cuts it round his
+torso and grades it like the sheet, and plays it in step with the ground he covers.
+
+Use the **BA · Nicholas** chat (or "Create Nicholas Sprite Strip"). Attach the current
+`assets/sprites/npc/nicholas.png` (his look) and `assets/sprites/strips/ulric_walk2.png`
+(the style and finish of the heroes: crisp dark outline, strong rim light, richer colour).
+
+> A sprite strip, one row of 8 poses on plain black, facing right, nothing touching, no
+> ground line, no text. The same man as in the attached Nicholas strip (bald head, full
+> black beard, dark brown leather coat with a grey wolf-fur collar over a faded brick-red
+> tunic, coil of rope over one shoulder, belt with hatchet and horn, fur-wrapped boots, a
+> long iron-shod ash staff in his right hand). Drawn in the style and finish of the attached
+> hero strip: detailed 16-bit painterly pixel art, a crisp dark outline round the figure, a
+> strong cool rim light on his head, shoulders and back, rich colour and deep shadows, not
+> soft or washed out. A full, steady walking cycle of a strong mountain man, the staff
+> planted in step: 1 right foot forward heel down (contact); 2 weight coming onto it (down);
+> 3 legs passing, body highest; 4 left foot swinging forward; 5 left foot forward heel down
+> (contact); 6 weight onto it; 7 legs passing; 8 right foot swinging forward. Each frame
+> clearly different from the last (the legs and the free arm swing through the cycle), the
+> same size and the same height of head in every frame, feet on one line.
+
+Save as `assets/sprites/npc/nicholas_walk.png` and commit. If he looks taller or shorter
+walking than standing, change `height` on `'nicholas-walk'` in `src/data/levelArt.js`.

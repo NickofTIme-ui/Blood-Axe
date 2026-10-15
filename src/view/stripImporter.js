@@ -435,8 +435,25 @@ export function importFxStrip(img, spec) {
     const x = (p % W) % cw; const y = ((p / W) | 0) % ch;
     if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
   }
-  const bw = Math.ceil(x1 - x0 + 1);
+  let bw = Math.ceil(x1 - x0 + 1);
   const bh = Math.ceil(y1 - y0 + 1);
+  // centre: each pose cut round its own torso (the middle of its body, between its
+  // shoulders and hips), so a figure doesn't hop sideways when he changes pose
+  const cx0 = [];
+  if (spec.centre) {
+    let half = 0;
+    for (let k = 0; k < n; k++) {
+      const ox = (k % (spec.columns ?? n)) * cw; const oy = Math.floor(k / (spec.columns ?? n)) * ch;
+      let t = ch; let b = 0; let l = cw; let r = 0;
+      for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) if (fg[(Math.floor(oy) + y) * W + Math.floor(ox) + x]) { if (y < t) t = y; if (y > b) b = y; if (x < l) l = x; if (x > r) r = x; }
+      let sum = 0; let cnt = 0;
+      for (let y = Math.floor(t + (b - t) * 0.3); y < t + (b - t) * 0.6; y++) for (let x = 0; x < cw; x++) if (fg[(Math.floor(oy) + y) * W + Math.floor(ox) + x]) { sum += x; cnt++; }
+      const c = cnt ? sum / cnt : (l + r) / 2;
+      cx0.push(c);
+      half = Math.max(half, c - l + 1, r - c + 1);
+    }
+    bw = Math.ceil(half * 2);
+  }
   const s = spec.height / bh;
   const fw = Math.round(bw * s);
   const fh = Math.round(bh * s);
@@ -448,11 +465,15 @@ export function importFxStrip(img, spec) {
   px.ctx.putImageData(px.data, 0, 0);
   const cols = spec.columns ?? n;
   for (let k = 0; k < n; k++) {
-    const cx = (k % cols) * cw + x0;
+    const cx = (k % cols) * cw + (spec.centre ? cx0[k] - bw / 2 : x0);
     const cy = Math.floor(k / cols) * ch + y0;
     const crop = document.createElement('canvas');
     crop.width = bw; crop.height = bh;
-    crop.getContext('2d').drawImage(px.c, cx, cy, bw, bh, 0, 0, bw, bh);
+    if (spec.centre) {
+      // (only this cell's pixels: a wide cut mustn't take in a neighbour's staff)
+      const cellX = (k % cols) * cw;
+      crop.getContext('2d').drawImage(px.c, cellX, cy, cw, bh, cellX - cx, 0, cw, bh);
+    } else crop.getContext('2d').drawImage(px.c, cx, cy, bw, bh, 0, 0, bw, bh);
     sctx.drawImage(downscale(crop, fw, fh), k * fw, 0);
   }
   return { canvas: sheet, count: n, fw, fh };

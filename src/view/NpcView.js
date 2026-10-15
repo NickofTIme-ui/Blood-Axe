@@ -14,7 +14,7 @@
 // own that never runs: the fight can't touch them.
 
 import { DEPTH, depthScale } from './depths.js';
-import { NPC } from '../stage/Story.js';
+import { NPC, GUIDE } from '../stage/Story.js';
 import { FONT } from './fonts.js';
 import { World } from '../core/World.js';
 import { Controller } from '../core/Controller.js';
@@ -70,10 +70,13 @@ const CELLS = {
   nicholas: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7, lie: 8 },
   // Irvolino, the miller: the villager's order
   irvolino: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7 },
+  // ...and his own walk, a full cycle, once it's painted (data/levelArt.js 'nicholas-walk')
+  'nicholas-walk': { run: [0, 1, 2, 3, 4, 5, 6, 7], stand: 0 },
 };
 // the mine's prisoners: the same sheets cut bigger (data/levelArt.js); the old man has no
 // run, so he hobbles on his standing pose (sinking on each step, like the run)
 const HOBBLE = [0, 0, 0, 0];
+const GUIDE_STEP = 24; // px of road a beat of the guide's walk covers (at depth scale 1)
 CELLS.miner = CELLS.villager;
 CELLS['miner-old'] = { stand: 0, sit: 1, wave: 2, kneel: 3, run: HOBBLE };
 const PRISONER = { kneel: 0, wave: 1, cower: 2, run: RUN, stand: 6, bound: 0 };
@@ -131,15 +134,16 @@ export class NpcView {
     const c = CELLS[who][pose] ?? CELLS[who].stand;
     const beat = Math.floor(t / 7);
     const i = Array.isArray(c) ? c[beat % c.length] : c;
-    if (c === RUN || c === HOBBLE) y += RUN_BOB[beat % 4] * k;
+    if ((c === RUN || c === HOBBLE) && !this.smooth) y += RUN_BOB[beat % 4] * k;
     let img = v.imgs[this.curN];
     if (!img) v.imgs.push(img = this.scene.add.image(x, y, S.key, 'f0').setOrigin(0.5, 1));
     this.curN++;
     // alive, not a picture: a breath, and a little sway (more on the rope, a shiver when
     // cowering), each man on his own beat
     const now = this.scene.time.now; const ph = (v.seed ?? 0) * 0.9 + this.curN * 1.7;
-    const br = c === RUN ? 0 : Math.sin(now * 0.0026 + ph);
-    const sway = c === RUN ? 0 : c === HOBBLE ? 4 + 2 * (beat % 2) : pose === 'hang' ? 3.5 * Math.sin(now * 0.0017 + ph) : pose === 'cower' ? 0.9 * Math.sin(now * 0.021 + ph) : 1.1 * Math.sin(now * 0.0011 + ph);
+    const walk = c === RUN || (this.smooth && Array.isArray(c));
+    const br = walk ? 0 : Math.sin(now * 0.0026 + ph);
+    const sway = walk ? 0 : c === HOBBLE ? 4 + 2 * (beat % 2) : pose === 'hang' ? 3.5 * Math.sin(now * 0.0017 + ph) : pose === 'cower' ? 0.9 * Math.sin(now * 0.021 + ph) : 1.1 * Math.sin(now * 0.0011 + ph);
     img.setTexture(S.key, `f${Math.min(i, S.count - 1)}`).setPosition(x, y).setScale(k * 0.5 * (1 - 0.008 * br), k * 0.5 * (1 + 0.018 * br))
       .setAngle(dir < 0 ? -sway : sway)
       .setFlipX(dir < 0).setDepth(g.depth + 0.01 * this.curN).setAlpha(g.alpha).setTint(this.tint ?? 0xffffff).setVisible(true);
@@ -243,14 +247,24 @@ export class NpcView {
     this.figure(g, n.x, y, k, pose, t, tun(0), dir, n.art);
   }
 
-  // The guide (Nicholas, stage/Story.js `guide`): walking on ahead, or waiting, turned to
-  // the heroes, pointing the way on; braced while a fight is on; struck down, he sits
-  // against the rock. Where he went round by his own way he fades back in.
+  // The guide (Nicholas, stage/Story.js `guide`): walking on ahead, or waiting, looking on
+  // up the road and now and then pointing the way; braced while a fight is on; struck down,
+  // he sits against the rock. Where he goes round by his own way he fades out, and back in.
+  // His steps keep pace with the ground he covers (one beat per GUIDE_STEP px), so his feet
+  // don't skate, and he sinks gently on each footfall.
   drawGuide(n, v, g, y, k, t, dir) {
     const who = SPRITES.nicholas ? 'nicholas' : SPRITES.miner ? 'miner' : 'villager'; // (the stand-in: the villager cut at the heroes' height)
-    const pose = n.state === 'dying' ? 'sit' : n.moving ? 'run' : n.braced ? 'cower' : Math.floor(t / 150) % 3 === 2 ? 'wave' : 'stand';
-    g.setAlpha(1 - (n.fade ?? 0) / 30);
-    this.figure(g, n.x, y, k, pose, n.moving ? t * 1.2 : t, 0x7a3a30, pose === 'sit' ? 1 : dir, who);
+    const point = n.pointing && Math.floor((t + v.seed * 40) / 170) % 3 === 2;
+    const pose = n.state === 'dying' ? 'sit' : n.moving ? 'run' : n.braced ? 'cower' : point ? 'wave' : 'stand';
+    g.setAlpha(n.going > 0 ? n.going / GUIDE.fade : 1 - (n.fade ?? 0) / GUIDE.fade);
+    // (his own walk cycle once it's painted: eight beats to the stride, two to a step)
+    const cycle = n.moving && who === 'nicholas' && SPRITES['nicholas-walk'] ? 'nicholas-walk' : who;
+    const per = cycle === 'nicholas-walk' ? 2 : 1; // beats to a footfall
+    const beat = (n.stride ?? 0) / (GUIDE_STEP * k) * per;
+    const sink = n.moving ? Math.abs(Math.cos(beat * Math.PI / (2 * per))) * 2.2 * k : 0;
+    this.smooth = true;
+    this.figure(g, n.x, y + sink, k, pose, n.moving ? beat * 7 : t, 0x7a3a30, pose === 'sit' ? 1 : dir, cycle);
+    this.smooth = false;
   }
 
   // At the ore face, chained by the ankle to a post (the shackle prop): each man in his own

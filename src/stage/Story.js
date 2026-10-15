@@ -83,7 +83,14 @@ export const NPC = {
 };
 // A guide: how far ahead of the leading hero he walks, how far back he keeps in a fight,
 // how near a fight line he waits, his pace, and when he gives up on the road and goes round
-export const GUIDE = { ahead: 170, back: 150, wait: 60, speed: 150, settle: 12, stuck: 20, far: 520, fight: 520, fade: 30 };
+export const GUIDE = {
+  ahead: 170, back: 150, wait: 60, speed: 150, settle: 12, stuck: 20, far: 520, fade: 30,
+  fight: 520, calm: 640,   // a foe this near starts a fight for him; none this near ends it
+  go: 70,                  // he sets off only once his spot is this far off
+  catchUp: 1.6,            // left well behind, he walks this much faster
+  accel: 10,               // px/s his pace changes by a frame (he eases in and out of a walk)
+  lane: 60, laneSlack: 45, // his lane: this far up the road from the lead's; moved once the lead strays this far
+};
 export const INTERACT = 'padUp';
 
 export class Story {
@@ -163,7 +170,7 @@ export class Story {
 
   // The guide is struck down (he lives until his last words are said).
   strike(n) {
-    n.state = 'dying'; n.t = 0; n.moving = false; n.stuck = 0;
+    n.state = 'dying'; n.t = 0; n.moving = false; n.stuck = 0; n.vx = n.vz = 0; n.going = 0;
     this.world.events.emit('npcStruck', { npc: n });
   }
 
@@ -406,40 +413,88 @@ export class Story {
   // The guide: a little ahead of the leading hero on the road, held at a fight line until
   // that fight is won, back behind the heroes while one is on. He climbs (any ledge); he
   // won't step into a drop or onto rotten planks: blocked there (or left far behind), he
-  // goes round by his own way and turns up again where he means to be.
+  // fades out, goes round by his own way and fades in again where he means to be.
+  // He moves like a man, not a marker: he walks a lane of his own a little up the road from
+  // the heroes (out of their way, never on top of them), sets off only once his spot is
+  // well off (a hero's shuffle doesn't move him), eases in and out of his walk, and turns
+  // to face you only once he has stopped. A fight starts for him when a foe comes near and
+  // ends only when none is near any more, so he doesn't wheel back and forth at its edge.
   updateGuide(n, heroes) {
     const st = this.stage;
     const T = st.terrain;
     const G = GUIDE;
     if (n.fade > 0) n.fade--;
+    n.vx ??= 0; n.vz ??= 0; n.stride ??= 0; n.still ??= 0;
     const lead = heroes.reduce((a, p) => (!a || p.x > a.x ? p : a), null);
-    if (!lead || this.holding) { n.moving = false; return; }
-    const sec = st.section;
-    const fight = st.livingFoes().some((f) => Math.abs(f.x - n.x) < G.fight);
-    n.braced = fight;
-    let tx = fight ? lead.x - G.back : lead.x + G.ahead;
-    // (not past the place a fight starts until it's won)
-    if (!fight && sec?.fightAt != null && (st.cleared ?? -1) < st.index) tx = Math.min(tx, sec.fightAt - G.wait);
-    const tz = Math.max(300, Math.min(500, lead.z - 20));
+    if (!lead || this.holding) { this.guideStep(n, 0, 0); return; }
     const ok = (x, z) => !T || T.safeAt(x, z);
-    const dx = tx - n.x;
-    if (Math.abs(dx) <= G.settle) { n.moving = false; n.stuck = 0; n.dir = Math.sign(lead.x - n.x) || n.dir; return; }
-    const step = G.speed / 60;
-    const nx = n.x + Math.sign(dx) * Math.min(step, Math.abs(dx));
-    const nz = n.z + Math.sign(tz - n.z) * Math.min(step * 0.5, Math.abs(tz - n.z));
-    if (ok(nx, nz) && Math.abs(n.x - lead.x) <= G.far) {
-      n.x = nx; n.z = nz; n.stuck = 0;
-    } else if (ok(nx, n.z) && Math.abs(n.x - lead.x) <= G.far) {
-      n.x = nx; n.stuck = 0;
-    } else if (++n.stuck >= G.stuck || Math.abs(n.x - lead.x) > G.far) {
-      // round by his own way: he turns up at the nearest firm ground by where he's going
-      const spot = this.firmNear(tx, tz);
-      if (spot) { n.x = spot.x; n.z = spot.z; n.fade = G.fade; this.world.events.emit('npcRound', { npc: n }); }
+    // going round by his own way: fading out where he stands, then in where he means to be
+    if (n.going > 0) {
+      if (n.going > 1) this.guideStep(n, 0, 0, ok);
+      if (--n.going === 0) {
+        n.x = n.goTo.x; n.z = n.lane = n.goTo.z; n.h = T ? Math.max(0, T.groundAt(n.x, n.z)) : 0;
+        n.fade = G.fade; n.vx = n.vz = 0;
+        this.world.events.emit('npcRound', { npc: n });
+      }
+      return;
+    }
+    const sec = st.section;
+    const near = (r) => st.livingFoes().some((f) => Math.min(Math.abs(f.x - lead.x), Math.abs(f.x - n.x)) < r);
+    n.braced = n.braced ? near(G.calm) : near(G.fight);
+    let tx = n.braced ? lead.x - G.back : lead.x + G.ahead;
+    // (not past the place a fight starts until it's won)
+    if (!n.braced && sec?.fightAt != null && (st.cleared ?? -1) < st.index) tx = Math.min(tx, sec.fightAt - G.wait);
+    // his lane: up the road from the lead (in front of him where there's no room), on firm
+    // ground; changed only once the lead has strayed well off it
+    const clampZ = (z) => Math.max(300, Math.min(500, z));
+    n.side ??= -1;
+    if (lead.z + n.side * G.lane < 300 || lead.z + n.side * G.lane > 500) n.side = -n.side;
+    let want = clampZ(lead.z + n.side * G.lane);
+    if (!ok(tx, want)) want = ok(tx, clampZ(lead.z - n.side * G.lane)) ? clampZ(lead.z - n.side * G.lane) : clampZ(lead.z - 20);
+    if (n.lane == null || Math.abs(want - n.lane) > G.laneSlack || !ok(n.x, n.lane)) n.lane = want;
+    if (n.parked != null && Math.abs(tx - n.parked) >= G.go) n.parked = null;
+    const dx = n.parked != null ? 0 : tx - n.x;
+    if (!n.walking && Math.abs(dx) > G.go) n.walking = true;
+    else if (n.walking && Math.abs(dx) <= G.settle) n.walking = false;
+    const top = G.speed * (Math.abs(dx) > G.go * 4 ? G.catchUp : 1);
+    const wx = n.walking ? Math.sign(dx) * Math.min(top, 40 + Math.abs(dx) * 2.4) : 0;
+    const dz = n.lane - n.z;
+    const wz = Math.abs(dz) > 4 ? Math.sign(dz) * Math.min(G.speed * 0.6, Math.abs(dz) * 2) : 0;
+    if (this.guideStep(n, wx, wz, ok)) n.stuck = 0; else n.stuck++;
+    // (blocked: he fades out first; left far behind, at the screen's edge, he just goes)
+    // (and where the nearest firm ground to his spot is where he already stands, he stays:
+    // until the heroes move on he waits there, he doesn't flicker out and back)
+    if (n.stuck >= G.stuck || Math.abs(n.x - lead.x) > G.far) {
+      const spot = this.firmNear(tx, n.lane);
       n.stuck = 0;
+      if (!spot || Math.hypot(spot.x - n.x, spot.z - n.z) < G.go) { n.parked = tx; n.walking = false; n.vx = n.vz = 0; }
+      else { n.going = Math.abs(n.x - lead.x) > G.far ? 1 : G.fade; n.goTo = spot; }
     }
     n.h = T ? Math.max(0, T.groundAt(n.x, n.z)) : 0;
-    n.dir = Math.sign(dx) || n.dir;
-    n.moving = true;
+    // he faces the way he walks; stopped a moment ahead of the heroes he looks on up the
+    // road (and points the way: view/NpcView.js), in a fight or left behind he faces them
+    if (Math.abs(n.vx) > 30) n.dir = Math.sign(n.vx);
+    else if (n.still > 20) n.dir = n.braced || lead.x > n.x + 40 ? Math.sign(lead.x - n.x) || n.dir : 1;
+    n.pointing = n.still > 20 && !n.braced && n.dir === 1 && lead.x < n.x;
+  }
+
+  // one frame of the guide's walk: his pace eased toward (wx, wz) px/s, a step taken where
+  // the ground is firm; false if he was blocked
+  guideStep(n, wx, wz, ok = () => true) {
+    const A = GUIDE.accel;
+    const ease = (v, w) => (Math.abs(w - v) <= A ? w : v + Math.sign(w - v) * A);
+    n.vx = ease(n.vx ?? 0, wx); n.vz = ease(n.vz ?? 0, wz);
+    let moved = true;
+    const nx = n.x + n.vx / 60; const nz = n.z + n.vz / 60;
+    if (ok(nx, nz)) { n.x = nx; n.z = nz; }
+    else if (ok(nx, n.z)) { n.x = nx; n.vz = 0; }
+    else if (ok(n.x, nz)) { n.z = nz; n.vx = 0; moved = !wx; }
+    else { n.vx = n.vz = 0; moved = false; }
+    const sp = Math.hypot(n.vx, n.vz);
+    n.stride = (n.stride ?? 0) + sp / 60; // (how far he has walked: his steps keep pace with it)
+    n.moving = sp > (n.moving ? 15 : 45); // (a walk, not a drift into place)
+    n.still = n.moving ? 0 : (n.still ?? 0) + 1;
+    return moved;
   }
 
   // the nearest firm spot (no drop, no rotten plank) to x, z along the lane
@@ -461,6 +516,7 @@ export class Story {
     const spot = this.firmNear(sp.x + GUIDE.ahead, sp.z - 20) ?? { x: sp.x, z: sp.z };
     n.state = 'guide'; n.x = spot.x; n.z = spot.z; n.h = T ? Math.max(0, T.groundAt(n.x, n.z)) : 0;
     n.t = 0; n.stuck = 0; n.moving = false; n.fade = GUIDE.fade;
+    n.vx = n.vz = 0; n.walking = false; n.going = 0; n.lane = null; n.parked = null; n.braced = false;
   }
 
   lose(n) {

@@ -84,7 +84,8 @@ export function buildLevelArt(scene) {
   for (const [name, S] of Object.entries(SPRITE_SHEETS)) {
     if (!T.exists(`sprsrc-${name}`)) continue;
     try {
-      const { canvas, count, fw, fh } = importFxStrip(T.get(`sprsrc-${name}`).getSourceImage(), { frames: S.frames, height: S.height, bg: 'black' });
+      const { canvas, count, fw, fh } = importFxStrip(T.get(`sprsrc-${name}`).getSourceImage(), { frames: S.frames, height: S.height, bg: 'black', centre: S.centre });
+      if (S.grade) gradeSheet(canvas, S.grade);
       const key = `spr-${name}`;
       if (T.exists(key)) T.remove(key);
       const tex = T.addCanvas(key, canvas);
@@ -96,6 +97,51 @@ export function buildLevelArt(scene) {
     }
   }
   return made;
+}
+
+// A sheet painted softer and duller than the heroes, graded to sit with them: more
+// contrast and colour, a dark ink line round the figure (the heroes' strips have one), and
+// a pale rim of light along the edges that face the sky.
+//   grade: { contrast, saturation, outline (px, at the sheet's size), rim (0..1) }
+export function gradeSheet(canvas, { contrast = 1, saturation = 1, outline = 0, rim = 0 }) {
+  const W = canvas.width; const H = canvas.height;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const img = ctx.getImageData(0, 0, W, H);
+  const d = img.data;
+  const solid = (x, y) => x >= 0 && y >= 0 && x < W && y < H && d[(y * W + x) * 4 + 3] > 110;
+  const inside = new Uint8Array(W * H);
+  for (let p = 0; p < W * H; p++) inside[p] = d[p * 4 + 3] > 110 ? 1 : 0;
+  const clamp = (v) => (v < 0 ? 0 : v > 255 ? 255 : v);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const p = y * W + x; const i = p * 4;
+    if (!d[i + 3]) continue;
+    let r = d[i]; let g = d[i + 1]; let b = d[i + 2];
+    const L = 0.3 * r + 0.59 * g + 0.11 * b;
+    r = L + (r - L) * saturation; g = L + (g - L) * saturation; b = L + (b - L) * saturation;
+    r = (r - 110) * contrast + 110; g = (g - 110) * contrast + 110; b = (b - 110) * contrast + 110;
+    // the rim: open sky (no figure) just above him, or up and to the side
+    if (rim && inside[p]) {
+      let open = 0;
+      for (let k = 1; k <= 3; k++) if (!solid(x, y - k) || !solid(x - k, y - k)) { open = 4 - k; break; }
+      if (open) { const a = rim * open / 3; r += (255 - r) * a * 0.55; g += (245 - g) * a * 0.5; b += (225 - b) * a * 0.45; }
+    }
+    d[i] = clamp(r); d[i + 1] = clamp(g); d[i + 2] = clamp(b);
+  }
+  if (outline) {
+    // (ink just outside the figure, from the shape as it was)
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const p = y * W + x;
+      if (inside[p]) continue;
+      let near = false;
+      for (let dy = -outline; dy <= outline && !near; dy++) for (let dx = -outline; dx <= outline; dx++) {
+        if (dx * dx + dy * dy > outline * outline + 0.5) continue;
+        const qx = x + dx; const qy = y + dy;
+        if (qx >= 0 && qy >= 0 && qx < W && qy < H && inside[qy * W + qx]) { near = true; break; }
+      }
+      if (near) { const i = p * 4; const a = d[i + 3]; d[i] = 18; d[i + 1] = 12; d[i + 2] = 10; d[i + 3] = Math.max(a, 215); }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
 }
 
 // The painted pieces of one level's backdrop, ready to draw.
