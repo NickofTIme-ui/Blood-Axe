@@ -123,6 +123,7 @@ export const STAGE_GALLOWS = {
             'You left them there for the crows.',
           ],
           last: 'The rope will have you yet.',
+          silent: true, // (asked for his last words, he says nothing)
         } },
     },
   ],

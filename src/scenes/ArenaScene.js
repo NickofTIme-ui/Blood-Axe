@@ -28,6 +28,7 @@ import { WrathFX } from '../effects/WrathFX.js';
 import { ProjectileView } from '../view/ProjectileView.js';
 import { DebugDraw } from '../view/DebugDraw.js';
 import { DEPTH } from '../view/depths.js';
+import { Spotlight } from '../view/Spotlight.js';
 import { EnemyView } from '../view/EnemyView.js';
 import { SpriteEnemyView } from '../view/SpriteEnemyView.js';
 import { ENEMY_ART } from '../view/enemyArt.js';
@@ -63,6 +64,10 @@ const LEVEL_FADE_MS = 700; // out of one campaign level and up into the next (go
 // The stages a run can be (data.stage): data/stages.js. The campaign's levels
 // (docs/campaign/plan.md) are stages too: 'village' is level 1, 'gallowsWood' level 2.
 export { STAGES };
+// The sentence's camera (setupSentence): how close it comes in as he kneels, how close it
+// has crept by the blow, the punch on the blow, and where it rests while he bleeds out.
+const SENTENCE_CAM = { start: 1.12, creep: 1.24, punch: 1.34, after: 1.2 };
+
 // How far above the floor a tall stage's camera can climb (px)
 const CAM_CLIMB = 360;
 
@@ -965,20 +970,25 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
-  // A beaten boss's sentence (stage/Sentence.js): the field goes still and the camera
-  // closes in while he drops to his knees; the words are the story strip's; the blow is
-  // the hardest thing in the game: a long freeze, slow motion, a white-red flash, the
-  // heaviest shake and sounds, the head flying and the neck pumping; then his men run.
+  // A beaten boss's sentence (stage/Sentence.js): the field goes still, the lights go
+  // down on him and the hero who beat him (view/Spotlight.js) and the camera settles on
+  // the two of them and closes in, slowly, all through the words; the words are the story
+  // strip's; the blow is the hardest thing in the game: a long freeze, slow motion, a
+  // red-white flash, the heaviest shake and sounds, the head going (one of several ways,
+  // Sentence HOW HE GOES) and the neck pumping; then the lights come up and his men run.
   setupSentence(ev) {
     const cam = this.cameras.main;
-    ev.on('sentenceStart', ({ boss: b }) => {
+    this.spotlight = new Spotlight(this);
+    this.events.once('shutdown', () => this.spotlight?.destroy());
+    ev.on('sentenceStart', ({ boss: b, hero: h }) => {
       // (no slow motion: the scene runs on the music's time, see syncSentenceMusic)
       stopMusic(this, 700);
       this.sentenceSong = null;
       this.fx.shake(5, 14);
       this.rumble(0.8, 0.4, 260);
-      cam.zoomTo(this.baseZoom * 1.12, 1100, 'Quad.easeInOut', true);
+      cam.zoomTo(this.baseZoom * SENTENCE_CAM.start, 1600, 'Sine.easeInOut', true);
       this.sentenceCam = true;
+      this.spotlight.start(b, h);
       playSfx(this, 'swingAlt', { volume: 0.5, pitch: -1100, spread: 30, minGapMs: 0 });
       this.popup(b.x, b.z - b.h - b.stats.body.h * (b.stats.size ?? 1) - 40, 'BEATEN', '#d8c8b0', 22);
     });
@@ -998,9 +1008,13 @@ export class ArenaScene extends Phaser.Scene {
       this.slowmo(0.14, 1300);
       this.fx.shake(14, 26);
       this.rumble(1, 1, 450);
-      cam.flash(120, 255, 210, 200);
-      cam.zoomTo(this.baseZoom * 1.24, 110, 'Quad.easeOut', true);
-      this.time.delayedCall(1500, () => { if (this.sys.isActive()) cam.zoomTo(this.baseZoom * 1.12, 900, 'Quad.easeInOut', true); });
+      // (a hot red-white flash over the arena, not a white screen: the blow is still seen)
+      const fl = this.add.rectangle(cam.midPoint.x, cam.midPoint.y, 6000, 4000, 0xff9a80, 0.38)
+        .setDepth(DEPTH.popups - 3).setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({ targets: fl, alpha: 0, duration: 220, ease: 'Quad.easeOut', onComplete: () => fl.destroy() });
+      this.spotlight.strike();
+      cam.zoomTo(this.baseZoom * SENTENCE_CAM.punch, 110, 'Quad.easeOut', true);
+      this.time.delayedCall(1500, () => { if (this.sys.isActive() && this.sentenceCam) cam.zoomTo(this.baseZoom * SENTENCE_CAM.after, 900, 'Quad.easeInOut', true); });
       playSfx(this, 'heavySwing', { volume: 1, spread: 30, minGapMs: 0 });
       playSfx(this, 'finisher', { volume: 1, pitch: -650, spread: 30, minGapMs: 0 });
       playSfx(this, 'kick', { volume: 0.9, pitch: -1400, minGapMs: 0 });
@@ -1023,7 +1037,8 @@ export class ArenaScene extends Phaser.Scene {
       this.callout('RETRIBUTION', '#ff2a1a', 46);
     });
     ev.on('sentenceDone', ({ routed }) => {
-      if (this.sentenceCam) { cam.zoomTo(this.baseZoom, 700, 'Quad.easeInOut', true); this.sentenceCam = false; }
+      if (this.sentenceCam) { cam.zoomTo(this.baseZoom, 900, 'Quad.easeInOut', true); this.sentenceCam = false; }
+      this.spotlight.stop();
       if (routed.length) this.callout('HIS MEN BREAK AND RUN', '#ffd24a', 24);
     });
   }
@@ -1352,6 +1367,7 @@ export class ArenaScene extends Phaser.Scene {
     this.quakeFX.update();
     this.wrathFX.update();
     this.updateCamFocus();
+    this.updateSentenceCam();
     this.updateFinisherMarker();
     this.stageView.update();
     this.updateStageCamera();
@@ -1420,17 +1436,41 @@ export class ArenaScene extends Phaser.Scene {
     for (const p of up) p.x = mid + Math.sign(p.x - mid) * (max / 2);
   }
 
+  // The sentence's camera: while the words are said it keeps closing in on the pair, a
+  // little every frame, so the blow falls at its closest (SENTENCE_CAM.creep); the spotlight
+  // follows them.
+  updateSentenceCam() {
+    this.spotlight?.update();
+    const S = this.stage.sentence;
+    const cam = this.cameras.main;
+    // (zoomed in, the camera may come down to them: on a flat stage it never moves up or down)
+    const ly = this.sentenceCam ? 0.06 : this.stageData.tall ? 0.09 : 0;
+    if (cam.lerp.y !== ly) cam.setLerp(0.12, ly);
+    if (!this.sentenceCam || !S?.running || this.paused) return;
+    if (cam.zoomEffect?.isRunning) return;
+    if (S.step === 'speak' || S.step === 'raise') {
+      const want = this.baseZoom * SENTENCE_CAM.creep;
+      cam.setZoom(cam.zoom + (want - cam.zoom) * 0.004);
+    }
+  }
+
   // What the camera follows: my hero (or, while I'm down, my partner); with two players
-  // on this screen, the point between them.
+  // on this screen, the point between them; during a sentence, the hero and the man on
+  // his knees.
   updateCamFocus() {
     const up = this.players.filter((p) => p.alive);
     let x;
-    if (this.mode === 'local' && up.length) x = up.reduce((s, p) => s + p.x, 0) / up.length;
+    const S = this.stage.sentence;
+    const pair = S?.running && S.boss && S.hero;
+    if (pair) x = (S.boss.x + S.hero.x) / 2;
+    else if (this.mode === 'local' && up.length) x = up.reduce((s, p) => s + p.x, 0) / up.length;
     else x = (this.player.alive || !up.length ? this.player : up[0]).x;
     // a tall stage: the camera rises with the ground under you (not with every jump), with
     // room above your head; on the floor it sits where it always has
     let y = this.player.z;
-    if (this.stageData.tall) {
+    // (the pair a little below the middle of the view, clear of the words' box)
+    if (pair) y = Math.max(S.boss.z, S.hero.z) - S.hero.stats.body.h * 0.2;
+    else if (this.stageData.tall) {
       const who = this.player.alive || !up.length ? this.player : up[0];
       const ground = this.mode === 'local' && up.length ? Math.max(...up.map((p) => Math.max(0, p.floor))) : Math.max(0, who.floor);
       y = who.z - ground - 70;

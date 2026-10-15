@@ -389,6 +389,13 @@ export class SpriteCuts {
               gore.burst(p.x, p.z, 4, Math.sign(p.vx) || p.face, Math.round((p.gib ? 6 : 16) * (gore.amount ?? 1)), 0.6);
               for (let i = 0; i < (p.gib ? 1 : 3); i++) gore.splat(p.x + rand(-26, 26) * (p.gib ? 0.4 : 1), p.z + rand(-4, 4), rand(1.6, 3) * (p.gib ? 0.6 : 1));
             }
+          } else if (p.roll && Math.abs(p.vx) > 8) {
+            // a head rolls on along the floor, turning with its speed, leaving a smear
+            p.vh = 0; p.vx *= p.roll;
+            const r = Math.max(6, Math.abs(p.edge));
+            p.rest = r * 0.9;
+            p.spin = p.vx / r;
+            if (gore?.level > 0 && p.age % 5 === 0) gore.splat(p.x, p.z + rand(-1, 1), rand(0.5, 0.9));
           } else {
             p.vh = 0; p.vx *= 0.8; p.spin *= 0.6;
             p.landed = true;
@@ -403,6 +410,9 @@ export class SpriteCuts {
         // the legs don't know yet: whatever they were doing carries them on a moment
         // (a runner's legs manage half of one more stride) before they go over
         if (p.vx) { p.x += p.vx / 60; p.vx *= 0.88; p.rot = p.fallDir * Math.min(0.1, p.age * 0.006); }
+        // (a headless body kept kneeling: it sways, or it shudders, before it goes)
+        if (p.sway) p.rot = Math.sin(p.age * 0.07) * 0.05 * Math.min(1, p.age / 30);
+        if (p.shudder) p.rot = (Math.random() - 0.5) * 0.07 * Math.min(1, p.stand / 30);
         if (--p.stand <= 0) { p.mode = 'topple'; p.toppleV = 0; }
       } else if (p.mode === 'topple') {
         p.toppleV += p.toppleSpeed ?? 0.006;

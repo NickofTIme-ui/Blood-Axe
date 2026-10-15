@@ -10,9 +10,10 @@
 //   boss.sentence: false   (the Ore Crusher: a machine has nothing to answer for)
 //   stats.machine          (the same, by type)
 //   the section a `sequence` ends (the king's judgment: stage/Sequence.js)
-// Stage data on the boss: sentence: { speaker, last, crimes: [line, ...] }
+// Stage data on the boss: sentence: { speaker, last, silent, crimes: [line, ...] }
 //   speaker  how his own line is labelled (default: the first word of his name)
-//   last     his last words, said on his knees (optional)
+//   last     his last words, said on his knees when the hero asks for them
+//   silent   he has none: asked, he says nothing (his `last` is kept, unused)
 //   crimes   the hero's charges, one line each (default: GENERIC)
 // The hero's side (data/characters.js `sentence`): { move, fatality, cut, as } — which of
 // his moves is the killing blow, how it takes the man apart (default: heavy, decap), and
@@ -41,8 +42,16 @@
 // skipped moves the clock (and so the music) on with it; the lines wait for a press
 // (stage/Story.js LINE.wait), so a slow reader holds the music at the words' end.
 //
+// HOW HE GOES: no two executions alike. The blow rolls how the head comes off (HEADS:
+// flung high, rolled to the executioner's feet, popped straight up, tipped off in front
+// of his knees, skidded away across the floor) and how what's left of him goes down
+// (BODIES: slumped onto his front, kept kneeling a long moment before it pitches over,
+// fallen back, knocked flat by the blow, a shudder and a collapse). Rolled with the
+// world's dice (the same on both online machines), never the same pair twice running;
+// carried on the kill (e.head, e.body) for effects/Gore.js to throw.
+//
 // Events: sentenceStart { boss, hero }, sentenceKneel { boss, hero },
-//         sentenceStrike { boss, hero, fatality, dir }, sentenceDone { boss, hero, routed }
+//         sentenceStrike { boss, hero, fatality, dir, head, body }, sentenceDone { boss, hero, routed }
 
 import { Controller } from '../core/Controller.js';
 import { stateFor } from '../entities/fighterStates.js';
@@ -63,6 +72,15 @@ export const SENTENCE = {
   late: 120,       // the track starts at most this late (a short silence as he drops), however many the words
   minLine: 60,     // but no line shorter than this
 };
+
+// How the head comes off, and how the body goes down (see HOW HE GOES above).
+export const HEADS = ['fly', 'roll', 'pop', 'drop', 'skid'];
+export const BODIES = ['slump', 'linger', 'back', 'blown', 'shudder'];
+
+// After the charges the hero asks for his last words. Some answer; some say nothing.
+export const ASK = 'Any last words?';
+export const SILENCE = '...';
+export const NOTHING = 'Nothing. So be it.';
 
 // The charges when a boss has none of his own.
 export const GENERIC_CRIMES = [
@@ -179,7 +197,7 @@ export class Sentence {
       const story = this.stage.story;
       if (this.t === SENTENCE.stand) { this.timeLines(); story?.cue(this.beatId); }
       // (his own line: he lifts his head to say it)
-      b.defiant = story?.line?.who === this.speaker;
+      b.defiant = story?.line?.who === this.speaker && story.line.text !== SILENCE;
       // the clock follows the words (a skipped line takes the music on with it)
       const c = story?.current;
       if (this.off && c?.beat.id === this.beatId && c.age >= 0) {
@@ -260,7 +278,9 @@ export class Sentence {
   place(b, h) {
     const m = this.blowOf.frames;
     const hb = m.hitbox ?? { x: 0, w: 60 };
-    const gap = Math.max(92, (hb.x ?? 0) + (hb.w ?? 60) * 0.75 + b.stats.body.w * 0.4);
+    // (far enough that the two pictures don't run into each other: a captain's shield
+    // and shoulders reach well past his body box)
+    const gap = Math.max(104, (hb.x ?? 0) + (hb.w ?? 60) * 0.75 + b.stats.body.w * 0.5);
     const B = this.world.bounds;
     let side = Math.sign(h.x - b.x) || -b.facing || -1;
     const fits = (s) => b.x + s * gap > B.minX + 20 && b.x + s * gap < B.maxX - 20;
@@ -299,15 +319,29 @@ export class Sentence {
     b.health = 0;
     b.fatality = B.fatality;
     h.hitstop = b.hitstop = SENTENCE.hitstop;
+    const { head, body } = this.howHeGoes(b);
     const H = b.stats.body.h;
     const e = {
       attacker: h, defender: b, dir, kind: 'melee', sentence: true,
       move: { cut: B.cut, damage: b.stats.maxHealth, hitstop: SENTENCE.hitstop },
-      x: b.x, z: b.z, h: b.h + H * 0.57, damage: b.stats.maxHealth, fatality: B.fatality,
+      x: b.x, z: b.z, h: b.h + H * 0.57, damage: b.stats.maxHealth, fatality: B.fatality, head, body,
     };
     b.fsm.change('dead');
-    this.world.events.emit('sentenceStrike', { boss: b, hero: h, fatality: B.fatality, dir });
+    this.world.events.emit('sentenceStrike', { boss: b, hero: h, fatality: B.fatality, dir, head, body });
     this.world.events.emit('kill', e);
+  }
+
+  // Roll how this one goes: never the same head, or the same fall, as the last man's.
+  howHeGoes(b) {
+    const pick = (list, last, salt) => {
+      const pool = list.filter((x) => x !== last);
+      return pool[Math.floor(this.world.roll(b.id, salt) * pool.length)];
+    };
+    const head = pick(HEADS, this.lastHead, 71);
+    const body = pick(BODIES, this.lastBody, 72);
+    this.lastHead = head;
+    this.lastBody = body;
+    return { head, body };
   }
 
   // The field lets go; his men, who watched it, break and run.
@@ -368,13 +402,15 @@ export function speakerOf(name = '') {
   return (words[0] ?? 'HE').toUpperCase();
 }
 
-// The charges, his last words, the sentence.
+// The charges, the hero's question, his last words (or his silence), the sentence.
 export function sentenceLines(b, h, def, speaker = speakerOf(b.stats.name)) {
   const hero = (h.stats.name ?? 'Rurik').toUpperCase();
   const crimes = def.crimes?.length ? def.crimes : GENERIC_CRIMES;
   const lines = [[hero, `${b.stats.name}. On your knees, hear your crimes.`]];
   for (const c of crimes) lines.push([hero, c]);
-  if (def.last) lines.push([speaker, def.last]);
+  lines.push([hero, ASK]);
+  if (def.last && !def.silent) lines.push([speaker, def.last]);
+  else lines.push([speaker, SILENCE], [hero, NOTHING]);
   const as = h.stats.sentence?.as ?? `${h.stats.name} of the Oath Keepers`;
   lines.push([hero, `By the oath we swore over our burning home, I, ${as}, sentence you to die.`]);
   return lines;

@@ -12,7 +12,7 @@ import { CHARACTERS } from '../src/data/characters.js';
 import { ENEMIES, WAVES } from '../src/data/enemies.js';
 import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.js';
 import { Stage } from '../src/stage/Stage.js';
-import { SENTENCE } from '../src/stage/Sentence.js';
+import { SENTENCE, Sentence, HEADS, BODIES, sentenceLines, ASK, SILENCE, NOTHING } from '../src/stage/Sentence.js';
 import { STAGE, PROPS } from '../src/data/stage.js';
 import { Terrain, STEP, PIT_LOST } from '../src/stage/Terrain.js';
 import { STAGE_GALLOWS } from '../src/data/stageGallows.js';
@@ -3948,6 +3948,38 @@ test('sentence: the twins: the first to fall dies fighting; the one left standin
   assert(ev.lines.some((l) => l.startsWith('HROLF: ')), `his own last words (${ev.lines})`);
 });
 
+test('sentence: the hero asks for his last words; some answer, some say nothing', () => {
+  const ask = (def) => sentenceLines({ stats: { name: 'Hruk the Hangman' } }, { stats: { name: 'Rurik' } }, { crimes: ['A.', 'B.'], ...def }, 'HRUK').map(([w, t]) => `${w}: ${t}`);
+  const said = ask({ last: 'The rope will have you yet.' });
+  assert(said[3] === `RURIK: ${ASK}` && said[4] === 'HRUK: The rope will have you yet.' && said[5].includes('sentence you to die'), `he answers (${said})`);
+  const still = ask({ last: 'The rope will have you yet.', silent: true });
+  assert(still[3] === `RURIK: ${ASK}` && still[4] === `HRUK: ${SILENCE}` && still[5] === `RURIK: ${NOTHING}` && still[6].includes('sentence you to die'), `he says nothing (${still})`);
+  const bosses = Object.values(STAGES).flatMap((d) => d.sections.map((q) => q.boss?.sentence)).filter(Boolean);
+  assert(bosses.some((x) => x.silent) && bosses.some((x) => x.last && !x.silent), 'some answer, some don\'t');
+});
+
+test('sentence: no two go alike: the head and the fall are rolled from the lists, never the same as the last man\'s, and the same on both online machines', () => {
+  const { st, ev, run, world, p } = sentenceSetup('warrior');
+  const b = st.boss;
+  blowOf(world, p, b);
+  run(60 * 40);
+  const k = ev.kill[0];
+  assert(HEADS.includes(k.head) && BODIES.includes(k.body), `the kill carries how he goes (${k.head} / ${k.body})`);
+  assert(ev.strike[0].head === k.head && ev.strike[0].body === k.body, 'the strike says the same');
+  const roll = (seed) => {
+    const w = new World({ seed });
+    const S = new Sentence({ world: w });
+    const out = [];
+    for (let i = 0; i < 40; i++) { w.tick(); out.push(S.howHeGoes({ id: 5 + (i % 3) })); }
+    return out;
+  };
+  const a = roll(11);
+  assert(JSON.stringify(a) === JSON.stringify(roll(11)), 'same seed, same deaths');
+  for (let i = 1; i < a.length; i++) assert(a[i].head !== a[i - 1].head && a[i].body !== a[i - 1].body, `never twice running (${i})`);
+  for (const x of HEADS) assert(a.some((o) => o.head === x), `every head comes up (${x})`);
+  for (const x of BODIES) assert(a.some((o) => o.body === x), `every fall comes up (${x})`);
+});
+
 test('sentence: a machine is no man: the Ore Crusher is simply destroyed', () => {
   const { world, p, st, ev, run } = sentenceSetup('warrior', STAGE_MINE, 'crusher', 6000);
   const b = st.boss;
@@ -3964,7 +3996,7 @@ test('sentence: every boss in the game has his crimes (the machine none); the Oa
       if (!B) continue;
       if (ENEMIES[B.type]?.machine) { assert(B.sentence === false, `${id}: ${B.name} is a machine: no sentence`); continue; }
       assert(B.sentence?.crimes?.length >= 2 && B.sentence.crimes.every((t) => t.length <= 100), `${id}: ${B.name} has his crimes`);
-      assert(B.sentence.last, `${id}: ${B.name} has his last words`);
+      assert(B.sentence.last || B.sentence.silent, `${id}: ${B.name} has his last words, or keeps silent`);
     }
   }
   const opening = STAGE_VILLAGE.story.find((b) => b.id === 'opening').lines.map((l) => l[1]).join(' ');

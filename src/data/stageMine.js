@@ -112,6 +112,7 @@ export const STAGE_MINE = {
             'You whipped the old until they fell, and left them where they fell.',
           ],
           last: 'Every chain in this mountain is mine. Even now.',
+          silent: true, // (asked for his last words, he says nothing)
         },
         phases: [
           { id: 'chains', at: 0.5, rage: true, adds: ['ghoul', 'grunt'], damage: 1.2, speed: 1.15 },

@@ -152,6 +152,7 @@ export class Gore {
     // anything else that blows a man up (a lotus, a rupture, a crushing crit) tears him
     // into fewer, bigger pieces, thrown the way the blow was going
     if (type === 'explode') return this.blowApart(view, e, { pieces: 9, power: 0.95, push: dir * 140 });
+    if (e.sentence && cut === 'neck' && e.body) return this.sentenceCut(view, e, type, dir);
     const { upper, lower } = cuts.split(view, cut, dir);
     view.cutAway = true;
     view.hideAll();
@@ -161,6 +162,35 @@ export class Gore {
     else if (type === 'halfV') cuts.launch(upper, dir * rand(60, 130), rand(150, 220), dir * rand(1.5, 3));
     else if (type === 'limbs') cuts.launch(upper, dir * rand(20, 70), rand(120, 180), dir * rand(1, 2.5));
     this.burst(f.x, f.z, mid, dir, Math.round(60 * this.amount), 1.6);
+    return true;
+  }
+
+  // A sentenced man's head (stage/Sentence.js HOW HE GOES): the head goes the way the
+  // blow rolled (e.head; the staff's blow always pops it) and the kneeling body after it
+  // (e.body). `face` is the way he was kneeling (toward his executioner), `dir` the blade's.
+  sentenceCut(view, e, type, dir) {
+    const cuts = this.scene.cuts;
+    const f = view.f;
+    const { upper, lower } = cuts.split(view, 'neck', dir);
+    view.cutAway = true;
+    view.hideAll();
+    const face = upper.face;
+    const head = type === 'headPop' ? 'pop' : e.head;
+    if (head === 'roll') { cuts.launch(upper, -dir * rand(80, 120), rand(220, 280), -dir * rand(4, 7)); upper.roll = 0.975; } // (back to the executioner's feet)
+    else if (head === 'pop') cuts.launch(upper, dir * rand(-15, 25), rand(660, 740), rand(-6, 6));
+    else if (head === 'drop') { cuts.launch(upper, face * rand(25, 45), rand(70, 120), face * rand(2, 3.5)); upper.roll = 0.93; } // (tips off in front of his knees)
+    else if (head === 'skid') { cuts.launch(upper, dir * rand(360, 440), rand(110, 160), dir * rand(12, 18)); upper.roll = 0.985; }
+    else cuts.launch(upper, dir * rand(240, 360), rand(470, 560), dir * rand(9, 14)); // fly
+    // the body: how long it stays kneeling, which way and how far it goes over, how fast
+    const B = {
+      slump: { stand: 46, speed: 0.003, fall: face, to: 0.5 },
+      linger: { stand: 120, speed: 0.0045, fall: face, to: 1.35, sway: true },
+      back: { stand: 30, speed: 0.004, fall: -face, to: 1.3 },
+      blown: { stand: 6, speed: 0.02, fall: dir, to: Math.PI / 2 * 0.96, vx: dir * 110 },
+      shudder: { stand: 64, speed: 0.014, fall: face, to: 1.45, shudder: true },
+    }[e.body] ?? { stand: 46, speed: 0.003, fall: face, to: 0.5 };
+    Object.assign(lower, { stand: B.stand, toppleSpeed: B.speed, fallDir: B.fall, toppleTo: B.to, sway: B.sway, shudder: B.shudder, vx: B.vx ?? 0, bleed: 320 });
+    this.burst(f.x, f.z, f.h + f.stats.body.h * 0.5, dir, Math.round(60 * this.amount), 1.6);
     return true;
   }
 
