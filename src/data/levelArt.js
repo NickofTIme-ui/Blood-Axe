@@ -139,6 +139,10 @@ export const SPRITE_SHEETS = {
   // cowers, sit wounded) and a ninth, lying dead. Until it's painted he walks on the
   // villager sheet.
   nicholas: { file: 'assets/sprites/npc/nicholas.png', frames: 9, height: 210 },
+  // Irvolino, the miller (made in ChatGPT from his photo: docs/irvolino-art-prompts.md): the
+  // villager sheet's 8 poses. He leads the miller's people out of the barn; until he's
+  // painted he's the villager.
+  irvolino: { file: 'assets/sprites/npc/irvolino.png', frames: 8, height: 150 },
   // Vincent, the Gatewright (view/VincentView.js; made in ChatGPT from his photo:
   // docs/vincent-art-prompts.md): stand, grip the bars, crank, aim, loose, walk x3, wave
   vincent: { file: 'assets/sprites/npc/vincent.png', frames: 9, height: 205 },
