@@ -226,7 +226,8 @@ export class Ragdoll {
   //   range [lo, hi]  only the joints lo..hi (0 head .. 4 feet) are here
   //   free            nobody's left in the game to follow: it just falls where it falls
   //   vel {x, y}, spin   how it's thrown (px / frame; spin turns it end over end)
-  //   strays          gear his missing parts held falls loose with this piece
+  //   strays          gear his missing parts held falls loose with this piece ({ covered(band) }:
+  //                   except what another ragdolled piece of him still holds)
   start(f, face, k, kind = 'knock', opts = {}) {
     const B = this.B;
     if (!B) return false;
@@ -303,8 +304,9 @@ export class Ragdoll {
     // the gear starts where it's drawn on him
     this.gear = B.gear.map((g) => this.startGear(g)).filter((w) => {
       const here = w.band >= this.lo && w.band < this.hi;
-      if (!here && opts.strays) { if (w.rope) w.dropped = true; else w.free = true; } // (fallen from his other half)
-      return here || opts.strays;
+      const stray = !here && opts.strays && !opts.strays.covered?.(w.band);
+      if (stray) { if (w.rope) w.dropped = true; else w.free = true; } // (fallen from his other half)
+      return here || stray;
     });
     this.place();
     return true;
@@ -393,9 +395,9 @@ export class Ragdoll {
         const fl = floorY - this.lift[j];
         const onFloor = p.y >= fl - 0.5;
         if (onFloor) down++;
-        const fr = onFloor ? 0.78 : 0.995;
+        const fr = onFloor ? (free && this.grounded > 20 ? 0.6 : 0.78) : 0.995;
         const vx = Math.max(-24, Math.min(24, (p.x - p.px) * fr));
-        const vy = Math.max(-24, Math.min(24, (p.y - p.py) * 0.995));
+        const vy = Math.max(-24, Math.min(24, (p.y - p.py) * (free && this.grounded > 20 ? 0.9 : 0.995)));
         p.px = p.x; p.py = p.y;
         p.x += vx; p.y += vy + G;
       }
@@ -409,9 +411,10 @@ export class Ragdoll {
         for (const p of P) { p.px -= dvx; p.x += ex; p.px += ex; }
       }
       // settling: once he's been down a moment, the body lets go into the painted pose
-      // (a cut-off piece just goes limp: its joints ease back toward lying straight)
+      // (a cut-off piece just comes to rest where it fell)
       if (down >= Math.min(3, hi - lo + 1)) this.grounded++; else this.grounded = Math.max(0, this.grounded - 1);
-      if (this.grounded > 10) this.settle = Math.min(0.22, this.settle + 0.006);
+      if (this.grounded > 6) this.settle = Math.min(0.22, this.settle + 0.012); // (still before the painted get-up starts)
+      const held = [];
       for (let it = 0; it < ITER; it++) {
         for (let j = lo; j < hi; j++) {
           const a = P[j]; const b = P[j + 1];
@@ -428,15 +431,22 @@ export class Ragdoll {
           const rel = wrap(Math.atan2(C.y - Bp.y, C.x - Bp.x) - Math.atan2(Bp.y - A.y, Bp.x - A.x));
           const r = wrap(rel - this.rest[j - 1]) * sgn;
           const [mn, mx] = LIMITS[j - 1];
-          let t = Math.max(mn, Math.min(mx, r));
-          if (free && this.grounded > 12) t += (0 - t) * 0.04; // (limp)
+          const t = Math.max(mn, Math.min(mx, r));
           if (t !== r) {
             const d = (t - r) * sgn;
             rotAbout(C, Bp, d * 0.5);
             rotAbout(A, Bp, -d * 0.5);
+            held[j - 1] = held[j] = held[j + 1] = true;
           }
         }
         for (let j = lo; j <= hi; j++) ground(P[j], floorY - this.lift[j], 0.25);
+      }
+      // a joint at its limit is lossy: what it holds back is spent, not stored (else a
+      // body propped on a stiff joint keeps winding up its fall and jumps with it)
+      for (let j = lo; j <= hi; j++) {
+        if (!held[j]) continue;
+        const p = P[j];
+        p.px = p.x - (p.x - p.px) * 0.6; p.py = p.y - (p.y - p.py) * 0.6;
       }
       if (this.settle > 0 && !free) {
         for (let j = 0; j < 5; j++) {
@@ -515,7 +525,7 @@ export class Ragdoll {
         const e = R[R.length - 1];
         if (this.settle > 0 && !w.dropped && target) { // (and comes to rest where it's painted)
           const t = target.W(g.ball[0], g.ball[1]);
-          const q = this.settle * 0.6;
+          const q = Math.min(0.3, this.settle * 1.3);
           e.x += (t.x - e.x) * q; e.y += (t.y - e.y) * q;
           e.px += (t.x - e.px) * q * 0.7; e.py += (t.y - e.py) * q * 0.7;
         }
@@ -535,6 +545,14 @@ export class Ragdoll {
           const vy = (p.y - p.py) * 0.995;
           p.px = p.x; p.py = p.y;
           p.x += vx; p.y += vy + G;
+        }
+        // nothing stands on its point: a blade come to rest on end tips over
+        {
+          const top = w.a.y < w.b.y ? w.a : w.b;
+          const foot = top === w.a ? w.b : w.a;
+          if (foot.y >= floorY - 2.5 && Math.abs(top.x - foot.x) < len * 0.7) {
+            top.x += (Math.sign(top.x - foot.x) || 1) * 0.35;
+          }
         }
         for (let it = 0; it < 4; it++) {
           const dx = w.b.x - w.a.x; const dy = w.b.y - w.a.y;
@@ -566,10 +584,17 @@ export class Ragdoll {
     // where he was cut: the raw end of what's left (the blood is SpriteCut's)
     for (const j of [this.lo > 0 ? this.lo : -1, this.hi < 4 ? this.hi : -1]) {
       if (j < 0) continue;
-      const r = Math.max(3, B.thick[j] * k * 0.3);
-      g.fillStyle(0x3a0000, 1).fillCircle(P[j].x, P[j].y, r);
-      g.fillStyle(0x9a0c0c, 1).fillCircle(P[j].x, P[j].y, r * 0.75);
-      g.fillStyle(0xe0d0b8, 1).fillCircle(P[j].x, P[j].y, Math.max(1, r * 0.22)); // (bone)
+      // a flat oval of meat across the body where it was cut, a fleck of bone in it
+      const o = P[j === this.lo ? j + 1 : j - 1];
+      const len = Math.hypot(P[j].x - o.x, P[j].y - o.y) || 1;
+      const nx = -(P[j].y - o.y) / len; const ny = (P[j].x - o.x) / len; // (across the body)
+      const half = Math.max(2.5, B.thick[j] * k * 0.32);
+      for (let q = -2; q <= 2; q++) {
+        const cx = P[j].x + nx * half * q * 0.42; const cy = P[j].y + ny * half * q * 0.42;
+        g.fillStyle(0x4a0404, 1).fillCircle(cx, cy, 2.4);
+        g.fillStyle(0x8e1010, 1).fillCircle(cx, cy, 1.6);
+      }
+      g.fillStyle(0xd8c8b0, 1).fillCircle(P[j].x + nx * half * 0.2, P[j].y + ny * half * 0.2, 1.1); // (bone)
     }
     (this.gear ?? []).forEach((w, i) => {
       const img = this.gearImgs[i];

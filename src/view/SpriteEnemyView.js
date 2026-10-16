@@ -511,7 +511,7 @@ export class SpriteEnemyView {
   // (effects/SpriteCut.js) keep bleeding from where the ragdoll's cut end is.
   //   which joints each half keeps: 0 head, 1 neck, 2 hips, 3 knees, 4 feet
   ragdollCut(type, upper, lower) {
-    const plan = { decap: [null, [1, 4]], headPop: [null, [1, 4]], halfH: [[0, 2], [2, 4]], limbs: [[0, 3], null] }[type];
+    const plan = { decap: [null, [1, 4]], headPop: [null, [1, 4]], halfH: [[0, 2], [2, 4]], limbs: [[0, 3], [3, 4]] }[type];
     const ref = this.A?.lying?.frames[0];
     if (!plan || !ref) return;
     const f = this.f;
@@ -521,6 +521,7 @@ export class SpriteEnemyView {
     const gearId = this.sheet.key.replace(/^enemy-/, '');
     const halves = [[upper, plan[0]], [lower, plan[1]]];
     const strayTo = plan[1] ? lower : upper; // (the gear of the half that isn't a ragdoll)
+    const strays = { covered: (band) => plan.some((r) => r && band >= r[0] && band < r[1]) };
     for (const [piece, range] of halves) {
       if (!piece || !range) continue;
       const r = new Ragdoll(this.scene, this.sheet, gearId);
@@ -528,7 +529,7 @@ export class SpriteEnemyView {
       const top = piece === upper;
       const vel = top ? { x: (piece.vx ?? 0) / 60, y: -(piece.vh ?? 0) / 60 } : { x: 0, y: 0 };
       const spin = top ? Math.max(-3, Math.min(3, (piece.spin ?? 0) / 60 * 18)) : 0;
-      r.start(f, face, k, top ? 'fly' : 'drop', { range, free: true, vel, spin, strays: piece === strayTo });
+      r.start(f, face, k, top ? 'fly' : 'drop', { range, free: true, vel, spin, strays: piece === strayTo ? strays : null });
       const j = top ? range[1] : range[0];         // the cut end
       Object.assign(piece, { rag: r, mode: 'rag', env, ragJoint: j, ragOther: top ? j - 1 : j + 1, bandOff: { x: 0, y: 0 } });
       piece.img.setVisible(false);
