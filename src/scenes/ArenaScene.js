@@ -688,7 +688,7 @@ export class ArenaScene extends Phaser.Scene {
       this.gore.spark(npc.x, npc.z, Math.max(0, npc.h) + 40, 0xe8f0ff, 16);
     });
     ev.on('hazardHit', ({ fighter, kind }) => {
-      if (fighter === this.player) this.callout(kind === 'fire' ? 'BURNED!' : kind === 'beam' ? 'CRUSHED!' : 'SLASHED!', '#ff9a30', 20);
+      if (fighter === this.player) this.callout(kind === 'fire' ? 'BURNED!' : kind === 'beam' ? 'CRUSHED!' : kind === 'arrow' ? 'PIERCED!' : 'SLASHED!', '#ff9a30', 20);
     });
     ev.on('stageWon', ({ stats }) => {
       if (this.stageData.exit) { this.campaignLevelDone(stats, hud); return; }

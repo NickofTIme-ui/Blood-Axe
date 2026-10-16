@@ -2581,7 +2581,7 @@ test('village: the boy on the high roof is saved by reaching him; every hero can
   }
 });
 
-test('village: the burning beam comes down after its warning, on heroes and enemies alike', () => {
+test('village: the archers by the mill shoot from the roofs on; their arrows stagger both sides; wreck their posts and the arrows stop', () => {
   const world = new World({ seed: 6 });
   const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 3160, z: 410, controller: new Scripted() }));
   const st = new Stage(world, STAGE_VILLAGE);
@@ -2589,23 +2589,44 @@ test('village: the burning beam comes down after its warning, on heroes and enem
   st.enterSection(2);
   hush(st);
   p.x = 3160; p.z = 410; st.placeOnGround(p);
-  const e = createEnemy(world, 'grunt', 3180, 420);
-  e.floor = st.terrain.groundAt(e.x, e.z); e.h = e.floor; e.controller.sample = () => {};
-  const hz = st.hazards.find((h) => h.type === 'beam' && h.section === 2);
-  let warned = false; const crashes = [];
-  world.events.on('beamCrash', (ev) => { if (ev.hazard === hz) crashes.push(world.frame); });
-  const hp = [p.health, e.health];
-  for (let i = 0; i < 260 && !crashes.length; i++) {
-    world.tick(); st.update();
-    if (st.beamPhase(hz).phase === 'warn') warned = true;
-    if (!crashes.length) { p.x = 3160; e.x = 3180; }
-  }
-  assert(warned && crashes.length === 1, 'warned, then fell');
-  assert(p.health < hp[0] && e.health < hp[1], `both hurt (${p.health}/${hp[0]}, ${e.health}/${hp[1]})`);
+  p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  assert(!st.hazards.some((h) => h.type === 'beam' && h.look !== 'rock'), 'no falling wood anywhere in the village');
+  const hz = st.hazards.find((h) => h.type === 'bombard' && h.look === 'arrows' && h.section === 2);
+  assert(hz && hz.silence === 'millArchers', 'the roofs are under the mill archers\' arrows');
+  const e = createEnemy(world, 'grunt', 3190, 420);
+  e.entering = false; e.controller = new Controller(); st.placeOnGround(e);
+  const land = []; world.events.on('shellLand', (ev) => { if (ev.hazard === hz) land.push(ev.shell); });
+  let hurtHero = 0; let hurtFoe = 0; let stunned = 0; let floored = 0;
+  world.events.on('hazardHit', (ev) => {
+    if (ev.kind !== 'arrow') return;
+    if (ev.fighter === p) { hurtHero++; if (p.state === 'hitstun') stunned++; if (p.state === 'knockdown') floored++; } else if (ev.fighter.team === 'enemy') hurtFoe++;
+  });
+  const tick = (n, each) => { for (let i = 0; i < n; i++) { world.tick(); st.update(); each?.(); } };
+  tick(60 * 10, () => { p.health = p.stats.maxHealth; p.x = 3160; p.z = 410; if (e.alive) { e.health = e.stats.maxHealth; e.x = p.x + 30; e.z = p.z; } });
+  assert(land.length >= 3 && land.every((sh) => Math.abs(sh.x - p.x) < 260), `arrows land near him (${land.map((sh) => Math.round(sh.x - p.x))})`);
+  assert(hurtHero >= 1 && hurtFoe >= 1, `they hit whoever is under them (hero ${hurtHero}, Ashen ${hurtFoe})`);
+  assert(stunned === hurtHero && floored === 0, `an arrow staggers him, never floors him (${stunned}/${hurtHero}, floored ${floored})`);
+  // still shooting in the mill yard, from posts up on the mill floor
+  const mill = STAGE_VILLAGE.sections.findIndex((q) => q.id === 'mill');
+  st.enterSection(mill);
+  assert(st.bombardShots(hz) === 2, 'the mill yard is under them too');
+  const posts = st.props.filter((pr) => pr.tag === 'millArchers');
+  assert(posts.length === 2 && posts.every((pr) => pr.kind === 'archers' && pr.section === mill), 'two archer posts in the mill yard');
+  st.breakProp(posts[0], 1);
+  assert(st.bombardShots(hz) === 1, 'one wrecked: half the volley');
+  const beats = []; world.events.on('storyBeat', (ev) => beats.push(ev.beat.id));
+  st.story.beats.find((b) => b.id === 'millSilenced').fired = false;
+  st.breakProp(posts[1], 1);
+  tick(30);
+  assert(st.bombardShots(hz) === 0 && beats.includes('millSilenced'), `both wrecked: the arrows stop (${beats})`);
+  // and past the mill yard it never shoots
+  const fresh = new Stage(new World({ seed: 6 }), STAGE_VILLAGE);
+  fresh.enterSection(mill + 1);
+  assert(fresh.bombardShots(fresh.hazards.find((h) => h.silence === 'millArchers')) === 0, 'not past the mill');
 });
 
 const HALL = STAGE_VILLAGE.sections.findIndex((q) => q.id === 'hall');
-test("village: the longhall's beams only fall once the Ash Captain rages", () => {
+test("village: the longhall: his archers only loose once the Ash Captain rages; wreck their post and they stop", () => {
   const world = new World({ seed: 7 });
   const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 7400, z: 440, controller: new Scripted() }));
   const st = new Stage(world, STAGE_VILLAGE);
@@ -2613,14 +2634,32 @@ test("village: the longhall's beams only fall once the Ash Captain rages", () =>
   st.enterSection(HALL);
   hush(st);
   p.x = 7450;
-  let crashes = 0;
-  world.events.on('beamCrash', (ev) => { if (ev.hazard.section === HALL) crashes++; });
+  let volleys = 0;
+  world.events.on('shellLaunch', (ev) => { if (ev.hazard.section === HALL) volleys++; });
   for (let i = 0; i < 900; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; p.awe = 0; }
   assert(st.boss && st.boss.stats.name.includes('Ash Captain'), 'he is here');
-  assert(crashes === 0, `no beams before his rage (${crashes})`);
+  assert(volleys === 0, `no arrows before his rage (${volleys})`);
   st.boss.health = st.boss.stats.maxHealth * 0.4;
   for (let i = 0; i < 700; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; }
-  assert(st.boss.raged && crashes >= 2, `the hall comes down (${crashes})`);
+  assert(st.boss.raged && volleys >= 2, `his archers loose on the hall (${volleys})`);
+  const post = st.props.find((pr) => pr.tag === 'hallArchers');
+  st.breakProp(post, 1);
+  const n = volleys;
+  for (let i = 0; i < 600; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; if (st.boss?.alive) st.boss.health = st.boss.stats.maxHealth * 0.4; }
+  assert(volleys === n, `their post wrecked: no more arrows (${volleys - n})`);
+});
+
+test('gates: the lower town: a catapult up the street shells it (no falling beams); wreck it and it stops', () => {
+  const town = STAGE_GATES.sections.findIndex((q) => q.id === 'town');
+  const st = new Stage(new World({ seed: 9 }), STAGE_GATES);
+  assert(!st.hazards.some((h) => h.type === 'beam' && h.look !== 'rock'), 'no falling wood anywhere in the Iron Gates');
+  st.enterSection(town);
+  const hz = st.hazards.find((h) => h.type === 'bombard' && h.section === town);
+  assert(hz && st.bombardShots(hz) === 1, 'the catapult throws');
+  const cat = st.props.find((pr) => pr.tag === hz.silence);
+  assert(cat && cat.kind === 'catapult' && cat.section === town, 'a catapult stands in the town');
+  st.breakProp(cat, 1);
+  assert(st.bombardShots(hz) === 0, 'wrecked: it stops');
 });
 
 test('village: a sub-boss walks in without freezing the heroes; the captain freezes them', () => {

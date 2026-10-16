@@ -32,6 +32,12 @@
 //                       ('saved:<npcId>': the rescued come back to help)
 //   bombard.friendly: true        stones thrown by your own people (the rescued, from the
 //                       walls): aimed at the Ashen, never at a boss; they hurt only the Ashen
+//   bombard.look: 'arrows'        an arrow volley instead of stones: lighter, it staggers
+//                       (hitstun) instead of knocking him flat (an archer post: prop
+//                       'archers', tagged with the volley's `silence`)
+//   bombard.upto: '<sectionId>'   it keeps shooting from its own section through that one
+//                       (the archers or the catapult stand further on: you come under fire
+//                       long before you reach them; smash them and it stops)
 //   section.needs: '<tag>'        its fight isn't won until every prop with that tag is
 //                       broken (the Shattered Ascent's catapults); propsDown { tag } is
 //                       emitted when the last one goes (story beats 'broken:<tag>')
@@ -113,7 +119,10 @@ const BEAM = { period: 230, warn: 80, damage: 22, lethalH: 60 };
 // stone aimed at a hero (a little off where he stands), its landing spot shown for `warn`
 // frames; what it hits (either side) within `radius` along the lane and `depth` across it.
 // No stone is aimed within `pitClear` px of a drop (nobody is shelled off a bridge or a ledge).
-const BOMBARD = { period: 200, warn: 75, shots: 2, radius: 64, depth: 46, damage: 20, spread: 110, pitClear: 170 };
+// An arrow volley (`look: 'arrows'`) is the same, lighter: it staggers (ARROW) instead of
+// knocking him flat, so it only needs to keep clear of the very edge of a drop (`arrowClear`).
+const BOMBARD = { period: 200, warn: 75, shots: 2, radius: 64, depth: 46, damage: 20, spread: 110, pitClear: 170, arrowClear: 45 };
+const ARROW = { stun: 22 };
 // Vincent's Gate Scorpion (hazard 'ballista'): frames between shots, the lane's warning, the
 // bolt's speed (px a frame) and reach, how near the lane a man must be to be skewered (and how
 // high he can be), the damage; the cart's roll across the yard (px a frame); the boss shot's
@@ -156,6 +165,9 @@ export class Stage {
       }
       for (const h of sec.hazards ?? []) this.hazards.push({ id: id++, section: si, ...h, t: h.phase ?? 0, cool: new Map() });
     }
+    // (`upto`: a bombardment that keeps falling on the sections after its own, up to and
+    // including that one: the archers ahead shoot at you all the way until you reach them)
+    for (const hz of this.hazards) hz.last = hz.upto ? Math.max(hz.section, this.sections.findIndex((s) => s.id === hz.upto)) : hz.section;
     world.events.on('kill', (e) => {
       if (e.defender?.team !== 'enemy') return;
       this.stats.kills++;
@@ -781,7 +793,7 @@ export class Stage {
   updateHazards() {
     for (const hz of this.hazards) {
       // only the hazards near the action run (the rest wait, so their timing is fresh)
-      if (Math.abs(hz.section - this.index) > 1) continue;
+      if (this.index < hz.section - 1 || this.index > hz.last + 1) continue;
       hz.t++;
       for (const [id, c] of hz.cool) { if (c <= 1) hz.cool.delete(id); else hz.cool.set(id, c - 1); }
       if (hz.type === 'fire') this.updateFire(hz);
@@ -824,7 +836,7 @@ export class Stage {
     if (!hz.when) return true;
     if (hz.when.startsWith('freed:')) return !!this.story?.rescued.has(hz.when.slice(6));
     const b = this.boss;
-    if (!b || !b.alive || hz.section !== this.index) return false;
+    if (!b || !b.alive || this.index < hz.section || this.index > hz.last) return false;
     if (hz.when === 'rage') return !!b.raged;
     return hz.when.startsWith('phase:') && this.bossInPhase(hz.when.slice(6));
   }
@@ -950,7 +962,7 @@ export class Stage {
   // than the catapults (props tagged `silence`) still standing; none once they're all gone
   // or before its `when`.
   bombardShots(hz) {
-    if (hz.section !== this.index || !this.beamLive(hz)) return 0;
+    if (this.index < hz.section || this.index > hz.last || !this.beamLive(hz)) return 0;
     const n = hz.shots ?? BOMBARD.shots;
     if (!hz.silence) return n;
     const standing = this.props.filter((pr) => pr.tag === hz.silence && !pr.broken).length;
@@ -968,6 +980,7 @@ export class Stage {
     const shots = this.bombardShots(hz);
     if (!shots) { hz.shells = hz.shells.filter((s) => s.land > hz.t); }
     const P = hz.period ?? B.period;
+    const arrows = hz.look === 'arrows';
     if (shots && !held && hz.t % P === 0) {
       // (your own people's stones go for the Ashen, never for a boss: he's yours)
       const heroes = hz.friendly
@@ -982,7 +995,7 @@ export class Stage {
         let x = p.x + (r() * 2 - 1) * B.spread * 0.6 + ahead * (i % 2 ? B.spread : B.spread * 0.3);
         const z = Math.max(b.minZ + 10, Math.min(b.maxZ - 10, p.z + (r() * 2 - 1) * 50));
         x = Math.max(b.minX + 20, Math.min(b.maxX - 20, x));
-        if (this.nearDrop(x, z)) continue;
+        if (this.nearDrop(x, z, arrows ? B.arrowClear : B.pitClear)) continue;
         hz.shells.push({ x, z, from: hz.t, land: hz.t + (hz.warn ?? B.warn) });
         fired++;
       }
@@ -996,7 +1009,7 @@ export class Stage {
       for (const f of this.world.fighters) {
         if (hz.friendly && (f.team !== 'enemy' || f.stats.boss)) continue;
         if (Math.abs(f.x - s.x) > (hz.radius ?? B.radius) || Math.abs(f.z - s.z) > (hz.depth ?? B.depth) || Math.abs(f.h - y) > 70) continue;
-        this.hurt(hz, f, hz.damage ?? B.damage, Math.sign(f.x - s.x) || 1, 'beam');
+        this.hurt(hz, f, hz.damage ?? B.damage, Math.sign(f.x - s.x) || 1, arrows ? 'arrow' : 'beam');
       }
     }
     hz.shells = hz.shells.filter((s) => s.land > hz.t);
@@ -1074,10 +1087,10 @@ export class Stage {
   }
 
   // Is there a drop (a pit) within BOMBARD.pitClear of this spot along the lane?
-  nearDrop(x, z) {
+  nearDrop(x, z, clear = BOMBARD.pitClear) {
     const T = this.terrain;
     if (!T) return false;
-    for (let d = -BOMBARD.pitClear; d <= BOMBARD.pitClear; d += 15) if (T.groundAt(x + d, z) < -1) return true;
+    for (let d = -clear; d <= clear; d += 15) if (T.groundAt(x + d, z) < -1) return true;
     return false;
   }
 
@@ -1150,14 +1163,15 @@ export class Stage {
     // an enemy the fire kills doesn't get thrown clear: he burns where he stands, then
     // drops (the 'burning' state; effects/Burn.js chars the body)
     if (lethal && kind === 'fire' && f.team === 'enemy') f.fsm.change('burning', { dir });
+    else if (kind === 'arrow' && !lethal && f.state !== 'knockdown' && f.h - (f.floor ?? 0) < 2) f.fsm.change('hitstun', { frames: ARROW.stun }); // (feathered: he staggers, keeps his feet)
     else {
-      f.fsm.change('knockdown', kind === 'fire' || kind === 'beam'
+      f.fsm.change('knockdown', kind === 'fire' || kind === 'beam' || kind === 'arrow'
         ? { vx: dir * 160, vh: 260 }
         : kind === 'trample' ? { vx: dir * 620, vh: 380 } : kind === 'bolt' ? { vx: dir * 760, vh: 240 } : { vx: dir * 420, vh: 320 });
     }
     const e = {
       attacker: null, defender: f, dir, kind: 'hazard', hazard: kind,
-      move: { cut: kind === 'fire' ? 'fire' : kind === 'bolt' ? 'pierce' : kind === 'crate' || kind === 'beam' || kind === 'trample' ? 'blunt' : 'slash', damage: dmg, hitstop: 6 },
+      move: { cut: kind === 'fire' ? 'fire' : kind === 'bolt' || kind === 'arrow' ? 'pierce' : kind === 'crate' || kind === 'beam' || kind === 'trample' ? 'blunt' : 'slash', damage: dmg, hitstop: 6 },
       x: f.x, z: f.z, h: f.h + f.stats.body.h * 0.5, damage: dmg, fatality: 'none',
     };
     this.world.events.emit('hazardHit', { hazard: hz, fighter: f, kind });
