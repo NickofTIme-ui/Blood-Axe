@@ -13,7 +13,7 @@ export const SPEAKER = {
 export const speakerColor = (who) => SPEAKER[who] ?? '#d8d0c0';
 
 const HEAD = 120; // a fighter's head, above his feet (times his size)
-const NPC_HEAD = 132; // a villager's (clear of his TALK / OPEN prompt)
+const NPC_HEAD = 150; // a villager's (clear of his TALK / OPEN prompt)
 
 // does this name belong to that voice? 'VAREK' is 'Varek, the Ash Captain'; 'HALE' is 'Hale the smith'
 const owns = (name, who) => !!name && name.toUpperCase().split(/[^A-Z]+/).includes(who);

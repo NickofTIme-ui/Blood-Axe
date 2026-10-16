@@ -119,11 +119,15 @@ export const LEVEL_ART = {
 // figure keeps its code drawing until its sheets exist (all of them, for the creatures).
 // The poses in each sheet are listed in docs/campaign/art-levels-1-2.md (items 8, 16,
 // 17, 25).
+const NPC_GRADE = { contrast: 1.12, saturation: 1.18, outline: 2, rim: 0.45 };
 export const SPRITE_SHEETS = {
-  villager: { file: 'assets/sprites/npc/villager.png', frames: 8, height: 150 },
-  mother: { file: 'assets/sprites/npc/mother.png', frames: 6, height: 150 },
-  boy: { file: 'assets/sprites/npc/boy.png', frames: 6, height: 110 },
-  elder: { file: 'assets/sprites/npc/elder.png', frames: 4, height: 150 },
+  // (the village's people are cut at the heroes' height, a standing man about 110 px, and
+  // graded like Nicholas so they stand out from the painted street: Nick, 2026-10-16,
+  // "you need to really see the npcs to interact with them")
+  villager: { file: 'assets/sprites/npc/villager.png', frames: 8, height: 235, grade: NPC_GRADE },
+  mother: { file: 'assets/sprites/npc/mother.png', frames: 6, height: 235, grade: NPC_GRADE },
+  boy: { file: 'assets/sprites/npc/boy.png', frames: 6, height: 170, grade: NPC_GRADE },
+  elder: { file: 'assets/sprites/npc/elder.png', frames: 4, height: 228, grade: NPC_GRADE },
   captive: { file: 'assets/sprites/npc/captive.png', frames: 6, height: 250 }, // (big: the hanging pose's rope makes it the tallest, and a standing man must still match the heroes)
   // the mine's chained prisoners (view/NpcView.js PRISONERS): the villager and elder sheets
   // again, cut at the heroes' height (a standing man as tall as the captive above) and so
@@ -153,7 +157,7 @@ export const SPRITE_SHEETS = {
   // Irvolino, the miller (made in ChatGPT from his photo: docs/irvolino-art-prompts.md): the
   // villager sheet's 8 poses. He leads the miller's people out of the barn; until he's
   // painted he's the villager.
-  irvolino: { file: 'assets/sprites/npc/irvolino.png', frames: 8, height: 150 },
+  irvolino: { file: 'assets/sprites/npc/irvolino.png', frames: 8, height: 235, grade: NPC_GRADE },
   // Vincent, the Gatewright (view/VincentView.js; made in ChatGPT from his photo:
   // docs/vincent-art-prompts.md): stand, grip the bars, crank, aim, loose, walk x3, wave
   vincent: { file: 'assets/sprites/npc/vincent.png', frames: 9, height: 205 },

@@ -123,7 +123,7 @@ export class NpcView {
   makeNpc(n) {
     const s = this.scene;
     const g = s.add.graphics();
-    const halo = s.add.image(n.x, n.z, 'glow').setScale(2.4, 3).setTint(0xdfe8ff).setAlpha(0).setBlendMode(Phaser.BlendModes.ADD);
+    const halo = s.add.image(n.x, n.z, 'glow').setScale(3, 4).setTint(0xdfe8ff).setAlpha(0).setBlendMode(Phaser.BlendModes.ADD);
     const shadow = s.add.ellipse(n.x, n.z, 40, 9, 0x000000, 0.3);
     // the prompt over him when a hero can do something (stage/Story.js prompts), and a
     // meter under it: a lock giving, a rope tightening, an escort's nerve
@@ -218,8 +218,11 @@ export class NpcView {
     g.setVisible(show).setAlpha(fadeOut);
     v.shadow.setVisible(show);
     // someone to save: a pale light behind him, pulsing
+    // ...and someone with something to say: a warm one (with the bubble over him, drawPrompt)
     const needs = n.state === 'trapped' || n.state === 'threatened';
-    v.halo.setVisible(needs).setPosition(n.x, n.z - n.h - 40).setDepth(n.z - 0.6).setAlpha(needs ? 0.25 + 0.2 * Math.sin(t * 0.12) : 0);
+    const talks = this.hasWord(n);
+    v.halo.setVisible(needs || talks).setPosition(n.x, n.z - n.h - 58).setDepth(n.z - 0.6).setTint(needs ? 0xdfe8ff : 0xffd890)
+      .setAlpha(needs || talks ? 0.25 + 0.2 * Math.sin(t * 0.12) : 0);
     if (!show) return;
     const y = n.z - n.h;
     const k = depthScale(n.z);
@@ -248,7 +251,7 @@ export class NpcView {
     if (n.pose === 'chained') { this.drawChained(n, v, g, y, k, t, pose, dir); return; }
     if (n.pose === 'group' || n.pose === 'convoy') {
       // (the barn's group is the miller's people: Irvolino leads them, data/speakers.js MILLER)
-      for (let i = 0; i < 3; i++) this.figure(g, n.x - 30 + i * 28, y + (i % 2) * 6, k * (i === 1 ? 0.75 : 1), pose, t + i * 5, tun(i + 4), dir, i === 0 && n.id === 'barn' ? 'irvolino' : undefined);
+      for (let i = 0; i < 3; i++) this.figure(g, n.x - 44 + i * 42, y + (i % 2) * 6, k * (i === 1 ? 0.75 : 1), pose, t + i * 5, tun(i + 4), dir, i === 0 && n.id === 'barn' ? 'irvolino' : undefined);
       return;
     }
     this.figure(g, n.x, y, k, pose, t, tun(0), dir, n.art);
@@ -347,11 +350,11 @@ export class NpcView {
       if (!open) {
         for (let i = 0; i < many; i++) this.figure(g, cx - (many - 1) * 12 + i * 24, cy - 26, ck * 0.85, i === many - 1 && SPRITES.captive ? 'grip' : 'cower', t + i * 5, tun(i), -1, SPRITES.captive ? 'captive' : undefined);
       } else if (n.state === 'free') {
-        for (let i = 0; i < many; i++) this.figure(g, cx + 40 + i * 26, cy + (i % 2) * 6, ck, 'stand', t + i * 5, tun(i), 1);
+        for (let i = 0; i < many; i++) this.figure(g, cx + 52 + i * 38, cy + (i % 2) * 6, ck, 'stand', t + i * 5, tun(i), 1);
       } else if (n.state === 'fleeing' || n.state === 'gathered') {
         const p = n.state === 'fleeing' ? 'run' : 'stand';
         const dir = n.state === 'fleeing' ? n.dir ?? -1 : -1;
-        for (let i = 0; i < many; i++) this.figure(g, n.x - (many - 1) * 14 + i * 28, y + (i % 2) * 6, k * (many > 1 && i === 1 ? 0.85 : 1), p, t + i * 5, tun(i), dir);
+        for (let i = 0; i < many; i++) this.figure(g, n.x - (many - 1) * 20 + i * 40, y + (i % 2) * 6, k * (many > 1 && i === 1 ? 0.85 : 1), p, t + i * 5, tun(i), dir);
       }
       if (paintedCage(this.scene)) {
         // the painted cage (its bars in front; the shut one, or broken open)
@@ -443,6 +446,11 @@ export class NpcView {
     drawVincent(s, v, g, x, y, k, pose, t, caged ? -1 : n.state === 'free' ? 1 : -1, n.z + 0.1);
   }
 
+  // has he something to say that no one has heard yet? (stage/Story.js updateTalk)
+  hasWord(n) {
+    return !!n.talk && !n.talked && n.state === 'idle';
+  }
+
   // What a hero near him can do now, and the meter that goes with it.
   drawPrompt(n, v) {
     const S = this.story;
@@ -450,11 +458,20 @@ export class NpcView {
     const q = S.prompts.find((p) => p.npc === n);
     const y = n.z - n.h;
     const text = !q ? '' : q.kind === 'talk' ? 'E  /  D-PAD ▲   TALK' : q.kind === 'open' ? 'HOLD  E  /  D-PAD ▲   OPEN' : 'KILL THEM FIRST';
-    v.tip.setVisible(!!text).setText(text).setPosition(n.x, y - 110).setColor(q?.kind === 'busy' ? '#ff9a7a' : '#f0e6d0');
+    v.tip.setVisible(!!text).setText(text).setPosition(n.x, y - 128).setColor(q?.kind === 'busy' ? '#ff9a7a' : '#f0e6d0');
     const bar = (frac, col) => {
-      m.fillStyle(0x000000, 0.7).fillRect(n.x - 31, y - 104, 62, 7);
-      m.fillStyle(col, 1).fillRect(n.x - 30, y - 103, 60 * Math.max(0, Math.min(1, frac)), 5);
+      m.fillStyle(0x000000, 0.7).fillRect(n.x - 31, y - 122, 62, 7);
+      m.fillStyle(col, 1).fillRect(n.x - 30, y - 121, 60 * Math.max(0, Math.min(1, frac)), 5);
     };
+    // someone with something to say, before a hero is near enough for the prompt: a speech
+    // bubble bobbing over his head, so he's seen from across the street
+    if (!text && this.hasWord(n)) {
+      const by = y - 140 + 4 * Math.sin(this.scene.time.now * 0.004);
+      m.fillStyle(0x000000, 0.85).fillRoundedRect(n.x - 21, by - 15, 42, 26, 9).fillTriangle(n.x - 7, by + 9, n.x + 5, by + 9, n.x - 4, by + 19);
+      m.fillStyle(0xf6ead0, 1).fillRoundedRect(n.x - 18, by - 12, 36, 20, 7).fillTriangle(n.x - 5, by + 6, n.x + 3, by + 6, n.x - 3, by + 14);
+      m.fillStyle(0x2a2018, 1);
+      for (let i = -1; i <= 1; i++) m.fillCircle(n.x + i * 9, by - 2, 2.6);
+    }
     if (q?.kind === 'open' && n.pick > 0) bar(n.pick / (n.hold ?? NPC.pick), 0xd8b04a);
     else if (n.rescue === 'execution' && n.state === 'threatened' && n.clock > 0) bar(1 - n.clock / (n.time ?? 900), 0xd04030); // the rope
     else if (n.state === 'escort') bar(n.nerve / (n.hp ?? NPC.nerve), n.cower ? 0xff7050 : 0x9ad0ff);         // his nerve

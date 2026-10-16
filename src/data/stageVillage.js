@@ -261,7 +261,7 @@ export const STAGE_VILLAGE = {
 
   // the villagers (stage/Story.js; drawn by view/NpcView.js)
   npcs: [
-    { id: 'hale', name: 'Hale the smith', x: 960, z: 296, pose: 'wounded', talk: 'hale' },
+    { id: 'hale', name: 'Hale the smith', x: 960, z: 296, talk: 'hale' }, // (on his feet, so he's seen: Nick, 2026-10-16)
     {
       id: 'mira', name: 'Mira and her son', x: 2300, z: 300, pose: 'family', rescue: 'defend', section: 'square', wave: 1,
       flee: { x: 1500, z: 300 }, gather: { x: 8740, z: 300 },

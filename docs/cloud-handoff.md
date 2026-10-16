@@ -792,3 +792,11 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - Gate (`VillageView.updateStables`): once freed, the painted gate is drawn thrown open, two leaves on their hinges, the dark stable and a flickering fire glow inside.
 - Tests pass (stables test updated: horses come out of the door, warned first, both ways). Seen in a headless browser (before/after in project files `stable-stampede/`). `tools/campaign-sweep.js village --section 4` gets through the stables; it then sticks in the longhall fight, same as on main without this change.
 - Art, optional: a gallop strip painted at an angle (coming toward the camera) would sell the first steps out of the door better than the side-on one; not needed.
+
+## Cloud, 2026-10-16: the villagers at hero size, and easy to spot (not on itch)
+- Nick: "Hale the npc doesnt pop out enough, and way too small, you need to really see the npcs to interact with them"; "mira is also too small same as hale, any npc thats this size needs to be bigger".
+- **Bigger** (`SPRITE_SHEETS` in `src/data/levelArt.js`): the village sheets were cut so a standing man was about 70 px, against the heroes' ~115. Now villager, mother and Irvolino are cut at 235 (standing ~110), the elder at 228, the boy at 170 (~80, a ten-year-old). That covers Hale, Mira, Tam, Elder Brann, Irvolino and every generic villager (roofs, barn, cellars, the gathered at the gate). Groups are spaced wider to fit (`NpcView.js`); prompts, meters and the speaker marker sit higher (`SpeakerMarker.js` `NPC_HEAD` 150).
+- **Easier to see**: those sheets get the same grade as Nicholas (`NPC_GRADE`: more contrast and colour, a dark ink outline, a pale rim of light) so they separate from the painted street. Hale now stands instead of sitting against the wall.
+- **Someone with something to say** (`NpcView.hasWord`: a `talk` not yet heard): a warm pulsing glow behind him and a speech bubble bobbing over his head until a hero comes near (Hale, Nicholas when wounded).
+- Not changed: the mine prisoners, captives, Vincent and Nicholas were already cut at about hero height (90-118 px).
+- Checked: logic tests pass; headless screenshots of Hale (and Mira, Tam). Not played by a person.
