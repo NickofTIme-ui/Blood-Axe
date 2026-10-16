@@ -302,7 +302,7 @@ export class Ragdoll {
     this.lift = kind === 'lying' ? B.lift.map((v) => v * k) : [0, 0, 0, 0, 0];
     this.floorY = floorY;
     // the gear starts where it's drawn on him
-    this.gear = B.gear.map((g) => this.startGear(g)).filter((w) => {
+    this.gear = B.gear.map((g, i) => Object.assign(this.startGear(g), { img: i })).filter((w) => {
       const here = w.band >= this.lo && w.band < this.hi;
       const stray = !here && opts.strays && !opts.strays.covered?.(w.band);
       if (stray) { if (w.rope) w.dropped = true; else w.free = true; } // (fallen from his other half)
@@ -414,6 +414,17 @@ export class Ragdoll {
       // (a cut-off piece just comes to rest where it fell)
       if (down >= Math.min(3, hi - lo + 1)) this.grounded++; else this.grounded = Math.max(0, this.grounded - 1);
       if (this.grounded > 6) this.settle = Math.min(0.22, this.settle + 0.012); // (still before the painted get-up starts)
+      // nothing dead sits up for long: a piece come to rest propped up (a headless body
+      // sat on its hips) is tipped over its highest end
+      if (free && this.grounded > 10) {
+        let top = lo;
+        for (let j = lo; j <= hi; j++) if (P[j].y < P[top].y) top = j;
+        if (floorY - this.lift[top] - P[top].y > 24 * k) {
+          let mx = 0;
+          for (let j = lo; j <= hi; j++) mx += P[j].x / (hi - lo + 1);
+          P[top].x += (Math.sign(P[top].x - mx) || 1) * 0.5;
+        }
+      }
       const held = [];
       for (let it = 0; it < ITER; it++) {
         for (let j = lo; j < hi; j++) {
@@ -596,8 +607,8 @@ export class Ragdoll {
       }
       g.fillStyle(0xd8c8b0, 1).fillCircle(P[j].x + nx * half * 0.2, P[j].y + ny * half * 0.2, 1.1); // (bone)
     }
-    (this.gear ?? []).forEach((w, i) => {
-      const img = this.gearImgs[i];
+    (this.gear ?? []).forEach((w) => {
+      const img = this.gearImgs[w.img]; // (its own picture: the half he's in may not carry all his gear)
       if (w.g.kind === 'flail') {
         const R = w.rope;
         // the chain: dark links with a light glint, every few px along the rope
