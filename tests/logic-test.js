@@ -7,7 +7,7 @@ import { World } from '../src/core/World.js';
 import { SETTINGS } from '../src/config/settings.js';
 import { Controller } from '../src/core/Controller.js';
 import { Fighter } from '../src/entities/Fighter.js';
-import { createEnemy, ENTER } from '../src/entities/Enemy.js';
+import { createEnemy, ENTER, inView } from '../src/entities/Enemy.js';
 import { CHARACTERS } from '../src/data/characters.js';
 import { ENEMIES, WAVES } from '../src/data/enemies.js';
 import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.js';
@@ -2288,6 +2288,7 @@ function routeRun(hero) {
       // (down the lane at 415; through the gallery in front of the balcony, clear of the blades' lanes)
       const lane = p.x > 4880 && p.x < 5700 ? 365 : 415;
       this.held = {}; this.moveX = 1; this.moveZ = Math.abs(p.z - lane) > 6 ? Math.sign(lane - p.z) : 0;
+      if (!T) return; // (a level without ledges or pits: just walk)
       if (this.jumpFor > 0) { this.jumpFor--; this.held.jump = p.h < this.jumpTo + 34; }
       if (!p.grounded) {
         if (p.vh < 0 && T.groundAt(p.x, 415) > -1 && T.groundAt(p.x + 25, 415) < -1) this.moveX = 0;
@@ -2384,6 +2385,7 @@ function campaignRun(data, hero, { kill = true, frames = 60 * 300, onTick = null
       const p = this.me; const T = this.world.terrain;
       const lane = 415;
       this.held = {}; this.moveX = 1; this.moveZ = Math.abs(p.z - lane) > 6 ? Math.sign(lane - p.z) : 0;
+      if (!T) return; // (a level without ledges or pits: just walk)
       if (this.jumpFor > 0) { this.jumpFor--; this.held.jump = p.h < this.jumpTo + 34; }
       if (!p.grounded) {
         // coming down: over ground with the dark ahead, pull back onto it (like a player)
@@ -3520,6 +3522,32 @@ const EVERYONE = ['shelter', 'bram', 'hilde', 'joren', 'convoy'];
 // a fighter killed the way a blow kills him (Stage listens for 'kill')
 const slay = (world, f) => { f.health = 0; world.events.emit('kill', { defender: f, attacker: null }); };
 
+test('every level: no enemy and no boss ever pops into view (each comes on from off-screen, or stood there before anyone could see the spot)', () => {
+  const heal = (w, st, p) => { p.health = p.stats.maxHealth; };
+  const levels = [
+    ['oath', STAGE, heal], ['gallows', STAGE_GALLOWS, heal], ['village', STAGE_VILLAGE, heal], ['wood', STAGE_WOOD, heal],
+    ['mine', STAGE_MINE, mineBreaker, {}, 400], ['ascent', STAGE_ASCENT, ascentBreaker, {}, 420], ['gates', STAGE_GATES, gatesBreaker, { saved: EVERYONE }, 420],
+  ];
+  const seen = []; const unfinished = [];
+  for (const [name, data, each, opts = {}, secs = 300] of levels) {
+    const r = campaignRun(data, 'warrior', {
+      frames: 60 * secs, opts,
+      onTick: (w, st, p) => { each(w, st, p); p.health = p.stats.maxHealth; },
+      setup: (world, st) => {
+        const add = world.addFighter.bind(world);
+        world.addFighter = (f) => {
+          const heroes = world.fighters.filter((q) => q.team === 'player' && q.alive);
+          if (f.team === 'enemy' && inView(world, heroes, f.x)) seen.push(`${name}/${st.section.id}: ${f.stats.name} at x ${Math.round(f.x)} (hero at ${Math.round(heroes[0]?.x)})`);
+          return add(f);
+        };
+      },
+    });
+    if (!r.won) unfinished.push(`${name} (${r.stage.section.id})`);
+  }
+  assert(!unfinished.length, `the walk got through every level (stuck: ${unfinished.join(', ')})`);
+  assert(!seen.length, `popped in: ${seen.join('; ')}`);
+});
+
 test('gates: the level is wired in: the ascent leads to it, its cutaway exists', () => {
   assert(STAGES[STAGE_ASCENT.next.id] === STAGE_GATES, 'the ascent leads on to the gates');
   const src = readFileSync(new URL('../src/scenes/CutawayScene.js', import.meta.url), 'utf8');
@@ -3620,7 +3648,7 @@ test('gates: Vincent, the Gatewright: caged on the landing, the gatehouse waits 
   const sec = GATE_SEC('gatehouse');
   const { world, p, st, run } = gatesSetup(sec, { x: 2470, z: 330 });
   const v = st.story.npc('vincent');
-  st.fightOn = true; st.waveIndex = 99;
+  st.fightOn = true; st.waveIndex = 99; killFoes(world); // (the guardroom's men already at their posts: gone)
   run(120, () => { p.health = p.stats.maxHealth; });
   assert(v && v.state === 'trapped' && v.h === 140, `in his cage on the landing (${v?.state}, ${v?.h})`);
   assert(st.phase === 'fight', 'the guardroom is empty, but the gatehouse is not won while he is caged');

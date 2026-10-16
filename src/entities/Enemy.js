@@ -24,6 +24,7 @@ export const ENTER = {
   margin: 140,   // + his half-width and the camera's lag behind a running hero
   stagger: 45,   // each next man in a wave a step further back
   onScreen: 400, // he's arrived once he's this close to a hero (and inside the bounds)
+  wake: 180,     // a man waiting at his post (Stage placeWaiting) stirs when a hero is this close
 };
 
 // Where to put the k-th man of a wave coming from this side (+1 right, -1 left).
@@ -88,6 +89,17 @@ export class EnemyBrain extends Controller {
 
     const target = this.pickTarget();
     if (!target) { this.facingHint = null; return; }
+
+    // Waiting at his post for his fight to start (stage/Stage.js placeWaiting): he
+    // stands and watches; struck, or a hero right on him, and the waiting is over.
+    if (f.lurking != null) {
+      const close = Math.abs(target.x - f.x) < ENTER.wake && Math.abs(target.z - f.z) < 80;
+      if (f.health >= f.stats.maxHealth && !close && (f.state === 'idle' || f.state === 'walk')) {
+        this.facingHint = Math.sign(target.x - f.x) || f.facing;
+        return;
+      }
+      f.lurking = null;
+    }
 
     // Still walking on from off-screen: nothing but the walk (no specials or shots
     // from where nobody can see him), until he's inside the bounds and in view.

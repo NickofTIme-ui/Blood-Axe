@@ -16,6 +16,12 @@
 // Campaign levels (data/stageVillage.js) add, all optional:
 //   story / npcs        dialogue and villagers to save (stage/Story.js)
 //   section.fightAt     its waves hold until a hero gets this far (walk in, look, then fight)
+//   section.spawns      where its men come from ({ x, z }, or one list per wave). Nobody
+//                       pops into view: a spot someone can see when the wave comes is
+//                       swapped for a start off-screen on that side (he walks or jumps on).
+//                       inPlace: already standing there. The first wave's inPlace men are
+//                       set down when the way to their section opens, out of sight, and
+//                       wait (`lurking`: not yet counted as foes) until their fight starts
 //   section.fightAfter  ...and (or) until this story beat has played (the north gate's
 //                       stragglers come only once Oathkeeper is in Rurik's hand)
 //   exit: { x, after }  the level ends when a hero walks out here, once the last section
@@ -218,7 +224,11 @@ export class Stage {
         this.placeOnGround(p);
         p.safe = { x: p.x, z: p.z };
       });
+      this.placeWaiting(i, true); // (the level comes up with them already there)
     }
+    // its first wave already waiting out there (placeWaiting): that wave is in
+    if (this.waiting === i) this.waveIndex = 1;
+    if (this.fightOn) this.wakeWaiting();
     this.world.events.emit('sectionStart', { index: i, section: sec });
   }
 
@@ -242,6 +252,36 @@ export class Stage {
     }
     const next = this.sections[this.index + 1];
     this.lockBounds(this.section.x0, next.x1);
+    this.placeWaiting(this.index + 1); // (the next fight's men, already at their posts)
+  }
+
+  // The first wave of section i, when its spots say the men are already standing there
+  // (inPlace): set them down now, while nobody can see those spots, so that they're there
+  // when the heroes come (not popping in before their eyes). They stand and wait, not yet
+  // counted as foes, until their fight starts (wakeWaiting). A spot already in view: no;
+  // that wave comes on from off-screen when its time comes (spawnWave). (fresh: the level
+  // is only now coming up, at a checkpoint: nobody has seen anything yet)
+  placeWaiting(i, fresh = false) {
+    const sec = this.sections[i];
+    let sp = sec?.spawns;
+    if (Array.isArray(sp?.[0])) sp = sp[0];
+    const roster = sec?.waves?.[0];
+    if (this.waiting === i || !roster?.length || !sp?.length || !sp.every((at) => at.inPlace)) return;
+    const heroes = this.players.filter((p) => p.alive);
+    if (!fresh && roster.some((_, k) => inView(this.world, heroes, sp[k % sp.length].x))) return;
+    roster.forEach((type, k) => {
+      const at = sp[k % sp.length];
+      const e = createEnemy(this.world, type, at.x + (k >= sp.length ? 40 : 0), at.z);
+      e.lurking = i;
+      e.facing = Math.sign((heroes[0]?.x ?? at.x) - e.x) || -1;
+      if (this.terrain) { e.floor = this.terrain.groundAt(e.x, e.z); e.h = e.floor; }
+    });
+    this.waiting = i;
+  }
+
+  // Their fight has started: the men waiting at their posts come for the heroes.
+  wakeWaiting() {
+    for (const f of this.world.fighters) if (f.team === 'enemy') f.lurking = null;
   }
 
   win() {
@@ -256,6 +296,7 @@ export class Stage {
     this.stats.deaths++;
     this.world.hold = null;
     for (const f of this.world.fighters) if (f.team === 'enemy') f.removeMe = true;
+    this.waiting = null; // (and whoever stood waiting at his post is set down again)
     this.world.barriers?.clear();
     this.world.mines?.clear();
     for (const p of this.players) this.restore(p, 1);
@@ -274,6 +315,7 @@ export class Stage {
     if (won) {
       // ...then it stays won: no fighting the same waves twice
       this.waveIndex = (this.section.waves ?? []).length;
+      for (const f of this.world.fighters) if (f.lurking === this.checkpoint) f.removeMe = true;
       this.clearSection();
     }
   }
@@ -446,8 +488,9 @@ export class Stage {
     }
   }
 
+  // (men waiting at their posts for a fight not yet started don't count: placeWaiting)
   livingFoes() {
-    return this.world.fighters.filter((f) => f.team === 'enemy' && f.alive);
+    return this.world.fighters.filter((f) => f.team === 'enemy' && f.alive && f.lurking == null);
   }
 
   spawnWave(roster) {
@@ -459,10 +502,20 @@ export class Stage {
     let sp = this.section.spawns;
     if (Array.isArray(sp?.[0])) sp = sp[Math.max(0, Math.min(sp.length - 1, this.waveIndex - 1))];
     if (sp?.length) {
+      const late = [0, 0]; // (how many have been sent round off-screen on each side)
       roster.forEach((type, k) => {
         const at = sp[(this.spawnCursor = ((this.spawnCursor ?? -1) + 1)) % sp.length];
-        const e = createEnemy(this.world, type, at.x + (k >= sp.length ? Math.sign(at.x - heroes[0]?.x || 1) * 40 : 0), at.z, { entering: !at.inPlace });
-        if (this.terrain) { e.floor = this.terrain.groundAt(e.x, e.z); e.h = e.floor; }
+        const x = at.x + (k >= sp.length ? Math.sign(at.x - heroes[0]?.x || 1) * 40 : 0);
+        if (!inView(this.world, heroes, x)) {
+          const e = createEnemy(this.world, type, x, at.z, { entering: !at.inPlace });
+          if (this.terrain) { e.floor = this.terrain.groundAt(e.x, e.z); e.h = e.floor; }
+          return;
+        }
+        // someone can see that spot: he comes on from off-screen on its side instead, in its lane
+        let side = Math.sign(x - (heroes[0]?.x ?? x)) || 1;
+        if (this.sealedSide(side, heroes)) side = -side;
+        const e = createEnemy(this.world, type, offscreenX(this.world, heroes, side, late[side > 0 ? 1 : 0]++), at.z, { entering: true });
+        this.setOnGround(e);
       });
       return;
     }
@@ -509,15 +562,20 @@ export class Stage {
     const def = sec.boss;
     const E = def.entrance;
     // with an entrance he starts off the right edge of the room and walks in (the
-    // 'bossEntrance' state); otherwise he's simply there
-    const x = E ? sec.x1 + E.from : Math.min(sec.x1 - PAD - 40, this.player.x + 420);
-    const boss = this.makeBoss(def, x, 430);
+    // 'bossEntrance' state); otherwise he still never pops into view: he comes on from
+    // off-screen like any man of a wave (his twin a step behind him)
+    const heroes = this.players.filter((p) => p.alive);
+    const side = this.sealedSide(1, heroes) ? -1 : 1;
+    const x = E ? sec.x1 + E.from : offscreenX(this.world, heroes, side, 0);
+    const boss = this.makeBoss(def, x, 430, !E);
     this.boss = boss;
     this.bossSpawned = true;
     // (the twins: his brother at his side, a little further back and down the lane)
     this.twins = null;
     if (def.twin) {
-      const twin = this.makeBoss({ damage: 1, health: 1, ...def.twin }, Math.min(x + 90, sec.x1 + (E?.from ?? -PAD - 40)), 360);
+      const twin = E
+        ? this.makeBoss({ damage: 1, health: 1, ...def.twin }, Math.min(x + 90, sec.x1 + E.from), 360)
+        : this.makeBoss({ damage: 1, health: 1, ...def.twin }, offscreenX(this.world, heroes, side, 2), 360, true);
       twin.phase = Infinity; // (no phases of his own)
       this.twins = [boss, twin];
     }
@@ -535,9 +593,10 @@ export class Stage {
   }
 
   // A boss is the same fighter, harder: more health, harder hits, never flinches from light blows.
-  makeBoss(def, x, z) {
+  // (entering: he walks on from off-screen, x being there)
+  makeBoss(def, x, z, entering = false) {
     const base = ENEMIES[def.type];
-    const boss = createEnemy(this.world, def.type, x, z);
+    const boss = createEnemy(this.world, def.type, x, z, { entering });
     this.setOnGround(boss);
     boss.stats = {
       ...base, name: def.name, boss: true, size: def.size ?? 1, // size: drawn this much bigger (looks only)
@@ -596,6 +655,7 @@ export class Stage {
         if (sec.fightAt != null && !this.players.some((q) => q.alive && q.x >= sec.fightAt)) return;
         if (sec.fightAfter && !this.story?.done.has(sec.fightAfter)) return;
         this.fightOn = true;
+        this.wakeWaiting();
         this.waveDelay = Math.min(this.waveDelay, 10);
         this.world.events.emit('fightStart', { index: this.index, section: sec });
       }
