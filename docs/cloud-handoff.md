@@ -815,3 +815,7 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
   - Levels: bed 0.16, fire at its most 0.3, of the effects volume (`SETTINGS.audio.sfx`). The file is about as loud as the battle music, so the bed sits about 10 dB under the music. It eases in and out over 0.6 s and fades while leaving a level. The M key (music mute) doesn't touch it, like every other effect.
   - Not counted: wall torches, braziers and lanterns, so the other levels don't crackle all the way through.
 - Checked: logic tests pass; headless Chromium loaded every level with one copy of the loop and no errors. Not heard by a person: tune `BED` / `NEAR` at the top of `FireAmbience.js` if it sits too loud or too quiet.
+
+## Cloud, 2026-10-16: better-looking arrows (not on itch)
+- Nick: the arrows over the roofs "need to look much higher quality, and not as straight and rigid". `StageView.js`: a detailed arrow texture drawn in code (`arrow-fly`: iron bodkin with a glint, shaded ash shaft, grey and Ashen-red fletching, horn nock). Each arrow flies a real arc (`arrowPath`) from the nearest standing archer post, or from high over its side when the post is off screen (`ARROWS.seen`), turns nose-down as it falls, flutters, leaves a faint streak; volleys are loosed ragged, not all at once. Landed arrows stick in at the angle they came down (head buried, `setCrop`), quiver on impact, kick up dirt and fade after ~3 s (`plantArrows`).
+- View only (the sim and the tests are unchanged). Screens: project files `arrows-catapults/arrows-v2-*.png`.
