@@ -32,7 +32,7 @@ export const CONTROLS = {
     debug:   ['F2', 'BACKTICK'], // show hitboxes & state info
     gore:    ['G'],              // cycle gore level
     pause:   ['P', 'ENTER'],     // pause / resume (the game also pauses itself if you tab away)
-    restart: ['R'],              // dead: rise at the checkpoint. Paused / won: restart the stage
+    restart: ['R'],              // only on the death screen: rise at the checkpoint (any other time: nothing)
     menu:    ['ESC'],            // playing: pause. Paused / dead / won: back to character select
     mute:    ['M'],              // music on/off
     back:    ['ESC', 'B', 'BACKSPACE'], // leave a menu (the skill tree)
@@ -55,7 +55,7 @@ export const CONTROLS = {
     sprint: [10],    // click the left stick: sprint on / off
     confirm: [0, 9],
     pause:   [9],    // Start
-    restart: [3],    // Y — only acts when dead, paused or after winning (it's the heavy button in a fight)
+    restart: [3],    // Y — only acts on the death screen (it's the heavy button in a fight)
     menu:    [8],    // Back / View
     back:    [1, 8, 9], // B, Back or Start: leave a menu (the skill tree)
     padUp: [12], padDown: [13], padLeft: [14], padRight: [15], // the D-pad: Up = interact, Down = the 360 swing (a skill), Right / Left = next / skip a story line

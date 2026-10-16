@@ -1483,11 +1483,12 @@ export class ArenaScene extends Phaser.Scene {
       else this.setPaused(!this.paused);
       return false;
     }
-    // R: dead = rise at the last checkpoint; paused or won = restart the stage.
-    // (In the middle of a fight it does nothing — one stray key can't wipe a run.)
+    // R: only on the death screen (everyone down) = rise at the last checkpoint. Any other
+    // time it does nothing: playing, paused or won, a stray R can't replay the level. To
+    // leave a level, Esc back to character select. (Online the records carry it, so one
+    // player's R acts for both only when both are down.)
     if (any('restart')) {
-      if (dead && !won) { this.setPaused(false); this.riseAtCheckpoint(); return false; }
-      if (this.paused || won) { this.setPaused(false); this.scene.restart(this.restartData()); return true; }
+      if (dead && !won) { this.setPaused(false); this.riseAtCheckpoint(); }
       return false;
     }
     // Esc: playing = pause; paused / dead / won = back to character select.

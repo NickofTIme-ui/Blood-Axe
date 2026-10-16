@@ -234,7 +234,7 @@ export class HUDScene extends Phaser.Scene {
     const tally = this.add.text(W / 2, H * 0.44, lines.join('\n'), { fontFamily: FONT.ui, fontSize: C ? '16px' : '18px', color: '#f0e0c0', align: 'center', lineSpacing: C ? 6 : 10, wordWrap: { width: W - 160 } })
       .setOrigin(0.5, 0).setStroke('#000000', 4).setAlpha(0).setDepth(D + 3);
     this.tweens.add({ targets: tally, alpha: 1, delay: 1200, duration: 900 });
-    const prompt = this.add.text(W / 2, H * (C ? 0.8 : 0.74), `${C?.onward ? `${C.onward}      ` : ''}R  —  RIDE AGAIN      ESC  —  CHOOSE ANOTHER`, { fontFamily: FONT.ui, fontSize: '15px', color: '#cdb391' })
+    const prompt = this.add.text(W / 2, H * (C ? 0.8 : 0.74), `${C?.onward ? `${C.onward}      ` : ''}ESC  —  CHOOSE ANOTHER`, { fontFamily: FONT.ui, fontSize: '15px', color: '#cdb391' })
       .setOrigin(0.5).setStroke('#000000', 3).setAlpha(0).setDepth(D + 3);
     this.tweens.add({ targets: prompt, alpha: 0.9, delay: 2400, duration: 900 });
     this.objective.setText('');
@@ -253,7 +253,7 @@ export class HUDScene extends Phaser.Scene {
       title.setLetterSpacing?.(6);
       epicFill(title, ['#ff7a5a', '#d0101a', '#5a0006']);
       const menu = this.add.text(W / 2, H * 0.42,
-        'P / ENTER  —  RESUME\nR  —  RESTART THE STAGE\nESC  —  CHARACTER SELECT',
+        'P / ENTER  —  RESUME\nESC  —  CHARACTER SELECT',
         { fontFamily: FONT.ui, fontSize: '18px', color: '#f0e0c0', align: 'center', lineSpacing: 10 })
         .setOrigin(0.5).setStroke('#000000', 4);
       const keys = this.add.text(W / 2, H * 0.70,

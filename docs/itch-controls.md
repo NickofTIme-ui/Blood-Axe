@@ -11,7 +11,7 @@
 - Jump: Space
 - Pause: P or Enter (the game also pauses when you tab away)
 - Esc: pause. From the pause, death or victory screen it goes back to character select
-- R: when you're dead, rise at the last checkpoint. When paused or after winning, restart the stage
+- R: only on the death screen (everyone down): rise at the last checkpoint. Any other time it does nothing; Esc leaves the level
 - M: music on/off · G: change the gore level
 
 **Each hero uses the buttons differently**

@@ -726,3 +726,8 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - Fix (`src/data/heroStrips.js`, data only): the idle strip gets a `nudge` per pose that lines its body up on pose 0's, and her idle now holds pose 0 with the same procedural breathing Rurik uses (`breathe: true`), playing the dagger flourish (pose 3) for half a second every ~4 s. Poses 1, 2, 4 and 5 are no longer used.
 - Before/after GIF: project files `vexa-idle/vexa-idle-before-after.gif`. Tests pass; checked by cutting the strip with the game's own importer, not yet watched in a running game.
 - Art, optional: a real breathing idle needs poses that differ only in what moves. If Nick wants one, ask ChatGPT for poses edited from one image (same pixels, only chest/hair/cloak tips changed) rather than a fresh 6-pose row.
+
+## Cloud, 2026-10-16: R only works on the death screen (not on itch)
+- Nick: "r to restart keeps making me and other players replay the same level... only can restart when dead". R (and the pad's Y) now acts only when everyone is down: rise at the last checkpoint. Paused, won or mid-fight it does nothing; Esc goes back to character select (`ArenaScene.systemKeys`).
+- The pause menu and the won tally no longer offer R (`HUDScene`: "R — RESTART THE STAGE" and "R — RIDE AGAIN" removed); `docs/itch-controls.md` updated. Online it still rides in the tick records, so one player's R rises both only on the shared death screen. The online "partner not responding, press R to carry on alone" prompt is unchanged (it doesn't replay the level).
+- Tests pass. Not seen in a running game.
