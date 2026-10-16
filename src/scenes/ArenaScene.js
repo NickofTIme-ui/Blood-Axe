@@ -37,6 +37,7 @@ import { CameraFX } from '../effects/CameraFX.js';
 import { SpriteCuts } from '../effects/SpriteCut.js';
 import { finisherTargets, IMPALE, impalePierce } from '../combat/Finisher.js';
 import { Burning } from '../effects/Burn.js';
+import { FireAmbience } from '../core/FireAmbience.js';
 import { Stage } from '../stage/Stage.js';
 import { StageView } from '../view/StageView.js';
 import { TerrainView } from '../view/TerrainView.js';
@@ -442,6 +443,7 @@ export class ArenaScene extends Phaser.Scene {
     });
 
     playMusic(this, this.stageData.music ?? 'battle');
+    this.fireAmbience = new FireAmbience(this); // the crackle of whatever is burning
   }
 
   // Sparta kick landing: shockwave ring, dust off the floor, heavy shake.
@@ -1390,6 +1392,7 @@ export class ArenaScene extends Phaser.Scene {
   // ------------------------------------------------------------ main loop
 
   update(_time, delta) {
+    this.fireAmbience?.update(delta); // (fades out while leaving)
     if (this.leaving) return; // (fading out to the next level: goNextLevel)
     this.localKeys();
     const s = this.session;

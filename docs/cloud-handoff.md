@@ -805,3 +805,13 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 ## Cloud, 2026-10-16: fireball impact sound (not on itch)
 - Nick's clip (`fireball-impact.mp3`, sent in the project chat) is `assets/audio/sfx/fire-impact.mp3`, key `fireImpact` in `SFX`. Trimmed to the burst (0.17 s of silence off the front, cut at 1.9 s with a fade from 1.37 s, 1.8 s long) and peaked at -1.5 dB like `fire-whoosh`.
 - `ProjectileView` plays it when a fire bolt (Firebolt, Hearthfire Bolt) bursts: on each body it hits (the Hearthfire runs through several), on a guard or parry, or on the ground or a wall; not when it just burns out in the air. Enemy fire at half volume, like the cast. The cast whoosh and lava loop are unchanged. View only, no sim change.
+
+## Cloud, 2026-10-16: the crackle of fire under anything burning (not on itch)
+- Nick: "this sound plays in the background of the first level along with everything else. its burning fire sound so anytime theres something in the game burning play this dont overpower the other sounds".
+- **The file**: Nick's `fire-ambience.mp3`, made into a seamless loop (its last 2 s crossfaded into its start) and re-encoded at 128 kbps without the cover art: `assets/audio/sfx/fire-ambience.mp3` (1.4 MB, 86 s), key `fireAmbience` in `SFX` (`src/core/Sfx.js`).
+- **`src/core/FireAmbience.js`**: one looped copy per arena (`ArenaScene.fireAmbience`), never stacked. Its level is the larger of a **bed** and **fire near the screen**:
+  - Bed: `fireBed: 1` on a level or a section plays it low the whole time. Set on the Burning Village (all of it), the Iron Gates' Lower Town (the burning town) and the Oath Road's Burning Gate.
+  - Near: fire grates and burning carts (louder as they flare), a burning beam pinning a door (`wreckage`), a body or part on fire (`Burn.js`), a wall of fire; each lifts it a little, fading over a screen past the camera's edge.
+  - Levels: bed 0.16, fire at its most 0.3, of the effects volume (`SETTINGS.audio.sfx`). The file is about as loud as the battle music, so the bed sits about 10 dB under the music. It eases in and out over 0.6 s and fades while leaving a level. The M key (music mute) doesn't touch it, like every other effect.
+  - Not counted: wall torches, braziers and lanterns, so the other levels don't crackle all the way through.
+- Checked: logic tests pass; headless Chromium loaded every level with one copy of the loop and no errors. Not heard by a person: tune `BED` / `NEAR` at the top of `FireAmbience.js` if it sits too loud or too quiet.

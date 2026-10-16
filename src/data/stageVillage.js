@@ -44,6 +44,7 @@ export const STAGE_VILLAGE = {
   width: 9400,
   theme: 'village',
   tall: true,
+  fireBed: 1, // the whole village is burning: its crackle plays low throughout (core/FireAmbience.js)
   // the castle on the horizon: where it stands on the far backdrop and how big (it grows
   // level by level, docs/campaign/plan.md)
   castle: { x: 830, scale: 0.42, detail: 0.3 },

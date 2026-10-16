@@ -156,6 +156,7 @@ export const STAGE_GATES = {
     },
     {
       id: 'town', name: 'THE LOWER TOWN', x0: 6400, x1: 7900,
+      fireBed: 1, // the King is burning his own town (core/FireAmbience.js)
       spawn: { x: 6460, z: 440 },
       objective: 'Save the townsfolk',
       hint: 'Break the bar on the granary door. Wreck the catapult up the street',

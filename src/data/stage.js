@@ -23,7 +23,7 @@ export const STAGE = {
   name: 'THE OATH ROAD',
   sections: [
     {
-      id: 'gate', name: 'THE BURNING GATE', x0: 0, x1: 1150, ground: 'village',
+      id: 'gate', name: 'THE BURNING GATE', x0: 0, x1: 1150, ground: 'village', fireBed: 1,
       light: 0xffa060, mood: 0.12,
       objective: 'Cut through the gate guard',
       waves: [['grunt', 'grunt', 'grunt', 'grunt'], ['grunt', 'grunt', 'grunt', 'grunt', 'grunt', 'grunt']],
