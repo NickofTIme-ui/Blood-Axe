@@ -352,6 +352,7 @@ export class ArenaScene extends Phaser.Scene {
     // Not online: both machines would have to agree on every pick.
     sharedProgress(this.registry);
     this.progress = this.mode === 'net' ? null : this.registry.get('progress');
+    this.progress?.play(this.stageId); // (level 1: Rurik's old sword until Brann gives him Oathkeeper)
     this.applySkills(true);
     // (on from the last level: a little worn, never on his last legs)
     if (this.carry) this.players.forEach((p, i) => { p.health = p.stats.maxHealth * Math.max(0.5, Math.min(1, this.carry.health?.[i] ?? 1)); });

@@ -31,7 +31,8 @@ const freshTrophies = () => ({ owned: {}, worn: [] });
 // THE CAMPAIGN (docs/campaign/plan.md): levels finished, the villagers saved (by id: they
 // show up later) and lost, where to CONTINUE from (`at`: the level and the section whose
 // checkpoint was reached last), and the one-time flags (a sequence's steps: the judgment)
-// flags that a finished level stands in for (saves from before the flag existed)
+// flags a level gives in its story (Oathkeeper: level 1's end); finishing it stands in for
+// the flag in saves from before the flag existed
 const FLAG_BY_LEVEL = { oathkeeper: 'village' };
 const freshCampaign = () => ({ levels: {}, rescued: {}, lost: {}, at: null, flags: {} });
 
@@ -129,9 +130,21 @@ export class Progress {
     return true;
   }
 
-  // Is this flag set? A few were added after saves already went past them, so a level
-  // finished counts for its flag (Oathkeeper: anyone past level 1 already has it).
-  hasFlag(key) { return !!this.campaign.flags[key] || !!(FLAG_BY_LEVEL[key] && this.campaign.levels[FLAG_BY_LEVEL[key]]); }
+  // Is this flag set? A flag a level gives (FLAG_BY_LEVEL) also counts as set once that
+  // level is finished (saves from before the flag existed), except while that level is
+  // being played: Rurik always starts level 1 with his old sword, however often it's played.
+  hasFlag(key) {
+    if (this.campaign.flags[key]) return true;
+    const lv = FLAG_BY_LEVEL[key];
+    return !!(lv && this.campaign.levels[lv] && this.playing !== lv);
+  }
+
+  // A level begun (scenes/ArenaScene.js): the flags it gives start unset again, so its
+  // scene gives them anew (Elder Brann hands over Oathkeeper every time level 1 is played).
+  play(stageId) {
+    this.playing = stageId;
+    for (const [key, lv] of Object.entries(FLAG_BY_LEVEL)) if (lv === stageId) delete this.campaign.flags[key];
+  }
 
   // A level walked out of: CONTINUE now starts the next one. Returns true the first time.
   finishLevel(id, next = null) {

@@ -9,6 +9,7 @@
 //
 // ←/→ (or the mouse) choose, J / Enter / (A) / click confirm, M music, Esc title.
 
+import { sharedProgress } from '../progression/Progress.js';
 import { SETTINGS } from '../config/settings.js';
 import { CHARACTERS } from '../data/characters.js';
 import { delayFor } from '../net/Session.js';
@@ -332,7 +333,10 @@ export class SelectScene extends Phaser.Scene {
     this.pName.setText(c.name.toUpperCase());
     epicFill(this.pName, ['#fff2c8', '#e0b060', '#7a4a10']);
     this.pDesc.setText(c.description);
-    this.pSpell.setText(`SPELL: ${(c.spell?.name ?? '—').toUpperCase()}${c.blade ? `   ·   BLADE: ${c.blade.toUpperCase()}` : ''}`);
+    // (as he'll start this level: Rurik in level 1 has his old sword, no fire, until Brann gives him Oathkeeper)
+    if (this.mode !== 'net') { const P = sharedProgress(this.registry); P.play(this.stageId); this.shown = P.statsFor(h.id, c); }
+    const k = this.mode !== 'net' ? this.shown : c;
+    this.pSpell.setText(`SPELL: ${(k.spell?.name ?? '—').toUpperCase()}   ·   BLADE: ${(k.blade ?? (c.birthright ? 'his old sword' : '')).toUpperCase()}`.replace(/   ·   BLADE: $/, ''));
     const t = this.heroTexture(c, h.id);
     const src = this.textures.get(t.key).getSourceImage();
     this.portrait.setTexture(t.key, t.frame);

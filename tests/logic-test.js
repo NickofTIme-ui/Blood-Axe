@@ -4046,6 +4046,15 @@ test("birthright: Rurik starts with his old sword and no fire; the King's Wrath 
   const old = new Progress(memStore());
   old.finishLevel('village', 'gallowsWood');
   assert(old.hasFlag('oathkeeper') && old.statsFor('warrior', CHARACTERS.warrior).spell, 'past level 1 = his');
+  old.play('gallowsWood');
+  assert(old.hasFlag('oathkeeper'), 'his in level 2');
+  // level 1 played again (a new campaign, or a save that has had it): the old sword until the scene
+  for (const Q of [old, P]) {
+    Q.play('village');
+    assert(!Q.hasFlag('oathkeeper') && Q.statsFor('warrior', CHARACTERS.warrior).sprite === 'ulric', 'level 1 starts with the old sword (Nick: "rurik starts with the damn sword")');
+    Q.setFlag('oathkeeper');
+    assert(Q.statsFor('warrior', CHARACTERS.warrior).sprite === 'ulricOath', 'until Brann gives it');
+  }
   // the other heroes are untouched
   assert(P.statsFor('rogue', CHARACTERS.rogue).spell === CHARACTERS.rogue.spell, 'Vexa as ever');
 });
