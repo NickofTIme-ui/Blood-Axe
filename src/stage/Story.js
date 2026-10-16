@@ -18,6 +18,11 @@
 // A line stays up until a player moves it on (LINE.wait): D-pad right / N (or a mouse
 // click, scenes/ArenaScene.js) in any line, jump / attack too in a held scene; D-pad
 // left / X skips the conversation. Either player can do it.
+// Except a line said in passing (Story.passing: a bark, a cry, a taunt, a remark mid-
+// fight, nobody talking with you): it goes by itself after LINE.pass time for its
+// length (a press still moves it on sooner). A conversation waits: a held scene, a
+// villager you talk to, or an exchange with one of the heroes in it (two speakers or
+// more, narration aside). A beat's own `passing: true / false` overrides.
 //   if: 'rescued:<npcId>'   only if that villager was saved (by now, in this level)
 //       'lost:<npcId>'      only if he was lost (an execution or an escort gone wrong)
 //       'saved:<npcId>'     saved in this level or any level before (the campaign save)
@@ -74,9 +79,17 @@
 // INTERACT is the D-pad's up button (`padUp`; E on the keys). `prompts` lists what a hero
 // standing near someone can do right now, for the view.
 
+import { NARRATION } from '../data/speakers.js';
+
 // (wait: a line never moves on by itself — Nick: the text went by too fast. false: lines
 // time out by their length, as they used to)
-export const LINE = { base: 70, perChar: 2.4, max: 330, minSkip: 16, gap: 14, wait: true };
+export const LINE = {
+  base: 70, perChar: 2.4, max: 330, minSkip: 16, gap: 14, wait: true,
+  pass: { base: 90, perChar: 4, max: 600 }, // a passing line's time up (frames): a 60-letter line ~5.5 s, 10 s at most
+};
+// (who the heroes are, for telling a conversation from a remark)
+const HEROES = new Set(['RURIK', 'ORYN', 'VEXA']);
+
 export const NPC = {
   speed: 110, reach: 44, depth: 32, height: 34, talkReach: 90, talkDepth: 260, freeFor: 50,
   askReach: 70, askDepth: 50,          // how near a hero must be to ask (INTERACT)
@@ -135,7 +148,7 @@ export class Story {
     const c = this.current;
     if (!c || c.age < 0) return null;
     const [who, text] = c.beat.lines[c.index];
-    return { who, text, beat: c.beat.id, index: c.index, of: c.beat.lines.length, hold: !!c.beat.hold, age: c.age };
+    return { who, text, beat: c.beat.id, index: c.index, of: c.beat.lines.length, hold: !!c.beat.hold, passing: this.passing(c.beat), age: c.age };
   }
 
   npc(id) { return this.npcs.find((n) => n.id === id); }
@@ -145,6 +158,18 @@ export class Story {
   // How long line i of a beat stays up: the beat's own `times` if it has them (the
   // sentence, timed to its music), else by its length.
   lineFrames(beat, i) { return beat.times?.[i] ?? this.frames(beat.lines[i][1]); }
+  // A passing line's time up, by its length (longer than a conversation's old timing:
+  // it has to be read in a fight).
+  passFrames(text) { const P = LINE.pass; return Math.min(P.max, Math.round(P.base + text.length * P.perChar)); }
+
+  // Is this beat said in passing (it goes by itself) rather than a conversation (it waits
+  // for a press)? See the top of the file.
+  passing(b) {
+    if (b.passing != null) return b.passing;
+    if (b.hold || this.npcs.some((n) => n.talk && n.talk === b.id)) return false;
+    const who = new Set(b.lines.map((l) => l[0]).filter((w) => !NARRATION.has(w)));
+    return !(who.size > 1 && [...who].some((w) => HEROES.has(w)));
+  }
 
   // ------------------------------------------------------------ firing beats
 
@@ -232,7 +257,9 @@ export class Story {
       for (const p of this.stage.players) if (p.alive) { p.awe = Math.max(p.awe ?? 0, 2); p.vx = p.vz = 0; }
     }
     if (c.age < 0) return;
-    let next = c.skip || (!LINE.wait && c.age >= this.lineFrames(c.beat, c.index));
+    const text = c.beat.lines[c.index][1];
+    let next = c.skip
+      || (this.passing(c.beat) ? c.age >= this.passFrames(text) : !LINE.wait && c.age >= this.lineFrames(c.beat, c.index));
     if (c.beat.hold && c.age >= LINE.minSkip) {
       for (const p of heroes) if (p.controller.consume('jump', 4) || p.controller.consume('attack', 4)) next = true;
     }

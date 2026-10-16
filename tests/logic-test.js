@@ -2500,23 +2500,44 @@ test('story: a line never moves on by itself; one press (D-pad right / N / a cli
   assert(st.story.done.has('opening'), 'skipping the scene still ends it');
 }));
 
-test('story: mid-fight lines wait too; and the cutaways\' lines never move on by themselves', waiting(() => {
+test('story: a line said in passing goes by itself, in time for its length; a conversation with a hero in it waits; and the cutaways\' lines never move on by themselves', waiting(() => {
   const world = new World({ seed: 2 });
   const c = new Pressing({}, {});
   const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 150, z: 440, controller: c }));
   const st = new Stage(world, STAGE_VILLAGE);
   st.start(p);
   hush(st);
-  st.story.beats.push({ id: 'shout', lines: [['RURIK', 'Behind you!'], ['RURIK', 'Again!']], fired: false });
-  st.story.cue('shout');
   const run = (n) => { for (let i = 0; i < n; i++) { world.tick(); st.update(); } };
+  // (Nick: someone only telling you something in passing, the box goes by itself)
+  const shout = { id: 'shout', lines: [['VAREK', 'Behind you!'], ['VAREK', 'Burn, all of you, burn with your village!']], fired: false };
+  st.story.beats.push(shout);
+  st.story.cue('shout');
+  run(LINE.gap + 4);
+  assert(st.story.line?.beat === 'shout' && st.story.line.passing, 'a taunt is said in passing');
+  const short = st.story.passFrames(shout.lines[0][1]); const long = st.story.passFrames(shout.lines[1][1]);
+  assert(short >= LINE.pass.base && long > short && long <= LINE.pass.max, `its time follows its length (${short}, ${long})`);
+  run(short - 10);
+  assert(st.story.line?.index === 0, 'up long enough to read');
+  run(20);
+  assert(st.story.line?.index === 1, 'then the next goes up by itself');
+  run(long + 10);
+  assert(st.story.done.has('shout') && !st.story.line, 'and the box goes away by itself');
+  // (anything else is a conversation: two speakers with a hero, a held scene, a villager you talk to)
+  const pass = (b) => st.story.passing({ lines: [], ...b });
+  assert(!pass({ lines: [['VINCENT', 'a'], ['RURIK', 'b']] }) && !pass({ hold: true, lines: [['VAREK', 'a']] }), 'an exchange with a hero, a held scene: they wait');
+  assert(!pass({ id: STAGE_VILLAGE.npcs.find((n) => n.talk).talk, lines: [['HALE', 'a']] }), 'a villager you talk to waits');
+  assert(pass({ lines: [['VOICE', '(horns)'], ['RURIK', 'b']] }) && pass({ lines: [['HASK', 'a'], ['HROLF', 'b']] }), 'narration and a remark, two bosses taunting: in passing');
+  assert(!pass({ passing: false, lines: [['VAREK', 'a']] }), 'a beat can say it waits');
+  const talk = { id: 'talk', lines: [['VEXA', 'Behind you!'], ['RURIK', 'Again!']], fired: false };
+  st.story.beats.push(talk);
+  st.story.cue('talk');
   run(LINE.max * 3);
-  assert(st.story.line?.beat === 'shout' && st.story.line.index === 0 && !st.story.holding, 'the line stays up');
+  assert(st.story.line?.beat === 'talk' && st.story.line.index === 0 && !st.story.holding, 'the conversation stays up, in a fight too');
   c.script = { [c.t + 1]: ['padRight'] };
   run(5);
   c.script = { [c.t + LINE.minSkip + 5]: ['padRight'] };
   run(LINE.minSkip + 10);
-  assert(st.story.done.has('shout'), 'two presses, two lines');
+  assert(st.story.done.has('talk'), 'two presses, two lines');
   const src = readFileSync(new URL('../src/scenes/CutawayScene.js', import.meta.url), 'utf8');
   assert(!/delayedCall\([^)]*text\.length/.test(src) && !src.includes('this.auto'), 'no line in a cutaway is on a timer');
   assert(src.includes("this.input.on('pointerdown', () => this.next())"), 'a click moves a cutaway on');
@@ -3938,6 +3959,8 @@ test('sentence: its lines wait for a press; the music plays on through the words
 test('sentence: beaten while his own taunt is still up (it waits for a press), the taunt is cut short and the sentence plays out (no softlock)', waiting(() => {
   const { world, p, c, st, ev, run } = sentenceSetup('warrior');
   const up = () => st.story.current?.beat.id;
+  // (his taunt goes by itself now, said in passing: made to wait here, as a conversation would)
+  st.story.beats.find((x) => x.id === 'captain').passing = false;
   if (up() !== 'captain') { st.story.done.delete('captain'); const b = st.story.beats.find((x) => x.id === 'captain'); b.fired = false; b.fire = true; run(30); }
   assert(up() === 'captain', `his taunt is up (${up()})`);
   blowOf(world, p, st.boss);
