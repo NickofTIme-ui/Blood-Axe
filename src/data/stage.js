@@ -130,6 +130,7 @@ export const PROPS = {
   counterweight: { hp: 5, w: 70, h: 120 }, // (the mine) the stone that holds a gate down: break its chain and the gate rises (`opens`)
   rubble: { hp: 6, w: 110, h: 90 }, // (the mine) loose fall in a passage: dig it out (`opens`: the rock wall behind it)
   catapult: { hp: 7, w: 130, h: 120 }, // (the Shattered Ascent) a siege catapult on the heights: wreck it and the bombardment thins (hazard 'bombard', `silence`)
+  archers: { hp: 6, w: 180, h: 190 }, // an archer post: a timber hoarding, its bowmen behind the mantlet: wreck it and their volleys stop (hazard 'bombard' `look: 'arrows'`, `silence`)
   winch: { hp: 6, w: 110, h: 150 }, // (the Iron Gates) a drum and chain that holds the gate down: break both and it rises (`opens` + `tag`)
   wagon: { hp: 16, w: 200, h: 110 }, // the convoy's prisoner wagon: rolls away (`roll`); wreck it and they're out
 };

@@ -4,8 +4,9 @@
 // view/NpcView.js); the painted replacements are listed in docs/cloud-handoff.md.
 //
 // Same format as data/stageGallows.js (terrain, rests, lanterns, section spawns), plus the
-// campaign's: story beats and villagers (stage/Story.js), section.fightAt, falling burning
-// beams (hazard 'beam'), wreckage props that pin people in, and the exit (stage/Stage.js).
+// campaign's: story beats and villagers (stage/Story.js), section.fightAt, Ashen arrow volleys
+// (hazard 'bombard' `look: 'arrows'`) from archer posts you can wreck (prop 'archers'),
+// wreckage props that pin people in, and the exit (stage/Stage.js).
 //
 // It is an introductory level, built for the weakest jumper (Rurik: a held jump rises 122
 // px and carries 118 on the flat; a tap is a 54 px hop), walking, no upgrades: steps up
@@ -16,13 +17,16 @@
 //   I   THE ASHEN ROAD     arrival; the others split off to search; Hale the smith; looters
 //   II  THE MARKET SQUARE  a mother and her son held at the well (defend); burning carts; a shrine
 //   III THE BURNING ROOFS  up onto the roofs, along a fallen beam, charred boards over the
-//                          cellars; a beam crashing down (taught alone); two men waiting on
-//                          the second roof; optional: a boy on a high roof
-//   IV  THE MILL YARD      a brawl round the mill floor; the barn pinned shut by a burning beam
+//                          cellars; arrows start falling from the archers by the mill
+//                          ahead; two men waiting on the second roof; optional: a boy on a
+//                          high roof
+//   IV  THE MILL YARD      a brawl round the mill floor; wreck the archers' posts either
+//                          side of the mill (the arrows stop); the barn pinned shut by a burning beam
 //                          (break it); then the rear guard, Brother Cinder, walks in
 //   V   THE STABLES        a fight round the burning stables; smash the gate bar and the
 //                          horses stampede across the yard, trampling both sides
-//   VI  THE LONGHALL       a shrine; Varek the Ash Captain; at half health the hall's beams fall
+//   VI  THE LONGHALL       a shrine; Varek the Ash Captain; at half health his archers loose
+//                          on the hall from their post at the far end: wreck it
 //   VII THE NORTH GATE     the saved gather; the elder gives Rurik Oathkeeper, his father's
 //                          sword, and its fire wakes; stragglers to burn; the vow; out
 
@@ -82,32 +86,35 @@ export const STAGE_VILLAGE = {
       id: 'roofs', name: 'THE BURNING ROOFS', x0: 2700, x1: 4300,
       spawn: { x: 2760, z: 440 },
       objective: 'Over the roofs',
-      hint: 'Beams fall where the ground glows red; charred boards give way',
+      hint: 'Arrows land where the red rings show; charred boards give way',
       // two of them waiting up on the second roof: a fight on a ledge over the fire
       fightAt: 3420,
       waves: [['stalker', 'grunt']],
       spawns: [[{ x: 3640, z: 380, inPlace: true }, { x: 3600, z: 460, inPlace: true }]],
       props: [{ kind: 'barrel', x: 4240, z: 470, drop: 'meat' }],
       hazards: [
-        // taught alone, on the wide roof: the shadow grows, the beam comes down
-        { type: 'beam', x: 3160, z: 410, w: 74, d: 90, period: 200, warn: 80, phase: 0 },
+        // the Ashen archers by the mill ahead: their volleys fall on you from here
+        // to the mill yard, until you get up there and wreck their posts (`silence`)
+        { type: 'bombard', look: 'arrows', silence: 'millArchers', upto: 'mill', period: 170, warn: 60, shots: 2, damage: 10, radius: 56, depth: 40 },
       ],
     },
     {
       id: 'mill', name: 'THE MILL YARD', x0: 4300, x1: 5700,
       spawn: { x: 4360, z: 440 },
       objective: 'Break their rear guard',
-      hint: 'Smash the burning beam off the barn door',
+      hint: 'Wreck the archer posts by the mill. Smash the beam off the barn door',
       fightAt: 4520,
       waves: [['grunt', 'grunt', 'ghoul', 'grunt'], ['stalker', 'grunt', 'butcher']],
       props: [
         // the barn door, pinned shut by a fallen burning beam: people inside
         { kind: 'wreckage', tag: 'barn', x: 5330, z: 300, drop: null },
         { kind: 'crate', x: 5560, z: 470, drop: 'meat' },
+        // the archers shooting at you since the roofs: two posts either side of the mill
+        { kind: 'archers', tag: 'millArchers', x: 4560, z: 300, drop: null },
+        { kind: 'archers', tag: 'millArchers', x: 5150, z: 300, drop: 'mana' },
       ],
       hazards: [
         { type: 'fire', look: 'cart', x: 4620, z: 490, w: 100, d: 50, phase: 60 },
-        { type: 'beam', x: 5120, z: 470, w: 74, d: 80, period: 260, warn: 80, phase: 90 },
       ],
       // the rear guard: the Iron Penitent's kind, grown into a sub-boss. He walks in from
       // the north road without freezing anyone
@@ -151,16 +158,18 @@ export const STAGE_VILLAGE = {
       id: 'hall', name: 'THE LONGHALL', x0: 7100, x1: 8400,
       spawn: { x: 7160, z: 440 },
       objective: 'Kill the Ash Captain',
-      hint: 'When the hall burns, watch the ground for falling beams',
+      hint: 'When he rages his archers loose: wreck their post',
       fightAt: 7400,
       waves: [],
-      props: [{ kind: 'barrel', x: 8280, z: 300, drop: 'meat' }],
+      props: [
+        { kind: 'barrel', x: 8280, z: 480, drop: 'meat' },
+        // his archers' post at the far end of the hall
+        { kind: 'archers', tag: 'hallArchers', x: 8250, z: 300, drop: null },
+      ],
       hazards: [
-        // the burning longhall comes down once he rages: on him and his men as well
-        { type: 'beam', when: 'rage', x: 7550, z: 330, w: 80, d: 70, period: 210, warn: 80, phase: 30 },
-        { type: 'beam', when: 'rage', x: 7820, z: 470, w: 80, d: 70, period: 210, warn: 80, phase: 100 },
-        { type: 'beam', when: 'rage', x: 8080, z: 360, w: 80, d: 70, period: 210, warn: 80, phase: 170 },
-        { type: 'beam', when: 'rage', x: 7700, z: 420, w: 80, d: 70, period: 300, warn: 90, phase: 230 },
+        // once he rages his archers loose on the hall: on him and his men as well, until
+        // their post is wrecked
+        { type: 'bombard', look: 'arrows', when: 'rage', silence: 'hallArchers', period: 150, warn: 60, shots: 2, damage: 12, radius: 56, depth: 40 },
       ],
       rest: { x: 7230, z: 330, kind: 'oath' },
       // the man who directed the attack: Pitlord Kragg's kind (mace and spiked shield), a captain
@@ -283,8 +292,10 @@ export const STAGE_VILLAGE = {
       ],
     },
     { id: 'roofs', at: 2880, calm: true, lines: [['VEXA', '(from across the village) The square is clear! Go over the roofs, the lanes are burning!']] },
+    { id: 'arrows', at: 2960, lines: [['RURIK', 'Archers! Up by the mill. Keep moving, we will deal with them there.']] },
     { id: 'tamCry', at: 3300, lines: [['TAM', 'Up here! The ladder burned!']] },
     { id: 'tam', on: 'rescued:tam', lines: [['TAM', 'I knew you would come back. I will climb down the back. Go!']] },
+    { id: 'millSilenced', on: 'broken:millArchers', lines: [['RURIK', 'That is their archers done.']] },
     { id: 'barnCry', at: 4900, lines: [['VOICE', 'The barn! We are inside! The door won\'t move!']] },
     { id: 'barn', on: 'rescued:barn', lines: [['MILLER', 'Air... Thank the old gods. We will run for the north gate.']] },
     { id: 'cinder', on: 'boss:mill', lines: [['CINDER', 'Turn back, or burn with them. The rear holds.']] },
@@ -298,7 +309,8 @@ export const STAGE_VILLAGE = {
         ['VAREK', 'No matter. You can burn with your village.'],
       ],
     },
-    { id: 'collapse', on: 'rage:hall', lines: [['VAREK', 'Bring it down! Bring the whole hall down on them!']] },
+    { id: 'hallArchers', on: 'rage:hall', lines: [['VAREK', 'Archers! Fill the hall! I do not care who you hit!']] },
+    { id: 'hallSilenced', on: 'broken:hallArchers', lines: [['RURIK', 'No more arrows. Now it is you and me.']] },
     { id: 'gathered', at: 8580, calm: true, if: 'rescued:mira', lines: [['MIRA', 'You came back for us. Every one of us here owes you their life.']] },
     // HIS BIRTHRIGHT: the elder gives Rurik his dead father's sword, Oathkeeper, and its fire
     // wakes in his hand (the cue sets the campaign flag: his look and his fire change on the

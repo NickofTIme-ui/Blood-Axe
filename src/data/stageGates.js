@@ -158,18 +158,19 @@ export const STAGE_GATES = {
       id: 'town', name: 'THE LOWER TOWN', x0: 6400, x1: 7900,
       spawn: { x: 6460, z: 440 },
       objective: 'Save the townsfolk',
-      hint: 'Break the bar on the granary door',
+      hint: 'Break the bar on the granary door. Wreck the catapult up the street',
       fightAt: 6900,
       waves: [['grunt', 'butcher', 'stalker'], ['penitent', 'grunt', 'grunt']],
       props: [
         // the granary: barred from outside, burning, a family inside
         { kind: 'wreckage', tag: 'granary', x: 7380, z: 300, drop: null },
         { kind: 'crate', x: 7800, z: 480, drop: 'mana' },
+        // a siege catapult at the top of the street, shelling its own town: wreck it
+        { kind: 'catapult', tag: 'townCatapult', x: 7700, z: 300, drop: 'meat' },
       ],
       hazards: [
-        // the burning houses shed their beams
-        { type: 'beam', x: 7000, z: 360, w: 90, d: 80, period: 240, warn: 80, phase: 40 },
-        { type: 'beam', x: 7560, z: 450, w: 90, d: 80, period: 260, warn: 80, phase: 150 },
+        // the catapult up the street throws burning stones down it until it's wrecked
+        { type: 'bombard', silence: 'townCatapult', period: 220, warn: 75, shots: 1, damage: 18 },
       ],
       rest: { x: 7820, z: 320, kind: 'oath' },
     },
@@ -333,7 +334,8 @@ export const STAGE_GATES = {
     { id: 'skewer', on: 'bolt:many', lines: [['VINCENT', 'Lined up like geese! Never gets old.']] },
     { id: 'held', on: 'clear:yard', calm: true, lines: [['RURIK', 'The gate is ours. The town next.']] },
     { id: 'drag', on: 'clear:yard', calm: true, if: 'rescued:vincent', lines: [['VINCENT', 'Not one of them touched my gate. Go on. I will drag her up behind you.']] },
-    { id: 'fires', at: 6560, lines: [['ORYN', '(from the rooftops) He is burning his own town. To slow us down.']] },
+    { id: 'fires', at: 6560, lines: [['ORYN', '(from the rooftops) He is burning his own town. To slow us down. A catapult up the street, throwing fire on it!']] },
+    { id: 'townCatapult', on: 'broken:townCatapult', lines: [['RURIK', 'No more fire on these streets.']] },
     { id: 'granaryCry', at: 6900, lines: [['VOICE', 'The granary! They barred the door! My children are in there!']] },
     { id: 'townsfolk', on: 'rescued:townsfolk', lines: [['TOWNSMAN', 'You are the ones he warned us of... and you stopped for us?']] },
     { id: 'granary', on: 'rescued:granary', lines: [['REEVE', 'We are his people. He burned us anyway. Go. End him.']] },
