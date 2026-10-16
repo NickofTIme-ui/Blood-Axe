@@ -20,7 +20,7 @@ const rand = (a, b) => a + Math.random() * (b - a);
 // An arrow volley (Stage bombard `look: 'arrows'`): arrows a volley; how far through the
 // warning they're loosed (they fly the rest); the arrow texture's size (drawn at 2x) and its
 // scale on screen, its length there; how long (ms) the spent ones stay standing in the ground
-const ARROWS = { perVolley: 7, loose: 0.2, texW: 160, texH: 26, scale: 0.36, len: 160 * 0.9, linger: 3200 };
+const ARROWS = { perVolley: 7, loose: 0.2, texW: 160, texH: 26, scale: 0.36, arc: 230, len: 160 * 0.9, linger: 3200 };
 
 // The pendulum blades' chain (world px): one link's outer length and width, the round
 // bar it's forged from, the spacing of the links (a link's length less the two bars that
@@ -869,9 +869,11 @@ export class StageView {
     const near = post && Math.abs(post.x - tx) < 1500;
     const side = post ? Math.sign(post.x - tx) || 1 : 1;
     const sx = near ? post.x - side * 30 + (i - 3) * 8 : tx + side * (760 + (i % 3) * 60);
-    const sy = near ? post.z - (post.y ?? 0) - 150 - (i % 2) * 14 : ty - 900 - (i % 4) * 40;
+    const sy = near ? post.z - (post.y ?? 0) - 150 - (i % 2) * 14 : ty - 560 - (i % 4) * 30;
     const dx = tx - sx; const dy = ty - sy;
-    const H = 180 + Math.abs(dx) * 0.28 + (i % 3) * 36; // how high it climbs over the straight line
+    // how high it climbs over the straight line (kept low enough that the arc stays on the
+    // screen: you see it come all the way in, not just its last few frames)
+    const H = Math.min(ARROWS.arc, 110 + Math.abs(dx) * 0.14) + (i % 3) * 26;
     const jit = ((i * 37) % 11 - 5) * 0.025; // (each lands a little crooked)
     return {
       lag: (i % 4) * 0.07, scale: ARROWS.scale * (0.9 + (i % 3) * 0.08), z: s.z + Math.sin(a) * r * 0.36, tx, ty, jit,
