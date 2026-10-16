@@ -19,7 +19,7 @@
 //   III THE BURNING ROOFS  up onto the roofs, along a fallen beam, charred boards over the
 //                          cellars; arrows start falling from the archers by the mill
 //                          ahead; two men waiting on the second roof; optional: a boy on a
-//                          high roof
+//                          high ridge, three jumps up
 //   IV  THE MILL YARD      a brawl round the mill floor; wreck the archers' posts either
 //                          side of the mill (the arrows stop); the barn pinned shut by a burning beam
 //                          (break it); then the rear guard, Brother Cinder, walks in
@@ -215,7 +215,14 @@ export const STAGE_VILLAGE = {
     { kind: 'pit', x0: 3330, x1: 3480, ...FULL },                      // the burning cellar under the beam
     { kind: 'block', x0: 3330, x1: 3480, z0: 385, z1: 440, top: 120 },  // the fallen roof beam: walk it
     { kind: 'block', x0: 3480, x1: 3680, ...FULL, top: 140 },           // the second roof: a hop up
-    { kind: 'block', x0: 3540, x1: 3640, z0: 282, z1: 340, top: 225 },  // OPTIONAL: the high roof (+85), the boy
+    // OPTIONAL: the boy, up at the back of the second roof: three jumps of +45, side by side
+    // (a chimney stack, a dormer, the ridge he clings to). Each stands on the roof, so its
+    // front is only as tall as the step (view/TerrainView.js supportTop); each is shallow
+    // (34 deep, against the back of the lane: hold up and you're lined up), so it shows as a
+    // ledge with a lit top, not a tall pale wall
+    { kind: 'block', x0: 3500, x1: 3548, z0: 282, z1: 316, top: 185, look: 'chimney' },
+    { kind: 'block', x0: 3564, x1: 3612, z0: 282, z1: 316, top: 230 },
+    { kind: 'block', x0: 3628, x1: 3680, z0: 282, z1: 316, top: 275 },
     { kind: 'pit', x0: 3680, x1: 3980, ...FULL },                      // the cellars, burning
     { kind: 'crumble', x0: 3740, x1: 3810, z0: 350, z1: 470, top: 150, fall: 40, back: 200 }, // gap 60
     { kind: 'crumble', x0: 3870, x1: 3940, z0: 350, z1: 470, top: 150, fall: 40, back: 200 }, // gap 60
@@ -225,6 +232,10 @@ export const STAGE_VILLAGE = {
     // ---- IV THE MILL YARD: the mill's raised floor at the back
     { kind: 'block', x0: 4720, x1: 5010, z0: 282, z1: 360, top: 70 },
   ],
+
+  // smoke dimming the backdrop behind the roofs, so the roofs you jump on stand out from the
+  // houses behind them (view/TerrainView.js drawVeils)
+  veils: [{ x0: 2800, x1: 4380, alpha: 0.45 }],
 
   // torches marking the way (lanterns: view/TerrainView.js)
   lanterns: [
@@ -249,7 +260,7 @@ export const STAGE_VILLAGE = {
       flee: { x: 1500, z: 300 }, gather: { x: 8740, z: 300 },
     },
     {
-      id: 'tam', name: 'Tam', x: 3600, z: 312, pose: 'child', rescue: 'reach', flee: null, gather: { x: 8800, z: 312 },
+      id: 'tam', name: 'Tam', x: 3656, z: 298, pose: 'child', rescue: 'reach', flee: null, gather: { x: 8800, z: 312 },
     },
     {
       id: 'barn', name: 'the miller\'s people', x: 5330, z: 296, pose: 'group', rescue: 'wreckage', tag: 'barn',

@@ -88,6 +88,14 @@ export class SweepBot extends Controller {
 
   steer(g) {
     const p = this.me; const T = this.world.terrain;
+    // the goal is too high to jump to from here (the boy on the village's ridge): first the
+    // nearest step up that stands at its depth, once he's up on the roof the steps stand on
+    if (T && g.h != null && g.h - p.floor > 95) {
+      const up = T.blocks.filter((b) => b.solid && b.top < g.h && b.top - p.floor > 10 && b.top - p.floor <= 95 && g.z >= b.z0 && g.z <= b.z1
+        && p.floor >= T.groundAt((b.x0 + b.x1) / 2, b.z1 + 4))
+        .sort((a, b) => Math.abs((a.x0 + a.x1) / 2 - p.x) - Math.abs((b.x0 + b.x1) / 2 - p.x))[0];
+      if (up) g = { ...g, x: (up.x0 + up.x1) / 2, h: up.top };
+    }
     const dx = g.x - p.x;
     if (Math.abs(dx) > 6) this.moveX = Math.sign(dx);
     // (travel down the lane the route is built along; leave it near the goal)
@@ -95,11 +103,15 @@ export class SweepBot extends Controller {
     if (Math.abs(gz - p.z) > 5) this.moveZ = Math.sign(gz - p.z);
     if (!T) return;
     const dir = Math.sign(this.moveX) || 1;
-    const jump = (to) => { this.jumpTo = to; this.registerPress('jump'); this.held.jump = true; this.jumpFor = 20; };
+    const jump = (to, onto = null) => { this.jumpTo = to; this.onto = onto; this.registerPress('jump'); this.held.jump = true; this.jumpFor = 20; };
     if (!p.grounded) {
+      // jumped up onto a narrow step (the village's climb to the boy): come down on it, not past it
+      const o = this.onto;
+      if (o && o.x1 - o.x0 < 120 && p.h > o.top) { const cx = (o.x0 + o.x1) / 2; this.moveX = Math.abs(cx - p.x) > 4 ? Math.sign(cx - p.x) : 0; return; }
       if (p.vh < 0 && T.groundAt(p.x, p.z) > -1 && T.groundAt(p.x + dir * 25, p.z) < -1) this.moveX = -dir * 0.5;
       return;
     }
+    this.onto = null;
     // a gap ahead: jump it (or wait at the edge)
     if (this.moveX && T.groundAt(p.x + dir * 14, p.z) < -1) {
       for (let d = 15; d <= this.reach; d += 5) {
@@ -112,7 +124,7 @@ export class SweepBot extends Controller {
     }
     const wall = this.moveX ? T.wallAt(p.x + dir * 22, p.z, p.h) : null;
     if (wall) {
-      if (wall.top - p.floor <= 95) jump(wall.top);
+      if (wall.top - p.floor <= 95) jump(wall.top, wall);
       else {
         // too tall: find the nearest place along it with something lower to climb
         const b = this.world.bounds; let bz = null;

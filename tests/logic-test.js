@@ -2565,21 +2565,38 @@ test('village: the barn: smashing the burning beam off its door frees the people
   assert(freed.filter((id) => id === 'barn').length === 1, 'reported once');
 });
 
-test('village: the boy on the high roof is saved by reaching him; every hero can climb to him', () => {
-  // from the second roof, up the back: a held jump onto the high roof (+85)
+test('village: the boy on the high ridge is saved by reaching him; every hero climbs to him in three jumps', () => {
+  // from the back of the second roof: a chimney (+45), a dormer (+45), the ridge (+45). Like
+  // a player: aim for the middle of the next step up, jump, steer onto it, land, again
+  const steps = STAGE_VILLAGE.terrain.filter((b) => b.kind === 'block' && b.z0 === 282 && b.x0 > 3480 && b.x1 <= 3680 && b.top > 140).sort((a, b) => a.top - b.top);
+  assert(steps.length === 3 && steps.every((b, i) => b.top - (i ? steps[i - 1].top : 140) <= 45), 'three steps of +45 at most');
   for (const hero of ['warrior', 'mage', 'rogue']) {
     const world = new World({ seed: 4 });
-    // (steers onto it like a player: right until over the roof, then stop)
-    const c = new Scripted({ 5: ['jump'] }, (t) => ({ jump: t < 40, right: t > 5 && c.p.x < 3575, left: c.p.x > 3620 }));
-    const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: 3500, z: 312, controller: c }));
+    let jumps = 0; let hold = 0; let aim = null;
+    const c = new Scripted({}, () => {
+      const p = c.p;
+      // (the step to make is picked on the ground and kept till he lands)
+      if (p.grounded && hold === 0) {
+        const next = steps.find((b) => b.top > p.floor + 5);
+        aim = next ? (next.x0 + next.x1) / 2 : null;
+        if (next) { c.registerPress('jump'); jumps++; hold = 24; }
+      }
+      if (hold > 0) hold--;
+      return { jump: hold > 0, right: aim != null && p.x < aim - 4, left: aim != null && p.x > aim + 4 };
+    });
+    const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: 3490, z: 300, controller: c }));
     c.p = p;
     const st = new Stage(world, STAGE_VILLAGE);
     st.start(p);
     st.enterSection(2);
     hush(st);
-    p.x = 3500; p.z = 312; st.placeOnGround(p);
-    for (let i = 0; i < 160; i++) { world.tick(); st.update(); }
-    assert(st.story.isRescued('tam'), `${hero}: reached him (on ${p.floor} at x ${Math.round(p.x)})`);
+    p.x = 3490; p.z = 300; st.placeOnGround(p);
+    for (let i = 0; i < 400 && !st.story.isRescued('tam'); i++) {
+      for (const e of world.fighters) if (e.team === 'enemy') { e.health = 0; e.removeMe = true; } // (the roof's two men: another test)
+      world.tick(); st.update();
+    }
+    assert(st.story.isRescued('tam'), `${hero}: reached him (on ${p.floor} at x ${Math.round(p.x)}, ${jumps} jumps)`);
+    assert(jumps === 3, `${hero}: three jumps up (${jumps})`);
   }
 });
 

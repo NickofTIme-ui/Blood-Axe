@@ -125,6 +125,7 @@ export class TerrainView {
     this.theme = data.theme;
     applyAtmosphere(scene, data.theme, this.width); // (depth: the backdrop recedes, the lane stays crisp)
     this.drawFloor();
+    this.drawVeils(data.veils ?? []);
     this.drawPits();
     this.blockGfx = new Map();
     for (const b of this.terrain?.blocks ?? []) this.blockGfx.set(b.id, this.makeBlock(b));
@@ -305,6 +306,22 @@ export class TerrainView {
     g.setDepth(d);
   }
 
+  // A veil of smoke over the backdrop behind a stretch of platforms (a level's `veils`: the
+  // village's roofs, whose backdrop is the same shingles and timber as the roofs you jump
+  // on): it dims everything behind the lane, so what you can stand on stands out from what
+  // you can't. Soft at both ends; the blocks, pits and men are all drawn over it.
+  drawVeils(list) {
+    const s = this.scene;
+    for (const v of list) {
+      const g = s.add.graphics().setDepth(DEPTH.floor - 0.5);
+      const top = -400; const bot = SETTINGS.world.floorTop; const soft = 120;
+      for (let x = v.x0; x < v.x1; x += 8) {
+        const k = Math.min(1, (x - v.x0) / soft, (v.x1 - x) / soft);
+        g.fillStyle(0x08040a, v.alpha * k).fillRect(x, top, 8.5, bot - top);
+      }
+    }
+  }
+
   // ------------------------------------------------------------ blocks
 
   makeBlock(b) {
@@ -465,8 +482,10 @@ export class TerrainView {
     const painted = { cart: 'cartwreck', wreckage: 'prop-wreckage-broken' }[b.look];
     if (painted && this.scene.textures.exists(painted)) { this.drawPaintedBlock(v, x0, x1, painted); return; }
     const narrow = b.z1 - b.z0 < 80;
-    const overPit = this.terrain.inPit((x0 + x1) / 2, b.z1 - 1);
-    // (a narrow block is a beam only where it spans a cellar: the boy's high roof is a roof)
+    const base = this.supportTop(b);
+    const overPit = !base && this.terrain.inPit((x0 + x1) / 2, b.z1 - 1);
+    if (b.look === 'chimney') { this.drawChimney(v, x0, x1, w, yTop0, yTop1, b.top - base); return; }
+    // (a narrow block is a beam only where it spans a cellar: the steps up to the boy are roofs)
     const mat = b.kind === 'crumble' ? 'board' : (narrow && overPit) || b.top <= 50 ? 'beam' : 'roof';
     const C = mat === 'board' ? [VIL.boardTop, VIL.boardRim, VIL.boardFront]
       : mat === 'beam' ? [VIL.beamTop, VIL.beamRim, VIL.beamFront] : [VIL.roofTop, VIL.roofRim, VIL.roofFront];
@@ -498,11 +517,14 @@ export class TerrainView {
     const fade = (g, x, y, ww, hh, color, a0, a1, n = 12) => {
       for (let i = 0; i < n; i++) g.fillStyle(color, a0 + ((a1 - a0) * i) / (n - 1)).fillRect(x, y + (hh * i) / n, ww, hh / n + 0.5);
     };
-    fade(top, x0 - 4, yTop0 - 22, w + 8, 22, 0x000000, 0, 0.7);
-    top.fillStyle(0xff9a50, 0.12).fillRect(x0, yTop0, w, depth);
-    fade(top, x0, yTop0, w, Math.min(18, depth * 0.3), 0x000000, 0.35, 0);
-    fade(top, x0, yTop1 - Math.min(26, depth * 0.4), w, Math.min(26, depth * 0.4), 0xffc890, 0, 0.22);
-    const down = mat === 'board' ? 12 : mat === 'beam' && overPit ? 18 : Math.max(0, b.top) + (overPit ? 120 : 0);
+    // (not behind a step standing on a roof, or a board: up against the sky or the veiled
+    // backdrop it showed as a dark box floating there)
+    if (!base && mat !== 'board') fade(top, x0 - 4, yTop0 - 22, w + 8, 22, 0x000000, 0, 0.7);
+    top.fillStyle(0xff9a50, 0.14).fillRect(x0, yTop0, w, depth);
+    fade(top, x0, yTop0, w, Math.min(60, depth * 0.45), 0x000000, 0.5, 0);
+    fade(top, x0, yTop1 - Math.min(40, depth * 0.45), w, Math.min(40, depth * 0.45), 0xffc890, 0, 0.3);
+    this.shadeEnds(v, x0, x1, yTop0, yTop1);
+    const down = mat === 'board' ? 12 : mat === 'beam' && overPit ? 18 : Math.max(0, b.top - base) + (overPit ? 120 : 0);
     const frontArt = art[1] && this.surface(v, 'front', art[1], x0, yTop1 + 1, w, down, b.z1 + 0.4);
     if (!frontArt) front.fillStyle(C[2], 1).fillRect(x0, yTop1 + 1, w, down);
     if (frontArt) {
@@ -525,6 +547,62 @@ export class TerrainView {
     }
     // and the face below the lip falls into shadow, so the edge stands out against it
     fade(front, x0, yTop1 + 1, w, Math.min(30, down), 0x000000, 0.6, 0);
+    // (a house front is in its own shadow, the roof above it in the firelight: the top you
+    // stand on is always the lighter of the two)
+    if (mat === 'roof') front.fillStyle(0x000000, 0.3).fillRect(x0, yTop1 + 1, w, down);
+    top.setDepth(b.z0 - 0.5);
+    front.setDepth(b.z1 + 0.5);
+  }
+
+  // The top of whatever a block stands on: 0 for the floor, or another block's top (the
+  // steps up to the boy stand on the second roof). Its front face comes down only that far:
+  // drawn on down to the floor it hung over the roof in front of it, so whoever walked to
+  // the back of the roof seemed to be walking up the side of a house.
+  supportTop(b) {
+    const cx = (b.x0 + b.x1) / 2;
+    let top = 0;
+    for (const o of this.terrain.blocks) if (o !== b && o.solid && o.top < b.top && this.terrain.inside(o, cx, b.z1 - 1)) top = Math.max(top, o.top);
+    return top;
+  }
+
+  // An end of a walkable top with a drop past it (a cellar, a lower roof): the last stretch
+  // of the top and of its face darkens into it, so you can see where your feet run out
+  // without a drawn line. A wall or a higher roof past the end: nothing.
+  shadeEnds(v, x0, x1, yTop0, yTop1) {
+    const { top, front, b } = v;
+    const zs = [b.z0 + 2, (b.z0 + b.z1) / 2, b.z1 - 2];
+    const lower = (x) => zs.some((z) => this.terrain.groundAt(x, z) < b.top - 20);
+    const W = Math.min(16, (x1 - x0) * 0.2);
+    for (const [ex, dir] of [[x0, 1], [x1, -1]]) {
+      if (!lower(ex - dir * 6)) continue;
+      for (let i = 0; i < 8; i++) {
+        const a = 0.55 * (1 - i / 8); const xx = dir > 0 ? ex + (W * i) / 8 : ex - (W * (i + 1)) / 8;
+        top.fillStyle(0x000000, a).fillRect(xx, yTop0, W / 8 + 0.5, yTop1 - yTop0);
+        front.fillStyle(0x000000, a).fillRect(xx, yTop1 + 1, W / 8 + 0.5, Math.max(0, b.top - this.supportTop(b)) + 4);
+      }
+    }
+  }
+
+  // A chimney stack on a roof (`look: 'chimney'`, a step up to the boy): soot-black stone
+  // courses, a flat capstone lit by the fire where you land, its face as tall as the step.
+  drawChimney(v, x0, x1, w, yTop0, yTop1, down) {
+    const { top, front, b } = v;
+    const depth = yTop1 - yTop0;
+    // the capstone: one slab, a crack or two, sooted toward the back, lit at the lip
+    top.fillStyle(0x6a5e54, 1).fillRect(x0, yTop0, w, depth);
+    top.lineStyle(1, 0x2a2420, 0.9).lineBetween(x0 + w * 0.35, yTop0, x0 + w * 0.42, yTop0 + depth * 0.6).lineBetween(x0 + w * 0.72, yTop0 + depth * 0.3, x1, yTop0 + depth * 0.45);
+    for (let i = 0; i < 10; i++) top.fillStyle(0x000000, 0.05 * (10 - i)).fillRect(x0, yTop0 + (depth * 0.5 * i) / 10, w, depth * 0.05 + 0.5);
+    for (let i = 0; i < 10; i++) top.fillStyle(0xffc890, 0.035 * i).fillRect(x0, yTop1 - 12 + 1.2 * i, w, 1.5);
+    // the stack's face: stone courses, sooted, darkening down to the roof
+    front.fillStyle(0x2c2420, 1).fillRect(x0, yTop1 + 1, w, down);
+    for (let y = yTop1 + 1, row = 0; y < yTop1 + down; y += 9, row++) {
+      for (let x = x0 + (row % 2 ? -8 : 0); x < x1; x += 16) {
+        const xa = Math.max(x0, x + 1); const xb = Math.min(x1, x + 15);
+        front.fillStyle(row % 3 === 1 ? 0x3e3430 : 0x463a34, 1).fillRect(xa, y + 1, xb - xa, Math.min(7, yTop1 + down - y - 1));
+      }
+    }
+    front.fillStyle(0x000000, 0.6).fillRect(x0, yTop1 + 1, w, 4);
+    front.fillStyle(0x000000, 0.35).fillRect(x1 - 6, yTop1 + 1, 6, down);
     top.setDepth(b.z0 - 0.5);
     front.setDepth(b.z1 + 0.5);
   }
