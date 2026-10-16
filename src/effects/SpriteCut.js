@@ -31,6 +31,9 @@ const CUTS = {
 // facing): negative = the line climbs that way (a falling cut starts high on the far side)
 const SLOPE = { diagDown: -0.5, diagUp: 0.5 };
 
+// the head, crown to the cut under the jaw, as a share of his standing height
+const HEAD = 0.19;
+
 const rand = (a, b) => a + Math.random() * (b - a);
 let pieceId = 0;
 
@@ -50,8 +53,15 @@ export class SpriteCuts {
     const face = Math.sign(s.scaleX) || f.facing;
     const bodyH = f.stats.body.h;
     const cutH = bodyH * (CUTS[cut] ?? 0.5);
-    const yCut = Math.round(sh.ay - cutH * res);                // cut line in frame px
-    const top = Math.max(0, Math.round(sh.ay - bodyH * 1.12 * res));
+    let yCut = Math.round(sh.ay - cutH * res);                  // cut line in frame px
+    // on his knees in painted kneeling art (view/SpriteEnemyView.js): he's drawn about two
+    // thirds his height, so the standing neck line would pass over his head; the neck is
+    // found from the top of his head in the picture itself
+    const painted = view.kneelCut && view.kneelCut.row >= sh.fh;
+    const head = painted ? this.headTop(s.frame) : null;
+    if (head != null && cut === 'neck') yCut = Math.round(head + bodyH * HEAD * res);
+    else if (head != null && cut === 'waist') yCut = Math.round((head + sh.ay) / 2);
+    const top = head ?? Math.max(0, Math.round(sh.ay - bodyH * 1.12 * res));
     const yc = (top + yCut) / 2;                                 // centre of the top piece
     const key = s.texture.key;
     const frame = s.frame.name;
@@ -101,6 +111,28 @@ export class SpriteCuts {
       lower.stand = 46; lower.toppleSpeed = 0.003; lower.fallDir = face; lower.toppleTo = 0.42; lower.bleed = 320;
     }
     return { upper, lower };
+  }
+
+  // The first row of a frame with his body in it (a few solid pixels): the top of his
+  // head. Measured once per frame. null if the picture can't be read.
+  headTop(frame) {
+    this.tops ??= new Map();
+    const key = `${frame.texture.key}:${frame.name}`;
+    if (this.tops.has(key)) return this.tops.get(key);
+    let top = null;
+    try {
+      const W = frame.cutWidth; const H = frame.cutHeight;
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const g = c.getContext('2d', { willReadFrequently: true });
+      g.drawImage(frame.source.image, frame.cutX, frame.cutY, W, H, 0, 0, W, H);
+      const d = g.getImageData(0, 0, W, H).data;
+      for (let y = 0; y < H && top == null; y++) {
+        let n = 0;
+        for (let x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3] > 80 && ++n >= 3) { top = y; break; }
+      }
+    } catch { top = null; }
+    this.tops.set(key, top);
+    return top;
   }
 
   // Divide one frame along the line y = yCut + slope * (x - ax) into two full-frame

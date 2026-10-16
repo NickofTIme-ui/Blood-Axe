@@ -745,3 +745,8 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - Everything else is in passing and goes by itself: cries for help, boss taunts and phase shouts, remarks, a freed villager's thanks, the calm "the captain is ahead" lines. Time up by length (`LINE.pass`: 1.5 s + 4 frames a letter, 10 s at most; a 60-letter line ~5.5 s, about 1.5x the old timing). A press still moves one on sooner. A beat can set `passing: true / false` to override.
 - The execution softlock fix (b7733ff, `Story.cutShort`) is untouched; its test now forces the boss taunt to wait so it still guards it (a passing taunt can't block it anyway: it times out).
 - Tests pass (the old "mid-fight lines wait too" test now checks the split). Not tried in the browser.
+
+## Cloud, 2026-10-16: fix, executed bosses kept their heads (not on itch yet)
+- Nick (itch upload 19788756): "executions dont seem to lose their heads". Cause: most bosses now kneel in painted kneeling art (`<enemy>_kneel.png`, drawn at about 0.68 of standing height), but `SpriteCut.split` still cut the neck at standing neck height (0.83), which passes over a kneeling man's head, so nothing came off.
+- Fix (`src/effects/SpriteCut.js`): on a painted kneel, the cut finds the top of his head in the frame itself (`headTop`, the first row with solid pixels, measured once per frame) and cuts `HEAD` (0.19 of his height) below it; a waist cut on a painted kneel goes halfway between his head and his knees. The sunk-and-cropped standing kneel (no kneel art) is unchanged. View only, no sim change.
+- Checked in the headless browser on the Ash Captain: the helmeted head pops off and the body falls back (project files `sentence/head-off-fixed.jpg`). Logic tests pass (they don't load the view).
