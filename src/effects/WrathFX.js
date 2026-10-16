@@ -6,9 +6,10 @@
 //                   heat glow swells behind him; the wrath also darkens the world around
 //                   him (not the fighters), shakes harder and harder, and shouts its name
 //   the release     a white-gold flash where the point goes in, the floor cracks glowing
-//   a pillar        a column of fire bursting up out of the floor: a white-hot core in an
-//                   orange body in a dark red skin, tongues of flame torn off its top,
-//                   stone thrown up, a patch of floor left glowing
+//   a pillar        a column of fire bursting up out of the floor (the painted strip
+//                   FX.kingsfire when it's in): a white-hot core in an orange body in a
+//                   dark red skin, tongues of flame torn off its top, stone thrown up, a
+//                   patch of floor left glowing
 //   the ring        (the wrath) a wall of fire racing out across the floor around him
 //   a man going up  a fireball: white flash, a ball of flame that swells and rolls up into
 //                   black smoke, a shock ring along the floor, burning scraps arcing out
@@ -19,6 +20,7 @@ import { softTex } from './Gore.js';
 import { playSfx } from '../core/Sfx.js';
 import { kingsfireOf } from '../combat/Skills.js';
 import { SETTINGS } from '../config/settings.js';
+import { FX } from '../view/stripImporter.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -163,7 +165,22 @@ export class WrathFX {
       { color: 0xffa030, w: 0.62, a: 0.7, add: true },
       { color: 0xfff0c0, w: 0.3, a: 0.85, add: true },
     ];
-    for (const L of layers) {
+    // the painted pillar when its strip is in (FX.kingsfire: crack, burst, column, smoke,
+    // embers), with an additive copy over it for the glow; else soft layers of colour
+    const P = FX.kingsfire;
+    if (P) {
+      const sc = (H * 1.35) / P.fh;
+      for (const glow of [false, true]) {
+        const img = s.add.image(x, y, P.key, 'f0').setOrigin(0.5, 0.97).setScale(sc).setDepth(z + 0.4 + (glow ? 0.01 : 0));
+        if (glow) img.setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.45);
+        const t = { f: 0 };
+        s.tweens.add({
+          targets: t, f: P.count - 0.01, duration: (P.count / P.fps) * 1000, ease: 'Linear',
+          onUpdate: () => img.setFrame(`f${Math.floor(t.f)}`), onComplete: () => img.destroy(),
+        });
+      }
+    }
+    for (const L of P ? [] : layers) {
       const img = this.sprite(L.color, L.add).setOrigin(0.5, 0.92).setPosition(x, y).setDepth(z + 0.4 + L.w * 0.01).setAlpha(L.a);
       const sx = (56 * k * L.w) / 64;
       const sy = H / 64 * 1.2;

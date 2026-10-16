@@ -32,7 +32,8 @@ export const LEVEL_ART = {
     wall: { height: 250 },
     ground: true,
     pieces: ['well', 'barn', 'stables', 'longhall', 'gate', 'pikes'],
-    props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' } },
+    props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' },
+      archers: { file: 'prop_archers.png', pair: true } },
     surfaces: { roof_top: { fit: true }, roof_front: { px: 180 }, beam: { px: 40 }, board: { fit: true } },
   },
   wood: {

@@ -311,6 +311,15 @@ export class StageView {
     // shaft lit along its top, a long iron bodkin bound on with sinew, three feathers (two
     // grey goose, the cock feather dyed Ashen red) with their barbs, a horn nock
     this.canvasTex('arrow-fly', ARROWS.texW, ARROWS.texH, (c, w, h) => {
+      // the painted arrow when it's in (assets/fx/arrow.png, ChatGPT): fitted to the width,
+      // its head at the right edge like the drawn one
+      if (this.scene.textures.exists('arrow-src')) {
+        const img = this.scene.textures.get('arrow-src').getSourceImage();
+        const ah = Math.min(h, (w * img.height) / img.width);
+        c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+        c.drawImage(img, 0, (h - ah) / 2, w, ah);
+        return;
+      }
       const m = h / 2;
       const sg = c.createLinearGradient(0, m - 3, 0, m + 3);
       sg.addColorStop(0, '#e2bd84'); sg.addColorStop(0.45, '#a8773f'); sg.addColorStop(1, '#4e3018');

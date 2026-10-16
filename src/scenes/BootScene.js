@@ -38,6 +38,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('shrine-oath-src', 'assets/env/shrine_oath.png'); // the painted oath shrine (view/TerrainView.js drawRests)
     this.load.image('water-src', 'assets/env/water.png'); // the painted stream (view/TerrainView.js drawPits)
     this.load.image('cage-src', 'assets/env/cage.png'); // the painted cage (view/NpcView.js drawCaptive)
+    this.load.image('arrow-src', 'assets/fx/arrow.png'); // the painted Ashen war arrow, cut out (view/StageView.js 'arrow-fly')
     this.load.image('lantern-src', 'assets/env/lantern.png'); // the painted lantern post (view/TerrainView.js drawLanterns)
     this.load.image('keep-hall', 'assets/env/keep_hall.png'); // the Black Keep's throne room (scenes/CutawayScene.js)
     this.load.image('bridge-log-src', 'assets/env/bridge_log.png'); // the painted log bridge (view/TerrainView.js drawBlock)

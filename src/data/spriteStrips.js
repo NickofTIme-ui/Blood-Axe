@@ -55,13 +55,31 @@ export const CHARACTER_STRIPS = {
 // OATHKEEPER IN HIS HAND: Nick's repaint of the strips above with the blade of his blood.
 // His look from the moment Elder Brann puts it in his hands at the end of level 1
 // (data/stageVillage.js, the 'elder' scene; Progress.statsFor picks the sheet). Until then
-// he carries his old sword (ulric). A strip not repainted yet (the wrath, the rising
-// cleave) is the old one.
+// he carries his old sword (ulric). The wrath was painted with Oathkeeper already.
 const OATH_DIR = 'assets/sprites/strips/oathkeeper/';
-const REPAINTED = new Set(['walk2', 'walkU', 'walkD', 'walkUD', 'walkDD', 'rollUp', 'rollDown', 'kick', 'slash', 'combo1', 'combo2', 'combo3', 'cleave', 'charge', 'thrust', 'chargeWalk', 'sprint', 'finThroat', 'finImpale']);
+const REPAINTED = new Set(['walk2', 'walkU', 'walkD', 'walkUD', 'walkDD', 'rollUp', 'rollDown', 'kick', 'slash', 'combo1', 'combo2', 'combo3', 'cleave', 'charge', 'thrust', 'chargeWalk', 'sprint', 'finThroat', 'finImpale', 'launcher']);
 CHARACTER_STRIPS.ulricOath = Object.fromEntries(Object.entries(CHARACTER_STRIPS.ulric).map(([name, s]) => (
   [name, REPAINTED.has(name) ? { ...s, file: OATH_DIR + s.file.split('/').pop() } : s]
 )));
+// Oathkeeper-only strips (ChatGPT, 16 Oct 2026): the moves that still came off his old
+// main sheet (ulric.png: jump, air slash, block, Firebolt throw, hit, knockdown, getup),
+// plus the Leap Smash and the Shoulder Smash, which borrowed other strips' poses. Each is
+// sized on its standing pose like the others.
+Object.assign(CHARACTER_STRIPS.ulricOath, {
+  // ready, blade drawn back over the shoulder, coiled, the throw, follow-through, ready
+  cast:      { file: OATH_DIR + 'ulric_cast.png', frames: 6, ref: 0, target: 116 },
+  // ready, raising the guard, holding it, a hit on the guard
+  block:     { file: OATH_DIR + 'ulric_block.png', frames: 4, ref: 0, target: 116 },
+  // hit, hit again, knocked flying, lying, up on one knee, standing
+  hurt:      { file: OATH_DIR + 'ulric_hurt.png', frames: 6, ref: 5, target: 116 },
+  // crouch, high with the blade up, the chop, buried, wrenching it out, standing
+  leapsmash: { file: OATH_DIR + 'ulric_leapsmash.png', frames: 6, ref: 5, target: 116 },
+  // crouch, leap, top, falling, air wind-up x2, the air slash, follow-through (no standing
+  // pose: painted at the Leap Smash's size, so it sizes from it)
+  air:       { file: OATH_DIR + 'ulric_air.png', frames: 8, scaleFrom: 'leapsmash' },
+  // the last stride, shoulder dropped, impact, driving through, the skid, ready
+  shoulder:  { file: OATH_DIR + 'ulric_shoulder.png', frames: 6, ref: 5, target: 116 },
+});
 
 const seq = (strip, ids) => ids.map((i) => `${strip}:${i}`);
 
@@ -112,11 +130,33 @@ export const ANIM_OVERRIDES = {
     thrust: { needs: ['thrust'], phases: { startup: seq('thrust', [0, 1]), active: seq('thrust', [2, 3, 3, 3]), recovery: seq('thrust', [3, 3, 4, 5]) } },
   },
 };
-ANIM_OVERRIDES.ulricOath = ANIM_OVERRIDES.ulric; // (the same moves, the same poses)
+// With Oathkeeper: the same moves, plus his own poses for what still came off the old sheet
+// (each only once its strip is in: `needs`)
+ANIM_OVERRIDES.ulricOath = {
+  ...ANIM_OVERRIDES.ulric,
+  // Firebolt: wind-up (draw back, coil), then the throw and the follow-through (SpriteFighterView
+  // 'cast': two wind-up frames, then the rest across the recovery)
+  cast: { needs: ['cast'], frames: seq('cast', [1, 2, 3, 4, 5]) },
+  jump: { needs: ['air'], rise: seq('air', [1]), fall: seq('air', [3]), crouch: seq('air', [0]), peak: seq('air', [2]) },
+  airAttack: { needs: ['air'], phases: { startup: seq('air', [4, 5]), active: seq('air', [6]), recovery: seq('air', [7]) } },
+  block: { needs: ['block'], frames: seq('block', [2]), fps: 1, loop: true, raise: seq('block', [1]), impact: seq('block', [3]) },
+  hitstun: { needs: ['hurt'], frames: seq('hurt', [0, 1]), fps: 8, loop: false },
+  knockdown: { needs: ['hurt'], air: seq('hurt', [2]), lying: seq('hurt', [3]) },
+  getup: { needs: ['hurt'], frames: seq('hurt', [4, 5]), fps: 1, spread: true },
+  // Leap Smash (SpriteFighterView 'plunge'): hang, drop, buried, wrenched out, standing
+  plunge: { needs: ['leapsmash'], up: seq('leapsmash', [0, 1]), down: seq('leapsmash', [2]), buried: seq('leapsmash', [3, 4, 5]) },
+  shoulder: { needs: ['shoulder'], phases: { startup: seq('shoulder', [0, 1]), active: seq('shoulder', [2, 3]), recovery: seq('shoulder', [4, 5]) } },
+};
 
 // Effects strips: equal cells, trimmed and scaled to `height` px.
 export const FX_STRIPS = {
   firebolt: { file: 'assets/fx/firebolt-strip.png', frames: 8, height: 44, fps: 14 },
+  // Rurik's Hearthfire Bolt (Oathkeeper Wakes, view/ProjectileView.js): white-gold, half again
+  // the Firebolt's size, on magenta
+  hearthfire: { file: 'assets/fx/hearthfire-strip.png', frames: 8, height: 64, fps: 14, bg: 'magenta' },
+  // a Kingsfire / King's Wrath pillar (effects/WrathFX.js): crack, burst, the column, smoke,
+  // embers, on magenta
+  kingsfire: { file: 'assets/fx/kingsfire-pillar-strip.png', frames: 8, height: 340, fps: 15, bg: 'magenta' },
   // the column of fire a floor grate throws up (view/StageView.js); drawn at half scale
   firepit: { file: 'assets/fx/firepit-strip.png', frames: 8, height: 300, fps: 16 },
   // the Mage's stone wall: 6 jagged slab variants on magenta (effects/MageFX.js); until
