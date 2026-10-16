@@ -404,6 +404,8 @@ export class MageView {
   }
 
   // ---- gore hand-off (he is never dismembered: a hero)
+  // (off screen without updating: a companion gone ahead; drawn again on his next update)
+  hide() { this.g.clear(); this.fx.clear(); this.shadow.setVisible(false); }
   hideAll() { this.g.setVisible(false); this.fx.setVisible(false); this.shadow.setVisible(false); }
 
   destroy() {

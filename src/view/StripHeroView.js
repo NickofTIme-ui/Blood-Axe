@@ -216,11 +216,20 @@ export class StripHeroView {
     if (st === 'dodge' && f.invincible) alpha = 0.8;
     if (st === 'getup') alpha = fr % 4 < 2 ? 0.6 : 1;
     if (st === 'dead') alpha = Math.max(0, 1 - Math.max(0, fr - 90) / 60);
+    alpha *= this.fade ?? 1; // (a companion fading into the dark: view/NpcView.js)
     s.setAlpha(alpha);
 
     const lift = f.h + (hover && !downed ? hover.height + (float?.lift ?? 0) : 0);
     this.shadow.setPosition(f.x, f.z).setScale(1 - Math.min(lift / 300, 0.5)).setAlpha(0.35 * alpha);
     this.hover?.update(s, ref, downed);
+  }
+
+  // Off screen without updating (a companion gone ahead): the sprite, its shadow and, for
+  // the Mage, the floor circle and motes with him.
+  hide() {
+    this.sprite.setVisible(false);
+    this.shadow.setVisible(false);
+    this.hover?.hide();
   }
 
   destroy() {

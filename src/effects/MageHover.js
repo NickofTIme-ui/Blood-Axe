@@ -218,9 +218,15 @@ export class MageHover {
   update(sprite, ref, downed) {
     const f = this.f;
     const st = f.state;
+    // he's not on screen (hidden, or a companion gone off ahead): nothing of the hover stays
+    if (!sprite.visible || ref === null) {
+      if (sprite.cloth) { sprite.cloth = null; sprite.resetPipeline(); }
+      this.hide();
+      return;
+    }
     const frozen = f.hitstop > 0;
     if (!frozen) this.t += 1;
-    const on = HOVER_STATES.has(st) && !downed && !f.sprinting && sprite.visible && ref !== null;
+    const on = HOVER_STATES.has(st) && !downed && !f.sprinting;
     this.k += ((on ? 1 : 0) - this.k) * (on ? 0.08 : 0.25);
     const speed = clamp01(Math.hypot(f.vx, f.vz) / Math.max(1, f.stats.walkSpeed));
     this.speedK += ((st === 'walk' ? speed : 0) - this.speedK) * 0.06;
@@ -361,6 +367,18 @@ export class MageHover {
       fr.fillStyle(u < 0.4 ? 0xffe0a0 : 0xff7a30, a).fillCircle(p.x, p.y, 1.1 * (1 - u * 0.5));
       return true;
     });
+  }
+
+  // Gone at once, not faded: the circle, the glows and every mote and spark. For when the
+  // view stops updating him (a companion off out of sight) or his sprite is hidden.
+  hide() {
+    this.k = 0;
+    this.speedK = 0;
+    this.motes = [];
+    this.sparks = [];
+    this.floor.clear();
+    this.back.clear();
+    this.front.clear();
   }
 
   destroy() {

@@ -26,6 +26,12 @@ import { drawVincent, hideVincent } from './VincentView.js';
 const TUNIC = [0x5a6a5a, 0x6a5a48, 0x4a5468, 0x6a4a4a, 0x5a5048, 0x58586a];
 const SKIN = 0xc8a080;
 const HEROES = ['warrior', 'mage', 'rogue'];
+// A companion out of sight: everything of him goes, the Mage's floor circle and motes too
+// (views that draw more than a sprite and a shadow have a hide() of their own).
+const hideView = (v) => {
+  if (v.hide) v.hide();
+  else { v.sprite?.setVisible(false); v.shadow?.setVisible(false); }
+};
 
 // The painted cage (assets/env/cage.png: shut on the left, broken open on the right, on
 // magenta): cut out once into 'cage-shut' and 'cage-open', each trimmed to its bars.
@@ -524,8 +530,7 @@ export class NpcView {
       // gone ahead to search: once out of sight they stay out of sight (no catching them up
       // on the road), until the meeting place
       if (c.mode === 'gone' && !target?.face && target?.leave && !(st.phase === 'won' || st.story.done.has(C.farewell))) {
-        c.view.sprite?.setVisible(false);
-        c.view.shadow?.setVisible(false);
+        hideView(c.view);
         continue;
       }
       if (target?.face === -1 && c.mode !== 'gate') {
@@ -556,9 +561,12 @@ export class NpcView {
       const fade = target?.away ? Math.max(0, Math.min(1, (f.z - target.z) / 70)) : 1;
       if (fade <= 0.04) hidden = true;
       if (hidden && c.mode === 'start') c.mode = 'gone';
-      c.view.sprite?.setVisible(!hidden);
-      c.view.shadow?.setVisible(!hidden);
-      if (!hidden) c.view.update();
+      if (hidden) hideView(c.view);
+      else {
+        c.view.sprite?.setVisible(true); c.view.shadow?.setVisible(true);
+        c.view.fade = fade; // (so the Mage's circle fades with him, not after him)
+        c.view.update();
+      }
       if (target?.away) { c.view.sprite?.setAlpha(fade); c.view.shadow?.setAlpha?.(fade * 0.35); }
     }
   }
