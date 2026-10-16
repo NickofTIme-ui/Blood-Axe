@@ -141,6 +141,7 @@ export class Gore {
   //   explode          torn to pieces (blowApart), in a storm of meat
   cutSprite(type, view, e) {
     const cuts = this.scene.cuts;
+    view?.prepareCut?.(); // (down as a ragdoll: back to his painted lying pose to be cut)
     if (!cuts || !view?.sheet || !view.sprite?.visible || view.cutAway) return false;
     const dir = e.dir || view.f.facing;
     const cut = { decap: 'neck', headPop: 'neck', halfH: 'waist', halfV: 'diagDown', limbs: 'legs', explode: 'waist' }[type];
@@ -161,6 +162,7 @@ export class Gore {
     else if (type === 'halfH') cuts.launch(upper, dir * rand(160, 320), rand(260, 380), dir * rand(5, 9));
     else if (type === 'halfV') cuts.launch(upper, dir * rand(60, 130), rand(150, 220), dir * rand(1.5, 3));
     else if (type === 'limbs') cuts.launch(upper, dir * rand(20, 70), rand(120, 180), dir * rand(1, 2.5));
+    view.ragdollCut?.(type, upper, lower); // (what's left of him flops: view/Ragdoll.js)
     this.burst(f.x, f.z, mid, dir, Math.round(60 * this.amount), 1.6);
     return true;
   }
