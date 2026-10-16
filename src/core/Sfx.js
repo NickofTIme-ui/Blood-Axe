@@ -15,6 +15,7 @@ export const SFX = {
   kick: 'assets/audio/sfx/kick-impact.wav',        // Sparta kick landing (and bodies bowled over)
   fireWhoosh: 'assets/audio/sfx/fire-whoosh.mp3',  // Firebolt cast (plays with the lava loop)
   fireLoop: 'assets/audio/sfx/fire-lava-loop.mp3', // Firebolt in flight: loops until it lands
+  fireImpact: 'assets/audio/sfx/fire-impact.mp3',  // Firebolt bursting on a body or the ground
   second: 'assets/audio/sfx/combo-second.mp3',     // 2nd swing of the light combo (the return)
   finisher: 'assets/audio/sfx/combo-finisher.mp3', // 3rd swing of the light combo (the overhand)
   heavySwing: 'assets/audio/sfx/heavy-swing.mp3',  // heavy two-handed swing (on the button press)

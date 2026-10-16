@@ -801,3 +801,7 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - **Someone with something to say** (`NpcView.hasWord`: a `talk` not yet heard): a warm pulsing glow behind him and a speech bubble bobbing over his head until a hero comes near (Hale, Nicholas when wounded).
 - Not changed: the mine prisoners, captives, Vincent and Nicholas were already cut at about hero height (90-118 px).
 - Checked: logic tests pass; headless screenshots of Hale (and Mira, Tam). Not played by a person.
+
+## Cloud, 2026-10-16: fireball impact sound (not on itch)
+- Nick's clip (`fireball-impact.mp3`, sent in the project chat) is `assets/audio/sfx/fire-impact.mp3`, key `fireImpact` in `SFX`. Trimmed to the burst (0.17 s of silence off the front, cut at 1.9 s with a fade from 1.37 s, 1.8 s long) and peaked at -1.5 dB like `fire-whoosh`.
+- `ProjectileView` plays it when a fire bolt (Firebolt, Hearthfire Bolt) bursts: on each body it hits (the Hearthfire runs through several), on a guard or parry, or on the ground or a wall; not when it just burns out in the air. Enemy fire at half volume, like the cast. The cast whoosh and lava loop are unchanged. View only, no sim change.

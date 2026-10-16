@@ -33,6 +33,7 @@ export class ProjectileView {
       if (d.cut === 'fire') {
         // cast whoosh + the lava roar riding along with the fireball, together
         const loud = projectile.team === 'player' ? 1 : 0.5;
+        this.fire = { loud, hits: 0 };
         playSfx(scene, 'fireWhoosh', { volume: 0.8 * loud, spread: 100, minGapMs: 30 });
         this.loop = startLoop(scene, 'fireLoop', { volume: 0.45 * loud });
       }
@@ -67,6 +68,7 @@ export class ProjectileView {
     this.age++;
     this.shadow.setPosition(p.x, p.z);
     if (this.fx) {
+      if (this.fire && p.hitList.size > this.fire.hits) this.burst(); // (the Hearthfire runs through: one per body)
       const y = p.z - p.h - d.h / 2;
       const frame = Math.floor((this.age * this.fx.fps) / 60) % this.fx.count;
       this.core.setFrame(`f${frame}`).setPosition(p.x + p.dir * d.w / 2, y).setDepth(p.z + 0.2);
@@ -101,8 +103,16 @@ export class ProjectileView {
     this.core.setPosition(p.x, y).setDepth(p.z + 0.1);
   }
 
+  // the fireball bursting on a body (or a guard)
+  burst() {
+    this.fire.hits = this.p.hitList.size;
+    playSfx(this.scene, 'fireImpact', { volume: 0.9 * this.fire.loud, spread: 120, minGapMs: 60 });
+  }
+
   destroy() {
     this.loop?.stop(300); // fire roar dies out as the bolt lands
+    // it burst on the last body it met, or on the ground or a wall (not just burnt out in the air)
+    if (this.fire && (this.p.hitList.size > this.fire.hits || this.p.grounded)) this.burst();
     this.glow.destroy();
     this.heart?.destroy();
     this.core.destroy();
