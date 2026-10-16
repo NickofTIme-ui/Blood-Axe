@@ -23,6 +23,8 @@ export const JUGGLE = {
   spikeVh: -950,    // the spike drives him down this fast
   bounceVh: 320,    // ...and the floor throws him back up this fast, once
   spikeDamage: 1.5, // the spike hits this much harder than an air swing
+  fallGravity: 1.8, // a flung enemy comes DOWN this much faster than he went up (else a
+                    // man popped up on his way down hangs there, floating)
 };
 
 // Can this hit juggle him? (a hero's blow on a man flying through the air)

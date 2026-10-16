@@ -18,6 +18,7 @@
 
 import { measureCanvas } from './frameMeasure.js';
 import { RAGDOLL_GEAR } from '../data/ragdollGear.js';
+import { JUGGLE } from '../combat/Juggle.js';
 
 const OVER = 6;      // frame px the pieces overlap at each joint (hides the seams)
 // the joints along the lying body, as a share of its length from the top of the head
@@ -360,7 +361,7 @@ export class Ragdoll {
     const lo = this.lo;
     const hi = this.hi;
     const free = this.free;
-    const G = f.stats.gravity / 3600;
+    const G = f.stats.gravity * JUGGLE.fallGravity / 3600; // (bodies come down as hard as the game drops a flung man)
     const floorY = f.z - f.floor;
     this.floorY = floorY;
     const target = free ? null : this.lyingAt(f, face, k);
@@ -377,11 +378,14 @@ export class Ragdoll {
     for (let n = 0; n < steps; n++) {
       this.age++;
       // the game threw him again (a juggle, a bounce, a blow while he's down): so does the doll
-      const expect = this.prevVh - f.stats.gravity / 60;
+      const expect = this.prevVh - f.stats.gravity * (this.prevVh < 0 ? JUGGLE.fallGravity : 1) / 60;
       if (!free && f.vh > 60 && f.vh > expect + 120) {
-        const dv = (f.vh - Math.max(0, expect)) / 60;
+        // the game SETS his speed (a juggle pops a falling man up from wherever he was):
+        // the doll goes up at that speed too, not at his fall plus it (that hung him
+        // in the air, floating, after every hit on the way down)
+        const dv = Math.max(0, f.vh / 60 + (P[2].y - P[2].py));
         for (const p of P) p.py += dv;
-        P[0].px -= (this.B.headLeft ? -face : face) * dv * 0.6;
+        P[0].px -= (this.B.headLeft ? -face : face) * Math.min(dv, f.vh / 60) * 0.6;
         this.grounded = 0; this.settle = Math.min(this.settle, 0.02);
       }
       this.prevVh = f.vh;
@@ -409,6 +413,12 @@ export class Ragdoll {
         const dvx = (gvx - (hip.x - hip.px)) * (down ? 0.08 : 0.3);
         const ex = (target.pts[2].x - hip.x) * 0.06;
         for (const p of P) { p.px -= dvx; p.x += ex; p.px += ex; }
+        // ...and up and down while the game has him in the air: the doll falls when he does
+        if (f.h > 1 && !down) {
+          const dvy = (-f.vh / 60 - (hip.y - hip.py)) * 0.3;
+          const ey = (target.pts[2].y - hip.y) * 0.06;
+          for (const p of P) { p.py -= dvy; p.y += ey; p.py += ey; }
+        }
       }
       // settling: once he's been down a moment, the body lets go into the painted pose
       // (a cut-off piece just comes to rest where it fell)

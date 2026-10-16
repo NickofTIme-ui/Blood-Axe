@@ -11,6 +11,7 @@
 import { StateMachine } from '../core/StateMachine.js';
 import { FIGHTER_STATES } from './fighterStates.js';
 import { STEP, FOOT } from '../stage/Terrain.js';
+import { JUGGLE } from '../combat/Juggle.js';
 
 let nextId = 1;
 
@@ -172,7 +173,9 @@ export class Fighter {
       else if (wasGrounded && this.vh <= 0 && this.h > this.floor && this.h - this.floor <= STEP) this.h = this.floor;
     }
     if (this.h > this.floor || this.vh > 0) {
-      this.vh -= this.stats.gravity * dt;
+      // (a flung enemy falls hard: combat/Juggle.js fallGravity)
+      const heavy = this.vh < 0 && this.team !== 'player' && this.state === 'knockdown';
+      this.vh -= this.stats.gravity * (heavy ? JUGGLE.fallGravity : 1) * dt;
       this.h += this.vh * dt;
       if (this.h <= this.floor) {
         this.landedFrom = this.peakH !== undefined ? this.peakH - this.floor : 0;
