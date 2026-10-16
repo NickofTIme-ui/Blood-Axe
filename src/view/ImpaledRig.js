@@ -18,58 +18,10 @@
 
 import { IMPALE, impalePierce } from '../combat/Finisher.js';
 import { depthScale } from './depths.js';
+import { measure, midAt } from './frameMeasure.js';
 
 const RAD = Math.PI / 180;
 const OVERLAP = 5; // frame px the pieces overlap at each joint (hides the seams)
-
-// The drawn figure inside one frame: its top row and where its middle is at any height.
-const measured = new Map();
-function measure(scene, key, name) {
-  const id = `${key}|${name}`;
-  if (measured.has(id)) return measured.get(id);
-  const fr = scene.textures.getFrame(key, name);
-  const w = fr.cutWidth;
-  const h = fr.cutHeight;
-  let rows = null;
-  let cols = null; // (solid pixels down each column)
-  try {
-    const c = document.createElement('canvas');
-    c.width = w; c.height = h;
-    const ctx = c.getContext('2d', { willReadFrequently: true });
-    ctx.drawImage(fr.source.image, fr.cutX, fr.cutY, w, h, 0, 0, w, h);
-    const d = ctx.getImageData(0, 0, w, h).data;
-    rows = [];
-    cols = new Array(w).fill(0);
-    for (let y = 0; y < h; y++) {
-      let x0 = -1;
-      let x1 = -1;
-      for (let x = 0; x < w; x++) {
-        if (d[(y * w + x) * 4 + 3] > 40) { if (x0 < 0) x0 = x; x1 = x; cols[x]++; }
-      }
-      rows.push(x0 < 0 ? null : [x0, x1]);
-    }
-  } catch { rows = null; }
-  const m = { rows, cols: rows ? cols : null, top: rows ? Math.max(0, rows.findIndex((r) => r)) : 0 };
-  if (rows) { // the figure's box (for the lying pose)
-    m.y0 = m.top;
-    m.y1 = rows.length - 1 - [...rows].reverse().findIndex((r) => r);
-    m.x0 = Math.min(...rows.filter((r) => r).map((r) => r[0]));
-    m.x1 = Math.max(...rows.filter((r) => r).map((r) => r[1]));
-  }
-  measured.set(id, m);
-  return m;
-}
-// centre of the body across a few rows around y (frame px), or `fallback`
-function midAt(m, y, fallback) {
-  if (!m.rows) return fallback;
-  let a = 0;
-  let n = 0;
-  for (let k = -4; k <= 4; k++) {
-    const r = m.rows[Math.round(y) + k];
-    if (r) { a += (r[0] + r[1]) / 2; n++; }
-  }
-  return n ? a / n : fallback;
-}
 
 class Spring {
   constructor() { this.a = 0; this.v = 0; }

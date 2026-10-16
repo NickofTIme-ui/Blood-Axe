@@ -390,7 +390,17 @@ export class SpriteCuts {
     const b = this.scene.world?.bounds;
     for (const p of this.pieces) {
       p.age++;
-      if (p.mode === 'perch') {
+      if (p.mode === 'rag') {
+        // what's left of him as a ragdoll (view/Ragdoll.js, SpriteEnemyView.ragdollCut):
+        // the piece itself is only where its cut end is now, pointing out of the wound
+        const R = p.rag;
+        R.step(p.env, R.face, R.k, 1);
+        const P = R.pts;
+        const a = P[p.ragJoint]; const o = P[p.ragOther];
+        const ux = a.x - o.x; const uy = a.y - o.y;
+        p.x = a.x; p.h = p.z - a.y;
+        p.rot = p.bleedDir < 0 ? Math.atan2(ux, -uy) : Math.atan2(-ux, uy);
+      } else if (p.mode === 'perch') {
         // sitting on its own legs, sliding very slowly along the cut, swaying
         if (p.age < 60) p.x += p.dir * 0.12;
         p.rot = Math.sin(p.age * 0.22) * 0.03 * Math.max(0, 1 - p.age / 90) - p.dir * Math.min(0.06, p.age * 0.001);
@@ -482,11 +492,13 @@ export class SpriteCuts {
         p.cont.alpha = Math.max(0, 1 - (p.age - 480) / 60);
         img.setAlpha(p.cont.alpha);
       }
+      p.rag?.look(p.z, p.cont.alpha, false, null, null);
     }
     const gone = this.pieces.filter((p) => p.age > 540);
     for (const p of gone) {
       p.dead = true;
       p.img.destroy();
+      p.rag?.destroy();
       if (p.tex && this.scene.textures.exists(p.tex)) this.scene.textures.remove(p.tex);
     }
     if (gone.length) this.pieces = this.pieces.filter((p) => p.age <= 540);
@@ -514,6 +526,7 @@ export class SpriteCuts {
   clear() {
     for (const p of this.pieces) {
       p.img.destroy();
+      p.rag?.destroy();
       if (p.tex && this.scene.textures.exists(p.tex)) this.scene.textures.remove(p.tex);
     }
     this.pieces = [];

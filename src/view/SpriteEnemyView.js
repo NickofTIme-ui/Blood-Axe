@@ -15,6 +15,7 @@ import { movePhase } from '../combat/MoveRunner.js';
 import { P as ART_PX } from './enemyArt.js';
 import { drawSmear, smearSparks } from './Smear.js';
 import { ImpaledRig } from './ImpaledRig.js';
+import { Ragdoll } from './Ragdoll.js';
 import { depthScale } from './depths.js';
 import { Heading, headingAnim } from './Heading.js';
 import { applyBurn } from '../effects/Burn.js';
@@ -258,14 +259,14 @@ export class SpriteEnemyView {
     this.smear.clear();
     this.hook?.setVisible(false);
     this.applyCut();
-    if (P.hidden || this.cutAway) { this.sprite.setVisible(false); this.rig?.hide(); return; }
+    if (P.hidden || this.cutAway) { this.sprite.setVisible(false); this.rig?.hide(); this.rag?.hide(); return; }
 
     // lost an arm: the scared one-armed art — or, without it, the doll (shows the stump)
     const A = this.animSet();
     const doll = !A;
     P.root.setVisible(doll);
     this.sprite.setVisible(!doll);
-    if (doll) return;
+    if (doll) { this.rag?.hide(); return; }
     if (A !== this.A) { this.A = A; this.lastWalkRef = null; this.walkHold = 0; }
     // scared = lost an arm (drawn with the scared art if it exists, else the normal art)
     const scared = !!(f.maimed?.armF || f.maimed?.armB);
@@ -290,6 +291,9 @@ export class SpriteEnemyView {
       return;
     }
     this.rig?.hide();
+
+    // floored, or dead: he goes down as dead weight (view/Ragdoll.js), not one stiff picture
+    if (this.ragdoll(f, st, A, P.visFacing, dt)) return;
 
     // same whole-body tint language as the doll: hit flash, wind-up telegraph, stagger
     const s = this.sprite;
@@ -474,6 +478,76 @@ export class SpriteEnemyView {
     }
   }
 
+  // Knocked down or killed: the ragdoll draws him from the moment the blow's frozen instant
+  // ends until he gets up (the painted get-up starts from the very pose the doll settles
+  // into) or his body fades. Returns true while it's drawing him.
+  ragdoll(f, st, A, face, dt) {
+    const down = (st === 'knockdown' || st === 'dead') && A.lying;
+    if (!down) { this.rag?.hide(); return false; }
+    const rag = this.rag ?? (this.rag = new Ragdoll(this.scene, this.sheet, this.sheet.key.replace(/^enemy-/, '')));
+    const k = depthScale(f.z) / this.res * (f.stats?.size ?? 1);
+    if (!rag.active) {
+      // the frozen instant of the blow keeps his painted hit pose; he falls when it ends
+      if (f.hitstop > 0 && st === 'knockdown' && f.lyingSince === null) { this.setFrameRef(A.hit.frames[0]); return false; }
+      if (!rag.setPose(A.lying.frames[0])) return false;
+      const kind = st === 'knockdown' ? (f.lyingSince === null ? 'knock' : 'lying') : (f.deadAge ?? 0) > 3 ? 'lying' : 'drop';
+      rag.start(f, face, k, kind);
+    }
+    if (f.health <= 0) rag.release();
+    rag.step(f, rag.face, k, f.hitstop > 0 ? 0 : Math.min(4, dt));
+    let alpha = 1;
+    if (st === 'dead') {
+      const age = f.deadAge ?? 0; // (stops counting while the body is still burning)
+      alpha = Math.max(0, 1 - Math.max(0, age - (f.burn?.heat > 0.3 ? 370 : 100)) / 50);
+    }
+    rag.look(f.z, alpha, f.flash > 0 && (f.flash > 3 || this.puppet.age % 4 < 2), f.burn, applyBurn);
+    this.sprite.setVisible(false);
+    return true;
+  }
+
+  // A killing blow cut him in two (effects/Gore.js cutSprite): what's left of him that has
+  // joints goes down as a ragdoll too — the headless body crumples, the legs fold, the
+  // top half flops as it flies — instead of a stiff cut-out toppling over. The cut pieces
+  // (effects/SpriteCut.js) keep bleeding from where the ragdoll's cut end is.
+  //   which joints each half keeps: 0 head, 1 neck, 2 hips, 3 knees, 4 feet
+  ragdollCut(type, upper, lower) {
+    const plan = { decap: [null, [1, 4]], headPop: [null, [1, 4]], halfH: [[0, 2], [2, 4]], limbs: [[0, 3], [3, 4]] }[type];
+    const ref = this.A?.lying?.frames[0];
+    if (!plan || !ref) return;
+    const f = this.f;
+    const face = this.puppet.visFacing;
+    const k = depthScale(f.z) / this.res * (f.stats?.size ?? 1);
+    const env = { z: f.z, floor: f.floor, stats: { gravity: f.stats.gravity } };
+    const gearId = this.sheet.key.replace(/^enemy-/, '');
+    const halves = [[upper, plan[0]], [lower, plan[1]]];
+    const strayTo = plan[1] ? lower : upper; // (the gear of the half that isn't a ragdoll)
+    const strays = { covered: (band) => plan.some((r) => r && band >= r[0] && band < r[1]) };
+    for (const [piece, range] of halves) {
+      if (!piece || !range) continue;
+      const r = new Ragdoll(this.scene, this.sheet, gearId);
+      if (!r.setPose(ref)) { r.destroy(); continue; }
+      const top = piece === upper;
+      const vel = top ? { x: (piece.vx ?? 0) / 60, y: -(piece.vh ?? 0) / 60 } : { x: 0, y: 0 };
+      const spin = top ? Math.max(-3, Math.min(3, (piece.spin ?? 0) / 60 * 18)) : 0;
+      r.start(f, face, k, top ? 'fly' : 'drop', { range, free: true, vel, spin, strays: piece === strayTo ? strays : null });
+      const j = top ? range[1] : range[0];         // the cut end
+      Object.assign(piece, { rag: r, mode: 'rag', env, ragJoint: j, ragOther: top ? j - 1 : j + 1, bandOff: { x: 0, y: 0 } });
+      piece.img.setVisible(false);
+    }
+  }
+
+  // A blow is about to cut him up (effects/Gore.js cutSprite): if he's down as a ragdoll,
+  // he's the painted lying pose again for the cut.
+  prepareCut() {
+    if (!this.rag?.active) return;
+    const f = this.f;
+    this.rag.hide();
+    const ref = this.A.lying?.frames[0];
+    if (ref) this.setFrameRef(ref);
+    const k = depthScale(f.z) / this.res * (f.stats?.size ?? 1);
+    this.sprite.setVisible(true).setPosition(f.x, f.z - f.h).setScale(k * this.puppet.visFacing, k).setAngle(0).setAlpha(1);
+  }
+
   // Chain throws (meat hook, sickle): the thrown item flies out on a chain from the
   // throwing hand to the end of the hitbox, then reels back in (doll's timing).
   drawHook() {
@@ -506,6 +580,7 @@ export class SpriteEnemyView {
   hideAll() {
     this.puppet.hideAll();
     this.sprite.setVisible(false);
+    this.rag?.hide();
     this.chain.clear();
     this.hook?.setVisible(false);
   }
@@ -517,5 +592,6 @@ export class SpriteEnemyView {
     this.smear.destroy();
     this.hook?.destroy();
     this.rig?.destroy();
+    this.rag?.destroy();
   }
 }
