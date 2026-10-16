@@ -113,8 +113,9 @@ const KICKED = { kinds: ['crate', 'chest'], speed: 620, range: 560, lane: 26, ra
 // its shadow growing on the ground, then comes down on whoever is under it, either side
 // (enemies too). `when: 'rage'` beams only fall while the section's boss is raging.
 // The stables' stampede: px a frame, the space between horses, how close a horse must be
-// to run you down (each side of him), the damage
-const STAMPEDE = { period: 330, warn: 80, speed: 13, gap: 120, reach: 46, damage: 26 };
+// to run you down (each side of him), the damage, and how far sideways a horse goes for
+// each px it comes down the yard on its way out of the stable door to its lane
+const STAMPEDE = { period: 330, warn: 90, speed: 13, gap: 120, reach: 46, damage: 26, slant: 1.1 };
 // The mine's collapse: how far ahead of the falling rock it still hits you, the damage,
 // how far on it throws him (and how much firm ground there must be: the knockdown carries him
 // on), and how far behind the hindmost hero it falls before it runs at `chaseMult` its speed
@@ -924,29 +925,61 @@ export class Stage {
     }
   }
 
-  // A stampede lane (the village stables): `count` horses burst out at x0 and run the lane
-  // to x1 (or back, dir -1), every `period` frames, `runs` times, then they're gone.
-  // Whoever is in the lane when they pass is trampled: knocked flat and thrown along it.
-  // Its state for the view: stampedeState(hz) -> { phase: 'idle'|'warn'|'run', warnT, heads }
+  // A stampede lane (the village stables): `count` horses burst out of the stable door
+  // (`door`: {x, z}, its threshold), slant down across the yard to their lane (z) and run
+  // it flat out to its end (x1, or x0 for dir -1), every `period` frames, `runs` times, then
+  // they're gone. Each run is warned first (`warn` frames: the path it will take lights up).
+  // Whoever is in their way when they pass is trampled: knocked flat and thrown along it.
+  // (No door: they run the whole lane, from x0, or x1 going back.)
+  // Its state for the view: stampedeState(hz) -> { phase: 'idle'|'warn'|'run', warnT, heads, dir, path }
+  // (heads: { x, z, i, out }: out = px it has come out of the door)
+  stampedePath(hz) {
+    if (hz.path) return hz.path;
+    const dir = hz.dir ?? 1;
+    const end = dir > 0 ? hz.x1 : hz.x0;
+    const d = hz.door;
+    const pts = d
+      ? [{ x: d.x, z: d.z }, { x: d.x + dir * Math.max(0, hz.z - d.z) * STAMPEDE.slant, z: hz.z }, { x: end, z: hz.z }]
+      : [{ x: dir > 0 ? hz.x0 : hz.x1, z: hz.z }, { x: end, z: hz.z }];
+    const segs = [];
+    let len = 0;
+    for (let i = 1; i < pts.length; i++) {
+      const l = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z);
+      segs.push({ a: pts[i - 1], b: pts[i], s0: len, l });
+      len += l;
+    }
+    hz.path = { dir, pts, segs, len };
+    return hz.path;
+  }
+
+  // the point s px along a stampede's path (on past its end, the way the last stretch runs)
+  stampedeAt(path, s) {
+    const sg = path.segs.find((q) => s <= q.s0 + q.l) ?? path.segs[path.segs.length - 1];
+    const u = sg.l ? (s - sg.s0) / sg.l : 0;
+    return { x: sg.a.x + (sg.b.x - sg.a.x) * u, z: sg.a.z + (sg.b.z - sg.a.z) * u };
+  }
+
   stampedeState(hz) {
     const P = hz.period ?? STAMPEDE.period;
     const W = hz.warn ?? STAMPEDE.warn;
-    if (!hz.live || hz.lt < 0) return { phase: 'idle', warnT: 0, heads: [] };
+    const path = this.stampedePath(hz);
+    const idle = { phase: 'idle', warnT: 0, heads: [], dir: path.dir, path };
+    if (!hz.live || hz.lt < 0) return idle;
     const k = hz.lt % P;
-    if (hz.lt >= P * (hz.runs ?? Infinity)) return { phase: 'idle', warnT: 0, heads: [] };
-    if (k < W) return { phase: 'warn', warnT: k / W, heads: [] };
-    const dir = hz.dir ?? 1;
-    const start = dir > 0 ? hz.x0 : hz.x1;
-    const end = dir > 0 ? hz.x1 : hz.x0;
-    const head = start + dir * (k - W) * STAMPEDE.speed;
+    if (hz.lt >= P * (hz.runs ?? Infinity)) return idle;
+    if (k < W) return { ...idle, phase: 'warn', warnT: k / W };
+    const lead = (k - W) * STAMPEDE.speed;
     const heads = [];
     for (let i = 0; i < (hz.count ?? 3); i++) {
-      const x = head - dir * i * STAMPEDE.gap;
+      const out = lead - i * STAMPEDE.gap;
+      if (out < 0 || out > path.len + STAMPEDE.gap) continue; // (still inside, or gone)
+      const at = this.stampedeAt(path, out);
       // (a little out of line, so they read as a herd, not a train)
-      const z = hz.z + ((i * 37) % 3 - 1) * hz.d * 0.22;
-      if ((x - start) * dir >= 0 && (end - x) * dir >= -STAMPEDE.gap) heads.push({ x, z, i });
+      at.z += ((i * 37) % 3 - 1) * hz.d * 0.22;
+      heads.push({ x: at.x, z: at.z, i, out });
     }
-    return { phase: heads.length ? 'run' : 'idle', warnT: 0, heads, dir };
+    if (!heads.length) return idle;
+    return { ...idle, phase: 'run', heads };
   }
 
   updateStampede(hz) {
@@ -958,7 +991,9 @@ export class Stage {
     hz.lt++;
     if (hz.lt < 0) return;
     const S = this.stampedeState(hz);
-    if (S.phase === 'warn' && hz.lt % (hz.period ?? STAMPEDE.period) === 0) this.world.events.emit('stampedeWarn', { hazard: hz });
+    const k = hz.lt % (hz.period ?? STAMPEDE.period);
+    if (S.phase === 'warn' && k === 0) this.world.events.emit('stampedeWarn', { hazard: hz });
+    if (k === (hz.warn ?? STAMPEDE.warn) && S.phase === 'run') this.world.events.emit('stampedeBurst', { hazard: hz });
     if (S.phase !== 'run') return;
     for (const f of this.world.fighters) {
       if (f.h > 70) continue; // (jumped clear)

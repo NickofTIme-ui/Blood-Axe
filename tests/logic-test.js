@@ -3068,7 +3068,7 @@ test('campaign: no section\'s fight is held open by a man stuck off-screen (the 
   }
 });
 
-test('village: the stables: smashing the gate bar frees the horses; they stampede the yard in lanes, trampling both sides, a few times, then they are gone', () => {
+test('village: the stables: smashing the gate bar frees the horses; they come out of the stable door and stampede the yard in lanes, trampling both sides, a couple of times, then they are gone', () => {
   const world = new World({ seed: 4 });
   const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 6300, z: 300, controller: new Scripted() }));
   const st = new Stage(world, STAGE_VILLAGE);
@@ -3079,21 +3079,35 @@ test('village: the stables: smashing the gate bar frees the horses; they stamped
   st.fightOn = true; st.waveIndex = 99; // (no waves: this is about the horses)
   const lanes = st.hazards.filter((h) => h.type === 'stampede');
   assert(lanes.length === 3, 'three lanes');
+  assert(lanes.some((h) => h.dir > 0) && lanes.some((h) => h.dir < 0), 'the herd turns both ways out of the door');
   for (let i = 0; i < 400; i++) { world.tick(); st.update(); }
   assert(lanes.every((h) => !h.live), 'nothing runs while they are shut in');
   st.breakProp(st.props.find((pr) => pr.tag === 'stables'), 1);
   for (let i = 0; i < 3; i++) { world.tick(); st.update(); }
   assert(st.story.rescued.has('horses'), 'the horses are freed');
-  // an Ashen man standing in the middle lane, and the hero (no longer invincible) in the first
-  const e = createEnemy(world, 'grunt', 6700, 420);
+  // whoever broke the bar has the whole warning to get clear: nothing runs for a beat, then
+  // the first path lights up before a horse comes out
+  assert(lanes.every((h) => st.stampedeState(h).phase === 'idle'), 'a beat for the gate to swing open');
+  // an Ashen man standing in the lane that turns left, and the hero (no longer invincible)
+  // in the first one, which turns right
+  const e = createEnemy(world, 'grunt', 6000, 430);
   e.entering = false; e.controller = new Controller();
   p.invincible = false; p.x = 6800; p.z = 330;
   const trampled = new Set();
   world.events.on('hazardHit', (ev) => { if (ev.kind === 'trample') trampled.add(ev.fighter === p ? 'hero' : 'grunt'); });
-  let warns = 0;
+  let warns = 0; let firstOut = null; let warnedFirst = false;
   world.events.on('stampedeWarn', () => warns++);
-  for (let i = 0; i < 400; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; if (e.alive) { e.x = 6700; e.z = 420; } if (p.state === 'idle') { p.x = 6800; p.z = 330; } }
-  assert(trampled.has('grunt') && trampled.has('hero'), `the horses run down anyone in their lane (${[...trampled]})`);
+  for (let i = 0; i < 400; i++) {
+    world.tick(); st.update(); p.health = p.stats.maxHealth;
+    if (e.alive) { e.x = 6000; e.z = 430; } if (p.state === 'idle') { p.x = 6800; p.z = 330; }
+    for (const h of lanes) {
+      const S = st.stampedeState(h);
+      if (!firstOut && S.phase === 'run') { firstOut = S.heads[0]; warnedFirst = warns > 0; }
+    }
+  }
+  assert(firstOut && Math.abs(firstOut.x - 6370) < 20 && firstOut.z < 282, `the first horse comes out of the stable door (${firstOut && `${Math.round(firstOut.x)},${Math.round(firstOut.z)}`})`);
+  assert(warnedFirst, 'its path is warned before it comes');
+  assert(trampled.has('grunt') && trampled.has('hero'), `the horses run down anyone in their way (${[...trampled]})`);
   assert(warns >= 2, `each run is warned first (${warns})`);
   for (let i = 0; i < 1400; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; }
   assert(lanes.every((h) => st.stampedeState(h).phase === 'idle'), 'after their runs they are gone');

@@ -14,7 +14,9 @@
 //            and broken/open)
 //   props    breakables repainted: the prop kind they replace (`prop-<kind>` and, with
 //            `pair`, `prop-<kind>-broken`)
-//   strips   frame strips cut into `frames` equal cells: `horse-gallop-0..5`
+//   strips   frame strips cut into `frames` equal cells: `horse-gallop-0..5` (`key` as
+//            for layers, or 'figure': black cut by flood fill from the edges; `grade`:
+//            view/levelArt.js gradeSheet; `trim`: the empty rows above and below cut away)
 //   surfaces the ground you stand and jump on (terrain blocks: view/TerrainView.js), as
 //            opaque seamless tiles `surf_<name>.png`. `fit`: stretched to the face's depth
 //            (a top face, receding into the lane); `px`: drawn this many px tall, repeating
@@ -103,7 +105,10 @@ export const LEVEL_ART = {
   },
   fx: {
     dir: 'assets/fx/',
-    strips: { 'horse-gallop': { file: 'horse_gallop.png', frames: 6, key: 'black' } },
+    // (key 'figure': cut from its black by flood fill, so the dark coats stay solid; trimmed
+    // to the rows the horses use, so they aren't squashed into their display size; graded
+    // with an ink line and firelit edges so they read on the dark yard)
+    strips: { 'horse-gallop': { file: 'horse_gallop.png', frames: 6, key: 'figure', trim: true, grade: { contrast: 1.12, saturation: 1.1, outline: 3, rim: 0.6 } } },
   },
 };
 

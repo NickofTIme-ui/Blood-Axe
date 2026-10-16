@@ -253,11 +253,33 @@ export class VillageBackdrop {
     const n = this.stage.story?.npcs.find((q) => q.id === 'horses');
     const inside = !n || n.state === 'trapped';
     const g = S.g.clear();
+    S.glow?.setVisible(!inside);
     if (S.painted && inside) return; // (the painting has them in it)
     if (!inside) {
-      // the gate hangs open on an empty, burning stall
-      g.fillStyle(COL.fire, 0.35 + 0.1 * Math.sin(t * 0.2)).fillRect(S.gx - 70, S.top - 100, 140, 100);
-      g.fillStyle(0x2a1e16, 1).fillRect(S.gx - 96, S.top - 110, 18, 110).fillRect(S.gx + 78, S.top - 110, 18, 110);
+      // the double gate thrown open on the dark of the stable, the fire at the back of it
+      // (where the stampede comes out: data/stageVillage.js STABLE_DOOR). The painted gate
+      // spans 690..995 of the picture's 1774 px, its leaves 470..795 of 887 down
+      const D = S.painted
+        ? { l: S.gx - 58, r: S.gx + 32, t: S.top - 112, b: S.top - 19 }
+        : { l: S.gx - 80, r: S.gx + 80, t: S.top - 110, b: S.top };
+      const w = D.r - D.l; const h = D.b - D.t;
+      g.fillStyle(0x0a0605, 1).fillRect(D.l, D.t, w, h);
+      // (the fire deep inside: a soft glow, flickering)
+      S.glow ??= this.scene.add.image((D.l + D.r) / 2, D.t + h * 0.6, 'glow').setTint(COL.fire)
+        .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor - 0.94).setDisplaySize(w * 1.1, h * 0.9);
+      S.glow.setAlpha(0.4 + 0.12 * Math.sin(t * 0.2) + 0.08 * Math.sin(t * 0.53));
+      g.fillStyle(0x000000, 0.5).fillRect(D.l, D.b - h * 0.15, w, h * 0.15); // (the floor in shadow)
+      // the two leaves, swung out toward you on their hinges
+      const leaf = (x, sgn) => {
+        const out = sgn * w * 0.32;
+        const pts = [{ x, y: D.t + 6 }, { x: x + out, y: D.t + 14 }, { x: x + out, y: D.b + 8 }, { x, y: D.b }];
+        g.fillStyle(0x24160e, 1).fillPoints(pts, true);
+        g.lineStyle(2, 0x0e0806, 1).strokePoints(pts, true);
+        g.lineStyle(1.5, 0x120a06, 1);
+        for (let k = 1; k < 4; k++) g.lineBetween(x + out * k / 4, D.t + 6 + 8 * k / 4, x + out * k / 4, D.b + 8 * k / 4);
+        g.lineStyle(2.5, 0x1a1412, 1).lineBetween(x, D.t + h * 0.3, x + out, D.t + h * 0.3 + 8).lineBetween(x, D.t + h * 0.75, x + out, D.t + h * 0.75 + 8);
+      };
+      leaf(D.l, -1); leaf(D.r, 1);
       return;
     }
     // three heads rearing and tossing in the dark, the firelight behind them

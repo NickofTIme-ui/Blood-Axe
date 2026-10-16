@@ -5,7 +5,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { LEVEL_ART, SPRITE_SHEETS } from '../data/levelArt.js';
-import { keyLayer, makeSeamless } from './envArt.js';
+import { keyFigure, keyLayer, makeSeamless } from './envArt.js';
 import { importFxStrip } from './stripImporter.js';
 
 // the painted figures that loaded (data/levelArt.js SPRITE_SHEETS): name -> { key, count, fw, fh }
@@ -40,7 +40,7 @@ export function buildLevelArt(scene) {
   const keyed = (from, kind) => (kind === 'opaque' ? T.get(from).getSourceImage() : keyLayer(T.get(from).getSourceImage(), kind));
   const add = (key, canvas) => { if (T.exists(key)) T.remove(key); T.addCanvas(key, canvas); made.push(key); };
   // a canvas of part of an image
-  const part = (img, x, w) => { const c = document.createElement('canvas'); c.width = w; c.height = img.height; c.getContext('2d').drawImage(img, x, 0, w, img.height, 0, 0, w, img.height); return c; };
+  const part = (img, x, w, y = 0, h = img.height) => { const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, x, y, w, h, 0, 0, w, h); return c; };
   for (const [theme, A] of Object.entries(LEVEL_ART)) {
     const have = (name) => T.exists(src(theme, name));
     try {
@@ -68,9 +68,12 @@ export function buildLevelArt(scene) {
       }
       for (const [k, s] of Object.entries(A.strips ?? {})) {
         if (!have(`strip-${k}`)) continue;
-        const c = keyed(src(theme, `strip-${k}`), s.key ?? 'black');
+        const c = s.key === 'figure' ? keyFigure(T.get(src(theme, `strip-${k}`)).getSourceImage()) : keyed(src(theme, `strip-${k}`), s.key ?? 'black');
+        if (s.grade) gradeSheet(c, s.grade);
         const w = Math.floor(c.width / s.frames);
-        for (let i = 0; i < s.frames; i++) add(`${k}-${i}`, part(c, i * w, w));
+        // (trim: the rows any frame uses, cut the same for all so they stay in step)
+        const [y0, y1] = s.trim ? usedRows(c) : [0, c.height];
+        for (let i = 0; i < s.frames; i++) add(`${k}-${i}`, part(c, i * w, w, y0, y1 - y0));
       }
       for (const k of Object.keys(A.surfaces ?? {})) {
         if (!have(`surf-${k}`)) continue;
@@ -97,6 +100,19 @@ export function buildLevelArt(scene) {
     }
   }
   return made;
+}
+
+// The rows of a cut-out canvas that have anything solid in them: [first, last + 1], with a
+// few px to spare (for a strip's frames: the empty sky above and ground below cut away).
+function usedRows(canvas) {
+  const W = canvas.width; const H = canvas.height;
+  const d = canvas.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H).data;
+  let y0 = H; let y1 = 0;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3] > 128) { if (y < y0) y0 = y; y1 = y; break; }
+  }
+  if (y1 < y0) return [0, H];
+  return [Math.max(0, y0 - 6), Math.min(H, y1 + 7)];
 }
 
 // A sheet painted softer and duller than the heroes, graded to sit with them: more

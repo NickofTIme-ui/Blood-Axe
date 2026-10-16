@@ -31,6 +31,9 @@
 //                          sword, and its fire wakes; stragglers to burn; the vow; out
 
 const FULL = { z0: 282, z1: 520 };
+// the stables' double gate (view/VillageView.js draws it open once the horses are freed):
+// where the stampede comes out, on its threshold at the back of the yard
+const STABLE_DOOR = { x: 6370, z: 216 };
 
 export const STAGE_VILLAGE = {
   id: 'village',
@@ -132,8 +135,9 @@ export const STAGE_VILLAGE = {
     },
     {
       // the stables burning at the back of the yard, the horses screaming inside: smash the
-      // bar off the gate and they bolt, three lanes of them in turn, trampling whoever
-      // stands in their way (Ashen men or Oath Keepers). The fight goes on through it.
+      // bar off the gate and they bolt out of it, down the yard and along three lanes in
+      // turn, trampling whoever stands in their way (Ashen men or Oath Keepers). The fight
+      // goes on through it.
       id: 'stables', name: 'THE BURNING STABLES', x0: 5700, x1: 7100,
       spawn: { x: 5760, z: 440 },
       objective: 'Free the horses',
@@ -147,11 +151,14 @@ export const STAGE_VILLAGE = {
       ],
       hazards: [
         { type: 'fire', look: 'cart', x: 6720, z: 330, w: 100, d: 50, phase: 30 },
-        // the stampede (stage/Stage.js updateStampede): out of the stable door, right across
-        // the yard; each lane in turn, a warning of dust and hooves first
-        { type: 'stampede', when: 'freed:horses', x0: 6200, x1: 7140, z: 330, d: 64, period: 330, warn: 80, count: 3, runs: 3, phase: 0 },
-        { type: 'stampede', when: 'freed:horses', x0: 6200, x1: 7140, z: 420, d: 64, period: 330, warn: 80, count: 4, runs: 3, phase: 110 },
-        { type: 'stampede', when: 'freed:horses', x0: 6200, x1: 7140, z: 500, d: 64, period: 330, warn: 80, count: 3, runs: 3, phase: 220 },
+        // the stampede (stage/Stage.js updateStampede): every horse comes out of the stable
+        // door (its threshold, under the painted gate), slants down the yard and turns along
+        // its lane, the lanes in turn and the herd turning a different way each time: the
+        // path lights up first, then they come. A beat after the bar breaks for the gate to
+        // swing open (phase), so whoever smashed it has the whole warning to get clear.
+        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 330, dir: 1, d: 64, period: 330, count: 3, runs: 2, phase: 40 },
+        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 430, dir: -1, d: 64, period: 330, count: 4, runs: 2, phase: 150 },
+        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 500, dir: 1, d: 64, period: 330, count: 3, runs: 2, phase: 260 },
       ],
     },
     {

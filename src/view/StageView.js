@@ -12,6 +12,7 @@ import { playSfx } from '../core/Sfx.js';
 import { buildPropSheet, PROP_HD } from './propSheet.js';
 import { FX } from './stripImporter.js';
 import { BladeChain } from './BladeChain.js';
+import { DANGER } from './dangerCue.js';
 import { cutPieces, keyLayer } from './envArt.js';
 import { drawScorpion, listenScorpion } from './VincentView.js';
 
@@ -951,53 +952,88 @@ export class StageView {
     for (let i = 0; i < 6; i++) w.fillStyle(0xc01808, a * (1 - i / 6)).fillRect(cam.x + i * W * 0.03, cam.y, W * 0.03, H);
   }
 
-  // The stables' stampede (Stage 'stampede'): first dust boiling out of the stable door and
-  // hoofprints flashing along the lane it will take, then the horses themselves, flat out,
-  // manes streaming, embers on their backs. Painted gallop frames (assets/fx/horse_gallop.png)
+  // The stables' stampede (Stage 'stampede'): first its whole path lights up on the ground,
+  // out of the stable door and along the lane, as a red band and big red-white chevrons
+  // racing the way the herd will run (the danger colour, view/dangerCue.js: not orange,
+  // which is the fire's), with dust boiling out of the doorway; then the horses come out of
+  // the dark of the door, growing as they come down the yard, and run it. The path stays
+  // lit, dimmer, while they're on it. Painted gallop frames (assets/fx/horse_gallop.png)
   // when they exist; drawn here until then.
   drawStampede(hz, cam) {
-    const g = hz.g = hz.g ?? this.scene.add.graphics();
-    g.clear();
+    const g = hz.g = hz.g ?? this.scene.add.graphics().setDepth(DEPTH.decals + 2);
+    const hg = hz.hg = hz.hg ?? this.scene.add.graphics();
+    g.clear(); hg.clear();
     const S = this.stage.stampedeState(hz);
-    const on = S.phase !== 'idle' && hz.x1 > cam.x - 200 && hz.x0 < cam.right + 200;
-    g.setVisible(on);
+    const P = S.path;
+    const xs = P.pts.map((q) => q.x);
+    const on = S.phase !== 'idle' && Math.max(...xs) > cam.x - 200 && Math.min(...xs) < cam.right + 200;
+    g.setVisible(on); hg.setVisible(on);
     for (const sp of hz.horseImgs ?? []) sp.setVisible(false);
     if (!on) return;
-    const y = hz.z;
     const t = this.scene.time.now / 16.7;
-    if (S.phase === 'warn') {
-      const w = S.warnT;
-      g.setDepth(hz.z - hz.d / 2);
-      // the lane: a band of churned ground, and arrows of hoofprints pulsing along it
-      g.fillStyle(0x000000, 0.12 + 0.18 * w).fillRect(hz.x0, y - hz.d / 2, hz.x1 - hz.x0, hz.d);
-      const dir = hz.dir ?? 1;
-      for (let x = hz.x0 + 40; x < hz.x1; x += 90) {
-        const a = 0.15 + 0.5 * w * (0.5 + 0.5 * Math.sin(t * 0.3 - x * 0.02 * dir));
-        g.fillStyle(0xffb070, a);
-        g.fillTriangle(x, y - 10, x, y + 10, x + 16 * dir, y);
-      }
-      // dust boiling out at the start
-      const sx = dir > 0 ? hz.x0 : hz.x1;
-      if (Math.floor(t) % 3 === 0) {
-        this.scene.gore.spawn({ x: sx + rand(-20, 40) * dir, z: y + rand(-hz.d / 2, hz.d / 2), h: rand(0, 30), vx: dir * rand(20, 90), vz: 0, vh: rand(10, 50), tint: 0x8a7a64, scale: rand(0.6, 1.2) * (0.5 + w), decal: false, life: 40 });
+    const dir = S.dir;
+    const door = P.pts[0];
+    const warn = S.phase === 'warn';
+    const w = warn ? S.warnT : 1;
+    // the path: a band of churned, red-lit ground...
+    const half = hz.d / 2;
+    const bandA = warn ? 0.12 + 0.2 * w : 0.1;
+    for (const sg of P.segs) {
+      const nx = -(sg.b.z - sg.a.z) / (sg.l || 1); const nz = (sg.b.x - sg.a.x) / (sg.l || 1);
+      g.fillStyle(DANGER.glint, bandA).fillPoints([
+        { x: sg.a.x + nx * half, y: sg.a.z + nz * half }, { x: sg.b.x + nx * half, y: sg.b.z + nz * half },
+        { x: sg.b.x - nx * half, y: sg.b.z - nz * half }, { x: sg.a.x - nx * half, y: sg.a.z - nz * half },
+      ], true);
+    }
+    // ...and chevrons along it, a pulse racing out of the door the way they'll run (faster
+    // and brighter as the warning runs out)
+    const step = 70;
+    const head = warn ? null : Math.max(...S.heads.map((hd) => hd.out));
+    for (let s = 30; s < P.len; s += step) {
+      if (head != null && s < head - 40) continue; // (behind the leader: the herd is the warning now)
+      const at = this.stage.stampedeAt(P, s);
+      const sg = P.segs.find((q) => s <= q.s0 + q.l) ?? P.segs[P.segs.length - 1];
+      const ux = (sg.b.x - sg.a.x) / (sg.l || 1); const uz = (sg.b.z - sg.a.z) / (sg.l || 1);
+      const pulse = 0.5 + 0.5 * Math.sin(t * (0.25 + 0.2 * w) - s * 0.035);
+      const a = warn ? 0.45 + 0.5 * w * pulse + 0.05 : 0.35 + 0.2 * pulse;
+      const sz = 16 + 4 * w * pulse;
+      const chev = (k) => {
+        const tip = { x: at.x + ux * sz * k, y: at.z + uz * sz * k };
+        const l = { x: at.x - ux * sz * 0.5 * k - uz * sz * k, y: at.z - uz * sz * 0.5 * k + ux * sz * k };
+        const r = { x: at.x - ux * sz * 0.5 * k + uz * sz * k, y: at.z - uz * sz * 0.5 * k - ux * sz * k };
+        const m = { x: at.x - ux * sz * 0.05 * k, y: at.z - uz * sz * 0.05 * k };
+        return [tip, r, m, l];
+      };
+      g.fillStyle(0x140808, a * 0.8).fillPoints(chev(1.3), true);
+      g.fillStyle(DANGER.glint, a).fillPoints(chev(1.05), true);
+      g.fillStyle(0xfff0e6, a * (0.4 + 0.6 * pulse)).fillPoints(chev(0.6), true);
+    }
+    if (warn) {
+      // dust boiling out of the doorway, thicker as they come
+      if (Math.floor(t) % 2 === 0) {
+        this.scene.gore.spawn({ x: door.x + rand(-40, 40), z: door.z + rand(0, 20), h: rand(0, 40), vx: dir * rand(10, 80), vz: rand(10, 60), vh: rand(10, 50), tint: 0x8a7a64, scale: rand(0.6, 1.2) * (0.5 + w), decal: false, life: 40 });
       }
       return;
     }
     const tex = this.scene.textures.exists('horse-gallop-0');
     hz.horseImgs ??= [];
     S.heads.forEach((hd, i) => {
-      const k = 1 + (hd.z - 400) / 900;
+      // out of the dark of the door: small and shadowed on the threshold, full size and
+      // firelit once they're out in the yard
+      const emerge = Math.min(1, hd.out / 90);
+      const k = (1 + (hd.z - 400) / 900) * (0.62 + 0.38 * emerge);
       if (tex) {
-        const sp = hz.horseImgs[i] ??= this.scene.add.image(0, 0, 'horse-gallop-0').setOrigin(0.5, 1);
-        sp.setTexture(`horse-gallop-${Math.floor(t * 0.35 + i * 2) % 6}`).setPosition(hd.x, hd.z).setFlipX(S.dir < 0)
-          .setDisplaySize(170 * k, 120 * k).setDepth(hd.z).setVisible(true);
-      } else this.horse(g, hd.x, hd.z, k, S.dir, t * 0.45 + i * 1.7);
-      g.fillStyle(0x000000, 0.35).fillEllipse(hd.x, hd.z, 150 * k, 18 * k);
+        const sp = hz.horseImgs[i] ??= this.scene.add.image(0, 0, 'horse-gallop-0').setOrigin(0.5, 0.97);
+        const shade = Math.round(0x50 + (0xff - 0x50) * emerge);
+        sp.setTexture(`horse-gallop-${Math.floor(t * 0.35 + i * 2) % 6}`).setPosition(hd.x, hd.z).setFlipX(dir < 0)
+          .setScale((140 * k) / sp.frame.height).setDepth(hd.z).setTint((shade << 16) | (shade << 8) | shade).setVisible(true);
+      } else this.horse(hg, hd.x, hd.z, k, dir, t * 0.45 + i * 1.7);
+      g.fillStyle(0x000000, 0.35 * emerge + 0.1).fillEllipse(hd.x, hd.z, 150 * k, 18 * k);
       if (Math.floor(t + i) % 2 === 0) {
-        this.scene.gore.spawn({ x: hd.x - S.dir * 50, z: hd.z + rand(-8, 8), h: rand(0, 14), vx: -S.dir * rand(40, 120), vz: 0, vh: rand(30, 90), tint: 0x7a6a54, scale: rand(0.5, 1), decal: false, life: 30 });
+        this.scene.gore.spawn({ x: hd.x - dir * 50 * k, z: hd.z + rand(-8, 8), h: rand(0, 14), vx: -dir * rand(40, 120), vz: 0, vh: rand(30, 90), tint: 0x7a6a54, scale: rand(0.5, 1), decal: false, life: 30 });
       }
     });
-    g.setDepth(S.heads.length ? Math.max(...S.heads.map((h) => h.z)) + 0.5 : hz.z);
+    hg.setDepth(S.heads.length ? Math.max(...S.heads.map((h) => h.z)) + 0.5 : hz.z);
   }
 
   // a galloping horse, side on (feet at x, z), phase p: a heavy draught horse, flat out
@@ -1254,6 +1290,16 @@ export class StageView {
       if (this.scene.player.x > hz.x0 - 700 && this.scene.player.x < hz.x1 + 700) {
         playSfx(this.scene, 'kick', { volume: 0.7, pitch: -2000, minGapMs: 0 });
         this.scene.fx?.shake(3, 40);
+      }
+    });
+    ev.on('stampedeBurst', ({ hazard: hz }) => {
+      // the herd breaks out of the door: a thud of hooves and a burst of dust and embers
+      const d = hz.door;
+      if (!d || Math.abs(this.scene.player.x - d.x) > 1100) return;
+      playSfx(this.scene, 'kick', { volume: 0.8, pitch: -2400, minGapMs: 0 });
+      this.scene.fx?.shake(5, 30);
+      for (let i = 0; i < 14; i++) {
+        this.scene.gore.spawn({ x: d.x + rand(-45, 45), z: d.z + rand(0, 24), h: rand(0, 60), vx: (hz.dir ?? 1) * rand(30, 160), vz: rand(20, 120), vh: rand(40, 140), tint: i % 4 ? 0x8a7a64 : 0xff8a30, scale: rand(0.7, 1.5), decal: false, life: rand(30, 55) });
       }
     });
     ev.on('shellLaunch', ({ hazard: hz }) => {

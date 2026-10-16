@@ -163,6 +163,43 @@ export function keyLayer(img, kind) {
   return c;
 }
 
+// A painted figure on flat black (the stampede's horses): only the black reached from the
+// image's edges is background, so a dark coat inside the figure stays solid (keyLayer
+// would see through everything darker than mid-grey and leave a ghost). The pixels along
+// the cut get a soft edge from their brightness. Returns a canvas.
+export function keyFigure(img, T = 24) {
+  const W = img.width;
+  const H = img.height;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const data = ctx.getImageData(0, 0, W, H);
+  const px = data.data;
+  const lum = (p) => Math.max(px[p * 4], px[p * 4 + 1], px[p * 4 + 2]);
+  const bg = new Uint8Array(W * H);
+  const stack = [];
+  const push = (p) => { if (!bg[p] && lum(p) < T) { bg[p] = 1; stack.push(p); } };
+  for (let x = 0; x < W; x++) { push(x); push((H - 1) * W + x); }
+  for (let y = 0; y < H; y++) { push(y * W); push(y * W + W - 1); }
+  while (stack.length) {
+    const p = stack.pop();
+    const x = p % W;
+    if (x > 0) push(p - 1);
+    if (x < W - 1) push(p + 1);
+    if (p >= W) push(p - W);
+    if (p < W * (H - 1)) push(p + W);
+  }
+  for (let p = 0; p < W * H; p++) {
+    if (bg[p]) { px[p * 4 + 3] = 0; continue; }
+    const x = p % W;
+    const edge = (x > 0 && bg[p - 1]) || (x < W - 1 && bg[p + 1]) || (p >= W && bg[p - W]) || (p < W * (H - 1) && bg[p + W]);
+    if (edge) px[p * 4 + 3] = Math.round(255 * Math.min(1, Math.max(0.25, (lum(p) - T) / (70 - T))));
+  }
+  ctx.putImageData(data, 0, 0);
+  return c;
+}
+
 // Every painted layer in data/parallax.js that loaded: cut out (if keyed), its ends
 // blended so it repeats, as texture `plx-<name>`. Returns the names that are ready.
 export function buildParallax(scene, layers) {
