@@ -720,3 +720,9 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - Live on the page and embedded. 338 MB zip, 36 parts, same chunked Chrome upload as before; SHA-256 checked in the page before handing it to itch.
 - Includes Rurik's birthright (Oathkeeper given at the end of level 1, the repainted strips swapped in), the first-execution softlock fix and Nicholas's walk. Checked in the running build: boots, build stamp matches, all 21 `strip-ulricOath-*` textures load. The ceremony itself is still not watched in play.
 - Online play: both players need this build (refresh the page).
+
+## Cloud, 2026-10-16: Vexa's idle steadied (not on itch)
+- Nick: "Vexa's idle animation is horrible". Cause: it cycled through all six poses of `rogue_idle.png` at 6 fps (0,1,2,1,0,...). ChatGPT paints every pose afresh and a few px off the last (up to 2.5 game px), so she shivered in place and her hair, cloak and armour crawled like static.
+- Fix (`src/data/heroStrips.js`, data only): the idle strip gets a `nudge` per pose that lines its body up on pose 0's, and her idle now holds pose 0 with the same procedural breathing Rurik uses (`breathe: true`), playing the dagger flourish (pose 3) for half a second every ~4 s. Poses 1, 2, 4 and 5 are no longer used.
+- Before/after GIF: project files `vexa-idle/vexa-idle-before-after.gif`. Tests pass; checked by cutting the strip with the game's own importer, not yet watched in a running game.
+- Art, optional: a real breathing idle needs poses that differ only in what moves. If Nick wants one, ask ChatGPT for poses edited from one image (same pixels, only chest/hair/cloak tips changed) rather than a fresh 6-pose row.

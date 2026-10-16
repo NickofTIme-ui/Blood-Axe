@@ -53,7 +53,9 @@ export const HERO_STRIPS = {
     strips: {
       run: strip('rogue', 'run', 8, { align: 'median', ground: 'drawn', target: 89 }),
       runU: strip('rogue', 'runU', 8, { align: 'median', ground: 'drawn', target: 89 }), // from behind (up the screen)
-      idle: strip('rogue', 'idle', 6), // coiled guard; pose 4 is a dagger flourish (optional)
+      // coiled guard; pose 3 is a dagger flourish (optional). (nudge: ChatGPT drew each pose a
+      // few px off the last; these line every pose's body up on pose 0's, or she shivers)
+      idle: strip('rogue', 'idle', 6, { nudge: [[0, 0], [3, 1], [2, -1], [5, -1], [4, 1], [2, -1]] }),
       combo1: strip('rogue', 'combo1', 4), // guard, cocked, slash, follow-through
       combo2: strip('rogue', 'combo2', 4),
       combo3: strip('rogue', 'combo3', 4),
@@ -119,8 +121,10 @@ export const HERO_ANIMS = {
     idle: { frames: seq('combo1', [0]), fps: 1, loop: true, breathe: true },
     walk: { frames: seq('run', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 15, loop: true },
     walkU: { needs: ['runU'], frames: seq('runU', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 15, loop: true },
-    // her idle: the coiled guard breathing, with the flourish (pose 4) now and then
-    idleStrip: { needs: ['idle'], frames: seq('idle', [0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 3, 4, 5]), fps: 6, loop: true },
+    // her idle: the coiled guard held and breathing, with the dagger flourish (pose 3) every
+    // few seconds. (Not a cycle through her six poses: each is painted afresh, so flicking
+    // between them makes her hair, cloak and armour crawl like static.)
+    idleStrip: { needs: ['idle'], frames: [...seq('idle', Array(22).fill(0)), ...seq('idle', [3, 3, 3])], fps: 6, loop: true, breathe: true },
     block: { frames: seq('moves', [3]) },
     light1: swing(seq('combo1', [0, 1]), seq('combo1', [2]), seq('combo1', [3])),
     light2: swing(seq('combo2', [0, 1]), seq('combo2', [2]), seq('combo2', [3])),
