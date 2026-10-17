@@ -92,6 +92,7 @@ const REVIVE_AFTER = 360; // ticks a fallen hero lies there before he rises besi
 const ADVANCE_AT = 300;  // px past the next section's start that locks you into it
 const SEALED = 200;      // px: a wall across the lane this tall can't be climbed (nobody comes on from behind it)
 const STUCK_AFTER = 180;  // frames a man walking on can stand stuck (a stream, a ledge) before he's brought round
+const ENTRANCE_PACE = 1.35; // a boss's entrance (walk in, the field frozen, the awe after) runs this much faster than its data
 
 // Fire grate: idle -> glowing warning -> eruption (frames)
 const FIRE = { period: 210, warn: 110, burst: 160, tick: 14, damage: 9 };
@@ -582,11 +583,15 @@ export class Stage {
     }
     if (E) {
       const toX = Math.max(this.world.bounds.minX + 60, sec.x1 - E.to);
-      boss.fsm.change('bossEntrance', { toX, speed: E.speed, stepEvery: E.stepEvery });
-      if (this.twins) this.twins[1].fsm.change('bossEntrance', { toX: toX + 70, speed: E.speed, stepEvery: E.stepEvery });
+      // every entrance runs ENTRANCE_PACE times faster than its level data says: a quicker
+      // stride, stomps closer together (the walk cycle keeps time with them), a shorter awe
+      const speed = E.speed * ENTRANCE_PACE;
+      const stepEvery = Math.max(1, Math.round(E.stepEvery / ENTRANCE_PACE));
+      boss.fsm.change('bossEntrance', { toX, speed, stepEvery });
+      if (this.twins) this.twins[1].fsm.change('bossEntrance', { toX: toX + 70, speed, stepEvery });
       // the whole field stands frozen while he comes (and a moment after): heroes, every
       // other foe (his escort too), arrows in flight, traps (World.holdStill)
-      const frames = Math.ceil(((x - toX) / E.speed) * 60) + (E.awe ?? 0);
+      const frames = Math.ceil(((x - toX) / speed) * 60) + Math.round((E.awe ?? 0) / ENTRANCE_PACE);
       if (E.freeze !== false) this.world.holdStill(frames, this.twins ?? [boss]);
     }
     if (def.escort?.length) this.spawnWave(def.escort); // (the men or dogs he brings with him)

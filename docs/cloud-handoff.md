@@ -829,3 +829,9 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - Spares in `assets/incoming/`: `rurik/ulric_leapsmash_alt.png`, `hearthfire_strip_try1.png`. Not made: the People's King portrait (optional).
 - The pillar strip's smoke came back tinted pink by the magenta; the pink was pulled out of the file itself.
 - Checked: logic tests pass; in headless Chromium every new strip cuts at boot and stands the same size as his other strips (contact sheet), the fire strips load, and the Mill Yard shows the painted posts (one wrecked) under painted arrows. The moves themselves (throw, jump, block, hits, Leap Smash, Shoulder Smash, the pillar, the Hearthfire Bolt) were not watched in play.
+
+## Cloud, 2026-10-17: boss entrances 35% faster (not on itch)
+- Nick: "when a boss comes out the freeze and walk takes a little too long lets speed that whole thing up by 35 percent".
+- `ENTRANCE_PACE = 1.35` at the top of `src/stage/Stage.js`, applied in `spawnBoss`: every boss (and twin) walks in 1.35x faster, his stomps come 1.35x more often (the walk cycle keeps time with them, so feet still land on the shakes), and the frozen "awe" after he arrives is cut by the same factor. The field's freeze is worked out from the faster walk, so it ends with him. The level data (`boss.entrance` in each `stage*.js`) is unchanged; set the constant back to 1 to undo.
+- The whole sequence now takes 1/1.35 of the time (about 26% less), e.g. a standard entrance goes from about 8.1 s to 6.0 s. If Nick meant 35% less time, use 1.54.
+- Checked: logic tests pass. Not watched in play.
