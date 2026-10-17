@@ -7,8 +7,8 @@
 // game frames so both online machines play it on the same tick.
 //
 // Every section boss gets it (the twins: the one left standing), except:
-//   boss.sentence: false   (the Ore Crusher: a machine has nothing to answer for)
-//   stats.machine          (the same, by type)
+//   boss.sentence: false   (a machine has nothing to answer for)
+//   stats.machine          (the same, by type: the Ore Crusher, should one be a boss)
 //   the section a `sequence` ends (the king's judgment: stage/Sequence.js)
 // Stage data on the boss: sentence: { speaker, last, silent, crimes: [line, ...] }
 //   speaker  how his own line is labelled (default: the first word of his name)

@@ -201,7 +201,8 @@ export const ENEMIES = {
   // over it, a furnace in its belly; its crew stokes it. Slow, and iron doesn't flinch
   // (`machine`: never staggered or knocked down, never blocks), so you hit it between its
   // blows. The drum grinds whoever is in front of it; the arm comes down hard in front.
-  // Drawn in code by view/CrusherView.js until its art exists.
+  // Drawn in code by view/CrusherView.js until its art exists. A regular enemy (Hollow
+  // Mountain sends it five times, twice in pairs), with a grunt's health.
   crusher: {
     ...BASE,
     id: 'crusher',
@@ -212,7 +213,7 @@ export const ENEMIES = {
     body: { w: 150, h: 170 },
     look: { color: 0x2a2826, accent: 0x8a5a2a, skin: 0x3a3634 },
 
-    maxHealth: 220, maxStamina: 200,
+    maxHealth: 70, maxStamina: 200,
     walkSpeed: 52, depthSpeed: 40,
     meleeMult: 1.0,
     blockReduction: 0, guardEfficiency: 1.0,

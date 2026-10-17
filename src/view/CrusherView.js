@@ -21,6 +21,22 @@ import { softShadow } from './atmosphere.js';
 const ATK1_CELLS = { startup: [0], active: [1, 2], recovery: [3] };
 const HEAVY_CELLS = { startup: [0, 1, 2], active: [3], recovery: [4] };
 
+// the painted strips stand on a ground line above their frames' bottoms where sparks or dust
+// hang below the wheels (a fraction of the frame's height), so the machine doesn't hop up
+// when it attacks
+const FOOT = { 'crusher-atk1': 0.058, 'crusher-heavy': 0.018 };
+
+// The painted walk strip's wheels are the same in all six poses, so they are turned in code:
+// the rear wheel's spokes and the drum's face are cut from the first pose as discs and spun
+// over it (the rims and the spikes stay painted; a round rim looks the same turned). In the
+// source strip's pixels (crusher_walk.png: the figure's box starts at 16,16 and is 378 tall,
+// the importer's crop), each hub, the disc's radius, and per pose the hub's drift.
+const WALK_SRC = { x0: 16, y0: 16, h: 378 };
+const WHEEL = { x: 75, y: 329, r: 49, dx: [0, -1, -3, -2, -3, -3] };
+// the drum: its arm comes in from the upper back to the hub, so the arm is left out of the
+// spun disc and masked off over it (it doesn't turn with the drum); the hub's cap is in front
+const DRUM = { x: 227, y: 302, r: 55, dx: [0, 0, -1, -1, -1, 0], arm: { x: -0.76, y: -0.65, w: 15, from: 13 } };
+
 const C = { iron: 0x2a2826, ironHi: 0x4a4644, ironDk: 0x161514, rivet: 0x6a6460, rust: 0x6a3a1e, fire: 0xff6a20, fireHi: 0xffd080, spike: 0x8a8480 };
 
 export class CrusherView {
@@ -39,7 +55,48 @@ export class CrusherView {
     this.smokeT = 0;
     // the painted strips, once all four exist (else the code drawing)
     this.painted = haveSprites('crusher-walk', 'crusher-atk1', 'crusher-heavy', 'crusher-doom');
-    if (this.painted) this.img = scene.add.image(fighter.x, fighter.z, SPRITES['crusher-walk'].key, 'f0').setOrigin(0.5, 1).setScale(0.5);
+    if (this.painted) {
+      this.img = scene.add.image(fighter.x, fighter.z, SPRITES['crusher-walk'].key, 'f0').setOrigin(0.5, 1).setScale(0.5);
+      this.wheelAng = 0; this.drumAng = 0;
+      this.wheel = scene.add.image(0, 0, wheelTexture(scene, 'wheel')).setScale(0.5);
+      this.drum = scene.add.image(0, 0, wheelTexture(scene, 'drum')).setScale(0.5);
+      this.armMask = scene.make.graphics({ add: false });
+      this.drum.setMask(this.armMask.createGeometryMask());
+    }
+  }
+
+  // the spun wheel and drum over the walk pose (hidden in the attack and wreck strips, whose
+  // drum is painted turning)
+  spin(on, i, alpha, sink) {
+    const f = this.f;
+    this.wheel.setVisible(on); this.drum.setVisible(on);
+    if (!on) return;
+    const S = SPRITES['crusher-walk'];
+    const k = S.fh / WALK_SRC.h; const sc = 0.5; const d = f.facing;
+    const baseY = f.z - f.h + sink;
+    const at = (W) => [f.x + ((W.x + W.dx[i] - WALK_SRC.x0) * k - S.fw / 2) * sc * d, baseY - (S.fh - (W.y - WALK_SRC.y0) * k) * sc];
+    const tint = f.flash > 0;
+    for (const [img, W, ang] of [[this.wheel, WHEEL, this.wheelAng], [this.drum, DRUM, this.drumAng]]) {
+      const [x, y] = at(W);
+      img.setPosition(x, y).setRotation(ang).setFlipX(d < 0).setDepth(f.z + 0.01).setAlpha(alpha);
+      if (tint) img.setTintFill(0xffffff); else img.clearTint();
+    }
+    // the drum's arm, kept still: the mask is the drum's disc less the arm's band
+    const [hx, hy] = at(DRUM);
+    const r = DRUM.r * k * sc + 2; const A = DRUM.arm;
+    const ux = A.x * d; const uy = A.y; const px = -uy; const py = ux; // (along the arm, across it)
+    const w = A.w * k * sc; const from = A.from * k * sc;
+    const edge = Math.sqrt(Math.max(0, r * r - w * w));
+    const a0 = Math.atan2(uy, ux);
+    const half = Math.asin(Math.min(1, w / r));
+    const pts = [];
+    for (let t = 0; t <= 32; t++) {
+      const a = a0 + half + ((Math.PI * 2 - 2 * half) * t) / 32;
+      pts.push({ x: hx + Math.cos(a) * r, y: hy + Math.sin(a) * r });
+    }
+    pts.push({ x: hx + ux * edge - px * w, y: hy + uy * edge - py * w }, { x: hx + ux * from - px * w, y: hy + uy * from - py * w });
+    pts.push({ x: hx + ux * from + px * w, y: hy + uy * from + py * w }, { x: hx + ux * edge + px * w, y: hy + uy * edge + py * w });
+    this.armMask.clear().fillStyle(0xffffff, 1).fillPoints(pts, true);
   }
 
   // the painted machine: which strip and cell, from the same state the drawing reads
@@ -52,8 +109,9 @@ export class CrusherView {
     } else if (st === 'dead') { name = 'crusher-doom'; i = Math.floor(fr / 10); }
     const S = SPRITES[name];
     i = name === 'crusher-walk' ? i % S.count : Math.min(S.count - 1, Math.max(0, i));
-    this.img.setTexture(S.key, `f${i}`).setPosition(f.x, f.z - f.h + (st === 'dead' ? 0 : sink)).setFlipX(f.facing < 0).setDepth(f.z).setAlpha(alpha);
+    this.img.setTexture(S.key, `f${i}`).setPosition(f.x, f.z - f.h + (st === 'dead' ? 0 : sink) + (FOOT[name] ?? 0) * S.fh * 0.5).setFlipX(f.facing < 0).setDepth(f.z).setAlpha(alpha);
     if (f.flash > 0) this.img.setTintFill(0xffffff); else this.img.clearTint();
+    this.spin(name === 'crusher-walk', i, alpha, sink);
   }
 
   update() {
@@ -64,8 +122,15 @@ export class CrusherView {
     const d = f.facing;
     const X = (dx) => f.x + dx * d;
     // the rollers turn with the ground covered
-    this.roll += (f.x - this.lastX) * d * 0.05;
+    const moved = f.x - this.lastX;
+    this.roll += moved * d * 0.05;
     this.lastX = f.x;
+    // (the painted wheels: the rear wheel rolls with the ground, about 30px across on screen;
+    // the drum never stops grinding, faster on the move; clockwise is forward facing right)
+    if (this.painted && f.alive) {
+      this.wheelAng += moved / 30;
+      this.drumAng += d * 0.07 + moved / 32;
+    }
     let drumOut = 0; let drumSpin = this.roll * 1.6; let arm = 0.15; let heat = 0.35; let tilt = 0; let alpha = 1; let sparks = false;
     if ((st === 'light1' || st === 'heavy') && f.move) {
       const ph = movePhase(f.move, fr);
@@ -164,8 +229,38 @@ export class CrusherView {
     this.g.destroy();
     this.glow.destroy();
     this.img?.destroy();
+    this.wheel?.destroy();
+    this.drum?.destroy();
+    this.armMask?.destroy();
     this.shadow.destroy();
     this.hpBg?.destroy();
     this.hpFill?.destroy();
   }
+}
+
+// the rear wheel's spokes or the drum's face cut from the walk's first pose as a disc (the
+// drum's less its arm), made once
+function wheelTexture(scene, which) {
+  const key = `spr-crusher-${which}`;
+  const T = scene.textures;
+  if (T.exists(key)) return key;
+  const S = SPRITES['crusher-walk'];
+  const W = which === 'wheel' ? WHEEL : DRUM;
+  const k = S.fh / WALK_SRC.h;
+  const r = Math.ceil(W.r * k);
+  const cx = (W.x - WALK_SRC.x0) * k; const cy = (W.y - WALK_SRC.y0) * k;
+  const c = document.createElement('canvas');
+  c.width = c.height = r * 2;
+  const ctx = c.getContext('2d');
+  ctx.beginPath(); ctx.arc(r, r, r, 0, Math.PI * 2); ctx.clip();
+  ctx.drawImage(T.get(S.key).getSourceImage(), cx - r, cy - r, r * 2, r * 2, 0, 0, r * 2, r * 2);
+  if (W.arm) {
+    // (the arm's band out from the hub's cap, cut away)
+    const A = W.arm; const w = A.w * k; const from = A.from * k;
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.translate(r, r); ctx.rotate(Math.atan2(A.y, A.x));
+    ctx.fillRect(from, -w, r * 2, w * 2);
+  }
+  T.addCanvas(key, c);
+  return key;
 }

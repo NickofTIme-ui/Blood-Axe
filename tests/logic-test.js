@@ -3297,12 +3297,19 @@ test('mine: the chase runs on through three stretches: each picks the rock up wh
   assert(b.front <= b.x0 + 10 && p.x > b.front + 60 && a.front == null, `back behind the start (${Math.round(b.front)}, hero ${Math.round(p.x)})`);
 });
 
-test('mine: the Ore Crusher is iron: no blow staggers it or knocks it down; it vents its furnace, then brings the roof down', () => {
+test('mine: the Ore Crusher is a regular enemy: a grunt\'s health, five times over the level, twice in pairs', () => {
+  assert(ENEMIES.crusher.maxHealth === ENEMIES.grunt.maxHealth, `a grunt's health (${ENEMIES.crusher.maxHealth})`);
+  assert(STAGE_MINE.sections.every((q) => q.boss?.type !== 'crusher'), 'no Crusher boss');
+  const counts = STAGE_MINE.sections.flatMap((q) => q.waves.map((w) => w.filter((t) => t === 'crusher').length)).filter((n) => n > 0);
+  assert(counts.length === 5 && counts.filter((n) => n === 2).length === 2 && counts.every((n) => n <= 2), `five times, twice in pairs (${counts})`);
+});
+
+test('mine: the Ore Crusher is iron: no blow staggers it or knocks it down', () => {
   const { world, p, st, run } = mineSetup(MINE_SEC('crusher'), { x: 6200, z: 440 });
-  const phases = []; world.events.on('bossPhase', (e) => phases.push(e.phase.id));
-  bossUp(st, run, p);
-  const b = st.boss;
-  assert(b?.stats.id === 'crusher' && b.stats.machine, 'the Crusher is here');
+  killFoes(world); st.fightOn = true; st.waveIndex = 99;
+  const b = createEnemy(world, 'crusher', 6290, 440);
+  st.placeOnGround(b);
+  assert(b.stats.machine, 'the Crusher is here');
   // the warrior's heavy, point blank
   b.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
   p.x = b.x - 90; p.z = b.z; p.facing = 1;
@@ -3312,16 +3319,6 @@ test('mine: the Ore Crusher is iron: no blow staggers it or knocks it down; it v
   run(60, () => { p.health = p.stats.maxHealth; seen.add(b.state); });
   assert(struck >= 1, 'the blow lands');
   assert(!seen.has('knockdown') && !seen.has('hitstun') && !seen.has('stagger'), `it shrugs it off (${[...seen]})`);
-  const fires = st.hazards.filter((h) => h.section === MINE_SEC('crusher') && h.type === 'fire');
-  const rocks = st.hazards.filter((h) => h.section === MINE_SEC('crusher') && h.type === 'beam');
-  assert(fires.every((h) => st.firePhase(h) === 'idle'), 'the vents are cold at first');
-  b.health = b.stats.maxHealth * 0.6;
-  run(2, () => { p.health = p.stats.maxHealth; });
-  assert(phases.join() === 'furnace', `the furnace (${phases})`);
-  b.health = b.stats.maxHealth * 0.2;
-  run(2, () => { p.health = p.stats.maxHealth; });
-  assert(phases.join() === 'furnace,overdrive' && b.raged, `overdrive (${phases})`);
-  assert(rocks.every((h) => st.beamLive(h)), 'the roof starts coming down');
 });
 
 test('mine: the Chain Warden calls up his ghouls at half health', () => {
@@ -4140,15 +4137,6 @@ test('sentence: no two go alike: the head and the fall are rolled from the lists
   for (let i = 1; i < a.length; i++) assert(a[i].head !== a[i - 1].head && a[i].body !== a[i - 1].body, `never twice running (${i})`);
   for (const x of HEADS) assert(a.some((o) => o.head === x), `every head comes up (${x})`);
   for (const x of BODIES) assert(a.some((o) => o.body === x), `every fall comes up (${x})`);
-});
-
-test('sentence: a machine is no man: the Ore Crusher is simply destroyed', () => {
-  const { world, p, st, ev, run } = sentenceSetup('warrior', STAGE_MINE, 'crusher', 6000);
-  const b = st.boss;
-  assert(b?.stats.machine && !b.spare, `the Crusher is not spared (${b?.stats.name}, ${b?.spare}, ${st.section.id})`);
-  blowOf(world, p, b);
-  run(10);
-  assert(!b.alive && !st.sentence.running && ev.strike.length === 0, 'destroyed, no sentence');
 });
 
 test('sentence: every boss in the game has his crimes (the machine none); the Oath Keepers swear it at the start', () => {
