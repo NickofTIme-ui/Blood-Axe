@@ -15,8 +15,11 @@ import { BladeChain } from './BladeChain.js';
 import { DANGER } from './dangerCue.js';
 import { cutPieces, keyLayer } from './envArt.js';
 import { drawScorpion, listenScorpion } from './VincentView.js';
+import { SiegeAnim } from './SiegeAnim.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
+// A catapult's stone in the air (drawStone): its radius on screen
+const SIEGE_STONE = { radius: 21 };
 // An arrow volley (Stage bombard `look: 'arrows'`): arrows a volley; how far through the
 // warning they're loosed (they fly the rest); the arrow texture's size (drawn at 2x) and its
 // scale on screen, its length there; how long (ms) the spent ones stay standing in the ground
@@ -37,6 +40,7 @@ export class StageView {
     this.makeTextures();
     this.buildSections();
     this.propSprites = new Map();
+    this.siege = new SiegeAnim(this); // (the archer posts and catapults: view/SiegeAnim.js)
     for (const pr of stage.props) this.propSprites.set(pr.id, this.makeProp(pr));
     this.pickupSprites = new Map();
     this.listen();
@@ -506,11 +510,14 @@ export class StageView {
     const y = pr.y ?? 0;
     const img = this.scene.add.image(pr.x, pr.z - y, key).setOrigin(0.5, 1).setScale(s).setDepth(pr.z);
     const shadow = this.scene.add.ellipse(pr.x, pr.z - y, pr.w * 1.2, 10, 0x000000, 0.35).setDepth(y ? pr.z - 0.3 : DEPTH.shadows);
-    return { img, shadow, s };
+    const v = { img, shadow, s };
+    this.siege.setup(pr, v, lvl);
+    return v;
   }
 
   propHit(pr, dir) {
     const v = this.propSprites.get(pr.id);
+    if (pr.kind === 'archers' || pr.kind === 'catapult') this.siege.hit(pr, dir);
     playSfx(this.scene, pr.kind === 'wall' ? 'block' : 'kick', { volume: 0.5, pitch: pr.kind === 'wall' ? -600 : -200, minGapMs: 0 });
     this.scene.tweens.add({ targets: v.img, x: pr.x + dir * 4, duration: 40, yoyo: true, repeat: 1 });
     this.chips(pr, 6, dir);
@@ -520,6 +527,7 @@ export class StageView {
 
   propBreak(pr, dir, blast = false) {
     const v = this.propSprites.get(pr.id);
+    if (pr.kind === 'archers' || pr.kind === 'catapult') this.siege.burst(pr, dir); // (before the wreck goes in: it cuts the chunks from the piece as it stood)
     playSfx(this.scene, 'kick', { volume: blast ? 1 : 0.8, pitch: blast ? -700 : -400, minGapMs: 0 });
     this.scene.fx?.shake(pr.kind === 'wall' || blast ? 6 : 3, blast ? 14 : 10);
     this.chips(pr, pr.kind === 'wall' ? 40 : blast ? 46 : 18, dir);
@@ -822,6 +830,8 @@ export class StageView {
     if (shells.length) g.setDepth(Math.min(...shells.map((q) => q.z)) - 1); // (over a ledge's top, under the men on it)
     if (!hz.stones) hz.stones = this.scene.add.graphics();
     const st = hz.stones.clear();
+    hz.fire?.clear();
+    for (const q of hz.stoneImgs ?? []) q.used = false;
     for (const s of shells) {
       s.gy ??= this.stage.terrain ? Math.max(0, this.stage.terrain.groundAt(s.x, s.z)) : 0;
       const k = Math.max(0, Math.min(1, (hz.t - s.from) / Math.max(1, s.land - s.from)));
@@ -842,14 +852,57 @@ export class StageView {
       // the stone: the last half of its flight, falling steeply onto the mark
       const f = (k - 0.45) / 0.55;
       const sy = gy - 720 * (1 - f) * (1 - f) - 12;
-      const sx = s.x - 120 * (1 - f);
+      const side = this.siege.sideOf(hz, s.x); // (it comes in from the catapult's side)
+      const sx = s.x + side * 140 * (1 - f);
       st.setDepth(s.z + 1);
+      if (this.drawStone(hz, s, sx, sy, f, side)) continue;
       // (a pitch-soaked stone, burning: it reads against the sky and the Keep alike)
       for (let k2 = 1; k2 <= 4; k2++) st.fillStyle(k2 < 3 ? 0xff7a30 : 0x6a6460, 0.35 - k2 * 0.06).fillCircle(sx - 26 * k2 * (1 - f * 0.6), sy - 60 * k2 * (1 - f * 0.6), 11 - k2);
       st.fillStyle(0xffb050, 1).fillCircle(sx, sy, 17);
       st.fillStyle(0x2a2420, 1).fillCircle(sx + 2, sy + 2, 13);
       st.fillStyle(0xff8a30, 1).fillCircle(sx - 5, sy - 5, 5);
     }
+    for (const im of hz.stoneImgs ?? []) if (!im.used) im.setVisible(false);
+    hz.fire?.setVisible(shells.length > 0);
+  }
+
+  // A catapult's stone in the air: the painted stone out of the catapult's sling (cut from
+  // prop_catapult.png, view/SiegeAnim.js), pitch-soaked and burning, tumbling as it falls,
+  // a tail of fire and smoke streaming up behind it, embers shed on the way. False when the
+  // painted catapult isn't in (the drawn stone stands in).
+  drawStone(hz, s, sx, sy, f, side) {
+    const key = this.siege.stoneKey();
+    if (!key) return false;
+    hz.stoneImgs ??= [];
+    const i = hz.shells.indexOf(s);
+    const im = hz.stoneImgs[i] ??= this.scene.add.image(0, 0, key);
+    im.used = true;
+    const R = SIEGE_STONE.radius;
+    im.setTexture(key).setDisplaySize(R * 2, R * 2).setPosition(sx, sy).setRotation(f * 9 + i).setDepth(s.z + 1.2).setVisible(true)
+      .setTint(0xffffff, 0xffffff, 0xffb070, 0xff9050); // (lit from below by its own fire)
+    // the fire: a glow round it, a tail of flame streaming back up its path, smoke above
+    const g = hz.fire ??= this.scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
+    g.setDepth(s.z + 1.1).setVisible(true);
+    const t = this.scene.time.now / 60;
+    // back along its path (up, and toward the catapult)
+    const vx = -side * 140; const vy = 1440 * (1 - f) + 40; const m = Math.hypot(vx, vy);
+    const back = (n) => ({ x: sx - (vx / m) * n * 11, y: sy - (vy / m) * n * 11 });
+    for (let n = 9; n >= 1; n--) {
+      const p = back(n);
+      const flick = Math.sin(t + n * 1.7 + i) * 4;
+      const a = 0.5 * (1 - n / 10);
+      g.fillStyle(n < 4 ? 0xffc060 : n < 7 ? 0xff7a28 : 0xc03a10, a).fillCircle(p.x + flick, p.y, R * (1.05 - n * 0.07));
+    }
+    g.fillStyle(0xffa040, 0.35).fillCircle(sx, sy, R * 1.6);
+    g.fillStyle(0xfff0c0, 0.25).fillCircle(sx - R * 0.2, sy + R * 0.3, R * 0.8);
+    // smoke behind the fire (normal blend: on the stones' own graphics)
+    const sm = hz.stones;
+    for (let n = 10; n <= 16; n++) {
+      const p = back(n);
+      sm.fillStyle(0x2a2624, 0.16 * (1 - (n - 10) / 7)).fillCircle(p.x + Math.sin(t * 0.7 + n) * 6, p.y, R * (0.5 + (n - 10) * 0.12));
+    }
+    if (Math.random() < 0.35) this.scene.gore.spawn({ x: sx + rand(-8, 8), z: s.z, h: s.z - sy, vx: rand(-60, 60), vz: 0, vh: rand(20, 120), tint: Math.random() < 0.5 ? 0xffb050 : 0xff6a20, texture: 'px', scale: rand(0.5, 1), decal: false, life: rand(14, 26) });
+    return true;
   }
 
   // An arrow volley (bombard `look: 'arrows'`): each arrow is loosed from the archers' post
@@ -1420,8 +1473,7 @@ export class StageView {
         if (Math.abs(this.scene.player.x - (this.stage.section?.x0 ?? 0)) < 2400) playSfx(this.scene, 'whiff', { volume: 0.6, pitch: 700, minGapMs: 0 });
         for (const pr of this.stage.props) {
           if (pr.kind !== 'archers' || pr.broken || (hz.silence && pr.tag !== hz.silence)) continue;
-          const v = this.propSprites.get(pr.id);
-          if (v?.img) this.scene.tweens.add({ targets: v.img, scaleY: v.s * 1.04, duration: 80, yoyo: true, ease: 'Quad.easeOut' });
+          this.siege.volley(pr);
         }
         return;
       }
@@ -1430,8 +1482,7 @@ export class StageView {
       if (near) playSfx(this.scene, 'heavySwing', { volume: 0.5, pitch: -900, minGapMs: 0 });
       for (const pr of this.stage.props) {
         if (pr.kind !== 'catapult' || pr.broken || (hz.silence && pr.tag !== hz.silence)) continue;
-        const v = this.propSprites.get(pr.id);
-        if (v?.img) this.scene.tweens.add({ targets: v.img, angle: -4, duration: 90, yoyo: true, ease: 'Quad.easeOut' });
+        this.siege.throw(pr);
       }
     });
     ev.on('shellLand', ({ hazard: hz, shell: s }) => {
@@ -1504,6 +1555,7 @@ export class StageView {
   }
 
   update() {
+    this.siege.update();
     this.syncRolling();
     this.syncKicked();
     this.syncPickups();
