@@ -88,7 +88,11 @@ export const LEVEL_ART = {
     wall: { height: 200 },
     ground: true,
     pieces: ['gatehouse', 'winch_room', 'town', 'inner_wall', 'keep_road'],
-    props: { winch: { file: 'prop_winch.png', pair: true } },
+    // (ram: the burned-out ram on the road, a block's `look`, view/TerrainView.js drawPaintedBlock)
+    props: { winch: { file: 'prop_winch.png', pair: true }, ram: { file: 'prop_ram.png' } },
+    // the gatehouse stair and landing (dressed stone) and the guardroom's rotten floor
+    // (prompts: docs/gates-art-prompts.md)
+    surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, plank: { fit: true } },
   },
   // THE GALLOWS ASCENT (the night climb, view/TerrainView.js): its painted backdrop, cliff
   // wall, floor and ledge faces. Prompts: docs/gallows-art-prompts.md. (The code-drawn sky

@@ -889,3 +889,9 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - Adds the halved-men fix (legs stand then fold, top half falls clear, pieces bounce and roll, loose hands drop) and the village carts and stable-gate bar. Tests pass; the autoplay bot reached the boss on the staged copy with no errors, and the hosted copy boots into a fight cleanly.
 - Still unpainted, so they 404 on itch as expected: `assets/env/village/torch.png` and `mill_floor.png` (the game skips them).
 - Online play: both players need this build (refresh the page).
+
+## Cloud, 2026-10-17: level 5 art list; Vincent's and Nicholas's lines rewritten (not on itch)
+- Nick: "get the art going for the 5th level", and the dialogue: Vincent's "live and let live" and Nicholas's "the mountain man" were cheesy; "short amazing tight dialogue like a game of thrones novel". Keep the action.
+- **Level 5 = THE IRON GATES.** Every backdrop and set piece is painted; what's still code: the gatehouse stair and landing, the rotten floor, the ram on the road, the town's cart, and the lamp posts (the wood's green lanterns). Prompts: `docs/gates-art-prompts.md` (copy in project files `gates-art/`), five pictures. All wired: `surfaces` and `props.ram` in the gates' `levelArt.js` entry, `look: 'ram'` / `'cart'` on the two blocks (`TerrainView.drawPaintedBlock` now runs outside the village), the brazier in `drawLanterns` (`gates-brazier-src`). The town's cart already shows the village's painted burnt cart.
+- **Dialogue** (`stageGates.js`: every Vincent line; `stageAscent.js` and `stageWood.js`: every Nicholas line). Same beats, ids, triggers and speakers; only the words. "Live and let live" and "a mountain man sent you" are gone.
+- Checked: logic tests pass; headless shots of the gates (the cart in the town). Not played by a person.

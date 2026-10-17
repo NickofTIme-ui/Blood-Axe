@@ -238,9 +238,9 @@ export const STAGE_WOOD = {
     {
       id: 'pilgrim', calm: true,
       lines: [
-        ['NICHOLAS', 'The rocks came down at dawn. Their own men did it, to close the pass behind them.'],
+        ['NICHOLAS', 'Their own men brought the rocks down at dawn. To close the pass behind them.'],
         ['NICHOLAS', 'The carts went into the old mine. Under the mountain.'],
-        ['NICHOLAS', 'I am Nicholas. I guide folk over this mountain, or I did. Go under it. I will find you on the far side.'],
+        ['NICHOLAS', 'I am Nicholas. I take folk over this mountain. Go under it. I will be waiting on the far side.'],
       ],
     },
     {

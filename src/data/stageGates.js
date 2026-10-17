@@ -20,7 +20,7 @@
 // VINCENT, THE GATEWRIGHT (Nick's friend Vincent in the game; his art prompts are in
 // docs/vincent-art-prompts.md): the young engineer who built the gates, the winch and the
 // Gate Scorpion on the tower. When the King shut the gates on his own men, Vincent unbarred
-// the sally port for them ("live and let live") and was caged in the guardroom to hang at
+// the sally port for them and was caged in the guardroom to hang at
 // dawn. The heroes free him (the gatehouse isn't won until they do); he raises the gate with
 // them, works his Gate Scorpion in the yard (Stage hazard 'ballista': a bolt down the lane
 // with the most Ashen in it), puts Malgor on his back with one bolt when he "will not fall",
@@ -232,7 +232,7 @@ export const STAGE_GATES = {
 
   terrain: [
     // ---- I THE KILLING GROUND: a burned-out ram on the road to hop (or walk round)
-    { kind: 'block', x0: 640, x1: 760, z0: 380, z1: 470, top: 40 },
+    { kind: 'block', x0: 640, x1: 760, z0: 380, z1: 470, top: 40, look: 'ram' },
 
     // ---- II THE GATEHOUSE: the stair up inside the wall, the rotten floor over the
     // oubliette, the guardroom landing, down to the winch room's door
@@ -248,10 +248,10 @@ export const STAGE_GATES = {
     { kind: 'block', tag: 'gate', mat: 'iron', x0: 4740, x1: 4775, ...FULL, top: 300 },
 
     // ---- V THE LOWER TOWN: a cart overturned in the street
-    { kind: 'block', x0: 6640, x1: 6740, z0: 400, z1: 480, top: 40 },
+    { kind: 'block', x0: 6640, x1: 6740, z0: 400, z1: 480, top: 40, look: 'cart' }, // (the village's burnt cart)
   ],
 
-  // braziers and siege fires
+  // braziers and siege fires (painted: assets/env/gates/brazier.png, view/TerrainView.js drawLanterns)
   lanterns: [
     { x: 400, z: 290 }, { x: 1300, z: 290 }, { x: 1600, z: 290 }, { x: 3000, z: 290 }, { x: 3400, z: 290 },
     { x: 4300, z: 290 }, { x: 5000, z: 290 }, { x: 6000, z: 290 }, { x: 7100, z: 290 }, { x: 8000, z: 290 },
@@ -304,16 +304,16 @@ export const STAGE_GATES = {
     { id: 'pitch', at: 1580, lines: [['ORYN', '(from inside the wall) Murder holes! Pitch on the grates. Go round when they glow.']] },
     { id: 'floor', at: 2100, calm: true, lines: [['VEXA', '(from below) The guardroom floor is rotten, over the oubliette. Do not stand on it.']] },
     // Vincent, in his cage on the landing
-    { id: 'caged', at: 2380, lines: [['VINCENT', '(from a cage on the landing) Oath Keepers! Up here! Get me out and I will get you through that gate.']] },
-    { id: 'cageAgain', on: 'clear:gatehouse', unless: 'rescued:vincent', lines: [['VINCENT', 'Hey! The lock! Hold it till it gives. I am not hanging for a door.']] },
+    { id: 'caged', at: 2380, lines: [['VINCENT', '(from a cage on the landing) Oath Keepers. Open this cage and I will open your gate.']] },
+    { id: 'cageAgain', on: 'clear:gatehouse', unless: 'rescued:vincent', lines: [['VINCENT', 'The lock. Lean on it. I will not hang for a door I built.']] },
     {
       id: 'vincent', on: 'rescued:vincent', hold: true,
       lines: [
-        ['VINCENT', 'Vincent. I built these gates. The winch, the chains, the scorpion on the tower. Twelve years of my life.'],
-        ['VINCENT', 'He shut them on his own men and told me to watch. So I unbarred the sally port for them. Live and let live.'],
-        ['VINCENT', 'The Marshal did not agree. I hang at dawn, apparently.'],
-        ['RURIK', 'Not today. Can you open it?'],
-        ['VINCENT', 'Two chains on the winch. Break both and she goes up. I will be on the tower. I left something up there for the Marshal.'],
+        ['VINCENT', 'Vincent. I built that gate. The winch, the chains, the scorpion on the tower.'],
+        ['VINCENT', 'He barred it on his own men and made me listen to them die. So I opened the sally port.'],
+        ['VINCENT', 'The Marshal hangs me at dawn.'],
+        ['RURIK', 'Then the Marshal has to live till dawn. Can you open it?'],
+        ['VINCENT', 'Break both chains on the winch and she rises. I will be on the tower. I left something there for the Marshal.'],
       ],
     },
     { id: 'winchRoom', on: 'enter:winch', lines: [['ORYN', '(from the stair) The winch room. Break the chains on the drums and the gate goes up.']] },
@@ -323,7 +323,7 @@ export const STAGE_GATES = {
     },
     { id: 'grief', on: 'twin:winch', lines: [['VOICE', '(a roar, the twin over his brother) BROTHER! I will tear you apart!']] },
     { id: 'gateUp', on: 'broken:winch', lines: [['VOICE', '(iron grinding, chains running, the great gate rising)'], ['RURIK', 'The gate is up! Down to the yard!']] },
-    { id: 'tower', on: 'broken:winch', if: 'rescued:vincent', lines: [['VINCENT', '(from the gate tower) Twelve years to build her. Two minutes to open her. Down you go, I have you covered!']] },
+    { id: 'tower', on: 'broken:winch', if: 'rescued:vincent', lines: [['VINCENT', '(from the gate tower) Twelve years to build her. One morning to break her. Go. The yard is mine.']] },
     // the rescued come back: who answers depends on who was saved
     { id: 'answer', at: 5000, lines: [['VOICE', '(behind you, through the open gate) OATH KEEPERS!']] },
     { id: 'miners', at: 5060, if: 'saved:shelter', lines: [['MINER', 'We followed you down from the pass! Up on the wall, lads! Slings!']] },
@@ -331,10 +331,10 @@ export const STAGE_GATES = {
     { id: 'joren', at: 5180, if: 'saved:joren', lines: [['JOREN', 'Mira sent me after you. I was not going to sit this out.']] },
     { id: 'alone', at: 5060, unless: 'saved:shelter', lines: [['RURIK', 'Nobody behind us. Then we hold it ourselves.']] },
     { id: 'retake', on: 'enter:yard', lines: [['VOICE', '(drums from the town) Take back the gate! Take it back!']] },
-    { id: 'scorpion', on: 'enter:yard', if: 'rescued:vincent', lines: [['VINCENT', '(at the scorpion) Meet the Gate Scorpion. Six feet of ash and iron. When a lane glows, step out of it!']] },
-    { id: 'skewer', on: 'bolt:many', lines: [['VINCENT', 'Lined up like geese! Never gets old.']] },
+    { id: 'scorpion', on: 'enter:yard', if: 'rescued:vincent', lines: [['VINCENT', '(at the scorpion) The Gate Scorpion. When a lane glows, leave it. She does not ask whose side you are on.']] },
+    { id: 'skewer', on: 'bolt:many', lines: [['VINCENT', 'One bolt. A whole rank. They never learn.']] },
     { id: 'held', on: 'clear:yard', calm: true, lines: [['RURIK', 'The gate is ours. The town next.']] },
-    { id: 'drag', on: 'clear:yard', calm: true, if: 'rescued:vincent', lines: [['VINCENT', 'Not one of them touched my gate. Go on. I will drag her up behind you.']] },
+    { id: 'drag', on: 'clear:yard', calm: true, if: 'rescued:vincent', lines: [['VINCENT', 'Not one of them touched the gate. Go. I will bring her up behind you.']] },
     { id: 'fires', at: 6560, lines: [['ORYN', '(from the rooftops) He is burning his own town. To slow us down. A catapult up the street, throwing fire on it!']] },
     { id: 'townCatapult', on: 'broken:townCatapult', lines: [['RURIK', 'No more fire on these streets.']] },
     { id: 'granaryCry', at: 6900, lines: [['VOICE', 'The granary! They barred the door! My children are in there!']] },
@@ -355,8 +355,8 @@ export const STAGE_GATES = {
     { id: 'walls', on: 'phase:marshal:walls', lines: [['MALGOR', 'Archers! Loose on the yard! On all of us! I will stand in it!']] },
     { id: 'slings', on: 'phase:marshal:walls', if: 'saved:shelter', lines: [['MINER', '(from the outer wall) Their archers! Slings on the inner wall!']] },
     { id: 'iron', on: 'phase:marshal:iron', lines: [['MALGOR', 'I have never lost a fight under this banner. Not one!']] },
-    { id: 'everyone', on: 'phase:marshal:iron', if: 'rescued:vincent', lines: [['VINCENT', '(behind the scorpion) Everybody falls, Marshal. Even you. Hold still.']] },
-    { id: 'felled', on: 'bolt:boss', lines: [['VINCENT', 'He is down! Finish him!']] },
+    { id: 'everyone', on: 'phase:marshal:iron', if: 'rescued:vincent', lines: [['VINCENT', '(behind the scorpion) You meant to hang me at dawn, Marshal. Hold still.']] },
+    { id: 'felled', on: 'bolt:boss', lines: [['VINCENT', 'He is down. Finish it.']] },
     {
       id: 'fallen', on: 'clear:marshal', calm: true,
       lines: [
@@ -370,9 +370,9 @@ export const STAGE_GATES = {
     {
       id: 'postern', at: 9620, calm: true, if: 'rescued:vincent',
       lines: [
-        ['VINCENT', 'The Keep has a postern on its north face. Under the old well. I built that too, before I knew who for.'],
-        ['VINCENT', 'I will be there when you need it opened. Live and let live, I always said. He never learned it.'],
-        ['RURIK', 'Then we teach him the other half.'],
+        ['VINCENT', 'There is a postern on the Keep\'s north face, under the old well. I built that too. Before I knew who for.'],
+        ['VINCENT', 'Send word and it opens. After that, I build nothing for kings.'],
+        ['RURIK', 'Then build something for the living.'],
       ],
     },
     {

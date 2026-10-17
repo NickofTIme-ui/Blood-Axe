@@ -363,6 +363,9 @@ export class TerrainView {
     if (b.mat === 'iron' && b.kind === 'block') { this.drawPortcullis(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
     if (this.village || (this.water && b.mat === 'log')) { this.drawVillageBlock(v, x0, x1, w, yTop0, yTop1); return; } // (the wood's fallen trees: as the village's beams)
+    // (the gates: a burned-out ram on the road, the village's burnt cart in the town)
+    const painted = { cart: 'cartwreck', ram: 'prop-ram' }[b.look];
+    if (painted && this.scene.textures.exists(painted)) { this.drawPaintedBlock(v, x0, x1, painted); return; }
     const mat = b.kind === 'crumble' ? 'plank' : b.kind === 'lift' ? 'iron' : 'rock';
     const C = mat === 'plank' ? [COL.plankTop, COL.plankRim, COL.plankFront]
       : mat === 'iron' ? [COL.iron, COL.ironRim, COL.ironDark] : [COL.rockTop, COL.rockRim, COL.rockFront];
@@ -615,11 +618,12 @@ export class TerrainView {
   // behind it, turned the other way, on a deep block; 'wreckage', a heap of charred
   // timbers and rubble (prop_wreckage.png, its burnt-out half, the smoke cropped off): one heap
   // per 50 of depth, every other one smaller and set aside. A little wider than the block, so it reads.
+  // (The gates' burned ram, `look` 'ram', stands like a cart: whole, one per block.)
   drawPaintedBlock(v, x0, x1, tex) {
     const { top, b } = v;
     const s = this.scene;
     const frame = s.textures.getFrame(tex);
-    const cart = b.look === 'cart';
+    const cart = b.look === 'cart' || b.look === 'ram';
     const painted = frame.width > 200; // (else the small code cart, StageView)
     const n = cart ? (b.z1 - b.z0 > 120 ? 2 : 1) : Math.max(1, Math.round((b.z1 - b.z0) / 50)); // (a heap or two, never a stamped row)
     const wide = x1 - x0 + (cart ? 70 : 60); const cx = (x0 + x1) / 2;
@@ -661,10 +665,12 @@ export class TerrainView {
     for (const l of list) {
       const y0 = l.z - Math.max(0, this.terrain?.groundAt(l.x, l.z) ?? 0);
       const g = s.add.graphics().setDepth(l.z - 0.2);
-      if (this.village && s.textures.exists('village-torch-src')) {
-        // the painted torch post (on magenta: cut out once); its flame at the top gets a glow
-        if (!s.textures.exists('village-torch')) s.textures.addCanvas('village-torch', keyLayer(s.textures.get('village-torch-src').getSourceImage(), 'magenta'));
-        const img = s.add.image(l.x, y0 + 3, 'village-torch').setOrigin(0.5, 0.98).setDepth(l.z - 0.2);
+      // the painted torch post (the village) or iron brazier (the gates), on magenta: cut out
+      // once; its fire at the top gets a glow
+      const post = this.village ? 'village-torch' : this.theme === 'gates' ? 'gates-brazier' : null;
+      if (post && s.textures.exists(`${post}-src`)) {
+        if (!s.textures.exists(post)) s.textures.addCanvas(post, keyLayer(s.textures.get(`${post}-src`).getSourceImage(), 'magenta'));
+        const img = s.add.image(l.x, y0 + 3, post).setOrigin(0.5, 0.98).setDepth(l.z - 0.2);
         img.setScale(TORCH_H / img.height);
         const glow = s.add.image(l.x, y0 - TORCH_H * 0.88, 'glow').setScale(2.2).setTint(COL.lantern).setAlpha(0.45).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
         s.tweens.add({ targets: glow, alpha: { from: 0.3, to: 0.55 }, duration: 260 + (l.x % 200), yoyo: true, repeat: -1 });

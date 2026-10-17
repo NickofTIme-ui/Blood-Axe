@@ -246,23 +246,23 @@ export const STAGE_ASCENT = {
     {
       id: 'guide', on: 'start', hold: true,
       lines: [
-        ['NICHOLAS', 'Oath Keepers! I told you on the wood road I would find you on this side.'],
-        ['NICHOLAS', 'Thirty years I have walked this mountain. Stay on my heels. It kills more men than the Ashen ever will.'],
-        ['RURIK', 'Then lead, Nicholas. We follow.'],
+        ['NICHOLAS', 'You came out of the mountain. Most do not.'],
+        ['NICHOLAS', 'Thirty years I have walked this road. Step where I step. The mountain kills more men than the Ashen ever will.'],
+        ['RURIK', 'Lead on.'],
       ],
     },
     { id: 'horn', at: 420, lines: [['VOICE', '(a horn, high on the cliffs) The Oath Keepers! On the ascent! To the road!']] },
-    { id: 'rocks', at: 640, lines: [['NICHOLAS', 'Loose rock! Watch the ground for its shadow.']] },
-    { id: 'stair', at: 1500, calm: true, lines: [['NICHOLAS', 'The stair broke in the spring thaw. The ledge will not hold you long. Keep moving, and do not look down.']] },
+    { id: 'rocks', at: 640, lines: [['NICHOLAS', 'Loose rock. Watch for the shadow.']] },
+    { id: 'stair', at: 1500, calm: true, lines: [['NICHOLAS', 'The thaw took the stair. The ledge will not hold you long. Keep moving. Do not look down.']] },
     { id: 'wren', on: 'rescued:wren', lines: [['WREN', 'My goats ran when the stones came. I know the back path down. Thank you!']] },
     { id: 'shelterCry', at: 3200, lines: [['VOICE', 'Help! Up here, under the rock! They have us pinned!']] },
-    { id: 'stones', at: 3320, lines: [['NICHOLAS', 'Catapults on the heights! A stone lands where its shadow grows. Move!']] },
+    { id: 'stones', at: 3320, lines: [['NICHOLAS', 'Catapults on the heights. A stone lands where its shadow grows. Move!']] },
     { id: 'shelter', on: 'rescued:shelter', lines: [['MINER', 'We went up the road ahead of you and walked into their catapults. We will hold here.']] },
     {
       id: 'hilde', on: 'rescued:shelter', if: 'saved:hilde',
       lines: [['HILDE', 'You came for us again. My brother is up there at the catapults. They make him haul the stones.']],
     },
-    { id: 'bridge', at: 4900, lines: [['NICHOLAS', 'The bridge is half gone. Do not stop on it! I will go round by the goat path.']] },
+    { id: 'bridge', at: 4900, lines: [['NICHOLAS', 'The bridge is half gone. Do not stop on it. I will take the goat path.']] },
     { id: 'battery', on: 'enter:battery', lines: [['ORYN', '(from above) There, the battery! Smash the catapults and the hillside goes quiet.']] },
     { id: 'silenced', on: 'broken:battery', lines: [['RURIK', 'That is the last of them.']] },
     {
@@ -277,7 +277,7 @@ export const STAGE_ASCENT = {
     { id: 'orsk', on: 'boss:camp', lines: [['ORSK', 'So these are the Oath Keepers. The King sent me to bury you on this mountain.']] },
     { id: 'barrage', on: 'phase:camp:barrage', lines: [['ORSK', 'Signal the Keep! Fire on my position! Bring it all down on them!']] },
     // the Keep's first stones come down on the camp, and on the guide
-    { id: 'struck', on: 'phase:camp:barrage', lines: [['NICHOLAS', '(under the falling stones) Behind you! Get clear! ...Do not look back. Finish him!']] },
+    { id: 'struck', on: 'phase:camp:barrage', lines: [['NICHOLAS', '(under the falling stones) Get clear! ...Do not look back. Finish him.']] },
     { id: 'berserk', on: 'phase:camp:berserk', lines: [['ORSK', 'Enough! I will break you with my own hands!']] },
     {
       id: 'retreat', on: 'clear:camp', calm: true,
@@ -287,12 +287,12 @@ export const STAGE_ASCENT = {
     {
       id: 'lastWords', on: 'clear:camp', calm: true, hold: true,
       lines: [
-        ['RURIK', 'Nicholas! Stay with me. The miners can carry you down.'],
-        ['NICHOLAS', 'No. I walked my last road today, and it was a good one. I got you to the top.'],
-        ['NICHOLAS', 'Listen. A guide only shows the way. You three are the ones who have to walk it.'],
-        ['NICHOLAS', 'When you stand before that king, tell him a mountain man sent you. Tell him the people were never his to burn.'],
+        ['RURIK', 'Nicholas. Stay with me. The miners can carry you down.'],
+        ['NICHOLAS', 'No. That was my last road. A good one. I got you to the top.'],
+        ['NICHOLAS', 'A guide shows the way. That is all he does. The walking is yours.'],
+        ['NICHOLAS', 'When you stand before the king, say my name. Make him learn it.'],
         ['NICHOLAS', 'Keep your oath, Rurik. Keep it for all of us.'],
-        ['RURIK', 'We will. On my life, we will.'],
+        ['RURIK', 'On my life.'],
       ],
     },
     { id: 'gathered', at: 9150, calm: true, if: 'rescued:shelter', lines: [['MINER', 'We will hold the pass behind you. Nobody comes up this road again.']] },
