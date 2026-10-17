@@ -33,6 +33,7 @@ export const SFX = {
   headOff: 'assets/audio/sfx/head-off.mp3',             // a head cut off (taking turns with limbOff)
   limbOff: 'assets/audio/sfx/limb-off.mp3',             // an arm (or a head, or legs) cut off
   bladeOut: 'assets/audio/sfx/blade-out.mp3',           // the sword pulled out of an impaled man
+  stationaryKill: 'assets/audio/sfx/stationary-kill.mp3', // Nick's: a blade biting flesh, mixed into sword and Rogue hits
   // the Mage's lightning: made in code by tools/sfx-gen/electric.js (ours outright, no licence)
   elecCharge: 'assets/audio/sfx/elec-charge.wav',   // hum and sparks building in the lantern
   elecZap: 'assets/audio/sfx/elec-zap.wav',         // a bolt leaving the staff
@@ -85,6 +86,17 @@ export function landThud(scene, small = false) {
 // The cut-in-half splatter was mixed hot next to the swings: it is played at this
 // share of the volume its caller asks for.
 const TRIM = { bloodSplatter: 0.75 };
+
+// Some hits get Nick's blade-in-flesh sound mixed in, so a run of cuts doesn't all sound
+// the same: about half of them, and never three in a row the same way.
+let fleshRun = 0, fleshLast = false;
+export function fleshBite(chance = 0.5) {
+  let bite = Math.random() < chance;
+  if (fleshRun >= 2 && bite === fleshLast) bite = !bite;
+  fleshRun = bite === fleshLast ? fleshRun + 1 : 1;
+  fleshLast = bite;
+  return bite;
+}
 
 // key can be a list of [key, weight] pairs to pick one at random (variations).
 export function playSfx(scene, key, { volume = 1, pitch = 0, spread = 150, minGapMs = 45 } = {}) {

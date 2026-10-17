@@ -10,7 +10,7 @@
 
 import { DEPTH } from '../view/depths.js';
 import { softTex } from './Gore.js';
-import { playSfx } from '../core/Sfx.js';
+import { playSfx, fleshBite } from '../core/Sfx.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -24,6 +24,8 @@ export const ROGUE_SOUNDS = {
   swing3: [['second', { volume: 0.55, pitch: 250 }]],
   swing4: [['finisher', { volume: 0.65, pitch: 200 }]],
   hit: [['block', { volume: 0.3, pitch: 1100, minGapMs: 30 }]],
+  // about half her cuts: Nick's blade-in-flesh sound, the steel tick kept faint under it
+  hitFlesh: [['stationaryKill', { volume: 0.7, pitch: 150, minGapMs: 50 }], ['block', { volume: 0.12, pitch: 1100, minGapMs: 30 }]],
   block: [['block', { volume: 0.7, pitch: 500 }]],
   shadow: [['swingAlt', { volume: 0.6, pitch: 1300 }], ['block', { volume: 0.35, pitch: 1800 }]],
   viper: [['heavySwing', { volume: 0.6, pitch: 500 }]],
@@ -61,7 +63,7 @@ export class RogueFX {
     });
     ev.on('hit', (e) => {
       if (isRogue(e.attacker) && e.kind === 'melee') {
-        this.sound('hit', e.attacker);
+        this.sound(fleshBite() ? 'hitFlesh' : 'hit', e.attacker);
         this.steelFlash(e.x, e.z - e.h, e.dir, e.z);
       }
       if (isRogue(e.attacker) && e.move.fx === 'shuriken') { this.sound('starHit', e.attacker); scene.gore.spark(e.x, e.z, e.h, 0xe8eef8, 5); }
