@@ -873,3 +873,19 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - **Shrinking**: each painted strip is scaled to its own tallest pose, so the slam (hammer up high) drew the machine about a quarter smaller. Each Crusher strip now has its own `height` in `SPRITE_SHEETS` (`src/data/levelArt.js`: walk 380, atk1 395, heavy 495, doom 355), matched by eye on the rear wheel and hull, and the atk1/heavy frames sit down onto their ground line (`FOOT` in `CrusherView.js`) instead of hovering over the sparks/dust.
 - **Wheels**: the six painted walk poses all have the wheels at the same angle, so `CrusherView.js` cuts the rear wheel's spokes and the drum's face out of the first walk pose as discs (`wheelTexture`) and turns them over the painting: the rear wheel rolls with the ground covered, the drum grinds all the time (faster on the move). The drum's arm is cut out of the disc and masked off so it stays still. Only over the walk strip (the grind strip's drum is painted turning). Hub positions are in source pixels of `crusher_walk.png` (`WHEEL`, `DRUM`): if that file is repainted, re-measure them.
 - Checked: logic tests pass (new: the Crusher is a regular enemy, five times, twice in pairs; still iron). In headless Chromium the painted Crusher walked, slammed and ground with the wheel turning and the slam the walk's size. Not played by a person.
+
+## itch upload 19800511 (2026-10-16) = main at f540b01
+- Live on the page and embedded. 338 MB zip, 36 parts, same chunked Chrome upload; SHA-256 checked in the page before handing it to itch.
+- Includes the ragdolls, arrow volleys and catapults, execution heads on kneeling bosses, the stables stampede, villagers at hero size, enemy walk-ons and the Burning Roofs cleanup. Tests pass. Nick to check the first execution and Tam on the roofs.
+- Online play: both players need this build (refresh the page).
+
+## itch upload 19803627 (2026-10-16) = main at cda2b32
+- Live on the page and embedded. 338 MB zip, 36 parts, same chunked Chrome upload; SHA-256 checked in the page before handing it to itch.
+- Adds the faster ragdoll falls (heavier fall gravity in a knockdown, juggle hits take the game's speed) on top of 19800511.
+- (These two notes were committed on the PC but never pushed; added here with 19814146.)
+
+## itch upload 19814146 (2026-10-16) = main at 8e88bbc
+- Live on the page and embedded. 342 MB zip, 38 parts, same chunked Chrome upload; SHA-256 checked in the page before handing it to itch.
+- Adds the halved-men fix (legs stand then fold, top half falls clear, pieces bounce and roll, loose hands drop) and the village carts and stable-gate bar. Tests pass; the autoplay bot reached the boss on the staged copy with no errors, and the hosted copy boots into a fight cleanly.
+- Still unpainted, so they 404 on itch as expected: `assets/env/village/torch.png` and `mill_floor.png` (the game skips them).
+- Online play: both players need this build (refresh the page).
