@@ -24,7 +24,7 @@ export const MAGE_SOUNDS = {
   boltCharge: [['fireWhoosh', { volume: 0.25, pitch: 900 }]], // force blast / rupture build-up (not electric)
   elecCharge: [['elecCharge', { volume: 0.55, spread: 80, minGapMs: 200 }]],
   elecFull: [['magicBlock', { volume: 0.5, pitch: 900 }], ['elecJump', { volume: 0.5, pitch: -200 }]],
-  boltCast: [['elecZap', { volume: 0.85 }], ['kick', { volume: 0.4, pitch: -300 }]],
+  boltCast: [['mageShock', { volume: 0.9 }], ['kick', { volume: 0.4, pitch: -300 }]],
   boltImpact: [['elecShock', { volume: 0.9, minGapMs: 30 }], ['block', { volume: 0.25, pitch: 1700, minGapMs: 30 }]],
   boltJump: [['elecJump', { volume: 0.6, minGapMs: 25 }]],
   force: [['kick', { volume: 1, pitch: -800 }], ['fireWhoosh', { volume: 0.6, pitch: -600 }]],
@@ -36,7 +36,7 @@ export const MAGE_SOUNDS = {
   earthDown: [['kick', { volume: 0.7, pitch: -1500 }]],
   earthHit: [['block', { volume: 0.45, pitch: -900, minGapMs: 60 }], ['kick', { volume: 0.7, pitch: -1100, minGapMs: 60 }]],
   earthBreak: [['kick', { volume: 1, pitch: -1600 }], ['heavySwing', { volume: 0.5, pitch: -900 }], ['block', { volume: 0.4, pitch: -1300 }]],
-  storm: [['elecThunder', { volume: 1, spread: 80 }], ['kick', { volume: 0.8, pitch: -1400 }]],
+  storm: [['lightningStrike', { volume: 0.9, spread: 60, minGapMs: 400 }], ['kick', { volume: 0.8, pitch: -1400 }]],
   rupture: [['kick', { volume: 1, pitch: -600 }], ['finisher', { volume: 0.6, pitch: -800 }]],
   embers: [['fireWhoosh', { volume: 1, pitch: -500 }], ['kick', { volume: 0.7, pitch: -1100 }]],
 };
@@ -68,6 +68,7 @@ export class MageFX {
     ev.on('boltChargeFull', ({ fighter }) => { this.sound('elecFull', fighter); this.flashAt(this.staffTip(fighter), 0xffd890, 18); });
     ev.on('boltCast', ({ fighter, plan, charged }) => {
       this.sound('boltCast', fighter);
+      if (charged) this.sound('storm', fighter); // held Y: the overcharged bolt is a real lightning strike
       if (!plan.hits.length) this.bolt(this.staffTip(fighter), { x: plan.end.x, y: plan.end.z - plan.end.h }, fighter.z, charged, 0.6);
     });
     ev.on('lightningArc', (a) => this.arc(a));
@@ -204,8 +205,7 @@ export class MageFX {
     this.flashAt({ x: s.x, y: s.z - 20 }, 0xeef4ff, 50);
     this.pulse(s.x, s.z, 0, 0x9ad0ff, s.radius);
     this.scene.fx?.shake(10, 18);
-    this.sound('elecFull', s.by);
-    playSfx(this.scene, 'kick', { volume: 1, pitch: -1700, minGapMs: 0 });
+    this.sound('storm', s.by);
   }
 
   // One jump of the chain: from the staff (or the last body) into this one.

@@ -38,7 +38,10 @@ export const SFX = {
   elecZap: 'assets/audio/sfx/elec-zap.wav',         // a bolt leaving the staff
   elecShock: 'assets/audio/sfx/elec-shock.wav',     // a bolt biting into a body: stuttering buzz
   elecJump: 'assets/audio/sfx/elec-jump.wav',       // a fork jumping on to the next body
-  elecThunder: 'assets/audio/sfx/elec-thunder.wav', // thunderclap: 3rd chain hit, Storm Judgment
+  elecThunder: 'assets/audio/sfx/elec-thunder.wav', // thunderclap (spare: lightningStrike took its place)
+  // Nick's own picks (2026-10-17), trimmed: the shock leads Y (chain lightning), the strike is the big bolt
+  mageShock: 'assets/audio/sfx/mage-shock.mp3',            // the Y press: the bolt leaving the staff
+  lightningStrike: 'assets/audio/sfx/lightning-strike.mp3', // a full lightning bolt: overcharge, 3rd chain hit, Thunderhead, Storm Judgment
 };
 
 const lastPlayed = {};
