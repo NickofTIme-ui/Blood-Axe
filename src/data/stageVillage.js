@@ -146,7 +146,7 @@ export const STAGE_VILLAGE = {
       fightAt: 5980,
       waves: [['grunt', 'butcher', 'grunt'], ['berserker', 'grunt', 'stalker'], ['grunt', 'butcher', 'grunt', 'ghoul']],
       props: [
-        { kind: 'wreckage', tag: 'stables', x: 6380, z: 300, drop: null },
+        { kind: 'wreckage', tag: 'stables', x: 6380, z: 300, size: 1.7, drop: null }, // (sized up to the stable gate: Nick, 2026-10-17)
         { kind: 'barrel', x: 5820, z: 500, drop: 'wine' },
         { kind: 'crate', x: 7000, z: 470, drop: 'meat' },
       ],
