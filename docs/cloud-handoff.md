@@ -936,3 +936,8 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - Still not online: skill trees, shrine spending and trophies' stats (each hero plays with his base sheet; Rurik has Oathkeeper from the start). The fingerprint (`net/Version.js`) now covers the campaign levels too.
 - Tests: two machines over a laggy wire play two minutes of the Burning Village alike (villagers and story too); the ready bit crosses the wire.
 - Online play: both players need this build (refresh the page).
+
+## itch upload 19830412 (2026-10-17) = main at 785ae7d
+- Live on https://knickoftime.itch.io/blood-axe-oath-of-vengeance and embedded. 385 MB zip, 39 parts, same chunked Chrome upload; SHA-256 checked in the page; waited for itch to unpack before loading any file; all 599 files load.
+- Adds online co-op on the campaign (ONLINE CO-OP on the main menu).
+- Online play: both players need this build (refresh the page).
