@@ -9,7 +9,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { World } from '../core/World.js';
 import { InputManager, realPads } from '../core/InputManager.js';
-import { TickController, pressed } from '../core/TickInput.js';
+import { TickController, pressed, held, bitOf, EMPTY } from '../core/TickInput.js';
 import { LocalSession, NetSession, snapshot, correct, feedPlayers } from '../net/Session.js';
 import { CONTROLS, CONTROLS_P1_SHARED, CONTROLS_P2 } from '../config/controls.js';
 import { createPlayer } from '../entities/Player.js';
@@ -49,7 +49,7 @@ import { CHARACTERS } from '../data/characters.js';
 import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
 import { playMusic, playCue, stopMusic, toggleMute } from '../core/Music.js';
-import { playSfx } from '../core/Sfx.js';
+import { playSfx, fleshBite } from '../core/Sfx.js';
 import { runTickJobs } from '../core/TickJobs.js';
 import { styleMult } from '../combat/Style.js';
 import { TROPHIES, RARITY, LOOT, pickTrophy } from '../data/trophies.js';
@@ -96,12 +96,16 @@ export class ArenaScene extends Phaser.Scene {
     this.carry = data.carry ?? null;
     this.leaving = false;
     this.campaign = !!(this.stageData.exit || this.stageData.sequence);
+    // online, the campaign's story so far (who was saved), the same on both machines: the
+    // host's checkpoint to begin with (SelectScene.netStart), then carried level to level
+    this.netCampaign = this.mode === 'net' ? data.netCampaign ?? null : null;
   }
 
   // What to start this scene again with (restart the stage).
   restartData() {
     return {
       players: this.heroIds, mode: this.mode, net: this.netInfo, keepSession: true, stage: this.stageId,
+      netCampaign: this.netCampaign,
       seed: this.mode === 'net' ? (this.world.seed + 1) >>> 0 : undefined, // (the same new dice on both machines)
     };
   }
@@ -157,6 +161,12 @@ export class ArenaScene extends Phaser.Scene {
       if (e.move.impale) this.impaleFX(e);
       if (e.move.shoulder) this.shoulderImpact(e);
       else if (e.kind === 'melee' && e.attacker?.stats.blade) this.oathkeeperBite(e);
+      // a sword cut from our side (not a kick, the shoulder or fire; the Mage and Rogue
+      // sound their own): now and then the blade biting flesh
+      if (e.kind === 'melee' && e.attacker?.team === 'player' && !e.attacker.stats.archetype
+        && e.move.fx !== 'kick' && !e.move.shoulder && e.move.cut !== 'fire' && fleshBite()) {
+        playSfx(this, 'stationaryKill', { volume: 0.75, spread: 120, minGapMs: 60 });
+      }
     });
     // the SHOULDER SMASH sets off: a grunt, the plant, dust off his back foot
     ev.on('attackStart', ({ fighter: f, state }) => {
@@ -354,6 +364,9 @@ export class ArenaScene extends Phaser.Scene {
     sharedProgress(this.registry);
     this.progress = this.mode === 'net' ? null : this.registry.get('progress');
     this.progress?.play(this.stageId); // (level 1: Rurik's old sword until Brann gives him Oathkeeper)
+    // online, the host's own campaign save still follows the game (checkpoints, levels,
+    // the saved), so CONTINUE picks up there next time. Written to only, never read here.
+    this.netSave = this.mode === 'net' && this.netInfo?.index === 0 && this.campaign ? this.registry.get('progress') : null;
     this.applySkills(true);
     // (on from the last level: a little worn, never on his last legs)
     if (this.carry) this.players.forEach((p, i) => { p.health = p.stats.maxHealth * Math.max(0.5, Math.min(1, this.carry.health?.[i] ?? 1)); });
@@ -373,10 +386,11 @@ export class ArenaScene extends Phaser.Scene {
     // online: both machines would have to agree on it)
     const C = this.progress?.campaign;
     const back = this.startSection > 0;
+    const NC = this.netCampaign;
     this.stage = new Stage(this.world, this.stageData, C ? {
       saved: this.progress.rescuedIds(), flags: { ...C.flags },
       rescued: back ? this.progress.rescuedIds() : undefined, lost: back ? this.progress.lostIds() : undefined,
-    } : {});
+    } : NC ? { saved: [...(NC.saved ?? [])], flags: {}, rescued: NC.rescued, lost: NC.lost } : {});
     this.gore.dismemberer.minZ = this.world.bounds.minZ; // (a stage's own lane: `laneTop`)
     this.stageView = new StageView(this, this.stage);
     // (after the StageView: it makes the 'glow' texture the terrain's lanterns use)
@@ -391,6 +405,8 @@ export class ArenaScene extends Phaser.Scene {
     this.setupBirthright(ev);
     this.stage.start(this.players, { section: this.startSection });
     this.nextReady = false;
+    this.tallyUp = false;   // (this machine's tally is on screen: the 'ready' bit online)
+    this.netGo = null;      // (online: a ready player asked to go on: netWonKeys)
     ev.on('revive', ({ fighter }) => {
       this.callout(fighter === this.player ? 'ON YOUR FEET' : 'YOUR PARTNER RISES', '#e0c080', 24);
       this.gore.spark(fighter.x, fighter.z, 40, 0xffe0a0, 14);
@@ -632,7 +648,7 @@ export class ArenaScene extends Phaser.Scene {
     ev.on('sectionStart', ({ index, section }) => {
       hud()?.sectionCard?.(index, section);
       // a campaign checkpoint: CONTINUE starts here
-      if (this.campaign) this.progress?.reach(this.stageId, index);
+      if (this.campaign) (this.progress ?? this.netSave)?.reach(this.stageId, index);
       if (index > 0) playSfx(this, 'block', { volume: 0.4, pitch: -900, minGapMs: 0 }); // the way shuts behind you
     });
     ev.on('sectionClear', ({ last, section }) => {
@@ -680,12 +696,14 @@ export class ArenaScene extends Phaser.Scene {
       playSfx(this, 'kick', { volume: 0.9, pitch: -1500, minGapMs: 0 });
     });
     ev.on('npcLost', ({ npc }) => {
+      this.netSave?.lose(npc.id);
       this.callout(`${npc.name.toUpperCase()}  ·  LOST`, '#a09080', 24);
       playSfx(this, 'kick', { volume: 0.5, pitch: -2200, minGapMs: 0 });
     });
     ev.on('npcFollow', ({ npc }) => this.callout(`${npc.name.toUpperCase()}  ·  FOLLOWS YOU`, '#e8f0ff', 20));
     ev.on('lockPick', () => playSfx(this, 'block', { volume: 0.3, pitch: 900, minGapMs: 0 }));
     ev.on('npcRescued', ({ npc }) => {
+      this.netSave?.rescue(npc.id);
       this.callout(`${npc.name.toUpperCase()}  ·  SAVED`, '#e8f0ff', 24);
       playSfx(this, 'block', { volume: 0.5, pitch: 400, minGapMs: 0 });
       this.gore.spark(npc.x, npc.z, Math.max(0, npc.h) + 40, 0xe8f0ff, 16);
@@ -714,7 +732,7 @@ export class ArenaScene extends Phaser.Scene {
     const N = nextLevel(D);
     const title = D.doneTitle ?? 'THE PURSUIT GOES ON';
     this.callout(title, '#bfe8ff', 34);
-    this.progress?.finishLevel(D.id, N ? D.next.id : null);
+    (this.progress ?? this.netSave)?.finishLevel(D.id, N ? D.next.id : null);
     const story = this.stage.story;
     const saved = (story?.npcs ?? []).filter((n) => story.isRescued(n.id)).map((n) => n.name);
     const lost = (story?.npcs ?? []).filter((n) => story.lost.has(n.id)).map((n) => n.name);
@@ -728,6 +746,7 @@ export class ArenaScene extends Phaser.Scene {
         },
       });
       this.nextReady = !!N; // (ENTER: on to the next level, once the tally is up)
+      this.tallyUp = true;
     };
     if (!D.cutaway) { this.time.delayedCall(1600, tally); return; }
     this.time.delayedCall(1800, () => {
@@ -779,6 +798,12 @@ export class ArenaScene extends Phaser.Scene {
     this.nextReady = false;
     this.leaving = true;
     const carry = { health: this.players.map((p) => p.health / p.stats.maxHealth) };
+    // online: who this level saved goes on with the story (as the campaign save does)
+    if (this.netCampaign) {
+      const story = this.stage.story;
+      const saved = new Set([...(this.netCampaign.saved ?? []), ...(story?.npcs ?? []).filter((n) => story.isRescued(n.id)).map((n) => n.id)]);
+      this.netCampaign = { saved: [...saved] };
+    }
     const go = () => { this.setPaused(false); this.scene.restart({ ...this.restartData(), stage: this.stageData.next.id, section: 0, carry }); };
     const hudCam = this.scene.get('HUD')?.cameras?.main;
     hudCam?.fadeOut(LEVEL_FADE_MS, 0, 0, 0);
@@ -1360,6 +1385,8 @@ export class ArenaScene extends Phaser.Scene {
       // the guest's safety net: pulled back into line with the host if it ever drifts
       this.session.onCorrect = (host, mine) => correct(this.world, host, mine);
       this.session.onGone = () => { if (this.sys.isActive()) this.goAlone(); };
+      // (my tally is up, the king's scene over: held in my records so both games know)
+      this.session.extraHeld = () => (this.tallyUp && !this.cutawayOn ? bitOf('ready') : 0);
       this.wentAlone = false;
     } else {
       this.session = new LocalSession([new InputManager(this)]);
@@ -1475,6 +1502,7 @@ export class ArenaScene extends Phaser.Scene {
   // Pause, restart and leave, from this tick's records (any player may press them).
   // Returns true if the scene is ending.
   systemKeys(recs) {
+    if (this.session.net && this.campaign && this.stage?.phase === 'won') return this.netWonKeys(recs);
     if (this.cutawayOn) return false; // (the king's scene has the keys: Esc there skips it, not the run)
     const any = (a) => recs.some((r) => pressed(r, a));
     const dead = this.allDead;
@@ -1501,12 +1529,34 @@ export class ArenaScene extends Phaser.Scene {
     if (any('menu')) {
       if (this.paused || dead || won) {
         this.setPaused(false);
-        this.scene.start('Select', { mode: this.mode, net: this.netInfo });
+        this.scene.start('Select', { mode: this.mode, net: this.netInfo, stage: this.mode === 'net' && !this.campaign ? 'oath' : undefined });
         return true;
       }
       this.setPaused(true);
     }
     return false;
+  }
+
+  // Online, a campaign level won: each machine plays the king's scene and puts up its
+  // tally in its own time, so nothing local may decide when the game moves on. Only the
+  // records do: a press of ENTER (or Esc after the last level) from a player whose tally
+  // is up counts, and both games go on the tick every player still here is ready.
+  netWonKeys(recs) {
+    const live = this.players.map((p) => recs[p.seat] ?? EMPTY);
+    const ready = (r) => held(r, 'ready');
+    if (!this.netGo) {
+      if (recs.some((r) => ready(r) && pressed(r, 'pause'))) this.netGo = 'next';
+      else if (recs.some((r) => ready(r) && pressed(r, 'menu'))) this.netGo = 'leave';
+      else return false;
+      if (!live.every(ready)) this.callout('WAITING FOR YOUR PARTNER', '#9fd0ff', 20);
+    }
+    if (!live.every(ready)) return false;
+    const go = this.netGo;
+    this.netGo = null;
+    if (go === 'next' && nextLevel(this.stageData)) { this.goNextLevel(); return true; }
+    this.scene.stop('Cutaway');
+    this.scene.start('Select', { mode: this.mode, net: this.netInfo });
+    return true;
   }
 
   // Two heroes on one screen can't walk out of each other's sight: past a screen's

@@ -13,6 +13,7 @@
 import { CHARACTERS } from '../data/characters.js';
 import { ENEMIES, WAVES } from '../data/enemies.js';
 import { STAGE, PICKUPS, PROPS } from '../data/stage.js';
+import { STAGES } from '../data/stages.js'; // (the campaign's levels: online plays them too)
 import { ACTIONS } from '../core/TickInput.js';
 import { World } from '../core/World.js';
 import { Stage } from '../stage/Stage.js';
@@ -41,7 +42,7 @@ function text(v, depth = 0) {
 let cached = null;
 export function simVersion() {
   if (cached) return cached;
-  const src = [CHARACTERS, ENEMIES, WAVES, STAGE, PICKUPS, PROPS, ACTIONS,
+  const src = [CHARACTERS, ENEMIES, WAVES, STAGE, STAGES, PICKUPS, PROPS, ACTIONS,
     World, Stage, CombatSystem, Fighter, EnemyBrain, createEnemy, Projectile, Barriers, Mines,
     { ...states }, { ...mage }, { ...rogue }, { ...finisher }, { ...session }].map((v) => text(v)).join('\n');
   let h = 2166136261;

@@ -921,6 +921,36 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - The stones in the air now use the painted stone from the catapult's sling (`drawStone` in `StageView.js`), spinning, burning, with a fire-and-smoke tail and embers, coming from the catapult's side. Without the painted art the old drawn ones stand in.
 - View only; tests pass. Pushed before being watched in a running game (Nick said push); a headless film was running at the time.
 
+## Cloud, 2026-10-17: Nick's flesh-hit sound mixed into sword and Rogue hits (not on itch)
+- `assets/audio/sfx/stationary-kill.mp3` (Nick's upload) is SFX key `stationaryKill`. It plays on about half of the player's sword hits (`ArenaScene` hit handler) and half of the Rogue's melee cuts (`ROGUE_SOUNDS.hitFlesh`); `fleshBite()` in `core/Sfx.js` picks, never three in a row the same way.
+
+## Cloud, 2026-10-17: the new opening cinematic, music from 17 s (not on itch)
+- Nick: "add in the new cinematic for the games opening ... i want the music to kick in at 17 second mark".
+- `assets/video/opening-cinematic.mp4` is the 41 s cut from Nick's ChatGPT "opening cinematic" chat (the Rurik version: story card, the march home, the burning village, Rurik draws, the Blood Axe title card). Re-encoded from ChatGPT's 88 MB file to 50 MB (H.264 CRF 21, 1080p, faststart); its own audio track was dropped since the cinematic always plays muted. The original is on the PC at `assets/incoming/opening-cinematic-new.mp4`.
+- `THEME_AT` in `src/core/StartupIntro.js` is 17 (was 7): "The Battle" starts 17 s in, or at once on a skip.
+- Checked in headless Chromium (with a VP9 stand-in, since its build lacks H.264): the film plays all 41 s, the theme starts at 17.0 s, it crossfades into the title. Tests pass.
+
+## itch upload 19827076 (2026-10-17) = main at 928c05e
+- Live on the page and embedded. 385 MB zip, 39 parts, same chunked Chrome upload; SHA-256 checked in the page before handing it to itch.
+- Adds the new 41 s opening cinematic (music from 17 s), Nick's flesh-hit and Mage shock/lightning sounds, and the archer/catapult animations. Checked on the hosted copy with ?mute=1: the cinematic loads and hands over to the title; all 599 files load.
+- Gotcha: the first try (19826617) broke because two files were fetched before itch finished unpacking, and itch's CDN cached the 404s for 31 days. After an upload, wait for itch to finish unpacking before loading any game file URL.
+- Not in it: the Black Keep (level 6) branch, which isn't merged to main.
+- Online play: both players need this build (refresh the page).
+
+## Cloud, 2026-10-17: online co-op plays the campaign
+- Nick: "have online play the campaign as normal with all the latest updated" (it used to play only the old Oath Road).
+- ONLINE CO-OP is on the main menu now (`TitleScene`); the Director's Cut keeps the Oath Road online as OATH ROAD: ONLINE (`openLobby('oath')`).
+- The host decides where it starts (`SelectScene.netStart`): his campaign checkpoint, or the Burning Village; the 'start' message carries the level, section and who he has saved, so both machines build the same level. The host's save follows the game (checkpoints, levels, the saved: `ArenaScene.netSave`), so CONTINUE picks up there. Who was saved carries level to level online (`netCampaign`).
+- Level end online: each machine plays the king's scene and its tally in its own time, so a new held bit `ready` (`TickInput` ACTIONS, set through `NetSession.extraHeld`) says when this machine's tally is up. ENTER from a ready player counts; both games go on the same tick once both are ready (`ArenaScene.netWonKeys`), with WAITING FOR YOUR PARTNER meanwhile.
+- Still not online: skill trees, shrine spending and trophies' stats (each hero plays with his base sheet; Rurik has Oathkeeper from the start). The fingerprint (`net/Version.js`) now covers the campaign levels too.
+- Tests: two machines over a laggy wire play two minutes of the Burning Village alike (villagers and story too); the ready bit crosses the wire.
+- Online play: both players need this build (refresh the page).
+
+## itch upload 19830412 (2026-10-17) = main at 785ae7d
+- Live on https://knickoftime.itch.io/blood-axe-oath-of-vengeance and embedded. 385 MB zip, 39 parts, same chunked Chrome upload; SHA-256 checked in the page; waited for itch to unpack before loading any file; all 599 files load.
+- Adds online co-op on the campaign (ONLINE CO-OP on the main menu).
+- Online play: both players need this build (refresh the page).
+
 ## Cloud + PC, 2026-10-17: the Black Keep painted, its music, the stage-clear tune (for itch)
 - Nick: "continue", then sent "12 Showdown" ("the last level song") and "06 Stage Clear" ("when you beat a level sound"), then "ill test the game just load everything in and update itch".
 - **Art**: 13 pictures made in ChatGPT on Nick's PC (chat "Create Fortress Landing Tile"), prompts in `docs/keep-art-prompts.md`: `assets/env/keep/` sky, far (the Keep with the seated king), ground, `tile_causeway/hall/cells/forge/root/spire/battlements` (a wall per part of the Keep: `LEVEL_ART.keep.tiles`, `PaintedLevel.tile`), `prop_pin/conduit/spire` (whole + broken, trimmed to their content). Raw downloads are in the PC's `assets/incoming/keep_*.png` (untracked there). Still code: ledge surfaces, the throne room's walls and the colossus, the forge's buckets and mill stone.

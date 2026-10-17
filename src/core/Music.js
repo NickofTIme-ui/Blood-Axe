@@ -7,7 +7,7 @@
 import { SETTINGS } from '../config/settings.js';
 
 export const MUSIC = {
-  title: 'assets/audio/title-the-battle.mp3',       // "02 The Battle": opening cinematic (from 7 s), title + character select
+  title: 'assets/audio/title-the-battle.mp3',       // "02 The Battle": opening cinematic (from 17 s), title + character select
   battle: 'assets/audio/gameplay-battle-field.mp3', // arena
   boss: 'assets/audio/boss-theme.mp3',              // the Warlord (until the file is added, the battle track plays on)
   wilderness: 'assets/audio/wilderness.mp3',        // Gallows Wood (a stage's `music` picks its track)
@@ -30,7 +30,7 @@ function volume(key = current?.key) {
   return SETTINGS.audio.muted ? 0 : SETTINGS.audio.music * (GAIN[key] ?? 1);
 }
 
-// Called by the opening cinematic (core/StartupIntro.js) 7 s in, or when it is skipped
+// Called by the opening cinematic (core/StartupIntro.js) 17 s in, or when it is skipped
 // sooner. A plain <audio> element, since Phaser does not exist yet; the title screen
 // adopts it, so the track carries on without restarting. Calling it again from a key
 // press or click retries a play the browser blocked. ?mute=1 leaves it to Phaser.

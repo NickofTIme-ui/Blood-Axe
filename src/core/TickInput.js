@@ -13,7 +13,10 @@ import { Controller } from './Controller.js';
 
 // Bit order. Append only: both machines must agree on it.
 export const ACTIONS = ['left', 'right', 'up', 'down', 'attack', 'heavy', 'block', 'dodge', 'magic', 'kick', 'jump',
-  'confirm', 'pause', 'restart', 'menu', 'sprint', 'padUp', 'padDown', 'padLeft', 'padRight'];
+  'confirm', 'pause', 'restart', 'menu', 'sprint', 'padUp', 'padDown', 'padLeft', 'padRight',
+  // (not a button: held while this machine's campaign tally is up, so online both games
+  // know when both players are ready to move on: ArenaScene.netWonKeys)
+  'ready'];
 const BIT = Object.fromEntries(ACTIONS.map((a, i) => [a, 1 << i]));
 
 export const EMPTY = [0, 0, 0, 0];
@@ -30,6 +33,8 @@ export function capture(sampler, presses = true) {
 }
 
 export const pressed = (rec, action) => !!(rec[1] & BIT[action]);
+export const held = (rec, action) => !!(rec[0] & BIT[action]);
+export const bitOf = (action) => BIT[action];
 
 // The controller a player's hero reads: it just plays back the record it's given.
 export class TickController extends Controller {

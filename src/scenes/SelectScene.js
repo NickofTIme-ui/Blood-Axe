@@ -12,6 +12,7 @@
 import { sharedProgress } from '../progression/Progress.js';
 import { SETTINGS } from '../config/settings.js';
 import { CHARACTERS } from '../data/characters.js';
+import { STAGES } from '../data/stages.js';
 import { delayFor } from '../net/Session.js';
 import { InputManager } from '../core/InputManager.js';
 import { playMusic, toggleMute } from '../core/Music.js';
@@ -264,18 +265,34 @@ export class SelectScene extends Phaser.Scene {
     if (this.net.index !== 0 || !this.picks[0] || !this.picks[1] || this.leaving) return;
     // the slowest recent round trip sets the delay (a press must arrive before it's due)
     const rtt = this.rtts.length ? Math.max(...this.rtts.slice(-8)) : null;
-    const msg = { k: 'start', seed: Math.floor(Math.random() * 0xffffffff), players: [this.picks[0], this.picks[1]], game: Math.floor(Math.random() * 1e9), delay: delayFor(rtt) };
+    const msg = { k: 'start', seed: Math.floor(Math.random() * 0xffffffff), players: [this.picks[0], this.picks[1]], game: Math.floor(Math.random() * 1e9), delay: delayFor(rtt), ...this.netStart() };
     this.net.link.send(msg);
     this.startNet(msg);
   }
 
+  // Host: where the online game starts. The campaign, from the host's own checkpoint
+  // (CONTINUE), with who he has saved so far; or the Oath Road from the Director's Cut.
+  // Both machines build the level from this same message, so they start the same game.
+  netStart() {
+    if (this.stageId === 'oath') return { stage: 'oath', section: 0, campaign: null };
+    const P = sharedProgress(this.registry);
+    const at = P.campaign.at && STAGES[P.campaign.at.level] ? P.campaign.at : { level: 'village', section: 0 };
+    const back = at.section > 0;
+    return {
+      stage: at.level, section: at.section,
+      campaign: { saved: P.rescuedIds(), rescued: back ? P.rescuedIds() : undefined, lost: back ? P.lostIds() : undefined },
+    };
+  }
+
   startNet(m) {
     if (this.leaving) return;
+    this.stageId = m.stage ?? 'oath'; // (the host's choice: netStart)
+    this.section = m.section ?? 0;
     // (from here until the arena is up nobody is listening: the link keeps what arrives)
     this.net.link.onData(null);
     this.pinger?.remove();
     this.setSub('TO BATTLE');
-    this.begin({ players: m.players, mode: 'net', seed: m.seed, net: { ...this.net, game: m.game, delay: m.delay } });
+    this.begin({ players: m.players, mode: 'net', seed: m.seed, net: { ...this.net, game: m.game, delay: m.delay }, netCampaign: m.campaign ?? null });
   }
 
   // ------------------------------------------------------------ the info panel
