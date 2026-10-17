@@ -532,10 +532,19 @@ export class SpriteEnemyView {
       const top = piece === upper;
       const vel = top ? { x: (piece.vx ?? 0) / 60, y: -(piece.vh ?? 0) / 60 } : { x: 0, y: 0 };
       const spin = top ? Math.max(-3, Math.min(3, (piece.spin ?? 0) / 60 * 18)) : 0;
-      r.start(f, face, k, top ? 'fly' : 'drop', { range, free: true, vel, spin, strays: piece === strayTo ? strays : null });
+      // (what's left on its feet stands a beat as the top goes, as the cut pieces' legs do:
+      // that moment, the top half clear of legs still standing, is what reads as cut in two)
+      const hold = top ? 0 : type === 'limbs' ? 2 : 14;
+      // ...then they go over back the way the blade came, away from the top half (falling
+      // after it, they'd land hips to hips with it: one whole body lying there again)
+      const lean = !top && plan[0] ? -0.18 * (Math.sign(upper.vx ?? 0) || upper.dir || face) : undefined;
+      r.start(f, face, k, top ? 'fly' : 'drop', { range, free: true, vel, spin, hold, lean, strays: piece === strayTo ? strays : null });
       const j = top ? range[1] : range[0];         // the cut end
       Object.assign(piece, { rag: r, mode: 'rag', env, ragJoint: j, ragOther: top ? j - 1 : j + 1, bandOff: { x: 0, y: 0 } });
       piece.img.setVisible(false);
+      // (the lying pose the doll is drawn from has his hands: any loose bits the cut left
+      // hanging off the standing picture would be a second pair)
+      this.scene.cuts?.dropLoose(piece);
     }
   }
 
