@@ -14,11 +14,13 @@ barrels, crates, bodies.
 
 | # | Item | Where you see it | Why it looks wrong | Fix |
 |---|---|---|---|---|
-| 1 | The gatehouse stair and guardroom landing | THE GATEHOUSE, the whole climb | flat grey code boxes, the only unpainted ground you stand on in the level | prompts A and B |
-| 2 | The rotten floor over the oubliette | THE GATEHOUSE, between stair and landing | code-drawn brown planks | prompt C |
-| 3 | The ram on the road | THE KILLING GROUND, the first thing you jump | a grey code box | prompt D |
+| 1 | The gatehouse stair and guardroom landing | THE GATEHOUSE, the whole climb | flat grey code boxes, the only unpainted ground you stand on in the level | **done** (A, B) |
+| 2 | The rotten floor over the oubliette | THE GATEHOUSE, between stair and landing | code-drawn brown planks | **done** (C) |
+| 3 | The ram on the road | THE KILLING GROUND, the first thing you jump | a grey code box | **done** (D) |
 | 4 | The overturned cart | THE LOWER TOWN | a grey code box | **done**: it uses the village's painted burnt cart now (no new art) |
-| 5 | Lamp posts | all through the level (12) | the green-lit wooden lantern post from the wood and the mine; this is an iron fortress | prompt E |
+| 5 | Lamp posts | all through the level (12) | the green-lit wooden lantern post from the wood and the mine; this is an iron fortress | **done** (E) |
+
+All five were painted on 17 Oct in ChatGPT on Nick's PC (chat "Create Fortress Landing Tile"). The brazier's smoke came back tinted pink by the magenta; the pink was pulled out of the file (it's an RGBA PNG now).
 
 ## How to use
 
