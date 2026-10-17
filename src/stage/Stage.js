@@ -614,6 +614,7 @@ export class Stage {
       knockdownFrames: Math.round((base.knockdownFrames ?? 40) * 0.6),
     };
     boss.health = boss.stats.maxHealth;
+    boss.dye = null; // (his own colours: no grunt's dye)
     boss.phase = 0; // (how many of his phase thresholds he has passed)
     return boss;
   }

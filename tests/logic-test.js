@@ -27,6 +27,7 @@ import { SPEAKERS, NARRATION, PORTRAIT_IDS, speakerInfo } from '../src/data/spea
 import { Progress, PROGRESS } from '../src/progression/Progress.js';
 import { SKILL_TREES } from '../src/data/skills.js';
 import { BladeChain, CHAIN_PHYS } from '../src/view/BladeChain.js';
+import { DYES } from '../src/view/dye.js';
 import { handshake } from '../src/net/Link.js';
 import { impalePin } from '../src/combat/Finisher.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/Mage.js';
@@ -838,6 +839,32 @@ test('waves: every enemy starts off every screen and walks on (no popping in)', 
       assert(Math.abs(f.x - hero.x) < 300, `${at}: and came for the hero (${Math.abs(f.x - hero.x).toFixed(0)} away)`);
     }
   }
+});
+
+test('variety: no two grunts alike (pace, height, dye), the same men on both machines, the kind left alone', () => {
+  const spawn = (seed) => {
+    const world = new World({ seed });
+    return Array.from({ length: 12 }, (_, i) => createEnemy(world, 'grunt', 600 + i * 30, 420));
+  };
+  const a = spawn(11);
+  const b = spawn(11);
+  const G = ENEMIES.grunt;
+  const V = G.variety;
+  for (const [i, f] of a.entries()) {
+    const k = f.stats.walkSpeed / G.walkSpeed;
+    assert(k >= V.speed[0] - 1e-9 && k <= V.speed[1] + 1e-9, `pace in range (${k})`);
+    assert(f.stats.size >= V.size[0] && f.stats.size <= V.size[1], `height in range (${f.stats.size})`);
+    assert(Math.abs(f.stats.depthSpeed / G.depthSpeed - k) < 1e-9, 'depth pace goes with it');
+    assert(f.health === f.stats.maxHealth, 'starts at his own full health');
+    assert(V.dyes.includes(f.dye), `a dye from the list (${f.dye})`);
+    assert(!f.dye || DYES[f.dye], `a dye the shader knows (${f.dye})`);
+    const g = b[i];
+    assert(g.stats.walkSpeed === f.stats.walkSpeed && g.stats.size === f.stats.size && g.dye === f.dye, 'same seed, same man');
+  }
+  assert(new Set(a.map((f) => f.stats.walkSpeed.toFixed(1))).size >= 10, 'all at their own pace');
+  assert(new Set(a.map((f) => f.dye)).size >= 4, `several colours (${a.map((f) => f.dye)})`);
+  assert(G.walkSpeed === 115 && G.size === undefined && a[0].stats !== a[1].stats, 'the kind\'s numbers untouched');
+  for (const [id, E] of Object.entries(ENEMIES)) for (const d of E.variety?.dyes ?? []) assert(!d || DYES[d], `${id}: dye ${d} exists`);
 });
 
 test('waves: a man stuck walking on is never spirited away while he can be seen', () => {
