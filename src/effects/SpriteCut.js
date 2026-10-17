@@ -16,6 +16,7 @@
 // Stepped once per game tick (update()), so slow motion slows them too.
 
 import { landThud } from '../core/Sfx.js';
+import { dyeImage } from '../view/dye.js';
 
 const GRAVITY = 1700;
 
@@ -81,6 +82,7 @@ export class SpriteCuts {
     const mk = (texKey, cropY, cropH, oy) => {
       const img = texKey ? this.scene.add.image(f.x, feetY, texKey) : this.scene.add.image(f.x, feetY, key, frame).setCrop(0, cropY, sh.fw, cropH);
       if (texKey && kn && cropY > 0) img.setCrop(0, 0, sh.fw, kneeRow); // (the shins stay under the floor)
+      dyeImage(this.scene, img, f.dye); // (his clothes keep their colour: view/dye.js)
       return img.setOrigin(sh.ax / sh.fw, oy / sh.fh).setScale(k * face, k).setDepth(f.z);
     };
     const bandX = baked?.midX ?? sh.ax;
@@ -221,6 +223,7 @@ export class SpriteCuts {
       const h = f.h + (sh.ay - c.cy) * k;
       const img = this.scene.add.image(x, feetY + (c.cy - sh.ay) * k, c.key)
         .setOrigin(c.ox / c.w, c.oy / c.h).setScale(k * face, k).setRotation(s.rotation).setDepth(f.z);
+      dyeImage(this.scene, img, f.dye);
       const thick = Math.min(c.w, c.h) * k;
       const p = this.add({
         img, tex: c.key, x, z: f.z + rand(-5, 5), h, mode: 'fly', rot: s.rotation, spin: 0, face, k, dir: face,

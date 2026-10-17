@@ -122,7 +122,7 @@ export const STAGE_VILLAGE = {
       waves: [['grunt', 'grunt', 'ghoul', 'grunt'], ['stalker', 'grunt', 'butcher']],
       props: [
         // the barn door, pinned shut by a fallen burning beam: people inside
-        { kind: 'wreckage', tag: 'barn', x: 5330, z: 300, drop: null },
+        { kind: 'wreckage', tag: 'barn', x: 5330, z: 300, size: 1.7, drop: null }, // (sized up to the barn: Nick, 2026-10-16)
         { kind: 'crate', x: 5560, z: 470, drop: 'health' },
         // the archers shooting at you since the roofs: two posts either side of the mill
         { kind: 'archers', tag: 'millArchers', x: 4560, z: 300, drop: null },
@@ -157,7 +157,7 @@ export const STAGE_VILLAGE = {
       fightAt: 5980,
       waves: [['grunt', 'butcher', 'grunt'], ['berserker', 'grunt', 'stalker'], ['grunt', 'butcher', 'grunt', 'ghoul']],
       props: [
-        { kind: 'wreckage', tag: 'stables', x: 6380, z: 300, drop: null },
+        { kind: 'wreckage', tag: 'stables', x: 6380, z: 300, size: 1.7, drop: null }, // (sized up to the stable gate: Nick, 2026-10-17)
         { kind: 'barrel', x: 5820, z: 500, drop: 'health' },
         { kind: 'crate', x: 7000, z: 470, drop: 'health' },
       ],

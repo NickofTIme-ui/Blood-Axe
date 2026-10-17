@@ -383,9 +383,11 @@ export class VillageBackdrop {
     g.fillStyle(0x000000, 0.3).fillEllipse(x, z, w, 10);
   }
 
-  // the square's well (where the family is held): stone ring, a roof on two posts
+  // the square's well (where the family is held): stone ring, a roof on two posts. The
+  // painting (the well with a burning market stall beside it) is 320 wide, so the stone
+  // ring comes up to a man's waist (was 140, a toy next to the fighters: Nick, 2026-10-16)
   drawWell({ x, z }) {
-    if (this.art.piece('well', x - 70, x + 70, { depth: z - 1, bottom: z - (SETTINGS.world.floorTop - 50) })) return;
+    if (this.art.piece('well', x - 160, x + 160, { depth: z - 1, bottom: z - (SETTINGS.world.floorTop - 50) })) return;
     const g = this.scene.add.graphics().setDepth(z - 1);
     g.fillStyle(0x3a3a3e, 1).fillRect(x - 30, z - 34, 60, 34);
     g.fillStyle(0x4a4a50, 1).fillEllipse(x, z - 34, 64, 16);

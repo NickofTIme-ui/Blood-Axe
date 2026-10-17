@@ -19,6 +19,7 @@
 import { measureCanvas } from './frameMeasure.js';
 import { RAGDOLL_GEAR } from '../data/ragdollGear.js';
 import { JUGGLE } from '../combat/Juggle.js';
+import { dyeImage } from './dye.js';
 
 const OVER = 6;      // frame px the pieces overlap at each joint (hides the seams)
 // the joints along the lying body, as a share of its length from the top of the head
@@ -177,11 +178,13 @@ function rotAbout(p, c, a) {
 }
 
 export class Ragdoll {
-  // gearId: which enemy's gear notes to use (his strips' id)
-  constructor(scene, sheet, gearId) {
+  // gearId: which enemy's gear notes to use (his strips' id); dye: his clothes' colour
+  // (view/dye.js)
+  constructor(scene, sheet, gearId, dye = null) {
     this.scene = scene;
     this.sheet = sheet;
     this.gearId = gearId;
+    this.dye = dye;
     this.parts = [];
     this.gearImgs = [];
     this.chainG = scene.add.graphics().setVisible(false);
@@ -202,7 +205,7 @@ export class Ragdoll {
     if (!this.B) return null;
     const B = this.B;
     for (const b of B.bands) {
-      this.parts.push(this.scene.add.image(0, 0, B.key).setCrop(...b.crop).setOrigin(b.ox / B.w, b.oy / B.h).setVisible(false));
+      this.parts.push(dyeImage(this.scene, this.scene.add.image(0, 0, B.key).setCrop(...b.crop).setOrigin(b.ox / B.w, b.oy / B.h).setVisible(false), this.dye));
     }
     for (const g of B.gear) {
       this.gearImgs.push(this.scene.add.image(0, 0, g.key).setOrigin(g.ox, g.oy).setVisible(false));

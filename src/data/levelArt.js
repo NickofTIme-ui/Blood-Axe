@@ -167,8 +167,12 @@ export const SPRITE_SHEETS = {
   'hound-atk1': { file: 'assets/enemies/strips/hound_atk1.png', frames: 4, height: 120 },
   'hound-react': { file: 'assets/enemies/strips/hound_react.png', frames: 3, height: 120 },
   'hound-doom': { file: 'assets/enemies/strips/hound_doom.png', frames: 4, height: 120 },
+  // the Crusher's strips: each is scaled to its tallest pose (the hammer hauled up, the
+  // sparks, the dust), and the machine is painted at a different size in each, so each
+  // strip has its own height that keeps the hull and wheels the walk's size (matched by eye
+  // on the rear wheel and hull; it shrank by a quarter in the slam at one height for all)
   'crusher-walk': { file: 'assets/enemies/strips/crusher_walk.png', frames: 6, height: 380 },
-  'crusher-atk1': { file: 'assets/enemies/strips/crusher_atk1.png', frames: 4, height: 380 },
-  'crusher-heavy': { file: 'assets/enemies/strips/crusher_heavy.png', frames: 5, height: 380 },
-  'crusher-doom': { file: 'assets/enemies/strips/crusher_doom.png', frames: 5, height: 380 },
+  'crusher-atk1': { file: 'assets/enemies/strips/crusher_atk1.png', frames: 4, height: 395 },
+  'crusher-heavy': { file: 'assets/enemies/strips/crusher_heavy.png', frames: 5, height: 495 },
+  'crusher-doom': { file: 'assets/enemies/strips/crusher_doom.png', frames: 5, height: 355 },
 };

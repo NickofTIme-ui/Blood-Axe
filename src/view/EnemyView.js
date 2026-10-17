@@ -17,6 +17,7 @@ import { woundTex } from '../effects/goreArt.js';
 import { FONT } from './fonts.js';
 import { softShadow } from './atmosphere.js';
 import { DANGER } from './dangerCue.js';
+import { dyeImage } from './dye.js';
 
 const D2R = Math.PI / 180;
 const ATTACKS = ['light1', 'light2', 'light3', 'heavy', 'special1', 'special2', 'airAttack'];
@@ -251,6 +252,8 @@ export class EnemyView {
     const f = this.f;
     if (this.hidden) return;
     this.age++;
+    // his clothes' colour (view/dye.js; rolled just after the view is made, so set here)
+    if (this.dyed !== f.dye) { for (const i of Object.values(this.parts)) dyeImage(this.scene, i, f.dye); this.dyed = f.dye; }
     const A = this.art;
     const rig = A.rig;
     const st = f.state;
@@ -336,7 +339,8 @@ export class EnemyView {
     if (angle <= -85) lift = -4;
     this.visFacing = this.spinning ? (Math.floor(fr / 3) % 2 ? -f.facing : f.facing) : f.facing;
     this.root.setPosition(f.x, f.z - f.h + lift).setDepth(f.z);
-    this.root.setScale(this.visFacing, 1);
+    const size = f.stats.size ?? 1; // (each man his own height: entities/Enemy.js vary())
+    this.root.setScale(this.visFacing * size, size);
     this.root.rotation = angle * D2R * this.visFacing;
     this.root.alpha = alpha;
 

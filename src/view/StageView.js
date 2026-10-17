@@ -627,6 +627,12 @@ export class StageView {
     if (!hz.view) {
       const cart = hz.look === 'cart';
       hz.view = this.scene.add.image(hz.x, hz.z, cart ? 'cartwreck' : 'grate').setDisplaySize(hz.w, hz.d * (cart ? 1 : 0.75)).setDepth(DEPTH.floor + 4);
+      // (a painted cart: stood up at its own shape, wider than the fire it holds, and sorted
+      // with the fighters, instead of squashed flat into a pile of logs: Nick, 2026-10-17)
+      const src = this.scene.textures.get('cartwreck').getSourceImage();
+      if (cart && src.width < src.height * 1.6) {
+        hz.view.setOrigin(0.5, 0.9).setPosition(hz.x, hz.z + hz.d * 0.35).setScale((hz.w * 1.5) / src.width).setDepth(hz.z);
+      }
       // (painted sheet: the same grate red-hot, faded in over the cold one as it heats)
       if (!cart && this.painted.has('grate-hot')) hz.hot = this.scene.add.image(hz.x, hz.z, 'grate-hot').setDisplaySize(hz.w, hz.d * 0.75).setDepth(DEPTH.floor + 4.05).setAlpha(0);
       hz.glow = this.scene.add.image(hz.x, hz.z, 'glow').setDisplaySize(hz.w * 1.6, hz.d * 1.4).setTint(0xff6020)

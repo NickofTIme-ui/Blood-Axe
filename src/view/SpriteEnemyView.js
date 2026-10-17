@@ -23,6 +23,7 @@ import { IMPALE } from '../combat/Finisher.js';
 import { BodyFeel, easedSpread, swingBody } from './animFeel.js';
 import { DANGER, dangerGlint } from './dangerCue.js';
 import { SENTENCE } from '../stage/Sentence.js';
+import { dyeImage } from './dye.js';
 
 // On his knees for his sentence (stage/Sentence.js) without painted kneeling art: his
 // standing frame sinks this share of his height into the floor, cropped at the knee.
@@ -254,6 +255,8 @@ export class SpriteEnemyView {
   update() {
     const f = this.f;
     const P = this.puppet;
+    // his clothes' colour (view/dye.js; rolled just after the view is made, so set here)
+    if (this.sprite.dye !== f.dye) dyeImage(this.scene, this.sprite, f.dye);
     P.update();
     this.chain.clear();
     this.smear.clear();
@@ -484,7 +487,7 @@ export class SpriteEnemyView {
   ragdoll(f, st, A, face, dt) {
     const down = (st === 'knockdown' || st === 'dead') && A.lying;
     if (!down) { this.rag?.hide(); return false; }
-    const rag = this.rag ?? (this.rag = new Ragdoll(this.scene, this.sheet, this.sheet.key.replace(/^enemy-/, '')));
+    const rag = this.rag ?? (this.rag = new Ragdoll(this.scene, this.sheet, this.sheet.key.replace(/^enemy-/, ''), f.dye));
     const k = depthScale(f.z) / this.res * (f.stats?.size ?? 1);
     if (!rag.active) {
       // the frozen instant of the blow keeps his painted hit pose; he falls when it ends
@@ -524,7 +527,7 @@ export class SpriteEnemyView {
     const strays = { covered: (band) => plan.some((r) => r && band >= r[0] && band < r[1]) };
     for (const [piece, range] of halves) {
       if (!piece || !range) continue;
-      const r = new Ragdoll(this.scene, this.sheet, gearId);
+      const r = new Ragdoll(this.scene, this.sheet, gearId, f.dye);
       if (!r.setPose(ref)) { r.destroy(); continue; }
       const top = piece === upper;
       const vel = top ? { x: (piece.vx ?? 0) / 60, y: -(piece.vh ?? 0) / 60 } : { x: 0, y: 0 };

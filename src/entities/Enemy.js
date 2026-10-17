@@ -410,6 +410,26 @@ export function createEnemy(world, typeId, x, z, opts = {}) {
     f.facing = Math.sign(world.bounds.minX + world.bounds.maxX - 2 * x) || -1;
   }
   world.addFighter(f);
+  vary(world, f);
   brain.cooldown = brain.randInt(stats.ai.attackCooldown, 15);
   return f;
+}
+
+// No two alike (data/enemies.js `variety`): each man rolls his own pace, height and dye
+// as he spawns, from the world's dice so both machines of an online game see the same
+// men. He gets his own copy of the stats; the kind's numbers are left alone.
+function vary(world, f) {
+  const v = f.stats.variety;
+  if (!v) return;
+  const between = (range, salt) => (range ? range[0] + (range[1] - range[0]) * world.roll(f.id, salt) : 1);
+  const pace = between(v.speed, 41);
+  const size = between(v.size, 42);
+  const s = f.stats;
+  f.stats = {
+    ...s, size,
+    walkSpeed: s.walkSpeed * pace, depthSpeed: s.depthSpeed * pace,
+    maxHealth: Math.round(s.maxHealth * (1 + (size - 1) * (v.toughness ?? 0))),
+  };
+  f.health = f.stats.maxHealth;
+  f.dye = v.dyes?.length ? v.dyes[Math.floor(world.roll(f.id, 43) * v.dyes.length)] : null;
 }

@@ -32,6 +32,14 @@
 //   blockHold       [min, max] frames it keeps blocking
 //   specials        [{ press, min, max, chance }] rolled every `specialEvery` frames when
 //                   the player is between min..max px away (e.g. hook from range, charge)
+//
+// VARIETY (no two men in a wave the same; entities/Enemy.js vary())
+//   variety          { speed, size, toughness, dyes }, rolled once per man as he spawns:
+//     speed          [min, max] times his walk (and depth) speed
+//     size           [min, max] times his drawn height (looks only, like a boss's size)
+//     toughness      how much of his size goes into his health: 1 = a man 10% taller has
+//                    10% more, 0 = all the same
+//     dyes           colours his clothes can be dyed (view/dye.js), null = as painted
 
 // Shared physics for all humanoid enemies.
 const BASE = {
@@ -54,6 +62,11 @@ export const ENEMIES = {
     art: 'grunt',
     body: { w: 44, h: 96 },
     look: { color: 0x5b6b2f, accent: 0x777777, skin: 0x9aa37a },
+
+    variety: {
+      speed: [0.78, 1.25], size: [0.86, 1.16], toughness: 1.5,
+      dyes: [null, null, 'crimson', 'frost', 'violet', 'ash', 'rust', 'moss'],
+    },
 
     maxHealth: 70, maxStamina: 60,
     walkSpeed: 115, depthSpeed: 85,
@@ -110,6 +123,11 @@ export const ENEMIES = {
     art: 'grunt',
     body: { w: 44, h: 96 },
     look: { color: 0x4a5428, accent: 0x666666, skin: 0x8a937a },
+    variety: {
+      speed: [0.78, 1.25], size: [0.86, 1.16], toughness: 1,
+      dyes: [null, null, 'crimson', 'frost', 'violet', 'ash', 'rust', 'moss'],
+    },
+
     maxHealth: 30, maxStamina: 40,
     walkSpeed: 128, depthSpeed: 92,
     meleeMult: 0.8,
@@ -139,6 +157,8 @@ export const ENEMIES = {
     view: 'hound',
     body: { w: 70, h: 52 },
     look: { color: 0x1a1614, accent: 0x5a5660, skin: 0x2a2220 },
+
+    variety: { speed: [0.85, 1.15] }, // (drawn in code: no size or dye yet)
 
     maxHealth: 42, maxStamina: 60,
     walkSpeed: 235, depthSpeed: 160,
@@ -181,7 +201,8 @@ export const ENEMIES = {
   // over it, a furnace in its belly; its crew stokes it. Slow, and iron doesn't flinch
   // (`machine`: never staggered or knocked down, never blocks), so you hit it between its
   // blows. The drum grinds whoever is in front of it; the arm comes down hard in front.
-  // Drawn in code by view/CrusherView.js until its art exists.
+  // Drawn in code by view/CrusherView.js until its art exists. A regular enemy (Hollow
+  // Mountain sends it five times, twice in pairs), with a grunt's health.
   crusher: {
     ...BASE,
     id: 'crusher',
@@ -192,7 +213,7 @@ export const ENEMIES = {
     body: { w: 150, h: 170 },
     look: { color: 0x2a2826, accent: 0x8a5a2a, skin: 0x3a3634 },
 
-    maxHealth: 220, maxStamina: 200,
+    maxHealth: 70, maxStamina: 200,
     walkSpeed: 52, depthSpeed: 40,
     meleeMult: 1.0,
     blockReduction: 0, guardEfficiency: 1.0,
@@ -239,6 +260,8 @@ export const ENEMIES = {
     art: 'butcher',
     body: { w: 54, h: 112 },
     look: { color: 0x6b4a32, accent: 0xc8c8c8, skin: 0xb06a48 },
+
+    variety: { speed: [0.88, 1.14], size: [0.94, 1.06], toughness: 1 },
 
     maxHealth: 130, maxStamina: 80,
     walkSpeed: 110, depthSpeed: 80,
@@ -302,6 +325,8 @@ export const ENEMIES = {
     art: 'stalker',
     body: { w: 40, h: 104 },
     look: { color: 0x4a5230, accent: 0xc8c8c8, skin: 0xa8704e },
+
+    variety: { speed: [0.88, 1.14], size: [0.94, 1.06], toughness: 1 },
 
     maxHealth: 80, maxStamina: 90,
     walkSpeed: 175, depthSpeed: 120,
@@ -377,6 +402,8 @@ export const ENEMIES = {
     body: { w: 66, h: 128 },
     look: { color: 0x5a3a2a, accent: 0x6a6a70, skin: 0xa8664a },
 
+    variety: { speed: [0.88, 1.14], size: [0.94, 1.06], toughness: 1 },
+
     maxHealth: 230, maxStamina: 140,
     walkSpeed: 78, depthSpeed: 60,
     meleeMult: 1.0,
@@ -439,6 +466,8 @@ export const ENEMIES = {
     art: 'berserker',
     body: { w: 50, h: 112 },
     look: { color: 0x5a3a26, accent: 0xc8c8c8, skin: 0xb46e4a },
+
+    variety: { speed: [0.88, 1.14], size: [0.94, 1.06], toughness: 1 },
 
     maxHealth: 120, maxStamina: 100,
     walkSpeed: 145, depthSpeed: 100,
@@ -512,6 +541,8 @@ export const ENEMIES = {
     body: { w: 44, h: 104 },
     look: { color: 0x4a5230, accent: 0x7a7a80, skin: 0xa06a4a },
 
+    variety: { speed: [0.88, 1.14], size: [0.94, 1.06], toughness: 1 },
+
     maxHealth: 95, maxStamina: 80,
     walkSpeed: 125, depthSpeed: 90,
     meleeMult: 1.0,
@@ -574,6 +605,8 @@ export const ENEMIES = {
     art: 'gladiator',
     body: { w: 56, h: 118 },
     look: { color: 0x7a1414, accent: 0x8a8a90, skin: 0xb06a48 },
+
+    variety: { speed: [0.88, 1.14], size: [0.94, 1.06], toughness: 1 },
 
     maxHealth: 170, maxStamina: 130,
     walkSpeed: 100, depthSpeed: 75,
