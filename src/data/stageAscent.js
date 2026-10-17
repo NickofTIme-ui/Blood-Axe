@@ -55,7 +55,7 @@ export const STAGE_ASCENT = {
       waves: [['grunt', 'grunt', 'stalker'], ['butcher', 'grunt']],
       props: [
         { kind: 'barrel', x: 420, z: 300, drop: null },
-        { kind: 'crate', x: 1300, z: 480, drop: 'meat' },
+        { kind: 'crate', x: 1300, z: 480, drop: 'health' },
       ],
       hazards: [
         // loose rock, taught alone on the open road before the first fight
@@ -84,7 +84,7 @@ export const STAGE_ASCENT = {
       hint: 'A stone is coming where its shadow grows',
       fightAt: 3620,
       waves: [['grunt', 'grunt', 'butcher'], ['stalker', 'grunt', 'grunt']],
-      props: [{ kind: 'barrel', x: 4400, z: 490, drop: 'wine' }],
+      props: [{ kind: 'barrel', x: 4400, z: 490, drop: 'health' }],
       hazards: [
         // the first stones: one at a time, slow (they teach the shadow)
         { type: 'bombard', period: 260, warn: 90, shots: 1, silence: 'battery' },
@@ -97,7 +97,7 @@ export const STAGE_ASCENT = {
       hint: 'Keep moving. Do not stop on the bridge',
       fightAt: 5720,
       waves: [['grunt', 'stalker', 'grunt'], ['penitent', 'grunt']],
-      props: [{ kind: 'crate', x: 6100, z: 480, drop: 'meat' }],
+      props: [{ kind: 'crate', x: 6100, z: 480, drop: 'health' }],
       hazards: [
         { type: 'bombard', period: 190, warn: 75, shots: 2, silence: 'battery' },
         { type: 'beam', look: 'rock', x: 5620, z: 360, w: 80, d: 80, period: 220, warn: 80, phase: 30 },
@@ -115,7 +115,7 @@ export const STAGE_ASCENT = {
       props: [
         // the battery: three catapults on the heights (each smashed, one stone fewer)
         { kind: 'catapult', tag: 'battery', x: 6820, z: 310, drop: null },
-        { kind: 'catapult', tag: 'battery', x: 7060, z: 330, drop: 'meat' },
+        { kind: 'catapult', tag: 'battery', x: 7060, z: 330, drop: 'health' },
         { kind: 'catapult', tag: 'battery', x: 7320, z: 310, drop: null },
         // Bram, chained to the stone pile and made to haul for them
         { kind: 'shackle', tag: 'bram', x: 7190, z: 300, drop: null },
@@ -133,7 +133,7 @@ export const STAGE_ASCENT = {
       waves: [['grunt', 'stalker', 'grunt']],
       props: [
         { kind: 'barrel', x: 8200, z: 300, drop: null },
-        { kind: 'crate', x: 8900, z: 480, drop: 'meat' },
+        { kind: 'crate', x: 8900, z: 480, drop: 'health' },
       ],
       hazards: [
         // at two thirds he signals the Keep to fire on his own camp (it hits his men too)

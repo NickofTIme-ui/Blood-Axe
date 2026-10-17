@@ -63,6 +63,17 @@ export class StageView {
     // the pickups at full detail (drawn at 1 / PICKUP_SCALE): the repainted sheet where it exists
     this.pickupHd = buildPropSheet(this.scene, 'props-src', PICKUP_HD, 4, 4, true);
     for (const k of buildPropSheet(this.scene, 'pickups-hd-src', PICKUP_PAINTED, 3, 2, true)) this.pickupHd.add(k);
+    // not painted yet: the health jar is the mana jar turned green, the ring and the rune the chalice
+    if (!this.scene.textures.exists('pk-health') && this.scene.textures.exists('pk-mana')) {
+      const src = this.scene.textures.get('pk-mana').getSourceImage();
+      const cv = document.createElement('canvas');
+      cv.width = src.width; cv.height = src.height;
+      const ctx = cv.getContext('2d');
+      ctx.filter = 'hue-rotate(-105deg) saturate(1.2)';
+      ctx.drawImage(src, 0, 0);
+      this.scene.textures.addCanvas('pk-health', cv).setFilter(Phaser.Textures.FilterMode.LINEAR);
+      if (this.pickupHd.has('pk-mana')) this.pickupHd.add('pk-health');
+    }
     // chest: iron-bound, brass lock (fallback)
     this.canvasTex('prop-chest', 92, 76, (c, w, h) => {
       c.fillStyle = '#4a2a14'; c.fillRect(2, 22, w - 4, h - 24);
@@ -152,15 +163,6 @@ export class StageView {
       c.fillStyle = '#2a201c'; c.fillRect(0, 0, 8, h); c.fillRect(w - 8, 0, 8, h);
     });
     // pickups
-    this.canvasTex('pk-meat', 40, 30, (c) => {
-      c.fillStyle = '#e8dcc0'; c.fillRect(2, 13, 14, 5); c.beginPath(); c.arc(4, 12, 3, 0, 7); c.arc(4, 19, 3, 0, 7); c.fill();
-      c.fillStyle = '#8a3a1a'; c.beginPath(); c.ellipse(26, 15, 13, 11, 0, 0, 7); c.fill();
-      c.fillStyle = '#c86a3a'; c.beginPath(); c.ellipse(24, 12, 8, 6, 0, 0, 7); c.fill();
-    });
-    this.canvasTex('pk-wine', 22, 40, (c) => {
-      c.fillStyle = '#2a0a14'; c.fillRect(8, 0, 6, 12); c.fillStyle = '#6a1a2a'; c.beginPath(); c.ellipse(11, 26, 10, 13, 0, 0, 7); c.fill();
-      c.fillStyle = '#c84a5a'; c.fillRect(5, 20, 3, 9); c.fillStyle = '#d8b080'; c.fillRect(7, 0, 8, 3);
-    });
     this.canvasTex('pk-mana', 22, 36, (c) => {
       c.fillStyle = '#c8c8d0'; c.fillRect(8, 0, 6, 9); c.fillStyle = '#1a3aaa'; c.beginPath(); c.arc(11, 23, 11, 0, 7); c.fill();
       c.fillStyle = '#6a9aff'; c.beginPath(); c.arc(8, 20, 4, 0, 7); c.fill();
@@ -567,7 +569,8 @@ export class StageView {
     const live = new Set(this.stage.pickups);
     for (const pk of this.stage.pickups) {
       if (this.pickupSprites.has(pk)) continue;
-      const key = `pk-${pk.kind}`;
+      let key = `pk-${pk.kind}`;
+      if (!this.scene.textures.exists(key)) key = 'pk-relic'; // (a secret treasure not painted yet)
       const img = this.scene.add.image(pk.x, pk.z, key).setOrigin(0.5, 1)
         .setScale((pk.kind === 'shrine' ? 0.7 : pk.kind === 'trophy' ? 1 : 0.75) / (this.pickupHd.has(key) ? PICKUP_SCALE : 1));
       const glow = this.scene.add.image(pk.x, pk.z - 12, 'glow').setScale(pk.kind === 'trophy' ? 2.6 : 1.4).setTint(PICKUPS[pk.kind].color).setAlpha(0.6).setBlendMode(Phaser.BlendModes.ADD);

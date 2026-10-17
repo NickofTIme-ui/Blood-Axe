@@ -96,11 +96,12 @@ export const PROP_HD = [
 export const PICKUP_SCALE = 4;
 export const PICKUP_HD = PROP_SHEET.map(([key, height]) => (key.startsWith('pk-') && key !== 'pk-shrine' ? [key, height * PICKUP_SCALE] : null));
 
-// ...and their repainting, when it arrives (assets/env/pickups-hd.png: a 3 x 2 grid on
-// black, docs/level1-art-prompts.md): it replaces the cut above, the trophy included.
+// ...and their repainting (made in ChatGPT, docs/level1-art-prompts.md): assets/env/pickups-hd.png,
+// a 3 x 2 grid on black. Top: the green health jar, the blue mana jar, the boss trophy; below:
+// the three secret treasures. It replaces the cut above; whatever isn't painted keeps it.
 export const PICKUP_PAINTED = [
-  ['pk-meat', 36 * PICKUP_SCALE], ['pk-wine', 50 * PICKUP_SCALE], ['pk-mana', 44 * PICKUP_SCALE],
-  ['pk-relic', 46 * PICKUP_SCALE], ['pk-trophy', 40 * PICKUP_SCALE], null,
+  ['pk-health', 48 * PICKUP_SCALE], ['pk-mana', 48 * PICKUP_SCALE], ['pk-trophy', 44 * PICKUP_SCALE],
+  ['pk-relic', 46 * PICKUP_SCALE], ['pk-ring', 40 * PICKUP_SCALE], ['pk-rune', 46 * PICKUP_SCALE],
 ];
 
 export function buildPropSheet(scene, srcKey = 'props-src', sheet = PROP_SHEET, COLS = 4, ROWS = 4, smooth = false) {

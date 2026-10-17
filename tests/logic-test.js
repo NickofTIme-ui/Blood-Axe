@@ -1539,7 +1539,7 @@ test('stage: the first section locks the camera bounds and sends its waves in tu
 
 test('stage: breaking a crate drops food that heals when walked over', () => {
   const t = stageSetup();
-  const crate = t.stage.props.find((p) => p.kind === 'crate' && p.drop === 'meat');
+  const crate = t.stage.props.find((p) => p.kind === 'crate' && p.drop === 'health');
   t.p.x = crate.x - 50; t.p.z = crate.z; t.p.facing = 1; t.p.health = 50;
   for (let i = 0; i < 2; i++) { t.p.controller.registerPress('attack'); t.run(30); }
   assert(crate.broken, `crate broken (hp ${crate.hp})`);
@@ -1565,7 +1565,7 @@ test('stage: fire grates burn whoever stands on them when they erupt; blades cut
 
 test('stage: a kicked crate skids down the lane and bursts on the first enemy, flooring him', () => {
   const t = stageSetup();
-  const crate = t.stage.props.find((p) => p.kind === 'crate' && p.drop === 'meat');
+  const crate = t.stage.props.find((p) => p.kind === 'crate' && p.drop === 'health');
   const x0 = crate.x;
   t.p.x = crate.x - 50; t.p.z = crate.z; t.p.facing = 1;
   const g = t.world.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x: crate.x + 260, z: crate.z, controller: new Scripted() }));
@@ -1579,7 +1579,7 @@ test('stage: a kicked crate skids down the lane and bursts on the first enemy, f
   assert(t.stage.pickups.some((k) => Math.abs(k.x - crate.x) < 1), 'its food spills where it burst');
   // nobody in the way: it breaks where it runs out of floor
   const u = stageSetup();
-  const c2 = u.stage.props.find((p) => p.kind === 'crate' && p.drop === 'meat');
+  const c2 = u.stage.props.find((p) => p.kind === 'crate' && p.drop === 'health');
   u.p.x = c2.x - 50; u.p.z = c2.z; u.p.facing = 1;
   u.p.controller.registerPress('kick'); u.run(120);
   assert(c2.broken && c2.x > x0 + 300, `broke at the end of its skid (${c2.x - x0})`);

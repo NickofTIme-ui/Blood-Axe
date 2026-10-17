@@ -55,7 +55,7 @@ export const STAGE_MINE = {
       fightAt: 860,
       waves: [['grunt', 'grunt', 'stalker'], ['butcher', 'grunt']],
       props: [
-        { kind: 'crate', x: 1180, z: 480, drop: 'meat' },
+        { kind: 'crate', x: 1180, z: 480, drop: 'health' },
         { kind: 'barrel', x: 420, z: 300, drop: null },
       ],
       hazards: [],
@@ -71,7 +71,7 @@ export const STAGE_MINE = {
         { kind: 'shackle', tag: 'tobin', x: 1900, z: 300, drop: null },
         { kind: 'shackle', tag: 'hilde', x: 2160, z: 300, drop: null },
         { kind: 'shackle', tag: 'miners', x: 2440, z: 300, drop: null },
-        { kind: 'barrel', x: 2620, z: 490, drop: 'wine' },
+        { kind: 'barrel', x: 2620, z: 490, drop: 'health' },
       ],
       hazards: [],
       rest: { x: 2700, z: 320, kind: 'oath' },
@@ -98,7 +98,7 @@ export const STAGE_MINE = {
       hint: 'Stepping stones: tap jump from stone to stone',
       fightAt: 5260,
       waves: [['grunt', 'stalker', 'grunt']],
-      props: [{ kind: 'barrel', x: 5700, z: 300, drop: 'meat' }],
+      props: [{ kind: 'barrel', x: 5700, z: 300, drop: 'health' }],
       hazards: [],
       // the keeper of the chains: the Ghoul's kind, grown into the mine's jailer
       boss: {
@@ -126,7 +126,7 @@ export const STAGE_MINE = {
       hint: 'Iron does not flinch: hit it between its blows',
       fightAt: 6150,
       waves: [['grunt', 'grunt', 'stalker']],
-      props: [{ kind: 'crate', x: 7200, z: 480, drop: 'meat' }],
+      props: [{ kind: 'crate', x: 7200, z: 480, drop: 'health' }],
       hazards: [
         // its furnace vents from two thirds on; the roof starts coming down at one third
         { type: 'fire', when: 'phase:furnace', x: 6400, z: 340, w: 110, d: 60, phase: 0 },

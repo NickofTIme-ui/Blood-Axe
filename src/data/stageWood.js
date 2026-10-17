@@ -50,7 +50,7 @@ export const STAGE_WOOD = {
       fightAt: 1000,
       waves: [['stalker', 'grunt', 'grunt'], ['grunt', 'butcher', 'grunt']],
       props: [
-        { kind: 'crate', x: 1320, z: 470, drop: 'meat' },
+        { kind: 'crate', x: 1320, z: 470, drop: 'health' },
         { kind: 'barrel', x: 420, z: 300, drop: null },
       ],
       hazards: [],
@@ -67,7 +67,7 @@ export const STAGE_WOOD = {
         [{ x: 2160, z: 330, inPlace: true }, { x: 2260, z: 400, inPlace: true }, { x: 2340, z: 320, inPlace: true }, { x: 2240, z: 480, inPlace: true }],
         [],
       ],
-      props: [{ kind: 'barrel', x: 2700, z: 480, drop: 'wine' }],
+      props: [{ kind: 'barrel', x: 2700, z: 480, drop: 'health' }],
       hazards: [],
       rest: { x: 2800, z: 320, kind: 'oath' },
     },
@@ -88,7 +88,7 @@ export const STAGE_WOOD = {
       hint: 'Keep them away from him: he freezes when they come close',
       fightAt: 4860,
       waves: [['stalker', 'grunt'], ['grunt', 'stalker', 'grunt']],
-      props: [{ kind: 'barrel', x: 5520, z: 300, drop: 'meat' }],
+      props: [{ kind: 'barrel', x: 5520, z: 300, drop: 'health' }],
       hazards: [],
     },
     {
@@ -102,7 +102,7 @@ export const STAGE_WOOD = {
       waves: [['grunt', 'butcher', 'grunt'], ['stalker', 'grunt', 'berserker'], ['grunt', 'butcher', 'stalker'], [...Array(10).fill('thrall'), 'berserker']], // (the last: the HORDE)
       props: [
         { kind: 'wagon', tag: 'convoy', x: 6080, z: 320, roll: { to: 7110, speed: 22 } },
-        { kind: 'barrel', x: 5700, z: 480, drop: 'wine' },
+        { kind: 'barrel', x: 5700, z: 480, drop: 'health' },
       ],
       hazards: [],
     },
@@ -113,7 +113,7 @@ export const STAGE_WOOD = {
       hint: 'Kill the hounds fast: he calls more when he is hurt',
       fightAt: 7560,
       waves: [],
-      props: [{ kind: 'crate', x: 8300, z: 480, drop: 'meat' }],
+      props: [{ kind: 'crate', x: 8300, z: 480, drop: 'health' }],
       hazards: [],
       rest: { x: 7320, z: 320, kind: 'oath' },
       // THE HOUNDMASTER: the Stalker's kind, grown into the convoy's master, with his war

@@ -12,8 +12,9 @@ current quality. The well and the burning beam are another thread's, so they're 
 
 | # | Item | Where you see it | Why it looks wrong | Fix |
 |---|---|---|---|---|
-| 1 | Roast meat (the "chicken"), wine, mana potion, relic | dropped by every barrel and crate | cut from the first prop sheet (`assets/env/props.png`, older pixel style) at the size it's drawn and blown up blocky | **code, done**: now cut at 4x and smoothed. **Art**: repaint, prompt A |
+| 1 | Roast meat (the "chicken"), wine, mana potion, relic | dropped by every barrel and crate | cut from the first prop sheet (`assets/env/props.png`, older pixel style) | **done**: meat and wine removed, health is a green jar (Nick); new art, prompt A |
 | 2 | Boss trophy | dropped by Brother Cinder and Varek | a stand-in drawn in code (a yellow box with a red dot) | prompt A (same sheet) |
+| 2b | Secret treasures (new) | level 1: an urn behind the road's burnt timbers, an urn on the chimney up to Tam | new | prompt A (same sheet) |
 | 3 | Torch posts | 5 along the roofs, the mill yard and the north gate | drawn in code: a black stick and a glow | prompt B |
 | 4 | The mill's raised floor | middle of the Mill Yard | drawn in code as a slab of roof with a house front under it, so it reads as a house sitting in the yard | prompt C |
 
@@ -35,9 +36,12 @@ current quality. The well and the burning beam are another thread's, so they're 
 
 ---
 
-### A. `assets/env/pickups-hd.png`: the pickups (meat, wine, mana, relic, trophy)
+### A. `assets/env/pickups-hd.png`: the pickups (health jar, mana jar, trophy, three secret treasures)
+Nick, 17 Oct: no more roast meat or wine. Health is a green magic jar, mana the blue one, the
+boss trophy repainted, and three secret treasures (the Oath Chalice, Hakon's signet ring, a
+runestone of the first fire).
 ```
-[style block] A sheet of five small pickup items for a side-scrolling brawler, laid out in a grid of 3 columns and 2 rows on a PLAIN PURE BLACK background, each item centred in its own cell, well apart, nothing touching, the last cell (bottom right) left empty. Same painted finish, detail and lighting as the attached barrel and crate. Top row, left to right: 1) a big roasted meat leg, a whole roast chicken drumstick, golden-brown crackling skin, the bone end sticking out, glistening; 2) a dark green glass wine bottle in a woven wicker sleeve, cork and red wax seal; 3) a round glass potion flask full of glowing swirling blue liquid with tiny sparkles, a gold stopper. Bottom row: 4) a jewelled gold chalice with red and blue stones; 5) a small gilded reliquary box with a peaked lid and one large blood-red gem on its front. Each item seen from the same low three-quarter angle, upright, no shadows on the ground, no glow drawn around them (the game adds the glow). 3:2, about 1536 x 1024. No text.
+[style block] A sheet of six small pickup items for a side-scrolling brawler, laid out in a grid of 3 columns and 2 rows on a PLAIN PURE BLACK background, each item centred in its own cell, well apart, nothing touching each other or the edge. Same painted finish, detail and lighting as the attached barrel, crate and urn. Top row, left to right: 1) a round-bellied glass magic jar full of glowing swirling EMERALD GREEN liquid with tiny sparkles, a short neck with a cork bound in leather and gold wire, a small gold heart-shaped charm hanging on a cord (health); 2) the SAME jar, same shape and size, full of glowing swirling SAPPHIRE BLUE liquid, a small silver star charm (mana); 3) a war trophy: a small iron-bound reliquary chest with a peaked lid, gilded corners, a blood-red gem set in the front, a torn scrap of red Ashen banner tied to it. Bottom row: 4) the Oath Chalice: an ancient gold chalice set with red and blue stones, a sword engraved on its bowl; 5) Hakon's signet ring: a heavy gold ring with a red stone carved with a sword, lying on its side so the stone faces the viewer, drawn LARGE so it fills its cell like the others; 6) a runestone of the first fire: a palm-sized dark stone tablet carved with glowing orange runes, cracks of fire light in it. Each item upright, seen from the same low three-quarter angle, no shadows on the ground, no glow or light rays drawn around them (the game adds the glow). 3:2, about 1536 x 1024. No text.
 ```
 
 ### B. `assets/env/village/torch.png`: a torch post

@@ -64,8 +64,10 @@ export const STAGE_VILLAGE = {
       fightAt: 1080, // (the looters are at the end of the road: talk to Hale first)
       waves: [['grunt', 'grunt', 'grunt'], ['grunt', 'stalker']],
       props: [
-        { kind: 'crate', x: 1250, z: 480, drop: 'meat' },
+        { kind: 'crate', x: 1250, z: 480, drop: 'health' },
         { kind: 'barrel', x: 600, z: 300, drop: null },
+        // a secret: tucked behind the heap of burnt timbers at the back of the road
+        { kind: 'urn', x: 806, z: 262, drop: 'rune', secret: true },
       ],
       hazards: [],
     },
@@ -82,7 +84,7 @@ export const STAGE_VILLAGE = {
         [],
       ],
       props: [
-        { kind: 'barrel', x: 1640, z: 305, drop: 'wine' },
+        { kind: 'barrel', x: 1640, z: 305, drop: 'health' },
         { kind: 'crate', x: 2560, z: 500, drop: 'mana' },
       ],
       hazards: [
@@ -100,7 +102,11 @@ export const STAGE_VILLAGE = {
       fightAt: 3420,
       waves: [['stalker', 'grunt']],
       spawns: [[{ x: 3640, z: 380, inPlace: true }, { x: 3600, z: 460, inPlace: true }]],
-      props: [{ kind: 'barrel', x: 4240, z: 470, drop: 'meat' }],
+      props: [
+        { kind: 'barrel', x: 4240, z: 470, drop: 'health' },
+        // a secret: up on the chimney, the first step to the boy (Rurik's father's ring)
+        { kind: 'urn', x: 3524, z: LANE_TOP + 16, drop: 'ring', secret: true },
+      ],
       hazards: [
         // the Ashen archers by the mill ahead: their volleys fall on you from here
         // to the mill yard, until you get up there and wreck their posts (`silence`)
@@ -117,7 +123,7 @@ export const STAGE_VILLAGE = {
       props: [
         // the barn door, pinned shut by a fallen burning beam: people inside
         { kind: 'wreckage', tag: 'barn', x: 5330, z: 300, drop: null },
-        { kind: 'crate', x: 5560, z: 470, drop: 'meat' },
+        { kind: 'crate', x: 5560, z: 470, drop: 'health' },
         // the archers shooting at you since the roofs: two posts either side of the mill
         { kind: 'archers', tag: 'millArchers', x: 4560, z: 300, drop: null },
         { kind: 'archers', tag: 'millArchers', x: 5150, z: 300, drop: 'mana' },
@@ -152,8 +158,8 @@ export const STAGE_VILLAGE = {
       waves: [['grunt', 'butcher', 'grunt'], ['berserker', 'grunt', 'stalker'], ['grunt', 'butcher', 'grunt', 'ghoul']],
       props: [
         { kind: 'wreckage', tag: 'stables', x: 6380, z: 300, drop: null },
-        { kind: 'barrel', x: 5820, z: 500, drop: 'wine' },
-        { kind: 'crate', x: 7000, z: 470, drop: 'meat' },
+        { kind: 'barrel', x: 5820, z: 500, drop: 'health' },
+        { kind: 'crate', x: 7000, z: 470, drop: 'health' },
       ],
       hazards: [
         { type: 'fire', look: 'cart', x: 6720, z: 330, w: 100, d: 50, phase: 30 },
@@ -175,7 +181,7 @@ export const STAGE_VILLAGE = {
       fightAt: 7400,
       waves: [],
       props: [
-        { kind: 'barrel', x: 8280, z: 480, drop: 'meat' },
+        { kind: 'barrel', x: 8280, z: 480, drop: 'health' },
         // his archers' post at the far end of the hall
         { kind: 'archers', tag: 'hallArchers', x: 8250, z: 300, drop: null },
       ],

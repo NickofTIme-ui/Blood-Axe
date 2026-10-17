@@ -837,3 +837,10 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - **Art still needed** (prompts: `docs/level1-art-prompts.md`, copy in project files `level-one/`): the pickups sheet (A), a torch post `assets/env/village/torch.png` (B, the 5 torches are code), the mill's raised floor `assets/env/village/mill_floor.png` (C, it reads as a house in the yard). All three are wired and picked up when the file lands.
 - `tools/campaign-sweep.js`: the bot no longer aims for a step behind the locked camera (it got stuck in the square going for the road's cart). The sweep's boss-kneel stops (mill, hall) were there before this change.
 - Checked: logic tests pass; headless screenshots (project files `level-one/`). Not played by a person.
+
+## Cloud + PC, 2026-10-17: health and mana jars, a new trophy, secret treasures (not on itch)
+- Nick: "what is that golden box thing that looks horrible, chat gpt it, i want a green magic jar to be for health, a blue one for magic... then some secret items too... remove the chicken and the wine".
+- **Gone**: the roast meat and the wine, in every level. Every `drop: 'meat' | 'wine'` is now `drop: 'health'` (the green jar, heals 45%, like the meat did). `PICKUPS` in `data/stage.js`.
+- **New art**: `assets/env/pickups-hd.png`, made in ChatGPT on Nick's PC by Claude (chat "Create Item Sheet Image"): green health jar, blue mana jar, the boss trophy (the gold box was a code drawing), and three secret treasures. Cut by `PICKUP_PAINTED` in `view/propSheet.js` (3 x 2 on black, 4x, drawn at 1/4). A copy is in `assets/incoming/` on Nick's PC.
+- **Secret treasures**: `relic` (the Oath Chalice), `ring` (Hakon's signet), `rune` (a runestone of the first fire), each a secret worth a skill point like the relic. Level 1 had no secrets; now two: an urn behind the road's burnt timbers (`rune`, reachable now the lane goes back further) and an urn on the chimney, the first step up to Tam (`ring`).
+- Checked: logic tests pass; headless screenshot of every pickup in the street (project files `level-one/new-pickups-in-game.png`).

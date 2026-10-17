@@ -68,7 +68,7 @@ export const STAGE_GATES = {
       waves: [['thrall', 'thrall', 'thrall', 'thrall', 'thrall', 'thrall', 'thrall'], ['grunt', 'stalker', 'butcher']],
       props: [
         { kind: 'barrel', x: 460, z: 300, drop: null },
-        { kind: 'crate', x: 1400, z: 480, drop: 'meat' },
+        { kind: 'crate', x: 1400, z: 480, drop: 'health' },
       ],
       hazards: [
         // stones dropped from the wall: one at a time, slow (they teach the shadow again)
@@ -87,7 +87,7 @@ export const STAGE_GATES = {
       waves: [['grunt', 'stalker', 'grunt'], ['butcher', 'penitent']],
       props: [
         { kind: 'crate', x: 3000, z: 480, drop: 'mana' },
-        { kind: 'barrel', x: 1720, z: 300, drop: 'wine' },
+        { kind: 'barrel', x: 1720, z: 300, drop: 'health' },
       ],
       hazards: [
         // the sally port passage: burning pitch poured through the murder holes onto the
@@ -110,7 +110,7 @@ export const STAGE_GATES = {
       props: [
         // the winch: two drums, a chain on each, holding the great gate down
         { kind: 'winch', tag: 'winch', x: 4380, z: 300, opens: 'gate', drop: null },
-        { kind: 'winch', tag: 'winch', x: 4600, z: 300, opens: 'gate', drop: 'meat' },
+        { kind: 'winch', tag: 'winch', x: 4600, z: 300, opens: 'gate', drop: 'health' },
         { kind: 'barrel', x: 3500, z: 490, drop: null },
       ],
       hazards: [],
@@ -142,8 +142,8 @@ export const STAGE_GATES = {
         ['gladiator', 'grunt', 'penitent'],
       ],
       props: [
-        { kind: 'crate', x: 5100, z: 300, drop: 'meat' },
-        { kind: 'barrel', x: 6300, z: 480, drop: 'wine' },
+        { kind: 'crate', x: 5100, z: 300, drop: 'health' },
+        { kind: 'barrel', x: 6300, z: 480, drop: 'health' },
       ],
       hazards: [
         // the people you saved, on the wall behind you: the miners' slings (saved on the
@@ -167,7 +167,7 @@ export const STAGE_GATES = {
         { kind: 'wreckage', tag: 'granary', x: 7380, z: 300, drop: null },
         { kind: 'crate', x: 7800, z: 480, drop: 'mana' },
         // a siege catapult at the top of the street, shelling its own town: wreck it
-        { kind: 'catapult', tag: 'townCatapult', x: 7700, z: 300, drop: 'meat' },
+        { kind: 'catapult', tag: 'townCatapult', x: 7700, z: 300, drop: 'health' },
       ],
       hazards: [
         // the catapult up the street throws burning stones down it until it's wrecked
@@ -183,8 +183,8 @@ export const STAGE_GATES = {
       fightAt: 8260,
       waves: [['grunt', 'stalker', 'grunt']],
       props: [
-        { kind: 'barrel', x: 8100, z: 300, drop: 'meat' },
-        { kind: 'crate', x: 9300, z: 490, drop: 'meat' },
+        { kind: 'barrel', x: 8100, z: 300, drop: 'health' },
+        { kind: 'crate', x: 9300, z: 490, drop: 'health' },
       ],
       hazards: [
         // at two thirds the archers on the inner wall loose on the yard: on everyone, his own
