@@ -900,3 +900,9 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - The five pictures from `docs/gates-art-prompts.md`, made in ChatGPT on Nick's PC by Claude (chat "Create Fortress Landing Tile", the gates' wall, ground and the village cart attached as references): `assets/env/gates/surf_rock_top.png`, `surf_rock_front.png`, `surf_plank.png`, `prop_ram.png`, `brazier.png`. No code change: the slots were wired in the previous commit.
 - The brazier's smoke was tinted pink by the magenta; the cloud un-mixed it into grey smoke with real transparency (RGBA). **On the PC**: the five files sit untracked in `assets/env/gates/` (the brazier there is the pink one). Delete them before `git pull`, or the pull refuses.
 - Checked in headless Chromium: the gatehouse stair and landing are painted stone, the ram stands on the Killing Ground road, braziers burn along the level. Shots: project files `gates-art/`. Not played by a person.
+
+## Cloud, 2026-10-17: dialogue rewrite (not on itch)
+- Nick asked for short, hard dialogue "like a Game of Thrones novel", keeping the action and the NPCs he put in. 170 lines rewritten across all five levels and the King's cutaways (`src/data/stage*.js`, `src/scenes/CutawayScene.js`); beat ids, triggers, cues and who speaks where are unchanged.
+- Vincent loses "live and let live" ("I build gates, not graves"; at the postern: "Every door I built for him opens for you now"). Nicholas loses "a mountain man sent you" (last words: "he'll ask who you are. Tell him: the ones he couldn't burn").
+- This replaces the Vincent and Nicholas wording from the level 5 art commit (7233cea) with the lines Nick approved here.
+- The pledge test follows the new opening line. Full before/after list: project files `dialogue-rewrite/dialogue-rewrite.md`.

@@ -4150,7 +4150,7 @@ test('sentence: every boss in the game has his crimes (the machine none); the Oa
     }
   }
   const opening = STAGE_VILLAGE.story.find((b) => b.id === 'opening').lines.map((l) => l[1]).join(' ');
-  assert(opening.includes('Each of them kneels, hears his crimes, and pays for them.'), 'the pledge');
+  assert(opening.includes('Each of them kneels. Each hears his crimes. Each pays.'), 'the pledge');
 });
 
 test('dialogue: every voice in every level has a name and a portrait (or is narration); Nick\'s names on the nameless', () => {
