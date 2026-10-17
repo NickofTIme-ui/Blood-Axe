@@ -34,4 +34,4 @@ With no pads, player 1 uses WASD + J K L I U O Space, with P to pause.
 Player 2 uses the arrow keys and the number pad: 1 light, 2 heavy, 3 block, 0 dodge, 4 kick, 5 magic, 6 jump, Enter to pause.
 
 **Online co-op**
-One player hosts and the other joins. Both of you run the full game. If your partner's connection goes quiet, the game waits for them. After a few seconds, press R to carry on alone.
+ONLINE CO-OP on the main menu plays the campaign. One player hosts and the other joins; the game starts at the host's checkpoint (CONTINUE), or at the first level. At the end of a level both players press ENTER on the tally to go on together. Both of you run the full game. If your partner's connection goes quiet, the game waits for them. After a few seconds, press R to carry on alone.

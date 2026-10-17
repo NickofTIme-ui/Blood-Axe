@@ -107,7 +107,7 @@ export class TitleScene extends Phaser.Scene {
   // The menu. MAIN: the campaign, big and first (CONTINUE from its last checkpoint once
   // it has been started), then a new campaign, two players on one machine, and the
   // DIRECTOR'S CUT: the earlier builds and modes — the Oath Road (the first stage, one or
-  // two players), online co-op (it plays the Oath Road) and THE GALLOWS ASCENT (the
+  // two players), online co-op on the Oath Road and THE GALLOWS ASCENT (the
   // platforming slice, data/stageGallows.js) — and RESET HERO LEVEL (Progress.resetLevel).
   makeButtons(y, page = 'main', delay = 1500) {
     const W = SETTINGS.width;
@@ -127,11 +127,16 @@ export class TitleScene extends Phaser.Scene {
       } else {
         entries.push([W / 2, y - 74, 'THE CAMPAIGN  ·  BEGIN', 600, () => this.go('solo', null, 'village'), { h: 64, size: 30 }]);
       }
-      if (resume) entries.push([W / 2 - 260, y, 'NEW CAMPAIGN', 230, () => this.go('solo', null, 'village')]);
+      // (the row under it: four buttons with a campaign started, three without)
+      const row = resume ? [-345, -115, 115, 345] : [-260, 0, 260];
+      const bw = resume ? 215 : 235;
+      if (resume) entries.push([W / 2 + row.shift(), y, 'NEW CAMPAIGN', bw, () => this.go('solo', null, 'village')]);
       // (two players carry on from the same checkpoint)
-      entries.push([resume ? W / 2 : W / 2 - 140, y, '2 PLAYERS', resume ? 230 : 250,
+      entries.push([W / 2 + row.shift(), y, '2 PLAYERS', bw,
         () => this.go('local', null, resume?.level ?? 'village', resume?.section)]);
-      entries.push([resume ? W / 2 + 260 : W / 2 + 140, y, "DIRECTOR'S CUT", 250, () => this.openCut()]);
+      // (online plays the campaign too, from the host's checkpoint: SelectScene.tryStartNet)
+      entries.push([W / 2 + row.shift(), y, 'ONLINE CO-OP', bw, () => this.openLobby()]);
+      entries.push([W / 2 + row.shift(), y, "DIRECTOR'S CUT", bw, () => this.openCut()]);
     } else {
       this.cutDim = this.add.rectangle(0, y - 196, W, SETTINGS.height, 0x050000, 0.72).setOrigin(0);
       this.cutTitle = this.add.text(W / 2, y - 164, "DIRECTOR'S CUT  ·  THE EARLIER BUILDS", { fontFamily: FONT.display, fontSize: '26px' })
@@ -139,7 +144,7 @@ export class TitleScene extends Phaser.Scene {
       epicFill(this.cutTitle, ['#fff2c8', '#e0b060', '#7a4a10']);
       entries.push([W / 2 - 270, y - 116, 'THE OATH ROAD', 230, () => this.go('solo')]);
       entries.push([W / 2, y - 116, 'OATH ROAD: 2 PLAYERS', 250, () => this.go('local'), { size: 19 }]);
-      entries.push([W / 2 + 270, y - 116, 'ONLINE CO-OP', 230, () => this.openLobby()]);
+      entries.push([W / 2 + 270, y - 116, 'OATH ROAD: ONLINE', 230, () => this.openLobby('oath')]);
       entries.push([W / 2 - 190, y - 58, 'THE GALLOWS ASCENT', 300, () => this.go('solo', null, 'gallows')]);
       entries.push([W / 2 + 190, y - 58, this.resetText(), 330, () => this.resetLevel()]);
       entries.push([W / 2 - 150, y, this.testText(), 260, () => this.toggleTest(), { size: 19 }]);
@@ -240,11 +245,13 @@ export class TitleScene extends Phaser.Scene {
   // HOST shows a 4-letter room code to read out to your friend; JOIN is where they type
   // it. Once the two browsers are connected (net/Link.js) both go on to pick a hero.
 
-  openLobby() {
+  // stage: 'oath' for the Director's Cut's Oath Road; unset = the campaign (the host's
+  // checkpoint decides where: SelectScene.tryStartNet). Only the host's choice counts.
+  openLobby(stage = undefined) {
     if (this.leaving || this.lobby) return;
     const W = SETTINGS.width;
     const H = SETTINGS.height;
-    const L = this.lobby = { state: 'menu', code: '', job: null };
+    const L = this.lobby = { state: 'menu', code: '', job: null, stage };
     L.dim = this.add.rectangle(0, 0, W, H, 0x050000, 0.82).setOrigin(0).setDepth(100).setInteractive();
     L.title = this.add.text(W / 2, H * 0.2, 'ONLINE CO-OP', { fontFamily: FONT.display, fontSize: '44px' }).setOrigin(0.5).setStroke('#0a0000', 7).setDepth(101);
     epicFill(L.title, ['#ff7a5a', '#d0101a', '#5a0006']);
@@ -313,7 +320,7 @@ export class TitleScene extends Phaser.Scene {
     L.job = null;
     playSfx(this, 'finisher', { volume: 0.6, pitch: -200 });
     this.closeLobby();
-    this.go('net', { link, index });
+    this.go('net', { link, index }, L.stage);
   }
 
   lobbyFailed(L, err) {

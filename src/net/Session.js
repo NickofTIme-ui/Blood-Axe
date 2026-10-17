@@ -64,6 +64,7 @@ export class NetSession {
     this.desyncs = 0;
     this.onCorrect = null;    // (hostSnap, mySnapAtThatTick) => void — the arena fixes itself up
     this.onGone = null;
+    this.extraHeld = null;    // () => held bits this machine adds to its records (TickInput 'ready')
     // the first DELAY ticks happen before anyone's input can have arrived: nothing pressed
     for (let t = 0; t < delay; t++) { this.local.set(t, EMPTY); this.remote.set(t, EMPTY); }
     link.onData((m) => this.receive(m));
@@ -84,7 +85,9 @@ export class NetSession {
     let first = true;
     while (this.sent < tick + this.delay) {
       const t = ++this.sent;
-      const rec = this.sampler ? capture(this.sampler, first) : EMPTY;
+      let rec = this.sampler ? capture(this.sampler, first) : EMPTY;
+      const extra = this.extraHeld?.() ?? 0;
+      if (extra) rec = [rec[0] | extra, rec[1], rec[2], rec[3]];
       first = false;
       this.local.set(t, rec);
       if (!this.alone) this.link.send({ k: 'i', g: this.game, t, r: rec });

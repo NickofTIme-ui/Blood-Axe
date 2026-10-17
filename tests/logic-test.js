@@ -33,7 +33,7 @@ import { impalePin } from '../src/combat/Finisher.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/Mage.js';
 import { STORM } from '../src/combat/Storm.js';
 import { ROGUE_FINISHERS } from '../src/combat/Rogue.js';
-import { TickController, pressed } from '../src/core/TickInput.js';
+import { TickController, pressed, held, bitOf } from '../src/core/TickInput.js';
 import { NetSession, NET, loopPair, snapshot, correct, feedPlayers, delayFor } from '../src/net/Session.js';
 import { runTickJobs } from '../src/core/TickJobs.js';
 import { JUGGLE } from '../src/combat/Juggle.js';
@@ -624,11 +624,11 @@ test('fire death: an enemy the flames kill burns on his feet, then drops dead (n
 // ---------------------------------------------------------------- co-op & online (net/Session.js)
 
 // One "machine": a world, the stage, two heroes driven by tick records.
-function machine(seed, link, index, script, delay) {
+function machine(seed, link, index, script, delay, stageData = undefined) {
   const world = new World({ seed });
   const ctrls = [new TickController(), new TickController()];
   const heroes = ['warrior', 'rogue'].map((id, i) => world.addFighter(new Fighter({ stats: CHARACTERS[id], team: 'player', x: 200 - i * 46, z: 430 + i * 26, controller: ctrls[i] })));
-  const stage = new Stage(world);
+  const stage = new Stage(world, stageData);
   stage.start(heroes);
   // a fake device: plays this machine's own scripted buttons
   let n = 0;
@@ -650,7 +650,8 @@ function machine(seed, link, index, script, delay) {
     m.tick++;
     return true;
   };
-  m.sum = () => world.fighters.map((f) => `${f.id}:${f.stats.id}:${f.x.toFixed(3)},${f.z.toFixed(3)},${f.h.toFixed(2)}:${f.health.toFixed(2)}:${f.state}`).join('|') + `#${stage.index}/${stage.phase}/${stage.stats.kills}`;
+  m.sum = () => world.fighters.map((f) => `${f.id}:${f.stats.id}:${f.x.toFixed(3)},${f.z.toFixed(3)},${f.h.toFixed(2)}:${f.health.toFixed(2)}:${f.state}`).join('|') + `#${stage.index}/${stage.phase}/${stage.stats.kills}`
+    + (stage.story ? `#${stage.story.npcs.map((n) => `${n.id}:${n.state}:${n.x.toFixed(2)}`).join(',')}#${[...stage.story.done].join(',')}` : '');
   return m;
 }
 // button mashing that is different for each player but repeatable
@@ -690,6 +691,41 @@ test('online co-op: two machines over a laggy wire play the same fight, tick for
   assert(A.stage.stats.kills > 0 || A.world.fighters.some((f) => f.team === 'enemy'), 'there was a fight');
   // both heroes are driven by the right player: they did different things
   assert(Math.abs(A.heroes[0].x - A.heroes[1].x) > 1 || A.heroes[0].state !== A.heroes[1].state, 'two separately driven heroes');
+});
+
+test('online co-op plays the campaign: two machines over a laggy wire play the Burning Village alike, tick for tick (villagers and story too)', () => {
+  const [a, b] = loopPair(3, 6);
+  const A = machine(777, a, 0, masher(3), 8, STAGES.village);
+  const B = machine(777, b, 1, masher(4), 8, STAGES.village);
+  assert(A.stage.story, 'the level has its story');
+  let frames = 0;
+  let checked = 0;
+  const sums = new Map();
+  const look = (M, me, them) => { const s = M.sum(); const o = sums.get(`${them}${M.tick}`); if (o !== undefined) { assert(o === s, `machines differ at tick ${M.tick}\n ${me} ${s.slice(0, 400)}\n ${them} ${o.slice(0, 400)}`); checked++; } else sums.set(`${me}${M.tick}`, s); };
+  while ((A.tick < 7200 || B.tick < 7200) && frames++ < 40000) {
+    if (frames % 5 !== 0 && A.frame()) look(A, 'a', 'b');
+    if (B.frame()) look(B, 'b', 'a');
+  }
+  assert(A.tick >= 7200 && B.tick >= 7200, `both ran two minutes (A ${A.tick}, B ${B.tick})`);
+  assert(checked > 6000, `compared ${checked} ticks`);
+  assert(B.session.desyncs === 0, `no corrections were needed (${B.session.desyncs})`);
+});
+
+test('online co-op: a machine marks its records ready once its tally is up, and the other machine sees it', () => {
+  const [a, b] = loopPair(1, 1);
+  const A = machine(5, a, 0, masher(1));
+  const B = machine(5, b, 1, masher(2));
+  let readyA = false;
+  A.session.extraHeld = () => (readyA ? bitOf('ready') : 0);
+  for (let i = 0; i < 60; i++) { A.frame(); B.frame(); }
+  readyA = true;
+  let seen = null;
+  for (let i = 0; i < 60 && seen == null; i++) {
+    A.frame(); B.frame();
+    for (const [t, r] of B.session.remote) if (held(r, 'ready')) { seen = t; break; }
+  }
+  assert(seen != null, 'the guest saw the host ready');
+  assert(!held(A.session.local.get(3) ?? [0, 0, 0, 0], 'ready'), 'not ready before the tally');
 });
 
 test('online co-op: over a real-internet lag the measured input delay keeps the game at full speed (a fixed 3 ticks crawled)', () => {

@@ -927,3 +927,12 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - Gotcha: the first try (19826617) broke because two files were fetched before itch finished unpacking, and itch's CDN cached the 404s for 31 days. After an upload, wait for itch to finish unpacking before loading any game file URL.
 - Not in it: the Black Keep (level 6) branch, which isn't merged to main.
 - Online play: both players need this build (refresh the page).
+
+## Cloud, 2026-10-17: online co-op plays the campaign
+- Nick: "have online play the campaign as normal with all the latest updated" (it used to play only the old Oath Road).
+- ONLINE CO-OP is on the main menu now (`TitleScene`); the Director's Cut keeps the Oath Road online as OATH ROAD: ONLINE (`openLobby('oath')`).
+- The host decides where it starts (`SelectScene.netStart`): his campaign checkpoint, or the Burning Village; the 'start' message carries the level, section and who he has saved, so both machines build the same level. The host's save follows the game (checkpoints, levels, the saved: `ArenaScene.netSave`), so CONTINUE picks up there. Who was saved carries level to level online (`netCampaign`).
+- Level end online: each machine plays the king's scene and its tally in its own time, so a new held bit `ready` (`TickInput` ACTIONS, set through `NetSession.extraHeld`) says when this machine's tally is up. ENTER from a ready player counts; both games go on the same tick once both are ready (`ArenaScene.netWonKeys`), with WAITING FOR YOUR PARTNER meanwhile.
+- Still not online: skill trees, shrine spending and trophies' stats (each hero plays with his base sheet; Rurik has Oathkeeper from the start). The fingerprint (`net/Version.js`) now covers the campaign levels too.
+- Tests: two machines over a laggy wire play two minutes of the Burning Village alike (villagers and story too); the ready bit crosses the wire.
+- Online play: both players need this build (refresh the page).
