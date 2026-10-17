@@ -59,6 +59,34 @@
 //                       executed by the hero who beat him (stage/Sentence.js); false: no
 //                       sentence (a machine)
 //   sequence            a scripted ending (stage/Sequence.js: the judgment)
+//   hazard 'drift'      THE BLACK KEEP's moving air and floors: everyone in x0..x1 is pushed
+//                       (vx, vz px/s; or `bands`: [{ z0, z1, vx, vz }], each depth its own way,
+//                       the Ash Mill's turning stone). With `period` it blows in gusts: `warn`
+//                       frames of warning (gustWarn), then `for` frames of push (gustStart),
+//                       once a period; without, it never stops. `shelter: { z }`: anyone this
+//                       far back (behind the parapet) is out of it. `ground: true`: only men on
+//                       their feet are carried (a floor, not a wind). `silence: '<tag>'`: it
+//                       stops once every prop with that tag is broken. `until: 'phase:<id>'`
+//                       (any hazard): it stops once the boss reaches that phase
+//                       (`until: 'clear'`: once its own section's fight is won)
+//   terrain block `carry: vx`     whoever stands on it is carried along at vx px/s (the Crucible
+//                       Line's buckets, running back toward the furnace)
+//   section.spawns[].drop: px     he comes down from above, dropped this high over the spot,
+//                       even in view (from a floor going by: the Burning Spire's hoist)
+//   boss.duel: { composure, ward, open, counter }   KING VAURATH's duel: he takes only `ward`
+//                       of the damage until his composure breaks: every parry of his blow and
+//                       every guard broken counts; at `composure` he staggers, wide open and
+//                       taking full damage, for `open` frames (kingOpen). Hit while he guards,
+//                       he answers at once (`counter`: { damage, reach }; emberCounter).
+//                       Only in his first phase. Emits kingComposure { boss, count, of }
+//   boss.phases[]: ward: { tag, mult }   while any prop with that tag stands he takes only
+//                       `mult` of the damage (the Keep's ember conduits feed him)
+//                  hold: { tag, x, z, heart: { x, z } }   he is out of reach (invincible,
+//                       still, at x/z: inside the colossus) until every prop with the tag is
+//                       broken; then he drops into the heart (heart x/z), stunned, to be hit
+//                       (heartOpen)
+//                  release: true   his brain back: he fights again
+//                  squeeze: { x0, x1 }   the room closes in on these ends, a little at a time
 //   section.frees: '<npcId>'      its fight isn't won until that villager is freed (Vincent's
 //                       cage on the Iron Gates' guardroom landing)
 //   hazard 'ballista'   VINCENT'S GATE SCORPION (the Iron Gates): a great crossbow on a cart,
@@ -85,6 +113,7 @@ import { Story } from './Story.js';
 import { Sequence } from './Sequence.js';
 import { Sentence } from './Sentence.js';
 import { LOOT } from '../data/trophies.js';
+import { Controller } from '../core/Controller.js';
 
 const PAD = 30;           // keep everyone this far inside the section's ends
 const WAVE_GAP = 50;      // frames between one wave dying and the next arriving
@@ -136,6 +165,12 @@ const ARROW = { stun: 22 };
 // high he can be), the damage; the cart's roll across the yard (px a frame); the boss shot's
 // warning and its share of his health
 const BALLISTA = { period: 240, warn: 70, speed: 30, range: 1700, depth: 30, high: 110, damage: 80, roll: 4, bossWarn: 90, share: 0.15, first: 90 };
+// The Black Keep's wind and moving floors (hazard 'drift'): a gust's warning and push
+// (frames), by default; how fast a squeezed room closes in (px a frame)
+const DRIFT = { warn: 90, for: 120 };
+const SQUEEZE = 0.6;
+// King Vaurath's duel (boss.duel): the defaults
+const DUEL = { composure: 3, ward: 0.3, open: 160, counter: { damage: 14, reach: 130 } };
 // A twin whose brother falls: harder and faster (boss.grief overrides)
 const GRIEF = { damage: 1.3, speed: 1.2 };
 
@@ -190,6 +225,19 @@ export class Stage {
     });
     // a boss the story spares (beaten to his knees: stage/Sequence.js) still gives up his trophy
     world.events.on('hit', (e) => { if (e.defender?.spare && e.defender.health <= 1) this.dropLoot(e.defender); });
+    // King Vaurath's duel (boss.duel): his composure, and his answer to a blow into his guard
+    this.counterHz = { id: 'emberCounter', cool: new Map() };
+    world.events.on('parry', (e) => { if (e.attacker && e.attacker === this.duelist()) this.shake(e.attacker); });
+    world.events.on('guardBreak', (e) => { if (e.defender && e.defender === this.duelist()) this.shake(e.defender); });
+    world.events.on('block', (e) => {
+      const b = this.duelist();
+      if (!b || e.defender !== b || e.attacker?.team !== 'player') return;
+      const C = { ...DUEL.counter, ...(this.section.boss.duel.counter ?? {}) };
+      if (Math.abs(e.attacker.x - b.x) > C.reach || this.counterHz.cool.has(e.attacker.id)) return;
+      b.facing = Math.sign(e.attacker.x - b.x) || b.facing;
+      this.hurt(this.counterHz, e.attacker, C.damage, b.facing, 'blade');
+      this.world.events.emit('emberCounter', { boss: b, target: e.attacker });
+    });
   }
 
   get section() { return this.sections[this.index]; }
@@ -513,6 +561,13 @@ export class Stage {
       roster.forEach((type, k) => {
         const at = sp[(this.spawnCursor = ((this.spawnCursor ?? -1) + 1)) % sp.length];
         const x = at.x + (k >= sp.length ? Math.sign(at.x - heroes[0]?.x || 1) * 40 : 0);
+        if (at.drop) {
+          // down from above (a floor going by): out of sight over the top of the screen, then he falls
+          const e = createEnemy(this.world, type, x, at.z, { entering: false });
+          e.floor = this.terrain ? this.terrain.groundAt(e.x, e.z) : 0;
+          e.h = e.floor + at.drop; e.vh = 0; e.dropIn = true;
+          return;
+        }
         if (!inView(this.world, heroes, x)) {
           const e = createEnemy(this.world, type, x, at.z, { entering: !at.inPlace });
           if (this.terrain) { e.floor = this.terrain.groundAt(e.x, e.z); e.h = e.floor; }
@@ -648,6 +703,7 @@ export class Stage {
     this.updateRests();
     this.updateChallenge();
     if (!this.hazardsOff && !this.world.hold) this.updateHazards(); // (held still while a boss walks in)
+    if (!this.world.hold) this.updateCarry();
     this.updateProps();
     this.updatePickups();
     this.updateDowned();
@@ -659,7 +715,8 @@ export class Stage {
     if (this.sentence.update()) return;
 
     const b = this.boss;
-    if (b && b.alive) this.updateBossPhases(b);
+    if (b && b.alive) { this.updateBossPhases(b); this.updateBossRules(b); }
+    for (const [id, c] of this.counterHz.cool) { if (c <= 1) this.counterHz.cool.delete(id); else this.counterHz.cool.set(id, c - 1); }
 
     if (this.phase === 'fight') {
       const sec = this.section;
@@ -692,6 +749,118 @@ export class Stage {
       const E = this.data.exit;
       const said = !E.after || this.story?.done.has(E.after);
       if (said && !this.story?.busy && this.players.some((q) => q.alive && q.x >= E.x)) this.win();
+    }
+  }
+
+  // ------------------------------------------------------------ the Black Keep
+
+  // The boss of this section while his duel is on (boss.duel, his first phase only), or null.
+  duelist() {
+    const b = this.boss;
+    return b && b.alive && b.phase === 0 && this.section?.boss?.duel && !this.sentence.running ? b : null;
+  }
+
+  // His composure cracks (a parry of his blow, a guard broken): at the count he staggers open.
+  shake(b) {
+    const D = { ...DUEL, ...this.section.boss.duel };
+    b.composure = (b.composure ?? 0) + 1;
+    this.world.events.emit('kingComposure', { boss: b, count: b.composure, of: D.composure });
+    if (b.composure < D.composure) return;
+    b.composure = 0;
+    b.openFor = D.open;
+    b.fsm.change('stagger', { frames: D.open });
+    b.vx = 0;
+    this.world.events.emit('kingOpen', { boss: b, frames: D.open });
+  }
+
+  // The rules of the fight that change with his phase: how much of a blow he takes, where he
+  // is held, whether he thinks, how big the room is (see the top: boss.duel, boss.phases[]).
+  updateBossRules(b) {
+    const def = this.section?.boss;
+    if (!def || b !== this.boss) return;
+    const phases = this.bossPhases();
+    const ph = b.phase > 0 ? phases[b.phase - 1] : null;
+    const standing = (tag) => this.props.some((pr) => pr.tag === tag && !pr.broken);
+    if (b.openFor > 0) b.openFor--;
+    if (b.phase === 0 && def.duel) b.ward = b.openFor > 0 ? 1 : (def.duel.ward ?? DUEL.ward);
+    else if (ph?.ward) b.ward = standing(ph.ward.tag) ? ph.ward.mult : 1;
+    else if (b.ward != null) b.ward = 1;
+    // held out of reach (the colossus) until its weak points are broken; then the heart
+    const H = ph?.hold;
+    if (H && !b.heartOpen) {
+      if (!b.held) {
+        b.held = true;
+        b.brain ??= b.controller;
+        b.controller = new Controller();
+        b.invincible = true;
+        if (b.state !== 'idle') b.fsm.change('idle');
+        this.world.events.emit('bossHeld', { boss: b });
+      }
+      b.x = H.x; b.z = H.z; b.vx = b.vz = 0;
+      b.invincible = true; // (every frame: the fighter's own frame clears it)
+      this.placeOnGround(b);
+      if (!standing(H.tag)) {
+        b.heartOpen = true;
+        b.invincible = false;
+        const at = H.heart ?? H;
+        b.x = at.x; b.z = at.z;
+        this.placeOnGround(b);
+        this.world.events.emit('heartOpen', { boss: b });
+      }
+    }
+    if (ph?.release && b.brain) {
+      b.controller = b.brain; b.brain = null;
+      b.held = false; b.invincible = false;
+    }
+    // the room closing in
+    const S = ph?.squeeze;
+    if (S) {
+      const B = this.world.bounds;
+      B.minX = Math.min(S.x0 + PAD, B.minX + SQUEEZE);
+      B.maxX = Math.max(S.x1 - PAD, B.maxX - SQUEEZE);
+    }
+  }
+
+  // Hazard 'drift': the wind on the causeway, the turning millstone, the hoist tilting (see the top).
+  driftState(hz) {
+    if (!hz.period) return 'blow';
+    const F = hz.for ?? DRIFT.for; const W = hz.warn ?? DRIFT.warn;
+    const k = hz.t % hz.period;
+    return k >= hz.period - F ? 'blow' : k >= hz.period - F - W ? 'warn' : 'idle';
+  }
+
+  updateDrift(hz) {
+    const silenced = hz.silence && !this.props.some((pr) => pr.tag === hz.silence && !pr.broken); // (the mill's pins broken: the stone stops)
+    if (silenced || !this.beamLive(hz) || this.story?.holding || this.sentence.running) { hz.state = 'idle'; return; }
+    const st = this.driftState(hz);
+    if (st !== hz.state) {
+      if (st === 'warn') this.world.events.emit('gustWarn', { hazard: hz });
+      if (st === 'blow') this.world.events.emit('gustStart', { hazard: hz });
+      hz.state = st;
+    }
+    if (st !== 'blow') return;
+    const T = this.terrain; const B = this.world.bounds;
+    for (const f of this.world.fighters) {
+      if (!f.alive || f.entering || f.held || f.stats.machine || f.state === 'executed' || f.state === 'execute') continue;
+      if (f.x < hz.x0 || f.x > hz.x1 || (hz.ground && !f.grounded)) continue;
+      if (hz.shelter && f.z <= hz.shelter.z) continue;
+      const band = hz.bands ? hz.bands.find((q) => f.z >= q.z0 && f.z < q.z1) : hz;
+      if (!band) continue;
+      const dx = (band.vx ?? 0) / 60; const dz = (band.vz ?? 0) / 60;
+      if (dx && !T?.wallAt(f.x + dx * 4, f.z, f.h)) f.x = Math.max(B.minX, Math.min(B.maxX, f.x + dx));
+      if (dz && !T?.wallAt(f.x, f.z + dz * 4, f.h)) f.z = Math.max(B.minZ, Math.min(B.maxZ, f.z + dz));
+    }
+  }
+
+  // Terrain blocks with `carry`: the Crucible Line's buckets carry whoever stands in them.
+  updateCarry() {
+    const T = this.terrain;
+    if (!T) return;
+    for (const f of this.world.fighters) {
+      const c = f.floorBlock?.carry;
+      if (!c || !f.alive || !f.grounded || f.state === 'executed' || f.state === 'execute') continue;
+      const dx = c / 60;
+      if (!T.wallAt(f.x + dx * 4, f.z, f.h)) f.x += dx;
     }
   }
 
@@ -874,6 +1043,7 @@ export class Stage {
       else if (hz.type === 'collapse') this.updateCollapse(hz);
       else if (hz.type === 'bombard') this.updateBombard(hz);
       else if (hz.type === 'ballista') this.updateBallista(hz);
+      else if (hz.type === 'drift') this.updateDrift(hz);
       else this.updateBlade(hz);
     }
   }
@@ -905,6 +1075,8 @@ export class Stage {
   // 'phase:<id>': only once he has reached that phase)
   beamLive(hz) {
     if ((hz.if || hz.unless) && this.story && !this.story.ok(hz)) return false; // (the rescued come back to help: only if they were saved)
+    if (hz.until?.startsWith('phase:') && this.bossInPhase(hz.until.slice(6))) return false; // (its time is over)
+    if (hz.until === 'clear' && this.index === hz.section && this.phase !== 'fight') return false; // (its section's fight won: the bowmen are gone)
     if (!hz.when) return true;
     if (hz.when.startsWith('freed:')) return !!this.story?.rescued.has(hz.when.slice(6));
     const b = this.boss;

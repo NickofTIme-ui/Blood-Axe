@@ -418,6 +418,57 @@ export class StageView {
     this.canvasTex('prop-winch-broken', 220, 300, (c, w, h) => winch(c, w, h, true));
     this.canvasTex('prop-wagon', 420, 240, (c, w, h) => wagon(c, w, h, false));
     this.canvasTex('prop-wagon-broken', 420, 240, (c, w, h) => wagon(c, w, h, true));
+    // (the Black Keep) the Ash Mill's drive pins: an iron pin through the hub's gearing, its
+    // gear teeth round it; broken: snapped off, the gear tilted
+    const pin = (c, w, h, broken) => {
+      const base = h - 8;
+      c.fillStyle = '#2a2a30';
+      if (!broken) {
+        c.fillRect(w / 2 - 12, base - 170, 24, 170); // the pin
+        c.fillStyle = '#5a5a62'; c.fillRect(w / 2 - 6, base - 168, 5, 166);
+        c.fillStyle = '#3a3a42'; c.beginPath(); c.arc(w / 2, base - 60, 46, 0, 7); c.fill(); // the gear
+        c.fillStyle = '#2a2a30'; for (let k = 0; k < 10; k++) { const a = (k / 10) * Math.PI * 2; c.fillRect(w / 2 + Math.cos(a) * 46 - 7, base - 60 + Math.sin(a) * 46 - 7, 14, 14); }
+        c.fillStyle = '#ff7a30'; c.beginPath(); c.arc(w / 2, base - 60, 8, 0, 7); c.fill(); // forge-hot at the axle
+      } else {
+        c.fillRect(w / 2 - 12, base - 50, 24, 50);
+        c.save(); c.translate(w / 2 + 30, base - 10); c.rotate(1.2); c.fillRect(0, -12, 110, 24); c.restore(); // the snapped pin
+        c.fillStyle = '#3a3a42'; c.beginPath(); c.ellipse(w / 2, base - 14, 50, 16, 0, 0, 7); c.fill();
+      }
+    };
+    this.canvasTex('prop-pin', 160, 200, (c, w, h) => pin(c, w, h, false));
+    this.canvasTex('prop-pin-broken', 160, 200, (c, w, h) => pin(c, w, h, true));
+    // (the Black Keep) an ember conduit: a black iron pillar running with forge fire, feeding it
+    // up to the King; broken: split open, the fire guttering out
+    const conduit = (c, w, h, broken) => {
+      const base = h - 8;
+      if (!broken) {
+        c.fillStyle = '#1a1618'; c.fillRect(w / 2 - 26, 10, 52, base - 10);
+        const g = c.createLinearGradient(0, 10, 0, base); g.addColorStop(0, '#ffd080'); g.addColorStop(0.5, '#ff6a20'); g.addColorStop(1, '#8a1a08');
+        c.fillStyle = g; c.fillRect(w / 2 - 10, 14, 20, base - 20); // the fire inside, through its slot
+        c.fillStyle = '#3a3a42'; for (let y = 30; y < base; y += 60) c.fillRect(w / 2 - 30, y, 60, 10); // its bands
+      } else {
+        c.fillStyle = '#1a1618'; c.fillRect(w / 2 - 26, base - 80, 52, 80);
+        c.save(); c.translate(w / 2 + 20, base - 20); c.rotate(1.3); c.fillRect(0, -24, 150, 48); c.restore();
+        c.fillStyle = '#ff6a20'; c.fillRect(w / 2 - 8, base - 70, 16, 10);
+      }
+    };
+    this.canvasTex('prop-conduit', 140, 380, (c, w, h) => conduit(c, w, h, false));
+    this.canvasTex('prop-conduit-broken', 140, 380, (c, w, h) => conduit(c, w, h, true));
+    // (the Black Keep) a spire of the colossus's crown: black stone, gold-veined, ember at its
+    // root; broken: the stump and the fallen point
+    const spire = (c, w, h, broken) => {
+      const base = h - 8;
+      if (!broken) {
+        c.fillStyle = '#16121a'; c.beginPath(); c.moveTo(w / 2 - 34, base); c.lineTo(w / 2 + 34, base); c.lineTo(w / 2, 6); c.fill();
+        c.strokeStyle = '#c8a040'; c.lineWidth = 3; c.beginPath(); c.moveTo(w / 2 - 10, base - 20); c.lineTo(w / 2, 40); c.lineTo(w / 2 + 12, base - 30); c.stroke();
+        c.fillStyle = '#ff7a30'; c.fillRect(w / 2 - 30, base - 12, 60, 8);
+      } else {
+        c.fillStyle = '#16121a'; c.beginPath(); c.moveTo(w / 2 - 34, base); c.lineTo(w / 2 + 34, base); c.lineTo(w / 2 + 10, base - 60); c.lineTo(w / 2 - 14, base - 50); c.fill();
+        c.save(); c.translate(w / 2 + 40, base - 6); c.rotate(1.4); c.beginPath(); c.moveTo(-20, 0); c.lineTo(20, 0); c.lineTo(0, -120); c.fill(); c.restore();
+      }
+    };
+    this.canvasTex('prop-spire', 160, 320, (c, w, h) => spire(c, w, h, false));
+    this.canvasTex('prop-spire-broken', 160, 320, (c, w, h) => spire(c, w, h, true));
     this.canvasTex('flame', 32, 64, (c, w, h) => {
       const g = c.createLinearGradient(0, h, 0, 0);
       g.addColorStop(0, 'rgba(255,240,180,1)'); g.addColorStop(0.35, 'rgba(255,150,40,0.95)'); g.addColorStop(0.75, 'rgba(220,40,10,0.6)'); g.addColorStop(1, 'rgba(120,10,0,0)');

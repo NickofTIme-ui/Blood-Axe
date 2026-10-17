@@ -10,7 +10,9 @@
 //                'boss:<sectionId>' (he appears), 'rage:<sectionId>', 'rescued:<npcId>',
 //                'broken:<tag>' (the last prop with that tag smashed), 'twin:<sectionId>'
 //                (one of the twins down), 'bolt:many' (a scorpion bolt through two men or
-//                more), 'bolt:boss' (one through the boss)
+//                more), 'bolt:boss' (one through the boss), 'fight:<sectionId>' (its fight
+//                starts), 'counter' (King Vaurath answers a blow into his guard), 'heart'
+//                (the colossus's heart laid open)
 //   (neither: fired by a villager's `talk` when a hero comes near him)
 //   calm: true   waits until no enemy is alive (essential lines are said on safe ground)
 //   hold: true   a held scene: the heroes stand still while it plays (never in a fight);
@@ -137,6 +139,10 @@ export class Story {
     ev.on('propsDown', ({ tag }) => this.trigger(`broken:${tag}`));
     ev.on('twinFall', () => this.trigger(`twin:${stage.section?.id}`));
     ev.on('boltHit', ({ bolt, fighter }) => this.trigger(fighter.stats.boss ? 'bolt:boss' : bolt.hit.size >= 2 ? 'bolt:many' : 'bolt:one'));
+    // (the Black Keep: a fight starting, the King's answer to a blow into his guard, the colossus's heart laid open)
+    ev.on('fightStart', ({ section }) => this.trigger(`fight:${section.id}`));
+    ev.on('emberCounter', () => this.trigger('counter'));
+    ev.on('heartOpen', () => this.trigger('heart'));
   }
 
   // ------------------------------------------------------------ queries

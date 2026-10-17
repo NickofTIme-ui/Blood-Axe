@@ -52,7 +52,7 @@ export class SweepBot extends Controller {
 
   pickGoal() {
     const p = this.me; const st = this.stage; const T = this.world.terrain;
-    const foes = this.world.fighters.filter((f) => f.team === 'enemy' && f.alive && !f.entering);
+    const foes = this.world.fighters.filter((f) => f.team === 'enemy' && f.alive && !f.entering && !f.invincible); // (not one out of reach: the King inside his colossus)
     let tgt = null; let best = Infinity;
     for (const f of foes) { const d = Math.abs(f.x - p.x) + Math.abs(f.z - p.z) * 2 + Math.abs(f.floor - p.floor) * 2; if (d < best) { best = d; tgt = f; } }
     if (tgt) {
@@ -74,7 +74,10 @@ export class SweepBot extends Controller {
       }
     }
     // what opens the way, and what holds the shackled
-    const pr = st.props.find((q) => !q.broken && (q.opens || q.kind === 'shackle' || (sec.needs && q.tag === sec.needs)) && inReach(q.x));
+    // (and what holds the boss out of reach, or wards him: the colossus's crown, the Keep's conduits)
+    const ph = st.boss?.alive && st.boss.phase > 0 ? st.bossPhases()[st.boss.phase - 1] : null;
+    const bossTag = ph?.hold?.tag ?? ph?.ward?.tag;
+    const pr = st.props.find((q) => !q.broken && (q.opens || q.kind === 'shackle' || (sec.needs && q.tag === sec.needs) || (bossTag && q.tag === bossTag)) && inReach(q.x));
     if (pr) return this.propGoal(pr);
     return { act: 'go', x: this.world.bounds.maxX + 60, z: LANE };
   }

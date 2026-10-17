@@ -10,8 +10,9 @@ import { STAGE_WOOD } from './stageWood.js';
 import { STAGE_MINE } from './stageMine.js';
 import { STAGE_ASCENT } from './stageAscent.js';
 import { STAGE_GATES } from './stageGates.js';
+import { STAGE_KEEP } from './stageKeep.js';
 
-export const STAGES = { oath: STAGE, gallows: STAGE_GALLOWS, village: STAGE_VILLAGE, gallowsWood: STAGE_WOOD, hollowMountain: STAGE_MINE, shatteredAscent: STAGE_ASCENT, ironGates: STAGE_GATES };
+export const STAGES = { oath: STAGE, gallows: STAGE_GALLOWS, village: STAGE_VILLAGE, gallowsWood: STAGE_WOOD, hollowMountain: STAGE_MINE, shatteredAscent: STAGE_ASCENT, ironGates: STAGE_GATES, blackKeep: STAGE_KEEP };
 
 // The campaign level after this one, if it's built (null: none yet, or the end).
 export function nextLevel(data) {

@@ -748,6 +748,94 @@ export const ENEMIES = {
   },
 };
 
+// =========================================================== 8. THE KING
+// KING VAURATH, THE ASHEN CROWN: the last fight of the campaign (data/stageKeep.js). Taller
+// and leaner than any man of his: a ruler, not a brute. A black greatsword, exact footwork,
+// three quick cuts with the last held back, a long thrust, and ash and ember in his free
+// hand. He guards often and answers a blow into his guard at once (Stage boss.duel).
+// Drawn on the gladiator's doll in black and gold until his painted strips exist
+// (final-boss-mockups/ in the project files: the approved face design).
+ENEMIES.king = {
+  ...BASE,
+  id: 'king',
+  name: 'King Vaurath',
+  title: 'The Ashen Crown',
+  art: 'gladiator',
+  body: { w: 58, h: 132 },
+  look: { color: 0x141218, accent: 0xc8a040, skin: 0xb89a88 },
+
+  maxHealth: 260, maxStamina: 220,
+  walkSpeed: 118, depthSpeed: 86,
+  meleeMult: 1.0,
+  blockReduction: 0.95, guardEfficiency: 0.4,
+  knockdownFrames: 36, getupFrames: 18, staggerFrames: 44,
+
+  moves: {
+    light1: { // the first cut
+      anim: 'slash', cut: 'slash',
+      startup: 9, active: 3, recovery: 14,
+      damage: 11, hitstun: 20, hitstop: 6, shake: 2,
+      knockback: { x: 120, y: 0 }, guardDamage: 14, lunge: 50,
+      hitbox: { x: 12, y: 46, w: 92, h: 50 },
+      chains: [{ button: 'attack', next: 'light2', from: 9, to: 26 }],
+    },
+    light2: { // the second, back the other way
+      anim: 'backslash', cut: 'slash',
+      startup: 9, active: 3, recovery: 16,
+      damage: 12, hitstun: 22, hitstop: 6, shake: 3,
+      knockback: { x: 140, y: 0 }, guardDamage: 16, lunge: 50,
+      hitbox: { x: 12, y: 44, w: 92, h: 52 },
+      chains: [{ button: 'attack', next: 'light3', from: 12, to: 34 }],
+    },
+    light3: { // the third, held back a beat: it catches the early dodge
+      anim: 'chop', cut: 'cleave',
+      startup: 22, active: 4, recovery: 22,
+      damage: 16, hitstun: 26, hitstop: 9, shake: 5,
+      knockback: { x: 300, y: 300 }, knockdown: true, guardDamage: 26, lunge: 70,
+      hitbox: { x: 10, y: 20, w: 110, h: 100 },
+    },
+    heavy: { // the thrust: a long straight lunge, a gleam on the blade first
+      anim: 'thrust', cut: 'pierce',
+      startup: 26, active: 5, recovery: 26,
+      damage: 22, hitstun: 30, hitstop: 10, shake: 6,
+      knockback: { x: 380, y: 200 }, knockdown: true, breaksGuard: true,
+      guardDamage: 40, lunge: 200,
+      hitbox: { x: 20, y: 50, w: 150, h: 36 },
+    },
+    special1: { // the glide: across a third of the room and through you
+      anim: 'stab', cut: 'pierce', superArmor: true,
+      startup: 24, active: 14, recovery: 28,
+      damage: 18, hitstun: 32, hitstop: 8, shake: 5,
+      knockback: { x: 420, y: 240 }, knockdown: true,
+      guardDamage: 40, lunge: 380,
+      hitbox: { x: 16, y: 40, w: 90, h: 60 },
+    },
+    special2: { // the ash wave: the greatsword into the floor, ash rolling out both ways
+      anim: 'chop', cut: 'chop', unblockable: true, superArmor: true,
+      startup: 44, active: 5, recovery: 40,
+      damage: 22, hitstun: 30, hitstop: 10, shake: 12,
+      knockback: { x: 300, y: 360 }, knockdown: true, lunge: 20,
+      hitbox: { x: 10, y: 0, w: 120, h: 130 },
+      cooldown: 480,
+      shockwave: { speed: 400, range: 560, width: 32, clear: 26, damage: 12, launch: 200, lift: 280 },
+    },
+  },
+
+  ai: {
+    attackRange: 110, minRange: 50, alignZ: 12,
+    waitRange: 240, maxCrowd: 1,
+    threatRange: 190,
+    attackCooldown: [34, 70],
+    heavyChance: 0.3, comboChance: 0.7, comboLength: 2,
+    blockChance: 0.6, blockHold: [26, 50],
+    specialEvery: 40,
+    specials: [
+      { press: 'special1', min: 200, max: 420, chance: 0.45 },
+      { press: 'special2', min: 0, max: 300, chance: 0.15 },
+    ],
+  },
+};
+
 // Wave line-ups for the test arena. After the last one, waves are random mixes.
 // the thrall swings the grunt's sword
 ENEMIES.thrall.moves = ENEMIES.grunt.moves;

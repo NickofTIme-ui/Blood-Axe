@@ -21,6 +21,7 @@ import { STAGE_WOOD } from '../src/data/stageWood.js';
 import { STAGE_MINE } from '../src/data/stageMine.js';
 import { STAGE_ASCENT } from '../src/data/stageAscent.js';
 import { STAGE_GATES } from '../src/data/stageGates.js';
+import { STAGE_KEEP } from '../src/data/stageKeep.js';
 import { STAGES } from '../src/data/stages.js';
 import { LINE, NPC, GUIDE } from '../src/stage/Story.js';
 import { SPEAKERS, NARRATION, PORTRAIT_IDS, speakerInfo } from '../src/data/speakers.js';
@@ -345,7 +346,7 @@ test('every enemy has art, anims, specials that exist, and is in a wave', () => 
   const anims = ['slash', 'backslash', 'chop', 'stab', 'stabB', 'thrust', 'uppercut', 'swingChain', 'slamChain', 'spin', 'hook', 'bash', 'charge'];
   // (a wave, the stage's waves, or the stage boss and his adds)
   const boss = (b) => (b ? [b.type, ...(b.adds ?? []), ...(b.escort ?? []), ...(b.phases ?? []).flatMap((ph) => ph.adds ?? [])] : []);
-  const inWaves = new Set([...WAVES.flat(), ...[STAGE, STAGE_WOOD, STAGE_MINE, STAGE_ASCENT].flatMap((S) => S.sections.flatMap((s) => [...(s.waves ?? []).flat(), ...boss(s.boss)]))]);
+  const inWaves = new Set([...WAVES.flat(), ...[STAGE, STAGE_WOOD, STAGE_MINE, STAGE_ASCENT, STAGE_GATES, STAGE_KEEP].flatMap((S) => S.sections.flatMap((s) => [...(s.waves ?? []).flat(), ...boss(s.boss)]))]);
   for (const e of Object.values(ENEMIES)) {
     assert(e.art || e.view, `${e.id} has no art`);
     assert(inWaves.has(e.id), `${e.id} never appears in a wave`);
@@ -3577,11 +3578,122 @@ const EVERYONE = ['shelter', 'bram', 'hilde', 'joren', 'convoy'];
 // a fighter killed the way a blow kills him (Stage listens for 'kill')
 const slay = (world, f) => { f.health = 0; world.events.emit('kill', { defender: f, attacker: null }); };
 
+
+// ------------------------------------------------------------ The Black Keep (level 6, the finale)
+
+const KEEP_SEC = (id) => STAGE_KEEP.sections.findIndex((q) => q.id === id);
+function keepSetup(section, { x, z, hero = 'warrior', opts = {} } = {}) {
+  const world = new World({ seed: 31 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: x ?? 200, z: z ?? 440, controller: new Scripted() }));
+  const st = new Stage(world, STAGE_KEEP, opts);
+  st.start(p, { section });
+  hush(st);
+  if (x != null) { p.x = x; p.z = z; st.placeOnGround(p); }
+  const run = (n, each) => { for (let i = 0; i < n; i++) { world.tick(); st.update(); each?.(i); } };
+  return { world, p, st, run };
+}
+// (the walker smashes what a player would: the forge shackle, the mill pins, the spires; and opens the cells)
+const keepBreaker = (w, st, p) => {
+  for (const pr of st.props) if (!pr.broken && ['shackle', 'pin', 'spire'].includes(pr.kind) && Math.abs(pr.x - p.x) < 200) st.breakProp(pr, 1);
+  for (const id of ['cellsLow', 'cellsMid', 'ilse']) {
+    const n = st.story.npc(id);
+    if (n?.state === 'trapped' && Math.abs(n.x - p.x) < 220 && !st.livingFoes().length) st.story.free(n);
+  }
+};
+const SAVED_ALL = ['shelter', 'convoy', 'vincent', 'joren'];
+
+test('keep: the level is wired in: the gates lead to it, it is the last, its speakers all exist', () => {
+  assert(STAGES[STAGE_GATES.next.id] === STAGE_KEEP, 'the gates lead on to the Keep');
+  assert(STAGE_KEEP.next == null && STAGE_KEEP.doneTitle === 'THE OATH IS KEPT', 'the finale');
+  for (const b of STAGE_KEEP.story) for (const [who] of b.lines ?? []) assert(who === 'VOICE' || SPEAKERS[who] || speakerInfo(who), `${b.id}: speaker ${who}`);
+  for (const s of STAGE_KEEP.sections) if (s.boss) {
+    const crimes = s.boss.sentence?.crimes ?? [];
+    assert(crimes.length >= 2 && crimes.every((c) => c.length <= 100) && s.boss.sentence.last, `${s.id}: a sentence for the boss`);
+  }
+});
+
+test('keep: every hero walks the Black Keep (no upgrades), without a fall, frees every cell and the forge, and keeps the oath; the saved come back', () => {
+  for (const hero of ['warrior', 'mage', 'rogue']) {
+    const where = [];
+    const r = campaignRun(STAGE_KEEP, hero, {
+      frames: 60 * 480, opts: { saved: SAVED_ALL },
+      onTick: (w, st, p) => { keepBreaker(w, st, p); p.health = p.stats.maxHealth; },
+      setup: (w, st, p) => w.events.on('pitFall', (e) => { if (e.fighter === p) where.push(`${st.section.id} x ${Math.round(p.x)}`); }),
+    });
+    assert(r.won === 1 && r.falls === 0, `${hero}: ${r.won ? 'out' : `stuck at x ${Math.round(r.x)} (${r.stage.section.id}, ${r.stage.phase})`} in ${r.secs.toFixed(0)} s, ${r.falls} falls (${where})`);
+    for (const id of ['cellsLow', 'cellsMid', 'ilse', 'forge']) assert(r.rescued.includes(id), `${hero}: ${id} saved (${r.rescued})`);
+    for (const id of ['opening', 'cells', 'forge', 'mill', 'kings', 'hoist', 'run', 'doorsThrone', 'king']) assert(r.beats.includes(id), `${hero}: ${id} played (${r.beats})`);
+  }
+});
+
+test('keep: the King duels: three parries or blocks break his composure and open him; until then his guard turns most of a blow; a blow into his guard is answered', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('throne'), { x: 16400, z: 420 });
+  st.fightOn = true; st.waveIndex = 99;
+  run(90, () => { p.health = p.stats.maxHealth; });
+  const k = st.boss;
+  assert(k?.stats.name && st.duelist() === k, 'the King is the duelist');
+  run(1, () => {});
+  assert(k.ward < 1, `his guard wards him (${k.ward})`);
+  const opened = []; world.events.on('kingOpen', (e) => opened.push(e));
+  for (let i = 0; i < 3; i++) world.events.emit('parry', { attacker: k, defender: p });
+  assert(opened.length === 1 && k.openFor > 0, 'three parries open him');
+  run(1, () => { p.health = p.stats.maxHealth; });
+  assert((k.ward ?? 1) === 1, `open, he takes the full blow (${k.ward})`);
+  const counters = []; world.events.on('emberCounter', (e) => counters.push(e));
+  p.x = k.x - k.facing * 60; p.z = k.z; p.invincible = false;
+  const hp = p.health;
+  world.events.emit('block', { attacker: p, defender: k });
+  assert(counters.length === 1 && p.health < hp, 'a blow into his guard burns back');
+});
+
+test('keep: the colossus: at half health the King is held in the statue, untouchable, until every spire breaks; then the heart opens; at a quarter he comes down and the ground shrinks', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('throne'), { x: 16400, z: 420 });
+  st.fightOn = true; st.waveIndex = 99;
+  run(90, () => { p.health = p.stats.maxHealth; });
+  const k = st.boss;
+  const ph = (id) => STAGE_KEEP.sections[KEEP_SEC('throne')].boss.phases.find((q) => q.id === id);
+  k.health = k.stats.maxHealth * ph('colossus').at - 1;
+  run(30, () => { p.health = p.stats.maxHealth; });
+  assert(st.bossInPhase('colossus') && k.invincible, 'held in the colossus, untouchable');
+  const hearts = []; world.events.on('heartOpen', (e) => hearts.push(e));
+  const spires = st.props.filter((q) => q.tag === 'spire');
+  for (const s of spires.slice(0, -1)) st.breakProp(s, 1);
+  run(10, () => { p.health = p.stats.maxHealth; });
+  assert(k.invincible && !hearts.length, 'still held with one spire up');
+  st.breakProp(spires.at(-1), 1);
+  run(10, () => { p.health = p.stats.maxHealth; });
+  assert(hearts.length === 1 && !k.invincible, 'the heart opens');
+  const B = world.bounds; const [x0, x1] = [B.minX, B.maxX];
+  k.health = k.stats.maxHealth * ph('last').at - 1;
+  run(60 * 12, () => { p.health = p.stats.maxHealth; k.health = Math.max(k.health, 1); });
+  assert(st.bossInPhase('last') && !k.held && !k.brain, 'out of the statue, thinking again');
+  assert(B.minX > x0 + 100 && B.maxX < x1 - 100 && B.minX >= ph('last').squeeze.x0 - 1 && B.maxX <= ph('last').squeeze.x1 + 1, `the last ground closes in (${x0}..${x1} to ${B.minX}..${B.maxX})`);
+});
+
+test('keep: the gale gives warning, then pushes; behind the stones it does not', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('causeway'), { x: 600, z: 440 });
+  const hz = st.hazards.find((h) => h.type === 'drift');
+  assert(hz, 'a gale on the causeway');
+  const warns = []; const gusts = [];
+  world.events.on('gustWarn', (e) => warns.push(world.frame)); world.events.on('gustStart', (e) => gusts.push(world.frame));
+  const pushed = (z) => {
+    p.x = 600; p.z = z; st.placeOnGround(p);
+    let moved = 0; let x0 = p.x; let z0 = p.z;
+    run(hz.period ?? 600, () => { if (hz.state === 'blow') moved += Math.abs(p.z - z0) + Math.abs(p.x - x0); x0 = p.x; z0 = p.z; });
+    return moved;
+  };
+  const open = pushed(380);
+  assert(warns.length && gusts.length && warns[0] < gusts[0], `warned first (${warns[0]}, ${gusts[0]})`);
+  assert(open > 20, `the gust pushes (${open})`);
+  assert(pushed(hz.shelter.z - 10) === 0, 'behind the stones, nothing');
+});
+
 test('every level: no enemy and no boss ever pops into view (each comes on from off-screen, or stood there before anyone could see the spot)', () => {
   const heal = (w, st, p) => { p.health = p.stats.maxHealth; };
   const levels = [
     ['oath', STAGE, heal], ['gallows', STAGE_GALLOWS, heal], ['village', STAGE_VILLAGE, heal], ['wood', STAGE_WOOD, heal],
     ['mine', STAGE_MINE, mineBreaker, {}, 400], ['ascent', STAGE_ASCENT, ascentBreaker, {}, 420], ['gates', STAGE_GATES, gatesBreaker, { saved: EVERYONE }, 420],
+    ['keep', STAGE_KEEP, keepBreaker, { saved: SAVED_ALL }, 480],
   ];
   const seen = []; const unfinished = [];
   for (const [name, data, each, opts = {}, secs = 300] of levels) {
@@ -3592,7 +3704,7 @@ test('every level: no enemy and no boss ever pops into view (each comes on from 
         const add = world.addFighter.bind(world);
         world.addFighter = (f) => {
           const heroes = world.fighters.filter((q) => q.team === 'player' && q.alive);
-          if (f.team === 'enemy' && inView(world, heroes, f.x)) seen.push(`${name}/${st.section.id}: ${f.stats.name} at x ${Math.round(f.x)} (hero at ${Math.round(heroes[0]?.x)})`);
+          if (f.team === 'enemy' && inView(world, heroes, f.x)) seen.push([f, `${name}/${st.section.id}: ${f.stats.name} at x ${Math.round(f.x)} (hero at ${Math.round(heroes[0]?.x)})`]);
           return add(f);
         };
       },
@@ -3600,7 +3712,9 @@ test('every level: no enemy and no boss ever pops into view (each comes on from 
     if (!r.won) unfinished.push(`${name} (${r.stage.section.id})`);
   }
   assert(!unfinished.length, `the walk got through every level (stuck: ${unfinished.join(', ')})`);
-  assert(!seen.length, `popped in: ${seen.join('; ')}`);
+  // (one dropped from the floor above falls in from over the top of the screen: the Spire)
+  const popped = seen.filter(([f]) => !f.dropIn).map(([, s]) => s);
+  assert(!popped.length, `popped in: ${popped.join('; ')}`);
 });
 
 test('gates: the level is wired in: the ascent leads to it, its cutaway exists', () => {

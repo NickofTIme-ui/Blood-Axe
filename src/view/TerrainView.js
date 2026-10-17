@@ -24,6 +24,7 @@ import { WoodBackdrop } from './WoodView.js';
 import { MineBackdrop } from './MineView.js';
 import { AscentBackdrop } from './AscentView.js';
 import { GatesBackdrop } from './GatesView.js';
+import { KeepBackdrop } from './KeepView.js';
 import { artKey, PaintedLevel } from './levelArt.js';
 import { LEVEL_ART } from '../data/levelArt.js';
 import { keyLayer } from './envArt.js';
@@ -123,6 +124,9 @@ export class TerrainView {
     // THE IRON GATES (theme 'gates'): the iron wall and its gatehouse, the burning town, the
     // Keep filling the sky (view/GatesView.js)
     if (data.theme === 'gates') this.backdrop = new GatesBackdrop(scene, stage);
+    // THE BLACK KEEP (theme 'keep'): black stone and violet torches, the forge, the colossus
+    // (view/KeepView.js)
+    if (data.theme === 'keep') this.backdrop = new KeepBackdrop(scene, stage);
     this.water = this.wood || this.mine;
     this.theme = data.theme;
     applyAtmosphere(scene, data.theme, this.width); // (depth: the backdrop recedes, the lane stays crisp)

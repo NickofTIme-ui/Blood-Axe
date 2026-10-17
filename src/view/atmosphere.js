@@ -24,6 +24,7 @@ export const AIR = {
   mine: { haze: 0x1e1c22, far: 0.22, wall: 0.2, wallFoot: 0.5, floorBack: 0.4, floorFront: 0.2 },
   ascent: { haze: 0x5a6070, far: 0.24, wall: 0.16, wallFoot: 0.4, floorBack: 0.32, floorFront: 0.18 },
   gates: { haze: 0x2e2630, far: 0.3, wall: 0.22, wallFoot: 0.5, floorBack: 0.42, floorFront: 0.22 },
+  keep: { haze: 0x241e2c, far: 0.3, wall: 0.22, wallFoot: 0.5, floorBack: 0.42, floorFront: 0.22 },
 };
 
 const hex = (c) => `${(c >> 16) & 255},${(c >> 8) & 255},${c & 255}`;

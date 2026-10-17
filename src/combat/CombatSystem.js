@@ -204,7 +204,8 @@ export class CombatSystem {
     // (a juggle hit: the Hangman's Hood trophy pays more for it — data/trophies.js)
     const juggleMult = juggles(attacker, def) ? (attacker.stats.juggleMult ?? 1) : 1;
     const damage = move.damage * mult * (counter ? FEEL.counterMultiplier : 1) * exposed *
-      (crit ? FEEL.critMultiplier : 1) * juggleMult * (riposte ? RIPOSTE.mult : 1);
+      (crit ? FEEL.critMultiplier : 1) * juggleMult * (riposte ? RIPOSTE.mult : 1) *
+      (def.ward ?? 1); // (ward: a boss taking only part of a blow: King Vaurath's guard, stage/Stage.js)
     const healthBefore = def.health;
     def.health = Math.max(def.spare || def.immortal ? 1 : 0, def.health - damage); // (spare: a boss beaten to his knees, not killed: stage/Sequence.js; immortal: config/testMode.js)
     def.flash = 6;

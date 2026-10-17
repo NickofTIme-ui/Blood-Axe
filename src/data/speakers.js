@@ -31,6 +31,8 @@ export const SPEAKERS = {
   HASK: { name: 'Hask' },
   HROLF: { name: 'Hrolf' },
   MESSENGER: { name: 'Messenger' },
+  EXECUTIONER: { name: 'The Executioner' },
+  FORGEMASTER: { name: 'The Forgemaster' },
   CAPTAIN: { name: 'Captain' },
   // the people
   HALE: { name: 'Hale' },
@@ -45,6 +47,7 @@ export const SPEAKERS = {
   HILDE: { name: 'Hilde' },
   BRAM: { name: 'Bram' },
   WREN: { name: 'Wren' },
+  ILSE: { name: 'Ilse' }, // Hale the smith's daughter, taken north (the Black Keep's cells)
   "TANNER'S BOY": { name: "The Tanner's Boy", portrait: 'tanners-boy' },
   // (named by Nick: the voices that had only a trade)
   MINER: { name: 'Daniel', portrait: 'daniel' },     // the miners' foreman (Hollow Mountain on)

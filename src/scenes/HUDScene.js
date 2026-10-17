@@ -189,7 +189,20 @@ export class HUDScene extends Phaser.Scene {
       .setOrigin(0.5, 0).setStroke('#000000', 4);
     epicFill(name, ['#ff9a7a', '#d0101a', '#5a0006']);
     parts.push(trail, fill, name);
-    this.bossUi = { boss, fill, trail, w, shown: 1, parts };
+    // (a boss of phases: a notch on the bar at each; King Vaurath's composure: three pips under
+    // it while his duel is on, cracking as he's parried)
+    const st = this.arena?.stage;
+    const def = st?.section?.boss;
+    for (const ph of def?.phases ?? []) parts.push(this.add.rectangle(x + w * ph.at, y - 2, 2, 14, 0xffe0a0, 0.9).setOrigin(0.5, 0));
+    const pips = [];
+    if (def?.duel) {
+      const n = def.duel.composure ?? 3;
+      for (let i = 0; i < n; i++) {
+        const pip = this.add.rectangle(W / 2 + (i - (n - 1) / 2) * 22, y + 46, 16, 8, 0x3a2a40).setStrokeStyle(1, 0xa88aff);
+        pips.push(pip); parts.push(pip);
+      }
+    }
+    this.bossUi = { boss, fill, trail, w, shown: 1, parts, pips };
   }
 
   updateBoss() {
@@ -199,6 +212,10 @@ export class HUDScene extends Phaser.Scene {
     ui.shown = r > ui.shown ? r : ui.shown + (r - ui.shown) * 0.05;
     ui.fill.scaleX = r;
     ui.trail.scaleX = ui.shown;
+    // (warded: his guard up, or the Keep feeding him: the bar goes cold; his composure pips)
+    ui.fill.fillColor = (ui.boss.ward ?? 1) < 1 ? 0x8a6ab0 : 0xc0161c;
+    const duel = ui.pips?.length && ui.boss.phase === 0;
+    ui.pips?.forEach((pip, i) => { pip.setVisible(!!duel); pip.fillColor = (ui.boss.openFor ?? 0) > 0 || i < (ui.boss.composure ?? 0) ? 0xffe0a0 : 0x3a2a40; });
     if (!ui.boss.alive && ui.shown < 0.01) { ui.parts.forEach((p) => p.destroy()); this.bossUi = null; }
   }
 

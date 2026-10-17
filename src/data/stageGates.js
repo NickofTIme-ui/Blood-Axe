@@ -49,7 +49,7 @@ export const STAGE_GATES = {
   id: 'ironGates',
   name: 'THE IRON GATES',
   chapter: 'V',
-  next: { id: 'blackKeep', name: 'THE BLACK KEEP', chapter: 'VI' }, // (not built yet: Stage 3 of the plan)
+  next: { id: 'blackKeep', name: 'THE BLACK KEEP', chapter: 'VI' },
   doneTitle: 'THE GATES HAVE FALLEN',
   width: 10400,
   theme: 'gates',
