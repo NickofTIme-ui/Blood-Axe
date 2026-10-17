@@ -153,6 +153,9 @@ export class Stage {
     // ledges, pits, lifts and rotten planks (stage/Terrain.js): stages without them have none
     this.terrain = data.terrain ? new Terrain(world, data.terrain) : null;
     world.terrain = this.terrain;
+    // how far back the lane goes, when a stage's painted street runs further back than the
+    // usual floorTop (else it reads as an invisible wall in front of the houses)
+    if (data.laneTop) world.bounds.minZ = data.laneTop;
     // dialogue and villagers (stage/Story.js): campaign levels only
     // (a stage with a boss has a story too: his sentence is spoken, stage/Sentence.js)
     this.story = data.story || data.npcs || data.sections.some((sec) => sec.boss) ? new Story(this, data) : null;

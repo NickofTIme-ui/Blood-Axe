@@ -9,7 +9,7 @@ import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { PICKUPS } from '../data/stage.js';
 import { playSfx } from '../core/Sfx.js';
-import { buildPropSheet, PROP_HD } from './propSheet.js';
+import { buildPropSheet, PROP_HD, PICKUP_HD, PICKUP_PAINTED, PICKUP_SCALE } from './propSheet.js';
 import { FX } from './stripImporter.js';
 import { BladeChain } from './BladeChain.js';
 import { DANGER } from './dangerCue.js';
@@ -60,6 +60,9 @@ export class StageView {
     // here instead (canvasTex leaves an existing texture alone)
     this.painted = buildPropSheet(this.scene);
     this.hd = buildPropSheet(this.scene, 'props-hd-src', PROP_HD, 3, 2, true); // (replaces the old breakables)
+    // the pickups at full detail (drawn at 1 / PICKUP_SCALE): the repainted sheet where it exists
+    this.pickupHd = buildPropSheet(this.scene, 'props-src', PICKUP_HD, 4, 4, true);
+    for (const k of buildPropSheet(this.scene, 'pickups-hd-src', PICKUP_PAINTED, 3, 2, true)) this.pickupHd.add(k);
     // chest: iron-bound, brass lock (fallback)
     this.canvasTex('prop-chest', 92, 76, (c, w, h) => {
       c.fillStyle = '#4a2a14'; c.fillRect(2, 22, w - 4, h - 24);
@@ -564,7 +567,9 @@ export class StageView {
     const live = new Set(this.stage.pickups);
     for (const pk of this.stage.pickups) {
       if (this.pickupSprites.has(pk)) continue;
-      const img = this.scene.add.image(pk.x, pk.z, `pk-${pk.kind}`).setOrigin(0.5, 1).setScale(pk.kind === 'shrine' ? 0.7 : pk.kind === 'trophy' ? 1 : 0.75);
+      const key = `pk-${pk.kind}`;
+      const img = this.scene.add.image(pk.x, pk.z, key).setOrigin(0.5, 1)
+        .setScale((pk.kind === 'shrine' ? 0.7 : pk.kind === 'trophy' ? 1 : 0.75) / (this.pickupHd.has(key) ? PICKUP_SCALE : 1));
       const glow = this.scene.add.image(pk.x, pk.z - 12, 'glow').setScale(pk.kind === 'trophy' ? 2.6 : 1.4).setTint(PICKUPS[pk.kind].color).setAlpha(0.6).setBlendMode(Phaser.BlendModes.ADD);
       this.pickupSprites.set(pk, { img, glow });
     }

@@ -2568,7 +2568,7 @@ test('village: the barn: smashing the burning beam off its door frees the people
 test('village: the boy on the high ridge is saved by reaching him; every hero climbs to him in three jumps', () => {
   // from the back of the second roof: a chimney (+45), a dormer (+45), the ridge (+45). Like
   // a player: aim for the middle of the next step up, jump, steer onto it, land, again
-  const steps = STAGE_VILLAGE.terrain.filter((b) => b.kind === 'block' && b.z0 === 282 && b.x0 > 3480 && b.x1 <= 3680 && b.top > 140).sort((a, b) => a.top - b.top);
+  const steps = STAGE_VILLAGE.terrain.filter((b) => b.kind === 'block' && b.z0 === STAGE_VILLAGE.laneTop && b.x0 > 3480 && b.x1 <= 3680 && b.top > 140).sort((a, b) => a.top - b.top);
   assert(steps.length === 3 && steps.every((b, i) => b.top - (i ? steps[i - 1].top : 140) <= 45), 'three steps of +45 at most');
   for (const hero of ['warrior', 'mage', 'rogue']) {
     const world = new World({ seed: 4 });
@@ -2584,13 +2584,13 @@ test('village: the boy on the high ridge is saved by reaching him; every hero cl
       if (hold > 0) hold--;
       return { jump: hold > 0, right: aim != null && p.x < aim - 4, left: aim != null && p.x > aim + 4 };
     });
-    const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: 3490, z: 300, controller: c }));
+    const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: 3490, z: STAGE_VILLAGE.laneTop + 18, controller: c }));
     c.p = p;
     const st = new Stage(world, STAGE_VILLAGE);
     st.start(p);
     st.enterSection(2);
     hush(st);
-    p.x = 3490; p.z = 300; st.placeOnGround(p);
+    p.x = 3490; p.z = STAGE_VILLAGE.laneTop + 18; st.placeOnGround(p);
     for (let i = 0; i < 400 && !st.story.isRescued('tam'); i++) {
       for (const e of world.fighters) if (e.team === 'enemy') { e.health = 0; e.removeMe = true; } // (the roof's two men: another test)
       world.tick(); st.update();

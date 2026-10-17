@@ -377,6 +377,7 @@ export class ArenaScene extends Phaser.Scene {
       saved: this.progress.rescuedIds(), flags: { ...C.flags },
       rescued: back ? this.progress.rescuedIds() : undefined, lost: back ? this.progress.lostIds() : undefined,
     } : {});
+    this.gore.dismemberer.minZ = this.world.bounds.minZ; // (a stage's own lane: `laneTop`)
     this.stageView = new StageView(this, this.stage);
     // (after the StageView: it makes the 'glow' texture the terrain's lanterns use)
     this.terrainView = this.stage.terrain || this.stageData.theme ? new TerrainView(this, this.stage) : null;

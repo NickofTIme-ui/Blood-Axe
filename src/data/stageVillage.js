@@ -30,7 +30,11 @@
 //   VII THE NORTH GATE     the saved gather; the elder gives Rurik Oathkeeper, his father's
 //                          sword, and its fire wakes; stragglers to burn; the vow; out
 
-const FULL = { z0: 282, z1: 520 };
+// The lane runs back to the foot of the painted house fronts (`laneTop`): at the usual 282
+// a band of street showed behind it that nobody could walk on (Nick, 2026-10-17: invisible walls)
+const LANE_TOP = 248;
+const FULL = { z0: LANE_TOP, z1: 520 };
+const BACK = (d) => ({ z0: LANE_TOP, z1: LANE_TOP + d }); // (against the back of the lane, d deep)
 // the stables' double gate (view/VillageView.js draws it open once the horses are freed):
 // where the stampede comes out, on its threshold at the back of the yard
 const STABLE_DOOR = { x: 6370, z: 216 };
@@ -44,6 +48,7 @@ export const STAGE_VILLAGE = {
   width: 9400,
   theme: 'village',
   tall: true,
+  laneTop: LANE_TOP,
   fireBed: 1, // the whole village is burning: its crackle plays low throughout (core/FireAmbience.js)
   // the castle on the horizon: where it stands on the far backdrop and how big (it grows
   // level by level, docs/campaign/plan.md)
@@ -228,9 +233,9 @@ export const STAGE_VILLAGE = {
     // front is only as tall as the step (view/TerrainView.js supportTop); each is shallow
     // (34 deep, against the back of the lane: hold up and you're lined up), so it shows as a
     // ledge with a lit top, not a tall pale wall
-    { kind: 'block', x0: 3500, x1: 3548, z0: 282, z1: 316, top: 185, look: 'chimney' },
-    { kind: 'block', x0: 3564, x1: 3612, z0: 282, z1: 316, top: 230 },
-    { kind: 'block', x0: 3628, x1: 3680, z0: 282, z1: 316, top: 275 },
+    { kind: 'block', x0: 3500, x1: 3548, ...BACK(34), top: 185, look: 'chimney' },
+    { kind: 'block', x0: 3564, x1: 3612, ...BACK(34), top: 230 },
+    { kind: 'block', x0: 3628, x1: 3680, ...BACK(34), top: 275 },
     { kind: 'pit', x0: 3680, x1: 3980, ...FULL },                      // the cellars, burning
     { kind: 'crumble', x0: 3740, x1: 3810, z0: 350, z1: 470, top: 150, fall: 40, back: 200 }, // gap 60
     { kind: 'crumble', x0: 3870, x1: 3940, z0: 350, z1: 470, top: 150, fall: 40, back: 200 }, // gap 60
@@ -238,7 +243,7 @@ export const STAGE_VILLAGE = {
     { kind: 'block', x0: 4180, x1: 4260, ...FULL, top: 60 },            // and down to the yard
 
     // ---- IV THE MILL YARD: the mill's raised floor at the back
-    { kind: 'block', x0: 4720, x1: 5010, z0: 282, z1: 360, top: 70 },
+    { kind: 'block', x0: 4720, x1: 5010, ...BACK(78), top: 70, look: 'mill' },
   ],
 
   // smoke dimming the backdrop behind the roofs, so the roofs you jump on stand out from the
@@ -268,7 +273,7 @@ export const STAGE_VILLAGE = {
       flee: { x: 1500, z: 300 }, gather: { x: 8740, z: 300 },
     },
     {
-      id: 'tam', name: 'Tam', x: 3656, z: 298, pose: 'child', rescue: 'reach', flee: null, gather: { x: 8800, z: 312 },
+      id: 'tam', name: 'Tam', x: 3656, z: LANE_TOP + 16, pose: 'child', rescue: 'reach', flee: null, gather: { x: 8800, z: 312 },
     },
     {
       id: 'barn', name: 'the miller\'s people', x: 5330, z: 296, pose: 'group', rescue: 'wreckage', tag: 'barn',

@@ -33,6 +33,8 @@ import { applyAtmosphere, gradient } from './atmosphere.js';
 const SHRINE_H = 170;
 // the painted lantern post: drawn this tall; its lantern at this point of the 300x400 picture
 const LANTERN_H = 150;
+// the village's painted torch post (assets/env/village/torch.png): its height on screen (world px)
+const TORCH_H = 112;
 const LANTERN_AT = [200, 134];
 // the painted log bridge, fitted to a block: `walk` = how far down the picture its top edge
 // is (set on the lane's front edge), `wide` = drawn this much wider than the block (roots
@@ -481,6 +483,7 @@ export class TerrainView {
     const { top, front, b } = v;
     const painted = { cart: 'cartwreck', wreckage: 'prop-wreckage-broken' }[b.look];
     if (painted && this.scene.textures.exists(painted)) { this.drawPaintedBlock(v, x0, x1, painted); return; }
+    if (b.look === 'mill' && this.drawMillFloor(v, x0, x1)) return;
     const narrow = b.z1 - b.z0 < 80;
     const base = this.supportTop(b);
     const overPit = !base && this.terrain.inPit((x0 + x1) / 2, b.z1 - 1);
@@ -635,6 +638,22 @@ export class TerrainView {
     top.setDepth(b.z0 - 0.5);
   }
 
+  // The mill's raised floor (`look: 'mill'`), painted (assets/env/village/mill_floor.png, on
+  // magenta): one picture of the platform, deck and front, as wide as the block and standing
+  // on its front edge. False until it's painted (then it's drawn as a roof, like the others).
+  drawMillFloor(v, x0, x1) {
+    const s = this.scene;
+    if (!s.textures.exists('village-mill-src')) return false;
+    if (!s.textures.exists('village-mill')) s.textures.addCanvas('village-mill', keyLayer(s.textures.get('village-mill-src').getSourceImage(), 'magenta'));
+    const { top, front, b } = v;
+    v.art ??= s.add.image(0, 0, 'village-mill').setOrigin(0.5, 0.97);
+    v.art.setPosition((x0 + x1) / 2, b.z1 + 4).setScale((x1 - x0 + 24) / v.art.frame.width).setDepth(b.z1 + 0.5).setVisible(true);
+    top.fillStyle(0x000000, 0.35).fillEllipse((x0 + x1) / 2, b.z1, x1 - x0 + 30, 18);
+    top.setDepth(b.z0 - 0.5);
+    front.setVisible(false);
+    return true;
+  }
+
   // ------------------------------------------------------------ landmarks
 
   drawLanterns(list) {
@@ -642,6 +661,15 @@ export class TerrainView {
     for (const l of list) {
       const y0 = l.z - Math.max(0, this.terrain?.groundAt(l.x, l.z) ?? 0);
       const g = s.add.graphics().setDepth(l.z - 0.2);
+      if (this.village && s.textures.exists('village-torch-src')) {
+        // the painted torch post (on magenta: cut out once); its flame at the top gets a glow
+        if (!s.textures.exists('village-torch')) s.textures.addCanvas('village-torch', keyLayer(s.textures.get('village-torch-src').getSourceImage(), 'magenta'));
+        const img = s.add.image(l.x, y0 + 3, 'village-torch').setOrigin(0.5, 0.98).setDepth(l.z - 0.2);
+        img.setScale(TORCH_H / img.height);
+        const glow = s.add.image(l.x, y0 - TORCH_H * 0.88, 'glow').setScale(2.2).setTint(COL.lantern).setAlpha(0.45).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
+        s.tweens.add({ targets: glow, alpha: { from: 0.3, to: 0.55 }, duration: 260 + (l.x % 200), yoyo: true, repeat: -1 });
+        continue;
+      }
       if (this.village) {
         // a torch on a post
         g.fillStyle(0x1a1410, 1).fillRect(l.x - 2, y0 - 70, 4, 70);
