@@ -920,3 +920,10 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - `assets/video/opening-cinematic.mp4` is the 41 s cut from Nick's ChatGPT "opening cinematic" chat (the Rurik version: story card, the march home, the burning village, Rurik draws, the Blood Axe title card). Re-encoded from ChatGPT's 88 MB file to 50 MB (H.264 CRF 21, 1080p, faststart); its own audio track was dropped since the cinematic always plays muted. The original is on the PC at `assets/incoming/opening-cinematic-new.mp4`.
 - `THEME_AT` in `src/core/StartupIntro.js` is 17 (was 7): "The Battle" starts 17 s in, or at once on a skip.
 - Checked in headless Chromium (with a VP9 stand-in, since its build lacks H.264): the film plays all 41 s, the theme starts at 17.0 s, it crossfades into the title. Tests pass.
+
+## itch upload 19827076 (2026-10-17) = main at 928c05e
+- Live on the page and embedded. 385 MB zip, 39 parts, same chunked Chrome upload; SHA-256 checked in the page before handing it to itch.
+- Adds the new 41 s opening cinematic (music from 17 s), Nick's flesh-hit and Mage shock/lightning sounds, and the archer/catapult animations. Checked on the hosted copy with ?mute=1: the cinematic loads and hands over to the title; all 599 files load.
+- Gotcha: the first try (19826617) broke because two files were fetched before itch finished unpacking, and itch's CDN cached the 404s for 31 days. After an upload, wait for itch to finish unpacking before loading any game file URL.
+- Not in it: the Black Keep (level 6) branch, which isn't merged to main.
+- Online play: both players need this build (refresh the page).
