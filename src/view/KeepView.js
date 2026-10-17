@@ -49,7 +49,7 @@ export class KeepBackdrop {
     if (art.has('sky')) art.layer('sky', DEPTH.sky); else this.drawSky();
     if (art.has('far')) art.layer('far', DEPTH.far - 1); else this.drawKeep();
     this.drawWalls();
-    this.drawGround();
+    if (art.has('ground')) art.ground(); else this.drawGround();
     this.drawForge();
     this.drawMill();
     this.drawSpire();
@@ -124,10 +124,12 @@ export class KeepBackdrop {
     const g = s.add.graphics().setDepth(DEPTH.floor - 1);
     const S = (id) => this.sec(id);
     const r = rng(41);
+    // (each part's painted wall where it exists, data/levelArt.js keep.tiles; else drawn here)
+    const painted = (name, x0, x1) => !!this.art.tile(name, x0, x1);
     // I THE ASH CAUSEWAY: the parapet, gibbets hung over it, the piers going down
     const cw = S('causeway');
-    this.stone(g, cw.x0 - this.pad, cw.x1, 40, { seed: 5 });
-    for (let x = cw.x0 + 200; x < cw.x1; x += 330) {
+    if (!painted('causeway', cw.x0 - this.pad, cw.x1)) this.stone(g, cw.x0 - this.pad, cw.x1, 40, { seed: 5 });
+    if (!this.art.has('tile-causeway')) for (let x = cw.x0 + 200; x < cw.x1; x += 330) {
       g.fillStyle(COL.timber, 1).fillRect(x, top - 190, 8, 190).fillRect(x, top - 190, 60, 7); // a gibbet's post and arm
       g.lineStyle(2, COL.ironLit, 1).lineBetween(x + 54, top - 184, x + 54, top - 150);
       g.lineStyle(3, COL.iron, 1).strokeRect(x + 38, top - 150, 32, 52); // its cage
@@ -135,18 +137,18 @@ export class KeepBackdrop {
     }
     // II THE MUSTER HALL: a cathedral of black stone, banners forty feet long
     const mh = S('muster');
-    this.stone(g, mh.x0, mh.x1, INSIDE, { seed: 9 });
-    for (let x = mh.x0 + 120; x < mh.x1; x += 300) {
+    if (!painted('hall', mh.x0, mh.x1)) this.stone(g, mh.x0, mh.x1, INSIDE, { seed: 9 });
+    if (!this.art.has('tile-hall')) for (let x = mh.x0 + 120; x < mh.x1; x += 300) {
       g.fillStyle(COL.stoneLit, 1).fillRect(x, top - INSIDE, 40, INSIDE); // a pillar
       g.fillStyle(COL.cloth, 1).fillRect(x + 100, top - 520, 70, 400).fillTriangle(x + 100, top - 120, x + 170, top - 120, x + 135, top - 80); // a banner
       g.fillStyle(COL.gold, 0.6).fillCircle(x + 135, top - 400, 16);
       this.torch(x + 20, top - 160);
     }
-    g.fillStyle(COL.timber, 1).fillRect(mh.x0 + 200, top - 300, mh.x1 - mh.x0 - 400, 14); // the upper balcony's edge
+    if (!this.art.has('tile-hall')) g.fillStyle(COL.timber, 1).fillRect(mh.x0 + 200, top - 300, mh.x1 - mh.x0 - 400, 14); // the upper balcony's edge
     // III THE BURNING CELLS: the well of the cell block, tiers of barred doors, fire below
     const ce = S('cells');
-    this.stone(g, ce.x0, ce.x1, INSIDE, { seed: 13 });
-    for (let tier = 0; tier < 6; tier++) {
+    if (!painted('cells', ce.x0, ce.x1)) this.stone(g, ce.x0, ce.x1, INSIDE, { seed: 13 });
+    if (!this.art.has('tile-cells')) for (let tier = 0; tier < 6; tier++) {
       const y = top - 40 - tier * 100;
       g.fillStyle(COL.iron, 1).fillRect(ce.x0, y, ce.x1 - ce.x0, 6); // a gallery
       for (let x = ce.x0 + 40; x < ce.x1; x += 110) {
@@ -166,16 +168,17 @@ export class KeepBackdrop {
     g.fillStyle(COL.timber, 1).fillRect(sc.x0 + 960, top - 520, 12, 240).fillRect(sc.x0 + 900, top - 520, 130, 10); // the bell frame
     // V-VI THE FORGE: the cavern, pipes as thick as towers carrying ash up into the dark
     const cr = S('crucible'); const ml = S('mill');
-    this.stone(g, cr.x0, ml.x1, INSIDE, { col: 0x1c1416, dark: 0x0c0808, lit: 0x3a2018, seed: 23 });
-    for (let x = cr.x0 + 160; x < ml.x1; x += 380) {
+    if (!painted('forge', cr.x0, ml.x1)) this.stone(g, cr.x0, ml.x1, INSIDE, { col: 0x1c1416, dark: 0x0c0808, lit: 0x3a2018, seed: 23 });
+    if (!this.art.has('tile-forge')) for (let x = cr.x0 + 160; x < ml.x1; x += 380) {
       g.fillStyle(COL.iron, 1).fillRect(x, top - INSIDE, 60, INSIDE - 60); // an ash pipe
       g.fillStyle(COL.ironLit, 0.6).fillRect(x + 8, top - INSIDE, 6, INSIDE - 60);
       for (let y = top - INSIDE + 40; y < top - 60; y += 120) g.fillStyle(0x3a3a42, 1).fillRect(x - 6, y, 72, 10); // its bands
     }
     // VII THE KINGS' ROOT: pale old stone; the kings carved along it, their eyes chiselled out
     const rt = S('root');
-    this.stone(g, rt.x0, rt.x1, INSIDE, { col: COL.pale, dark: COL.paleDark, lit: COL.paleLit, seed: 29 });
-    for (let x = rt.x0 + 150; x < rt.x1; x += 260) {
+    const rootArt = painted('root', rt.x0, rt.x1);
+    if (!rootArt) this.stone(g, rt.x0, rt.x1, INSIDE, { col: COL.pale, dark: COL.paleDark, lit: COL.paleLit, seed: 29 });
+    if (!rootArt) for (let x = rt.x0 + 150; x < rt.x1; x += 260) {
       g.fillStyle(COL.paleDark, 1).fillRect(x, top - 200, 60, 200).fillCircle(x + 30, top - 220, 26); // a king, standing
       g.fillTriangle(x + 8, top - 244, x + 52, top - 244, x + 30, top - 270); // his crown
       g.fillStyle(0x1a1c20, 1).fillRect(x + 18, top - 226, 8, 4).fillRect(x + 34, top - 226, 8, 4); // the eyes, gone
@@ -184,11 +187,13 @@ export class KeepBackdrop {
     g.fillStyle(COL.gold, 0.4).fillTriangle(rt.x1 - 510, top - 210, rt.x1 - 450, top - 210, rt.x1 - 480, top - 240);
     // VIII THE BURNING SPIRE: the inside of the tower (drawSpire moves its floors past)
     const sp = S('spire');
-    this.stone(g, sp.x0, sp.x1, INSIDE, { col: 0x221a1c, dark: 0x0e0a0c, lit: 0x4a2a20, seed: 31 });
+    if (!painted('spire', sp.x0, sp.x1)) this.stone(g, sp.x0, sp.x1, INSIDE, { col: 0x221a1c, dark: 0x0e0a0c, lit: 0x4a2a20, seed: 31 });
     // IX-X THE CROWN WALK, THE SPAN: battlements against the sky, the Crown ahead
     const cn = S('crown'); const sn = S('span');
-    this.stone(g, cn.x0, sn.x1, 40, { seed: 37 });
-    for (let x = cn.x0; x < sn.x1; x += 30) g.fillStyle(COL.stone, 1).fillRect(x, top - 58, 18, 18); // the merlons' line
+    if (!painted('battlements', cn.x0, sn.x1)) {
+      this.stone(g, cn.x0, sn.x1, 40, { seed: 37 });
+      for (let x = cn.x0; x < sn.x1; x += 30) g.fillStyle(COL.stone, 1).fillRect(x, top - 58, 18, 18); // the merlons' line
+    }
     g.fillStyle(COL.stoneDark, 1).fillRect(sn.x1 - 260, top - INSIDE, 300, INSIDE - 40); // the Crown, the far tower
     for (let y = top - INSIDE + 60; y < top - 80; y += 110) this.torch(sn.x1 - 110, y);
     // throne: drawThrone

@@ -17,6 +17,9 @@
 //   strips   frame strips cut into `frames` equal cells: `horse-gallop-0..5` (`key` as
 //            for layers, or 'figure': black cut by flood fill from the edges; `grade`:
 //            view/levelArt.js gradeSheet; `trim`: the empty rows above and below cut away)
+//   tiles    stretches of back wall of their own, by section (the Black Keep: a hall, the cells,
+//            the forge...): `tile_<name>.png` repeating sideways, `height` drawn, `key`
+//            'magenta' for one with sky over it (else opaque)
 //   surfaces the ground you stand and jump on (terrain blocks: view/TerrainView.js), as
 //            opaque seamless tiles `surf_<name>.png`. `fit`: stretched to the face's depth
 //            (a top face, receding into the lane); `px`: drawn this many px tall, repeating
@@ -93,6 +96,22 @@ export const LEVEL_ART = {
     // the gatehouse stair and landing (dressed stone) and the guardroom's rotten floor
     // (prompts: docs/gates-art-prompts.md)
     surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, plank: { fit: true } },
+  },
+  // THE BLACK KEEP (view/KeepView.js): each part of the Keep has its own wall (`tiles`);
+  // what isn't painted stays drawn in code. Prompts: docs/keep-art-prompts.md
+  keep: {
+    dir: 'assets/env/keep/',
+    layers: [
+      { name: 'sky', key: 'opaque', scroll: 0.04, bottom: -40, height: 420 },
+      { name: 'far', key: 'magenta', scroll: 0.12, bottom: -10, height: 320 },
+    ],
+    ground: true,
+    tiles: {
+      causeway: { height: 230, key: 'magenta' }, battlements: { height: 200, key: 'magenta' },
+      hall: { height: 760 }, cells: { height: 760 }, forge: { height: 760 }, root: { height: 760 }, spire: { height: 760 },
+    },
+    props: { pin: { file: 'prop_pin.png', pair: true }, conduit: { file: 'prop_conduit.png', pair: true }, spire: { file: 'prop_spire.png', pair: true } },
+    surfaces: { rock_top: { fit: true }, rock_front: { px: 160 } },
   },
   // THE GALLOWS ASCENT (the night climb, view/TerrainView.js): its painted backdrop, cliff
   // wall, floor and ledge faces. Prompts: docs/gallows-art-prompts.md. (The code-drawn sky

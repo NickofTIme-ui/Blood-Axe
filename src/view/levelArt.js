@@ -26,6 +26,7 @@ export function preloadLevelArt(scene) {
     for (const [k, p] of Object.entries(A.props ?? {})) load(`prop-${k}`, p.file);
     for (const [k, s] of Object.entries(A.strips ?? {})) load(`strip-${k}`, s.file);
     for (const k of Object.keys(A.surfaces ?? {})) load(`surf-${k}`, `surf_${k}.png`);
+    for (const k of Object.keys(A.tiles ?? {})) load(`tile-${k}`, `tile_${k}.png`);
   }
   for (const [name, S] of Object.entries(SPRITE_SHEETS)) scene.load.image(`sprsrc-${name}`, S.file);
 }
@@ -58,6 +59,14 @@ export function buildLevelArt(scene) {
         const img = T.get(src(theme, name)).getSourceImage();
         T.addCanvas(tmp, kind === 'opaque' ? part(img, 0, img.width) : keyLayer(img, kind));
         if (makeSeamless(scene, tmp, artKey(theme, name), 0.08)) made.push(artKey(theme, name));
+      }
+      for (const [k, L] of Object.entries(A.tiles ?? {})) {
+        if (!have(`tile-${k}`)) continue;
+        const tmp = `${src(theme, `tile-${k}`)}-cut`;
+        if (T.exists(tmp)) T.remove(tmp);
+        const img = T.get(src(theme, `tile-${k}`)).getSourceImage();
+        T.addCanvas(tmp, L.key === 'magenta' ? keyLayer(img, 'magenta') : part(img, 0, img.width));
+        if (makeSeamless(scene, tmp, artKey(theme, `tile-${k}`), 0.08)) made.push(artKey(theme, `tile-${k}`));
       }
       for (const p of A.pieces ?? []) if (have(p)) add(artKey(theme, p), keyed(src(theme, p), 'magenta'));
       for (const [k, p] of Object.entries(A.props ?? {})) {
@@ -192,6 +201,18 @@ export class PaintedLevel {
     const top = SETTINGS.world.floorTop - 50;
     const s = h / img.height;
     return this.scene.add.tileSprite(0, top - h + 8, x1, h, key).setOrigin(0).setTileScale(s, s).setDepth(DEPTH.floor - 1);
+  }
+
+  // a stretch of back wall of its own (data/levelArt.js `tiles`): repeating from x0 to x1,
+  // its foot on the street's back edge. Returns false if it isn't painted.
+  tile(name, x0, x1, depth = DEPTH.floor - 0.98) {
+    if (!this.has(`tile-${name}`)) return false;
+    const key = artKey(this.theme, `tile-${name}`);
+    const img = this.scene.textures.get(key).getSourceImage();
+    const h = this.A.tiles[name].height;
+    const top = SETTINGS.world.floorTop - 50;
+    const s = h / img.height;
+    return this.scene.add.tileSprite(x0, top - h + 8, x1 - x0, h, key).setOrigin(0).setTileScale(s, s).setDepth(depth);
   }
 
   // the street itself, from the back wall down past the bottom of the screen
