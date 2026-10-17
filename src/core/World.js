@@ -161,6 +161,9 @@ export class World {
         }
       }
     }
+    // (a crowd against the room's edge mustn't shove a man out through it)
+    const B = this.bounds;
+    for (const f of fs) if (!f.unbounded) f.x = Math.max(B.minX, Math.min(B.maxX, f.x));
   }
 
   // A kicked body flying backwards knocks down anyone on its team it crashes into.

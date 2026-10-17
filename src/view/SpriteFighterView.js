@@ -169,6 +169,16 @@ export class SpriteFighterView {
       // the hang and is held there through the drop, chops down just before the floor,
       // stays buried in the crater, then is wrenched out
       case 'plunge': {
+        const P = a.plunge; // (his own Leap Smash strip: up, the chop, buried / wrenched out / standing)
+        if (P) {
+          if (f.landedAt) {
+            const t = fr - f.landedAt;
+            return P.buried[t < PLUNGE_LAND - 9 ? 0 : t < PLUNGE_LAND - 4 ? 1 : 2];
+          }
+          const hang = f.stats.kit?.plunge?.hang ?? 0;
+          if (fr <= hang) return P.up[fr < hang * 0.35 ? 0 : 1];
+          return f.air < 46 ? P.down[0] : P.up[1];
+        }
         const ph = a.heavy?.phases;
         if (!ph) return a.jump.fall[0];
         const up = ph.startup;
@@ -420,6 +430,7 @@ export class SpriteFighterView {
     // runs bent double behind it, jars on every man he hits, then skids up out of it
     if (st === 'shoulder' && f.move) {
       const m = f.move;
+      const lean0 = lean; // (his own painted strip already leans into it: a little less on top)
       const end = m.startup + m.active;
       if (fr <= m.startup) {
         const t = easeInOut(fr / m.startup);
@@ -443,6 +454,7 @@ export class SpriteFighterView {
           this.scene.gore?.spark(f.x + f.facing * 14, f.z, 2, 0x9a8a70, 7);
         }
       }
+      if (this.meta.anims.shoulder) lean = lean0 + (lean - lean0) * 0.4;
     }
 
     // Kingsfire: he sinks behind the blade as it goes into the floor; the wrath shakes

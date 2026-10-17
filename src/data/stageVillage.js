@@ -30,7 +30,11 @@
 //   VII THE NORTH GATE     the saved gather; the elder gives Rurik Oathkeeper, his father's
 //                          sword, and its fire wakes; stragglers to burn; the vow; out
 
-const FULL = { z0: 282, z1: 520 };
+// The lane runs back to the foot of the painted house fronts (`laneTop`): at the usual 282
+// a band of street showed behind it that nobody could walk on (Nick, 2026-10-17: invisible walls)
+const LANE_TOP = 248;
+const FULL = { z0: LANE_TOP, z1: 520 };
+const BACK = (d) => ({ z0: LANE_TOP, z1: LANE_TOP + d }); // (against the back of the lane, d deep)
 // the stables' double gate (view/VillageView.js draws it open once the horses are freed):
 // where the stampede comes out, on its threshold at the back of the yard
 const STABLE_DOOR = { x: 6370, z: 216 };
@@ -44,6 +48,8 @@ export const STAGE_VILLAGE = {
   width: 9400,
   theme: 'village',
   tall: true,
+  laneTop: LANE_TOP,
+  fireBed: 1, // the whole village is burning: its crackle plays low throughout (core/FireAmbience.js)
   // the castle on the horizon: where it stands on the far backdrop and how big (it grows
   // level by level, docs/campaign/plan.md)
   castle: { x: 830, scale: 0.42, detail: 0.3 },
@@ -58,8 +64,10 @@ export const STAGE_VILLAGE = {
       fightAt: 1080, // (the looters are at the end of the road: talk to Hale first)
       waves: [['grunt', 'grunt', 'grunt'], ['grunt', 'stalker']],
       props: [
-        { kind: 'crate', x: 1250, z: 480, drop: 'meat' },
+        { kind: 'crate', x: 1250, z: 480, drop: 'health' },
         { kind: 'barrel', x: 600, z: 300, drop: null },
+        // a secret: tucked behind the heap of burnt timbers at the back of the road
+        { kind: 'urn', x: 806, z: 262, drop: 'rune', secret: true },
       ],
       hazards: [],
     },
@@ -76,7 +84,7 @@ export const STAGE_VILLAGE = {
         [],
       ],
       props: [
-        { kind: 'barrel', x: 1640, z: 305, drop: 'wine' },
+        { kind: 'barrel', x: 1640, z: 305, drop: 'health' },
         { kind: 'crate', x: 2560, z: 500, drop: 'mana' },
       ],
       hazards: [
@@ -94,7 +102,11 @@ export const STAGE_VILLAGE = {
       fightAt: 3420,
       waves: [['stalker', 'grunt']],
       spawns: [[{ x: 3640, z: 380, inPlace: true }, { x: 3600, z: 460, inPlace: true }]],
-      props: [{ kind: 'barrel', x: 4240, z: 470, drop: 'meat' }],
+      props: [
+        { kind: 'barrel', x: 4240, z: 470, drop: 'health' },
+        // a secret: up on the chimney, the first step to the boy (Rurik's father's ring)
+        { kind: 'urn', x: 3524, z: LANE_TOP + 16, drop: 'ring', secret: true },
+      ],
       hazards: [
         // the Ashen archers by the mill ahead: their volleys fall on you from here
         // to the mill yard, until you get up there and wreck their posts (`silence`)
@@ -110,8 +122,8 @@ export const STAGE_VILLAGE = {
       waves: [['grunt', 'grunt', 'ghoul', 'grunt'], ['stalker', 'grunt', 'butcher']],
       props: [
         // the barn door, pinned shut by a fallen burning beam: people inside
-        { kind: 'wreckage', tag: 'barn', x: 5330, z: 300, drop: null },
-        { kind: 'crate', x: 5560, z: 470, drop: 'meat' },
+        { kind: 'wreckage', tag: 'barn', x: 5330, z: 300, size: 1.7, drop: null }, // (sized up to the barn: Nick, 2026-10-16)
+        { kind: 'crate', x: 5560, z: 470, drop: 'health' },
         // the archers shooting at you since the roofs: two posts either side of the mill
         { kind: 'archers', tag: 'millArchers', x: 4560, z: 300, drop: null },
         { kind: 'archers', tag: 'millArchers', x: 5150, z: 300, drop: 'mana' },
@@ -130,7 +142,7 @@ export const STAGE_VILLAGE = {
             'You held the road while the village burned behind you.',
             'You drove the families who ran back into the flames.',
           ],
-          last: 'The fire was a mercy. Your king will show you none.',
+          last: 'Fire was the mercy. Your king has none.',
         } },
     },
     {
@@ -145,9 +157,9 @@ export const STAGE_VILLAGE = {
       fightAt: 5980,
       waves: [['grunt', 'butcher', 'grunt'], ['berserker', 'grunt', 'stalker'], ['grunt', 'butcher', 'grunt', 'ghoul']],
       props: [
-        { kind: 'wreckage', tag: 'stables', x: 6380, z: 300, drop: null },
-        { kind: 'barrel', x: 5820, z: 500, drop: 'wine' },
-        { kind: 'crate', x: 7000, z: 470, drop: 'meat' },
+        { kind: 'wreckage', tag: 'stables', x: 6380, z: 300, size: 1.7, drop: null }, // (sized up to the stable gate: Nick, 2026-10-17)
+        { kind: 'barrel', x: 5820, z: 500, drop: 'health' },
+        { kind: 'crate', x: 7000, z: 470, drop: 'health' },
       ],
       hazards: [
         { type: 'fire', look: 'cart', x: 6720, z: 330, w: 100, d: 50, phase: 30 },
@@ -169,7 +181,7 @@ export const STAGE_VILLAGE = {
       fightAt: 7400,
       waves: [],
       props: [
-        { kind: 'barrel', x: 8280, z: 480, drop: 'meat' },
+        { kind: 'barrel', x: 8280, z: 480, drop: 'health' },
         // his archers' post at the far end of the hall
         { kind: 'archers', tag: 'hallArchers', x: 8250, z: 300, drop: null },
       ],
@@ -190,7 +202,7 @@ export const STAGE_VILLAGE = {
             'You put our homes to the torch, and you laughed while they burned.',
             'You chained our people and drove them north to the Keep.',
           ],
-          last: 'Swing, then. My king will hang every one of you from his walls.',
+          last: 'Swing, then. The King will hang you all from his walls.',
         } },
     },
     {
@@ -227,9 +239,9 @@ export const STAGE_VILLAGE = {
     // front is only as tall as the step (view/TerrainView.js supportTop); each is shallow
     // (34 deep, against the back of the lane: hold up and you're lined up), so it shows as a
     // ledge with a lit top, not a tall pale wall
-    { kind: 'block', x0: 3500, x1: 3548, z0: 282, z1: 316, top: 185, look: 'chimney' },
-    { kind: 'block', x0: 3564, x1: 3612, z0: 282, z1: 316, top: 230 },
-    { kind: 'block', x0: 3628, x1: 3680, z0: 282, z1: 316, top: 275 },
+    { kind: 'block', x0: 3500, x1: 3548, ...BACK(34), top: 185, look: 'chimney' },
+    { kind: 'block', x0: 3564, x1: 3612, ...BACK(34), top: 230 },
+    { kind: 'block', x0: 3628, x1: 3680, ...BACK(34), top: 275 },
     { kind: 'pit', x0: 3680, x1: 3980, ...FULL },                      // the cellars, burning
     { kind: 'crumble', x0: 3740, x1: 3810, z0: 350, z1: 470, top: 150, fall: 40, back: 200 }, // gap 60
     { kind: 'crumble', x0: 3870, x1: 3940, z0: 350, z1: 470, top: 150, fall: 40, back: 200 }, // gap 60
@@ -237,7 +249,7 @@ export const STAGE_VILLAGE = {
     { kind: 'block', x0: 4180, x1: 4260, ...FULL, top: 60 },            // and down to the yard
 
     // ---- IV THE MILL YARD: the mill's raised floor at the back
-    { kind: 'block', x0: 4720, x1: 5010, z0: 282, z1: 360, top: 70 },
+    { kind: 'block', x0: 4720, x1: 5010, ...BACK(78), top: 70, look: 'mill' },
   ],
 
   // smoke dimming the backdrop behind the roofs, so the roofs you jump on stand out from the
@@ -267,7 +279,7 @@ export const STAGE_VILLAGE = {
       flee: { x: 1500, z: 300 }, gather: { x: 8740, z: 300 },
     },
     {
-      id: 'tam', name: 'Tam', x: 3656, z: 298, pose: 'child', rescue: 'reach', flee: null, gather: { x: 8800, z: 312 },
+      id: 'tam', name: 'Tam', x: 3656, z: LANE_TOP + 16, pose: 'child', rescue: 'reach', flee: null, gather: { x: 8800, z: 312 },
     },
     {
       id: 'barn', name: 'the miller\'s people', x: 5330, z: 296, pose: 'group', rescue: 'wreckage', tag: 'barn',
@@ -283,53 +295,53 @@ export const STAGE_VILLAGE = {
     {
       id: 'opening', on: 'start', hold: true, delay: 150, // (after the section's title card)
       lines: [
-        ['RURIK', 'Smoke. Over the village... no.'],
-        ['VEXA', 'They thought we died at the ford. They thought no one was left to stop them.'],
-        ['ORYN', 'Then they were wrong.'],
+        ['RURIK', 'Smoke. Over home.'],
+        ['VEXA', 'They left us for dead at the ford. They should have made sure.'],
+        ['ORYN', 'The dead keep long memories.'],
         // (the pledge every boss's sentence pays off: stage/Sentence.js)
-        ['RURIK', 'Every captain who led them here. Every one of them, up to the king who gave the order.'],
-        ['RURIK', 'Swear it with me. Each of them kneels, hears his crimes, and pays for them.'],
+        ['RURIK', 'Every captain who led them here. Every one, up to the king who gave the word.'],
+        ['RURIK', 'Swear it. Each of them kneels. Each hears his crimes. Each pays.'],
         ['VEXA', 'On my blades.'],
-        ['ORYN', 'On my staff. Now split up. Find whoever still lives.'],
+        ['ORYN', 'On my staff. Now go. Find the living.'],
       ],
     },
     {
       id: 'hale', calm: true, // (fired by talking to him)
       lines: [
-        ['HALE', 'The Oath Keepers... They told us you were dead at the ford.'],
-        ['HALE', 'They came at dusk. Ashen men, and a captain who laughed while the roofs burned.'],
-        ['HALE', 'Some of them are still at the square. Go!'],
+        ['HALE', 'Oath Keepers? They said the ford took you.'],
+        ['HALE', 'Ashen men, at dusk. Their captain laughed while the roofs burned.'],
+        ['HALE', 'Some are still in the square. Go.'],
       ],
     },
-    { id: 'cry', at: 1560, lines: [['MIRA', 'Leave him! He is only a boy!']] },
+    { id: 'cry', at: 1560, lines: [['MIRA', 'Not the boy! He\'s a child!']] },
     {
       id: 'mira', on: 'rescued:mira', calm: true,
       lines: [
-        ['MIRA', 'They took my husband with the others. Chained them and drove them north.'],
-        ['MIRA', 'Toward the castle. We will hide by the north gate.'],
+        ['MIRA', 'They took my husband. Chained him with the others and drove them north like cattle.'],
+        ['MIRA', 'To the castle. We\'ll wait at the north gate.'],
       ],
     },
-    { id: 'roofs', at: 2880, calm: true, lines: [['VEXA', '(from across the village) The square is clear! Go over the roofs, the lanes are burning!']] },
-    { id: 'arrows', at: 2960, lines: [['RURIK', 'Archers! Up by the mill. Keep moving, we will deal with them there.']] },
+    { id: 'roofs', at: 2880, calm: true, lines: [['VEXA', '(from across the village) Square\'s clear! Take the roofs, the lanes are burning!']] },
+    { id: 'arrows', at: 2960, lines: [['RURIK', 'Archers, by the mill. Keep moving. We\'ll pay them a visit.']] },
     { id: 'tamCry', at: 3300, lines: [['TAM', 'Up here! The ladder burned!']] },
-    { id: 'tam', on: 'rescued:tam', lines: [['TAM', 'I knew you would come back. I will climb down the back. Go!']] },
-    { id: 'millSilenced', on: 'broken:millArchers', lines: [['RURIK', 'That is their archers done.']] },
-    { id: 'barnCry', at: 4900, lines: [['VOICE', 'The barn! We are inside! The door won\'t move!']] },
-    { id: 'barn', on: 'rescued:barn', lines: [['MILLER', 'Air... Thank the old gods. We will run for the north gate.']] },
-    { id: 'cinder', on: 'boss:mill', lines: [['CINDER', 'Turn back, or burn with them. The rear holds.']] },
-    { id: 'stablesCry', at: 5860, lines: [['VOICE', 'The stables! The horses are burning alive in there!']] },
-    { id: 'horses', on: 'rescued:horses', lines: [['RURIK', 'Let them run! Stay out of their way and let them clear the yard!']] },
-    { id: 'shrine', at: 7190, calm: true, lines: [['ORYN', '(from across the village) The captain is at the longhall. Kneel at the shrine first. Then end him.']] },
+    { id: 'tam', on: 'rescued:tam', lines: [['TAM', 'I told them you\'d come. I can climb down the back. Go!']] },
+    { id: 'millSilenced', on: 'broken:millArchers', lines: [['RURIK', 'No more arrows from the mill.']] },
+    { id: 'barnCry', at: 4900, lines: [['VOICE', 'The barn! They\'ve barred us in!']] },
+    { id: 'barn', on: 'rescued:barn', lines: [['MILLER', 'Air... gods, air. I owe you a lifetime of bread. To the north gate!']] },
+    { id: 'cinder', on: 'boss:mill', lines: [['CINDER', 'The rear holds. Come closer and burn.']] },
+    { id: 'stablesCry', at: 5860, lines: [['VOICE', 'The stables! The horses are burning!']] },
+    { id: 'horses', on: 'rescued:horses', lines: [['RURIK', 'Let them run! Stand clear, they\'ll empty the yard for us!']] },
+    { id: 'shrine', at: 7190, calm: true, lines: [['ORYN', '(from across the village) Their captain\'s in the longhall. Kneel at the shrine. Then end him.']] },
     {
       id: 'captain', on: 'boss:hall',
       lines: [
-        ['VAREK', 'The Oath Keepers? The King said you rotted at the ford.'],
-        ['VAREK', 'No matter. You can burn with your village.'],
+        ['VAREK', 'Oath Keepers. The King swore you rotted at the ford.'],
+        ['VAREK', 'No matter. A village burns as well with three more in it.'],
       ],
     },
-    { id: 'hallArchers', on: 'rage:hall', lines: [['VAREK', 'Archers! Fill the hall! I do not care who you hit!']] },
-    { id: 'hallSilenced', on: 'broken:hallArchers', lines: [['RURIK', 'No more arrows. Now it is you and me.']] },
-    { id: 'gathered', at: 8580, calm: true, if: 'rescued:mira', lines: [['MIRA', 'You came back for us. Every one of us here owes you their life.']] },
+    { id: 'hallArchers', on: 'rage:hall', lines: [['VAREK', 'Archers! Fill the hall. I don\'t care who you hit.']] },
+    { id: 'hallSilenced', on: 'broken:hallArchers', lines: [['RURIK', 'No more arrows. Just you and me.']] },
+    { id: 'gathered', at: 8580, calm: true, if: 'rescued:mira', lines: [['MIRA', 'You came back. Every soul at this gate owes you a life.']] },
     // HIS BIRTHRIGHT: the elder gives Rurik his dead father's sword, Oathkeeper, and its fire
     // wakes in his hand (the cue sets the campaign flag: his look and his fire change on the
     // spot, scenes/ArenaScene.js oathkeeperGiven; data/characters.js birthright). Then the
@@ -337,28 +349,28 @@ export const STAGE_VILLAGE = {
     {
       id: 'elder', at: 8720, calm: true, hold: true,
       lines: [
-        ['BRANN', 'They chained the young and the strong... and drove them up the north road.'],
-        ['BRANN', 'To the Black Keep. To the king who ordered this.'],
+        ['BRANN', 'They took the young and the strong. Chained them and drove them up the north road.'],
+        ['BRANN', 'To the Black Keep. To the king who ordered it.'],
         ['RURIK', 'Brann. Where is my father?'],
-        ['BRANN', 'Hakon held this gate alone, so the children could get out behind him. He did not fall until the last of them was through.'],
-        ['BRANN', 'He was still breathing when I reached him. He put this in my hands and said: give it to my son.'],
-        ['BRANN', 'Oathkeeper. The blade of your blood, Rurik. Your father\'s, and his mother\'s, and back and back, further than any song remembers.'],
-        ['BRANN', 'It was forged in the first fire this valley ever lit. In any other hand it is only steel. In the hand of your blood, it burns.'],
-        ['RURIK', '...It is warm. As if he only just let go of it.', { flag: 'oathkeeper' }],
-        ['BRANN', 'Do you feel them? Every one who carried it before you. They stand with you now.'],
-        ['RURIK', 'Then they will stand with me all the way to the Black Keep.'],
-        ['VEXA', 'Ashen! Their stragglers, coming back for the old man!'],
-        ['RURIK', 'Get behind me, Brann. Let them see what my father left me.'],
+        ['BRANN', 'Hakon held this gate alone while the children ran. He didn\'t fall until the last one was through.'],
+        ['BRANN', 'He was breathing when I found him. He put this in my hands and said one word. Rurik.'],
+        ['BRANN', 'Oathkeeper. Your father\'s blade, and his mother\'s, and back further than any song remembers.'],
+        ['BRANN', 'Forged in the first fire this valley ever lit. In other hands it is steel. In yours, it burns.'],
+        ['RURIK', '...It\'s warm. As if he only just let go.', { flag: 'oathkeeper' }],
+        ['BRANN', 'Every hand that ever held it is with you now. Feel them?'],
+        ['RURIK', 'Then they walk with me to the Black Keep.'],
+        ['VEXA', 'Ashen! Stragglers, back for the old man!'],
+        ['RURIK', 'Behind me, Brann. Let them see what my father left me.'],
       ],
     },
     {
       id: 'vow', at: 8900, calm: true, hold: true,
       lines: [
-        ['ORYN', 'The north road runs through the Gallows Wood. Their convoy cannot be far ahead.'],
-        ['VEXA', 'They burned our home because they thought we were dead.'],
-        ['RURIK', 'We stand for our people. We stand for our home.'],
-        ['RURIK', 'Whoever brings harm to either will answer to us.'],
-        ['VEXA', 'Their captain knelt. The rest of them will kneel too.'],
+        ['ORYN', 'The north road runs through the Gallows Wood. Their convoy can\'t be far.'],
+        ['VEXA', 'They burned our home because they thought us dead.'],
+        ['RURIK', 'We stand for our people. For our home.'],
+        ['RURIK', 'Whoever harms either answers to us.'],
+        ['VEXA', 'Their captain knelt. The rest will learn how.'],
       ],
     },
   ],

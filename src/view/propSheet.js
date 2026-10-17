@@ -90,6 +90,20 @@ export const PROP_HD = [
   ['prop-barrel-broken', 160], ['prop-crate-broken', 144], ['prop-urn-broken', 108],
 ];
 
+// The pickups, cut from the same painted sheet at four times the size they're drawn and
+// smoothed (they were cut at their drawn size and blown up blocky: Nick, 2026-10-17).
+// StageView draws a texture made here at a quarter of the scale.
+export const PICKUP_SCALE = 4;
+export const PICKUP_HD = PROP_SHEET.map(([key, height]) => (key.startsWith('pk-') && key !== 'pk-shrine' ? [key, height * PICKUP_SCALE] : null));
+
+// ...and their repainting (made in ChatGPT, docs/level1-art-prompts.md): assets/env/pickups-hd.png,
+// a 3 x 2 grid on black. Top: the green health jar, the blue mana jar, the boss trophy; below:
+// the three secret treasures. It replaces the cut above; whatever isn't painted keeps it.
+export const PICKUP_PAINTED = [
+  ['pk-health', 48 * PICKUP_SCALE], ['pk-mana', 48 * PICKUP_SCALE], ['pk-trophy', 44 * PICKUP_SCALE],
+  ['pk-relic', 46 * PICKUP_SCALE], ['pk-ring', 40 * PICKUP_SCALE], ['pk-rune', 46 * PICKUP_SCALE],
+];
+
 export function buildPropSheet(scene, srcKey = 'props-src', sheet = PROP_SHEET, COLS = 4, ROWS = 4, smooth = false) {
   const made = new Set();
   if (!scene.textures.exists(srcKey)) return made;
@@ -101,9 +115,10 @@ export function buildPropSheet(scene, srcKey = 'props-src', sheet = PROP_SHEET, 
     const fctx = full.getContext('2d', { willReadFrequently: true });
     fctx.drawImage(src, 0, 0);
     const cells = findObjects(fctx, W, H, COLS, ROWS);
-    sheet.forEach(([key, height], i) => {
+    sheet.forEach((entry, i) => {
       const b = cells[i];
-      if (!b) return;
+      if (!b || !entry) return; // (null: a cell this cut leaves alone)
+      const [key, height] = entry;
       const pad = 3;
       const x = Math.max(0, b.x - pad); const y = Math.max(0, b.y - pad);
       const w = Math.min(W - x, b.w + pad * 2); const h = Math.min(H - y, b.h + pad * 2);

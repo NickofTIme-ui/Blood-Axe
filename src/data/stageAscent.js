@@ -55,7 +55,7 @@ export const STAGE_ASCENT = {
       waves: [['grunt', 'grunt', 'stalker'], ['butcher', 'grunt']],
       props: [
         { kind: 'barrel', x: 420, z: 300, drop: null },
-        { kind: 'crate', x: 1300, z: 480, drop: 'meat' },
+        { kind: 'crate', x: 1300, z: 480, drop: 'health' },
       ],
       hazards: [
         // loose rock, taught alone on the open road before the first fight
@@ -84,7 +84,7 @@ export const STAGE_ASCENT = {
       hint: 'A stone is coming where its shadow grows',
       fightAt: 3620,
       waves: [['grunt', 'grunt', 'butcher'], ['stalker', 'grunt', 'grunt']],
-      props: [{ kind: 'barrel', x: 4400, z: 490, drop: 'wine' }],
+      props: [{ kind: 'barrel', x: 4400, z: 490, drop: 'health' }],
       hazards: [
         // the first stones: one at a time, slow (they teach the shadow)
         { type: 'bombard', period: 260, warn: 90, shots: 1, silence: 'battery' },
@@ -97,7 +97,7 @@ export const STAGE_ASCENT = {
       hint: 'Keep moving. Do not stop on the bridge',
       fightAt: 5720,
       waves: [['grunt', 'stalker', 'grunt'], ['penitent', 'grunt']],
-      props: [{ kind: 'crate', x: 6100, z: 480, drop: 'meat' }],
+      props: [{ kind: 'crate', x: 6100, z: 480, drop: 'health' }],
       hazards: [
         { type: 'bombard', period: 190, warn: 75, shots: 2, silence: 'battery' },
         { type: 'beam', look: 'rock', x: 5620, z: 360, w: 80, d: 80, period: 220, warn: 80, phase: 30 },
@@ -115,7 +115,7 @@ export const STAGE_ASCENT = {
       props: [
         // the battery: three catapults on the heights (each smashed, one stone fewer)
         { kind: 'catapult', tag: 'battery', x: 6820, z: 310, drop: null },
-        { kind: 'catapult', tag: 'battery', x: 7060, z: 330, drop: 'meat' },
+        { kind: 'catapult', tag: 'battery', x: 7060, z: 330, drop: 'health' },
         { kind: 'catapult', tag: 'battery', x: 7320, z: 310, drop: null },
         // Bram, chained to the stone pile and made to haul for them
         { kind: 'shackle', tag: 'bram', x: 7190, z: 300, drop: null },
@@ -133,7 +133,7 @@ export const STAGE_ASCENT = {
       waves: [['grunt', 'stalker', 'grunt']],
       props: [
         { kind: 'barrel', x: 8200, z: 300, drop: null },
-        { kind: 'crate', x: 8900, z: 480, drop: 'meat' },
+        { kind: 'crate', x: 8900, z: 480, drop: 'health' },
       ],
       hazards: [
         // at two thirds he signals the Keep to fire on his own camp (it hits his men too)
@@ -238,70 +238,70 @@ export const STAGE_ASCENT = {
     {
       id: 'opening', on: 'start', hold: true, delay: 150,
       lines: [
-        ['VEXA', 'The old road. Cut into the cliff, all the way up to their gates.'],
+        ['VEXA', 'The old road. Cut into the cliff, all the way to his gates.'],
         ['ORYN', 'And the Keep, right there across the gorge. Close enough to count its towers.'],
-        ['RURIK', 'Take the high paths, both of you. I keep to the road. If they want to stop us, they come to me.'],
+        ['RURIK', 'Take the high paths. I keep the road. If they want to stop us, they come through me.'],
       ],
     },
     {
       id: 'guide', on: 'start', hold: true,
       lines: [
-        ['NICHOLAS', 'Oath Keepers! I told you on the wood road I would find you on this side.'],
-        ['NICHOLAS', 'Thirty years I have walked this mountain. Stay on my heels. It kills more men than the Ashen ever will.'],
-        ['RURIK', 'Then lead, Nicholas. We follow.'],
+        ['NICHOLAS', 'Oath Keepers. I said I\'d find you on this side. I keep my word.'],
+        ['NICHOLAS', 'Stay on my heels. This mountain has killed more men than the Ashen ever will.'],
+        ['RURIK', 'Lead on, Nicholas.'],
       ],
     },
     { id: 'horn', at: 420, lines: [['VOICE', '(a horn, high on the cliffs) The Oath Keepers! On the ascent! To the road!']] },
-    { id: 'rocks', at: 640, lines: [['NICHOLAS', 'Loose rock! Watch the ground for its shadow.']] },
-    { id: 'stair', at: 1500, calm: true, lines: [['NICHOLAS', 'The stair broke in the spring thaw. The ledge will not hold you long. Keep moving, and do not look down.']] },
-    { id: 'wren', on: 'rescued:wren', lines: [['WREN', 'My goats ran when the stones came. I know the back path down. Thank you!']] },
+    { id: 'rocks', at: 640, lines: [['NICHOLAS', 'Loose rock! Watch for its shadow!']] },
+    { id: 'stair', at: 1500, calm: true, lines: [['NICHOLAS', 'The thaw took the stair. The ledge won\'t hold you long. Keep moving. Don\'t look down.']] },
+    { id: 'wren', on: 'rescued:wren', lines: [['WREN', 'My goats ran when the stones came. I know the back path. Thank you!']] },
     { id: 'shelterCry', at: 3200, lines: [['VOICE', 'Help! Up here, under the rock! They have us pinned!']] },
-    { id: 'stones', at: 3320, lines: [['NICHOLAS', 'Catapults on the heights! A stone lands where its shadow grows. Move!']] },
-    { id: 'shelter', on: 'rescued:shelter', lines: [['MINER', 'We went up the road ahead of you and walked into their catapults. We will hold here.']] },
+    { id: 'stones', at: 3320, lines: [['NICHOLAS', 'Catapults! Where the shadow grows, the stone falls. Move!']] },
+    { id: 'shelter', on: 'rescued:shelter', lines: [['MINER', 'We came up ahead of you and walked into their catapults. We\'ll hold here.']] },
     {
       id: 'hilde', on: 'rescued:shelter', if: 'saved:hilde',
-      lines: [['HILDE', 'You came for us again. My brother is up there at the catapults. They make him haul the stones.']],
+      lines: [['HILDE', 'You came for us again. My brother\'s up at the catapults. They\'ve got him hauling stones.']],
     },
-    { id: 'bridge', at: 4900, lines: [['NICHOLAS', 'The bridge is half gone. Do not stop on it! I will go round by the goat path.']] },
-    { id: 'battery', on: 'enter:battery', lines: [['ORYN', '(from above) There, the battery! Smash the catapults and the hillside goes quiet.']] },
-    { id: 'silenced', on: 'broken:battery', lines: [['RURIK', 'That is the last of them.']] },
+    { id: 'bridge', at: 4900, lines: [['NICHOLAS', 'Half the bridge is gone. Don\'t stop on it! I\'ll go round by the goat path.']] },
+    { id: 'battery', on: 'enter:battery', lines: [['ORYN', '(from above) The battery! Smash the catapults and the hill goes quiet.']] },
+    { id: 'silenced', on: 'broken:battery', lines: [['RURIK', 'Quiet at last.']] },
     {
       id: 'bram', on: 'rescued:bram', if: 'saved:hilde',
-      lines: [['BRAM', 'Hilde is alive? Then I am going to find her. Go on. Finish this.']],
+      lines: [['BRAM', 'Hilde lives? Then I\'m going to find her. Go. Finish this.']],
     },
     {
       id: 'bramAlone', on: 'rescued:bram', unless: 'saved:hilde',
-      lines: [['BRAM', 'They worked me like a mule. No more. Go on, I will find my own way down.']],
+      lines: [['BRAM', 'They worked me like a mule. Never again. Go on, I\'ll find my way down.']],
     },
-    { id: 'camp', at: 7700, calm: true, lines: [['VEXA', '(from the cliff) Their commander is in the camp ahead. Orsk. He burned the road behind us himself.']] },
-    { id: 'orsk', on: 'boss:camp', lines: [['ORSK', 'So these are the Oath Keepers. The King sent me to bury you on this mountain.']] },
-    { id: 'barrage', on: 'phase:camp:barrage', lines: [['ORSK', 'Signal the Keep! Fire on my position! Bring it all down on them!']] },
+    { id: 'camp', at: 7700, calm: true, lines: [['VEXA', '(from the cliff) Orsk is in the camp ahead. He burned the road behind us with his own hands.']] },
+    { id: 'orsk', on: 'boss:camp', lines: [['ORSK', 'So these are the Oath Keepers. The King sent me to bury you. I brought a mountain.']] },
+    { id: 'barrage', on: 'phase:camp:barrage', lines: [['ORSK', 'Signal the Keep! Fire on my position! Bring it all down!']] },
     // the Keep's first stones come down on the camp, and on the guide
-    { id: 'struck', on: 'phase:camp:barrage', lines: [['NICHOLAS', '(under the falling stones) Behind you! Get clear! ...Do not look back. Finish him!']] },
-    { id: 'berserk', on: 'phase:camp:berserk', lines: [['ORSK', 'Enough! I will break you with my own hands!']] },
+    { id: 'struck', on: 'phase:camp:barrage', lines: [['NICHOLAS', '(under the falling stones) Get clear! ...Don\'t look back. Finish him!']] },
+    { id: 'berserk', on: 'phase:camp:berserk', lines: [['ORSK', 'Enough! I\'ll break you myself!']] },
     {
       id: 'retreat', on: 'clear:camp', calm: true,
-      lines: [['VOICE', '(horns from the Keep, long and low, again and again)'], ['RURIK', 'They are sounding the retreat.']],
+      lines: [['VOICE', '(horns from the Keep, long and low, again and again)'], ['RURIK', 'They\'re sounding the retreat.']],
     },
     // his last words (a held scene; then he is gone)
     {
       id: 'lastWords', on: 'clear:camp', calm: true, hold: true,
       lines: [
-        ['RURIK', 'Nicholas! Stay with me. The miners can carry you down.'],
-        ['NICHOLAS', 'No. I walked my last road today, and it was a good one. I got you to the top.'],
-        ['NICHOLAS', 'Listen. A guide only shows the way. You three are the ones who have to walk it.'],
-        ['NICHOLAS', 'When you stand before that king, tell him a mountain man sent you. Tell him the people were never his to burn.'],
-        ['NICHOLAS', 'Keep your oath, Rurik. Keep it for all of us.'],
-        ['RURIK', 'We will. On my life, we will.'],
+        ['RURIK', 'Nicholas. Stay with me. The miners can carry you down.'],
+        ['NICHOLAS', 'No. I\'ve walked this road a thousand times. Today was the first time it mattered.'],
+        ['NICHOLAS', 'A guide only shows the way. The walking was always yours.'],
+        ['NICHOLAS', 'When you stand before that king, he\'ll ask who you are. Tell him: the ones he couldn\'t burn.'],
+        ['NICHOLAS', 'Keep your oath, Rurik. For all of us.'],
+        ['RURIK', 'On my life.'],
       ],
     },
-    { id: 'gathered', at: 9150, calm: true, if: 'rescued:shelter', lines: [['MINER', 'We will hold the pass behind you. Nobody comes up this road again.']] },
+    { id: 'gathered', at: 9150, calm: true, if: 'rescued:shelter', lines: [['MINER', 'We hold the pass. Nobody comes up this road again.']] },
     {
       id: 'gates', at: 9300, calm: true, hold: true,
       lines: [
-        ['VEXA', 'Look at them. Every man on the mountain running back to the Iron Gates.'],
-        ['ORYN', 'He is pulling his army in behind his walls. That is not confidence.'],
-        ['RURIK', 'No. It is fear. For Nicholas, then. The gates next. Then the Keep.'],
+        ['VEXA', 'Look at them. Every man on the mountain, running for the Iron Gates.'],
+        ['ORYN', 'He\'s pulling his army behind his walls. That isn\'t strength.'],
+        ['RURIK', 'It\'s fear. The gates, then the Keep. For Nicholas.'],
       ],
     },
   ],

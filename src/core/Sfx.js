@@ -15,6 +15,8 @@ export const SFX = {
   kick: 'assets/audio/sfx/kick-impact.wav',        // Sparta kick landing (and bodies bowled over)
   fireWhoosh: 'assets/audio/sfx/fire-whoosh.mp3',  // Firebolt cast (plays with the lava loop)
   fireLoop: 'assets/audio/sfx/fire-lava-loop.mp3', // Firebolt in flight: loops until it lands
+  fireImpact: 'assets/audio/sfx/fire-impact.mp3',  // Firebolt bursting on a body or the ground
+  fireAmbience: 'assets/audio/sfx/fire-ambience.mp3', // anything burning, under the rest (core/FireAmbience.js)
   second: 'assets/audio/sfx/combo-second.mp3',     // 2nd swing of the light combo (the return)
   finisher: 'assets/audio/sfx/combo-finisher.mp3', // 3rd swing of the light combo (the overhand)
   heavySwing: 'assets/audio/sfx/heavy-swing.mp3',  // heavy two-handed swing (on the button press)
@@ -31,12 +33,16 @@ export const SFX = {
   headOff: 'assets/audio/sfx/head-off.mp3',             // a head cut off (taking turns with limbOff)
   limbOff: 'assets/audio/sfx/limb-off.mp3',             // an arm (or a head, or legs) cut off
   bladeOut: 'assets/audio/sfx/blade-out.mp3',           // the sword pulled out of an impaled man
+  stationaryKill: 'assets/audio/sfx/stationary-kill.mp3', // Nick's: a blade biting flesh, mixed into sword and Rogue hits
   // the Mage's lightning: made in code by tools/sfx-gen/electric.js (ours outright, no licence)
   elecCharge: 'assets/audio/sfx/elec-charge.wav',   // hum and sparks building in the lantern
   elecZap: 'assets/audio/sfx/elec-zap.wav',         // a bolt leaving the staff
   elecShock: 'assets/audio/sfx/elec-shock.wav',     // a bolt biting into a body: stuttering buzz
   elecJump: 'assets/audio/sfx/elec-jump.wav',       // a fork jumping on to the next body
-  elecThunder: 'assets/audio/sfx/elec-thunder.wav', // thunderclap: 3rd chain hit, Storm Judgment
+  elecThunder: 'assets/audio/sfx/elec-thunder.wav', // thunderclap (spare: lightningStrike took its place)
+  // Nick's own picks (2026-10-17), trimmed: the shock leads Y (chain lightning), the strike is the big bolt
+  mageShock: 'assets/audio/sfx/mage-shock.mp3',            // the Y press: the bolt leaving the staff
+  lightningStrike: 'assets/audio/sfx/lightning-strike.mp3', // a full lightning bolt: overcharge, 3rd chain hit, Thunderhead, Storm Judgment
 };
 
 const lastPlayed = {};
@@ -80,6 +86,17 @@ export function landThud(scene, small = false) {
 // The cut-in-half splatter was mixed hot next to the swings: it is played at this
 // share of the volume its caller asks for.
 const TRIM = { bloodSplatter: 0.75 };
+
+// Some hits get Nick's blade-in-flesh sound mixed in, so a run of cuts doesn't all sound
+// the same: about half of them, and never three in a row the same way.
+let fleshRun = 0, fleshLast = false;
+export function fleshBite(chance = 0.5) {
+  let bite = Math.random() < chance;
+  if (fleshRun >= 2 && bite === fleshLast) bite = !bite;
+  fleshRun = bite === fleshLast ? fleshRun + 1 : 1;
+  fleshLast = bite;
+  return bite;
+}
 
 // key can be a list of [key, weight] pairs to pick one at random (variations).
 export function playSfx(scene, key, { volume = 1, pitch = 0, spread = 150, minGapMs = 45 } = {}) {

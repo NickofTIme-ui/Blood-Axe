@@ -7,7 +7,8 @@
 // Same format as data/stageWood.js. New here: terrain blocks with a `tag` that a prop's
 // `opens` takes away (a portcullis raised by its counterweight, a fall of rock dug out:
 // Stage.openWay), the collapse (hazard 'collapse': a front of falling rock that chases you),
-// falling rocks (beam hazards with `look: 'rock'`) and a war machine boss (`crusher`).
+// falling rocks (beam hazards with `look: 'rock'`) and a war machine (`crusher`), a regular
+// enemy here: it comes on five times, twice in pairs.
 // Built for the weakest jumper, walking, no upgrades (ups of 85 at most, gaps of 60 at
 // most); a test walks it with every hero.
 //
@@ -21,8 +22,7 @@
 //                             to a portcullis chained to its counterweight: break the chain
 //   IV  THE UNDERGROUND RIVER stepping stones over cold black water, a log over the second
 //                             channel; THE CHAIN WARDEN on the far bank
-//   V   THE CRUSHER HALL      a shrine; THE ORE CRUSHER, the war machine: its furnace vents at
-//                             two thirds, the roof starts coming down at one third
+//   V   THE CRUSHER HALL      a shrine; the furnace vents; two Ore Crushers at once
 //   VI  THE COLLAPSE          the mine coming down behind you, a wall of rock spikes: run, over
 //                             planks, over a spur of rock, under falling rock
 //   VII THE BROKEN GALLERY    still running: up onto the old gallery and pillar to pillar over the
@@ -53,9 +53,9 @@ export const STAGE_MINE = {
       objective: 'Follow the tracks into the mountain',
       hint: 'Hop the ore cart',
       fightAt: 860,
-      waves: [['grunt', 'grunt', 'stalker'], ['butcher', 'grunt']],
+      waves: [['grunt', 'grunt', 'stalker'], ['crusher', 'grunt']], // (the first Ore Crusher)
       props: [
-        { kind: 'crate', x: 1180, z: 480, drop: 'meat' },
+        { kind: 'crate', x: 1180, z: 480, drop: 'health' },
         { kind: 'barrel', x: 420, z: 300, drop: null },
       ],
       hazards: [],
@@ -66,12 +66,12 @@ export const STAGE_MINE = {
       objective: 'Strike the shackles',
       hint: 'Break the posts they are chained to',
       fightAt: 1600,
-      waves: [['grunt', 'butcher', 'grunt', 'grunt'], ['ghoul', 'grunt', 'stalker'], [...Array(10).fill('thrall'), 'ghoul']], // (the last: the HORDE)
+      waves: [['grunt', 'crusher', 'grunt', 'grunt'], ['crusher', 'crusher', 'stalker'], [...Array(10).fill('thrall'), 'ghoul']], // (a Crusher, then two; the last: the HORDE)
       props: [
         { kind: 'shackle', tag: 'tobin', x: 1900, z: 300, drop: null },
         { kind: 'shackle', tag: 'hilde', x: 2160, z: 300, drop: null },
         { kind: 'shackle', tag: 'miners', x: 2440, z: 300, drop: null },
-        { kind: 'barrel', x: 2620, z: 490, drop: 'wine' },
+        { kind: 'barrel', x: 2620, z: 490, drop: 'health' },
       ],
       hazards: [],
       rest: { x: 2700, z: 320, kind: 'oath' },
@@ -97,8 +97,8 @@ export const STAGE_MINE = {
       objective: 'Kill the Chain Warden',
       hint: 'Stepping stones: tap jump from stone to stone',
       fightAt: 5260,
-      waves: [['grunt', 'stalker', 'grunt']],
-      props: [{ kind: 'barrel', x: 5700, z: 300, drop: 'meat' }],
+      waves: [['crusher', 'stalker', 'grunt']],
+      props: [{ kind: 'barrel', x: 5700, z: 300, drop: 'health' }],
       hazards: [],
       // the keeper of the chains: the Ghoul's kind, grown into the mine's jailer
       boss: {
@@ -122,29 +122,17 @@ export const STAGE_MINE = {
     {
       id: 'crusher', name: 'THE CRUSHER HALL', x0: 5800, x1: 7300,
       spawn: { x: 5860, z: 440 },
-      objective: 'Wreck the Ore Crusher',
+      objective: 'Wreck the Ore Crushers',
       hint: 'Iron does not flinch: hit it between its blows',
       fightAt: 6150,
-      waves: [['grunt', 'grunt', 'stalker']],
-      props: [{ kind: 'crate', x: 7200, z: 480, drop: 'meat' }],
+      waves: [['grunt', 'grunt', 'stalker'], ['crusher', 'crusher', 'grunt']],
+      props: [{ kind: 'crate', x: 7200, z: 480, drop: 'health' }],
       hazards: [
-        // its furnace vents from two thirds on; the roof starts coming down at one third
-        { type: 'fire', when: 'phase:furnace', x: 6400, z: 340, w: 110, d: 60, phase: 0 },
-        { type: 'fire', when: 'phase:furnace', x: 6850, z: 470, w: 110, d: 60, phase: 105 },
-        { type: 'beam', look: 'rock', when: 'phase:overdrive', x: 6250, z: 450, w: 80, d: 70, period: 220, warn: 80, phase: 40 },
-        { type: 'beam', look: 'rock', when: 'phase:overdrive', x: 6600, z: 330, w: 80, d: 70, period: 220, warn: 80, phase: 150 },
-        { type: 'beam', look: 'rock', when: 'phase:overdrive', x: 7000, z: 420, w: 80, d: 70, period: 260, warn: 90, phase: 90 },
+        // the hall's furnace vents (it was the Crusher boss's, from two thirds on; no boss now)
+        { type: 'fire', x: 6400, z: 340, w: 110, d: 60, phase: 0 },
+        { type: 'fire', x: 6850, z: 470, w: 110, d: 60, phase: 105 },
       ],
       rest: { x: 5900, z: 320, kind: 'oath' },
-      boss: {
-        type: 'crusher', name: 'The Ore Crusher', health: 1.3, damage: 1, escort: ['grunt'],
-        entrance: { from: 160, to: 360, speed: 40, stepEvery: 40, awe: 40 },
-        sentence: false, // (a machine answers for nothing: its overseer ran; stage/Sentence.js)
-        phases: [
-          { id: 'furnace', at: 0.66, adds: ['grunt', 'grunt'] },
-          { id: 'overdrive', at: 0.33, rage: true, adds: ['stalker'], damage: 1.2, speed: 1.5, ai: { attackCooldown: [24, 60] } },
-        ],
-      },
     },
     // ---- THE CHASE (VI-VIII): the mine coming down behind you, a wall of rock spikes that
     // never stops. Three stretches, each a checkpoint and each faster than the last; the wall
@@ -305,38 +293,36 @@ export const STAGE_MINE = {
       id: 'opening', on: 'start', hold: true, delay: 150,
       lines: [
         ['ORYN', 'The old mine. The tracks go in, and nothing comes out.'],
-        ['VEXA', 'There is a side gallery. Oryn and I will find another way through.'],
-        ['RURIK', 'Then I follow the tracks. Whoever they chained down here, we bring out.'],
+        ['VEXA', 'A side gallery. Oryn and I will find another way.'],
+        ['RURIK', 'I follow the tracks. Whoever they chained down here comes out.'],
       ],
     },
     { id: 'hammers', at: 1440, lines: [['VOICE', '(hammers on rock, a whip cracking) Faster, you dogs! The King wants his iron!']] },
-    { id: 'tobin', on: 'rescued:tobin', lines: [['TOBIN', 'Free... After forty days. Bless you, Oath Keeper.']] },
+    { id: 'tobin', on: 'rescued:tobin', lines: [['TOBIN', 'Forty days in the dark... Bless you.']] },
     { id: 'hilde', on: 'rescued:hilde', lines: [['HILDE', 'They took my brother deeper in. To the crusher. Please.']] },
-    { id: 'miners', on: 'rescued:miners', lines: [['MINER', 'Out, lads! Back down the tunnel, toward the light!']] },
-    { id: 'shaft', at: 2900, calm: true, lines: [['VEXA', '(echoing from far off) The gate below is chained to a counterweight. Break the chain!']] },
-    { id: 'pip', on: 'rescued:pip', lines: [['PIP', 'They cut the lift and left me! I will climb down the ladder at the back. Go!']] },
-    { id: 'river', at: 4400, calm: true, lines: [['ORYN', '(from the dark) Cold water runs under the mountain. Do not fall in: it will carry you away.']] },
+    { id: 'miners', on: 'rescued:miners', lines: [['MINER', 'Out, lads! Toward the light, and don\'t stop!']] },
+    { id: 'shaft', at: 2900, calm: true, lines: [['VEXA', '(echoing from far off) The gate below hangs on a counterweight. Break the chain!']] },
+    { id: 'pip', on: 'rescued:pip', lines: [['PIP', 'They cut the lift and left me! I\'ll take the back ladder. Go!']] },
+    { id: 'river', at: 4400, calm: true, lines: [['ORYN', '(from the dark) There\'s a river under the mountain. Fall in and it keeps you.']] },
     { id: 'warden', on: 'boss:river', lines: [['WARDEN', 'Every chain in this mountain is mine. I will find one for you.']] },
-    { id: 'wardenChains', on: 'phase:river:chains', lines: [['WARDEN', 'Up, my ghouls! Drag them down to the water!']] },
-    { id: 'hall', at: 5880, calm: true, lines: [['ORYN', '(from above) There is a machine in the next hall. Kneel at the shrine first. You will need it.']] },
-    { id: 'crusher', on: 'boss:crusher', lines: [['OVERSEER', 'Feed the furnace! Let the Oath Keepers meet the Crusher!']] },
-    { id: 'furnace', on: 'phase:crusher:furnace', lines: [['OVERSEER', 'Vent the furnace! Burn them where they stand!']] },
-    { id: 'overdrive', on: 'phase:crusher:overdrive', lines: [['OVERSEER', 'Full steam! Bring the roof down, bring it all down!']] },
+    { id: 'wardenChains', on: 'phase:river:chains', lines: [['WARDEN', 'Up, ghouls! Drag them to the water!']] },
+    { id: 'hall', at: 5880, calm: true, lines: [['ORYN', '(from above) Something big in the next hall. Kneel at the shrine. You\'ll need it.']] },
+    { id: 'crusher', at: 6150, lines: [['OVERSEER', 'Stoke the furnace! Let them meet the Crushers!']] },
     {
       id: 'collapse', on: 'clear:crusher', calm: true,
-      lines: [['RURIK', 'The roof is coming down. Run!']],
+      lines: [['RURIK', 'The roof\'s coming down. Run!']],
     },
-    { id: 'gallery', at: 8720, lines: [['RURIK', 'The gallery is broken through! Jump, and do not look down!']] },
-    { id: 'leap', at: 10000, lines: [['VOICE', '(the whole mountain groaning) It is all coming down! Faster!']] },
-    { id: 'passageCry', at: 10300, lines: [['VOICE', 'Here! The passage, behind the rocks! We are trapped!']] },
-    { id: 'passage', on: 'rescued:passage', lines: [['MINER', 'Light! I can see daylight through there! Go, go!']] },
-    { id: 'gathered', at: 11160, calm: true, if: 'rescued:tobin', lines: [['TOBIN', 'Every one of us that walks out of that mountain owes it to you.']] },
+    { id: 'gallery', at: 8720, lines: [['RURIK', 'The gallery\'s broken! Jump, and don\'t look down!']] },
+    { id: 'leap', at: 10000, lines: [['VOICE', '(the whole mountain groaning) It\'s all coming down! Faster!']] },
+    { id: 'passageCry', at: 10300, lines: [['VOICE', 'Here! Behind the rocks! We\'re trapped!']] },
+    { id: 'passage', on: 'rescued:passage', lines: [['MINER', 'Daylight! I see daylight! Go, go!']] },
+    { id: 'gathered', at: 11160, calm: true, if: 'rescued:tobin', lines: [['TOBIN', 'Every man who walks out of that mountain walks out because of you.']] },
     {
       id: 'daylight', at: 11300, calm: true, hold: true,
       lines: [
         ['VEXA', 'Daylight. And there, across the gorge... the Black Keep.'],
-        ['ORYN', 'The convoy went up the old road. The cliffs are all that is left between us and the gates.'],
-        ['RURIK', 'Then we climb. Their King has run out of mountain to hide behind.'],
+        ['ORYN', 'The convoy took the cliff road. Only the cliffs stand between us and his gates.'],
+        ['RURIK', 'Then we climb. He\'s running out of mountain.'],
       ],
     },
   ],

@@ -28,41 +28,41 @@ export const CUTAWAYS = {
   learns: {
     caption: 'THE BLACK KEEP',
     beats: [
-      { who: 'MESSENGER', text: 'My king. The village... The Oath Keepers live. They cut down Varek and his men.' },
-      { who: 'MALGOR', text: 'Let me ride out, my king. I will bring you their heads.' },
+      { who: 'MESSENGER', text: 'My king. The Oath Keepers live. Varek is dead, and his men with him.' },
+      { who: 'MALGOR', text: 'Let me ride, my king. I\'ll bring you their heads.' },
       { who: 'VAURATH', text: 'No. Varek was careless. I am not.' },
       { act: 'ember' }, // his power, shown: ember-fire gathered in one hand, then a wave of ash that puts out every torch
-      { who: 'VAURATH', text: 'Three who should have died at the ford. A minor inconvenience.' },
+      { who: 'VAURATH', text: 'Three who should have drowned at the ford. Careless of the river.' },
       { who: 'VAURATH', text: 'Close the wood road. Hang whoever they try to free.' },
     ],
   },
   convoy: {
     caption: 'THE BLACK KEEP',
     beats: [
-      { who: 'MESSENGER', text: 'My king... the Houndmaster is dead. The cages on the wood road are open. Empty.' },
+      { who: 'MESSENGER', text: 'My king... the Houndmaster is dead. The cages are empty.' },
       { who: 'VAURATH', text: 'Empty.' },
       { act: 'strike' }, // irritation: his fist on the arm of the throne; the stone cracks
-      { who: 'MALGOR', text: 'Give me the mountain road, my king. They will not pass me.' },
-      { who: 'VAURATH', text: 'The pass is already buried. Let them crawl into the mine after their people.' },
-      { who: 'VAURATH', text: 'Work the captives harder. If the Oath Keepers want them, they can dig for them.' },
+      { who: 'MALGOR', text: 'Give me the mountain road. They won\'t pass me.' },
+      { who: 'VAURATH', text: 'The pass is buried. Let them crawl into the mine after their people.' },
+      { who: 'VAURATH', text: 'Work the captives harder. If the Oath Keepers want them, let them dig.' },
     ],
   },
   collapse: {
     caption: 'THE BLACK KEEP',
     beats: [
-      { who: 'MESSENGER', text: 'My king... we brought the mountain down on them. They came out the far side. With the miners.' },
+      { who: 'MESSENGER', text: 'We brought the mountain down on them, my king. They walked out the far side. With the miners.' },
       { who: 'VAURATH', text: 'With the miners.' },
       { who: 'MALGOR', text: 'The Crusher is scrap. The Chain Warden is in the river.' },
       { act: 'hurl' }, // frustration: the war map and its markers flung off the table across the hall
       { who: 'VAURATH', text: 'Every road I close, they open. Every wall I build, they climb.' },
-      { who: 'VAURATH', text: 'Send for the Siege Commander. Burn the ascent behind them. Leave them nothing to stand on.' },
+      { who: 'VAURATH', text: 'Send for Orsk. Burn the ascent. Leave them nothing to stand on.' },
     ],
   },
   retreat: {
     caption: 'THE BLACK KEEP',
     beats: [
       { act: 'horns' }, // the retreat sounding across the Keep: long, low horns; the torches shiver
-      { who: 'CAPTAIN', text: 'My king... Orsk is dead. The ascent is theirs. The men on the cliffs are running for the gates.' },
+      { who: 'CAPTAIN', text: 'My king... Orsk is dead. The ascent is lost. The men are running for the gates.' },
       { who: 'VAURATH', text: 'Running.' },
       { who: 'MALGOR', text: 'Give me the Iron Gates, my king. Nothing passes me.' },
       { who: 'VAURATH', text: 'Take them. Every man behind the iron. Let the Oath Keepers break themselves on it.' },
@@ -77,10 +77,10 @@ export const CUTAWAYS = {
     beats: [
       { who: 'MESSENGER', text: 'My king... the gates are open. The Marshal...' },
       { act: 'helm' }, // the Iron Marshal's helm, dented and split, rolled across the floor to the foot of the dais
-      { who: 'VAURATH', text: 'He asked me three times. I told him no three times.' },
+      { who: 'VAURATH', text: 'Three times he asked me. Three times I told him no.' },
       { act: 'gutter' }, // fear: the ember-fire gathers in his hand, shakes, and gutters out
       { who: 'MESSENGER', text: 'The town is burning, my king. The people are going over to them.' },
-      { who: 'VAURATH', text: 'Then the prison wing burns too. Every cell. With every one of them in it.' },
+      { who: 'VAURATH', text: 'Then burn the prison wing. Every cell. Every soul.' },
       { who: 'MESSENGER', text: 'My king... those are the prisoners they came for...' },
       { who: 'VAURATH', text: 'Yes. Let them climb my walls for ashes.' },
     ],

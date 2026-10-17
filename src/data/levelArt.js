@@ -32,7 +32,8 @@ export const LEVEL_ART = {
     wall: { height: 250 },
     ground: true,
     pieces: ['well', 'barn', 'stables', 'longhall', 'gate', 'pikes'],
-    props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' } },
+    props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' },
+      archers: { file: 'prop_archers.png', pair: true } },
     surfaces: { roof_top: { fit: true }, roof_front: { px: 180 }, beam: { px: 40 }, board: { fit: true } },
   },
   wood: {
@@ -87,7 +88,11 @@ export const LEVEL_ART = {
     wall: { height: 200 },
     ground: true,
     pieces: ['gatehouse', 'winch_room', 'town', 'inner_wall', 'keep_road'],
-    props: { winch: { file: 'prop_winch.png', pair: true } },
+    // (ram: the burned-out ram on the road, a block's `look`, view/TerrainView.js drawPaintedBlock)
+    props: { winch: { file: 'prop_winch.png', pair: true }, ram: { file: 'prop_ram.png' } },
+    // the gatehouse stair and landing (dressed stone) and the guardroom's rotten floor
+    // (prompts: docs/gates-art-prompts.md)
+    surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, plank: { fit: true } },
   },
   // THE GALLOWS ASCENT (the night climb, view/TerrainView.js): its painted backdrop, cliff
   // wall, floor and ledge faces. Prompts: docs/gallows-art-prompts.md. (The code-drawn sky
@@ -166,8 +171,12 @@ export const SPRITE_SHEETS = {
   'hound-atk1': { file: 'assets/enemies/strips/hound_atk1.png', frames: 4, height: 120 },
   'hound-react': { file: 'assets/enemies/strips/hound_react.png', frames: 3, height: 120 },
   'hound-doom': { file: 'assets/enemies/strips/hound_doom.png', frames: 4, height: 120 },
+  // the Crusher's strips: each is scaled to its tallest pose (the hammer hauled up, the
+  // sparks, the dust), and the machine is painted at a different size in each, so each
+  // strip has its own height that keeps the hull and wheels the walk's size (matched by eye
+  // on the rear wheel and hull; it shrank by a quarter in the slam at one height for all)
   'crusher-walk': { file: 'assets/enemies/strips/crusher_walk.png', frames: 6, height: 380 },
-  'crusher-atk1': { file: 'assets/enemies/strips/crusher_atk1.png', frames: 4, height: 380 },
-  'crusher-heavy': { file: 'assets/enemies/strips/crusher_heavy.png', frames: 5, height: 380 },
-  'crusher-doom': { file: 'assets/enemies/strips/crusher_doom.png', frames: 5, height: 380 },
+  'crusher-atk1': { file: 'assets/enemies/strips/crusher_atk1.png', frames: 4, height: 395 },
+  'crusher-heavy': { file: 'assets/enemies/strips/crusher_heavy.png', frames: 5, height: 495 },
+  'crusher-doom': { file: 'assets/enemies/strips/crusher_doom.png', frames: 5, height: 355 },
 };

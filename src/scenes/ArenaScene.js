@@ -37,6 +37,7 @@ import { CameraFX } from '../effects/CameraFX.js';
 import { SpriteCuts } from '../effects/SpriteCut.js';
 import { finisherTargets, IMPALE, impalePierce } from '../combat/Finisher.js';
 import { Burning } from '../effects/Burn.js';
+import { FireAmbience } from '../core/FireAmbience.js';
 import { Stage } from '../stage/Stage.js';
 import { StageView } from '../view/StageView.js';
 import { TerrainView } from '../view/TerrainView.js';
@@ -48,7 +49,7 @@ import { CHARACTERS } from '../data/characters.js';
 import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
 import { playMusic, playCue, stopMusic, toggleMute } from '../core/Music.js';
-import { playSfx } from '../core/Sfx.js';
+import { playSfx, fleshBite } from '../core/Sfx.js';
 import { runTickJobs } from '../core/TickJobs.js';
 import { styleMult } from '../combat/Style.js';
 import { TROPHIES, RARITY, LOOT, pickTrophy } from '../data/trophies.js';
@@ -156,6 +157,12 @@ export class ArenaScene extends Phaser.Scene {
       if (e.move.impale) this.impaleFX(e);
       if (e.move.shoulder) this.shoulderImpact(e);
       else if (e.kind === 'melee' && e.attacker?.stats.blade) this.oathkeeperBite(e);
+      // a sword cut from our side (not a kick, the shoulder or fire; the Mage and Rogue
+      // sound their own): now and then the blade biting flesh
+      if (e.kind === 'melee' && e.attacker?.team === 'player' && !e.attacker.stats.archetype
+        && e.move.fx !== 'kick' && !e.move.shoulder && e.move.cut !== 'fire' && fleshBite()) {
+        playSfx(this, 'stationaryKill', { volume: 0.75, spread: 120, minGapMs: 60 });
+      }
     });
     // the SHOULDER SMASH sets off: a grunt, the plant, dust off his back foot
     ev.on('attackStart', ({ fighter: f, state }) => {
@@ -376,6 +383,7 @@ export class ArenaScene extends Phaser.Scene {
       saved: this.progress.rescuedIds(), flags: { ...C.flags },
       rescued: back ? this.progress.rescuedIds() : undefined, lost: back ? this.progress.lostIds() : undefined,
     } : {});
+    this.gore.dismemberer.minZ = this.world.bounds.minZ; // (a stage's own lane: `laneTop`)
     this.stageView = new StageView(this, this.stage);
     // (after the StageView: it makes the 'glow' texture the terrain's lanterns use)
     this.terrainView = this.stage.terrain || this.stageData.theme ? new TerrainView(this, this.stage) : null;
@@ -442,6 +450,7 @@ export class ArenaScene extends Phaser.Scene {
     });
 
     playMusic(this, this.stageData.music ?? 'battle');
+    this.fireAmbience = new FireAmbience(this); // the crackle of whatever is burning
   }
 
   // Sparta kick landing: shockwave ring, dust off the floor, heavy shake.
@@ -1390,6 +1399,7 @@ export class ArenaScene extends Phaser.Scene {
   // ------------------------------------------------------------ main loop
 
   update(_time, delta) {
+    this.fireAmbience?.update(delta); // (fades out while leaving)
     if (this.leaving) return; // (fading out to the next level: goNextLevel)
     this.localKeys();
     const s = this.session;

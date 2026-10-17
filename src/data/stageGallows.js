@@ -37,7 +37,7 @@ export const STAGE_GALLOWS = {
       objective: 'Climb the stair',
       hint: 'Tap jump for a hop — HOLD it to clear the tall steps',
       waves: [],
-      props: [{ kind: 'crate', x: 880, z: 470, drop: 'meat' }],
+      props: [{ kind: 'crate', x: 880, z: 470, drop: 'health' }],
       hazards: [],
     },
     {
@@ -48,8 +48,8 @@ export const STAGE_GALLOWS = {
       // a crowd, then a mix that punishes standing still (the stalker darts, the berserker charges)
       waves: [['grunt', 'grunt', 'butcher'], ['stalker', 'grunt', 'berserker']],
       props: [
-        { kind: 'crate', x: 1720, z: 300, drop: 'meat' },
-        { kind: 'barrel', x: 2180, z: 505, drop: 'wine' },
+        { kind: 'crate', x: 1720, z: 300, drop: 'health' },
+        { kind: 'barrel', x: 2180, z: 505, drop: 'health' },
         // the OPTIONAL fight: strike the iron bell and Pitlord Kragg answers. Beat him for a
         // skill point (stage.challenge; view: the bell)
         { kind: 'bell', x: 2240, z: 300, drop: null, challenge: ['gladiator'] },
@@ -98,7 +98,7 @@ export const STAGE_GALLOWS = {
         [{ x: 5450, z: 312 }, { x: 5450, z: 330 }, { x: 5820, z: 450 }, { x: 5820, z: 390 }],
         [{ x: 5820, z: 450 }, { x: 5820, z: 390 }, { x: 5820, z: 480 }],
       ],
-      props: [{ kind: 'crate', x: 5000, z: 495, drop: 'meat' }],
+      props: [{ kind: 'crate', x: 5000, z: 495, drop: 'health' }],
       hazards: [
         { type: 'blade', x: 5150, z: 440, swing: 90, phase: 0 },
         { type: 'blade', x: 5420, z: 470, swing: 90, phase: 70 },
@@ -110,7 +110,7 @@ export const STAGE_GALLOWS = {
       objective: 'Cut down the Hangman',
       hint: 'The trapdoor gives way under anyone',
       waves: [['grunt', 'ghoul', 'stalker']],
-      props: [{ kind: 'barrel', x: 6560, z: 300, drop: 'meat' }],
+      props: [{ kind: 'barrel', x: 6560, z: 300, drop: 'health' }],
       hazards: [{ type: 'fire', x: 6300, z: 470, w: 120, d: 70, phase: 0 }],
       rest: { x: 5800, z: 330 },
       // the elite: a berserker grown huge on the gallows, his men come at half health

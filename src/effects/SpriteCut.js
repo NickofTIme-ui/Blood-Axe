@@ -16,6 +16,7 @@
 // Stepped once per game tick (update()), so slow motion slows them too.
 
 import { landThud } from '../core/Sfx.js';
+import { dyeImage } from '../view/dye.js';
 
 const GRAVITY = 1700;
 
@@ -81,6 +82,7 @@ export class SpriteCuts {
     const mk = (texKey, cropY, cropH, oy) => {
       const img = texKey ? this.scene.add.image(f.x, feetY, texKey) : this.scene.add.image(f.x, feetY, key, frame).setCrop(0, cropY, sh.fw, cropH);
       if (texKey && kn && cropY > 0) img.setCrop(0, 0, sh.fw, kneeRow); // (the shins stay under the floor)
+      dyeImage(this.scene, img, f.dye); // (his clothes keep their colour: view/dye.js)
       return img.setOrigin(sh.ax / sh.fw, oy / sh.fh).setScale(k * face, k).setDepth(f.z);
     };
     const bandX = baked?.midX ?? sh.ax;
@@ -105,6 +107,27 @@ export class SpriteCuts {
     });
     upper.other = lower;
     lower.other = upper;
+    // the loose bits drop off where they hung, turning over as they go
+    // (not on his knees: those pictures are cropped into the floor)
+    if (!kn) {
+      [upper, lower].forEach((half, i) => {
+        half.loose = (baked?.loose?.[i] ?? []).map((c) => {
+          const x = f.x + (c.cx - sh.ax) * k * face;
+          const h = f.h + (sh.ay - c.cy) * k;
+          const img = this.scene.add.image(x, feetY + (c.cy - sh.ay) * k, c.key)
+            .setOrigin(c.ox / c.w, c.oy / c.h).setScale(k * face, k).setRotation(s.rotation).setDepth(f.z);
+          const thick = Math.min(c.w, c.h) * k;
+          const p = this.add({
+            img, tex: c.key, x, z: f.z + rand(0.5, 2), h, mode: 'fly', rot: s.rotation, spin: 0, face, k, dir,
+            edge: thick * 0.75, rest: thick * 0.45, bleed: 40, bleedDir: 1, pump: 0.35, age: 0,
+            bandOff: { x: 0, y: 0 }, gib: true,
+          });
+          this.launch(p, dir * rand(10, 50), rand(0, 70), rand(-4, 4));
+          p.rest = thick * 0.45;
+          return p;
+        });
+      });
+    }
     if (kn) {
       // beheaded on his knees: the body stays kneeling a long moment, the neck pumping,
       // then slumps forward onto its own front (not over: it's kneeling)
@@ -189,6 +212,9 @@ export class SpriteCuts {
           }
         }
       }
+      // whatever the cut left hanging on its own (a hand, a forearm, the sword in it: across
+      // the waist his hands hang beside his hips) isn't held up by either half: it falls
+      const loose = cut === 'neck' || cut === 'legs' ? [[], []] : [up, lo].map((img) => this.loose(img, W, H));
       const keys = [up, lo].map((img, i) => {
         const c = mkc();
         c.getContext('2d').putImageData(img, 0, 0);
@@ -196,8 +222,68 @@ export class SpriteCuts {
         this.scene.textures.addCanvas(key, c).setFilter(Phaser.Textures.FilterMode.NEAREST);
         return key;
       });
-      return { upper: keys[0], lower: keys[1], midX: x1 > x0 ? (x0 + x1) / 2 : sh.ax };
+      return { upper: keys[0], lower: keys[1], midX: x1 > x0 ? (x0 + x1) / 2 : sh.ax, loose };
     } catch { return null; }
+  }
+
+  // The bits of one half that hang free of the rest of it once it's cut (not touching its
+  // biggest part, pixel to pixel): lifted out of `img` into their own textures.
+  // Returns [{ key, w, h, ox, oy, cx, cy }] like tear(); crumbs stay where they are.
+  loose(img, W, H) {
+    const d = img.data;
+    const comp = new Int32Array(W * H).fill(-1);
+    const sizes = [];
+    const stack = [];
+    for (let i = 0; i < W * H; i++) {
+      if (!d[i * 4 + 3] || comp[i] >= 0) continue;
+      const id = sizes.length;
+      let n = 0;
+      comp[i] = id; stack.push(i);
+      while (stack.length) {
+        const q = stack.pop(); n++;
+        const x = q % W; const y = (q / W) | 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = x + dx; const ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+            const r = ny * W + nx;
+            if (d[r * 4 + 3] && comp[r] < 0) { comp[r] = id; stack.push(r); }
+          }
+        }
+      }
+      sizes.push(n);
+    }
+    if (sizes.length < 2) return [];
+    const main = sizes.indexOf(Math.max(...sizes));
+    const out = [];
+    sizes.forEach((n, id) => {
+      if (id === main || n < 30) return;
+      let x0 = W; let y0 = H; let x1 = -1; let y1 = -1; let sx = 0; let sy = 0;
+      for (let i = 0; i < W * H; i++) {
+        if (comp[i] !== id) continue;
+        const x = i % W; const y = (i / W) | 0;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        sx += x; sy += y;
+      }
+      const w = x1 - x0 + 1; const h = y1 - y0 + 1;
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      const part = ctx.createImageData(w, h);
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+          const i = y * W + x;
+          if (comp[i] !== id) continue;
+          const o = ((y - y0) * w + (x - x0)) * 4;
+          for (let ch = 0; ch < 4; ch++) { part.data[o + ch] = d[i * 4 + ch]; d[i * 4 + ch] = 0; }
+        }
+      }
+      ctx.putImageData(part, 0, 0);
+      const key = `cutpiece-${++pieceId}-loose`;
+      this.scene.textures.addCanvas(key, c).setFilter(Phaser.Textures.FilterMode.NEAREST);
+      const cx = sx / n; const cy = sy / n;
+      out.push({ key, w, h, ox: cx - x0, oy: cy - y0, cx, cy });
+    });
+    return out;
   }
 
   // Blown apart (a mine, a lotus, a rupture): the frame on screen is torn into `n`
@@ -221,6 +307,7 @@ export class SpriteCuts {
       const h = f.h + (sh.ay - c.cy) * k;
       const img = this.scene.add.image(x, feetY + (c.cy - sh.ay) * k, c.key)
         .setOrigin(c.ox / c.w, c.oy / c.h).setScale(k * face, k).setRotation(s.rotation).setDepth(f.z);
+      dyeImage(this.scene, img, f.dye);
       const thick = Math.min(c.w, c.h) * k;
       const p = this.add({
         img, tex: c.key, x, z: f.z + rand(-5, 5), h, mode: 'fly', rot: s.rotation, spin: 0, face, k, dir: face,
@@ -371,6 +458,19 @@ export class SpriteCuts {
     return p;
   }
 
+  // A half drawn some other way from here on (view/SpriteEnemyView.js ragdollCut: from his
+  // lying pose, hands and all): its loose bits go, or they'd be a second pair.
+  dropLoose(half) {
+    const gone = new Set(half?.loose ?? []);
+    if (!gone.size) return;
+    for (const p of gone) {
+      p.img.destroy();
+      if (p.tex && this.scene.textures.exists(p.tex)) this.scene.textures.remove(p.tex);
+    }
+    this.pieces = this.pieces.filter((p) => !gone.has(p));
+    half.loose = [];
+  }
+
   // The middle of a piece's cut face, in world (screen) coordinates.
   cutPoint(p) {
     return p.worldPoint(p.bandOff.x, p.bandOff.y);
@@ -409,6 +509,7 @@ export class SpriteCuts {
         p.h += p.vh / 60;
         p.x += p.vx / 60;
         p.rot += p.spin / 60; // radians per second
+        if (!p.landed) { p.vx *= 0.998; p.spin *= 0.997; } // (a little air drag)
         // off the arena walls
         if (b && (p.x < b.minX + 4 || p.x > b.maxX - 4)) {
           p.x = Math.max(b.minX + 4, Math.min(b.maxX - 4, p.x));
@@ -422,10 +523,17 @@ export class SpriteCuts {
           const cp = this.cutPoint(p);
           gore.spawn({ x: cp.x, z: p.z + rand(-2, 2), h: Math.max(1, p.z - cp.y), vx: -p.vx * 0.1 + rand(-20, 20), vz: 0, vh: rand(-10, 30), tint: 0x7a0303, scale: rand(0.35, 0.7) });
         }
+        // (how far its middle is from the floor it's turning on: what turns spin into roll)
+        const R = Math.max(6, Math.abs(p.edge));
         if (p.h <= p.rest) {
           p.h = p.rest;
-          if (Math.abs(p.vh) > 160) {
-            p.vh = -p.vh * 0.22; p.vx *= 0.5; p.spin *= 0.4; // thud, a small bounce
+          if (Math.abs(p.vh) > 90) {
+            // it hits, bounces, and the floor grabs it: the skid turns it over (the spin it
+            // comes away with is part how it was turning, part how fast it was sliding)
+            // and a lopsided thing lands lopsided — a kick of spin either way
+            p.vh = -p.vh * (p.gib ? 0.38 : 0.3);
+            p.spin = p.spin * 0.45 + (p.vx / R) * 0.35 + rand(-2.5, 2.5) * Math.min(1, Math.abs(p.vh) / 200);
+            p.vx *= 0.62;
             if (!p.thudded) { p.thudded = true; landThud(this.scene, p.gib); }
             if (gore?.level > 0) {
               gore.burst(p.x, p.z, 4, Math.sign(p.vx) || p.face, Math.round((p.gib ? 6 : 16) * (gore.amount ?? 1)), 0.6);
@@ -439,12 +547,22 @@ export class SpriteCuts {
             p.spin = p.vx / r;
             if (gore?.level > 0 && p.age % 5 === 0) gore.splat(p.x, p.z + rand(-1, 1), rand(0.5, 0.9));
           } else {
-            p.vh = 0; p.vx *= 0.8; p.spin *= 0.6;
+            // on the floor: it slides to a stop, the friction rolling it over as it goes, and
+            // rocks down onto its flattest side (weight, not a snap to the floor)
+            p.vh = 0;
             p.landed = true;
-            if (p.thrown && !p.gib) {
-              const side = Math.round((p.rot - Math.PI / 2) / Math.PI) * Math.PI + Math.PI / 2;
-              p.rot += (side - p.rot) * 0.18;
-              p.rest += (Math.abs(p.edge) * 0.45 - p.rest) * 0.2; // lies lower than it stood
+            p.vx *= 0.9;
+            p.spin += (p.vx / R - p.spin) * 0.2;
+            if (p.thrown) {
+              // halves lie on their flat sides; a gib on whichever face is nearest
+              const step = p.gib ? Math.PI / 2 : Math.PI;
+              const off = p.gib ? 0 : Math.PI / 2;
+              const side = Math.round((p.rot - off) / step) * step + off;
+              p.spin += (side - p.rot) * 16;  // tipping onto that side...
+              p.spin *= 0.86;                 // ...and rocking to a stop on it
+              if (!p.gib) p.rest += (Math.abs(p.edge) * 0.45 - p.rest) * 0.12; // lies lower than it stood
+            } else {
+              p.spin *= 0.6;
             }
           }
         }
@@ -457,10 +575,14 @@ export class SpriteCuts {
         if (p.shudder) p.rot = (Math.random() - 0.5) * 0.07 * Math.min(1, p.stand / 30);
         if (--p.stand <= 0) { p.mode = 'topple'; p.toppleV = 0; }
       } else if (p.mode === 'topple') {
-        p.toppleV += p.toppleSpeed ?? 0.006;
+        // going over: slow off the vertical, faster the further it leans (its weight)
+        p.toppleV += (p.toppleSpeed ?? 0.006) + Math.abs(Math.sin(p.rot)) * 0.006;
         const target = p.fallDir * (p.toppleTo ?? Math.PI / 2 * 0.96);
         p.rot += Math.sign(target - p.rot) * p.toppleV;
-        if (Math.abs(p.rot) >= Math.abs(target)) {
+        if (Math.abs(p.rot) >= Math.abs(target) && !p.rebound && p.toppleV > 0.05) {
+          // it hits the floor and bounces back a little before it settles
+          p.rot = target; p.rebound = true; p.toppleV = -p.toppleV * 0.3;
+        } else if (Math.abs(p.rot) >= Math.abs(target)) {
           p.rot = target; p.mode = 'down';
           if (gore?.level > 0) {
             gore.burst(p.x + p.fallDir * 20, p.z, 3, p.fallDir, Math.round(10 * (gore.amount ?? 1)), 0.5);

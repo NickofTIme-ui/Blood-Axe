@@ -19,6 +19,7 @@
 import { measureCanvas } from './frameMeasure.js';
 import { RAGDOLL_GEAR } from '../data/ragdollGear.js';
 import { JUGGLE } from '../combat/Juggle.js';
+import { dyeImage } from './dye.js';
 
 const OVER = 6;      // frame px the pieces overlap at each joint (hides the seams)
 // the joints along the lying body, as a share of its length from the top of the head
@@ -177,11 +178,13 @@ function rotAbout(p, c, a) {
 }
 
 export class Ragdoll {
-  // gearId: which enemy's gear notes to use (his strips' id)
-  constructor(scene, sheet, gearId) {
+  // gearId: which enemy's gear notes to use (his strips' id); dye: his clothes' colour
+  // (view/dye.js)
+  constructor(scene, sheet, gearId, dye = null) {
     this.scene = scene;
     this.sheet = sheet;
     this.gearId = gearId;
+    this.dye = dye;
     this.parts = [];
     this.gearImgs = [];
     this.chainG = scene.add.graphics().setVisible(false);
@@ -202,7 +205,7 @@ export class Ragdoll {
     if (!this.B) return null;
     const B = this.B;
     for (const b of B.bands) {
-      this.parts.push(this.scene.add.image(0, 0, B.key).setCrop(...b.crop).setOrigin(b.ox / B.w, b.oy / B.h).setVisible(false));
+      this.parts.push(dyeImage(this.scene, this.scene.add.image(0, 0, B.key).setCrop(...b.crop).setOrigin(b.ox / B.w, b.oy / B.h).setVisible(false), this.dye));
     }
     for (const g of B.gear) {
       this.gearImgs.push(this.scene.add.image(0, 0, g.key).setOrigin(g.ox, g.oy).setVisible(false));
@@ -227,6 +230,8 @@ export class Ragdoll {
   //   range [lo, hi]  only the joints lo..hi (0 head .. 4 feet) are here
   //   free            nobody's left in the game to follow: it just falls where it falls
   //   vel {x, y}, spin   how it's thrown (px / frame; spin turns it end over end)
+  //   lean            which way (and how far, rad) it starts leaning: where it falls
+  //   hold            frames it keeps standing before it falls (legs cut out from under him)
   //   strays          gear his missing parts held falls loose with this piece ({ covered(band) }:
   //                   except what another ragdolled piece of him still holds)
   start(f, face, k, kind = 'knock', opts = {}) {
@@ -235,6 +240,7 @@ export class Ragdoll {
     this.on = true;
     [this.lo, this.hi] = opts.range ?? [0, 4];
     this.free = !!opts.free;
+    this.hold = opts.hold ?? 0;     // frames it stays as it stands before it starts to fall
     this.face = face;
     this.k = k;
     this.age = 0;
@@ -255,7 +261,7 @@ export class Ragdoll {
     const floorY = f.z - f.floor;
     const footY = f.z - f.h;
     const headDir = B.headLeft ? -face : face; // where his head ends up when he's down
-    const lean = (kind === 'drop' ? 0.12 : 0.22) * headDir;
+    const lean = opts.lean ?? (kind === 'drop' ? 0.12 : 0.22) * headDir;
     const pts = [];
     let x = f.x;
     let y = footY;
@@ -361,7 +367,10 @@ export class Ragdoll {
     const lo = this.lo;
     const hi = this.hi;
     const free = this.free;
-    const G = f.stats.gravity * JUGGLE.fallGravity / 3600; // (bodies come down as hard as the game drops a flung man)
+    // (bodies come down as hard as the game drops a flung man; a cut-off piece of him isn't
+    // the game's any more and falls like any other piece: plain gravity, so a top half
+    // thrown off its legs hangs in the air long enough to read as cut in two)
+    const G = f.stats.gravity * (free ? 1 : JUGGLE.fallGravity) / 3600;
     const floorY = f.z - f.floor;
     this.floorY = floorY;
     const target = free ? null : this.lyingAt(f, face, k);
@@ -376,6 +385,8 @@ export class Ragdoll {
       return c / n;
     };
     for (let n = 0; n < steps; n++) {
+      // (legs left standing a moment after the top half's gone: they don't know yet)
+      if (this.hold > 0) { this.hold--; continue; }
       this.age++;
       // the game threw him again (a juggle, a bounce, a blow while he's down): so does the doll
       const expect = this.prevVh - f.stats.gravity * (this.prevVh < 0 ? JUGGLE.fallGravity : 1) / 60;

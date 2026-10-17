@@ -27,6 +27,7 @@ import { SPEAKERS, NARRATION, PORTRAIT_IDS, speakerInfo } from '../src/data/spea
 import { Progress, PROGRESS } from '../src/progression/Progress.js';
 import { SKILL_TREES } from '../src/data/skills.js';
 import { BladeChain, CHAIN_PHYS } from '../src/view/BladeChain.js';
+import { DYES } from '../src/view/dye.js';
 import { handshake } from '../src/net/Link.js';
 import { impalePin } from '../src/combat/Finisher.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS } from '../src/combat/Mage.js';
@@ -840,6 +841,32 @@ test('waves: every enemy starts off every screen and walks on (no popping in)', 
   }
 });
 
+test('variety: no two grunts alike (pace, height, dye), the same men on both machines, the kind left alone', () => {
+  const spawn = (seed) => {
+    const world = new World({ seed });
+    return Array.from({ length: 12 }, (_, i) => createEnemy(world, 'grunt', 600 + i * 30, 420));
+  };
+  const a = spawn(11);
+  const b = spawn(11);
+  const G = ENEMIES.grunt;
+  const V = G.variety;
+  for (const [i, f] of a.entries()) {
+    const k = f.stats.walkSpeed / G.walkSpeed;
+    assert(k >= V.speed[0] - 1e-9 && k <= V.speed[1] + 1e-9, `pace in range (${k})`);
+    assert(f.stats.size >= V.size[0] && f.stats.size <= V.size[1], `height in range (${f.stats.size})`);
+    assert(Math.abs(f.stats.depthSpeed / G.depthSpeed - k) < 1e-9, 'depth pace goes with it');
+    assert(f.health === f.stats.maxHealth, 'starts at his own full health');
+    assert(V.dyes.includes(f.dye), `a dye from the list (${f.dye})`);
+    assert(!f.dye || DYES[f.dye], `a dye the shader knows (${f.dye})`);
+    const g = b[i];
+    assert(g.stats.walkSpeed === f.stats.walkSpeed && g.stats.size === f.stats.size && g.dye === f.dye, 'same seed, same man');
+  }
+  assert(new Set(a.map((f) => f.stats.walkSpeed.toFixed(1))).size >= 10, 'all at their own pace');
+  assert(new Set(a.map((f) => f.dye)).size >= 4, `several colours (${a.map((f) => f.dye)})`);
+  assert(G.walkSpeed === 115 && G.size === undefined && a[0].stats !== a[1].stats, 'the kind\'s numbers untouched');
+  for (const [id, E] of Object.entries(ENEMIES)) for (const d of E.variety?.dyes ?? []) assert(!d || DYES[d], `${id}: dye ${d} exists`);
+});
+
 test('waves: a man stuck walking on is never spirited away while he can be seen', () => {
   const world = new World({ seed: 3 });
   const hero = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 300, z: 430, controller: new TickController() }));
@@ -1539,7 +1566,7 @@ test('stage: the first section locks the camera bounds and sends its waves in tu
 
 test('stage: breaking a crate drops food that heals when walked over', () => {
   const t = stageSetup();
-  const crate = t.stage.props.find((p) => p.kind === 'crate' && p.drop === 'meat');
+  const crate = t.stage.props.find((p) => p.kind === 'crate' && p.drop === 'health');
   t.p.x = crate.x - 50; t.p.z = crate.z; t.p.facing = 1; t.p.health = 50;
   for (let i = 0; i < 2; i++) { t.p.controller.registerPress('attack'); t.run(30); }
   assert(crate.broken, `crate broken (hp ${crate.hp})`);
@@ -1565,7 +1592,7 @@ test('stage: fire grates burn whoever stands on them when they erupt; blades cut
 
 test('stage: a kicked crate skids down the lane and bursts on the first enemy, flooring him', () => {
   const t = stageSetup();
-  const crate = t.stage.props.find((p) => p.kind === 'crate' && p.drop === 'meat');
+  const crate = t.stage.props.find((p) => p.kind === 'crate' && p.drop === 'health');
   const x0 = crate.x;
   t.p.x = crate.x - 50; t.p.z = crate.z; t.p.facing = 1;
   const g = t.world.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x: crate.x + 260, z: crate.z, controller: new Scripted() }));
@@ -1579,7 +1606,7 @@ test('stage: a kicked crate skids down the lane and bursts on the first enemy, f
   assert(t.stage.pickups.some((k) => Math.abs(k.x - crate.x) < 1), 'its food spills where it burst');
   // nobody in the way: it breaks where it runs out of floor
   const u = stageSetup();
-  const c2 = u.stage.props.find((p) => p.kind === 'crate' && p.drop === 'meat');
+  const c2 = u.stage.props.find((p) => p.kind === 'crate' && p.drop === 'health');
   u.p.x = c2.x - 50; u.p.z = c2.z; u.p.facing = 1;
   u.p.controller.registerPress('kick'); u.run(120);
   assert(c2.broken && c2.x > x0 + 300, `broke at the end of its skid (${c2.x - x0})`);
@@ -2568,7 +2595,7 @@ test('village: the barn: smashing the burning beam off its door frees the people
 test('village: the boy on the high ridge is saved by reaching him; every hero climbs to him in three jumps', () => {
   // from the back of the second roof: a chimney (+45), a dormer (+45), the ridge (+45). Like
   // a player: aim for the middle of the next step up, jump, steer onto it, land, again
-  const steps = STAGE_VILLAGE.terrain.filter((b) => b.kind === 'block' && b.z0 === 282 && b.x0 > 3480 && b.x1 <= 3680 && b.top > 140).sort((a, b) => a.top - b.top);
+  const steps = STAGE_VILLAGE.terrain.filter((b) => b.kind === 'block' && b.z0 === STAGE_VILLAGE.laneTop && b.x0 > 3480 && b.x1 <= 3680 && b.top > 140).sort((a, b) => a.top - b.top);
   assert(steps.length === 3 && steps.every((b, i) => b.top - (i ? steps[i - 1].top : 140) <= 45), 'three steps of +45 at most');
   for (const hero of ['warrior', 'mage', 'rogue']) {
     const world = new World({ seed: 4 });
@@ -2584,13 +2611,13 @@ test('village: the boy on the high ridge is saved by reaching him; every hero cl
       if (hold > 0) hold--;
       return { jump: hold > 0, right: aim != null && p.x < aim - 4, left: aim != null && p.x > aim + 4 };
     });
-    const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: 3490, z: 300, controller: c }));
+    const p = world.addFighter(new Fighter({ stats: CHARACTERS[hero], team: 'player', x: 3490, z: STAGE_VILLAGE.laneTop + 18, controller: c }));
     c.p = p;
     const st = new Stage(world, STAGE_VILLAGE);
     st.start(p);
     st.enterSection(2);
     hush(st);
-    p.x = 3490; p.z = 300; st.placeOnGround(p);
+    p.x = 3490; p.z = STAGE_VILLAGE.laneTop + 18; st.placeOnGround(p);
     for (let i = 0; i < 400 && !st.story.isRescued('tam'); i++) {
       for (const e of world.fighters) if (e.team === 'enemy') { e.health = 0; e.removeMe = true; } // (the roof's two men: another test)
       world.tick(); st.update();
@@ -3270,12 +3297,19 @@ test('mine: the chase runs on through three stretches: each picks the rock up wh
   assert(b.front <= b.x0 + 10 && p.x > b.front + 60 && a.front == null, `back behind the start (${Math.round(b.front)}, hero ${Math.round(p.x)})`);
 });
 
-test('mine: the Ore Crusher is iron: no blow staggers it or knocks it down; it vents its furnace, then brings the roof down', () => {
+test('mine: the Ore Crusher is a regular enemy: a grunt\'s health, five times over the level, twice in pairs', () => {
+  assert(ENEMIES.crusher.maxHealth === ENEMIES.grunt.maxHealth, `a grunt's health (${ENEMIES.crusher.maxHealth})`);
+  assert(STAGE_MINE.sections.every((q) => q.boss?.type !== 'crusher'), 'no Crusher boss');
+  const counts = STAGE_MINE.sections.flatMap((q) => q.waves.map((w) => w.filter((t) => t === 'crusher').length)).filter((n) => n > 0);
+  assert(counts.length === 5 && counts.filter((n) => n === 2).length === 2 && counts.every((n) => n <= 2), `five times, twice in pairs (${counts})`);
+});
+
+test('mine: the Ore Crusher is iron: no blow staggers it or knocks it down', () => {
   const { world, p, st, run } = mineSetup(MINE_SEC('crusher'), { x: 6200, z: 440 });
-  const phases = []; world.events.on('bossPhase', (e) => phases.push(e.phase.id));
-  bossUp(st, run, p);
-  const b = st.boss;
-  assert(b?.stats.id === 'crusher' && b.stats.machine, 'the Crusher is here');
+  killFoes(world); st.fightOn = true; st.waveIndex = 99;
+  const b = createEnemy(world, 'crusher', 6290, 440);
+  st.placeOnGround(b);
+  assert(b.stats.machine, 'the Crusher is here');
   // the warrior's heavy, point blank
   b.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
   p.x = b.x - 90; p.z = b.z; p.facing = 1;
@@ -3285,16 +3319,6 @@ test('mine: the Ore Crusher is iron: no blow staggers it or knocks it down; it v
   run(60, () => { p.health = p.stats.maxHealth; seen.add(b.state); });
   assert(struck >= 1, 'the blow lands');
   assert(!seen.has('knockdown') && !seen.has('hitstun') && !seen.has('stagger'), `it shrugs it off (${[...seen]})`);
-  const fires = st.hazards.filter((h) => h.section === MINE_SEC('crusher') && h.type === 'fire');
-  const rocks = st.hazards.filter((h) => h.section === MINE_SEC('crusher') && h.type === 'beam');
-  assert(fires.every((h) => st.firePhase(h) === 'idle'), 'the vents are cold at first');
-  b.health = b.stats.maxHealth * 0.6;
-  run(2, () => { p.health = p.stats.maxHealth; });
-  assert(phases.join() === 'furnace', `the furnace (${phases})`);
-  b.health = b.stats.maxHealth * 0.2;
-  run(2, () => { p.health = p.stats.maxHealth; });
-  assert(phases.join() === 'furnace,overdrive' && b.raged, `overdrive (${phases})`);
-  assert(rocks.every((h) => st.beamLive(h)), 'the roof starts coming down');
 });
 
 test('mine: the Chain Warden calls up his ghouls at half health', () => {
@@ -4115,15 +4139,6 @@ test('sentence: no two go alike: the head and the fall are rolled from the lists
   for (const x of BODIES) assert(a.some((o) => o.body === x), `every fall comes up (${x})`);
 });
 
-test('sentence: a machine is no man: the Ore Crusher is simply destroyed', () => {
-  const { world, p, st, ev, run } = sentenceSetup('warrior', STAGE_MINE, 'crusher', 6000);
-  const b = st.boss;
-  assert(b?.stats.machine && !b.spare, `the Crusher is not spared (${b?.stats.name}, ${b?.spare}, ${st.section.id})`);
-  blowOf(world, p, b);
-  run(10);
-  assert(!b.alive && !st.sentence.running && ev.strike.length === 0, 'destroyed, no sentence');
-});
-
 test('sentence: every boss in the game has his crimes (the machine none); the Oath Keepers swear it at the start', () => {
   for (const [id, data] of Object.entries(STAGES)) {
     for (const sec of data.sections) {
@@ -4135,7 +4150,7 @@ test('sentence: every boss in the game has his crimes (the machine none); the Oa
     }
   }
   const opening = STAGE_VILLAGE.story.find((b) => b.id === 'opening').lines.map((l) => l[1]).join(' ');
-  assert(opening.includes('Each of them kneels, hears his crimes, and pays for them.'), 'the pledge');
+  assert(opening.includes('Each of them kneels. Each hears his crimes. Each pays.'), 'the pledge');
 });
 
 test('dialogue: every voice in every level has a name and a portrait (or is narration); Nick\'s names on the nameless', () => {

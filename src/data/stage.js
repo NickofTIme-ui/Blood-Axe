@@ -15,23 +15,23 @@
 // Positions are in world px. z = depth on the floor (282 back .. 520 front: SETTINGS.world).
 // waves: line-ups spawned one after another (the next when the last is dead).
 //        (each line-up is written twice over: the fights were too easy at single strength)
-// props: breakables — kind: barrel | crate | urn | wall (secret wall) ; drop: meat (health),
-//        wine (half health), mana, relic (secret, score)
+// props: breakables — kind: barrel | crate | urn | wall (secret wall) ; drop: health (the
+//        green jar), mana (the blue jar), and the secret treasures relic | ring | rune (score)
 // hazards: fire (x, z, w, d, phase) | blade (x, z = its lane, swing: px each side, phase)
 
 export const STAGE = {
   name: 'THE OATH ROAD',
   sections: [
     {
-      id: 'gate', name: 'THE BURNING GATE', x0: 0, x1: 1150, ground: 'village',
+      id: 'gate', name: 'THE BURNING GATE', x0: 0, x1: 1150, ground: 'village', fireBed: 1,
       light: 0xffa060, mood: 0.12,
       objective: 'Cut through the gate guard',
       waves: [['grunt', 'grunt', 'grunt', 'grunt'], ['grunt', 'grunt', 'grunt', 'grunt', 'grunt', 'grunt']],
       props: [
         { kind: 'barrel', x: 420, z: 320, drop: null },
-        { kind: 'crate', x: 470, z: 310, drop: 'meat' },
-        { kind: 'barrel', x: 860, z: 489, drop: 'wine' },
-        { kind: 'crate', x: 1040, z: 307, drop: 'meat' },
+        { kind: 'crate', x: 470, z: 310, drop: 'health' },
+        { kind: 'barrel', x: 860, z: 489, drop: 'health' },
+        { kind: 'crate', x: 1040, z: 307, drop: 'health' },
       ],
       hazards: [],
     },
@@ -42,7 +42,7 @@ export const STAGE = {
       waves: [['grunt', 'butcher', 'grunt', 'butcher'], ['grunt', 'grunt', 'stalker', 'grunt', 'grunt', 'stalker']],
       props: [
         { kind: 'crate', x: 1320, z: 495, drop: 'mana' },
-        { kind: 'barrel', x: 2200, z: 307, drop: 'meat' },
+        { kind: 'barrel', x: 2200, z: 307, drop: 'health' },
       ],
       hazards: [
         { type: 'fire', x: 1560, z: 395, w: 120, d: 75, phase: 0 },
@@ -57,7 +57,7 @@ export const STAGE = {
       waves: [['penitent', 'grunt', 'penitent', 'grunt'], ['stalker', 'ghoul', 'grunt', 'stalker', 'ghoul', 'grunt']],
       props: [
         { kind: 'urn', x: 2560, z: 501, drop: null },
-        { kind: 'urn', x: 2600, z: 510, drop: 'wine' },
+        { kind: 'urn', x: 2600, z: 510, drop: 'health' },
       ],
       hazards: [
         { type: 'blade', x: 2780, z: 407, swing: 90, phase: 0 },
@@ -73,7 +73,7 @@ export const STAGE = {
         { kind: 'urn', x: 3700, z: 295, drop: null },
         { kind: 'urn', x: 3735, z: 301, drop: null },
         { kind: 'urn', x: 3770, z: 292, drop: 'relic', secret: true },
-        { kind: 'crate', x: 4480, z: 495, drop: 'meat' },
+        { kind: 'crate', x: 4480, z: 495, drop: 'health' },
         { kind: 'crate', x: 4130, z: 305, drop: 'relic' },
         { kind: 'barrel', x: 4530, z: 320, drop: 'mana' },
       ],
@@ -101,7 +101,7 @@ export const STAGE = {
           last: 'An oath is only words. Words burn.',
         } },
       waves: [],
-      props: [{ kind: 'barrel', x: 4780, z: 501, drop: 'meat' }],
+      props: [{ kind: 'barrel', x: 4780, z: 501, drop: 'health' }],
       hazards: [],
     },
   ],
@@ -109,10 +109,14 @@ export const STAGE = {
 
 // What each pickup does. heal/mana are shares of the maximum.
 export const PICKUPS = {
-  meat: { heal: 0.45, label: 'ROAST MEAT', color: 0xc86a3a },
-  wine: { heal: 0.25, label: 'WINE', color: 0x8a1a3a },
+// (Nick, 2026-10-17: the roast meat and the wine are gone; health is a green magic jar, the
+// twin of the blue mana jar)
+  health: { heal: 0.45, label: 'HEALTH', color: 0x3aff7a },
   mana: { mana: 1, label: 'MANA', color: 0x3a6aff },
-  relic: { score: 1, label: 'RELIC', color: 0xffd060 },
+  // secret treasures (score): found in hidden places, one of them each
+  relic: { score: 1, label: 'THE OATH CHALICE', color: 0xffd060 },
+  ring: { score: 1, label: 'HAKON\'S SIGNET', color: 0xffd060 },
+  rune: { score: 1, label: 'A RUNESTONE OF THE FIRST FIRE', color: 0x7ad8ff },
   shrine: { heal: 1, mana: 1, score: 1, label: 'BLOOD SHRINE', color: 0xff3a2a },
   trophy: { trophy: true, label: 'TROPHY', color: 0xffb030 }, // boss loot (data/trophies.js): dropped by bosses and elites
 };

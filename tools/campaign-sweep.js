@@ -91,7 +91,9 @@ export class SweepBot extends Controller {
     // the goal is too high to jump to from here (the boy on the village's ridge): first the
     // nearest step up that stands at its depth, once he's up on the roof the steps stand on
     if (T && g.h != null && g.h - p.floor > 95) {
+      const B = this.world.bounds; // (never a step behind the locked camera: the road's cart, seen from the square)
       const up = T.blocks.filter((b) => b.solid && b.top < g.h && b.top - p.floor > 10 && b.top - p.floor <= 95 && g.z >= b.z0 && g.z <= b.z1
+        && b.x1 > B.minX && b.x0 < B.maxX
         && p.floor >= T.groundAt((b.x0 + b.x1) / 2, b.z1 + 4))
         .sort((a, b) => Math.abs((a.x0 + a.x1) / 2 - p.x) - Math.abs((b.x0 + b.x1) / 2 - p.x))[0];
       if (up) g = { ...g, x: (up.x0 + up.x1) / 2, h: up.top };

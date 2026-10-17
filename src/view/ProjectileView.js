@@ -3,8 +3,9 @@
 // that animation — e.g. Ulric's Firebolt — with a glow and a trail of embers.
 // Everything else is a glowing placeholder box.
 //
-// 'hearthfire' (Rurik's Oathkeeper Wakes, data/skills.js) is the Firebolt's strip grown
-// half again, with a white-gold heart and a thicker trail of gold embers.
+// 'hearthfire' (Rurik's Oathkeeper Wakes, data/skills.js) plays its own white-gold strip
+// (FX.hearthfire; until it's in, the Firebolt's strip grown half again), with a white-gold
+// heart and a thicker trail of gold embers.
 
 import { DEPTH } from './depths.js';
 import { FX } from './stripImporter.js';
@@ -16,7 +17,9 @@ export class ProjectileView {
     this.p = projectile;
     const d = projectile.data;
     this.hearth = d.look === 'hearthfire';
-    this.fx = d.look ? FX[this.hearth ? 'firebolt' : d.look] : null;
+    // (the Hearthfire Bolt's own painted strip when it's in, else the Firebolt's grown)
+    this.painted = this.hearth && !!FX.hearthfire;
+    this.fx = d.look ? FX[this.hearth ? (this.painted ? 'hearthfire' : 'firebolt') : d.look] : null;
     this.age = 0;
     this.shadow = scene.add.ellipse(0, 0, d.w, 8, 0x000000, 0.3).setDepth(DEPTH.shadows);
     if (this.fx) {
@@ -26,13 +29,14 @@ export class ProjectileView {
       this.core = scene.add.image(0, 0, this.fx.key, 'f0').setOrigin(0.82, 0.5);
       this.core.setScale(projectile.dir, 1);
       if (this.hearth) {
-        this.core.setScale(projectile.dir * 1.45, 1.45);
+        if (!this.painted) this.core.setScale(projectile.dir * 1.45, 1.45);
         this.glow.setFillStyle(0xffb030, 0.3).setScale(1.5);
         this.heart = scene.add.ellipse(0, 0, d.w * 0.7, d.h * 0.55, 0xfff2c0, 0.85).setBlendMode(Phaser.BlendModes.ADD);
       }
       if (d.cut === 'fire') {
         // cast whoosh + the lava roar riding along with the fireball, together
         const loud = projectile.team === 'player' ? 1 : 0.5;
+        this.fire = { loud, hits: 0 };
         playSfx(scene, 'fireWhoosh', { volume: 0.8 * loud, spread: 100, minGapMs: 30 });
         this.loop = startLoop(scene, 'fireLoop', { volume: 0.45 * loud });
       }
@@ -67,6 +71,7 @@ export class ProjectileView {
     this.age++;
     this.shadow.setPosition(p.x, p.z);
     if (this.fx) {
+      if (this.fire && p.hitList.size > this.fire.hits) this.burst(); // (the Hearthfire runs through: one per body)
       const y = p.z - p.h - d.h / 2;
       const frame = Math.floor((this.age * this.fx.fps) / 60) % this.fx.count;
       this.core.setFrame(`f${frame}`).setPosition(p.x + p.dir * d.w / 2, y).setDepth(p.z + 0.2);
@@ -101,8 +106,16 @@ export class ProjectileView {
     this.core.setPosition(p.x, y).setDepth(p.z + 0.1);
   }
 
+  // the fireball bursting on a body (or a guard)
+  burst() {
+    this.fire.hits = this.p.hitList.size;
+    playSfx(this.scene, 'fireImpact', { volume: 0.9 * this.fire.loud, spread: 120, minGapMs: 60 });
+  }
+
   destroy() {
     this.loop?.stop(300); // fire roar dies out as the bolt lands
+    // it burst on the last body it met, or on the ground or a wall (not just burnt out in the air)
+    if (this.fire && (this.p.hitList.size > this.fire.hits || this.p.grounded)) this.burst();
     this.glow.destroy();
     this.heart?.destroy();
     this.core.destroy();
