@@ -801,3 +801,9 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - **Someone with something to say** (`NpcView.hasWord`: a `talk` not yet heard): a warm pulsing glow behind him and a speech bubble bobbing over his head until a hero comes near (Hale, Nicholas when wounded).
 - Not changed: the mine prisoners, captives, Vincent and Nicholas were already cut at about hero height (90-118 px).
 - Checked: logic tests pass; headless screenshots of Hale (and Mira, Tam). Not played by a person.
+
+## Cloud, 2026-10-17: the new opening cinematic, music from 17 s (not on itch)
+- Nick: "add in the new cinematic for the games opening ... i want the music to kick in at 17 second mark".
+- `assets/video/opening-cinematic.mp4` is the 41 s cut from Nick's ChatGPT "opening cinematic" chat (the Rurik version: story card, the march home, the burning village, Rurik draws, the Blood Axe title card). Re-encoded from ChatGPT's 88 MB file to 50 MB (H.264 CRF 21, 1080p, faststart); its own audio track was dropped since the cinematic always plays muted. The original is on the PC at `assets/incoming/opening-cinematic-new.mp4`.
+- `THEME_AT` in `src/core/StartupIntro.js` is 17 (was 7): "The Battle" starts 17 s in, or at once on a skip.
+- Checked in headless Chromium (with a VP9 stand-in, since its build lacks H.264): the film plays all 41 s, the theme starts at 17.0 s, it crossfades into the title. Tests pass.
