@@ -49,6 +49,7 @@ export const STAGE_KEEP = {
   doneTitle: 'THE OATH IS KEPT',
   width: 17400,
   theme: 'keep',
+  music: 'showdown', // (core/Music.js: Nick's track for the last level)
   tall: true,
   castle: { x: 900, scale: 1.25, detail: 1 },
   companions: { leaveAfter: 'opening', meet: 16400, farewell: 'oathKept' },
@@ -372,7 +373,7 @@ export const STAGE_KEEP = {
         { type: 'beam', look: 'rock', when: 'phase:last', x: 16750, z: 450, w: 90, d: 90, period: 170, warn: 70, phase: 85 },
       ],
       boss: {
-        type: 'king', name: 'King Vaurath, the Ashen Crown', health: 4.2, damage: 1.1, size: 1.15,
+        type: 'king', name: 'King Vaurath, the Ashen Crown', music: 'showdown', health: 4.2, damage: 1.1, size: 1.15,
         entrance: { from: 160, to: 420, speed: 46, stepEvery: 36, awe: 50 },
         // I, THE DUEL: little gets through his guard until his composure breaks (three parries
         // of his blows, or guards broken); then he staggers wide open

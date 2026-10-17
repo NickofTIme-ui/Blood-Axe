@@ -654,7 +654,7 @@ export class ArenaScene extends Phaser.Scene {
       playSfx(this, 'kick', { volume: 1, pitch: -1900, minGapMs: 0 });
     });
     ev.on('bossSpawn', ({ boss }) => {
-      playMusic(this, 'boss'); // (until the boss track is added, the battle music plays on)
+      playMusic(this, this.stage.section?.boss?.music ?? 'boss'); // (a boss's own `music`: King Vaurath keeps the finale's track)
       this.callout(boss.stats.name.toUpperCase(), '#ff2a1a', 26);
       this.fx.shake(6, 20);
       playSfx(this, 'kick', { volume: 1, pitch: -1200, minGapMs: 0 });
@@ -694,6 +694,7 @@ export class ArenaScene extends Phaser.Scene {
       if (fighter === this.player) this.callout(kind === 'fire' ? 'BURNED!' : kind === 'beam' ? 'CRUSHED!' : kind === 'arrow' ? 'PIERCED!' : 'SLASHED!', '#ff9a30', 20);
     });
     ev.on('stageWon', ({ stats }) => {
+      playCue(this, 'clear'); // (the level's beaten: the stage-clear tune, once, in place of its track)
       if (this.stageData.exit) { this.campaignLevelDone(stats, hud); return; }
       // a long slow moment of victory: he falls at a crawl, the screen shudders, the
       // word hangs there, and only then the tally comes up

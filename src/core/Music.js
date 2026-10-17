@@ -13,13 +13,15 @@ export const MUSIC = {
   wilderness: 'assets/audio/wilderness.mp3',        // Gallows Wood (a stage's `music` picks its track)
   caves: 'assets/audio/caves.mp3',                  // the Hollow Mountain ("Fiends Path")
   cliffs: 'assets/audio/cliffs.mp3',                // the Shattered Ascent, the cliff roads ("Turtle Village II")
+  showdown: 'assets/audio/showdown.mp3',            // the Black Keep and King Vaurath, the finale ("12 Showdown", Nick 2026-10-17)
+  clear: 'assets/audio/stage-clear.mp3',            // a level beaten, played once ("06 Stage Clear", Nick 2026-10-17)
   sentence: 'assets/audio/sentence.mp3',            // a beaten boss's execution, played once ("Black Cell": stage/Sentence.js)
 };
 
 // Per-track level, so every track sits as loud as the battle track (measured RMS:
-// battle -18.5 dB, wilderness -11.0 dB, caves -11.6 dB, cliffs -13.1 dB; title is
-// 5.3 dB hotter than battle)
-const GAIN = { wilderness: 0.42, caves: 0.45, cliffs: 0.54, title: 0.55, sentence: 0.85 }; // (sentence: -15.7 dB, left a touch hot)
+// battle -18.5 dB, wilderness -11.0 dB, caves -11.6 dB, cliffs -13.1 dB, showdown and clear -11.7 dB;
+// title is 5.3 dB hotter than battle)
+const GAIN = { wilderness: 0.42, caves: 0.45, cliffs: 0.54, showdown: 0.46, clear: 0.6, title: 0.55, sentence: 0.85 }; // (sentence: -15.7 dB, left a touch hot)
 
 let current = null; // { key, sound }
 let early = null;   // the title theme the opening cinematic started, before Phaser exists

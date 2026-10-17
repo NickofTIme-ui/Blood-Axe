@@ -107,7 +107,7 @@ export const LEVEL_ART = {
     ],
     ground: true,
     tiles: {
-      causeway: { height: 230, key: 'magenta' }, battlements: { height: 200, key: 'magenta' },
+      causeway: { height: 330, key: 'magenta' }, battlements: { height: 280, key: 'magenta' },
       hall: { height: 760 }, cells: { height: 760 }, forge: { height: 760 }, root: { height: 760 }, spire: { height: 760 },
     },
     props: { pin: { file: 'prop_pin.png', pair: true }, conduit: { file: 'prop_conduit.png', pair: true }, spire: { file: 'prop_spire.png', pair: true } },

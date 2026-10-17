@@ -3626,6 +3626,22 @@ test('keep: every hero walks the Black Keep (no upgrades), without a fall, frees
   }
 });
 
+test('keep: the finale has its own track (Nick\'s "12 Showdown"): the whole level, and the King keeps it', () => {
+  const src = readFileSync(new URL('../src/core/Music.js', import.meta.url), 'utf8');
+  assert(/showdown: 'assets\/audio\/showdown\.mp3'/.test(src), 'the track is listed');
+  assert(readFileSync(new URL('../assets/audio/showdown.mp3', import.meta.url)).length > 1e6, 'the file is there');
+  const king = STAGE_KEEP.sections.find((s) => s.id === 'throne').boss;
+  assert(STAGE_KEEP.music === 'showdown' && king.music === 'showdown', 'the level and the King');
+});
+
+test('beating any level plays the stage-clear tune (Nick\'s "06 Stage Clear")', () => {
+  const music = readFileSync(new URL('../src/core/Music.js', import.meta.url), 'utf8');
+  assert(/clear: 'assets\/audio\/stage-clear\.mp3'/.test(music), 'the tune is listed');
+  assert(readFileSync(new URL('../assets/audio/stage-clear.mp3', import.meta.url)).length > 10000, 'the file is there');
+  const arena = readFileSync(new URL('../src/scenes/ArenaScene.js', import.meta.url), 'utf8');
+  assert(/ev\.on\('stageWon', \(\{ stats \}\) => \{\s*playCue\(this, 'clear'\)/.test(arena), 'played first thing when a level is won, campaign or not');
+});
+
 test('keep: the King duels: three parries or blocks break his composure and open him; until then his guard turns most of a blow; a blow into his guard is answered', () => {
   const { world, p, st, run } = keepSetup(KEEP_SEC('throne'), { x: 16400, z: 420 });
   st.fightOn = true; st.waveIndex = 99;
