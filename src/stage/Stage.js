@@ -168,7 +168,9 @@ export class Stage {
         const def = PROPS[p.kind];
         // (y: the ground it stands on — a ledge's top on a stage with terrain)
         const y = this.terrain ? Math.max(0, this.terrain.groundAt(p.x, p.z)) : 0;
-        this.props.push({ id: id++, section: si, ...p, ...def, y, hp: def.hp, broken: false, hitBy: new Set() });
+        // (size: this one drawn and hit bigger or smaller than its kind's default)
+        const sz = p.size ?? 1;
+        this.props.push({ id: id++, section: si, ...p, ...def, w: def.w * sz, h: def.h * sz, y, hp: def.hp, broken: false, hitBy: new Set() });
         if (p.secret) this.secretsTotal++;
       }
       for (const h of sec.hazards ?? []) this.hazards.push({ id: id++, section: si, ...h, t: h.phase ?? 0, cool: new Map() });
