@@ -956,3 +956,9 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - **Art**: 13 pictures made in ChatGPT on Nick's PC (chat "Create Fortress Landing Tile"), prompts in `docs/keep-art-prompts.md`: `assets/env/keep/` sky, far (the Keep with the seated king), ground, `tile_causeway/hall/cells/forge/root/spire/battlements` (a wall per part of the Keep: `LEVEL_ART.keep.tiles`, `PaintedLevel.tile`), `prop_pin/conduit/spire` (whole + broken, trimmed to their content). Raw downloads are in the PC's `assets/incoming/keep_*.png` (untracked there). Still code: ledge surfaces, the throne room's walls and the colossus, the forge's buckets and mill stone.
 - **Music**: `assets/audio/showdown.mp3` (`MUSIC.showdown`, gain 0.46) is the Black Keep's track (`STAGE_KEEP.music`) and King Vaurath keeps it (`boss.music`, read by ArenaScene's bossSpawn). `assets/audio/stage-clear.mp3` (`MUSIC.clear`) plays once on every `stageWon`.
 - Checked: tests pass; headless shots of the causeway, muster hall, cells, crucible, spire, crown walk and throne with the painted art. Not played by a person.
+
+## itch upload 19836140 (2026-10-17) = main at 9b7d110
+- Live on https://knickoftime.itch.io/blood-axe-oath-of-vengeance and embedded. 382 MB zip (616 files), 41 parts, same chunked Chrome upload; SHA-256 checked in the page; waited for itch to unpack (checked with cache-busted URLs only) before loading any file; all 616 files load.
+- Adds the Black Keep (level 6): its painted art (`assets/env/keep/`), `showdown.mp3` and the stage-clear tune.
+- Checked with ?mute=1: the game boots into the opening cinematic with no console errors. The Chrome tab closed before I could watch it reach the title.
+- Online play: both players need this build (refresh the page).
