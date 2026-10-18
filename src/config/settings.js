@@ -72,6 +72,12 @@ export const SETTINGS = {
       { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' },
     ],
     broker: null,
+    // A dependable relay (TURN over TCP/TLS 443 too, which home routers let through):
+    // the address that hands out its passes, e.g. Metered's
+    //   'https://<app>.metered.live/api/v1/turn/credentials?apiKey=<key>'
+    // It's asked when a room opens or is joined; its servers go beside the ones above.
+    // null = PeerJS's free relay only.
+    relayCredentials: null,
   },
 
   // Debug overlay (hitboxes, hurtboxes, state names, frame counts). Toggle in game with F2 or `.

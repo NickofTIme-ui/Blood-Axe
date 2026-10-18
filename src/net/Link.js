@@ -23,8 +23,21 @@ import { SETTINGS } from '../config/settings.js';
 // (STUN and TURN servers, and the matchmaker if not PeerJS's own: config/settings.js net)
 const peerOptions = () => ({
   ...(SETTINGS.net?.broker ?? {}),
-  config: { iceServers: SETTINGS.net?.iceServers ?? [] },
+  config: { iceServers: [...(SETTINGS.net?.iceServers ?? []), ...relayServers] },
 });
+
+// The dependable relay's servers (SETTINGS.net.relayCredentials), fetched once. If it
+// can't be reached the game carries on with the free relay only.
+let relayServers = [];
+let relayAsked = null;
+function loadRelay() {
+  const url = SETTINGS.net?.relayCredentials;
+  if (!url) return Promise.resolve();
+  relayAsked ??= fetch(url).then((r) => (r.ok ? r.json() : []))
+    .then((list) => { if (Array.isArray(list)) relayServers = list; })
+    .catch(() => { relayAsked = null; });
+  return Promise.race([relayAsked, new Promise((r) => setTimeout(r, 5000))]);
+}
 
 // How long each step may take before the player is told it failed.
 export const WAIT = {
@@ -133,7 +146,7 @@ export function hostRoom(code, onReady, onTrouble) {
   let peer = null;
   let cancelled = false;
   let registered = false;
-  const link = loadPeerJs().then(() => new Promise((resolve, reject) => {
+  const link = Promise.all([loadPeerJs(), loadRelay()]).then(() => new Promise((resolve, reject) => {
     if (cancelled) return reject(new Error('cancelled'));
     const fail = (msg) => { try { peer.destroy(); } catch { /* */ } reject(new Error(msg)); };
     peer = new window.Peer(prefix() + code, peerOptions());
@@ -170,7 +183,7 @@ export function hostRoom(code, onReady, onTrouble) {
 export function joinRoom(code) {
   let peer = null;
   let cancelled = false;
-  const link = loadPeerJs().then(() => new Promise((resolve, reject) => {
+  const link = Promise.all([loadPeerJs(), loadRelay()]).then(() => new Promise((resolve, reject) => {
     if (cancelled) return reject(new Error('cancelled'));
     let settled = false;
     let stop = () => {};
