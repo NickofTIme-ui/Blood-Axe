@@ -1,0 +1,23 @@
+import {createRequire}from'node:module';import fs from'node:fs';import http from'node:http';import path from'node:path';
+const root=process.cwd(),types={'.html':'text/html','.js':'text/javascript','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.ttf':'font/ttf','.wav':'audio/wav','.mp3':'audio/mpeg'};
+const server=http.createServer((req,res)=>{const name=decodeURIComponent(new URL(req.url,'http://localhost').pathname),file=path.resolve(root,'.'+(name==='/'?'/index.html':name));if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return;}res.setHeader('Content-Type',types[path.extname(file)]??'application/octet-stream');fs.createReadStream(file).pipe(res);});await new Promise(r=>server.listen(8142,'127.0.0.1',r));server.unref();
+const require=createRequire('C:/Users/nickr/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/');const {chromium}=require('playwright');const browser=await chromium.launch({channel:'chrome',headless:true,args:['--disable-dev-shm-usage']});const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];
+page.on('pageerror',e=>{errors.push(e.message);console.log('PAGE ERROR',e.message)});page.on('console',m=>{if(m.text().includes('failed'))console.log(m.text())});
+await page.addInitScript(()=>{const get=document.getElementById.bind(document);document.getElementById=id=>id==='studio-intro'?null:get(id);document.addEventListener('DOMContentLoaded',()=>document.querySelector('#studio-intro')?.remove());});
+await page.goto('http://127.0.0.1:8142/?mute=1',{waitUntil:'domcontentloaded'});console.log('Loading HD heroes');await page.waitForFunction(()=>window.game?.scene?.isActive('Title'),null,{timeout:180000});console.log('HD boot complete');
+const output='art/hero-refresh/hd-review/live';fs.mkdirSync(output,{recursive:true});
+for(const hero of ['warrior','mage','rogue']){
+ await page.evaluate(hero=>{const game=window.game,active=game.scene.isActive('Arena')?game.scene.getScene('Arena'):game.scene.getScene('Title');active.scene.start('Arena',{mode:'solo',characterId:hero,stage:'village',section:3,testPreview:true,testMoment:'checkpoint'});},hero);
+ await page.waitForFunction(hero=>{const a=window.game.scene.getScene('Arena');return a?.player?.stats.id===hero&&a?.views?.get(a.player.id);},hero,{timeout:15000});
+ await page.evaluate(()=>{const a=window.game.scene.getScene('Arena');for(const f of a.world.fighters)if(f.team==='enemy'){f.health=0;f.removeMe=true;}a.stage.millRescue.outcome='saved';a.stage.phase='exit';a.stage.hazardsOff=true;a.player.invincible=true;a.player.x=4500;a.player.z=430;});
+ await page.waitForTimeout(900);await page.screenshot({path:`${output}/${hero}-idle.png`});
+ await page.keyboard.down('d');await page.waitForTimeout(300);await page.screenshot({path:`${output}/${hero}-walk.png`});await page.keyboard.up('d');
+ await page.evaluate(()=>window.game.scene.getScene('Arena').controls.registerPress('attack'));await page.waitForTimeout(160);await page.screenshot({path:`${output}/${hero}-attack.png`});
+ const status=await page.evaluate(()=>{const a=window.game.scene.getScene('Arena'),v=a.views.get(a.player.id),s=v.sprite;return {hero:a.player.stats.id,view:v.constructor.name,texture:s.texture.key,source:s.texture.getSourceImage().src,scale:s.scaleX,frame:s.frame.name,res:a.registry.get('heroSprites')?.[a.player.stats.id]?.res??v.meta?.visualRes};});console.log(JSON.stringify(status));if(status.res!==2)throw Error(hero+' not using HD');
+}
+await page.evaluate(()=>{const a=window.game.scene.getScene('Arena');a.scene.start('Arena',{mode:'solo',characterId:'warrior',stage:'village',section:3,testPreview:true,testMoment:'checkpoint'});});
+await page.waitForFunction(()=>window.game.scene.getScene('Arena')?.player?.stats.id==='warrior');
+await page.waitForTimeout(1000);
+await page.evaluate(()=>{const a=window.game.scene.getScene('Arena');for(const f of a.world.fighters)if(f.team==='enemy'){f.health=0;f.removeMe=true;}a.stage.millRescue.outcome='saved';a.stage.phase='exit';a.stage.hazardsOff=true;a.player.x=4500;a.player.z=430;});
+for(let n=1;n<=3;n++){await page.evaluate(()=>window.game.scene.getScene('Arena').controls.registerPress('attack'));await page.waitForTimeout(150);await page.screenshot({path:`${output}/warrior-chain-${n}.png`});console.log('Chain '+n,await page.evaluate(()=>{const a=window.game.scene.getScene('Arena');return {move:a.player.move?.id,texture:a.views.get(a.player.id).sprite.texture.key};}));}
+console.log(JSON.stringify({errors}));await browser.close();server.close();if(errors.length)process.exitCode=1;

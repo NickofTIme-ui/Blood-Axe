@@ -55,10 +55,8 @@ export function chooseFatality({ cut = 'slash', damage = 10, overkill = 0, count
       add('headPop', cut === 'crush' ? 2 : 0);
       break;
     case 'chop':
-      add('halfV', brutal ? 5 : hard ? 3.5 : 1);
-      add('decap', high ? 3.5 : 2);
-      add('limbs', 2);
-      add('halfH', hard ? 1.5 : 0);
+      // An overhead blade travels down the body, never across its waist/neck.
+      add('halfV', 1);
       break;
     case 'cleave':
       add('halfH', brutal ? 8 : hard ? 4 : 1.5);
@@ -86,6 +84,18 @@ export function chooseFatality({ cut = 'slash', damage = 10, overkill = 0, count
       add('none', 3);
       add('limbs', 1);
   }
+  if(BLADES.includes(cut)) {
+    // A low blade contact should not routinely take the head. Keep the attack's
+    // character, but weight the outcome toward the anatomy actually struck.
+    if(rel<.3){
+      if(t.limbs)t.limbs*=4;
+      if(t.decap)t.decap*=.08;
+      if(t.halfH)t.halfH*=.6;
+    }else if(rel>.72){
+      if(t.decap)t.decap*=2;
+      if(t.limbs)t.limbs*=.45;
+    }else if(t.decap)t.decap*=.55;
+  }
   return pickWeighted(t, rng);
 }
 
@@ -93,10 +103,10 @@ export function chooseFatality({ cut = 'slash', damage = 10, overkill = 0, count
 // Returns 'armB' (off hand), 'armF' (weapon hand) or null.
 // (`maims`: a move that isn't a blade but can still take an arm — the Mage's heavier
 //  lightning — otherwise no hero without a blade could ever make a man flee)
-export function chooseMaim({ cut, damage, counter = false, maxHealth, maimed = {}, maims = false }, rng = Math.random) {
+export function chooseMaim({ cut, damage, counter = false, maxHealth, maimed = {}, maims = false, overhead = false }, rng = Math.random) {
   if (!BLADES.includes(cut) && !maims) return null;
   if (!(damage >= maxHealth * 0.18 || counter)) return null;
-  if (rng() > (counter ? 0.55 : 0.35)) return null;
+  if (rng() > (overhead ? 0.55 : counter ? 0.55 : 0.35)) return null;
   const options = ['armB', 'armF'].filter((l) => !maimed[l]);
   if (!options.length) return null;
   if (options.length === 1) return options[0];

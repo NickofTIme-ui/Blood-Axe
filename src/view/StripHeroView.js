@@ -74,6 +74,7 @@ export class StripHeroView {
     }
 
     switch (st) {
+      case 'idle': return f.stats.hover ? A.idle.frames[0] : loop(A.idle);
       case 'walk': {
         if (tick !== this.headTick) { this.headTick = tick; this.heading.update(f.vx, f.vz); }
         // sprinting (side on): its own strip when drawn, else the run played faster
@@ -185,7 +186,7 @@ export class StripHeroView {
     if (st === 'walk' && hover) lean += clamp01(Math.hypot(f.vx, f.vz) / f.stats.walkSpeed) * 4;
     if (st === 'walk' && f.sprinting && !this.A.sprint) lean += 5; // (no sprint art yet: lean into it)
 
-    if (st === 'idle' && this.A.idle.breathe) {
+    if (st === 'idle' && this.A.idle.breathe && !hover) {
       const b = Math.sin(tick * 0.06);
       sy *= 1 + b * 0.012; sx *= 1 - b * 0.005;
     }

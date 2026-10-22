@@ -34,7 +34,7 @@ export const LEVEL_ART = {
     ],
     wall: { height: 250 },
     ground: true,
-    pieces: ['well', 'barn', 'stables', 'longhall', 'gate', 'pikes'],
+    pieces: ['well', 'mill', 'barn', 'stables', 'longhall', 'gate', 'pikes'],
     props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' },
       archers: { file: 'prop_archers.png', pair: true } },
     surfaces: { roof_top: { fit: true }, roof_front: { px: 180 }, beam: { px: 40 }, board: { fit: true } },
@@ -182,6 +182,7 @@ export const SPRITE_SHEETS = {
   // villager sheet's 8 poses. He leads the miller's people out of the barn; until he's
   // painted he's the villager.
   irvolino: { file: 'assets/sprites/npc/irvolino.png', frames: 8, height: 235, grade: NPC_GRADE },
+  elsbeth: {file:'assets/npcs/mill-rescue/elsbeth-row.png',frames:8,height:235,grade:NPC_GRADE},
   // Vincent, the Gatewright (view/VincentView.js; made in ChatGPT from his photo:
   // docs/vincent-art-prompts.md): stand, grip the bars, crank, aim, loose, walk x3, wave
   vincent: { file: 'assets/sprites/npc/vincent.png', frames: 9, height: 205 },

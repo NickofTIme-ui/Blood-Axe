@@ -8,6 +8,7 @@ import { SETTINGS } from '../config/settings.js';
 
 export const MUSIC = {
   title: 'assets/audio/title-the-battle.mp3',       // "02 The Battle": opening cinematic (from 17 s), title + character select
+  sanctuary: 'assets/audio/safety-in-the-sanctuary.mp3', // Hakon approach through the end of the village
   battle: 'assets/audio/gameplay-battle-field.mp3', // arena
   boss: 'assets/audio/boss-theme.mp3',              // the Warlord (until the file is added, the battle track plays on)
   wilderness: 'assets/audio/wilderness.mp3',        // Gallows Wood (a stage's `music` picks its track)

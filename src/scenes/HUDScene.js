@@ -16,6 +16,7 @@ import { FONT, epicFill } from '../view/fonts.js';
 import { DeathScreen } from '../view/DeathScreen.js';
 import { StyleMeter } from '../view/StyleMeter.js';
 import { DialogueBox } from '../view/DialogueBox.js';
+import { PauseMenu } from '../view/PauseMenu.js';
 
 const SERIF = FONT.ui;
 
@@ -138,7 +139,7 @@ export class HUDScene extends Phaser.Scene {
     const line = story?.line;
     const hold = !!story?.holding;
     for (const b of this.bars2) b.setAlpha(Phaser.Math.Linear(b.alpha, hold ? 1 : 0, 0.12));
-    if (!line) D.setAlpha(Math.max(0, D.alpha - 0.08));
+    if (!line || !line.text.trim()) D.setAlpha(Math.max(0, D.alpha - 0.08));
     else {
       // (a fight on: the slim strip; held scenes and quiet ground: the full box)
       const fight = !hold && (this.arena.stage.livingFoes?.().length ?? 0) > 0;
@@ -259,30 +260,9 @@ export class HUDScene extends Phaser.Scene {
 
   // The pause menu. Built once, then just shown and hidden.
   showPause(on) {
-    if (!this.banner?.active) return; // not up (yet, or any more)
-    if (!this.pauseUi) {
-      if (!on) return;
-      const W = SETTINGS.width;
-      const H = SETTINGS.height;
-      const dim = this.add.rectangle(0, 0, W, H, 0x050000, 0.72).setOrigin(0).setInteractive(); // swallows clicks
-      const title = this.add.text(W / 2, H * 0.24, 'PAUSED', { fontFamily: FONT.display, fontSize: '60px' })
-        .setOrigin(0.5).setStroke('#0a0000', 8);
-      title.setLetterSpacing?.(6);
-      epicFill(title, ['#ff7a5a', '#d0101a', '#5a0006']);
-      const menu = this.add.text(W / 2, H * 0.42,
-        'P / ENTER  —  RESUME\nESC  —  CHARACTER SELECT',
-        { fontFamily: FONT.ui, fontSize: '18px', color: '#f0e0c0', align: 'center', lineSpacing: 10 })
-        .setOrigin(0.5).setStroke('#000000', 4);
-      const keys = this.add.text(W / 2, H * 0.70,
-        'J  light      K  heavy      O  kick      L  block (tap to parry)\n'
-        + 'SHIFT  roll (cancels a swing)      SPACE  jump      U  spell\n'
-        + 'Behind a fleeing enemy:  J  throat  ·  hold J  impale  ·  K  halve  ·  O  slash\n'
-        + 'M  music      G  gore',
-        { fontFamily: FONT.body, fontSize: '16px', color: '#cdb391', align: 'center', lineSpacing: 7 })
-        .setOrigin(0.5).setStroke('#000000', 3);
-      this.pauseUi = this.add.container(0, 0, [dim, title, menu, keys]).setDepth(2000);
-    }
-    this.pauseUi.setVisible(on);
+    if (!this.banner?.active) return;
+    if (!this.pauseMenu && on) this.pauseMenu = new PauseMenu(this, this.arena);
+    this.pauseMenu?.show(on);
   }
 
   clearDeath() {
@@ -468,3 +448,4 @@ export class HUDScene extends Phaser.Scene {
     this.death?.update();
   }
 }
+

@@ -514,6 +514,10 @@ export class SpriteEnemyView {
   // (effects/SpriteCut.js) keep bleeding from where the ragdoll's cut end is.
   //   which joints each half keeps: 0 head, 1 neck, 2 hips, 3 knees, 4 feet
   ragdollCut(type, upper, lower) {
+    if(upper?.flex||lower?.flex)return;
+    // Dynamic torso cuts keep the exact frame and matching cut faces. Replacing
+    // them with fixed bands from a different pose changes the anatomy at impact.
+    if (type === 'halfH' || this.cutLying) return;
     const plan = { decap: [null, [1, 4]], headPop: [null, [1, 4]], halfH: [[0, 2], [2, 4]], limbs: [[0, 3], [3, 4]] }[type];
     const ref = this.A?.lying?.frames[0];
     if (!plan || !ref) return;
@@ -551,6 +555,7 @@ export class SpriteEnemyView {
   // A blow is about to cut him up (effects/Gore.js cutSprite): if he's down as a ragdoll,
   // he's the painted lying pose again for the cut.
   prepareCut() {
+    this.cutLying = !!this.rag?.active;
     if (!this.rag?.active) return;
     const f = this.f;
     this.rag.hide();

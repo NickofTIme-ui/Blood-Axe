@@ -1,0 +1,15 @@
+# Rurik march — rough review only
+
+Generated with the built-in image-generation tool, using the existing Oathkeeper walk as the character reference. Not installed in the game.
+
+Review loops: Rurik-march-rough.gif (100 ms per drawing), Rurik-march-slow.gif (200 ms per drawing). Eight poses in reading order, four columns by two rows. Assembly only crops the cells and aligns the rows; no limb warping or interpolation.
+
+This is a motion draft, not finished production animation. The free-arm swing is still restrained and the alternating leg silhouettes need more work. Preserve the current game animation until this draft is approved and refined.
+
+## Initial prompt
+
+Create a rough but anatomically excellent hand-drawn 2D game WALK CYCLE sprite sheet for Rurik using the input as CHARACTER DESIGN reference only, NOT its repeated bad walk poses. Exactly 8 full-body figures, four columns and two rows, identical equally sized cells, reading order left to right top then bottom. Every figure facing RIGHT in consistent side/very slight three-quarter view, fixed camera and consistent pelvis center. Plain solid pale gray background, no ground shadows, no labels, no cell borders. Each figure fully inside own cell with generous margins including sword and cape. Rough animation pencil/ink drawing with simple flat charcoal armor, dark red cape and brown hair; prioritize volume and movement over armor ornament. Preserve muscular mature bearded red-brown long-haired knight, recognizable plate armor and flame-motif red cape, large broad gold-hilt longsword. Confident powerful unhurried march through danger, upright proud chest, steady head, relaxed confidence, substantial stride. Sword carried low in right hand, blade pointing diagonally forward-down, same blade length and stable grip throughout. Sword hand follows hip with very little movement. Free left arm swings opposite its leg. Subtle opposing pelvis and ribcage rotation, cape drags with slight delayed motion. Essential: draw TWO DIFFERENT steps, near and far leg alternate correctly, not repeating same leg. Near leg visibly brighter than far leg for checking. 1 near heel contacting forward, far toe back; 2 near foot flat weight down knee flexes, far foot lifts; 3 near support leg vertical, far knee passing forward; 4 near leg pushes behind, far leg extending forward heel ready; 5 far heel contacts forward and near toe behind; 6 far foot flat weight down, near foot lifting; 7 far support leg vertical, near knee passing forward; 8 far leg pushes behind, near leg extends forward ready to loop into 1. Subtle small down-up vertical movement only, no bouncing run, no high knee march, no crouching, no leg length changes, no duplicated contact poses. Deliver clean equally spaced 4x2 animation production sheet, landscape 3:2.
+
+## Correction
+
+Preserve top row and character design; change bottom-row legs to the opposite step, with the near leg traveling from rear toe-off through passing to forward heel contact. Keep the sword, camera, cell spacing and proportions consistent.

@@ -114,6 +114,8 @@ import { Sequence } from './Sequence.js';
 import { Sentence } from './Sentence.js';
 import { LOOT } from '../data/trophies.js';
 import { Controller } from '../core/Controller.js';
+import { VillageOpening } from './VillageOpening.js';
+import { MillRescue } from './MillRescue.js';
 
 const PAD = 30;           // keep everyone this far inside the section's ends
 const WAVE_GAP = 50;      // frames between one wave dying and the next arriving
@@ -199,6 +201,7 @@ export class Stage {
     this.sequence = data.sequence ? new Sequence(this, data.sequence, opts.flags ?? {}) : null;
     // every captain beaten kneels, hears his crimes and is executed (stage/Sentence.js)
     this.sentence = new Sentence(this);
+    if(data.id==='village')this.millRescue=new MillRescue(this);
     this.stats = { kills: 0, finishers: 0, secrets: 0, deaths: 0, frames: 0 };
     let id = 1;
     for (const [si, sec] of this.sections.entries()) {
@@ -249,6 +252,7 @@ export class Stage {
   start(players, { section = 0 } = {}) {
     this.players = Array.isArray(players) ? players : [players];
     const k = Math.max(0, Math.min(this.sections.length - 1, section | 0));
+    if(k<=3)this.millRescue?.prepare();
     if (k > 0) {
       this.cleared = k - 1;
       this.story?.skipTo(k);
@@ -260,6 +264,7 @@ export class Stage {
   // ------------------------------------------------------------ sections
 
   enterSection(i, teleport = false) {
+    this.opening?.cancel();
     const sec = this.sections[i];
     this.index = i;
     this.checkpoint = i;
@@ -268,6 +273,7 @@ export class Stage {
     this.phase = 'fight';
     this.bossSpawned = false;
     this.boss = null;
+    this.regularSpawned = false;
     this.fightOn = sec.fightAt == null && sec.fightAfter == null; // (a section with fightAt / fightAfter: its waves wait)
     this.lockBounds(sec.x0, sec.x1);
     if (teleport) {
@@ -285,6 +291,7 @@ export class Stage {
     if (this.waiting === i) this.waveIndex = 1;
     if (this.fightOn) this.wakeWaiting();
     this.world.events.emit('sectionStart', { index: i, section: sec });
+    if(i===0 && teleport && this.data.openingFormation) this.opening = new VillageOpening(this);
   }
 
   lockBounds(x0, x1) {
@@ -336,7 +343,7 @@ export class Stage {
 
   // Their fight has started: the men waiting at their posts come for the heroes.
   wakeWaiting() {
-    for (const f of this.world.fighters) if (f.team === 'enemy') f.lurking = null;
+    for (const f of this.world.fighters) if (f.team === 'enemy'&&f.lurking===this.index) f.lurking = null;
   }
 
   win() {
@@ -357,6 +364,7 @@ export class Stage {
     for (const p of this.players) this.restore(p, 1);
     const won = this.cleared === this.checkpoint; // died (a trap) after the fight here was already won
     this.story?.resetSection(this.checkpoint);
+    if(this.checkpoint===3)this.millRescue?.reset();
     for (const hz of this.hazards) if (hz.type === 'collapse' && hz.section <= this.checkpoint) hz.front = null; // (the rock starts again behind you)
     for (const hz of this.hazards) if (hz.type === 'bombard') hz.shells = []; // (nothing left in the air)
     for (const hz of this.hazards) if (hz.type === 'ballista') { hz.bolts = []; hz.aim = null; hz.next = null; hz.bossDone = false; } // (and the scorpion reloads)
@@ -697,6 +705,11 @@ export class Stage {
 
   update() {
     if (!this.player || this.phase === 'idle') return;
+    if(this.opening?.active) {
+      this.story?.update();
+      this.opening.update();
+      return;
+    }
     this.stats.frames++;
     const p = this.player;
     this.updateFalls();
@@ -705,10 +718,12 @@ export class Stage {
     if (!this.hazardsOff && !this.world.hold) this.updateHazards(); // (held still while a boss walks in)
     if (!this.world.hold) this.updateCarry();
     this.updateProps();
+    this.millRescue?.update();
     this.updatePickups();
     this.updateDowned();
     if (!this.world.hold) this.updateLatecomers(); // (standing still while a boss walks in is not being stuck)
     this.story?.update();
+    if(this.story?.holding && !this.sentence.running && !this.sequence?.running)return;
     // a scripted ending running: it has the stage until it's done
     if (this.sequence?.update()) return;
     // a beaten boss on his knees, hearing his sentence: the fight stands still
@@ -737,9 +752,22 @@ export class Stage {
         this.waveDelay = WAVE_GAP;
         return;
       }
+      if(sec.regular && !this.regularSpawned) {
+        this.regularSpawned=true;
+        const def=sec.regular;
+        const f=createEnemy(this.world,def.type,offscreenX(this.world,this.players,1),380,{entering:true});
+        f.stats={...f.stats,name:def.name,size:def.size??1,boss:false,noFinisher:true,maxHealth:Math.round(f.stats.maxHealth*(def.health??1))};
+        f.health=f.stats.maxHealth;
+        this.setOnGround(f);
+        if(def.escort?.length)this.spawnWave(def.escort);
+        this.world.events.emit('regularEncounter',{fighter:f,section:sec});
+        this.story?.cue(def.beat);
+        return;
+      }
       if (sec.boss && !this.bossSpawned) { this.spawnBoss(); return; }
       if (sec.needs && this.props.some((pr) => pr.tag === sec.needs && !pr.broken)) return; // (the catapults still stand)
       if (sec.frees && this.story && !this.story.isRescued(sec.frees)) return; // (he's still in his cage)
+      if(sec.id==='mill' && this.millRescue && !this.millRescue.resolved)return;
       this.clearSection();
     } else if (this.phase === 'clear') {
       const next = this.sections[this.index + 1];
@@ -895,6 +923,16 @@ export class Stage {
   // ------------------------------------------------------------ props & pickups
 
   updateProps() {
+    this.chestPrompt = null;
+    if (!this.world.hold && !this.story?.holding) {
+      for (const f of this.players ?? [this.player]) {
+        if (!f?.alive || !f.grounded || !['idle','walk'].includes(f.state)) continue;
+        const pr = this.props.filter(p=>p.kind==='chest' && !p.broken && !p.opened && !p.fly && Math.abs(p.x-f.x)<76 && Math.abs(p.z-f.z)<38 && Math.abs((p.y??0)-(f.h??0))<28).sort((a,b)=>Math.abs(a.x-f.x)-Math.abs(b.x-f.x))[0];
+        if (!pr) continue;
+        this.chestPrompt = pr;
+        if (f.controller.consume('padUp',6)) this.openChest(pr,f);
+      }
+    }
     for (const f of this.world.fighters) {
       // a swing's hitbox, or a blast of force (the Mage: f.propStrike, one tick)
       const ps = f.propStrike;
@@ -902,7 +940,7 @@ export class Stage {
       if (f.team !== 'player' || !info) continue;
       const hb = f.activeAttack ? toWorldBox(f, info.hitbox ?? info.move.hitbox) : ps.box;
       for (const pr of this.props) {
-        if (pr.broken || pr.hitBy.has(info)) continue;
+        if (pr.broken || pr.opened || pr.hitBy.has(info)) continue;
         const box = { left: pr.x - pr.w / 2, right: pr.x + pr.w / 2, bottom: pr.y, top: pr.y + pr.h, z: pr.z };
         if (!overlaps(hb, box, f.activeAttack ? (pr.kind === 'wall' ? 60 : 30) : ps.depth)) continue;
         pr.hitBy.add(info);
@@ -955,6 +993,7 @@ export class Stage {
   }
 
   breakProp(pr, dir, blast = false) {
+    if (pr.broken || pr.opened) return;
     pr.broken = true;
     pr.fly = null;
     this.world.events.emit('propBreak', { prop: pr, dir, blast });
@@ -967,6 +1006,14 @@ export class Stage {
       const z = pr.kind === 'wall' ? pr.z + 6 : Math.min(this.world.bounds.maxZ - 5, pr.z + 14);
       this.pickups.push({ kind: pr.drop, x: pr.x, z, y: pr.y ?? 0, age: 0, taken: false, secret: !!pr.secret });
     }
+  }
+
+  openChest(pr, by) {
+    if (pr.kind !== 'chest' || pr.broken || pr.opened) return;
+    pr.opened = true;
+    pr.fly = null;
+    this.world.events.emit('chestOpen', {prop:pr,by});
+    if (pr.drop) this.pickups.push({kind:pr.drop,x:pr.x,z:Math.min(this.world.bounds.maxZ-5,pr.z+14),y:pr.y??0,age:0,taken:false,secret:!!pr.secret});
   }
 
   // BOSS LOOT: a boss always drops a trophy; an elite (a big man) sometimes does. Which
@@ -1081,6 +1128,7 @@ export class Stage {
     if (hz.when.startsWith('freed:')) return !!this.story?.rescued.has(hz.when.slice(6));
     const b = this.boss;
     if (!b || !b.alive || this.index < hz.section || this.index > hz.last) return false;
+    if (hz.when === 'boss') return true;
     if (hz.when === 'rage') return !!b.raged;
     return hz.when.startsWith('phase:') && this.bossInPhase(hz.when.slice(6));
   }
@@ -1256,6 +1304,12 @@ export class Stage {
     const B = BOMBARD;
     const held = this.story?.holding;
     const shots = this.bombardShots(hz);
+    // Boss-support archers launch their first warned volley at fight start,
+    // rather than waiting for the next arbitrary point in the section's clock.
+    if (hz.when === 'boss' && shots && !held && !hz.bombardStarted) {
+      hz.bombardStarted = true;
+      hz.t = 0;
+    }
     if (!shots) { hz.shells = hz.shells.filter((s) => s.land > hz.t); }
     const P = hz.period ?? B.period;
     const arrows = hz.look === 'arrows';
@@ -1431,7 +1485,9 @@ export class Stage {
 
   // A hazard hurting anyone (players and enemies alike).
   hurt(hz, f, dmg, dir, kind) {
-    if (!f.alive || f.invincible || f.entering || f.state === 'executed' || f.state === 'execute' || hz.cool.has(f.id)) return;
+    const crushed=kind==='trample'&&f.team!=='player'&&!f.stats.boss;
+    if (!f.alive || (f.invincible&&!crushed) || f.entering || f.cinematic || f.state === 'executed' || f.state === 'execute' || hz.cool.has(f.id)) return;
+    if(crushed)dmg=f.health+f.stats.maxHealth;
     if ((f.spare || f.immortal) && f.health - dmg < 1) dmg = Math.max(0, f.health - 1); // (beaten to his knees, never killed: Sequence.js; immortal: config/testMode.js)
     if (kind === 'fire' && f.state === 'knockdown' && f.lyingSince === null) return; // already thrown clear
     hz.cool.set(f.id, kind === 'fire' ? FIRE.tick * 3 : 50);
@@ -1440,7 +1496,8 @@ export class Stage {
     const lethal = f.health <= 0;
     // an enemy the fire kills doesn't get thrown clear: he burns where he stands, then
     // drops (the 'burning' state; effects/Burn.js chars the body)
-    if (lethal && kind === 'fire' && f.team === 'enemy') f.fsm.change('burning', { dir });
+    if(crushed&&lethal)f.fsm.change('dead');
+    else if (lethal && kind === 'fire' && f.team === 'enemy') f.fsm.change('burning', { dir });
     else if (kind === 'arrow' && !lethal && f.state !== 'knockdown' && f.h - (f.floor ?? 0) < 2) f.fsm.change('hitstun', { frames: ARROW.stun }); // (feathered: he staggers, keeps his feet)
     else {
       f.fsm.change('knockdown', kind === 'fire' || kind === 'beam' || kind === 'arrow'
@@ -1449,11 +1506,11 @@ export class Stage {
     }
     const e = {
       attacker: null, defender: f, dir, kind: 'hazard', hazard: kind,
-      move: { cut: kind === 'fire' ? 'fire' : kind === 'bolt' || kind === 'arrow' ? 'pierce' : kind === 'crate' || kind === 'beam' || kind === 'trample' ? 'blunt' : 'slash', damage: dmg, hitstop: 6 },
-      x: f.x, z: f.z, h: f.h + f.stats.body.h * 0.5, damage: dmg, fatality: 'none',
+      move: { cut: crushed ? 'crush' : kind === 'fire' ? 'fire' : kind === 'bolt' || kind === 'arrow' ? 'pierce' : kind === 'crate' || kind === 'beam' || kind === 'trample' ? 'blunt' : 'slash', damage: dmg, hitstop: 6, fx: crushed?'trample':undefined },
+      x: f.x, z: f.z, h: f.h + f.stats.body.h * 0.5, damage: dmg, fatality: crushed?'explode':'none',
     };
     this.world.events.emit('hazardHit', { hazard: hz, fighter: f, kind });
     this.world.events.emit('hit', e);
-    if (lethal) { f.fatality = 'none'; this.world.events.emit('kill', e); }
+    if (lethal) { f.fatality = e.fatality; this.world.events.emit('kill', e); }
   }
 }

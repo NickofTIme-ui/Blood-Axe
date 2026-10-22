@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import {updateStableMaster} from '../src/stage/StableMaster.js';
+import {STAGE_VILLAGE} from '../src/data/stageVillage.js';
+import {World} from '../src/core/World.js';
+import {Stage} from '../src/stage/Stage.js';
+import {createEnemy} from '../src/entities/Enemy.js';
+const npc={...STAGE_VILLAGE.npcs.find(n=>n.stableMaster),state:'waiting',home:{x:6130,z:350},t:0,h:0};
+const step=x=>{npc.t++;updateStableMaster(npc,[{x}],null);};
+for(let i=0;i<100;i++)step(5800);assert.equal(npc.state,'waiting');
+step(5860);assert.equal(npc.state,'alarm');
+let jumped=false;
+for(let i=0;i<210;i++){step(6100);jumped||=npc.h>10;}
+assert(jumped);assert.equal(npc.state,'fleeing');
+for(let i=0;i<260;i++)step(6100);assert.equal(npc.state,'gone');
+step(5860);assert.equal(npc.state,'gone','Warning never repeats');
+assert(!STAGE_VILLAGE.story.some(b=>b.id==='stablesCry'||b.id==='horses'),'Stable warning must not use a dialogue box');
+const w=new World(),enemy=createEnemy(w,'grunt',6000,430);enemy.entering=false;enemy.invincible=true;enemy.health=10000;
+const kills=[];w.events.on('kill',e=>kills.push(e));
+const stage={world:w};const hz={cool:new Map()};
+Stage.prototype.hurt.call(stage,hz,enemy,26,-1,'trample');
+assert.equal(enemy.health,0,'Trample kills regardless of remaining health');
+assert.equal(enemy.state,'dead','No knockdown/get-up after a lethal trample');
+assert.equal(kills.length,1);assert.equal(kills[0].fatality,'explode');assert.equal(kills[0].move.fx,'trample');
+Stage.prototype.hurt.call(stage,hz,enemy,26,-1,'trample');assert.equal(kills.length,1,'One kill per victim');
+console.log('Stable worker: proximity warning, jumps, flees once; horses crush enemies directly into gibs.');

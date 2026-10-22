@@ -245,7 +245,7 @@ export class CombatSystem {
       // a kill gives back health (the Warden's Chain trophy)
       if (attacker?.stats.killHeal && attacker.alive) attacker.health = Math.min(attacker.stats.maxHealth, attacker.health + attacker.stats.killHeal);
       // How do they come apart? (only rigged enemies can be dismembered)
-      if (def.stats.art && superCrit) event.fatality = 'explode'; // heavy carnage
+      if (def.stats.art && superCrit && move.cut !== 'chop') event.fatality = 'explode'; // overhead blades keep their downward cut
       else if (def.stats.art && move.fatality && !(def.stats.boss && move.cut === 'fire')) event.fatality = move.fatality; // (a mine says how; Rurik's fire never blows a boss apart: his death is his own)
       else if (def.stats.art) {
         event.fatality = chooseFatality({
@@ -257,6 +257,7 @@ export class CombatSystem {
         }, this.world.rngFor(def.id, 21));
       }
       def.fatality = event.fatality ?? 'none';
+      if(event.fatality==='halfV')event.attachedSplit=this.world.rngFor(def.id,23)()<.4;
       // a runner skewered from behind crumples where he stood instead of flying off
       if (move.impale && def.controller?.scared) def.fsm.change('knockdown', { vx: dir * 50, vh: 140 });
       else def.fsm.change('knockdown', { vx: dir * Math.max(kb.x, 220), vh: Math.max(kb.y, 380) });
@@ -270,7 +271,7 @@ export class CombatSystem {
     // he's fought to the end)
     if (def.stats.art && !def.stats.boss) {
       const limb = chooseMaim({
-        cut: move.cut, damage, counter, maxHealth: def.stats.maxHealth, maimed: def.maimed, maims: !!move.maims,
+        cut: move.cut, damage, counter, maxHealth: def.stats.maxHealth, maimed: def.maimed, maims: !!move.maims, overhead: !!move.overhead,
       }, this.world.rngFor(def.id, 22));
       if (limb) {
         def.maimed = { ...def.maimed, [limb]: true };

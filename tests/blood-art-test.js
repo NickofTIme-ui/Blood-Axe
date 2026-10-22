@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { Gore } from '../src/effects/Gore.js';
+const made=[];
+const scene={add:{image(...args){const img={args};for(const n of ['setTint','setScale','setDisplaySize','setRotation'])img[n]=(...v)=>{img[n+'Args']=v;return img;};made.push(img);return img;}}};
+const gore={scene,drops:[],bloodArt:true};
+Gore.prototype.spawn.call(gore,{x:0,z:400,h:60,vx:600,vz:0,vh:40,tint:0x880000,scale:1});
+assert.equal(made[0].args[2],'blood-ink-sheet');assert.equal(made[0].args[3],'ink-1');
+assert.ok(made[0].setDisplaySizeArgs[0]>=30,'Fast blood must read as a long painted jet');
+assert.ok(made[0].setDisplaySizeArgs[1]>=14.4&&made[0].setDisplaySizeArgs[1]<=25.2,'Fast painted jets are 80% thicker');
+Gore.prototype.spawn.call(gore,{x:0,z:400,h:60,vx:0,vz:0,vh:40,tint:0xffffff,scale:1,decal:false});
+assert.equal(made[1].args[2],'dot','Sparks must remain sparks');
+Gore.prototype.spawn.call(gore,{x:0,z:400,h:60,vx:40,vz:0,vh:40,tint:0x880000,scale:1});
+assert.equal(made[2].args[3],'ink-0');
+assert.ok(made[2].setDisplaySizeArgs[1]>=8&&made[2].setDisplaySizeArgs[1]<=14,'Ordinary droplets keep their existing size');
+assert.ok(Object.getOwnPropertyDescriptor(Gore.prototype,'amount').get.call({level:2})>1.5);
+console.log('Blood art checks passed: painted jets, increased full gore, unaffected sparks.');

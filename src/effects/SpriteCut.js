@@ -15,22 +15,16 @@
 // the arena walls, and work as anchors for gut ropes (local()/worldPoint()).
 // Stepped once per game tick (update()), so slow motion slows them too.
 
-import { landThud } from '../core/Sfx.js';
+import { landThud,playSfx } from '../core/Sfx.js';
 import { dyeImage } from '../view/dye.js';
+import { measure } from '../view/frameMeasure.js';
+import { RAGDOLL_GEAR, EXECUTION_GEAR } from '../data/ragdollGear.js';
+import { cutPlane, spritePoint, cutDistance } from './CutGeometry.js';
+import { FlexibleCut } from '../view/FlexibleCut.js';
+import { FleshChain } from './FleshChain.js';
+import { SplitSeam } from './SplitSeam.js';
 
 const GRAVITY = 1700;
-
-const CUTS = {
-  legs: 0.3,   // height of the cut, as a share of the body
-  waist: 0.5,
-  waistPerch: 0.5,
-  neck: 0.83,
-  diagDown: 0.6, // the chain's falling diagonal (chest height at his middle)
-  diagUp: 0.56,  // ...and its rising answer
-};
-// slope of the cut line, per px TOWARD the way the blade is travelling (the attacker's
-// facing): negative = the line climbs that way (a falling cut starts high on the far side)
-const SLOPE = { diagDown: -0.5, diagUp: 0.5 };
 
 // the head, crown to the cut under the jaw, as a share of his standing height
 const HEAD = 0.19;
@@ -42,10 +36,16 @@ export class SpriteCuts {
   constructor(scene) {
     this.scene = scene;
     this.pieces = [];
+    this.seams = [];
+  }
+  attachSplit(a,b){
+    if(!a?.flex||!b?.flex)return false;
+    this.seams.push({a,b,link:new SplitSeam(a.flex.chain,b.flex.chain),g:this.scene.add.graphics().setDepth(a.z+.25)});
+    return true;
   }
 
   // Returns { upper, lower } pieces; hides nothing itself (the view hides its sprite).
-  split(view, cut, dir) {
+  split(view, cut, dir, options = {}) {
     const f = view.f;
     const s = view.sprite;
     const sh = view.sheet;
@@ -53,8 +53,7 @@ export class SpriteCuts {
     const k = Math.abs(s.scaleY) || 1 / res; // (the size he's drawn at, depth scaling included)
     const face = Math.sign(s.scaleX) || f.facing;
     const bodyH = f.stats.body.h;
-    const cutH = bodyH * (CUTS[cut] ?? 0.5);
-    let yCut = Math.round(sh.ay - cutH * res);                  // cut line in frame px
+    let yCut = Math.round(sh.ay - bodyH * 0.5 * res);
     // on his knees in painted kneeling art (view/SpriteEnemyView.js): he's drawn about two
     // thirds his height, so the standing neck line would pass over his head; the neck is
     // found from the top of his head in the picture itself
@@ -62,8 +61,15 @@ export class SpriteCuts {
     const head = painted ? this.headTop(s.frame) : null;
     if (head != null && cut === 'neck') yCut = Math.round(head + bodyH * HEAD * res);
     else if (head != null && cut === 'waist') yCut = Math.round((head + sh.ay) / 2);
-    const top = head ?? Math.max(0, Math.round(sh.ay - bodyH * 1.12 * res));
-    const yc = (top + yCut) / 2;                                 // centre of the top piece
+    const m = measure(this.scene, s.texture.key, s.frame.name);
+    const lying = !!view.cutLying;
+    const plane = cutPlane({ cut, bounds: m.rows ? m : null, ax: sh.ax, ay: sh.ay, bodyHeight: bodyH * res,
+      lying: lying && !!m.rows, headRight: !!RAGDOLL_GEAR[sh.key.replace(/^enemy-/, '')]?.headRight,
+      dir, face, variation: options.variation ?? Math.random(), tilt: options.tilt ?? Math.random(),impact:options.impact,impactSide:options.impactSide });
+    // Neck placement on a kneeling pose uses its actual crown as before.
+    if (head != null && cut === 'neck') plane.cy = yCut;
+    yCut = Math.round(plane.cy);
+    const yc = plane.upper.y;
     const key = s.texture.key;
     const frame = s.frame.name;
     // on his knees without painted kneeling art (view/SpriteEnemyView.js): the standing
@@ -77,44 +83,67 @@ export class SpriteCuts {
     // The two pieces are his own picture, divided along the cut line and nothing else:
     // same pixels, same proportions, nothing added outside his outline. The wound is
     // painted INTO the few rows either side of the line (bake()).
-    const slope = (SLOPE[cut] ?? 0) * dir * face; // the line in the drawn (unmirrored) frame
-    const baked = this.bake(s.frame, sh, yCut, slope, cut, f.stats.body.w * res);
-    const mk = (texKey, cropY, cropH, oy) => {
+    const slope = -plane.nx; // (the standing plane's slope; fallback only)
+    const equipment = kn ? EXECUTION_GEAR[sh.key.replace(/^enemy-/, '')]?.[view.lastRef] : null;
+    const baked = this.bake(s.frame, sh, yCut, slope, cut, f.stats.body.w * res, plane, equipment);
+    if (baked && equipment) this.dropExecutionGear(view, equipment, dir);
+    const mk = (texKey, cropY, cropH, pivot) => {
       const img = texKey ? this.scene.add.image(f.x, feetY, texKey) : this.scene.add.image(f.x, feetY, key, frame).setCrop(0, cropY, sh.fw, cropH);
       if (texKey && kn && cropY > 0) img.setCrop(0, 0, sh.fw, kneeRow); // (the shins stay under the floor)
       dyeImage(this.scene, img, f.dye); // (his clothes keep their colour: view/dye.js)
-      return img.setOrigin(sh.ax / sh.fw, oy / sh.fh).setScale(k * face, k).setDepth(f.z);
+      const at = spritePoint(s, sh, pivot);
+      return img.setOrigin(pivot.x / sh.fw, pivot.y / sh.fh).setScale(s.scaleX, s.scaleY).setPosition(at.x, at.y).setRotation(s.rotation).setDepth(f.z);
     };
     const bandX = baked?.midX ?? sh.ax;
+    const upperPivot = plane.upper;
+    const lowerPivot = plane.lower ?? (plane.lying ? { x: (plane.cx + (plane.nx > 0 ? m.x1 : m.x0)) / 2, y: plane.cy } : { x: sh.ax, y: sh.ay });
+    const upAt = spritePoint(s, sh, upperPivot), lowAt = spritePoint(s, sh, lowerPivot);
+    const wound = plane.lying || plane.longitudinal ? { x: plane.cx, y: plane.cy } : { x: bandX, y: plane.cy + slope * (bandX - plane.cx) };
+    const offset = pivot => ({ x: (wound.x - pivot.x) * s.scaleX, y: (wound.y - pivot.y) * s.scaleY });
 
     const upper = this.add({
-      img: mk(baked?.upper, 0, yCut, yc), tex: baked?.upper, x: f.x, z: f.z, h: f.h + (sh.ay - yc) * k - sink, mode: perch ? 'perch' : 'fly',
+      img: mk(baked?.upper, 0, yCut, upperPivot), tex: baked?.upper, x: upAt.x, z: f.z, h: f.z - upAt.y, mode: perch ? 'perch' : 'fly',
       vx: 0, vh: 0, rot: s.rotation, spin: 0, face, k, dir,
       edge: (yCut - yc) * k,   // cut face: this far below the piece's centre
       rest: (yCut - yc) * k,   // lands standing on its cut
       bleed: 170, bleedDir: 1, age: 0,
-      bandOff: { x: (bandX - sh.ax) * k * face, y: (yCut - yc) * k },
+      bandOff: offset(upperPivot),
     });
     const lower = this.add({
-      img: mk(baked?.lower, yCut, Math.max(1, kneeRow - yCut), sh.ay), tex: baked?.lower, x: f.x, z: f.z, h: f.h - sink, mode: 'stand',
+      img: mk(baked?.lower, yCut, Math.max(1, kneeRow - yCut), lowerPivot), tex: baked?.lower, x: lowAt.x, z: f.z, h: f.z - lowAt.y, mode: plane.lying ? 'fly' : 'stand',
       vx: 0, vh: 0, rot: s.rotation, spin: 0, face, k, dir,
       edge: -(sh.ay - yCut) * k, // cut face: this far above the feet
       // legs: the sweep knocks them straight over (the torso drops where they stood);
       // a perched top half keeps the legs standing until it's kicked off them
       stand: perch ? Infinity : cut === 'legs' ? 2 : 14, fallDir: dir, bleed: 220, bleedDir: -1, age: 0,
       toppleSpeed: cut === 'legs' ? 0.03 : 0.006,
-      bandOff: { x: (bandX - sh.ax) * k * face, y: -(sh.ay - yCut) * k },
+      bandOff: offset(lowerPivot),
     });
     upper.other = lower;
     lower.other = upper;
+    // Spray out of the actual cut face, rotating with each falling half.
+    const normalLength=Math.hypot(plane.nx*s.scaleX,plane.ny*s.scaleY)||1;
+    for(const piece of [upper,lower]) {
+      piece.bloodNormal={x:plane.nx*s.scaleX/normalLength,y:plane.ny*s.scaleY/normalLength};
+      piece.pressureCut=['vertical','waist','waistPerch','diagDown','diagUp'].includes(cut);
+    }
+    if(plane.longitudinal) {
+      for(const piece of [upper,lower])piece.edge=piece.rest=Math.max(5,bodyH*.22);
+    }
+    if (plane.lying) {
+      upper.edge = upper.rest = Math.max(4, (m.y1 - m.y0) * k * 0.35);
+      lower.edge = lower.rest = upper.rest;
+      lower.vx = -dir * 55; lower.vh = 70; lower.thrown = true;
+    }
     // the loose bits drop off where they hung, turning over as they go
     // (not on his knees: those pictures are cropped into the floor)
     if (!kn) {
       [upper, lower].forEach((half, i) => {
         half.loose = (baked?.loose?.[i] ?? []).map((c) => {
-          const x = f.x + (c.cx - sh.ax) * k * face;
-          const h = f.h + (sh.ay - c.cy) * k;
-          const img = this.scene.add.image(x, feetY + (c.cy - sh.ay) * k, c.key)
+          const at = spritePoint(s, sh, { x: c.cx, y: c.cy });
+          const x = at.x;
+          const h = f.z - at.y;
+          const img = this.scene.add.image(x, at.y, c.key)
             .setOrigin(c.ox / c.w, c.oy / c.h).setScale(k * face, k).setRotation(s.rotation).setDepth(f.z);
           const thick = Math.min(c.w, c.h) * k;
           const p = this.add({
@@ -132,6 +161,12 @@ export class SpriteCuts {
       // beheaded on his knees: the body stays kneeling a long moment, the neck pumping,
       // then slumps forward onto its own front (not over: it's kneeling)
       lower.stand = 46; lower.toppleSpeed = 0.003; lower.fallDir = face; lower.toppleTo = 0.42; lower.bleed = 320;
+    }
+    if(['waist','vertical','diagDown','diagUp','legs'].includes(cut)&&!kn){
+      for(const piece of [upper,lower]){
+        piece.flex=FlexibleCut.create(this.scene,piece,s,sh,m,plane.lying);
+        if(piece.flex){piece.life=1440;piece.worldPoint=(x,y)=>piece.flex.worldPoint(x,y);}
+      }
     }
     return { upper, lower };
   }
@@ -164,7 +199,7 @@ export class SpriteCuts {
   // pale fleck of spine toward his back, and a blood stain soaking a little further in.
   // Nothing is drawn where he wasn't: both pieces keep his exact outline and size.
   // Returns { upper, lower, midX } (texture keys; midX = middle of the cut, frame px).
-  bake(frame, sh, yCut, slope, cut, bodyW) {
+  bake(frame, sh, yCut, slope, cut, bodyW, plane = null, equipment = null) {
     try {
       const W = frame.cutWidth;
       const H = frame.cutHeight;
@@ -172,6 +207,11 @@ export class SpriteCuts {
       const srcC = mkc();
       const sctx = srcC.getContext('2d', { willReadFrequently: true });
       sctx.drawImage(frame.source.image, frame.cutX, frame.cutY, W, H, 0, 0, W, H);
+      if (equipment) {
+        sctx.save();sctx.globalCompositeOperation = 'destination-out';
+        for (const poly of equipment) { sctx.beginPath();poly.forEach(([x,y],i)=>i?sctx.lineTo(x,y):sctx.moveTo(x,y));sctx.closePath();sctx.fill(); }
+        sctx.restore();
+      }
       const src = sctx.getImageData(0, 0, W, H);
       const up = sctx.createImageData(W, H);
       const lo = sctx.createImageData(W, H);
@@ -184,7 +224,7 @@ export class SpriteCuts {
         for (let y = 0; y < H; y++) {
           const o = (y * W + x) * 4;
           if (src.data[o + 3] < 40) continue;
-          const d = y + 0.5 - ly;
+          const d = plane ? cutDistance(plane,x+.5,y+.5) : y + 0.5 - ly;
           const out = d < 0 ? up : lo;
           const a = Math.abs(d);
           let r = src.data[o]; let g = src.data[o + 1]; let b = src.data[o + 2];
@@ -201,7 +241,7 @@ export class SpriteCuts {
         }
       }
       // the spine: a pale fleck in the cut, toward his back (frames face right: back = left)
-      if (x1 > x0 && cut !== 'legs') {
+      if (x1 > x0 && cut !== 'legs' && !plane?.lying) {
         const bx = Math.round(x0 + (x1 - x0) * 0.36);
         for (const img of [up, lo]) {
           for (let x = bx - 2; x <= bx + 2; x++) {
@@ -476,9 +516,48 @@ export class SpriteCuts {
     return p.worldPoint(p.bandOff.x, p.bandOff.y);
   }
 
+  // Execution art includes equipment on the ground. Give it its own physics,
+  // instead of rotating those pixels upward with the falling torso.
+  dropExecutionGear(view, equipment, dir) {
+    const s=view.sprite,fr=s.frame;
+    for(const poly of equipment){
+      const x0=Math.floor(Math.min(...poly.map(p=>p[0]))),y0=Math.floor(Math.min(...poly.map(p=>p[1])));
+      const w=Math.ceil(Math.max(...poly.map(p=>p[0])))-x0,h=Math.ceil(Math.max(...poly.map(p=>p[1])))-y0;
+      const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+      const ctx=canvas.getContext('2d');ctx.translate(-x0,-y0);ctx.beginPath();poly.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.clip();
+      ctx.drawImage(fr.source.image,fr.cutX,fr.cutY,fr.cutWidth,fr.cutHeight,0,0,fr.cutWidth,fr.cutHeight);
+      const key=`execution-gear-${pieceId++}`;this.scene.textures.addCanvas(key,canvas);
+      const at=spritePoint(s,view.sheet,{x:x0+w/2,y:y0+h/2});
+      const img=this.scene.add.image(at.x,at.y,key).setOrigin(.5).setScale(s.scaleX,s.scaleY).setRotation(s.rotation);
+      this.dropWeapon(img,view.f.z,{vx:dir*35,vh:65,spin:dir*2.2,ownedTexture:key});img.destroy();
+    }
+  }
+
+  // The gear owns its own lifetime after leaving a dead enemy's hand.
+  dropWeapon(source,z,{vx=70,vh=150,spin=4,ownedTexture=null}={}){
+    const width=source.frame.width,height=source.frame.height;
+    const dx=(.5-source.originX)*width*source.scaleX,dy=(.5-source.originY)*height*source.scaleY;
+    const c=Math.cos(source.rotation),s=Math.sin(source.rotation);
+    const x=source.x+dx*c-dy*s,y=source.y+dx*s+dy*c;
+    const img=this.scene.add.image(x,y,source.texture.key,source.frame.name).setOrigin(.5).setScale(source.scaleX,source.scaleY).setRotation(source.rotation).setDepth(z+.2);
+    const thick=Math.min(Math.abs(width*source.scaleX),Math.abs(height*source.scaleY));
+    const p=this.add({img,tex:ownedTexture,x,z,h:z-y,rot:source.rotation,mode:'fly',weapon:true,life:1440,
+      edge:Math.max(2,thick*.5),rest:Math.max(2,thick*.4),age:0,bleed:0,bleedDir:1,bandOff:{x:0,y:0},face:Math.sign(source.scaleX)||1,dir:Math.sign(vx)||1,
+      flatAngle:Math.abs(width*source.scaleX)>=Math.abs(height*source.scaleY)?0:Math.PI/2});
+    this.launch(p,vx,vh,spin);return p;
+  }
+
+  dropFlail(source,z,w,k){
+    const p=this.dropWeapon(source,z,{vx:45,vh:100,spin:3});
+    p.flail=new FleshChain(w.rope.map(q=>({x:q.x,y:q.y})));p.flail.limitBend=false;
+    p.flail.launch(45,-100,1);p.flailRadius=Math.max(3,w.g.r*k*.8);
+    p.chainG=this.scene.add.graphics().setDepth(z+.15);p.mode='flail';return p;
+  }
+
   launch(p, vx, vh, spin, { bowl = false } = {}) {
     if (!p) return;
-    Object.assign(p, { mode: 'fly', vx, vh, spin, thrown: true, rest: Math.abs(p.edge) * 0.6, bleed: Math.max(p.bleed, 120), landed: false });
+    Object.assign(p, { mode: 'fly', vx, vh, spin, thrown: true, rest: Math.abs(p.edge) * 0.6, bleed:p.weapon?0:Math.max(p.bleed, 120), landed: false });
+    p.flex?.launch(vx,vh,spin);
     p.h = Math.max(p.h, p.rest + 1);
     if (bowl) p.bowl = new Set();
     // the legs it was sitting on are left standing... then go
@@ -486,11 +565,35 @@ export class SpriteCuts {
   }
 
   update() {
+    this.seams=this.seams.filter(s=>{
+      if(s.a.dead||s.b.dead||!s.link.step()){s.g.destroy();return false;}
+      const [a,b]=s.link.ends();
+      s.g.clear().lineStyle(4,0x641b20,Math.min(s.a.cont.alpha,s.b.cont.alpha)).lineBetween(a.x,a.y,b.x,b.y);
+      return true;
+    });
     const gore = this.scene.gore;
     const b = this.scene.world?.bounds;
+    // Keep an aftermath without accumulating an unbounded number of articulated
+    // corpses. Excess older remains fade first; small gibs retain their short life.
+    const remains=this.pieces.filter(p=>p.flex&&p.age<(p.life??540)-60);
+    for(const p of remains.slice(0,Math.max(0,remains.length-64)))p.age=(p.life??540)-60;
     for (const p of this.pieces) {
       p.age++;
-      if (p.mode === 'rag') {
+      if(p.flail){
+        const floor=x=>p.z-Math.max(0,this.scene.world?.terrain?.groundAt(x,p.z)??0);
+        const radii=p.flail.points.map((_,i)=>i===p.flail.points.length-1?p.flailRadius:1);
+        p.flail.step(floor,b,radii);const end=p.flail.points.at(-1);p.x=end.x;p.h=p.z-end.y;
+        p.rot+=p.spin/60;p.spin*=.96;
+        p.chainG.clear().lineStyle(1.5,0x8c8175,p.cont.alpha);
+        for(let i=1;i<p.flail.points.length;i++){const a=p.flail.points[i-1],c=p.flail.points[i];p.chainG.lineBetween(a.x,a.y,c.x,c.y);}
+      }else if(p.flex){
+        if(p.mode==='stand'&&--p.stand>0){p.flex.draw();}
+        else{
+          if(p.mode==='stand'){p.mode='fly';p.flex.launch(-p.dir*45,30,-p.dir*.7);}
+          p.flex.step();
+          if(p.bowl)this.bowlInto(p);
+        }
+      } else if (p.mode === 'rag') {
         // what's left of him as a ragdoll (view/Ragdoll.js, SpriteEnemyView.ragdollCut):
         // the piece itself is only where its cut end is now, pointing out of the wound
         const R = p.rag;
@@ -514,12 +617,12 @@ export class SpriteCuts {
         if (b && (p.x < b.minX + 4 || p.x > b.maxX - 4)) {
           p.x = Math.max(b.minX + 4, Math.min(b.maxX - 4, p.x));
           p.vx = -p.vx * 0.35; p.spin = -p.spin * 0.5;
-          gore?.burst(p.x, p.z, p.h, Math.sign(p.vx) || 1, Math.round((p.gib ? 5 : 16) * (gore.amount ?? 1)), 0.8);
+          if(!p.weapon)gore?.burst(p.x, p.z, p.h, Math.sign(p.vx) || 1, Math.round((p.gib ? 5 : 16) * (gore.amount ?? 1)), 0.8);
           if (!p.gib) this.scene.fx?.shake(3, 6);
         }
         if (p.bowl) this.bowlInto(p);
         // a thrown piece trails blood in the air
-        if (p.thrown && !p.landed && gore?.level > 0 && p.age % 2 === 0) {
+        if (!p.weapon && p.thrown && !p.landed && gore?.level > 0 && p.age % 2 === 0) {
           const cp = this.cutPoint(p);
           gore.spawn({ x: cp.x, z: p.z + rand(-2, 2), h: Math.max(1, p.z - cp.y), vx: -p.vx * 0.1 + rand(-20, 20), vz: 0, vh: rand(-10, 30), tint: 0x7a0303, scale: rand(0.35, 0.7) });
         }
@@ -534,8 +637,8 @@ export class SpriteCuts {
             p.vh = -p.vh * (p.gib ? 0.38 : 0.3);
             p.spin = p.spin * 0.45 + (p.vx / R) * 0.35 + rand(-2.5, 2.5) * Math.min(1, Math.abs(p.vh) / 200);
             p.vx *= 0.62;
-            if (!p.thudded) { p.thudded = true; landThud(this.scene, p.gib); }
-            if (gore?.level > 0) {
+            if (!p.thudded) { p.thudded = true; if(p.weapon)playSfx(this.scene,'block',{volume:.2,pitch:450,minGapMs:100});else landThud(this.scene, p.gib); }
+            if (!p.weapon && gore?.level > 0) {
               gore.burst(p.x, p.z, 4, Math.sign(p.vx) || p.face, Math.round((p.gib ? 6 : 16) * (gore.amount ?? 1)), 0.6);
               for (let i = 0; i < (p.gib ? 1 : 3); i++) gore.splat(p.x + rand(-26, 26) * (p.gib ? 0.4 : 1), p.z + rand(-4, 4), rand(1.6, 3) * (p.gib ? 0.6 : 1));
             }
@@ -556,7 +659,7 @@ export class SpriteCuts {
             if (p.thrown) {
               // halves lie on their flat sides; a gib on whichever face is nearest
               const step = p.gib ? Math.PI / 2 : Math.PI;
-              const off = p.gib ? 0 : Math.PI / 2;
+              const off = p.weapon?p.flatAngle:p.gib ? 0 : Math.PI / 2;
               const side = Math.round((p.rot - off) / step) * step + off;
               p.spin += (side - p.rot) * 16;  // tipping onto that side...
               p.spin *= 0.86;                 // ...and rocking to a stop on it
@@ -596,13 +699,17 @@ export class SpriteCuts {
         p.bleed--;
         if (p.age % 2 === 0) {
           const cp = this.cutPoint(p);
-          const nx = -Math.sin(p.rot) * p.bleedDir;
-          const ny = Math.cos(p.rot) * p.bleedDir;
+          const normal=p.bloodNormal??{x:0,y:1};
+          const nx = (normal.x*Math.cos(p.rot)-normal.y*Math.sin(p.rot))*p.bleedDir;
+          const ny = (normal.x*Math.sin(p.rot)+normal.y*Math.cos(p.rot))*p.bleedDir;
           const pump = (0.55 + 0.45 * Math.max(0, Math.sin(p.age * 0.35)) * (p.bleed / 200)) * (p.pump ?? 1);
-          gore.spawn({
+          // Brief theatrical geyser, then pressure falls into distinct smaller pulses.
+          const pressure=p.pressureCut?(p.age<18?620:p.age<60?340:150):150;
+          const jets=p.pressureCut&&gore.level>1?(p.age<60?(p.age%4===0?5:4):3):1;
+          for(let jet=0;jet<jets;jet++)gore.spawn({
             x: cp.x + rand(-4, 4), z: p.z + rand(-1.5, 1.5), h: Math.max(1, p.z - cp.y),
-            vx: nx * 150 * pump + rand(-30, 30), vz: rand(-10, 10),
-            vh: -ny * 150 * pump + 40, tint: 0x8a0303, scale: rand(0.35, 0.75),
+            vx: nx * pressure * pump + rand(-30, 30), vz: rand(-10, 10),
+            vh: -ny * pressure * pump + 40, tint: 0x8a0303, scale: rand(0.35, p.pressureCut&&p.age<18?1.15:0.75),
           });
         }
       }
@@ -610,20 +717,23 @@ export class SpriteCuts {
       const img = p.img;
       const depth = p.z + (p.mode === 'fly' ? 0.2 : 0);
       img.setPosition(p.x, p.z - p.h).setRotation(p.rot).setDepth(depth);
-      if (p.age > 480) {
-        p.cont.alpha = Math.max(0, 1 - (p.age - 480) / 60);
+      if (p.age > (p.life??540)-60) {
+        p.cont.alpha = Math.max(0, 1 - (p.age - ((p.life??540)-60)) / 60);
         img.setAlpha(p.cont.alpha);
       }
       p.rag?.look(p.z, p.cont.alpha, false, null, null);
+      if(p.flex)p.flex.draw();
     }
-    const gone = this.pieces.filter((p) => p.age > 540);
+    const gone = this.pieces.filter((p) => p.age > (p.life??540));
     for (const p of gone) {
       p.dead = true;
       p.img.destroy();
       p.rag?.destroy();
+      p.flex?.destroy();
+      p.chainG?.destroy();
       if (p.tex && this.scene.textures.exists(p.tex)) this.scene.textures.remove(p.tex);
     }
-    if (gone.length) this.pieces = this.pieces.filter((p) => p.age <= 540);
+    if (gone.length) this.pieces = this.pieces.filter((p) => p.age <= (p.life??540));
   }
 
   // A kicked torso is a bowling ball: anyone standing in its path goes down.
@@ -646,9 +756,12 @@ export class SpriteCuts {
   }
 
   clear() {
+    for(const s of this.seams)s.g.destroy();this.seams=[];
     for (const p of this.pieces) {
       p.img.destroy();
       p.rag?.destroy();
+      p.flex?.destroy();
+      p.chainG?.destroy();
       if (p.tex && this.scene.textures.exists(p.tex)) this.scene.textures.remove(p.tex);
     }
     this.pieces = [];

@@ -202,16 +202,14 @@ export class MageHover {
     this.front = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
   }
 
-  // The float: a slow swell under a quicker bob (px, up = positive) and a little sway
+  // One gentle five-second rise/fall (px, up = positive), with almost no sway
   // (degrees) that follows it. Called by the view before it places the sprite.
   motion(downed) {
-    const H = this.f.stats.hover;
     const t = this.t;
-    const r = H.driftRate;
-    const lift = downed ? 0 : Math.sin(t * r) * H.drift + Math.sin(t * r * 0.47 + 1.7) * H.drift * 0.55 + Math.sin(t * r * 2.3) * H.drift * 0.12;
+    const lift = downed ? 0 : Math.sin(t * TAU / 300) * 2.2;
     const v = lift - this.lastLift;
     this.lastLift = lift;
-    this.sway += (Math.sin(t * r * 0.47 + 0.4) * 0.9 - v * 2 - this.sway) * 0.08;
+    this.sway += (Math.sin(t * TAU / 420 + 0.4) * 0.22 - this.sway) * 0.08;
     return { lift, sway: this.sway * this.k, rising: v };
   }
 
@@ -225,7 +223,10 @@ export class MageHover {
       return;
     }
     const frozen = f.hitstop > 0;
-    if (!frozen) this.t += 1;
+    const tick = f.world?.frame ?? 0;
+    const dt = this.lastTick == null ? 0 : Math.max(0, Math.min(4, tick - this.lastTick));
+    this.lastTick = tick;
+    if (!frozen) this.t += dt;
     const on = HOVER_STATES.has(st) && !downed && !f.sprinting;
     this.k += ((on ? 1 : 0) - this.k) * (on ? 0.08 : 0.25);
     const speed = clamp01(Math.hypot(f.vx, f.vz) / Math.max(1, f.stats.walkSpeed));
@@ -238,8 +239,8 @@ export class MageHover {
       sprite.cloth = {
         box: info.box, staff: info.staff, staffHalf: info.staffHalf,
         time: this.t / 60,
-        amp: (2.2 + this.speedK * 1.4) * this.k * 2,
-        wind: (0.6 + this.speedK * 4.5) * this.k * 2,
+        amp: (0.65 + this.speedK * 2.95) * this.k * 2,
+        wind: (0.15 + this.speedK * 4.95) * this.k * 2,
         side: strip === 'hoverU' || strip === 'hoverD' ? 0 : 1,
       };
       if (sprite.pipeline?.name !== PIPE) sprite.setPipeline(PIPE);

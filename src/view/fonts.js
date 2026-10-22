@@ -18,6 +18,7 @@ export function loadFonts(timeout = 3000) {
   if (!document.fonts?.load) return Promise.resolve();
   const loads = [
     "400 64px 'MedievalSharp'",
+    "600 32px 'Cinzel'", "600 18px 'Source Sans 3'",
     "600 20px 'Cormorant Garamond'", "700 20px 'Cormorant Garamond'",
   ].map((f) => document.fonts.load(f).catch(() => null));
   return Promise.race([Promise.all(loads), new Promise((r) => setTimeout(r, timeout))]);

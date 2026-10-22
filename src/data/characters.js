@@ -68,7 +68,7 @@ export const CHARACTERS = {
     description: "The people's king. Oathkeeper, the blade of his blood, burns in his hand alone. Slow, heavy, unbreakable. His fire is his fury.",
     sprite: 'ulricOath',      // pixel-art sheet (see data/sprites.js); remove to use placeholder shapes
     // HIS BIRTHRIGHT: in the campaign he starts with his old soldier's sword and no fire. At
-    // the end of level 1 Elder Brann gives him Oathkeeper, his dead father's blade (the
+    // the end of level 1 his dying father gives him Oathkeeper (the
     // campaign flag below: data/stageVillage.js 'elder'); its fire is his from then on.
     // Until then Progress.statsFor lays `before` over him and the branches that need the
     // flag (data/skills.js THE KING'S WRATH) stay shut.
@@ -129,7 +129,7 @@ export const CHARACTERS = {
         cancels: [{ from: 15, to: 38, into: ['dodge', 'kick'] }],
       },
       heavy: { // brutal downward cleave
-        cut: 'chop',
+        cut: 'chop', overhead: true,
         startup: 17, active: 4, recovery: 26,
         damage: 30, hitstun: 30, hitstop: 14, shake: 10,
         knockback: { x: 360, y: 380 }, knockdown: true, breaksGuard: true,

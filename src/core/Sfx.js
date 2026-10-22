@@ -6,6 +6,26 @@
 import { SETTINGS } from '../config/settings.js';
 
 export const SFX = {
+  heroRoll: 'assets/audio/sfx/hero-roll.wav',
+  stoneStep: 'assets/audio/sfx/stone-chain-step.wav',
+  stoneJump: 'assets/audio/sfx/stone-jump.wav',
+  doorOpen1: 'assets/audio/sfx/door-open-1.wav',
+  doorOpen2: 'assets/audio/sfx/door-open-2.wav',
+  doorClose1: 'assets/audio/sfx/door-close-1.wav',
+  doorClose2: 'assets/audio/sfx/door-close-2.wav',
+  gateOpen: 'assets/audio/sfx/gate-open.wav',
+  gateClose: 'assets/audio/sfx/gate-close.wav',
+  lockUnlock: 'assets/audio/sfx/lock-unlock.wav',
+  chestOpen1: 'assets/audio/sfx/chest-open-1.wav',
+  chestOpen2: 'assets/audio/sfx/chest-open-2.wav',
+  chestClose1: 'assets/audio/sfx/chest-close-1.wav',
+  chestClose2: 'assets/audio/sfx/chest-close-2.wav',
+  swordUnsheath1: 'assets/audio/sfx/sword-unsheath-1.wav',
+  swordUnsheath2: 'assets/audio/sfx/sword-unsheath-2.wav',
+  swordSheath1: 'assets/audio/sfx/sword-sheath-1.wav',
+  swordSheath2: 'assets/audio/sfx/sword-sheath-2.wav',
+  bowShot1: 'assets/audio/sfx/bow-shot-1-audible.wav',
+  bowShot2: 'assets/audio/sfx/bow-shot-2-audible.wav',
   block: 'assets/audio/sfx/block-clash.mp3', // sword on armour / shield: blocks, parries, guard breaks
   clash: 'assets/audio/sfx/sword-clash.mp3', // ambient: mixed low, now and then when the fight is busy
   whiff: 'assets/audio/sfx/swing-miss.mp3',  // a light swing that hits nothing

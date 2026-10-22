@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import { Story } from '../src/stage/Story.js';
+import { World } from '../src/core/World.js';
+import { Controller } from '../src/core/Controller.js';
+import { STAGE_VILLAGE } from '../src/data/stageVillage.js';
+const world=new World(),controller=new Controller();
+const hero={alive:true,x:960,z:296,h:0,controller};
+const stage={world,data:STAGE_VILLAGE,opts:{},players:[hero],sections:STAGE_VILLAGE.sections,livingFoes:()=>[],props:[]};
+const story=new Story(stage,STAGE_VILLAGE);stage.story=story;
+// Isolate the conversation from the staged opening.
+story.started=true;for(const b of story.beats)if(b.id!=='hale'&&b.id!=='mira')b.fired=true;
+for(let i=0;i<100;i++)story.update();
+assert.equal(story.current,null,'Walking close to Hale never opens dialogue');
+assert(story.prompts.some(p=>p.kind==='talk'));
+assert.equal(story.talkBeat(story.npc('hale')).lines.length,1,'Hale speaks in one brief box');
+hero.z=400;controller.registerPress('padUp');story.update();
+assert.equal(story.current,null,'Wrong street depth cannot start conversation');
+controller.consume('padUp',99);hero.z=296;controller.registerPress('padUp');story.update();
+assert.equal(story.current.beat.id,'hale');
+assert.equal(story.holding,false,'Optional conversation does not freeze action');
+story.current.age=1000;story.update();assert.equal(story.current,null,'Short optional dialogue clears itself');
+const mira=story.npc('mira');mira.state='free';story.trigger('rescued:mira');story.update();
+assert.equal(story.current,null,'Rescue never opens a dialogue automatically');
+assert.equal(story.talkBeat(mira)?.id,'mira','Rescued NPC offers a conversation');
+hero.x=mira.x;hero.z=mira.z;controller.registerPress('padUp');story.update();
+assert.equal(story.current.beat.id,'mira');assert.equal(story.current.beat.lines.length,1);
+assert.equal(STAGE_VILLAGE.story.find(b=>b.id==='hale').lines.length,3,'Runtime edits do not mutate shared level data');
+console.log('NPC dialogue checks passed: voluntary interaction, range, one box, auto-clear and optional rescue conversation.');

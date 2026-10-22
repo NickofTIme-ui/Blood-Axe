@@ -854,3 +854,4 @@ export const WAVES = [
 ];
 
 export const BAD_GUYS = ['butcher', 'stalker', 'penitent', 'berserker', 'ghoul', 'gladiator'];
+ENEMIES.executioner={...ENEMIES.butcher,id:'executioner',name:'The Hangman',title:'Kill him before he pulls the lever',maxHealth:105,boss:false,variety:null};

@@ -40,6 +40,7 @@ const BACK = (d) => ({ z0: LANE_TOP, z1: LANE_TOP + d }); // (against the back o
 const STABLE_DOOR = { x: 6370, z: 216 };
 
 export const STAGE_VILLAGE = {
+  millRescue:{type:'executioner'},
   id: 'village',
   name: 'THE BURNING VILLAGE',
   chapter: 'I',
@@ -50,22 +51,32 @@ export const STAGE_VILLAGE = {
   tall: true,
   laneTop: LANE_TOP,
   fireBed: 1, // the whole village is burning: its crackle plays low throughout (core/FireAmbience.js)
+  openingFormation: true,
   // the castle on the horizon: where it stands on the far backdrop and how big (it grows
   // level by level, docs/campaign/plan.md)
   castle: { x: 830, scale: 0.42, detail: 0.3 },
   well: { x: 2250, z: 292 }, // the market square's well (view only)
+  church: { x:8775, z:302, width:700, height:420, door:{x:8880,z:279} },
+  gateTalk: {
+    elsbeth:{who:'ELSBETH',before:'Irvolino is gone. Your father got us into the church. Let me help him now.',after:'Hale and I will carry him. He won’t be left alone.'},
+    hale:{who:'HALE',before:"He held the church door while we brought the children in. He's been asking for you.",after:"We'll lay him by the altar. No one will leave him alone."},
+    mira:{who:'MIRA',before:"He wouldn't come inside until the last child was safe.",after:"I'll light a candle for him. My son will know his name."},
+    tam:{who:'TAM',before:"He told me to stay behind the altar. Is he going to be all right?",after:"I'll stay with the others. You don't have to worry about us."},
+    barn:{who:'MILLER',before:"Your father sent me inside with the children. He took the doorway himself.",after:"Hale and I can carry him. Let us do this."},
+  },
 
   sections: [
     {
       id: 'road', name: 'THE ASHEN ROAD', x0: 0, x1: 1400,
       spawn: { x: 150, z: 440 },
       objective: 'Find who still lives',
-      hint: 'Tap jump to hop the wreckage',
+      hint: 'Break their formation. Then find the survivors',
       fightAt: 1080, // (the looters are at the end of the road: talk to Hale first)
-      waves: [['grunt', 'grunt', 'grunt'], ['grunt', 'stalker']],
+      waves: [['grunt', 'grunt', 'grunt', 'grunt', 'grunt', 'grunt'], ['grunt', 'stalker']],
       props: [
         { kind: 'crate', x: 1250, z: 480, drop: 'health' },
         { kind: 'barrel', x: 600, z: 300, drop: null },
+        { kind: 'chest', x: 920, z: 510, drop: 'health' },
         // a secret: tucked behind the heap of burnt timbers at the back of the road
         { kind: 'urn', x: 806, z: 262, drop: 'rune', secret: true },
       ],
@@ -86,6 +97,7 @@ export const STAGE_VILLAGE = {
       props: [
         { kind: 'barrel', x: 1640, z: 305, drop: 'health' },
         { kind: 'crate', x: 2560, z: 500, drop: 'mana' },
+        { kind: 'chest', x: 2450, z: 300, drop: 'mana' },
       ],
       hazards: [
         { type: 'fire', look: 'cart', x: 1900, z: 470, w: 110, d: 60, phase: 0 },
@@ -116,8 +128,8 @@ export const STAGE_VILLAGE = {
     {
       id: 'mill', name: 'THE MILL YARD', x0: 4300, x1: 5700,
       spawn: { x: 4360, z: 440 },
-      objective: 'Break their rear guard',
-      hint: 'Wreck the archer posts by the mill. Smash the beam off the barn door',
+      objective: 'Stop the execution. Break the rear guard',
+      hint: 'Kill the hangman! Strike Irvolino’s bonds before the trapdoor falls',
       fightAt: 4520,
       waves: [['grunt', 'grunt', 'ghoul', 'grunt'], ['stalker', 'grunt', 'butcher']],
       props: [
@@ -131,19 +143,9 @@ export const STAGE_VILLAGE = {
       hazards: [
         { type: 'fire', look: 'cart', x: 4620, z: 490, w: 100, d: 50, phase: 60 },
       ],
-      // the rear guard: the Iron Penitent's kind, grown into a sub-boss. He walks in from
-      // the north road without freezing anyone
-      boss: { type: 'penitent', name: 'Brother Cinder, the Rear Guard', health: 2.4, damage: 1, size: 1.3, adds: ['grunt', 'grunt'],
-        entrance: { from: 140, to: 330, speed: 70, stepEvery: 30, awe: 0, freeze: false },
-        // beaten: his crimes and his sentence (stage/Sentence.js)
-        sentence: {
-          speaker: 'CINDER',
-          crimes: [
-            'You held the road while the village burned behind you.',
-            'You drove the families who ran back into the flames.',
-          ],
-          last: 'Fire was the mercy. Your king has none.',
-        } },
+      // Cinder is a named regular enemy: ordinary death, no boss event or sentence.
+      regular: { type: 'penitent', name: 'Brother Cinder', health: 1.6, size: 1.3,
+        escort: ['grunt', 'grunt'], beat: 'cinder' },
     },
     {
       // the stables burning at the back of the yard, the horses screaming inside: smash the
@@ -177,7 +179,7 @@ export const STAGE_VILLAGE = {
       id: 'hall', name: 'THE LONGHALL', x0: 7100, x1: 8400,
       spawn: { x: 7160, z: 440 },
       objective: 'Kill the Ash Captain',
-      hint: 'When he rages his archers loose: wreck their post',
+      hint: 'His archers are firing: wreck their post',
       fightAt: 7400,
       waves: [],
       props: [
@@ -186,14 +188,15 @@ export const STAGE_VILLAGE = {
         { kind: 'archers', tag: 'hallArchers', x: 8250, z: 300, drop: null },
       ],
       hazards: [
-        // once he rages his archers loose on the hall: on him and his men as well, until
-        // their post is wrecked
-        { type: 'bombard', look: 'arrows', when: 'rage', silence: 'hallArchers', period: 150, warn: 60, shots: 2, damage: 12, radius: 56, depth: 40 },
+        // His archers join the fight immediately; wrecking their post stops them.
+        { type: 'bombard', look: 'arrows', when: 'boss', silence: 'hallArchers', period: 150, warn: 60, shots: 2, damage: 12, radius: 56, depth: 40 },
       ],
       rest: { x: 7230, z: 330, kind: 'oath' },
       // the man who directed the attack: Pitlord Kragg's kind (mace and spiked shield), a captain
-      boss: { type: 'gladiator', name: 'Varek, the Ash Captain', health: 3.4, damage: 1.15,
-        adds: ['grunt', 'stalker', 'grunt', 'berserker'],
+      boss: { type: 'gladiator', name: 'Varek, the Ash Captain', health: 3.4, damage: 1.15, size: 1.75,
+        escort: ['grunt', 'stalker', 'grunt', 'berserker'],
+        adds: [], // these are his last men; no fresh army at half health
+        phases: [{id:'desperate',at:0.5,damage:1.12,ai:{attackCooldown:[24,42]},rage:true}],
         entrance: { from: 140, to: 320, speed: 58, stepEvery: 34, awe: 30 },
         sentence: {
           speaker: 'VAREK',
@@ -210,23 +213,25 @@ export const STAGE_VILLAGE = {
       spawn: { x: 8460, z: 440 },
       objective: 'The road north',
       hint: '',
-      // the stragglers, once Oathkeeper is his: the first men his fire burns
+      // Finish the protected farewell before opening the road north.
       fightAfter: 'elder',
-      waves: [['grunt', 'grunt', 'grunt'], ['stalker', 'grunt']],
+      waves: [], // the farewell and sword reveal are safe; no epilogue ambush
       props: [],
       hazards: [],
     },
   ],
 
   // walk out of the north gate once the vow is made: the pursuit begins
-  exit: { x: 9280, after: 'vow' },
+  exit: { x: 9280, after: 'churchFarewell' },
 
   terrain: [
     // ---- I THE ASHEN ROAD: a cart to hop (or walk round), a heap of burnt timbers at
     // the back of the road (look: painted, view/TerrainView.js drawPaintedBlock). (It was a
     // line right across the road: the same timbers stamped eight times read as fake.)
     { kind: 'block', x0: 470, x1: 560, z0: 390, z1: 470, top: 40, look: 'cart' },
-    { kind: 'block', x0: 780, x1: 830, z0: 290, z1: 380, top: 42, look: 'wreckage' },
+    // Separate footprints for the two painted heaps: the street between them is open.
+    { kind: 'block', x0: 780, x1: 830, z0: 290, z1: 306, top: 42, look: 'wreckage' },
+    { kind: 'block', x0: 816, x1: 846, z0: 364, z1: 380, top: 42, look: 'wreckage', artFlip: true },
 
     // ---- III THE BURNING ROOFS
     { kind: 'block', x0: 2900, x1: 2990, z0: 330, z1: 520, top: 45, look: 'cart' }, // a cart against the house: a hop
@@ -249,7 +254,7 @@ export const STAGE_VILLAGE = {
     { kind: 'block', x0: 4180, x1: 4260, ...FULL, top: 60 },            // and down to the yard
 
     // ---- IV THE MILL YARD: the mill's raised floor at the back
-    { kind: 'block', x0: 4720, x1: 5010, ...BACK(78), top: 70, look: 'mill' },
+    { kind: 'block', x0: 4700, x1: 5090, ...BACK(110), top: 70, look: 'mill' },
   ],
 
   // smoke dimming the backdrop behind the roofs, so the roofs you jump on stand out from the
@@ -282,11 +287,14 @@ export const STAGE_VILLAGE = {
       id: 'tam', name: 'Tam', x: 3656, z: LANE_TOP + 16, pose: 'child', rescue: 'reach', flee: null, gather: { x: 8800, z: 312 },
     },
     {
-      id: 'barn', name: 'the miller\'s people', x: 5330, z: 296, pose: 'group', rescue: 'wreckage', tag: 'barn',
+      id: 'barn', name: 'Irvolino', x: 4860, z: 296, pose: 'irvolino', art:'irvolino', rescue: 'execution', section:'mill',
       flee: { x: 4400, z: 510 }, gather: { x: 8660, z: 330 },
     },
+    {id:'elsbeth',name:'Elsbeth',x:5330,z:296,pose:'elsbeth',art:'elsbeth',gather:{x:8660,z:330}},
+    {id:'mill-villagers',name:'The mill villagers',x:5330,z:296,pose:'group',rescue:'wreckage',tag:'barn',flee:{x:5450,z:510}},
     { id: 'horses', name: 'the horses', x: 6380, z: 294, pose: 'horses', rescue: 'wreckage', tag: 'stables', flee: null },
-    { id: 'brann', name: 'Elder Brann', x: 8880, z: 330, pose: 'wounded', art: 'elder', talk: null },
+    { id: 'stable-master', name: 'Stable master', x: 6130, z: 350, stableMaster: true, warningAt: 5860 },
+    { id: 'hakon', name: 'Hakon', x: 8880, z: 330, pose: 'wounded', art: 'hakon', talk: null },
   ],
 
   // who says what (stage/Story.js). The three Oath Keepers speak whoever is played: the
@@ -295,9 +303,10 @@ export const STAGE_VILLAGE = {
     {
       id: 'opening', on: 'start', hold: true, delay: 150, // (after the section's title card)
       lines: [
-        ['RURIK', 'Smoke. Over home.'],
-        ['VEXA', 'They left us for dead at the ford. They should have made sure.'],
-        ['ORYN', 'The dead keep long memories.'],
+        ['RURIK', 'Ashen troops. In our streets.'],
+        ['CINDER', 'The ford spat them back out, Captain. Let me finish it.'],
+        ['VAREK', 'No. Hold the mill, Cinder. I will secure the longhall.'],
+        ['VAREK', 'Ranks! Cut them down. Leave nothing for the crows.'],
         // (the pledge every boss's sentence pays off: stage/Sentence.js)
         ['RURIK', 'Every captain who led them here. Every one, up to the king who gave the word.'],
         ['RURIK', 'Swear it. Each of them kneels. Each hears his crimes. Each pays.'],
@@ -327,50 +336,52 @@ export const STAGE_VILLAGE = {
     { id: 'tam', on: 'rescued:tam', lines: [['TAM', 'I told them you\'d come. I can climb down the back. Go!']] },
     { id: 'millSilenced', on: 'broken:millArchers', lines: [['RURIK', 'No more arrows from the mill.']] },
     { id: 'barnCry', at: 4900, lines: [['VOICE', 'The barn! They\'ve barred us in!']] },
-    { id: 'barn', on: 'rescued:barn', lines: [['MILLER', 'Air... gods, air. I owe you a lifetime of bread. To the north gate!']] },
-    { id: 'cinder', on: 'boss:mill', lines: [['CINDER', 'The rear holds. Come closer and burn.']] },
-    { id: 'stablesCry', at: 5860, lines: [['VOICE', 'The stables! The horses are burning!']] },
-    { id: 'horses', on: 'rescued:horses', lines: [['RURIK', 'Let them run! Stand clear, they\'ll empty the yard for us!']] },
+    { id: 'barn', on: 'rescued:barn', lines: [['MILLER', 'I thought that was it. Thank you. I’ll find the others at the church.']] },
+    { id: 'cinder', lines: [['CINDER', 'You broke the ranks. You will not break me.']] },
     { id: 'shrine', at: 7190, calm: true, lines: [['ORYN', '(from across the village) Their captain\'s in the longhall. Kneel at the shrine. Then end him.']] },
     {
       id: 'captain', on: 'boss:hall',
       lines: [
-        ['VAREK', 'Oath Keepers. The King swore you rotted at the ford.'],
-        ['VAREK', 'No matter. A village burns as well with three more in it.'],
+        ['VAREK', 'Archers! Fill the hall. I don\'t care who you hit.'],
+        ['VAREK', 'Cinder. The rear guard. All of them...'],
+        ['VAREK', 'You four. Shields forward. We hold here.'],
+        ['VAREK', 'You want my head? Come and earn it.'],
       ],
     },
-    { id: 'hallArchers', on: 'rage:hall', lines: [['VAREK', 'Archers! Fill the hall. I don\'t care who you hit.']] },
+    {id:'varekDesperate',on:'phase:hall:desperate',lines:[['VAREK','No retreat! I am still standing. Fight!']]},
     { id: 'hallSilenced', on: 'broken:hallArchers', lines: [['RURIK', 'No more arrows. Just you and me.']] },
     { id: 'gathered', at: 8580, calm: true, if: 'rescued:mira', lines: [['MIRA', 'You came back. Every soul at this gate owes you a life.']] },
-    // HIS BIRTHRIGHT: the elder gives Rurik his dead father's sword, Oathkeeper, and its fire
-    // wakes in his hand (the cue sets the campaign flag: his look and his fire change on the
-    // spot, scenes/ArenaScene.js oathkeeperGiven; data/characters.js birthright). Then the
-    // Ashen stragglers come back for the elder, and he burns them (the gate's fightAfter).
+    // HIS BIRTHRIGHT: Hakon gives his son the sword before dying. Grief, then a promise.
+    // The legacy beat id stays for campaign save compatibility.
     {
       id: 'elder', at: 8720, calm: true, hold: true,
       lines: [
-        ['BRANN', 'They took the young and the strong. Chained them and drove them up the north road.'],
-        ['BRANN', 'To the Black Keep. To the king who ordered it.'],
-        ['RURIK', 'Brann. Where is my father?'],
-        ['BRANN', 'Hakon held this gate alone while the children ran. He didn\'t fall until the last one was through.'],
-        ['BRANN', 'He was breathing when I found him. He put this in my hands and said one word. Rurik.'],
-        ['BRANN', 'Oathkeeper. Your father\'s blade, and his mother\'s, and back further than any song remembers.'],
-        ['BRANN', 'Forged in the first fire this valley ever lit. In other hands it is steel. In yours, it burns.'],
-        ['RURIK', '...It\'s warm. As if he only just let go.', { flag: 'oathkeeper' }],
-        ['BRANN', 'Every hand that ever held it is with you now. Feel them?'],
-        ['RURIK', 'Then they walk with me to the Black Keep.'],
-        ['VEXA', 'Ashen! Stragglers, back for the old man!'],
-        ['RURIK', 'Behind me, Brann. Let them see what my father left me.'],
+        ['RURIK', "Father. I'm here.", {moment:'fatherFound',minFrames:90}],
+        ['HAKON', 'The children... in the church.', {minFrames:120}],
+        ['RURIK', "They're out. You kept them safe.", {minFrames:120}],
+        ['HAKON', 'Good.', {minFrames:90}],
+        ['HAKON', "Take the sword. I can't hold it.", {flag:'oathkeeper',moment:'swordOffered',minFrames:150}],
+        ['RURIK', "Then let go. I've got you.", {minFrames:150}],
+        ['HAKON', 'Let me look at you.', {minFrames:180}],
+        ['RURIK', 'Father?', {moment:'fatherDies',minFrames:240}],
+        ['VOICE', '', {moment:'mourning',minFrames:300,autoAdvance:true}],
+        ['RURIK', 'I should have been here.', {minFrames:180}],
+        ['ORYN', 'We can wait.', {minFrames:150}],
+        ['MIRA', 'He put himself between them and my son.', {if:'rescued:mira',minFrames:150}],
+        ['MILLER', "He won't be left here. We'll carry him.", {if:'rescued:barn',minFrames:180}],
+        ['ELSBETH', "He won't be left here. Hale and I will carry him.", {if:'rescued:elsbeth',minFrames:180}],
+        ['RURIK', 'Give me a moment.', {minFrames:180}],
+        ['VOICE', '', {minFrames:180,autoAdvance:true}],
+        ['RURIK', "I'll carry it, Father.", {moment:'swordRaised',minFrames:210}],
+        ['VOICE', '', {moment:'fatherRest',minFrames:300,autoAdvance:true}],
       ],
     },
     {
-      id: 'vow', at: 8900, calm: true, hold: true,
+      id: 'vow', at: 8900, after: 'elder', calm: true, hold: true,
       lines: [
-        ['ORYN', 'The north road runs through the Gallows Wood. Their convoy can\'t be far.'],
-        ['VEXA', 'They burned our home because they thought us dead.'],
-        ['RURIK', 'We stand for our people. For our home.'],
-        ['RURIK', 'Whoever harms either answers to us.'],
-        ['VEXA', 'Their captain knelt. The rest will learn how.'],
+        ['HALE', "We'll carry him into the church. We'll look after him.", {minFrames:150}],
+        ['RURIK', 'Thank you.', {minFrames:120}],
+        ['VEXA', 'We leave when you say.', {minFrames:150}],
       ],
     },
   ],
@@ -378,3 +389,4 @@ export const STAGE_VILLAGE = {
   // the first castle cutaway, after the level (scenes/CutawayScene.js)
   cutaway: 'learns',
 };
+

@@ -355,6 +355,9 @@ function importStrip(img, spec, palette) {
       }
       cx = cnt ? sx / cnt : (x0 + x1) / 2;
     }
+    // Authored pelvis anchors keep an outstretched sword from dragging the body
+    // sideways when the silhouette changes from one side to the other.
+    if(spec.centers?.[i-1]!=null)cx=spec.centers[i-1]*W;
     figs.push({ i, x0, x1, y0, y1, cx });
   }
   const heights = figs.map((f) => f.y1 - f.y0);
@@ -375,6 +378,7 @@ function importStrip(img, spec, palette) {
   sheet.height = FH;
   const sctx = sheet.getContext('2d', { willReadFrequently: true });
   const near = palette ? nearestPaletteFn(palette) : null;
+  const swords=[];
 
   figs.forEach((f, k) => {
     const w = f.x1 - f.x0 + 1;
@@ -411,10 +415,13 @@ function importStrip(img, spec, palette) {
     sctx.beginPath();
     sctx.rect(k * FW, 0, FW, FH);
     sctx.clip();
-    sctx.drawImage(small, k * FW + Math.round(AX - (f.cx - f.x0) * s) + nx, Math.round(AY - (f.y1 - f.y0) * s - air) + ny);
+    const dx=Math.round(AX-(f.cx-f.x0)*s)+nx,dy=Math.round(AY-(f.y1-f.y0)*s-air)+ny;
+    sctx.drawImage(small,k*FW+dx,dy);
+    const blade=spec.swords?.[k];
+    if(blade)swords[k]={hilt:{x:dx+(blade[0]*W-f.x0)*s,y:dy+(blade[1]*H-f.y0)*s},tip:{x:dx+(blade[2]*W-f.x0)*s,y:dy+(blade[3]*H-f.y0)*s}};
     sctx.restore();
   });
-  return { canvas: sheet, count: n, scale: s, fw: FW, fh: FH };
+  return { canvas: sheet, count: n, scale: s, fw: FW, fh: FH, swords };
 }
 
 // Effects strips (fireballs etc.): n equal cells, each trimmed and scaled to `height` px,

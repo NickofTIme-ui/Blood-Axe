@@ -49,11 +49,16 @@ import { CHARACTERS } from '../data/characters.js';
 import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
 import { playMusic, playCue, stopMusic, toggleMute } from '../core/Music.js';
+import { syncSanctuaryMusic } from '../core/SanctuaryMusic.js';
 import { playSfx, fleshBite } from '../core/Sfx.js';
+import { BattlefieldAudio } from '../core/BattlefieldAudio.js';
+import {MillRescueView} from '../view/MillRescueView.js';
 import { runTickJobs } from '../core/TickJobs.js';
 import { styleMult } from '../combat/Style.js';
 import { TROPHIES, RARITY, LOOT, pickTrophy } from '../data/trophies.js';
 import { TEST, toggleTestMode, applyTestMode, levelAfter, showTestTag } from '../config/testMode.js';
+import { BirthrightArt } from '../view/BirthrightArt.js';
+import { TestNavigator, makePreviewProgress } from '../view/TestNavigator.js';
 
 // Number keys spawn a specific enemy next to you (for testing the roster).
 const SPAWN_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'];
@@ -93,6 +98,8 @@ export class ArenaScene extends Phaser.Scene {
     // the campaign: start at a saved checkpoint (CONTINUE), and the health the heroes
     // walked out of the last level with (shares of their max, in player order)
     this.startSection = data.section ?? 0;
+    this.testPreview=!!data.testPreview;
+    this.testMoment=data.testMoment;
     this.carry = data.carry ?? null;
     this.leaving = false;
     this.campaign = !!(this.stageData.exit || this.stageData.sequence);
@@ -106,6 +113,7 @@ export class ArenaScene extends Phaser.Scene {
     return {
       players: this.heroIds, mode: this.mode, net: this.netInfo, keepSession: true, stage: this.stageId,
       netCampaign: this.netCampaign,
+      testPreview:this.testPreview,
       seed: this.mode === 'net' ? (this.world.seed + 1) >>> 0 : undefined, // (the same new dice on both machines)
     };
   }
@@ -142,6 +150,7 @@ export class ArenaScene extends Phaser.Scene {
 
     // Views follow the world: one view per fighter.
     const ev = this.world.events;
+    this.battlefieldAudio = new BattlefieldAudio(this);
     ev.on('fighterAdded', (f) => this.views.set(f.id, this.makeView(f)));
     ev.on('fighterRemoved', (f) => {
       this.views.get(f.id)?.destroy();
@@ -276,12 +285,13 @@ export class ArenaScene extends Phaser.Scene {
       if (state === 'airAttack') playSfx(this, [['whiff', 2], ['swingAlt', 1]], { volume: fighter.team === 'player' ? 0.6 : 0.25 });
     });
     ev.on('roll', ({ fighter }) => {
-      playSfx(this, 'roll', { volume: fighter.team === 'player' ? 0.7 : 0.3, spread: 120 });
+      const heroRoll=fighter.team==='player'&&['warrior','rogue'].includes(fighter.stats.id);
+      playSfx(this, heroRoll?'heroRoll':'roll', { volume: fighter.team === 'player' ? 0.7 : 0.3, spread: heroRoll?65:120 });
       this.gore.spark(fighter.x, fighter.z, 2, 0x8a7a60, 6); // a puff of dust as he hits the floor
     });
     ev.on('jump', ({ fighter, airJump }) => {
       // push-off: a lighter, higher tap of the same impact
-      playSfx(this, 'jump', { volume: (fighter.team === 'player' ? 0.35 : 0.15) * (airJump ? 0.7 : 1), pitch: 350, spread: 100, minGapMs: 80 });
+      playSfx(this, 'stoneJump', { volume: (fighter.team === 'player' ? 0.55 : 0.2) * (airJump ? 0.7 : 1), pitch: 0, spread: 65, minGapMs: 80 });
     });
     ev.on('jumpLand', ({ fighter }) => {
       playSfx(this, 'jump', { volume: fighter.team === 'player' ? 0.75 : 0.3, spread: 120, minGapMs: 80 });
@@ -363,6 +373,9 @@ export class ArenaScene extends Phaser.Scene {
     // Not online: both machines would have to agree on every pick.
     sharedProgress(this.registry);
     this.progress = this.mode === 'net' ? null : this.registry.get('progress');
+    if(this.testPreview && this.progress) {
+      this.progress=makePreviewProgress(this.progress,this.stageData,this.startSection);
+    }
     this.progress?.play(this.stageId); // (level 1: Rurik's old sword until Brann gives him Oathkeeper)
     // online, the host's own campaign save still follows the game (checkpoints, levels,
     // the saved), so CONTINUE picks up there next time. Written to only, never read here.
@@ -393,6 +406,7 @@ export class ArenaScene extends Phaser.Scene {
     } : NC ? { saved: [...(NC.saved ?? [])], flags: {}, rescued: NC.rescued, lost: NC.lost } : {});
     this.gore.dismemberer.minZ = this.world.bounds.minZ; // (a stage's own lane: `laneTop`)
     this.stageView = new StageView(this, this.stage);
+    this.millRescueView=this.stage.millRescue?new MillRescueView(this,this.stage):null;
     // (after the StageView: it makes the 'glow' texture the terrain's lanterns use)
     this.terrainView = this.stage.terrain || this.stageData.theme ? new TerrainView(this, this.stage) : null;
     // a campaign level's villagers, its dead and the other Oath Keepers (view/NpcView.js)
@@ -404,6 +418,7 @@ export class ArenaScene extends Phaser.Scene {
     this.setupProgressEvents(ev);
     this.setupBirthright(ev);
     this.stage.start(this.players, { section: this.startSection });
+    this.prepareTestMoment();
     this.nextReady = false;
     this.tallyUp = false;   // (this machine's tally is on screen: the 'ready' bit online)
     this.netGo = null;      // (online: a ready player asked to go on: netWonKeys)
@@ -701,7 +716,6 @@ export class ArenaScene extends Phaser.Scene {
       playSfx(this, 'kick', { volume: 0.5, pitch: -2200, minGapMs: 0 });
     });
     ev.on('npcFollow', ({ npc }) => this.callout(`${npc.name.toUpperCase()}  ·  FOLLOWS YOU`, '#e8f0ff', 20));
-    ev.on('lockPick', () => playSfx(this, 'block', { volume: 0.3, pitch: 900, minGapMs: 0 }));
     ev.on('npcRescued', ({ npc }) => {
       this.netSave?.rescue(npc.id);
       this.callout(`${npc.name.toUpperCase()}  ·  SAVED`, '#e8f0ff', 24);
@@ -780,12 +794,50 @@ export class ArenaScene extends Phaser.Scene {
       this.setPaused(false);
       this.scene.restart({ ...this.restartData(), stage, section });
     };
+    if(!this.session.net) {
+      this.testNavigator=new TestNavigator(this,(stage,section,testMoment)=>{
+        if(!TEST.on)toggleTestMode();
+        this.setPaused(false);
+        this.scene.restart({...this.restartData(),stage,section,testMoment,testPreview:true});
+      });
+      key('F8',()=>this.testNavigator.toggle());
+    }
     key('PAGE_DOWN', () => go(levelAfter(this.stageId, 1)));
     key('PAGE_UP', () => go(levelAfter(this.stageId, -1)));
     key('END', () => {
       const i = this.stage.index + 1;
       go(...(i < this.stage.sections.length ? [this.stageId, i] : [levelAfter(this.stageId, 1)]));
     });
+  }
+
+  prepareTestMoment(){
+    if(!this.testPreview||this.stageId!=='village')return;
+    const st=this.stage,kind=this.testMoment;
+    if(['mill-rescue','mill-failure'].includes(kind)){
+      this.player.x=4750;this.player.z=400;st.fightOn=true;
+      if(kind==='mill-failure')st.millRescue.clock=1310;
+    }
+    if(['cinder','varek'].includes(kind)){
+      if(kind==='cinder')st.millRescue.save();
+      st.fightOn=true;st.waveIndex=99;st.waveDelay=0;
+      this.player.x=(st.section.fightAt??st.section.x0+200)+50;
+    }
+    if(kind==='horses'){
+      this.player.x=6250;
+      const gate=st.props.find(p=>p.tag==='stables');
+      if(gate)st.breakProp(gate,1);
+    }
+    if(['handoff','raise'].includes(kind)){
+      this.player.x=8830;this.player.z=330;
+      this.player.controller.registerPress('padUp');
+      st.story.update();
+      if(kind==='raise')this.time.delayedCall(150,()=>{
+        const c=st.story.current;
+        if(c?.beat.id!=='elder')return;
+        c.index=c.beat.lines.findIndex(l=>l[2]?.moment==='swordRaised');c.age=0;
+        for(let i=0;i<=c.index;i++)st.story.lineCue(c,i);
+      });
+    }
   }
 
   // On to the campaign's next level: the same heroes, the health they walked out with.
@@ -893,26 +945,38 @@ export class ArenaScene extends Phaser.Scene {
   // ground shaking, its name over the screen, and he stands there with Oathkeeper in his
   // hand (his look and his fire change on the spot: Progress.statsFor).
   setupBirthright(ev) {
+    this.birthrightArt = new BirthrightArt(this);
+    this.events.once('shutdown',()=>this.birthrightArt.clear());
     const gives = (beat) => beat.lines.some((l) => l[2]?.flag === 'oathkeeper');
     const cam = this.cameras.main;
     ev.on('storyBeat', ({ beat }) => {
       if (!gives(beat) || !this.spotlight) return;
       const R = this.rurikNow();
-      const brann = this.stage.story?.npcs.find((n) => n.id === 'brann');
+      const brann = this.stage.story?.npcs.find((n) => n.id === 'hakon');
       if (!R || !brann) return;
-      stopMusic(this, 1800);
+      if(this.stageId==='village')playMusic(this,'sanctuary');
+      else stopMusic(this, 1800);
       this.spotlight.start({ x: brann.x, z: brann.z, h: 0, stats: { body: { h: 70 } } }, R.f);
       cam.zoomTo(this.baseZoom * 1.1, 1800, 'Sine.easeInOut', true);
       this.birthrightCam = true;
+      this.birthrightActive = true;
+      this.birthrightArt.show('farewell');
     });
     ev.on('campaignFlag', ({ key }) => { if (key === 'oathkeeper') this.oathkeeperGiven(); });
+    ev.on('storyCue',({cue})=>{
+      if(cue.moment==='fatherDies')this.birthrightArt.grief();
+      if(cue.moment==='mourning'||cue.moment==='fatherRest')this.birthrightArt.show('aftermath');
+      if(cue.moment==='swordRaised')this.oathkeeperRaised();
+    });
     ev.on('storyBeatDone', ({ beat }) => {
       if (!gives(beat)) return;
+      this.birthrightActive=false;
+      this.birthrightArt.clear();
       this.spotlight?.stop();
       if (this.birthrightCam) { cam.zoomTo(this.baseZoom, 900, 'Quad.easeInOut', true); this.birthrightCam = false; }
       this.birthGlow?.forEach((g) => this.tweens.add({ targets: g, alpha: 0, duration: 900, onComplete: () => g.destroy() }));
       this.birthGlow = null;
-      playMusic(this, this.stageData.music ?? 'battle');
+      if(this.stageId!=='village')playMusic(this, this.stageData.music ?? 'battle');
     });
   }
 
@@ -930,34 +994,14 @@ export class ArenaScene extends Phaser.Scene {
     const R = this.rurikNow();
     if (!R) return;
     R.swap();
-    const f = R.f;
-    const W = this.wrathFX;
-    const y = f.z - (f.h ?? 0);
-    const hilt = y - 72;
-    this.cameras.main.flash(260, 255, 214, 140);
-    this.fx.shake(8, 40);
-    this.rumble(1, 0.8, 700);
-    playSfx(this, 'block', { volume: 1, pitch: 900, minGapMs: 0 });     // the ring of the steel
-    playSfx(this, 'fireWhoosh', { volume: 1, pitch: -1000, minGapMs: 0 });
-    playSfx(this, 'kick', { volume: 0.9, pitch: -2000, minGapMs: 0 });
-    W.flare(f.x, hilt, 3);
-    W.pillar(f.x, f.z, f.h ?? 0, 1.35);
-    this.time.delayedCall(260, () => this.sys.isActive() && W.pillar(f.x, f.z, f.h ?? 0, 1.1));
-    // embers rising off the ground all round him, drawn up into the blade
-    for (let k = 0; k < 46; k++) {
-      const a = Math.random() * Math.PI * 2;
-      const r = 40 + Math.random() * 90;
-      W.flame(f.x + Math.cos(a) * r, f.z + Math.sin(a) * r * 0.35, 0, -Math.cos(a) * 40, 0, 120 + Math.random() * 160, 0.15 + Math.random() * 0.2, 50 + Math.random() * 50, -140);
-    }
-    // the light it gives off, on him for the rest of the scene
-    const glow = W.sprite(0xffc850).setPosition(f.x, hilt + 20).setScale(2.6).setAlpha(0).setDepth(DEPTH.popups - 5);
-    const heart = W.sprite(0xfffbe8).setPosition(f.x, hilt + 20).setScale(1.1).setAlpha(0).setDepth(DEPTH.popups - 5);
-    this.tweens.add({ targets: glow, alpha: { from: 0.55, to: 0.25 }, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.tweens.add({ targets: heart, alpha: { from: 0.5, to: 0.2 }, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.birthGlow = [glow, heart];
-    this.callout('OATHKEEPER', '#ffe08a', 52);
-    this.time.delayedCall(1700, () => this.sys.isActive() && this.callout('THE BLADE OF HIS BLOOD  ·  HIS FIRE IS AWAKE', '#ffc860', 22));
-    if (R.played) this.time.delayedCall(3600, () => this.sys.isActive() && this.callout("FIREBOLT  ·  U / LB      THE KING'S WRATH IS OPEN ON HIS TREE", '#ff9a30', 18));
+  }
+
+  oathkeeperRaised() {
+    this.birthrightArt.show('raise');
+    this.cameras.main.flash(160,255,224,170);
+    this.rumble(0.35,0.2,450);
+    playSfx(this,'block',{volume:0.45,pitch:600,minGapMs:0});
+    this.callout('OATHKEEPER','#ffe0a0',38);
   }
 
   openSkills() {
@@ -1421,6 +1465,7 @@ export class ArenaScene extends Phaser.Scene {
   // ------------------------------------------------------------ main loop
 
   update(_time, delta) {
+    this.battlefieldAudio?.update();
     this.fireAmbience?.update(delta); // (fades out while leaving)
     if (this.leaving) return; // (fading out to the next level: goNextLevel)
     this.localKeys();
@@ -1469,6 +1514,7 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     this.syncSentenceMusic();
+    syncSanctuaryMusic(this);
     for (const v of this.views.values()) v.update();
     this.liftShadows();
     this.terrainView?.update();
@@ -1483,6 +1529,7 @@ export class ArenaScene extends Phaser.Scene {
     this.updateSentenceCam();
     this.updateFinisherMarker();
     this.stageView.update();
+    this.millRescueView?.update();
     this.updateStageCamera();
     this.syncProjectileViews();
     this.debugDraw.draw(this.world);
@@ -1510,6 +1557,14 @@ export class ArenaScene extends Phaser.Scene {
     // a campaign level won and its tally up: ENTER goes on to the next level (both online
     // machines on the same tick: it rides in the records)
     if (won && this.nextReady && any('pause')) { this.goNextLevel(); return true; }
+    if(this.paused){
+      const menu=this.scene.get('HUD')?.pauseMenu;
+      if(menu){
+        const leaving=menu.handle(recs);
+        // The button used to resume must not also swing or jump on this tick.
+        return leaving || !this.paused;
+      }
+    }
     if (any('pause')) {
       // (everyone down: Start / Enter is "rise again", as the death screen says — after
       // a beat, so the blow that killed you can't also skip the death)

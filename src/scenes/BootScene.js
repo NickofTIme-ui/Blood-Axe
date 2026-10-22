@@ -20,6 +20,8 @@ import { PARALLAX_LAYERS } from '../data/parallax.js';
 import { preloadLevelArt, buildLevelArt, isLevelArtKey } from '../view/levelArt.js';
 import { warmGore } from '../effects/goreArt.js';
 import { introFinished } from '../core/StartupIntro.js';
+import {HERO_HD} from '../data/heroHdAssets.js';
+import {preloadHeroHd,installHeroHd} from '../view/heroHd.js';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -27,9 +29,22 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
+    preloadHeroHd(this);
+    for(const name of ['gallows','mechanisms','irvolino-bound','executioner-actions','executioner-lever','irvolino-rescue'])this.load.image(`mill-${name}`,`assets/npcs/mill-rescue/${name}.png`);
+    this.load.image('pause-frame','assets/ui/pause-frame.png');
+    this.load.image('blood-ink-sheet','assets/fx/blood-ink-sheet.png');
+    this.load.image('rurik-oathkeeper-raised','assets/cinematics/rurik-oathkeeper-raised.png');
+    this.load.image('hakon-farewell','assets/cinematics/church-hakon-farewell-somber.png');
+    this.load.image('hakon-last-breath','assets/cinematics/church-hakon-last-breath-somber.png');
+    this.load.image('hakon-dying','assets/cinematics/hakon-dying.png');
+    this.load.image('hakon-mourned','assets/cinematics/church-hakon-mourned-somber.png');
+    this.load.image('hakon-dead','assets/cinematics/hakon-dead.png');
+    this.load.image('town-church','assets/env/village/town-church.png');
+    this.load.image('church-bearers-src','assets/npcs/church-bearers.png');
+    this.load.image('church-bearers-elsbeth-src','assets/npcs/mill-rescue/church-bearers-elsbeth.png');
     this.cameras.main.setOrigin(0, 0).setZoom(SETTINGS.renderScale ?? 1); // draw at full resolution
     for (const [key, s] of Object.entries(SPRITES)) {
-      this.load.image(key, s.image);
+      this.load.image(key, HERO_HD.base.file);
       this.load.json(`${key}-data`, s.data);
     }
     for (const [key, file] of Object.entries(MUSIC)) this.load.audio(key, file);
@@ -48,26 +63,22 @@ export class BootScene extends Phaser.Scene {
     this.load.image('keep-hall', 'assets/env/keep_hall.png'); // the Black Keep's throne room (scenes/CutawayScene.js)
     this.load.image('bridge-log-src', 'assets/env/bridge_log.png'); // the painted log bridge (view/TerrainView.js drawBlock)
     this.load.image('bodies-src', 'assets/env/bodies.png'); // the painted fallen villagers (view/NpcView.js drawBodies)
+    this.load.spritesheet('stable-master', 'assets/npcs/stable-master-frames.png',{frameWidth:338,frameHeight:240});
+    this.load.image('gore-painted-atlas','assets/fx/gore-painted-atlas.png');
     this.load.image('rubble-wall-src', 'assets/env/mine/rubble_wall.png'); // the cave's boulder wall (view/TerrainView.js drawRubble)
     this.load.image('collapse-wall-src', 'assets/env/mine/collapse_wall.png'); // the mine's spike chase: the wall's face (view/StageView.js paintedCollapse)
     this.load.image('collapse-spikes-src', 'assets/env/mine/collapse_spikes.png'); // ...and its six spikes
     this.load.image('rockfall-src', 'assets/env/mine/rockfall.png'); // the falling rock: the slab and its heap (view/StageView.js paintedRockfall)
-    for (const [key, strips] of Object.entries(CHARACTER_STRIPS)) {
-      for (const [name, s] of Object.entries(strips)) this.load.image(`strip-${key}-${name}`, s.file);
-    }
     for (const [name, s] of Object.entries(FX_STRIPS)) this.load.image(`fxsrc-${name}`, s.file);
     for (const [id, strips] of Object.entries(ENEMY_STRIPS)) {
       for (const [name, s] of Object.entries(strips)) this.load.image(`estrip-${id}-${name}`, s.file);
-    }
-    for (const [id, h] of Object.entries(HERO_STRIPS)) {
-      for (const [name, s] of Object.entries(h.strips)) this.load.image(`hstrip-${id}-${name}`, s.file);
     }
     this.load.image('sprite-palette', 'tools/sprite-pipeline/palette.png');
     this.load.image('hud-src', HUD_SRC);
     this.load.image('cover', 'assets/ui/cover.jpg'); // title screen (scenes/TitleScene.js)
     // character select (scenes/SelectScene.js): the cathedral, and each hero's full-body art
     this.load.image('select-bg', 'assets/ui/select-bg.jpg');
-    for (const id of Object.keys(CHARACTERS)) this.load.image(`hero-src-${id}`, `assets/ui/hero-${id}.png`);
+    for (const id of Object.keys(CHARACTERS)) this.load.image(`hero-src-${id}`, `assets/ui/hero-${id}-hd.png`);
     this.load.image('oathkeeper-art', 'assets/ui/oathkeeper.png'); // Rurik's blade, painted (the skill screen's lore page)
     this.load.image('props-hd-src', 'assets/env/props-hd.png'); // the breakables, repainted
     this.load.image('props-src', 'assets/env/props.png'); // painted props & traps (view/propSheet.js)
@@ -87,17 +98,28 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
+    // Hakon's dialogue portrait is the face from his new character painting.
+    if(this.textures.exists('hakon-dying')) {
+      const src=this.textures.get('hakon-dying').getSourceImage();
+      const c=document.createElement('canvas');c.width=c.height=128;
+      const ctx=c.getContext('2d');ctx.fillStyle='#151116';ctx.fillRect(0,0,128,128);
+      const side=src.height*0.34;
+      ctx.drawImage(src,src.width*0.34,src.height*0.02,side,side,0,0,128,128);
+      if(this.textures.exists('portrait-hakon'))this.textures.remove('portrait-hakon');
+      this.textures.addCanvas('portrait-hakon',c);
+    }
     // Slice each sheet into frames named f0, f1, f2... and keep pixels crisp.
     for (const key of Object.keys(SPRITES)) {
       const meta = this.cache.json.get(`${key}-data`);
       if (!meta || !this.textures.exists(key)) continue;
       const tex = this.textures.get(key);
-      const cols = Math.floor(tex.source[0].width / meta.frameWidth);
+      meta.visualRes=HERO_HD.res;
+      const fw=meta.frameWidth*HERO_HD.res,fh=meta.frameHeight*HERO_HD.res;
+      const cols = Math.floor(tex.source[0].width / fw);
       for (let i = 0; i < meta.frameCount; i++) {
-        tex.add(`f${i}`, 0, (i % cols) * meta.frameWidth, Math.floor(i / cols) * meta.frameHeight,
-          meta.frameWidth, meta.frameHeight);
+        tex.add(`f${i}`, 0, (i % cols) * fw, Math.floor(i / cols) * fh,fw,fh);
       }
-      tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
     }
 
     const g = this.make.graphics({ x: 0, y: 0, add: false });
@@ -258,6 +280,7 @@ export class BootScene extends Phaser.Scene {
     const src = (k) => (this.textures.exists(k) ? this.textures.get(k).getSourceImage() : null);
     const palette = paletteFrom(src('sprite-palette'));
     for (const [key, strips] of Object.entries(CHARACTER_STRIPS)) {
+      if(key==='ulric'||key==='ulricOath')continue; // HD strips are already compiled.
       const meta = this.cache.json.get(`${key}-data`);
       if (!meta) continue;
       const have = new Set();
@@ -270,7 +293,7 @@ export class BootScene extends Phaser.Scene {
           // share of the image height: rescale by the height ratio.
           const from = s.scaleFrom && scales[s.scaleFrom];
           const spec = from ? { ...s, scale: from.scale * (from.h / img.height) * (s.sizeFix ?? 1) } : s;
-          const { canvas, count, scale } = await this.cut(img, spec, palette);
+          const { canvas, count, scale, swords } = await this.cut(img, spec, palette);
           scales[name] = { scale, h: img.height };
           const tk = `${key}-${name}`;
           if (this.textures.exists(tk)) this.textures.remove(tk);
@@ -279,6 +302,7 @@ export class BootScene extends Phaser.Scene {
           for (let i = 0; i < count; i++) tex.add(`f${i}`, 0, i * cw, 0, cw, meta.frameHeight);
           meta.stripOrigin = meta.stripOrigin ?? {};
           meta.stripOrigin[name] = (meta.anchorX + (cw - meta.frameWidth) / 2) / cw;
+            (meta.stripSwords??={})[name]=swords;
           tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
           have.add(name);
         } catch (err) {
@@ -290,7 +314,7 @@ export class BootScene extends Phaser.Scene {
       }
     }
     this.registry.set('enemySprites', await this.buildEnemyStrips(src));
-    this.registry.set('heroSprites', await this.buildHeroStrips(src));
+    this.registry.set('heroSprites', installHeroHd(this));
     for (const [name, s] of Object.entries(FX_STRIPS)) {
       const img = src(`fxsrc-${name}`);
       if (!img) continue;
@@ -303,3 +327,5 @@ export class BootScene extends Phaser.Scene {
     }
   }
 }
+
+

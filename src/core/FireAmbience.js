@@ -15,8 +15,8 @@
 import { SETTINGS } from '../config/settings.js';
 
 const KEY = 'fireAmbience';
-const BED = 0.16;  // the bed's share of the effects volume (the file sits about as loud as the music)
-const NEAR = 0.3;  // the most that fire on screen can bring it up to
+const BED = 0.4;   // audible burning village bed under the music
+const NEAR = 0.65; // stronger crackle near visible flames
 const EASE = 0.6;  // seconds to settle on a new level
 
 export class FireAmbience {
@@ -26,9 +26,9 @@ export class FireAmbience {
     this.snd = null;
     if (!scene.cache.audio.exists(KEY)) return;
     this.snd = scene.sound.add(KEY, { loop: true, volume: 0 });
-    const start = () => { if (this.snd) this.snd.play(); };
-    if (scene.sound.locked) scene.sound.once('unlocked', start);
-    else start();
+    this.start = () => { if (this.snd && !this.snd.isPlaying) this.snd.play(); };
+    if (scene.sound.locked) scene.sound.once('unlocked', this.start);
+    else this.start();
     scene.events.once('shutdown', () => this.destroy());
   }
 
@@ -68,13 +68,14 @@ export class FireAmbience {
 
   update(delta) {
     if (!this.snd) return;
-    const target = this.scene.leaving ? 0 : Math.max(BED * this.bed(), NEAR * this.presence());
+    const target = this.scene.leaving ? 0 : Math.max(BED * this.bed(), NEAR * this.presence()) * (this.scene.birthrightActive ? 0.3 : 1);
     const k = Math.min(1, Math.min(delta, 100) / 1000 / EASE);
     this.level += (target - this.level) * k;
-    try { this.snd.setVolume((SETTINGS.audio.sfx ?? 0.8) * this.level); } catch { this.snd = null; }
+    try { this.snd.setVolume((SETTINGS.audio.sfx ?? 0.8) * (SETTINGS.audio.fireAmbience ?? 1) * this.level); } catch { this.destroy(); }
   }
 
   destroy() {
+    this.scene.sound.off('unlocked', this.start);
     this.snd?.stop();
     this.snd?.destroy();
     this.snd = null;

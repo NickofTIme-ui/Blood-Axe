@@ -22,6 +22,7 @@ import { createPlayer } from '../entities/Player.js';
 import { SPRITES } from './levelArt.js';
 import { keyLayer, cutPieces } from './envArt.js';
 import { drawVincent, hideVincent } from './VincentView.js';
+import { StableMasterView } from './StableMasterView.js';
 
 const TUNIC = [0x5a6a5a, 0x6a5a48, 0x4a5468, 0x6a4a4a, 0x5a5048, 0x58586a];
 const SKIN = 0xc8a080;
@@ -76,6 +77,7 @@ const CELLS = {
   nicholas: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7, lie: 8 },
   // Irvolino, the miller: the villager's order
   irvolino: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7 },
+  elsbeth: {stand:0,cower:1,wave:2,run:[3,4,5,4],sit:6,kneel:6},
   // ...and his own walk, a full cycle, once it's painted (data/levelArt.js 'nicholas-walk')
   'nicholas-walk': { run: [0, 1, 2, 3, 4, 5, 6, 7], stand: 0 },
 };
@@ -116,6 +118,7 @@ export class NpcView {
     for (const n of this.story?.npcs ?? []) this.views.set(n.id, this.makeNpc(n));
     this.drawBodies(stage.data.bodies ?? []);
     this.makeCompanions();
+    this.fieldWords=scene.add.text(0,0,'',{fontFamily:FONT.ui,fontSize:'16px',color:'#fff0d8',align:'center',wordWrap:{width:260}}).setOrigin(.5,1).setStroke('#160f0b',4).setDepth(DEPTH.popups).setVisible(false);
   }
 
   // ------------------------------------------------------------ villagers
@@ -206,6 +209,12 @@ export class NpcView {
     const g = v.g.clear();
     this.cur = v; this.curN = 0;
     for (const img of v.imgs) img.setVisible(false);
+    if(n.millCaptive){v.g.setVisible(false);v.halo.setVisible(false);v.shadow.setVisible(false);v.tip.setVisible(false);v.meter.clear();return;}
+    v.father?.setVisible(false);
+    if(n.stableMaster){
+      v.halo.setVisible(false);v.tip.setVisible(false);v.meter.clear();
+      v.worker??=new StableMasterView(this.scene,v);v.worker.draw(n);return;
+    }
     v.fg?.clear();
     const t = this.scene.time.now / 16.7;
     this.drawPrompt(n, v);
@@ -214,7 +223,7 @@ export class NpcView {
     // (the horses are drawn in their stable, view/VillageView.js; the group is inside the barn)
     const show = !['safe', 'gone'].includes(n.state) && !(n.pose === 'group' && n.state === 'trapped') && n.pose !== 'horses'
       && !(n.pose === 'convoy' && (n.state === 'trapped' || n.state === 'lost')); // (inside the wagon, or carried off in it)
-    const fadeOut = n.state === 'free' && !n.flee ? Math.max(0, 1 - n.t / 50) : 1; // (he slips away)
+    const fadeOut = (n.state === 'free' && !n.flee ? Math.max(0, 1 - n.t / 50) : 1)*(n.processionAlpha??1)*(n.carrier?(n.carrierBlend??1):1);
     g.setVisible(show).setAlpha(fadeOut);
     v.shadow.setVisible(show);
     // someone to save: a pale light behind him, pulsing
@@ -226,11 +235,22 @@ export class NpcView {
     if (!show) return;
     const y = n.z - n.h;
     const k = depthScale(n.z);
+    if(n.id==='hakon' && this.scene.textures.exists('hakon-dying')) {
+      v.father ??= this.scene.add.image(n.x,y,'hakon-dying').setOrigin(0.5,0.96);
+      const dead=n.state==='dead';
+      const deadArt=dead&&this.scene.textures.exists('hakon-dead');
+      v.father.setTexture(deadArt?'hakon-dead':'hakon-dying');
+      const breath=dead?0:Math.sin(this.scene.time.now*0.002)*0.004;
+      const size=deadArt?180*k/v.father.frame.width:95*k/v.father.frame.height;
+      v.father.setPosition(n.x,y).setScale(size,size*(1+breath))
+        .setDepth(n.z+0.01).setTint(0xffffff).setAlpha(n.carried?(n.carrierBlend??0):1).setVisible(!n.insideChurch);
+      return;
+    }
     const dir = n.dir ?? -1;
     v.shadow.setPosition(n.x, y).setDepth(n.h > 0 ? n.z - 0.4 : DEPTH.shadows);
     g.setDepth(n.z);
     const tun = (i) => TUNIC[(v.seed + i) % TUNIC.length];
-    const pose = n.state === 'fleeing' ? 'run' : n.state === 'threatened' || n.cower ? 'cower' : n.state === 'trapped' ? 'wave' : 'stand';
+    const pose = n.state === 'fleeing' || n.gatherMoving ? 'run' : n.mourning ? (n.pose==='family'||n.pose==='child'?'cower':'kneel') : n.state === 'threatened' || n.cower ? 'cower' : n.state === 'trapped' ? 'wave' : 'stand';
     if (n.state === 'dead' && SPRITES.nicholas && n.art === 'nicholas') { this.figure(g, n.x, y, k, 'lie', t, 0, 1, 'nicholas'); return; }
     if (n.state === 'lost' || n.state === 'dead') { this.fallen(g, n.x, y, k, tun(0)); return; }
     if (n.guide) { this.drawGuide(n, v, g, y, k, t, dir); return; }
@@ -251,7 +271,11 @@ export class NpcView {
     if (n.pose === 'chained') { this.drawChained(n, v, g, y, k, t, pose, dir); return; }
     if (n.pose === 'group' || n.pose === 'convoy') {
       // (the barn's group is the miller's people: Irvolino leads them, data/speakers.js MILLER)
-      for (let i = 0; i < 3; i++) this.figure(g, n.x - 44 + i * 42, y + (i % 2) * 6, k * (i === 1 ? 0.75 : 1), pose, t + i * 5, tun(i + 4), dir, i === 0 && n.id === 'barn' ? 'irvolino' : undefined);
+      for (let i = 0; i < 3; i++) {
+        const first=this.curN;
+        this.figure(g, n.x - 44 + i * 42, y + (i % 2) * 6, k * (i === 1 ? 0.75 : 1), pose, t + i * 5, tun(i + 4), dir, i === 0 && n.id === 'barn' ? 'irvolino' : undefined);
+        if(i===0&&n.carrier)for(const img of v.imgs.slice(first,this.curN))img.setAlpha(g.alpha*(n.carrierBlend??0));
+      }
       return;
     }
     this.figure(g, n.x, y, k, pose, t, tun(0), dir, n.art);
@@ -448,7 +472,7 @@ export class NpcView {
 
   // has he something to say that no one has heard yet? (stage/Story.js updateTalk)
   hasWord(n) {
-    return !!n.talk && !n.talked && n.state === 'idle';
+    return !n.mourning&&!this.story.holding&&!!this.story.talkBeat(n);
   }
 
   // What a hero near him can do now, and the meter that goes with it.
@@ -458,14 +482,14 @@ export class NpcView {
     const q = S.prompts.find((p) => p.npc === n);
     const y = n.z - n.h;
     const text = !q ? '' : q.kind === 'talk' ? 'E  /  D-PAD ▲   TALK' : q.kind === 'open' ? 'HOLD  E  /  D-PAD ▲   OPEN' : 'KILL THEM FIRST';
-    v.tip.setVisible(!!text).setText(text).setPosition(n.x, y - 128).setColor(q?.kind === 'busy' ? '#ff9a7a' : '#f0e6d0');
+    v.tip.setVisible(!!text).setText(text).setPosition(n.x, y - (q?.kind === 'talk' ? 163 : 128)).setColor(q?.kind === 'busy' ? '#ff9a7a' : '#f0e6d0');
     const bar = (frac, col) => {
       m.fillStyle(0x000000, 0.7).fillRect(n.x - 31, y - 122, 62, 7);
       m.fillStyle(col, 1).fillRect(n.x - 30, y - 121, 60 * Math.max(0, Math.min(1, frac)), 5);
     };
     // someone with something to say, before a hero is near enough for the prompt: a speech
     // bubble bobbing over his head, so he's seen from across the street
-    if (!text && this.hasWord(n)) {
+    if (this.hasWord(n)) {
       const by = y - 140 + 4 * Math.sin(this.scene.time.now * 0.004);
       m.fillStyle(0x000000, 0.85).fillRoundedRect(n.x - 21, by - 15, 42, 26, 9).fillTriangle(n.x - 7, by + 9, n.x + 5, by + 9, n.x - 4, by + 19);
       m.fillStyle(0xf6ead0, 1).fillRoundedRect(n.x - 18, by - 12, 36, 20, 7).fillTriangle(n.x - 5, by + 6, n.x + 3, by + 6, n.x - 3, by + 14);
@@ -528,13 +552,26 @@ export class NpcView {
     const gx = st.data.exit?.x ?? gate.x1 - 100;
     // (a level's `companions`: the beat after which they go ahead, where they wait, and the
     // beat after which they leave with you; the village's are the defaults)
-    const C = { leaveAfter: 'opening', meet: gate.x0 - 200, farewell: 'vow', ...st.data.companions };
+    const C = { leaveAfter: 'opening', meet: gate.x0 - 200, farewell: st.data.church ? 'churchFarewell' : 'vow', ...st.data.companions };
     const cam = this.scene.cameras.main.worldView;
     for (const c of this.companions) {
       const f = c.f;
+      if(st.opening?.active) {
+        const moving=st.opening.progress<1;
+        f.x=-280+360*st.opening.progress-c.i*55;
+        f.z=380+c.i*95;f.facing=1;f.vx=moving?300:0;f.vz=0;f.sprinting=moving;
+        if(f.state!==(moving?'walk':'idle'))f.fsm.change(moving?'walk':'idle');
+        f.fsm.frame++;
+        c.view.sprite?.setVisible(true);c.view.shadow?.setVisible(true);c.view.update();
+        continue;
+      }
       let target = null;
       if (st.phase === 'won' || st.story.done.has(C.farewell)) target = { x: gx + 260, z: 380 + c.i * 50, leave: true };
-      else if (st.index >= st.sections.length - 1 || this.scene.player.x > C.meet) target = { x: gx - 260 + c.i * 70, z: 340 + c.i * 90, face: -1 };
+      else if (st.index >= st.sections.length - 1 || this.scene.player.x > C.meet) {
+        const father=st.data.id==='village'?st.story.npc('hakon'):null;
+        target=father?{x:father.x+(c.id==='warrior'?-75:c.id==='mage'?110:-150),z:father.z+(c.id==='warrior'?75:c.id==='mage'?125:25),face:-1}
+          :{x:gx-260+c.i*70,z:340+c.i*90,face:-1};
+      }
       else if (st.story.done.has(C.leaveAfter)) {
         // they split off down the lanes between the houses: away up the street into the
         // dark at the back, fading as they go, not running on ahead along the road
@@ -569,6 +606,7 @@ export class NpcView {
           f.vx = f.vz = 0;
           if (f.state !== 'idle') f.fsm.change('idle');
           if (target.face) f.facing = target.face;
+          if(st.data.id==='village'&&c.mode==='gate')f.facing=Math.sign((st.story.npc('hakon')?.x??f.x)-f.x)||-1;
         }
       }
       f.fsm.frame++;
@@ -591,5 +629,12 @@ export class NpcView {
   update() {
     for (const n of this.story?.npcs ?? []) this.drawNpc(n, this.views.get(n.id));
     this.updateCompanions();
+    const help=this.story?.npcs.find(n=>n.helpAge>0&&['threatened','trapped','bound'].includes(n.state));
+    const field=this.story?.fieldLine;
+    const n=field?.npc??help;
+    this.fieldWords.setVisible(!!n&&!this.story?.holding);
+    if(n)this.fieldWords.setText(field?.text??n.helpText).setPosition(n.x,n.z-(n.h??0)-125);
   }
 }
+
+

@@ -42,7 +42,7 @@ export const SETTINGS = {
   gore: {
     level: 2,
     names: ['OFF', 'LOW', 'FULL'],
-    maxDrops: 700,          // cap on live blood particles (performance safety)
+    maxDrops: 1800,         // bounded pool for the increased graphic-novel sprays
     guts: 3,                // how many times the guts: every gut rope and every loose loop of gut or organ
                             // spilled from a cut-open body comes this many times over (effects/Dismember.js)
   },
@@ -54,7 +54,7 @@ export const SETTINGS = {
   ground: { pick: 'cathedral', brightness: 0.85 },
 
   // Music volume 0..1. Press M in game to mute/unmute.
-  audio: { music: 0.5, muted: false, sfx: 0.8 },
+  audio: { music: 0.5, muted: false, sfx: 0.8, fireAmbience: 1 },
 
   // Online co-op: the servers that help two browsers find a path to each other.
   // STUN finds a direct line, which works for many home networks. When the two networks

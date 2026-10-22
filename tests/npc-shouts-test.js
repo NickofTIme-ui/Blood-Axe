@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {Story} from '../src/stage/Story.js';
+import {World} from '../src/core/World.js';
+import {Controller} from '../src/core/Controller.js';
+const world=new World(),hero={alive:true,x:100,z:300,h:0,controller:new Controller()};
+const data={id:'test',sections:[],npcs:[{id:'trapped',name:'Villager',x:100,z:300,rescue:'wreckage',tag:'beam'}],story:[]};
+const stage={world,data,players:[hero],opts:{},sections:[],props:[],livingFoes:()=>[]};
+const story=new Story(stage,data);stage.story=story;
+story.updateNpcs([hero]);const npc=story.npc('trapped');
+assert.equal(npc.helpAge,180);assert(npc.helpText.includes('HELP'));
+assert.equal(story.line,null);assert(!story.holding);
+for(let i=0;i<181;i++)story.updateNpcs([hero]);assert.equal(npc.helpAge,0,'Help shout ends and never loops');
+const b={id:'optional',lines:[['VILLAGER','Thank you.']],talkedTo:'trapped'};story.fire(b);story.play([hero]);story.current.age=20;
+assert.equal(story.line,null);assert.equal(story.fieldLine.npc,npc);
+console.log('Help shouts are automatic, one-shot, unboxed and do not freeze play; invited NPC lines remain in the world.');

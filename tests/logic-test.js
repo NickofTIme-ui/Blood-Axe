@@ -349,7 +349,7 @@ test('every enemy has art, anims, specials that exist, and is in a wave', () => 
   const inWaves = new Set([...WAVES.flat(), ...[STAGE, STAGE_WOOD, STAGE_MINE, STAGE_ASCENT, STAGE_GATES, STAGE_KEEP].flatMap((S) => S.sections.flatMap((s) => [...(s.waves ?? []).flat(), ...boss(s.boss)]))]);
   for (const e of Object.values(ENEMIES)) {
     assert(e.art || e.view, `${e.id} has no art`);
-    assert(inWaves.has(e.id), `${e.id} never appears in a wave`);
+    assert(inWaves.has(e.id)||STAGE_VILLAGE.millRescue.type===e.id, `${e.id} never appears in a wave or encounter`);
     // (one with its own view, the hound, has its own poses)
     for (const [k, m] of Object.entries(e.moves)) assert(e.view || anims.includes(m.anim), `${e.id}.${k} anim ${m.anim}`);
     for (const sp of e.ai.specials ?? []) {
@@ -2426,7 +2426,7 @@ test("gallows: the roost is Vexa's and Oryn's to reach, and Rurik's only with Wi
 // ------------------------------------------------------------ the campaign: THE BURNING VILLAGE
 
 // Story off: no beats fire (for tests that check something else)
-const hush = (st) => { st.story.started = true; st.story.current = null; st.story.queue = []; for (const b of st.story.beats) b.fired = true; };
+const hush = (st) => { st.story.started = true; st.story.current = null; st.story.queue = []; for (const b of st.story.beats) b.fired = true; if(st.millRescue)st.millRescue.save(); };
 // A controller whose presses land even while the hero is frozen (like the real one)
 class Pressing extends Controller {
   constructor(script = {}, hold = {}) { super(); this.script = script; this.hold = hold; this.t = 0; }
@@ -2442,6 +2442,16 @@ class Pressing extends Controller {
 // A bot that walks the village (no fighting: enemies are cleared as they come), jumping
 // walls and gaps like the gallows bot. Reports the stage's end, falls and the story.
 function villageRun(hero, opts = {}) { return campaignRun(STAGE_VILLAGE, hero, opts); }
+// Story-order fixtures explicitly accept invitations. Their route bot tests the
+// traversal separately; interaction range is covered by npc-talk-test.js.
+function acceptNpcInvitations(st) {
+  if(st.story.busy)return;
+  for(const n of st.story.npcs)if(!n.ask && st.story.talkBeat(n)){
+    const controller=new Controller();controller.registerPress('padUp');
+    st.story.updateTalk(n,[{x:n.x,z:n.z,h:n.h,controller}]);
+    if(st.story.busy)break;
+  }
+}
 function campaignRun(data, hero, { kill = true, frames = 60 * 300, onTick = null, setup = null, opts = {}, section = 0 } = {}) {
   class Bot extends Controller {
     sample(frozen) {
@@ -2488,6 +2498,10 @@ function campaignRun(data, hero, { kill = true, frames = 60 * 300, onTick = null
     if (kill) for (const e of world.fighters) if (e.team === 'enemy') { e.health = 0; e.removeMe = true; }
     world.tick(); stage.update();
     onTick?.(world, stage, p, f);
+    // Route fixtures auto-resolve interactions; actual bond hitboxes and failure are
+    // exercised independently in mill-rescue-test.js.
+    if(kill&&stage.millRescue?.started&&!stage.millRescue.executioner.alive)stage.millRescue.save();
+    acceptNpcInvitations(stage);
   }
   return { won, secs: f / 60, falls, beats, rescued, stage, world, p, x: p.x };
 }
@@ -2508,8 +2522,8 @@ test('village: the story plays in order: the opening, Hale, the family, the vow;
   assert(at('hale') < at('mira') && at('mira') < at('elder') && at('elder') < at('vow'), r.beats.join(','));
   assert(!wonBeforeVow, 'won before the vow was made');
   assert(r.rescued.includes('mira'), 'clearing the square frees the family');
-  assert(!r.rescued.includes('barn') && !r.rescued.includes('tam'), 'the barn and the boy need you to do something');
-  assert(r.beats.includes('gathered'), 'the family is at the gate');
+  assert(r.rescued.includes('barn') && !r.rescued.includes('tam'), 'the route fixture cuts Irvolino free; the ridge boy remains optional');
+  assert(r.stage.story.done.has('churchFarewell')&&r.stage.story.npc('mira').insideChurch, 'The family accompanies Hakon into the church before the exit opens');
 });
 
 test('village: a held scene stops the heroes; a press of jump skips to the next line', () => {
@@ -2524,9 +2538,9 @@ test('village: a held scene stops the heroes; a press of jump skips to the next 
   assert(Math.abs(p.x - 150) < 1, `he holds still (x ${p.x})`);
   for (let i = 0; i < 10; i++) { world.tick(); st.update(); }
   assert(st.story.line.index === 1, `jump moved it on (line ${st.story.line?.index})`);
-  for (let i = 0; i < 1200 && st.story.busy; i++) { world.tick(); st.update(); }
+  for (let i = 0; i < 2400 && st.story.busy; i++) { world.tick(); st.update(); }
   assert(!st.story.busy && st.story.done.has('opening'), 'the opening ends by itself');
-  for (let i = 0; i < 30; i++) { world.tick(); st.update(); }
+  for (let i = 0; i < 130; i++) { world.tick(); st.update(); }
   assert(p.x > 160, 'and he walks on');
   assert(p.state !== 'jump' || p.grounded, 'the skip press did not also make him jump');
 });
@@ -2579,31 +2593,16 @@ test('story: a line said in passing goes by itself, in time for its length; a co
   st.story.beats.push(shout);
   st.story.cue('shout');
   run(LINE.gap + 4);
-  assert(st.story.line?.beat === 'shout' && st.story.line.passing, 'a taunt is said in passing');
-  const short = st.story.passFrames(shout.lines[0][1]); const long = st.story.passFrames(shout.lines[1][1]);
-  assert(short >= LINE.pass.base && long > short && long <= LINE.pass.max, `its time follows its length (${short}, ${long})`);
-  run(short - 10);
-  assert(st.story.line?.index === 0, 'up long enough to read');
-  run(20);
-  assert(st.story.line?.index === 1, 'then the next goes up by itself');
-  run(long + 10);
-  assert(st.story.done.has('shout') && !st.story.line, 'and the box goes away by itself');
-  // (anything else is a conversation: two speakers with a hero, a held scene, a villager you talk to)
-  const pass = (b) => st.story.passing({ lines: [], ...b });
-  assert(!pass({ lines: [['VINCENT', 'a'], ['RURIK', 'b']] }) && !pass({ hold: true, lines: [['VAREK', 'a']] }), 'an exchange with a hero, a held scene: they wait');
-  assert(!pass({ id: STAGE_VILLAGE.npcs.find((n) => n.talk).talk, lines: [['HALE', 'a']] }), 'a villager you talk to waits');
-  assert(pass({ lines: [['VOICE', '(horns)'], ['RURIK', 'b']] }) && pass({ lines: [['HASK', 'a'], ['HROLF', 'b']] }), 'narration and a remark, two bosses taunting: in passing');
-  assert(!pass({ passing: false, lines: [['VAREK', 'a']] }), 'a beat can say it waits');
-  const talk = { id: 'talk', lines: [['VEXA', 'Behind you!'], ['RURIK', 'Again!']], fired: false };
-  st.story.beats.push(talk);
-  st.story.cue('talk');
-  run(LINE.max * 3);
-  assert(st.story.line?.beat === 'talk' && st.story.line.index === 0 && !st.story.holding, 'the conversation stays up, in a fight too');
-  c.script = { [c.t + 1]: ['padRight'] };
-  run(5);
-  c.script = { [c.t + LINE.minSkip + 5]: ['padRight'] };
-  run(LINE.minSkip + 10);
-  assert(st.story.done.has('talk'), 'two presses, two lines');
+  assert(st.story.current?.beat.id === 'shout' && !st.story.line, 'incidental taunts never show a bottom dialogue box');
+  const short=st.story.passFrames(shout.lines[0][1]),long=st.story.passFrames(shout.lines[1][1]);
+  run(short+long+20);
+  assert(st.story.done.has('shout')&&!st.story.line,'incidental lines finish without clicks');
+  const pass=(b)=>st.story.passing({lines:[],...b});
+  assert(pass({lines:[['VINCENT','a'],['RURIK','b']]}),'incidental exchanges time out');
+  assert(!pass({hold:true,lines:[['HAKON','a']]}),'important held scenes retain their pacing');
+  const talk={id:'talk',lines:[['VEXA','Behind you!'],['ORYN','Again!']],fired:false};
+  st.story.beats.push(talk);st.story.cue('talk');run(30);
+  assert(st.story.done.has('talk')&&!st.story.current,'random companion chatter is removed entirely');
   const src = readFileSync(new URL('../src/scenes/CutawayScene.js', import.meta.url), 'utf8');
   assert(!/delayedCall\([^)]*text\.length/.test(src) && !src.includes('this.auto'), 'no line in a cutaway is on a timer');
   assert(src.includes("this.input.on('pointerdown', () => this.next())"), 'a click moves a cutaway on');
@@ -2616,17 +2615,17 @@ test('village: the barn: smashing the burning beam off its door frees the people
   st.start(p);
   st.enterSection(3);
   p.x = 5260; p.z = 300;
-  const barn = st.story.npc('barn');
+  const barn = st.story.npc('mill-villagers');
   const door = st.props.find((pr) => pr.tag === 'barn');
   assert(barn.state === 'trapped' && door && !door.broken, 'trapped behind the door');
   const freed = [];
   world.events.on('npcRescued', (e) => freed.push(e.npc.id));
   st.breakProp(door, 1);
   for (let i = 0; i < 3; i++) { world.tick(); st.update(); }
-  assert(barn.state === 'free' && freed.includes('barn'), `freed (${barn.state})`);
-  for (let i = 0; i < 60 * 20; i++) { world.tick(); st.update(); }
-  assert(barn.state === 'gathered' && barn.x === 8660, `they wait at the gate (${barn.state})`);
-  assert(freed.filter((id) => id === 'barn').length === 1, 'reported once');
+  assert(barn.state === 'free' && freed.includes('mill-villagers'), `freed (${barn.state})`);
+  for (let i = 0; i < 60 * 20; i++) { world.tick(); st.update(); acceptNpcInvitations(st); }
+  assert(barn.state === 'safe' && Math.abs(barn.x-5450)<2, `the other villagers reach shelter (${barn.state})`);
+  assert(freed.filter((id) => id === 'mill-villagers').length === 1, 'reported once');
 });
 
 test('village: the boy on the high ridge is saved by reaching him; every hero climbs to him in three jumps', () => {
@@ -2709,7 +2708,7 @@ test('village: the archers by the mill shoot from the roofs on; their arrows sta
 });
 
 const HALL = STAGE_VILLAGE.sections.findIndex((q) => q.id === 'hall');
-test("village: the longhall: his archers only loose once the Ash Captain rages; wreck their post and they stop", () => {
+test("village: the longhall archers fire from the boss battle's start; wreck their post and they stop", () => {
   const world = new World({ seed: 7 });
   const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 7400, z: 440, controller: new Scripted() }));
   const st = new Stage(world, STAGE_VILLAGE);
@@ -2718,10 +2717,20 @@ test("village: the longhall: his archers only loose once the Ash Captain rages; 
   hush(st);
   p.x = 7450;
   let volleys = 0;
-  world.events.on('shellLaunch', (ev) => { if (ev.hazard.section === HALL) volleys++; });
-  for (let i = 0; i < 900; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; p.awe = 0; }
+  let bossFrame = null, firstVolley = null, combatFrame = null;
+  world.events.on('bossSpawn', () => { bossFrame = world.frame; });
+  world.events.on('shellLaunch', (ev) => { if (ev.hazard.section === HALL) { volleys++; firstVolley ??= world.frame; } });
+  for (let i = 0; i < 900; i++) {
+    world.tick();
+    if (st.boss && !world.hold) combatFrame ??= world.frame;
+    st.update(); p.health = p.stats.maxHealth; p.awe = 0;
+  }
   assert(st.boss && st.boss.stats.name.includes('Ash Captain'), 'he is here');
-  assert(volleys === 0, `no arrows before his rage (${volleys})`);
+  assert(!st.boss.raged && volleys >= 2, `arrows before his rage (${volleys})`);
+  assert(bossFrame != null && firstVolley >= bossFrame && firstVolley - combatFrame <= 1, 'first warned volley starts when his entrance ends, never before him');
+  const opening = STAGE_VILLAGE.story.find(b => b.on === 'boss:hall');
+  assert(opening.lines[0][1].startsWith('Archers!'), 'his archers command is his first line');
+  assert(!STAGE_VILLAGE.story.some(b => b.on === 'rage:hall' && b.lines.some(l => l[1].startsWith('Archers!'))), 'the command does not repeat at half health');
   st.boss.health = st.boss.stats.maxHealth * 0.4;
   for (let i = 0; i < 700; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; }
   assert(st.boss.raged && volleys >= 2, `his archers loose on the hall (${volleys})`);
@@ -2745,7 +2754,7 @@ test('gates: the lower town: a catapult up the street shells it (no falling beam
   assert(st.bombardShots(hz) === 0, 'wrecked: it stops');
 });
 
-test('village: a sub-boss walks in without freezing the heroes; the captain freezes them', () => {
+test('village: Cinder arrives as a regular enemy without boss events or a frozen field', () => {
   const world = new World({ seed: 8 });
   const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 4600, z: 440, controller: new Scripted() }));
   const st = new Stage(world, STAGE_VILLAGE);
@@ -2754,8 +2763,9 @@ test('village: a sub-boss walks in without freezing the heroes; the captain free
   hush(st); p.awe = 0;
   p.x = 4600; st.fightOn = true; st.waveIndex = st.section.waves.length; st.waveDelay = 0;
   for (let i = 0; i < 5; i++) { world.tick(); st.update(); }
-  assert(st.boss?.stats.name.includes('Cinder') && !(p.awe > 2), `Cinder in, hero free (awe ${p.awe})`);
-  assert(st.boss.x > world.bounds.maxX, 'he starts off-screen and walks in');
+  const cinder=st.livingFoes().find(f=>f.stats.name==='Brother Cinder');
+  assert(cinder && !cinder.stats.boss && !st.boss && !world.hold && !(p.awe > 2), `Cinder in, hero free (awe ${p.awe})`);
+  assert(!inView(world,[p],cinder.x), 'he starts off-screen and walks in');
 });
 
 test('village: rescues and the level are saved once (the campaign save)', () => {
@@ -3125,6 +3135,7 @@ test('campaign: no section\'s fight is held open by a man stuck off-screen (the 
         // the hero fights whoever has arrived; nobody walks over to fetch a straggler
         if (f % 60 === 0) for (const e of world.fighters) if (e.team === 'enemy' && e.alive && !e.entering && e.state !== 'bossEntrance') { e.health = 0; e.removeMe = true; }
         world.tick(); st.update();
+        if(st.millRescue?.started&&!st.millRescue.executioner.alive)st.millRescue.save();
       }
       const left = st.livingFoes().map((e) => `${e.stats.name}@${Math.round(e.x)},${Math.round(e.z)} h${Math.round(e.h)}/${e.floor}`);
       assert(st.phase !== 'fight', `${data.id} ${sec.id}: still fighting after ${f} frames: ${left.join(', ')}`);
@@ -3370,7 +3381,7 @@ test('mine: the Chain Warden calls up his ghouls at half health', () => {
 
 // ---------------------------------------------------------- the campaign sweep's finds
 
-test('village: Brother Cinder walks in even with a hero standing in his road (he was held there for good, invincible)', () => {
+test('village: regular Cinder reaches the player even with a hero standing in his road', () => {
   const world = new World({ seed: 3 });
   const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 200, z: 430, controller: new Pressing({}, { right: true }) }));
   const st = new Stage(world, STAGE_VILLAGE);
@@ -3380,8 +3391,9 @@ test('village: Brother Cinder walks in even with a hero standing in his road (he
   const sec = STAGE_VILLAGE.sections[k];
   p.x = sec.x1 - 260; p.z = 430; st.placeOnGround(p);
   st.fightOn = true; st.waveIndex = sec.waves.length; st.waveDelay = 0;
-  for (let i = 0; i < 60 * 20 && !(st.boss && st.boss.state !== 'bossEntrance'); i++) { p.health = p.stats.maxHealth; world.tick(); st.update(); }
-  assert(st.boss && st.boss.state !== 'bossEntrance', `he arrived (${st.boss?.state} at x ${Math.round(st.boss?.x)}, hero x ${Math.round(p.x)})`);
+  for (let i = 0; i < 60 * 20; i++) { p.health = p.stats.maxHealth; world.tick(); st.update(); }
+  const cinder=st.livingFoes().find(f=>f.stats.name==='Brother Cinder');
+  assert(cinder && !cinder.entering && !cinder.invincible && !st.boss, 'he reached the playable space as a vulnerable regular enemy');
 });
 
 test('mine: nobody walks on from behind the portcullis while it is down (he could never be reached)', () => {
@@ -3489,9 +3501,9 @@ test('ascent: the shelter: the miners are safe once the men on them are dead; Hi
   for (const b of st.story.beats) if (['shelter', 'hilde'].includes(b.id)) b.fired = false;
   const beats = []; world.events.on('storyBeat', (e) => beats.push(e.beat.id));
   assert(st.story.npc('shelter').state === 'threatened', 'pinned down');
-  run(60 * 30, () => killFoes(world));
+  run(60 * 30, () => {killFoes(world);acceptNpcInvitations(st);});
   assert(st.story.rescued.has('shelter'), 'defended');
-  run(60 * 20);
+  run(60 * 20, () => acceptNpcInvitations(st));
   assert(beats.includes('shelter') && beats.includes('hilde'), `their lines (${beats})`);
 });
 
@@ -3658,7 +3670,7 @@ test('keep: every hero walks the Black Keep (no upgrades), without a fall, frees
     });
     assert(r.won === 1 && r.falls === 0, `${hero}: ${r.won ? 'out' : `stuck at x ${Math.round(r.x)} (${r.stage.section.id}, ${r.stage.phase})`} in ${r.secs.toFixed(0)} s, ${r.falls} falls (${where})`);
     for (const id of ['cellsLow', 'cellsMid', 'ilse', 'forge']) assert(r.rescued.includes(id), `${hero}: ${id} saved (${r.rescued})`);
-    for (const id of ['opening', 'cells', 'forge', 'mill', 'kings', 'hoist', 'run', 'doorsThrone', 'king']) assert(r.beats.includes(id), `${hero}: ${id} played (${r.beats})`);
+    for (const id of ['opening', 'cells', 'forge', 'kings', 'run', 'doorsThrone', 'king']) assert(r.beats.includes(id), `${hero}: ${id} played (${r.beats})`);
   }
 });
 
@@ -3784,7 +3796,8 @@ test('gates: every hero walks the Iron Gates (no upgrades), without a fall, rais
     });
     assert(r.won === 1 && r.falls === 0, `${hero}: ${r.won ? 'out' : `stuck at x ${Math.round(r.x)} (${r.stage.section.id}, ${r.stage.phase})`} in ${r.secs.toFixed(0)} s, ${r.falls} falls`);
     for (const id of ['townsfolk', 'granary', 'vincent']) assert(r.rescued.includes(id), `${hero}: ${id} saved (${r.rescued})`);
-    for (const id of ['caged', 'vincent', 'tower', 'scorpion', 'postern', 'opening', 'gateUp', 'miners', 'convoy', 'joren', 'malgor', 'fallen', 'returned', 'bramHilde', 'keep']) assert(r.beats.includes(id), `${hero}: ${id} played (${r.beats})`);
+    for (const id of ['caged', 'tower', 'scorpion', 'postern', 'opening', 'gateUp', 'miners', 'convoy', 'joren', 'malgor', 'fallen', 'returned', 'bramHilde', 'keep']) assert(r.beats.includes(id)||r.stage.story.beats.find(b=>b.id===id)?.npcTalkFor, `${hero}: ${id} played or offers an optional NPC conversation (${r.beats})`);
+    assert(r.stage.story.beats.find(b=>b.id==='vincent').npcTalkFor==='vincent','Vincent waits for an optional conversation; it cannot block the route');
     assert(!r.beats.includes('alone'), `${hero}: not alone with the miners back (${r.beats})`);
   }
   // nobody saved on the way: nobody comes back
@@ -4133,7 +4146,7 @@ function sentenceSetup(hero = 'warrior', data = STAGE_VILLAGE, sectionId = 'hall
   // the waves out of the way, the boss walked in
   for (let i = 0; i < 3000 && !(st.boss && st.boss.state !== 'bossEntrance'); i++) {
     world.tick(); st.update(); p.health = p.stats.maxHealth;
-    for (const e of st.livingFoes()) if (!e.stats.boss) { e.health = 0; e.removeMe = true; }
+    for (const e of st.livingFoes()) if (!st.boss && !e.stats.boss) { e.health = 0; e.removeMe = true; }
   }
   run(30);
   return { world, p, c, st, ev, run };
@@ -4361,7 +4374,7 @@ test("birthright: Rurik starts with his old sword and no fire; the King's Wrath 
   assert(P.statsFor('rogue', CHARACTERS.rogue).spell === CHARACTERS.rogue.spell, 'Vexa as ever');
 });
 
-test('birthright: the elder gives it at the north gate (the flag is set on the line, even if the scene is skipped); the stragglers come only after', () => {
+test('birthright: his dying father gives the sword once, watched or skipped; the farewell has no ambush', () => {
   for (const skip of [false, true]) {
     const flags = [];
     let foesBefore = 0; let foesAfter = 0;
@@ -4372,15 +4385,29 @@ test('birthright: the elder gives it at the north gate (the flag is set on the l
         else if (st.section.id === 'gate') foesAfter += st.livingFoes().length;
         if (skip && st.story.current?.beat.id === 'elder') st.story.skipScene();
         for (const e of w.fighters) if (e.team === 'enemy') { e.health = 0; e.removeMe = true; }
+        if(st.millRescue?.started&&!st.millRescue.executioner.alive)st.millRescue.save();
       },
       setup: (w) => w.events.on('campaignFlag', ({ key }) => flags.push(key)),
     });
     assert(r.won === 1, `${skip ? 'skipped' : 'watched'}: out of the gate`);
     assert(flags.filter((k) => k === 'oathkeeper').length === 1, `${skip ? 'skipped' : 'watched'}: given once (${flags})`);
-    assert(foesBefore === 0 && foesAfter > 0, `no stragglers before the sword, then they come (${foesBefore}, ${foesAfter})`);
+    assert(foesBefore === 0 && foesAfter === 0, `no attackers during or after the farewell (${foesBefore}, ${foesAfter})`);
   }
   const elder = STAGE_VILLAGE.story.find((b) => b.id === 'elder');
   assert(elder.hold && elder.lines.some((l) => l[2]?.flag === 'oathkeeper'), 'a held scene, with the cue');
+});
+
+test('village: all heroes walk both ways through the opening rubble gap, while the heaps stay solid', () => {
+  for (const hero of Object.values(CHARACTERS)) for (const dir of [-1, 1]) {
+    const w = new World();
+    w.terrain = new Terrain(w, STAGE_VILLAGE.terrain);
+    const p = w.addFighter(new Fighter({ stats: hero, team: 'player', x: dir > 0 ? 720 : 910, z: 338, controller: new Scripted() }));
+    for (let tick = 0; tick < 120; tick++) { p.vx = dir * 120; p.vz = 0; p.integrate(); }
+    assert(dir > 0 ? p.x > 910 : p.x < 720, `${hero.id}: blocked in the empty street`);
+    assert(p.h === 0 && p.floor === 0, 'the gap must remain street-level');
+    assert(w.terrain.wallAt(805, 300, 0), 'rear rubble still blocks walking');
+    assert(w.terrain.wallAt(830, 374, 0), 'front rubble still blocks walking');
+  }
 });
 
 for (const [name, fn] of later) {

@@ -216,3 +216,5 @@ export const ENEMY_ANIMS = {
 // a boss's own look -> the kind whose moves (and size) he has
 export const LOOKS = { orsk: 'berserker', twin: 'gladiator' };
 for (const [look, kind] of Object.entries(LOOKS)) ENEMY_ANIMS[look] = ENEMY_ANIMS[kind];
+ENEMY_STRIPS.executioner=Object.fromEntries(Object.entries({walk:8,react:6,atk1:5,atk2:5,heavy:6,special:6}).map(([name,frames])=>[name,{file:`assets/npcs/mill-rescue/executioner-${name}.png`,frames,ref:0,ground:'drawn'}]));
+ENEMY_ANIMS.executioner=ENEMY_ANIMS.butcher;

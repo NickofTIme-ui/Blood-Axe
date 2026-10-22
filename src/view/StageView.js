@@ -6,6 +6,8 @@
 // stage works with no extra image files.
 
 import { SETTINGS } from '../config/settings.js';
+import { PHYSICS } from '../effects/Physics.js';
+import { drawStampedeTrail } from './StampedeTrail.js';
 import { DEPTH } from './depths.js';
 import { PICKUPS } from '../data/stage.js';
 import { playSfx } from '../core/Sfx.js';
@@ -617,7 +619,8 @@ export class StageView {
       gore.spawn({
         x: pr.x + rand(-pr.w / 2, pr.w / 2), z: pr.z + rand(-4, 4), h: (pr.y ?? 0) + rand(8, pr.h),
         vx: dir * rand(40, 260) + rand(-80, 80), vz: rand(-40, 40), vh: rand(120, 380),
-        tint: colors[i % colors.length], texture: 'px', scale: rand(0.8, 2), decal: false, life: rand(40, 90), spin: rand(-10, 10),
+        tint: colors[i % colors.length], texture: 'px', scale: rand(0.8, 2), decal: false, life: rand(180, 300), spin: rand(-10, 10),
+        material: PHYSICS[pr.kind === 'wall' ? 'stone' : pr.kind === 'urn' ? 'pottery' : 'wood'],
       });
     }
   }
@@ -684,16 +687,13 @@ export class StageView {
 
   drawFire(hz) {
     if (!hz.view) {
-      const cart = hz.look === 'cart';
-      hz.view = this.scene.add.image(hz.x, hz.z, cart ? 'cartwreck' : 'grate').setDisplaySize(hz.w, hz.d * (cart ? 1 : 0.75)).setDepth(DEPTH.floor + 4);
-      // (a painted cart: stood up at its own shape, wider than the fire it holds, and sorted
-      // with the fighters, instead of squashed flat into a pile of logs: Nick, 2026-10-17)
-      const src = this.scene.textures.get('cartwreck').getSourceImage();
-      if (cart && src.width < src.height * 1.6) {
-        hz.view.setOrigin(0.5, 0.9).setPosition(hz.x, hz.z + hz.d * 0.35).setScale((hz.w * 1.5) / src.width).setDepth(hz.z);
-      }
-      // (painted sheet: the same grate red-hot, faded in over the cold one as it heats)
-      if (!cart && this.painted.has('grate-hot')) hz.hot = this.scene.add.image(hz.x, hz.z, 'grate-hot').setDisplaySize(hz.w, hz.d * 0.75).setDepth(DEPTH.floor + 4.05).setAlpha(0);
+      // Restore the original stone-rimmed firepit from props.png, including the
+      // matching ember-lit artwork. Legacy look:'cart' mustn't cover this trap.
+      hz.view = this.scene.add.image(hz.x, hz.z, 'grate')
+        .setDisplaySize(hz.w, hz.d * 0.75).setDepth(DEPTH.floor + 4);
+      hz.hot = this.painted.has('grate-hot')
+        ? this.scene.add.image(hz.x, hz.z, 'grate-hot').setDisplaySize(hz.w, hz.d * 0.75).setDepth(DEPTH.floor + 4.05).setAlpha(0)
+        : this.scene.add.ellipse(hz.x, hz.z, hz.w * 0.82, hz.d * 0.52, 0xc4420e, 1).setDepth(DEPTH.floor + 4.05).setAlpha(0);
       hz.glow = this.scene.add.image(hz.x, hz.z, 'glow').setDisplaySize(hz.w * 1.6, hz.d * 1.4).setTint(0xff6020)
         .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 4.1);
       hz.flames = Array.from({ length: 7 }, () => this.scene.add.image(hz.x, hz.z, 'flame').setOrigin(0.5, 1)
@@ -708,7 +708,7 @@ export class StageView {
     hz.view.setVisible(true);
     const phase = this.stage.firePhase(hz);
     const t = hz.t % 210;
-    // warning: the grate glows hotter and embers rise — readable well before it goes off
+    // warning: the opening glows hotter and embers rise before the eruption
     const warm = phase === 'warn' ? (t - 110) / 50 : phase === 'burst' ? 1 : 0.15;
     hz.hot?.setVisible(true).setAlpha(Math.max(0, Math.min(1, warm)));
     hz.glow.setVisible(true).setAlpha(0.25 + 0.6 * warm + (phase === 'warn' ? Math.sin(t * 0.6) * 0.15 : 0));
@@ -1169,9 +1169,8 @@ export class StageView {
   }
 
   // The stables' stampede (Stage 'stampede'): first its whole path lights up on the ground,
-  // out of the stable door and along the lane, as a red band and big red-white chevrons
-  // racing the way the herd will run (the danger colour, view/dangerCue.js: not orange,
-  // which is the fire's), with dust boiling out of the doorway; then the horses come out of
+  // out of the stable door and along the lane, as scuffed earth and worn hoof marks
+  // pulsing in the herd's direction, with dust boiling out of the doorway; horses come out of
   // the dark of the door, growing as they come down the yard, and run it. The path stays
   // lit, dimmer, while they're on it. Painted gallop frames (assets/fx/horse_gallop.png)
   // when they exist; drawn here until then.
@@ -1191,39 +1190,7 @@ export class StageView {
     const door = P.pts[0];
     const warn = S.phase === 'warn';
     const w = warn ? S.warnT : 1;
-    // the path: a band of churned, red-lit ground...
-    const half = hz.d / 2;
-    const bandA = warn ? 0.12 + 0.2 * w : 0.1;
-    for (const sg of P.segs) {
-      const nx = -(sg.b.z - sg.a.z) / (sg.l || 1); const nz = (sg.b.x - sg.a.x) / (sg.l || 1);
-      g.fillStyle(DANGER.glint, bandA).fillPoints([
-        { x: sg.a.x + nx * half, y: sg.a.z + nz * half }, { x: sg.b.x + nx * half, y: sg.b.z + nz * half },
-        { x: sg.b.x - nx * half, y: sg.b.z - nz * half }, { x: sg.a.x - nx * half, y: sg.a.z - nz * half },
-      ], true);
-    }
-    // ...and chevrons along it, a pulse racing out of the door the way they'll run (faster
-    // and brighter as the warning runs out)
-    const step = 70;
-    const head = warn ? null : Math.max(...S.heads.map((hd) => hd.out));
-    for (let s = 30; s < P.len; s += step) {
-      if (head != null && s < head - 40) continue; // (behind the leader: the herd is the warning now)
-      const at = this.stage.stampedeAt(P, s);
-      const sg = P.segs.find((q) => s <= q.s0 + q.l) ?? P.segs[P.segs.length - 1];
-      const ux = (sg.b.x - sg.a.x) / (sg.l || 1); const uz = (sg.b.z - sg.a.z) / (sg.l || 1);
-      const pulse = 0.5 + 0.5 * Math.sin(t * (0.25 + 0.2 * w) - s * 0.035);
-      const a = warn ? 0.45 + 0.5 * w * pulse + 0.05 : 0.35 + 0.2 * pulse;
-      const sz = 16 + 4 * w * pulse;
-      const chev = (k) => {
-        const tip = { x: at.x + ux * sz * k, y: at.z + uz * sz * k };
-        const l = { x: at.x - ux * sz * 0.5 * k - uz * sz * k, y: at.z - uz * sz * 0.5 * k + ux * sz * k };
-        const r = { x: at.x - ux * sz * 0.5 * k + uz * sz * k, y: at.z - uz * sz * 0.5 * k - ux * sz * k };
-        const m = { x: at.x - ux * sz * 0.05 * k, y: at.z - uz * sz * 0.05 * k };
-        return [tip, r, m, l];
-      };
-      g.fillStyle(0x140808, a * 0.8).fillPoints(chev(1.3), true);
-      g.fillStyle(DANGER.glint, a).fillPoints(chev(1.05), true);
-      g.fillStyle(0xfff0e6, a * (0.4 + 0.6 * pulse)).fillPoints(chev(0.6), true);
-    }
+    drawStampedeTrail(g, this.stage, P, S, hz.d, t);
     if (warn) {
       // dust boiling out of the doorway, thicker as they come
       if (Math.floor(t) % 2 === 0) {
@@ -1469,6 +1436,12 @@ export class StageView {
     listenScorpion(this);
     ev.on('propHit', ({ prop, dir }) => this.propHit(prop, dir));
     ev.on('propBreak', ({ prop, dir, blast }) => this.propBreak(prop, dir, blast));
+    ev.on('chestOpen', ({prop}) => {
+      const v=this.propSprites.get(prop.id);
+      if(!v)return;
+      v.img.setTexture('prop-chest-open').clearTint();
+      this.scene.tweens.add({targets:v.img,scaleY:v.s*1.08,duration:120,yoyo:true,ease:'Sine.easeOut'});
+    });
     ev.on('bladeStruck', ({ hazard, dir, force }) => {
       const s = this.stage.bladeState(hazard);
       hazard.chain?.kick(dir, force ? 1.4 : 1); // the blow shakes the chain as well as turning the swing
@@ -1606,6 +1579,10 @@ export class StageView {
   }
 
   update() {
+    if (!this.chestHint) this.chestHint=this.scene.add.text(0,0,'E / D-PAD UP · OPEN',{fontFamily:'Georgia',fontSize:'15px',color:'#ffe0a0',stroke:'#17100a',strokeThickness:4}).setOrigin(.5,1);
+    const chest=this.stage.chestPrompt;
+    this.chestHint.setVisible(!!chest && !chest.opened);
+    if(chest)this.chestHint.setPosition(chest.x,chest.z-(chest.y??0)-chest.h-10).setDepth(chest.z+100);
     this.siege.update();
     this.syncRolling();
     this.syncKicked();

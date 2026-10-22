@@ -635,7 +635,7 @@ export class TerrainView {
     top.fillStyle(0x000000, 0.4);
     for (let i = 0; i < n; i++) {
       const z = cart || n === 1 ? b.z0 + ((b.z1 - b.z0) * (i + 1)) / n : b.z0 + 16 + ((b.z1 - b.z0 - 16) * i) / (n - 1);
-      const flip = cart ? i !== n - 1 : i % 2 === 1;
+      const flip = b.artFlip ?? (cart ? i !== n - 1 : i % 2 === 1);
       const dx = cart ? 0 : (i % 2 ? 16 : -10);
       const k = cart ? 1 : 1 - 0.18 * (i % 2); // (the second heap smaller, set off to the side)
       top.fillEllipse(cx + dx + 4, z - 2, wide * 0.9 * k, cart ? 22 : 16);
@@ -654,8 +654,14 @@ export class TerrainView {
     if (!s.textures.exists('village-mill-src')) return false;
     if (!s.textures.exists('village-mill')) s.textures.addCanvas('village-mill', keyLayer(s.textures.get('village-mill-src').getSourceImage(), 'magenta'));
     const { top, front, b } = v;
-    v.art ??= s.add.image(0, 0, 'village-mill').setOrigin(0.5, 0.97);
-    v.art.setPosition((x0 + x1) / 2, b.z1 + 4).setScale((x1 - x0 + 24) / v.art.frame.width).setDepth(b.z1 + 0.5).setVisible(true);
+    const tex=s.textures.get('village-mill');
+    if(!tex.has('deck')) {
+      const src=tex.getSourceImage();
+      // Trim transparent export padding in the texture frame, preserving source alpha.
+      tex.add('deck',0,0,Math.round(src.height*.26),src.width,Math.round(src.height*.58));
+    }
+    v.art ??= s.add.image(0, 0, 'village-mill','deck').setOrigin(0.5, 1);
+    v.art.setPosition((x0 + x1) / 2, b.z1).setDisplaySize(x1-x0,b.z1-b.z0+b.top).setDepth(b.z0-.1).setVisible(true);
     top.fillStyle(0x000000, 0.35).fillEllipse((x0 + x1) / 2, b.z1, x1 - x0 + 30, 18);
     top.setDepth(b.z0 - 0.5);
     front.setVisible(false);

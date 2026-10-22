@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {syncSanctuaryMusic} from '../src/core/SanctuaryMusic.js';
+const scene={stageId:'village',players:[{alive:true,x:8000}],stage:{section:{id:'longhall'},story:{npc:()=>({x:8880})}}};
+let calls=0;const play=(s,key)=>{assert.equal(key,'sanctuary');calls++;};
+assert(!syncSanctuaryMusic(scene,play));scene.stage.section.id='gate';assert(!syncSanctuaryMusic(scene,play));
+scene.players[0].x=8500;assert(syncSanctuaryMusic(scene,play));
+scene.stage.sentence={running:true};assert(!syncSanctuaryMusic(scene,play));scene.stage.sentence.running=false;
+assert(syncSanctuaryMusic(scene,play));scene.leaving=true;assert(!syncSanctuaryMusic(scene,play));assert.equal(calls,2);
+const music=readFileSync('src/core/Music.js','utf8');assert(music.includes("sanctuary: 'assets/audio/safety-in-the-sanctuary.mp3'"));
+assert(readFileSync('assets/audio/safety-in-the-sanctuary.mp3').length>1000000);
+const gore=readFileSync('src/effects/Gore.js','utf8').split('  onMaim(')[1].split('  // Red mist')[0];
+assert(!gore.includes('pieceTex('),'No unrelated generic hand is spawned on a maim');assert(gore.includes('Math.round(46 * this.amount)'),'Approved maim blood spray retained');
+console.log('Sanctuary approach/scene/exit guards and removal of unmatched arm art passed.');

@@ -20,6 +20,7 @@ import { measureCanvas } from './frameMeasure.js';
 import { RAGDOLL_GEAR } from '../data/ragdollGear.js';
 import { JUGGLE } from '../combat/Juggle.js';
 import { dyeImage } from './dye.js';
+import { PHYSICS, limitTurn } from '../effects/Physics.js';
 
 const OVER = 6;      // frame px the pieces overlap at each joint (hides the seams)
 // the joints along the lying body, as a share of its length from the top of the head
@@ -165,7 +166,7 @@ function ground(p, fl, bounce) {
   if (p.y <= fl) return;
   const v = p.y - p.py;
   p.y = fl;
-  p.py = v > 0 ? fl + v * bounce : fl - v;
+  p.py = v > 0 ? fl + (v < 0.65 ? 0 : v * bounce) : fl - v;
 }
 
 function rotAbout(p, c, a) {
@@ -246,6 +247,7 @@ export class Ragdoll {
     this.age = 0;
     this.grounded = 0;
     this.settle = 0;
+    this.sleeping = false;
     this.prevVh = f.vh;
     this.dead = f.health <= 0;
     this.released = false;
@@ -396,10 +398,21 @@ export class Ragdoll {
         // in the air, floating, after every hit on the way down)
         const dv = Math.max(0, f.vh / 60 + (P[2].y - P[2].py));
         for (const p of P) p.py += dv;
-        P[0].px -= (this.B.headLeft ? -face : face) * Math.min(dv, f.vh / 60) * 0.6;
+        P[0].px -= (this.B.headLeft ? -face : face) * Math.min(2, dv * 0.2);
         this.grounded = 0; this.settle = Math.min(this.settle, 0.02);
       }
       this.prevVh = f.vh;
+      if (!free && this.grounded > 60 && f.h <= f.floor + 1 && Math.abs(f.vx) < 6 && Math.abs(f.vh) < 6) {
+        target.pts.forEach((t, j) => { P[j].x = P[j].px = t.x; P[j].y = P[j].py = t.y; });
+        this.stepGear(f, G, floorY, target);
+        continue;
+      }
+      if (free && this.grounded > 120 && P.slice(lo, hi + 1).every(p => Math.hypot(p.x - p.px, p.y - p.py) < 1.5)) this.sleeping = true;
+      if (free && this.sleeping) {
+        for (let j = lo; j <= hi; j++) { P[j].px = P[j].x; P[j].py = P[j].y; }
+        this.stepGear(f, G, floorY, target);
+        continue;
+      }
       let down = 0;
       for (let j = lo; j <= hi; j++) {
         const p = P[j];
@@ -433,7 +446,10 @@ export class Ragdoll {
       }
       // settling: once he's been down a moment, the body lets go into the painted pose
       // (a cut-off piece just comes to rest where it fell)
-      if (down >= Math.min(3, hi - lo + 1)) this.grounded++; else this.grounded = Math.max(0, this.grounded - 1);
+      // A bent body can rest on just its hips and heels. Requiring three contacts
+      // left those bodies permanently awake, fighting their own pose correction.
+      if (down >= Math.min(2, hi - lo + 1) || (!free && down > 0 && f.h <= f.floor + 1)) this.grounded++;
+      else this.grounded = Math.max(0, this.grounded - 1);
       if (this.grounded > 6) this.settle = Math.min(0.22, this.settle + 0.012); // (still before the painted get-up starts)
       // nothing dead sits up for long: a piece come to rest propped up (a headless body
       // sat on its hips) is tipped over its highest end
@@ -485,9 +501,14 @@ export class Ragdoll {
           const p = P[j]; const t = target.pts[j];
           const dx = (t.x - p.x) * this.settle; const dy = (t.y - p.y) * this.settle;
           p.x += dx; p.y += dy;
-          p.px += dx * 0.7; p.py += dy * 0.7; // (and calmed)
+          // Pose correction isn't an impulse: translate the previous position by
+          // exactly the same amount, then dissipate the remaining movement.
+          p.px += dx; p.py += dy;
+          p.px = p.x - (p.x - p.px) * 0.85;
+          p.py = p.y - (p.y - p.py) * 0.85;
         }
       }
+      limitTurn(P, lo, hi, free ? PHYSICS.pieceTurn : PHYSICS.bodyTurn);
       this.stepGear(f, G, floorY, target);
       if (free) this.release();
       // (never let a bad number loose: put him down as painted, or drop the piece)
@@ -506,7 +527,17 @@ export class Ragdoll {
     if (!this.on || this.released || this.age < 6) return;
     this.released = true;
     for (const w of this.gear ?? []) {
-      if (w.g.kind === 'flail') { if (w.g.drops) w.dropped = true; continue; }
+      if (w.g.kind === 'flail') {
+        if(this.scene.cuts?.dropFlail){this.scene.cuts.dropFlail(this.gearImgs[w.img],this.zDepth??this.floorY,w,this.k);this.gearImgs[w.img].setVisible(false);w.transferred=true;}
+        else w.dropped=true;
+        continue;
+      }
+      if(this.scene.cuts?.dropWeapon){
+        const img=this.gearImgs[w.img];
+        const facing=this.B.headLeft?-this.face:this.face;
+        this.scene.cuts.dropWeapon(img,this.zDepth??this.floorY,{vx:facing*(45+Math.random()*80),vh:120+Math.random()*100,spin:facing*(2+Math.random()*4)});
+        img.setVisible(false);w.transferred=true;continue;
+      }
       w.free = true;
       const vx = (Math.random() - 0.3) * 1.6 * power * (this.B.headLeft ? -this.face : this.face);
       w.a.px -= vx; w.a.py += 1 + Math.random() * 1.5 * power;
@@ -516,6 +547,7 @@ export class Ragdoll {
 
   stepGear(f, G, floorY, target) {
     for (const w of this.gear) {
+      if(w.transferred)continue;
       const g = w.g;
       if (g.kind === 'flail') {
         const R = w.rope;
@@ -593,6 +625,7 @@ export class Ragdoll {
           w.a.x += dx * diff; w.a.y += dy * diff; w.b.x -= dx * diff; w.b.y -= dy * diff;
           for (const p of [w.a, w.b]) ground(p, floorY - 2, 0.35);
         }
+        limitTurn([w.a, w.b], 0, 1, PHYSICS.pieceTurn);
       }
     }
   }
@@ -629,6 +662,7 @@ export class Ragdoll {
       g.fillStyle(0xd8c8b0, 1).fillCircle(P[j].x + nx * half * 0.2, P[j].y + ny * half * 0.2, 1.1); // (bone)
     }
     (this.gear ?? []).forEach((w) => {
+      if(w.transferred)return;
       const img = this.gearImgs[w.img]; // (its own picture: the half he's in may not carry all his gear)
       if (w.g.kind === 'flail') {
         const R = w.rope;

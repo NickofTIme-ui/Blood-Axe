@@ -348,8 +348,8 @@ export class Dismember {
   // A rope of gut spilling out of point p, optionally still attached to a chunk. The
   // belly gives up SETTINGS.gore.guts of them: the one asked for, and the rest spilling
   // out beside it, longer or shorter, some the other way.
-  rope(p, z, { chunk = null, lenU = 60, dir = 0, power = 1 } = {}) {
-    const n = Math.max(1, Math.round(SETTINGS.gore.guts ?? 1));
+  rope(p, z, { chunk = null, lenU = 60, dir = 0, power = 1, copies = null } = {}) {
+    const n = Math.max(1, Math.round(copies ?? SETTINGS.gore.guts ?? 1));
     if (this.gore.level === 0 || this.ropes.length > 14 * n) return null;
     const k = this.gore.level === 1 ? 0.6 : 1;
     const first = new GutRope(this, { x: p.x, y: p.y, z, chunk, lenU: lenU * k, dir, power });
@@ -440,13 +440,8 @@ export class Dismember {
 
   // Tiny coloured shards (a burst skull).
   shards(x, y, z, colors, count, power = 1) {
-    for (let i = 0; i < count; i++) {
-      const snap = { key: 'px', def: { w: 4, h: 4 }, ox: 2, oy: 2, x: x + rand(-5, 5), y: y + rand(-5, 5), rot: rand(0, 6), sx: rand(0.4, 0.9), sy: rand(0.4, 0.9), tint: 0xffffff };
-      const c = this.fly([{ snap, tint: pick(colors) }], z + rand(-5, 5), {
-        vx: rand(-260, 260) * power, vh: rand(220, 620) * power, vz: rand(-40, 40), spin: rand(-20, 20),
-      });
-      c.trail = false;
-    }
+    // Irregular painted bone and flesh replace the old tinted square pixels.
+    this.bits(x,y,z,['skullBit','bone','meat2'],Math.max(1,Math.round(count/3)),power,0);
   }
 
   // ------------------------------------------------------------ entry points
@@ -696,7 +691,7 @@ export class Dismember {
       const p = { x: htop.x + (bottom.x - htop.x) * (i / 4), y: htop.y + (bottom.y - htop.y) * (i / 4) };
       this.gore.burst(p.x, c.z, c.z - p.y, i % 2 ? 1 : -1, Math.round(22 * this.gore.amount), 1);
     }
-    this.bits(bottom.x, bottom.y, c.z, ['gut', 'organ', 'meat1', 'meat2', 'sinew'], 6, 0.35, 0);
+    this.bits(bottom.x, bottom.y, c.z, ['gut', 'organ', 'meat1', 'meat2', 'sinew'], 7, 0.35, 0);
   }
 
   // --------------------------------------------------------------- BLOWN TO PIECES

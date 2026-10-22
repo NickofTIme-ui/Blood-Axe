@@ -650,7 +650,7 @@ export function tube(ctx, pts, r, R = Math.random) {
 const cache = new Map();
 function register(scene, key, painted, extra = {}) {
   if (!scene.textures.exists(key)) scene.textures.addCanvas(key, painted.canvas).setFilter(Phaser.Textures.FilterMode.LINEAR);
-  const v = { key, w: painted.canvas.width, h: painted.canvas.height, ox: painted.ox, oy: painted.oy, scale: 1 / S, ...extra };
+  const v = { key, w: painted.canvas.width, h: painted.canvas.height, ox: painted.ox, oy: painted.oy, scale: painted.scale ?? 1 / S, ...extra };
   cache.set(key, v);
   return v;
 }
@@ -677,17 +677,32 @@ export function bandTex(scene, { lenU, thickU, kind, variant, skin, spine = true
 
 // Loose pieces: 'organ' | 'gutLoop' | 'sinew' | 'meat' | 'boneShard' | 'skullShard' | 'eyeball'
 const PIECE_SIZE = { organ: 12, gutLoop: 16, sinew: 12, meat: 8, boneShard: 9, skullShard: 9, eyeball: 4 };
+const PAINTED_PIECES={forearm:0,upperArm:1,lowerLeg:2,helmet:3,meat:4,organ:5,gutLoop:6,sinew:7,boneShard:8,skullShard:9,eyeball:10,armor:11};
+function paintedPiece(scene,type,size){
+  if(!scene.textures.exists('gore-painted-atlas')||PAINTED_PIECES[type]==null)return null;
+  const src=scene.textures.get('gore-painted-atlas').getSourceImage(),index=PAINTED_PIECES[type];
+  const w=Math.floor(src.width/4),h=Math.floor(src.height/3),c=canvas(w,h),ctx=c.getContext('2d');
+  ctx.drawImage(src,(index%4)*w,Math.floor(index/4)*h,w,h,0,0,w,h);
+  const px=ctx.getImageData(0,0,w,h).data;
+  let x0=w,y0=h,x1=0,y1=0;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(px[(y*w+x)*4+3]>30){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
+  if(x0>x1)return null;
+  const density=S*2,scale=size*density/Math.max(x1-x0+1,y1-y0+1),out=canvas((x1-x0+1)*scale,(y1-y0+1)*scale);
+  out.getContext('2d').drawImage(c,x0,y0,x1-x0+1,y1-y0+1,0,0,out.width,out.height);
+  return{canvas:out,ox:out.width/2,oy:out.height/2,scale:1/density};
+}
 export function pieceTex(scene, type, variant, skin = '#b06a48') {
   const key = `piece-${type}-${variant % 6}-${skin}`;
   if (cache.has(key)) return cache.get(key);
   const R = rng((variant % 6 + 1) * 6151 + type.length * 97);
-  const size = PIECE_SIZE[type] * (0.8 + R() * 0.45);
-  return register(scene, key, PIECES[type](R, size, skin));
+  const size = (PIECE_SIZE[type]??({forearm:35,upperArm:43,lowerLeg:40,helmet:25,armor:17}[type]??10)) * (0.8 + R() * 0.45);
+  return register(scene, key, paintedPiece(scene,type,size)??(PIECES[type]??PIECES.meat)(R, size, skin));
 }
 
 // Pre-paint the common variants at boot so the first kill doesn't hitch.
 export function warmGore(scene) {
   for (const t of Object.keys(PIECE_SIZE)) for (let v = 0; v < 6; v++) pieceTex(scene, t, v);
+  if(scene.textures.exists('gore-painted-atlas'))for(const t of ['forearm','upperArm','lowerLeg','helmet','armor'])for(let v=0;v<6;v++)pieceTex(scene,t,v);
   for (const kind of ['clean', 'heavy', 'crush']) {
     for (let v = 0; v < VARIANTS; v++) {
       woundTex(scene, { widthU: 14, part: 'upperArm', kind, variant: v, skin: '#b06a48' });

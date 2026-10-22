@@ -79,7 +79,7 @@ export const CHAIN = {
 
 // A runner who can be executed right now.
 export function isFinishable(e) {
-  return e.team === 'enemy' && e.alive && !!e.controller?.scared && e.grounded &&
+  return e.team === 'enemy' && e.alive && !e.stats.noFinisher && !!e.controller?.scared && e.grounded &&
     ['idle', 'walk', 'hitstun'].includes(e.state);
 }
 

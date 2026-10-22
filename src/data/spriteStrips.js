@@ -11,6 +11,8 @@
 // ANIMATION FRAMES are 'strip:index' (or plain numbers for the main sheet).
 // Attack animations use { phases: { startup: [...], active: [...], recovery: [...] } }.
 
+import { installRurikCombo } from './rurikComboArt.js';
+
 export const CHARACTER_STRIPS = {
   ulric: {
     // walk2 sets the size; the others were drawn "same scale" so they borrow its scale
@@ -89,12 +91,12 @@ export const ANIM_OVERRIDES = {
     // idle: his ready stance (the pose every attack strip starts and ends on, so no pop
     // going in or out of a swing) with smooth eased breathing on top (SpriteFighterView)
     idle: { needs: ['combo1'], frames: seq('combo1', [0]), fps: 1, loop: true, breathe: true },
-    // lingers on each foot's weight-down frame (1, 5), so every step lands heavily
-    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 1, 2, 3, 4, 5, 5, 6, 7]), fps: 11, loop: true, heavyBob: true },
-    walkU: { needs: ['walkU'], frames: seq('walkU', [0, 1, 1, 2, 3, 4, 5, 5, 6, 7]), fps: 11, loop: true, heavyBob: true },
-    walkD: { needs: ['walkD'], frames: seq('walkD', [0, 1, 1, 2, 3, 4, 5, 5, 6, 7]), fps: 11, loop: true, heavyBob: true },
-    walkUD: { needs: ['walkUD'], frames: seq('walkUD', [0, 1, 1, 2, 3, 4, 5, 5, 6, 7]), fps: 11, loop: true, heavyBob: true },
-    walkDD: { needs: ['walkDD'], frames: seq('walkDD', [0, 1, 1, 2, 3, 4, 5, 5, 6, 7]), fps: 11, loop: true, heavyBob: true },
+    // Continuous, distance-driven march; use every drawing without duplicate holds.
+    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
+    walkU: { needs: ['walkU'], frames: seq('walkU', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
+    walkD: { needs: ['walkD'], frames: seq('walkD', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
+    walkUD: { needs: ['walkUD'], frames: seq('walkUD', [0, 1, 2, 3, 4, 5, 6, 7, 8]), fps: 11, loop: true, march: true },
+    walkDD: { needs: ['walkDD'], frames: seq('walkDD', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
     sprint: { needs: ['sprint'], frames: seq('sprint', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 16, loop: true },
     dodgeUp: { needs: ['rollUp'], frames: seq('rollUp', [0, 1, 2, 3, 4, 5]) },
     dodgeDown: { needs: ['rollDown'], frames: seq('rollDown', [0, 1, 2, 3, 4, 5]) },
@@ -148,6 +150,8 @@ ANIM_OVERRIDES.ulricOath = {
   shoulder: { needs: ['shoulder'], phases: { startup: seq('shoulder', [0, 1]), active: seq('shoulder', [2, 3]), recovery: seq('shoulder', [4, 5]) } },
 };
 
+installRurikCombo(CHARACTER_STRIPS,ANIM_OVERRIDES);
+
 // Effects strips: equal cells, trimmed and scaled to `height` px.
 export const FX_STRIPS = {
   firebolt: { file: 'assets/fx/firebolt-strip.png', frames: 8, height: 44, fps: 14 },
@@ -163,3 +167,4 @@ export const FX_STRIPS = {
   // the file exists the slabs are drawn as rock shapes
   earthwall: { file: 'assets/fx/earthwall-strip.png', frames: 6, height: 260, bg: 'magenta' },
 };
+

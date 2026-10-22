@@ -1,0 +1,21 @@
+import {createRequire} from 'node:module';
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const require=createRequire('C:/Users/nickr/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/');
+const {createCanvas,loadImage}=require('@napi-rs/canvas');
+globalThis.document={createElement:()=>createCanvas(1,1)};
+const {importCharacterStrip}=await import('../src/view/stripImporter.js');
+const src=await loadImage('assets/npcs/stable-master.png');
+const c=createCanvas(src.width*2,src.height/2),g=c.getContext('2d');
+g.drawImage(src,0,0,src.width,src.height/2,0,0,src.width,src.height/2);
+g.drawImage(src,0,src.height/2,src.width,src.height/2,src.width,0,src.width,src.height/2);
+const result=importCharacterStrip(c,{frames:8,ref:0,target:116,align:'median',wide:65},null);
+assert(result,'Worker atlas must import as eight distinct complete figures');
+fs.writeFileSync('assets/npcs/stable-master-frames.png',result.canvas.toBuffer('image/png'));
+fs.writeFileSync('assets/npcs/stable-master-frames.json',JSON.stringify({fw:result.fw,fh:result.fh,count:8}));
+const preview=createCanvas(result.fw*4,result.fh*2),ctx=preview.getContext('2d');
+ctx.fillStyle='#292425';ctx.fillRect(0,0,preview.width,preview.height);
+for(let i=0;i<8;i++)ctx.drawImage(result.canvas,i*result.fw,0,result.fw,result.fh,(i%4)*result.fw,Math.floor(i/4)*result.fh,result.fw,result.fh);
+fs.writeFileSync('docs/stable-master-art-review.png',preview.toBuffer('image/png'));
+console.log('Imported eight stable-master poses:',result.fw,result.fh);
+

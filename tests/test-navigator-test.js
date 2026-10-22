@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { Progress } from '../src/progression/Progress.js';
+import { makePreviewProgress, TEST_SCENES } from '../src/view/TestNavigator.js';
+import { STAGE_VILLAGE } from '../src/data/stageVillage.js';
+const original=new Progress();original.data.campaign.flags.oathkeeper=true;
+const before=JSON.stringify(original.data);
+const preview=makePreviewProgress(original,STAGE_VILLAGE,6);
+preview.setFlag('preview-only');preview.save();
+assert.equal(JSON.stringify(original.data),before,'Testing must not change campaign progress');
+assert.equal(preview.storage,null);
+assert.equal(preview.data.campaign.flags.oathkeeper,undefined);
+for(const [,section] of TEST_SCENES)assert.ok(STAGE_VILLAGE.sections[section]);
+console.log('Test navigator: isolated save, replayable handoff, valid shortcuts.');

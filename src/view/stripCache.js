@@ -80,7 +80,7 @@ export async function cutStrip(img, spec, palette) {
   }
   const out = importCharacterStrip(img, spec, palette);
   out.canvas.toBlob((blob) => {
-    if (blob) put(key, { blob, meta: { count: out.count, scale: out.scale, fw: out.fw, fh: out.fh } });
+    if (blob) put(key, { blob, meta: { count: out.count, scale: out.scale, fw: out.fw, fh: out.fh, swords:out.swords } });
   }, 'image/png');
   return { ...out, cached: false };
 }

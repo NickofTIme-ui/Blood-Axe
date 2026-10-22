@@ -8,6 +8,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from '../view/depths.js';
 import { Dismember } from './Dismember.js';
+import { landDebris } from './Physics.js';
 
 const BLOOD = [0x8a0303, 0xa10a0a, 0x6e0202, 0xb3120f];
 const DECAL = [0x5a0000, 0x6b0505, 0x4a0000];
@@ -31,6 +32,13 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 export class Gore {
   constructor(scene) {
     this.scene = scene;
+    if(scene.textures.exists('blood-ink-sheet')) {
+      const tex=scene.textures.get('blood-ink-sheet'),src=tex.getSourceImage();
+      tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+      const w=Math.floor(src.width/2),h=Math.floor(src.height/2);
+      for(let i=0;i<4;i++)if(!tex.has(`ink-${i}`))tex.add(`ink-${i}`,0,(i%2)*w,Math.floor(i/2)*h,w,h);
+      this.bloodArt=true;
+    }
     this.drops = []; // flying blood, gibs and sparks
     const W = SETTINGS.world;
     this.rtY = W.floorTop - 60;
@@ -47,17 +55,23 @@ export class Gore {
   }
 
   get level() { return SETTINGS.gore.level; }
-  get amount() { return [0, 0.35, 1][this.level] ?? 1; }
+  get amount() { return [0, 0.35, 2.7][this.level] ?? 2.7; }
 
   // ------------------------------------------------------------ spawning
 
-  spawn({ x, z, h, vx, vz, vh, tint, scale, texture = 'dot', decal = true, life = 999, spin = 0 }) {
+  spawn({ x, z, h, vx, vz, vh, tint, scale, texture = 'dot', decal = true, life = 999, spin = 0, material = null }) {
     if (this.drops.length >= SETTINGS.gore.maxDrops) {
       const old = this.drops.shift();
       old.img.destroy();
     }
-    const img = this.scene.add.image(x, z - h, texture).setTint(tint).setScale(scale);
-    this.drops.push({ img, x, z, h, vx, vz, vh, scale, decal, life, spin });
+    const blood=this.bloodArt&&texture==='dot'&&decal&&!material;
+    const streak=blood&&Math.hypot(vx,vh)>230;
+    const img = this.scene.add.image(x, z - h, blood?'blood-ink-sheet':texture,blood?`ink-${streak?1:0}`:undefined).setTint(blood?0xffffff:tint).setScale(scale);
+    const bloodWidth=blood?(streak?rand(30,52):rand(10,18))*scale:0;
+    // Broaden fast painted jets across their direction of travel; keep their
+    // length, artwork, motion, droplet count and floor splashes unchanged.
+    if(blood)img.setDisplaySize(bloodWidth,rand(8,14)*scale*(streak?1.8:1)).setRotation(Math.atan2(vz-vh,vx));
+    this.drops.push({ img, x, z, h, vx, vz, vh, scale, decal, life, spin, material,blood,bloodWidth });
   }
 
   // A spray of blood. dir = direction the hit was travelling (-1/1).
@@ -113,14 +127,8 @@ export class Gore {
     }
 
     if (this.level >= 2) {
-      // Chunky bits
-      for (let i = 0; i < 5; i++) {
-        this.spawn({
-          x: e.x, z: e.z, h: e.h, texture: 'px',
-          vx: e.dir * rand(80, 320), vz: rand(-60, 60), vh: rand(200, 480),
-          tint: pick([...BLOOD, victim.stats.look.color]), scale: rand(1.5, 3), spin: rand(-12, 12),
-        });
-      }
+      // Painted flesh replaces the old solid square kill particles.
+      this.dismemberer.bits(e.x,e.z-e.h,e.z,['meat1','meat2'],2,.65,e.dir);
     }
     // A pool spreads under the body once it lands.
     const pool = () => {
@@ -136,7 +144,7 @@ export class Gore {
   // that way (no painted sprite showing), so the caller falls back to the doll.
   //   decap / headPop  the head comes off at the neck (flung, or popped straight up)
   //   halfH            cut through at the waist, the top half thrown clear
-  //   halfV            a steep diagonal from shoulder to hip, the halves sliding apart
+  //   halfV            lengthwise through the body; both sides tumble independently
   //   limbs            the legs taken at the knee, the body dropping where it stood
   //   explode          torn to pieces (blowApart), in a storm of meat
   cutSprite(type, view, e) {
@@ -144,23 +152,41 @@ export class Gore {
     view?.prepareCut?.(); // (down as a ragdoll: back to his painted lying pose to be cut)
     if (!cuts || !view?.sheet || !view.sprite?.visible || view.cutAway) return false;
     const dir = e.dir || view.f.facing;
-    const cut = { decap: 'neck', headPop: 'neck', halfH: 'waist', halfV: 'diagDown', limbs: 'legs', explode: 'waist' }[type];
+    const cut = { decap: 'neck', headPop: 'neck', halfH: 'waist', halfV: 'vertical', limbs: 'legs', explode: 'waist' }[type];
     if (!cut) return false;
     const f = view.f;
     const mid = f.h + f.stats.body.h * 0.5;
     // a mine doesn't cut a man in two: there are no halves, only what's left of him
     if (type === 'explode' && e.move?.fx === 'mine') return this.blowApart(view, e, { pieces: 15, power: 1.15 });
+    if (type === 'explode' && e.move?.fx === 'trample') return this.blowApart(view,e,{pieces:14,power:1.15,push:dir*260});
     // anything else that blows a man up (a lotus, a rupture, a crushing crit) tears him
     // into fewer, bigger pieces, thrown the way the blow was going
     if (type === 'explode') return this.blowApart(view, e, { pieces: 9, power: 0.95, push: dir * 140 });
     if (e.sentence && cut === 'neck' && e.body) return this.sentenceCut(view, e, type, dir);
-    const { upper, lower } = cuts.split(view, cut, dir);
+    const { upper, lower } = cuts.split(view, cut, dir, {
+      impact:Number.isFinite(e.h)?Math.max(0,Math.min(1,(e.h-f.h)/f.stats.body.h)):null,
+      impactSide:Number.isFinite(e.x)?(e.x-f.x)/f.stats.body.w*(Math.sign(view.sprite.scaleX)||1):0,
+      // The blow supplies the broad direction; variation stays within the torso band.
+      tilt: e.move?.cut === 'chop' ? rand(0.65, 1) : rand(0.15, 0.65),
+    });
     view.cutAway = true;
     view.hideAll();
     if (type === 'decap') cuts.launch(upper, dir * rand(180, 420), rand(380, 520), dir * rand(9, 16));
     else if (type === 'headPop') cuts.launch(upper, dir * rand(-40, 60), rand(620, 760), dir * rand(4, 9));
     else if (type === 'halfH') cuts.launch(upper, dir * rand(160, 320), rand(260, 380), dir * rand(5, 9));
-    else if (type === 'halfV') cuts.launch(upper, dir * rand(60, 130), rand(150, 220), dir * rand(1.5, 3));
+    else if (type === 'halfV') {
+      const face=Math.sign(view.sprite.scaleX)||f.facing;
+      const spread=e.attachedSplit?rand(35,55):rand(85,150);
+      cuts.launch(upper, -face*spread+dir*35,rand(140,220),-face*rand(2,4));
+      cuts.launch(lower, face*spread+dir*35,rand(110,190),face*rand(2,4));
+      if(e.attachedSplit)cuts.attachSplit(upper,lower);
+      // Spill from the opened abdomen, rather than dropping unrelated limb art.
+      const D=this.dismemberer,belly=f.z-f.h-f.stats.body.h*.42;
+      const skin=f.stats.look.skin;
+      D.skin=typeof skin==='number'?`#${skin.toString(16).padStart(6,'0')}`:(skin??'#b06a48');
+      D.bits(f.x,belly,f.z,['organ','gut'],2,.4,0);
+      D.rope({x:f.x-5,y:belly},f.z,{chunk:upper,lenU:42,dir:-face,power:.3,copies:1});
+    }
     else if (type === 'limbs') cuts.launch(upper, dir * rand(20, 70), rand(120, 180), dir * rand(1, 2.5));
     view.ragdollCut?.(type, upper, lower); // (what's left of him flops: view/Ragdoll.js)
     this.burst(f.x, f.z, mid, dir, Math.round(60 * this.amount), 1.6);
@@ -256,13 +282,8 @@ export class Gore {
       const h = f.h + f.stats.body.h * 0.68;
       const dir = e.dir || f.facing;
       this.burst(f.x, f.z, h, dir, Math.round(46 * this.amount), 1.5);
-      for (let i = 0; i < Math.round(7 * this.amount); i++) {
-        this.spawn({
-          x: f.x, z: f.z + rand(-3, 3), h, texture: 'px',
-          vx: dir * rand(90, 360), vz: rand(-50, 50), vh: rand(180, 420),
-          tint: pick([...BLOOD, f.stats.look.skin ?? 0x8a0303, f.stats.look.color]), scale: rand(1.6, 3), spin: rand(-12, 12),
-        });
-      }
+      // Preserve the wound spray without spawning unrelated generic arm artwork.
+      this.dismemberer.bits(f.x,f.z-h,f.z,['meat1','sinew'],2,.6,dir);
       return;
     }
     this.dismemberer.maim(view.sever(e.limb), e);
@@ -297,6 +318,12 @@ export class Gore {
 
   splat(x, z, size, alpha = 0.85) {
     if (this.level === 0) return;
+    if(this.bloodArt) {
+      this.stamp.setTexture('blood-ink-sheet',`ink-${Math.random()<.5?2:3}`)
+        .setPosition(x,z-this.rtY).setTint(0xffffff).setDisplaySize(size*rand(28,44),size*rand(12,20))
+        .setRotation(rand(-.2,.2)).setAlpha(this.level===1?alpha*.6:alpha);
+      this.decals.draw(this.stamp);return;
+    }
     this.stamp.setPosition(x, z - this.rtY)
       .setScale(size * rand(1, 1.8), size * rand(0.45, 0.7))
       .setTint(pick(DECAL))
@@ -321,12 +348,16 @@ export class Gore {
       d.h += d.vh * dt;
       d.life--;
       if (d.spin) d.img.rotation += d.spin * dt;
+      if(d.blood)d.img.setRotation(Math.atan2(d.vz-d.vh,d.vx));
 
       // (on a stage with ledges it lands on whatever is under it; the floor's stains are
       // only for the floor: a drop that lands on a ledge just soaks in)
       const T = this.scene.world?.terrain;
       const ground = T ? T.groundAt(d.x, d.z) : 0;
-      if (d.h <= ground || d.life <= 0) {
+      if (d.material && ground >= 0 && d.h <= ground && d.life > 0) {
+        landDebris(d, ground, d.material);
+        d.img.setAlpha(Math.min(1, d.life / 30));
+      } else if (d.h <= ground || d.life <= 0) {
         if (d.decal && d.h <= ground && ground === 0) this.splat(d.x, d.z, d.scale * (d.spin ? 1.2 : 0.8));
         d.img.destroy();
         this.drops.splice(i, 1);

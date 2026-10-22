@@ -14,6 +14,7 @@
 export const NARRATION = new Set(['VOICE']);
 
 export const SPEAKERS = {
+  ELSBETH:{name:'Elsbeth',portrait:'elsbeth'},
   // the Oath Keepers
   RURIK: { name: 'Rurik' },
   ORYN: { name: 'Oryn' },
@@ -39,6 +40,7 @@ export const SPEAKERS = {
   MIRA: { name: 'Mira' },
   TAM: { name: 'Tam' },
   BRANN: { name: 'Brann' },
+  HAKON: { name: 'Hakon' },
   JOREN: { name: 'Joren' },
   WENNA: { name: 'Wenna' },
   ANSEL: { name: 'Ansel' },

@@ -14,6 +14,8 @@ import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { drawCastle } from './castle.js';
 import { PaintedLevel } from './levelArt.js';
+import { PaintedFire } from './PaintedFire.js';
+import { TownChurchView } from './TownChurchView.js';
 
 const COL = {
   skyTop: 0x07070f, skyMid: 0x1a1426, skyLow: 0x4a2a2a,
@@ -41,6 +43,7 @@ export class VillageBackdrop {
     this.data = stage.data;
     this.width = this.data.width;
     this.flickers = [];
+    this.paintedFire = new PaintedFire(scene);
     this.embers = [];
     // painted art where it exists (data/levelArt.js), the code-drawn stand-ins elsewhere
     const art = this.art = new PaintedLevel(scene, 'village', this.width);
@@ -49,6 +52,7 @@ export class VillageBackdrop {
     this.drawSmoke();
     if (art.has('mid')) art.layer('mid', DEPTH.far + 2); else this.drawFarRoofs();
     this.drawStreetFronts();
+    this.church=new TownChurchView(scene,stage);
     this.drawStreet();
     this.makeEmbers();
   }
@@ -147,16 +151,22 @@ export class VillageBackdrop {
     const r = rng(51);
     const special = (x) => this.data.sections.find((sec) => x >= sec.x0 && x < sec.x1)?.id;
     const painted = this.art.has('wall');
-    if (painted) this.art.wall();
+    if (painted) this.paintedFire.add(this.art.wall(), true);
+    // Architecture stays behind the lane; only the matching loading deck is solid.
+    this.art.piece('mill', 4500, 5200, { bottom: 8 });
     for (let x = 0; x < this.width;) {
       const id = special(x);
       const sec = this.data.sections.find((q) => q.id === id);
       const prop = (tag) => sec?.props?.find((pr) => pr.tag === tag);
       // (a set piece: its painting if there is one, else drawn here)
-      const piece = (name, x0, x1, draw) => { if (!this.art.piece(name, x0, x1)) draw(); return x1; };
+      const piece = (name, x0, x1, draw) => {
+        const img = this.art.piece(name, x0, x1);
+        if (img) this.paintedFire.add(img); else draw();
+        return x1;
+      };
       if (id === 'gate') {
         const gx = this.data.exit?.x ?? this.width - 120;
-        if (!this.art.has('gate')) this.drawGate(g, sec.x0, this.width, top); else this.art.piece('gate', gx - 260, gx + 260);
+        if (!this.art.has('gate')) this.drawGate(g, 9180, this.width, top); else this.art.piece('gate', 9180, 9400);
         x = this.width; continue;
       }
       if (id === 'hall' && x >= sec.x0 + 200 && x < sec.x0 + 1200) { x = piece('longhall', sec.x0 + 200, sec.x0 + 1200, () => this.drawLonghall(g, sec.x0 + 200, sec.x0 + 1200, top)); continue; }
@@ -387,7 +397,8 @@ export class VillageBackdrop {
   // painting (the well with a burning market stall beside it) is 320 wide, so the stone
   // ring comes up to a man's waist (was 140, a toy next to the fighters: Nick, 2026-10-16)
   drawWell({ x, z }) {
-    if (this.art.piece('well', x - 160, x + 160, { depth: z - 1, bottom: z - (SETTINGS.world.floorTop - 50) })) return;
+    const painted = this.art.piece('well', x - 160, x + 160, { depth: z - 1, bottom: z - (SETTINGS.world.floorTop - 50) });
+    if (painted) { this.paintedFire.add(painted); return; }
     const g = this.scene.add.graphics().setDepth(z - 1);
     g.fillStyle(0x3a3a3e, 1).fillRect(x - 30, z - 34, 60, 34);
     g.fillStyle(0x4a4a50, 1).fillEllipse(x, z - 34, 64, 16);
@@ -408,6 +419,8 @@ export class VillageBackdrop {
   }
 
   update() {
+    this.church?.update();
+    this.paintedFire.update(this.scene.time.now);
     const t = this.scene.time.now / 16.7;
     this.updateStables(t);
     for (const f of this.flickers) f.img.setAlpha(f.base + Math.sin(t * f.rate + f.base * 40) * f.amp + (Math.random() - 0.5) * f.amp * 0.4);

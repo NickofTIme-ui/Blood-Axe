@@ -19,6 +19,8 @@ import { Heading, headingAnim } from './Heading.js';
 import { BodyFeel, easedSpread } from './animFeel.js';
 import { PLUNGE_LAND, kingsfireOf } from '../combat/Skills.js';
 import { softShadow } from './atmosphere.js';
+import { BladeTrail } from './BladeTrail.js';
+import { MarchCycle } from './MarchCycle.js';
 
 const ATTACKS = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'airAttack', 'kick', 'thrust', 'spin', 'shoulder'];
 
@@ -79,7 +81,9 @@ export class SpriteFighterView {
     this.ghost = scene.add.image(fighter.x, fighter.z, spriteKey, 'f0')
       .setOrigin(m.anchorX / m.frameWidth, m.anchorY / m.frameHeight).setVisible(false);
     this.lastFrameRef = null;
+    this.bladeTrail=new BladeTrail();
     this.heading = new Heading();
+    this.march = new MarchCycle();
     this.feel = new BodyFeel(fighter, { mass: fighter.stats.body.h / 108 }); // squash, stretch, state blends (view/animFeel.js)
 
     if (fighter.team === 'enemy') {
@@ -115,7 +119,7 @@ export class SpriteFighterView {
       const dir = this.heading.dir;
       const vert = dir === 'up' || dir === 'down';
       const soft = st === 'idle' || st === 'block' || st === 'parry' || st === 'charge' || ATTACKS.includes(st);
-      if (soft && dt < (vert ? 6 : 3)) {
+      if (soft && !['light1','light2','light3'].includes(st) && dt < (vert ? 6 : 3)) {
         const via = vert && dt < 3 ? dir : dir.startsWith('up') ? 'upDiag' : 'downDiag';
         const turn = headingAnim(a, via);
         if (turn !== a.walk) return turn.frames[3]; // (a planted, legs-passing pose)
@@ -131,7 +135,7 @@ export class SpriteFighterView {
       const phase = movePhase(m, fr);
       // chained out of another swing: the last follow-through IS the wind-up, so skip
       // the strip's ready stance instead of snapping back to it between hits
-      const startup = this.chained() && ph.startup.length > 1 ? ph.startup.slice(1) : ph.startup;
+      const startup = !atk.directStartup && this.chained() && ph.startup.length > 1 ? ph.startup.slice(1) : ph.startup;
       // (wind-up and recovery eased: the coil and the follow-through hold, the in-betweens
       // fly; the strike itself is never moved off its active frames)
       if (phase === 'startup') return easedSpread(startup, (fr - 1) / m.startup);
@@ -162,6 +166,7 @@ export class SpriteFighterView {
         // sprinting (side on): the charge strip when drawn, else the walk played faster
         if (f.sprinting && this.heading.dir === 'side' && a.sprint) return loop(a.sprint);
         const w = headingAnim(a, this.heading.dir);
+        if (!f.sprinting && w.march) return this.march.frame(w);
         return loop(f.sprinting ? { ...w, fps: w.fps * 1.5 } : w);
       }
       case 'jump': return f.vh > 0 ? a.jump.rise[0] : a.jump.fall[0];
@@ -241,7 +246,7 @@ export class SpriteFighterView {
     if (!feel || !m) return null;
     const seed = this.f.fsm.enterCount;
     const vary = 0.86 + ((seed * 37) % 11) / 11 * 0.28;
-    const k = feel.k * vary;
+    const k = feel.k * vary * (['light1','light2','light3'].includes(st)?1.45:1);
     // momentum carries a chained swing: less wind-up (but a heavy always coils in full —
     // its big wind-up is the telegraph)
     const coil = this.chained() && st !== 'heavy' ? 0.45 : 1;
@@ -267,6 +272,12 @@ export class SpriteFighterView {
       out.sx = 1 + 0.03 * k * damp;
       out.sy = 1 - 0.02 * k * damp;
       out.bob = -0.8 * k * Math.sin(t * Math.PI) * damp;   // weight comes back up
+    }
+    // The artwork supplies torso rotation. Large whole-body tilts make a vertical
+    // blade diagonal and forward offsets make a broad cross look like a poke.
+    if(['light1','light2','light3'].includes(st)) {
+      out.lean*=st==='light3'?.18:.5;
+      out.push*=.65;
     }
     return out;
   }
@@ -321,10 +332,10 @@ export class SpriteFighterView {
     if (typeof ref === 'string') {
       const [strip, i] = ref.split(':');
       this.sprite.setTexture(`${this.key}-${strip}`, `f${i}`);
-      this.sprite.setOrigin(this.meta.stripOrigin?.[strip] ?? this.sprite.originX, this.sprite.originY);
+      this.sprite.setOrigin(this.meta.stripOrigin?.[strip] ?? .5,this.meta.stripOriginY?.[strip] ?? this.meta.anchorY/this.meta.frameHeight);
     } else {
       this.sprite.setTexture(this.key, `f${ref}`);
-      this.sprite.setOrigin(this.meta.anchorX / this.meta.frameWidth, this.sprite.originY);
+      this.sprite.setOrigin(this.meta.anchorX / this.meta.frameWidth,this.meta.anchorY/this.meta.frameHeight);
     }
   }
 
@@ -346,6 +357,7 @@ export class SpriteFighterView {
       this.chargeMoving = false;
     }
 
+    this.march.update(f);
     const ref = this.frameFor();
     this.poseChanged = ref !== this.lastFrameRef;
     this.setFrameRef(ref);
@@ -354,7 +366,7 @@ export class SpriteFighterView {
     let bob = 0;
     let lean = 0;
     if (st === 'walk' && f.sprinting) lean = this.meta.anims.sprint ? 0 : 6; // (no charge art yet: lean into it)
-    else if (st === 'walk' && this.meta.anims.walk?.heavyBob) {
+    else if (st === 'walk' && this.meta.anims.walk?.heavyBob && !this.meta.anims.walk?.march) {
       const n = this.meta.anims.walk.frames.length;
       const fps = this.meta.anims.walk.fps;
       const cyc = ((fr * fps) / 60) % n / n; // 0..1 through the cycle, two steps per cycle
@@ -541,7 +553,8 @@ export class SpriteFighterView {
     const shape = this.feel.step();
     sx *= shape.sx; sy *= shape.sy;
     s.setPosition(f.x + push * f.facing, f.z - f.h + bob).setDepth(f.z + behind);
-    s.setScale(sx, sy);
+    const visualRes=this.meta.visualRes??1;
+    s.setScale(sx/visualRes,sy/visualRes);
     s.angle = lean * f.facing;
 
     // afterimage: when a swing changes pose through the strike, the last pose lingers a
@@ -552,18 +565,18 @@ export class SpriteFighterView {
       // Leap Smash: a trail of himself left up the drop
       const p = this.prevPose;
       if (!g.visible || g.alpha < 0.2) {
-        g.setTexture(p.key, p.frame).setPosition(p.x, p.y - 26).setScale(p.sx, p.sy * 1.1).setAngle(p.angle)
+        g.setTexture(p.key, p.frame).setOrigin(p.ox,p.oy).setPosition(p.x, p.y - 26).setScale(p.sx, p.sy * 1.1).setAngle(p.angle)
           .setDepth(f.z - 0.05).setAlpha(0.45).setVisible(true).setTint(0xb8d0ff);
       } else g.setAlpha(g.alpha - 0.05);
     } else if (this.poseChanged && sw && f.move && fr >= f.move.startup - 1 && fr <= f.move.startup + f.move.active + 2 && this.prevPose) {
       const p = this.prevPose;
-      g.setTexture(p.key, p.frame).setPosition(p.x, p.y).setScale(p.sx, p.sy).setAngle(p.angle)
+      g.setTexture(p.key, p.frame).setOrigin(p.ox,p.oy).setPosition(p.x, p.y).setScale(p.sx, p.sy).setAngle(p.angle)
         .setDepth(f.z - 0.05).setAlpha(0.38).setVisible(true).setTint(0xffc8a0);
     } else if (g.visible) {
       g.setAlpha(g.alpha - 0.07);
       if (g.alpha <= 0.02) g.setVisible(false);
     }
-    this.prevPose = { key: s.texture.key, frame: s.frame.name, x: s.x, y: s.y, sx, sy, angle: s.angle };
+    this.prevPose = { key: s.texture.key, frame: s.frame.name, x: s.x, y: s.y, sx:s.scaleX, sy:s.scaleY, ox:s.originX,oy:s.originY,angle: s.angle };
 
     // Tints: white hit flash, heavy wind-up telegraph, stagger wobble, parry glint.
     s.clearTint();
@@ -593,12 +606,16 @@ export class SpriteFighterView {
     }
     if (ATTACKS.includes(st) && f.move) {
       const sm = this.swingSmear(st);
-      drawSmear(this.smear, f, sm, fr);
+      const [strip,index]=String(this.lastFrameRef).split(':');
+      const blade=this.meta.stripSwords?.[strip]?.[Number(index)];
+      const tracked=['light1','light2','light3'].includes(st)&&!!blade;
+      if(tracked)this.bladeTrail.draw(this.smear,s,blade,f,fr);
+      else drawSmear(this.smear, f, sm, fr);
       // sparks once per game frame (the view can redraw several times per frame)
       if (fr !== this.sparkFrame || st !== this.sparkState) {
         this.sparkFrame = fr;
         this.sparkState = st;
-        if (f.hitstop === 0) smearSparks(this.scene.gore, f, sm, fr);
+        if (f.hitstop === 0&&!tracked) smearSparks(this.scene.gore, f, sm, fr);
       }
     }
 

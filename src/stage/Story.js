@@ -13,7 +13,7 @@
 //                more), 'bolt:boss' (one through the boss), 'fight:<sectionId>' (its fight
 //                starts), 'counter' (King Vaurath answers a blow into his guard), 'heart'
 //                (the colossus's heart laid open)
-//   (neither: fired by a villager's `talk` when a hero comes near him)
+//   (neither: offered by a villager's `talk`; press INTERACT nearby to speak)
 //   calm: true   waits until no enemy is alive (essential lines are said on safe ground)
 //   hold: true   a held scene: the heroes stand still while it plays (never in a fight);
 //                any hero's jump or attack moves to the next line
@@ -53,8 +53,8 @@
 //                       default NPC.nerve): he cowers and won't move; at 0 he's lost
 //           'convoy'    inside a rolling prop (`tag`: the convoy's wagon, Stage.updateRolling):
 //                       carried along with it; out when it's wrecked, LOST if it gets away
-//   (no rescue: a survivor who only talks, `talk`: a beat id fired when a hero comes near
-//    him; with `ask: true` only when a hero near him presses INTERACT)
+//   (no rescue: a survivor who only talks; `talk` names a beat offered via INTERACT.
+//    All NPC exchanges wait for interaction, including rescue conversations.)
 //   flee: { x, z }      where he runs once free (null: he slips away out of sight)
 //   gather: { x, z }    where he waits later (the gate at the end of the level)
 //   posts: [{ section, x, z }]   once gathered, where he stands as the level goes on: the
@@ -82,6 +82,7 @@
 // standing near someone can do right now, for the view.
 
 import { NARRATION } from '../data/speakers.js';
+import { updateStableMaster } from './StableMaster.js';
 
 // (wait: a line never moves on by itself — Nick: the text went by too fast. false: lines
 // time out by their length, as they used to)
@@ -118,7 +119,7 @@ export class Story {
     this.beats = (data.story ?? []).map((b) => ({ ...b, fired: false }));
     this.npcs = (data.npcs ?? []).map((n) => ({
       ...n,
-      state: n.guide ? 'guide' : n.rescue === 'defend' || n.rescue === 'execution' ? 'threatened' : n.rescue ? 'trapped' : 'idle',
+      state: n.stableMaster ? 'waiting' : n.guide ? 'guide' : n.rescue === 'defend' || n.rescue === 'execution' ? 'threatened' : n.rescue ? 'trapped' : 'idle',
       x: n.x, z: n.z, h: 0, t: 0, home: { x: n.x, z: n.z }, clock: 0, pick: 0, nerve: n.hp ?? NPC.nerve,
     }));
     this.prompts = [];
@@ -130,6 +131,39 @@ export class Story {
     this.savedBefore = new Set(stage.opts?.saved ?? []); // (every level's, from the campaign save)
     // (a villager with `if` / `unless` is only there if that holds: the rescued who come back)
     this.npcs = this.npcs.filter((n) => !(n.if || n.unless) || this.ok(n));
+    for(const [id,talk] of Object.entries(data.gateTalk??{}))for(const phase of ['before','after']){
+      this.beats.push({id:`vigil-${id}-${phase}`,lines:[[talk.who,talk[phase]]],passing:true,fired:false,contextOnly:true});
+    }
+    // Civilian exchanges become invitations, including rescue thank-yous. Combat
+    // barks and commander scenes still use their own event/cinematic triggers.
+    for (const b of this.beats) {
+      const [event, id] = (b.on ?? '').split(':');
+      let n = ['rescued', 'follow'].includes(event) ? this.npc(id) : null;
+      const civilian = b.lines.some(([who]) => !HEROES.has(who) && !NARRATION.has(who));
+      if (!civilian) continue;
+      if (!n && b.at != null && !b.after && (b.hold || b.calm)) {
+        for(const [who] of b.lines){
+          n=this.npcs.find(q=>!q.guide&&(who.toLowerCase()===q.id||who.toLowerCase()===q.name.toLowerCase()));
+          if(n)break;
+        }
+      }
+      if (n && n.pose !== 'horses') b.npcTalkFor = n.id;
+    }
+    const short = {
+      'village:hale': 'Ashen troops burned the village. Survivors are trapped in the square. Help them.',
+      'village:mira': 'They took my husband north, toward the castle. We’ll wait at the north gate.',
+      'wood:joren': 'Mira’s alive? Thank the gods. They drove the other prisoners farther north.',
+      'wood:pilgrim': 'Nicholas. Take the mountain road. I’ll meet you on the far side.',
+      'gates:vincent': 'Vincent. I built these gates. Break both winch chains to open them. I’ll take the tower.',
+      'keep:ilse': 'Rurik! My father’s alive? Thank the gods. I’ll find him.',
+    };
+    for (const b of this.beats) {
+      const optional = !b.hold && (b.npcTalkFor || this.npcs.some(n=>n.talk===b.id));
+      const text = short[`${stage.data.id}:${b.id}`];
+      if (text && !b.lines.some(l=>l[2])) b.lines = [[b.lines[0][0], text]];
+      else if (optional && b.lines.length>1 && !b.lines.some(l=>l[2])) b.lines = [[b.lines[0][0], b.lines.map(l=>l[1]).join(' ')]];
+      if (optional) b.passing = true;
+    }
     const ev = this.world.events;
     ev.on('sectionClear', ({ section }) => this.trigger(`clear:${section.id}`));
     ev.on('sectionStart', ({ section }) => this.trigger(`enter:${section.id}`));
@@ -152,12 +186,20 @@ export class Story {
   // The line on screen: { who, text, beat, index, of } (null: none)
   get line() {
     const c = this.current;
-    if (!c || c.age < 0) return null;
+    if (!c || c.age < 0 || !c.beat.hold) return null;
     const [who, text] = c.beat.lines[c.index];
     return { who, text, beat: c.beat.id, index: c.index, of: c.beat.lines.length, hold: !!c.beat.hold, passing: this.passing(c.beat), age: c.age };
   }
 
+  get fieldLine() {
+    const c=this.current;if(!c||c.age<0||c.beat.hold)return null;
+    const [who,text]=c.beat.lines[c.index];
+    const n=this.npcs.find(n=>n.id===c.beat.talkedTo||n.id===c.beat.npcTalkFor||n.id===who.toLowerCase()||n.name?.toUpperCase()===who);
+    return n&&!['ORYN','VEXA'].includes(who)?{npc:n,text}:null;
+  }
+
   npc(id) { return this.npcs.find((n) => n.id === id); }
+  vigilNpc(id){return this.npc(id==='barn'&&this.lost.has('barn')?'elsbeth':id);}
   isRescued(id) { return this.rescued.has(id); }
 
   frames(text) { return Math.min(LINE.max, Math.round(LINE.base + text.length * LINE.perChar)); }
@@ -171,6 +213,7 @@ export class Story {
   // Is this beat said in passing (it goes by itself) rather than a conversation (it waits
   // for a press)? See the top of the file.
   passing(b) {
+    if (!b.hold) return true;
     if (b.passing != null) return b.passing;
     if (b.hold || this.npcs.some((n) => n.talk && n.talk === b.id)) return false;
     const who = new Set(b.lines.map((l) => l[0]).filter((w) => !NARRATION.has(w)));
@@ -194,6 +237,8 @@ export class Story {
     if (b.fired) return;
     b.fired = true;
     if (!this.ok(b)) { this.done.add(b.id); return; }
+    b.lines=b.lines.filter(l=>(!l[2]?.if||this.ok(l[2]))&&(b.hold||!['ORYN','VEXA'].includes(l[0])||l[2]));
+    if(!b.lines.length){this.done.add(b.id);return;}
     this.queue.push(b);
   }
 
@@ -241,7 +286,9 @@ export class Story {
 
     for (const b of this.beats) {
       if (b.fired) continue;
-      const due = b.fire || (b.at != null && heroes.some((p) => p.x >= b.at));
+      if(b.contextOnly)continue;
+      const due = (!b.after || this.done.has(b.after)) && (b.fire || (b.at != null && heroes.some((p) => p.x >= b.at)));
+      if (due && b.npcTalkFor) { b.readyToTalk = true; continue; }
       if (due && (!b.calm || calm)) this.fire(b);
     }
     this.updateNpcs(heroes);
@@ -259,22 +306,32 @@ export class Story {
     }
     c.age++;
     if (c.beat.hold) {
+      // A held conversation pauses the whole fight, not just the helpless heroes.
+      // Preserve holds owned by the opening, a boss entrance or an execution.
+      if (!this.stage.opening?.active && !this.stage.sentence?.running && !this.stage.sequence?.running
+        && (!this.world.hold || this.world.hold.owner === 'story')) {
+        this.world.holdStill(2);
+        this.world.hold.owner = 'story';
+      }
       // a held scene: everyone stands still and listens
       for (const p of this.stage.players) if (p.alive) { p.awe = Math.max(p.awe ?? 0, 2); p.vx = p.vz = 0; }
     }
     if (c.age < 0) return;
     const text = c.beat.lines[c.index][1];
-    let next = c.skip
-      || (this.passing(c.beat) ? c.age >= this.passFrames(text) : !LINE.wait && c.age >= this.lineFrames(c.beat, c.index));
-    if (c.beat.hold && c.age >= LINE.minSkip) {
+    const minFrames = c.beat.lines[c.index][2]?.minFrames ?? 0;
+    const ready = c.age >= minFrames;
+    let next = (ready && c.beat.lines[c.index][2]?.autoAdvance)
+      || (c.skip && (ready || c.skipAll))
+      || (ready && (this.passing(c.beat) ? c.age >= this.passFrames(text) : !LINE.wait && c.age >= this.lineFrames(c.beat, c.index)));
+    if (c.beat.hold && c.age >= Math.max(LINE.minSkip, minFrames)) {
       for (const p of heroes) if (p.controller.consume('jump', 4) || p.controller.consume('attack', 4)) next = true;
     }
     // any line, in a fight too: D-pad right (N) on to the next, D-pad left (X) skips the
     // whole conversation (the fight buttons stay the fight's)
-    if (c.age >= LINE.minSkip) {
+    if (c.age >= Math.max(LINE.minSkip, minFrames)) {
       for (const p of heroes) {
         if (p.controller.consume('padRight', 4)) next = true;
-        if (p.controller.consume('padLeft', 4)) { next = true; c.index = c.beat.lines.length - 1; }
+        if (p.controller.consume('padLeft', 4)) { next = true; c.skipAll = true; c.index = c.beat.lines.length - 1; }
       }
     }
     if (!next) return;
@@ -289,6 +346,7 @@ export class Story {
       if (n.state === 'dying' && n.guide.words === c.beat.id) { n.state = 'dead'; n.t = 0; this.world.events.emit('npcDied', { npc: n }); }
     }
     if (c.beat.hold) {
+      if(this.world.hold?.owner === 'story')this.world.release();
       // (what was pressed to skip the last line doesn't carry into the fight)
       for (const p of this.stage.players) { p.awe = 0; for (const a of ['jump', 'attack', 'padRight', 'padLeft']) p.controller.consume(a, 99); }
     }
@@ -301,6 +359,10 @@ export class Story {
     const q = c.beat.lines[i]?.[2];
     if (!q || c.cued?.has(i)) return;
     (c.cued ??= new Set()).add(i);
+    if(q.moment==='fatherDies') {
+      const father=this.npc('hakon');
+      if(father){father.state='dead';father.t=0;}
+    }
     if (q.flag) this.world.events.emit('campaignFlag', { key: q.flag });
     this.world.events.emit('storyCue', { beat: c.beat, cue: q });
   }
@@ -312,6 +374,7 @@ export class Story {
     c.index = c.beat.lines.length - 1;
     c.age = Math.max(0, c.age);
     c.skip = true;
+    c.skipAll = true;
   }
 
   // ------------------------------------------------------------ villagers
@@ -320,12 +383,20 @@ export class Story {
     const st = this.stage;
     const T = st.terrain;
     this.prompts = [];
+    this.updateChurchProcession();
     for (const n of this.npcs) {
       n.t++;
+      if(n.helpAge>0)n.helpAge--;
+      if(!n.helpCalled&&!n.stableMaster&&['threatened','trapped'].includes(n.state)&&heroes.some(p=>Math.abs(p.x-n.x)<300&&Math.abs(p.z-n.z)<200)){
+        n.helpCalled=true;n.helpAge=180;
+        n.helpText=n.rescue==='wreckage'?'HELP! I’M TRAPPED!':n.rescue==='cage'?'GET US OUT OF HERE!':n.rescue==='execution'?'HELP! CUT ME DOWN!':'HELP! OVER HERE!';
+      }
+      if(n.insideChurch){n.state='gone';continue;}
+      if(n.stableMaster){updateStableMaster(n,heroes,T);continue;}
       if (n.state === 'idle' || n.state === 'threatened' || n.state === 'trapped') {
         n.h = T ? Math.max(0, T.groundAt(n.x, n.z)) : 0;
       }
-      if (n.state === 'idle' && n.talk && !n.talked) this.updateTalk(n, heroes);
+      if (this.talkBeat(n)) this.updateTalk(n, heroes);
       if (n.state === 'threatened') {
         if (n.rescue === 'execution') this.updateExecution(n);
         else if (this.defended(n)) this.free(n);
@@ -363,6 +434,25 @@ export class Story {
       }
       if (n.state === 'gathered' && n.posts) this.toPost(n);
     }
+    if(!this.procession && this.stage.data.id==='village' && heroes.some(p=>p.x>=7400)) {
+      const father=this.npc('hakon');
+      const dead=father?.state==='dead';
+      const seats=dead?{mira:[-80,55],tam:[-25,95],barn:[110,60],hale:[15,0]}:{mira:[-125,85],tam:[-40,125],barn:[155,95],hale:[105,40]};
+      for(const [id,[dx,dz]] of Object.entries(seats)) {
+        const n=this.vigilNpc(id);
+        if(!father||!n||n.state==='lost'||(id!=='hale'&&!this.isRescued(n.id)))continue;
+        // Hale joins off-screen well before the gate. Saved villagers retain their
+        // existing identities and walk from their waiting positions into the huddle.
+        if(id==='hale'&&!n.gatePlaced){n.x=8600;n.z=390;n.state='gathered';n.gatePlaced=true;}
+        if(n.state!=='gathered')continue;
+        if(!heroes.some(p=>p.x>=8100))continue;
+        const tx=father.x+dx,tz=father.z+dz,d=Math.hypot(tx-n.x,tz-n.z),step=Math.min(d,65/60);
+        n.gatherMoving=d>2;
+        if(d>0){n.x+=(tx-n.x)/d*step;n.z+=(tz-n.z)/d*step;}
+        n.h=T?Math.max(0,T.groundAt(n.x,n.z)):0;
+        n.dir=Math.sign(father.x-n.x)||-1;n.mourning=dead&&!n.gatherMoving;
+      }
+    }
   }
 
   // Where a gathered man with posts stands now: the last post whose section is reached.
@@ -376,19 +466,57 @@ export class Story {
     n.post = post.section;
   }
 
-  // A survivor with something to say: he says it when a hero comes near (or, `ask`, when
-  // a hero near him presses INTERACT).
-  updateTalk(n, heroes) {
-    const R = n.ask ? [NPC.askReach, NPC.askDepth] : [NPC.talkReach, NPC.talkDepth];
-    const p = heroes.find((q) => Math.abs(q.x - n.x) <= R[0] && Math.abs(q.z - n.z) <= R[1]);
-    if (!p) return;
-    if (n.ask) {
-      this.prompts.push({ npc: n, kind: 'talk', hero: p });
-      if (!p.controller.consume(INTERACT, 6)) return;
+  talkBeat(n) {
+    if (!['idle', 'free', 'fleeing', 'gathered', 'escort', 'dying'].includes(n.state)) return null;
+    if(this.stage.section?.id==='gate' && this.stage.data.gateTalk?.[n.id] && n.state==='gathered'){
+      if(this.procession)return null;
+      const phase=this.npc('hakon')?.state==='dead'?'after':'before';
+      return this.beats.find(b=>b.id===`vigil-${n.id}-${phase}`&&!b.fired)??null;
     }
-    n.talked = true;
-    const b = this.beats.find((x) => x.id === n.talk);
-    if (b) b.fire = true;
+    return this.beats.find(b => !b.fired && this.ok(b) &&
+      ((b.id === n.talk && !n.talked) || (b.npcTalkFor === n.id && b.readyToTalk)));
+  }
+
+  updateChurchProcession(){
+    const church=this.stage.data.church;
+    if(!church||!this.done.has('vow'))return;
+    const father=this.npc('hakon');if(!father)return;
+    const p=this.procession??={age:0,from:{x:father.x,z:father.z},x:father.x,z:father.z,progress:0,phase:'lift'};
+    if(p.phase==='inside')return;
+    p.age++;
+    p.phase=p.age<=60?'lift':'walk';
+    p.progress=Math.max(0,Math.min(1,(p.age-60)/300));
+    p.x=p.from.x+(church.door.x-p.from.x)*p.progress;
+    p.z=p.from.z+(church.door.z-p.from.z)*p.progress;
+    father.carried=true;father.carrierBlend=Math.max(0,1-p.age/60);
+    const followers={hale:[-80,0],barn:[85,0],mira:[-50,50],tam:[35,65]};
+    for(const [id,[dx,dz]]of Object.entries(followers)){
+      const n=this.vigilNpc(id);if(!n||n.state!=='gathered')continue;
+      n.mourning=false;n.gatherMoving=p.age>60;
+      n.processionAlpha=Math.min(1,(1-p.progress)/.3);
+      if(id==='hale'||id==='barn'){n.carrier=true;n.carrierBlend=father.carrierBlend;}
+      const tx=p.x+dx*(1-p.progress*.7),tz=p.z+dz*(1-p.progress*.7),d=Math.hypot(tx-n.x,tz-n.z);
+      if(d>.1){const speed=Math.min(d,1);n.x+=(tx-n.x)/d*speed;n.z+=(tz-n.z)/d*speed;}
+      n.dir=Math.sign(tx-n.x)||n.dir;
+    }
+    if(p.progress>=1){
+      p.phase='inside';father.insideChurch=true;
+      for(const id of Object.keys(followers)){const n=this.vigilNpc(id);if(n?.state==='gathered')n.insideChurch=true;}
+      this.done.add('churchFarewell');this.world.events.emit('churchFarewell');
+    }
+  }
+
+  // Every NPC waits for a deliberate interaction. Walking past never opens UI.
+  updateTalk(n, heroes) {
+    const b = this.talkBeat(n);
+    if (!b || this.busy || (b.calm && this.stage.livingFoes().length)) return;
+    const p = heroes.find(q => Math.abs(q.x-n.x)<=NPC.askReach && Math.abs(q.z-n.z)<=NPC.askDepth && Math.abs((q.h??0)-n.h)<=NPC.height);
+    if (!p) return;
+    this.prompts.push({ npc: n, kind: 'talk', hero: p });
+    if (!p.controller.consume(INTERACT, 6)) return;
+    if (b.id === n.talk) n.talked = true;
+    b.talkedTo = n.id;
+    this.fire(b);
   }
 
   // The section a villager belongs to (named, or the one he stands in).
@@ -624,6 +752,7 @@ export class Story {
         continue;
       }
       if (!earlyNpc.has(n.id)) continue;
+      if(n.stableMaster){n.state='gone';continue;}
       n.talked = true;
       if (this.rescued.has(n.id)) n.state = 'safe'; // (and on to his gather point, if he has one)
       else if (n.rescue) n.state = 'gone';
