@@ -79,7 +79,7 @@ export const STAGE_VILLAGE = {
     hale:{who:'HALE',before:"He held the church door while we brought the children in. He's been asking for you.",after:"We'll lay him by the altar. No one will leave him alone."},
     mira:{who:'MIRA',before:"He wouldn't come inside until the last child was safe.",after:"I'll light a candle for him. My son will know his name."},
     tam:{who:'TAM',before:"He told me to stay behind the altar. Is he going to be all right?",after:"I'll stay with the others. You don't have to worry about us."},
-    barn:{who:'MILLER',before:"Your father sent me inside with the children. He took the doorway himself.",after:"Hale and I can carry him. Let us do this."},
+    barn:{who:'MILLER',before:"An hour ago I had a rope around my neck. You cut me down. Go to him.",after:"I owe you my neck. Let me carry him for you."},
   },
 
   sections: [
@@ -419,7 +419,7 @@ export const STAGE_VILLAGE = {
         ['RURIK', 'I should have been here.', {minFrames:180}],
         ['ORYN', 'We can wait.', {minFrames:150}],
         ['MIRA', 'He put himself between them and my son.', {if:'rescued:mira',minFrames:150}],
-        ['MILLER', "He won't be left here. We'll carry him.", {if:'rescued:barn',minFrames:180}],
+        ['MILLER', "You cut me down from that gallows today. He'd be proud of you, lad.", {if:'rescued:barn',minFrames:180}],
         ['ELSBETH', "He won't be left here. Hale and I will carry him.", {if:'rescued:elsbeth',minFrames:180}],
         ['RURIK', 'Give me a moment.', {minFrames:180}],
         ['VOICE', '', {minFrames:180,autoAdvance:true}],
