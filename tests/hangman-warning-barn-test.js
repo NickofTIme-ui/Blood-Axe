@@ -28,25 +28,22 @@ function setup(){const w=new World({seed:123}),p=createPlayer(w,new Controller()
  r.executioner.health=0;r.update();assert.equal(r.bark,null);assert.equal(r.outcome,null);
 }
 {
- // the barn: three barricades, nine people; each smashed lets its group out and the count rises
+ // the barn: one barricade, nine people behind it; smashing it lets them all out at once
  const {w,p,st}=setup();
  const def=STAGE_VILLAGE.sections.find((s)=>s.id==='mill').tally;
  const bars=st.props.filter((pr)=>pr.kind==='barricade');
- assert.equal(bars.length,3,'the doors and both sheds are nailed shut');
+ assert.equal(bars.length,1,'one barricade, on the barn doors (Nick: one spot, not three)');
  assert(!st.props.some((pr)=>pr.kind==='wreckage'&&pr.section===3),'no burning beam in the barn yard any more');
  assert.deepEqual(st.story.tally(def),{saved:0,total:9});
  const freed=[];w.events.on('npcRescued',(e)=>freed.push(e.npc.id));
- let saved=0;
- for(const pr of bars){
-  st.breakProp(pr,1);for(let i=0;i<3;i++){w.tick();st.update();}
-  const t=st.story.tally(def);assert.equal(t.saved,saved+3,`${pr.tag} lets three out`);saved=t.saved;
- }
+ st.breakProp(bars[0],1);for(let i=0;i<3;i++){w.tick();st.update();}
+ assert.deepEqual(st.story.tally(def),{saved:9,total:9},'all nine out');
  assert.deepEqual(freed.sort(),['barn-east','barn-west','mill-villagers']);
  // a barricade is broken by hits like any prop
- const {st:st2,p:p2,w:w2}=setup();const door=st2.props.find((pr)=>pr.tag==='barnWest');
+ const {st:st2,p:p2,w:w2}=setup();const door=st2.props.find((pr)=>pr.tag==='barn');
  p2.x=door.x-30;p2.z=door.z;p2.facing=1;
  let hits=0;for(let i=0;i<20&&!door.broken;i++){Object.defineProperty(p2,'activeAttack',{configurable:true,value:{move:{hitbox:{x:0,y:0,w:60,h:80}}}});st2.update();hits++;}
  assert(door.broken,`smashed by blows (${door.hp} left)`);
  void p;
 }
-console.log('Hangman warning: shouts, countdown, final warning, held clock; barn: three barricades, nine villagers counted out.');
+console.log('Hangman warning: shouts, countdown, final warning, held clock; barn: one barricade, nine villagers counted out.');

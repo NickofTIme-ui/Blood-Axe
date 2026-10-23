@@ -53,8 +53,8 @@ const WELL = { x: 2250, z: 292 };
 const wellFootprint = (w) => ({ kind: 'block', x0: w.x - 154, x1: w.x + 154, z0: LANE_TOP, z1: w.z - 2, top: 400, hideArt: true });
 const shrineFootprint = (r) => ({ kind: 'block', x0: r.x - 52, x1: r.x + 52, z0: LANE_TOP, z1: r.z + 6, top: 400, hideArt: true });
 // the barn's two sheds, either side of its doors (x 5330): each nailed shut, people inside
-const BARN_WEST = 5226;
-const BARN_EAST = 5440;
+const BARN_WEST = 5280; // (the three groups crowd the one barred door: all freed by tag 'barn')
+const BARN_EAST = 5380;
 
 export const STAGE_VILLAGE = {
   millRescue:{type:'executioner'},
@@ -153,13 +153,11 @@ export const STAGE_VILLAGE = {
       fightAt: 4520,
       waves: [['grunt', 'grunt', 'ghoul', 'grunt'], ['stalker', 'grunt', 'butcher']],
       props: [
-        // the barn, nailed shut with the miller's people inside: planks across its doors and
-        // both its sheds; each one smashed lets a few out (Nick, 2026-10-23: the tally below)
-        // (struck at the back of the lane, z 264, but drawn `lift` higher, on the doorways
-        // painted on the barn behind; the sheds' openings are smaller: `size`)
+        // the barn, nailed shut with the miller's people inside: one barricade across its doors,
+        // and smashing it lets all nine out (Nick, 2026-10-23: one spot, not three; the tally below)
+        // (struck at the back of the lane, z 264, but drawn `lift` higher, on the doorway
+        // painted on the barn behind)
         { kind: 'barricade', tag: 'barn', x: 5330, z: 264, lift: 48, drop: null },
-        { kind: 'barricade', tag: 'barnWest', x: BARN_WEST, z: 264, lift: 48, size: 0.75, drop: null },
-        { kind: 'barricade', tag: 'barnEast', x: BARN_EAST, z: 264, lift: 48, size: 0.75, drop: null },
         { kind: 'crate', x: 5560, z: 470, drop: 'health' },
         // the archers shooting at you since the roofs: two posts either side of the mill
         { kind: 'archers', tag: 'millArchers', x: 4560, z: 300, drop: null },
@@ -345,8 +343,8 @@ export const STAGE_VILLAGE = {
     },
     {id:'elsbeth',name:'Elsbeth',x:5330,z:296,pose:'elsbeth',art:'elsbeth',gather:{x:8660,z:330}},
     {id:'mill-villagers',name:'The mill villagers',x:5330,z:296,pose:'group',people:3,rescue:'wreckage',tag:'barn',flee:{x:5450,z:510}},
-    {id:'barn-west',name:'The barn families',x:BARN_WEST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barnWest',flee:{x:5240,z:500}},
-    {id:'barn-east',name:'The barn hands',x:BARN_EAST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barnEast',flee:{x:5600,z:480}},
+    {id:'barn-west',name:'The barn families',x:BARN_WEST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barn',flee:{x:5240,z:500}},
+    {id:'barn-east',name:'The barn hands',x:BARN_EAST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barn',flee:{x:5600,z:480}},
     { id: 'horses', name: 'the horses', x: 6380, z: 294, pose: 'horses', rescue: 'wreckage', tag: 'stables', flee: null },
     { id: 'stable-master', name: 'Stable master', x: 6130, z: 350, stableMaster: true, warningAt: 5860 },
     { id: 'hakon', name: 'Hakon', x: 8880, z: 330, pose: 'wounded', art: 'hakon', talk: null },
