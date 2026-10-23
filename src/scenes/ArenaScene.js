@@ -718,7 +718,8 @@ export class ArenaScene extends Phaser.Scene {
     ev.on('npcFollow', ({ npc }) => this.callout(`${npc.name.toUpperCase()}  ·  FOLLOWS YOU`, '#e8f0ff', 20));
     ev.on('npcRescued', ({ npc }) => {
       this.netSave?.rescue(npc.id);
-      this.callout(`${npc.name.toUpperCase()}  ·  SAVED`, '#e8f0ff', 24);
+      this.callout(`${(npc.savedAs ?? npc.name).toUpperCase()}  ·  SAVED`, // (savedAs: groups freed together share one callout)
+        '#e8f0ff', 24);
       playSfx(this, 'block', { volume: 0.5, pitch: 400, minGapMs: 0 });
       this.gore.spark(npc.x, npc.z, Math.max(0, npc.h) + 40, 0xe8f0ff, 16);
     });
