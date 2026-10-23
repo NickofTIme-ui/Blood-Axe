@@ -72,7 +72,7 @@ export class PauseMenu {
     if(this.index===1){this.page='controls';this.index=0;this.render();return;}
     this.arena.setPaused(false);
     this.leaving=true;
-    if(this.index===2)this.arena.scene.start('Select',{mode:this.arena.mode,net:this.arena.netInfo,stage:this.arena.mode==='net'&&!this.arena.campaign?'oath':undefined});
+    if(this.index===2)this.arena.scene.start('Select',this.arena.selectData());
     else this.arena.scene.start('Title');
   }
 }

@@ -108,6 +108,21 @@ export class ArenaScene extends Phaser.Scene {
     this.netCampaign = this.mode === 'net' ? data.netCampaign ?? null : null;
   }
 
+  // Where CHARACTER SELECT (pause menu, Esc) goes back into: the run you were in. A
+  // campaign level = the campaign's saved checkpoint, as CONTINUE on the title (online
+  // the host's checkpoint decides: SelectScene.netStart); any other stage = that stage
+  // again. Never left unset: unset is the old Oath Road (data/stage.js).
+  selectData() {
+    let stage = this.stageId;
+    let section;
+    if (this.campaign && this.mode !== 'net') {
+      const at = sharedProgress(this.registry).campaign.at;
+      if (at && STAGES[at.level]) { stage = at.level; section = at.section; }
+      else section = this.stage?.checkpoint ?? 0;
+    }
+    return { mode: this.mode, net: this.netInfo, stage, section };
+  }
+
   // What to start this scene again with (restart the stage).
   restartData() {
     return {
@@ -1586,7 +1601,7 @@ export class ArenaScene extends Phaser.Scene {
     if (any('menu')) {
       if (this.paused || dead || won) {
         this.setPaused(false);
-        this.scene.start('Select', { mode: this.mode, net: this.netInfo, stage: this.mode === 'net' && !this.campaign ? 'oath' : undefined });
+        this.scene.start('Select', this.selectData());
         return true;
       }
       this.setPaused(true);
@@ -1612,7 +1627,7 @@ export class ArenaScene extends Phaser.Scene {
     this.netGo = null;
     if (go === 'next' && nextLevel(this.stageData)) { this.goNextLevel(); return true; }
     this.scene.stop('Cutaway');
-    this.scene.start('Select', { mode: this.mode, net: this.netInfo });
+    this.scene.start('Select', this.selectData());
     return true;
   }
 

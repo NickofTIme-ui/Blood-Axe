@@ -1030,3 +1030,13 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 ## Cloud, 2026-10-23: cinematic music on the first footstep, 12.6 s (on main, not on itch)
 - Nick: "have the music start on the opening cinematic as soon as the text goes away and the next scene begins".
 - Measured in `assets/video/opening-cinematic.mp4`: the story card's text fades out by 11.9 s and the first shot (the boots on the march) cuts in at 12.0 s. Then Nick: "the moment the foot step hits the ground". The boot comes down from 12.1 s and its sole lands with a puff of dust at 12.6 s, so `THEME_AT` in `src/core/StartupIntro.js` is 12.6 (was 17). The track has no lead-in silence. A skip still starts the theme at once.
+
+## Cloud, 2026-10-23: Character Select no longer drops you on the old Oath Road
+
+Pause menu > Character Select (and Esc on the pause / death / win screen) started the
+character select with no stage, so picking a hero loaded the old Oath Road test stage
+("some weird old build"). `ArenaScene.selectData()` now sends you back into the run you
+were in: a campaign level resumes at the saved checkpoint (like CONTINUE), any other
+stage restarts that stage. Not on itch yet. The itch packager (tools/build-release.py)
+copies only src/lib/assets fresh each time and the game has no service worker, so no
+stale files ship.
