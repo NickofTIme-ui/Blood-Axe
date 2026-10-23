@@ -296,8 +296,11 @@ export const STAGE_VILLAGE = {
   veils: [{ x0: 2800, x1: 4380, alpha: 0.45 }],
 
   // torches marking the way (lanterns: view/TerrainView.js)
+  // (none on the roofs' edges: one stood where the cart climb meets the first roof and one
+  // in front of the boy's chimney steps; Nick, 2026-10-23. They flank the roofs from the
+  // street now: one at the foot of the climb, one in the yard below the last roof)
   lanterns: [
-    { x: 2990, z: 290 }, { x: 3480, z: 290 }, { x: 3980, z: 290 }, { x: 4720, z: 290 }, { x: 8400, z: 290 },
+    { x: 2800, z: 290 }, { x: 4080, z: 290 }, { x: 4310, z: 290 }, { x: 4720, z: 290 }, { x: 8400, z: 290 },
   ],
 
   // the dead (view only): some were beyond saving before the Oath Keepers came home
