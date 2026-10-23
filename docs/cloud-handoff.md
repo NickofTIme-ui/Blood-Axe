@@ -975,7 +975,8 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - The father's scene (`elder` beat, `stageVillage.js`): Rurik "Father, I'm here. The children in the church... they are safe." / Hakon "Good. Take the sword. I can't hold it." / Rurik "Then I'll hold it for both of us." / Hakon "Let me look at you." (two lines shorter than before).
 - `STAGE_VILLAGE.clearTune: false`: no stage-clear fanfare when level 1 is won (ArenaScene's `stageWon`); every other level keeps it.
 - npm test passes. On branch `claude/project-thread-o8oxi3`, not on main or itch.
-## Cloud, 2026-10-23: Burning Roofs art pass (branch claude/project-thread-6i5dwn)
+
+## Cloud, 2026-10-23: Burning Roofs art pass (on main)
 - Sky stripes over the roofs: the smoke veil (`TerrainView.drawVeils`) was 8 px strips overlapping by half a pixel; now one gradient image. Same fix for every strip-drawn fade on the roof, beam and chimney blocks (`vFade` / `hFade`: one gradient-filled rect).
 - The black box over the burning cellars: their back is now the painted house front in deep shadow (`burningCellar`).
 - Roofs: a ridge beam along the back and an eave board along the lip (painted `surf_beam`, running past the ends), more broken shingle edges, corner and foot shading on the house fronts.
