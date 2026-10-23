@@ -1013,3 +1013,11 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
   Mira's family (z 300) stands clear. Test: "village: nobody walks through the market well".
 ## Cloud, 2026-10-23: stray purple line on the Burning Roofs removed (on main)
 - Nick saw an "unfinished purple line" over the chimney urn on THE BURNING ROOFS. It was the Gallows Ascent's crow-cage cue (`TerrainView.drawRoostCue`: a grey box on a line, lit violet), which drew beside ANY raised secret, so it hung in mid-air by the village's chimney urn. Now drawn only on the Gallows stage. Code only; no art needed. Shot: project files `purple-line/before-after.png`.
+
+
+## Cloud, 2026-10-23: a bigger stampede, men thrown into it (not on itch)
+
+- Nick asked for the horses to come out more times and for many more enemies to get smashed. Each of the three lanes now runs 5 times (was 2) with herds of 5, 6 and 5 (was 3, 4, 3): a run every ~110 frames for ~27 s.
+- `fodder` on a stampede hazard (`Stage.sendFodder`): each time its run is warned, that roster comes on from off-screen on the side the herd is running to, down its lane, straight into the horses (trampled Ashen men still blow apart). Capped at `STAMPEDE.maxFoes` (12) living foes; only while the stables are the current section and no boss is up, even after its waves are beaten.
+- The stables' fight isn't won while a fodder stampede is still running (`Stage.stampedeSending`). Trample damage to heroes 20 (was 26); jumping still clears them.
+- Campaign bot from section 4: same result as main (gets through the stables with no deaths, then stops at Varek kneeling, as before); ~20 s longer at the stables.

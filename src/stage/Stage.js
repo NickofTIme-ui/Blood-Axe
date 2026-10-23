@@ -146,8 +146,9 @@ const KICKED = { kinds: ['crate', 'chest'], speed: 620, range: 560, lane: 26, ra
 // (enemies too). `when: 'rage'` beams only fall while the section's boss is raging.
 // The stables' stampede: px a frame, the space between horses, how close a horse must be
 // to run you down (each side of him), the damage, and how far sideways a horse goes for
-// each px it comes down the yard on its way out of the stable door to its lane
-const STAMPEDE = { period: 330, warn: 90, speed: 13, gap: 120, reach: 46, damage: 26, slant: 1.1 };
+// each px it comes down the yard on its way out of the stable door to its lane; and the
+// most Ashen men a lane's `fodder` may bring on (no more sent while this many stand)
+const STAMPEDE = { period: 330, warn: 90, speed: 13, gap: 120, reach: 46, damage: 20, slant: 1.1, maxFoes: 12 };
 // The mine's collapse: how far ahead of the falling rock it still hits you, the damage,
 // how far on it throws him (and how much firm ground there must be: the knockdown carries him
 // on), and how far behind the hindmost hero it falls before it runs at `chaseMult` its speed
@@ -768,6 +769,7 @@ export class Stage {
       if (sec.needs && this.props.some((pr) => pr.tag === sec.needs && !pr.broken)) return; // (the catapults still stand)
       if (sec.frees && this.story && !this.story.isRescued(sec.frees)) return; // (he's still in his cage)
       if(sec.id==='mill' && this.millRescue && !this.millRescue.resolved)return;
+      if (this.stampedeSending()) return; // (the herd is still running, and men still coming into it)
       this.clearSection();
     } else if (this.phase === 'clear') {
       const next = this.sections[this.index + 1];
@@ -1162,6 +1164,8 @@ export class Stage {
   // they're gone. Each run is warned first (`warn` frames: the path it will take lights up).
   // Whoever is in their way when they pass is trampled: knocked flat and thrown along it.
   // (No door: they run the whole lane, from x0, or x1 going back.)
+  // `fodder`: a roster sent on each time a run is warned, from off-screen on the side the
+  // herd is running to, down its lane, so they walk straight into it (while the fight is on).
   // Its state for the view: stampedeState(hz) -> { phase: 'idle'|'warn'|'run', warnT, heads, dir, path }
   // (heads: { x, z, i, out }: out = px it has come out of the door)
   stampedePath(hz) {
@@ -1223,7 +1227,10 @@ export class Stage {
     if (hz.lt < 0) return;
     const S = this.stampedeState(hz);
     const k = hz.lt % (hz.period ?? STAMPEDE.period);
-    if (S.phase === 'warn' && k === 0) this.world.events.emit('stampedeWarn', { hazard: hz });
+    if (S.phase === 'warn' && k === 0) {
+      this.world.events.emit('stampedeWarn', { hazard: hz });
+      this.sendFodder(hz);
+    }
     if (k === (hz.warn ?? STAMPEDE.warn) && S.phase === 'run') this.world.events.emit('stampedeBurst', { hazard: hz });
     if (S.phase !== 'run') return;
     for (const f of this.world.fighters) {
@@ -1233,6 +1240,24 @@ export class Stage {
       if (hz.cool.has(f.id)) continue;
       this.hurt(hz, f, STAMPEDE.damage, S.dir, 'trample');
     }
+  }
+
+  // a stampede in this section still to run that sends men down its lane (its fight goes on till it's done)
+  stampedeSending() {
+    return this.hazards.some((hz) => hz.type === 'stampede' && hz.fodder?.length && hz.section === this.index
+      && hz.live && hz.lt < (hz.period ?? STAMPEDE.period) * (hz.runs ?? 1));
+  }
+
+  sendFodder(hz) {
+    if (!hz.fodder?.length || this.index !== hz.section || this.boss?.alive) return; // (even with its waves beaten: they come for the horses' freer)
+    const room = STAMPEDE.maxFoes - this.livingFoes().length;
+    if (room <= 0) return;
+    const heroes = this.players.filter((p) => p.alive);
+    const side = this.stampedePath(hz).dir;
+    hz.fodder.slice(0, room).forEach((type, k) => {
+      const e = createEnemy(this.world, type, offscreenX(this.world, heroes, side, k), hz.z + ((k % 3) - 1) * hz.d * 0.3, { entering: true });
+      this.setOnGround(e);
+    });
   }
 
   // The mine coming down behind you (Hollow Mountain): once its section starts, a front of

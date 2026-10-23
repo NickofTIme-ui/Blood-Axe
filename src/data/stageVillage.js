@@ -195,9 +195,11 @@ export const STAGE_VILLAGE = {
         // its lane, the lanes in turn and the herd turning a different way each time: the
         // path lights up first, then they come. A beat after the bar breaks for the gate to
         // swing open (phase), so whoever smashed it has the whole warning to get clear.
-        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 330, dir: 1, d: 64, period: 330, count: 3, runs: 2, phase: 40 },
-        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 430, dir: -1, d: 64, period: 330, count: 4, runs: 2, phase: 150 },
-        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 500, dir: 1, d: 64, period: 330, count: 3, runs: 2, phase: 260 },
+        // Each run sends a handful of Ashen men down its lane from the far side, straight
+        // into the herd: they get smashed in heaps (Nick, 2026-10-23: more runs, more men).
+        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 330, dir: 1, d: 64, period: 330, count: 5, runs: 5, phase: 40, fodder: ['thrall', 'grunt', 'thrall'] },
+        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 430, dir: -1, d: 64, period: 330, count: 6, runs: 5, phase: 150, fodder: ['grunt', 'thrall', 'thrall', 'grunt'] },
+        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 500, dir: 1, d: 64, period: 330, count: 5, runs: 5, phase: 260, fodder: ['thrall', 'grunt', 'thrall'] },
       ],
     },
     {

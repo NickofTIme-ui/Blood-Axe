@@ -3184,8 +3184,18 @@ test('village: the stables: smashing the gate bar frees the horses; they come ou
   assert(warnedFirst, 'its path is warned before it comes');
   assert(trampled.has('grunt') && trampled.has('hero'), `the horses run down anyone in their way (${[...trampled]})`);
   assert(warns >= 2, `each run is warned first (${warns})`);
-  for (let i = 0; i < 1400; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; }
+  // every run sends Ashen men down its lane into the herd: they are smashed in numbers
+  let smashed = 0;
+  world.events.on('kill', (ev) => { if (ev.hazard === 'trample' && ev.defender.team === 'enemy') smashed++; });
+  const end = Math.max(...lanes.map((h) => h.period * h.runs + (h.phase ?? 0)));
+  for (let i = 0; i < end; i++) { world.tick(); st.update(); p.health = p.stats.maxHealth; p.x = 6300; p.z = 600; }
   assert(lanes.every((h) => st.stampedeState(h).phase === 'idle'), 'after their runs they are gone');
+  assert(smashed >= 15, `the herd smashes Ashen men by the dozen (${smashed})`);
+  assert(st.livingFoes().length <= 12, `never more men on than the cap (${st.livingFoes().length})`);
+  for (const f of st.livingFoes()) { f.health = 0; f.fsm.change('dead'); }
+  for (let i = 0; i < 5; i++) { world.tick(); st.update(); }
+  assert(st.phase !== 'fight', 'the herd run and its men dead, the fight is won');
+  assert(!st.stampedeSending(), 'the herd has run');
 });
 
 test('village: two of them wait up on the second roof (standing on it, not inside it)', () => {
