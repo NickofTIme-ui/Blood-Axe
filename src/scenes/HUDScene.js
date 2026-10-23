@@ -17,6 +17,7 @@ import { DeathScreen } from '../view/DeathScreen.js';
 import { StyleMeter } from '../view/StyleMeter.js';
 import { DialogueBox } from '../view/DialogueBox.js';
 import { PauseMenu } from '../view/PauseMenu.js';
+import { AbilityNotice } from '../view/AbilityNotice.js';
 
 const SERIF = FONT.ui;
 
@@ -76,6 +77,7 @@ export class HUDScene extends Phaser.Scene {
       fontFamily: FONT.display, fontSize: '24px', color: '#ff2a1a', fontStyle: 'normal', align: 'center',
     }).setOrigin(0.5).setStroke('#0a0000', 5).setAlpha(0);
     this.banner.setLetterSpacing?.(2);
+    this.abilityNotice = new AbilityNotice(this); // NEW ABILITY plaque (arena.newAbility)
     this.death = null; // the YOU DIED sequence (view/DeathScreen.js)
     this.pauseUi = null;
 
@@ -418,6 +420,11 @@ export class HUDScene extends Phaser.Scene {
   }
 
   // ------------------------------------------------------------ call-outs
+
+  // NEW ABILITY: its name and the button for it (view/AbilityNotice.js)
+  newAbility(opts) {
+    if (this.banner?.active) this.abilityNotice.show(opts);
+  }
 
   callout(text, color = '#ff2a1a', size = 24) {
     const b = this.banner;

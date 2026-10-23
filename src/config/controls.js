@@ -82,3 +82,22 @@ export const CONTROLS_P2 = {
   gamepad: CONTROLS.gamepad,
   stickDeadzone: CONTROLS.stickDeadzone,
 };
+
+// The names a player reads for a binding: what a key cap or a pad button says on screen
+// ('U', 'NUM 5'; 'LB', 'RT'). Used by on-screen prompts (view/AbilityNotice.js).
+const PAD_NAMES = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'VIEW', 'MENU', 'L-STICK', 'R-STICK', 'D-PAD UP', 'D-PAD DOWN', 'D-PAD LEFT', 'D-PAD RIGHT'];
+const DIGITS = { ZERO: 0, ONE: 1, TWO: 2, THREE: 3, FOUR: 4, FIVE: 5, SIX: 6, SEVEN: 7, EIGHT: 8, NINE: 9 };
+export function keyLabel(name) {
+  const num = /^NUMPAD_(\w+)$/.exec(name);
+  if (num) return DIGITS[num[1]] !== undefined ? `NUM ${DIGITS[num[1]]}` : `NUM ${num[1] === 'ADD' ? '+' : num[1]}`;
+  if (name in DIGITS) return String(DIGITS[name]);
+  return name === 'SPACE' ? 'SPACE' : name.replace(/_/g, ' ');
+}
+export function padLabel(button) { return PAD_NAMES[button] ?? `BUTTON ${button}`; }
+
+// One action's first key and first pad button for a player's bindings (null: none / not used).
+export function actionButtons(action, bindings = CONTROLS, { keyboard = true, pad = true } = {}) {
+  const k = keyboard ? bindings.keyboard?.[action]?.[0] : undefined;
+  const b = pad ? bindings.gamepad?.[action]?.[0] : undefined;
+  return { key: k ? keyLabel(k) : null, pad: b !== undefined ? padLabel(b) : null };
+}

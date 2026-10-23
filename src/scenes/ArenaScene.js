@@ -11,7 +11,7 @@ import { World } from '../core/World.js';
 import { InputManager, realPads } from '../core/InputManager.js';
 import { TickController, pressed, held, bitOf, EMPTY } from '../core/TickInput.js';
 import { LocalSession, NetSession, snapshot, correct, feedPlayers } from '../net/Session.js';
-import { CONTROLS, CONTROLS_P1_SHARED, CONTROLS_P2 } from '../config/controls.js';
+import { CONTROLS, CONTROLS_P1_SHARED, CONTROLS_P2, actionButtons } from '../config/controls.js';
 import { createPlayer } from '../entities/Player.js';
 import { createEnemy, offscreenX } from '../entities/Enemy.js';
 import { FighterView } from '../view/FighterView.js';
@@ -1019,6 +1019,22 @@ export class ArenaScene extends Phaser.Scene {
     this.rumble(0.35,0.2,450);
     playSfx(this,'block',{volume:0.45,pitch:600,minGapMs:0});
     this.callout('OATHKEEPER','#ffe0a0',38);
+    // and the fire is his: NEW ABILITY, KING'S FIRE, on the button that throws it
+    const buttons=this.rurikButtons('magic');
+    if(buttons)this.time.delayedCall(700,()=>this.scene.get('HUD')?.newAbility?.({
+      name:"KING'S FIRE",buttons,verb:'Press',after:"to hurl Oathkeeper's fire",
+    }));
+  }
+
+  // The labels of the buttons that do `action` for whoever plays Rurik here (his own
+  // bindings: a shared keyboard, player 2's number pad, a gamepad). null: nobody here
+  // plays him (he's a companion, or the other machine's hero online).
+  rurikButtons(action) {
+    const R=this.rurikNow();
+    if(!R?.played)return null;
+    const inp=this.mode==='net'?(R.f===this.player?this.session?.samplers?.[0]:null):this.session?.samplers?.[R.f.seat];
+    if(!inp&&this.mode==='net')return null;
+    return actionButtons(action,inp?.bindings??CONTROLS,{keyboard:inp?.useKeyboard??true,pad:inp?inp.padSlot!==null:true});
   }
 
   openSkills() {
