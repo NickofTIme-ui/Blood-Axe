@@ -1011,3 +1011,5 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
   whole width (`wellFootprint` in `src/data/stageVillage.js`, x 2096-2404, from the back of
   the lane to z 290). Heroes stop just in front of it, so they are drawn over its foot, and
   Mira's family (z 300) stands clear. Test: "village: nobody walks through the market well".
+## Cloud, 2026-10-23: stray purple line on the Burning Roofs removed (on main)
+- Nick saw an "unfinished purple line" over the chimney urn on THE BURNING ROOFS. It was the Gallows Ascent's crow-cage cue (`TerrainView.drawRoostCue`: a grey box on a line, lit violet), which drew beside ANY raised secret, so it hung in mid-air by the village's chimney urn. Now drawn only on the Gallows stage. Code only; no art needed. Shot: project files `purple-line/before-after.png`.

@@ -153,7 +153,7 @@ export class TerrainView {
     for (const b of this.terrain?.blocks ?? []) this.blockGfx.set(b.id, this.makeBlock(b));
     this.drawLanterns(data.lanterns ?? []);
     this.drawRests();
-    this.drawRoostCue();
+    if (data.theme === 'gallows') this.drawRoostCue(); // (only the Gallows roost has a crow-cage)
     this.listen();
   }
 
@@ -794,7 +794,8 @@ export class TerrainView {
     }
   }
 
-  // the roost's crow-cage: a violet glint you can see from the ledge below
+  // the roost's crow-cage: a violet glint you can see from the ledge below (Gallows only:
+  // elsewhere it hung in mid-air beside any raised secret, a stray violet line by the chimney urn)
   drawRoostCue() {
     const secret = this.stage.props.find((p) => p.secret && p.y > 100);
     if (!secret) return;
