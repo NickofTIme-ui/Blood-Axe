@@ -1041,3 +1041,13 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 ## 2026-10-23: King's Fire unlock notice (main 94b24ab)
 - When Rurik raises Oathkeeper at the deathbed (line `moment: 'swordRaised'`), a NEW ABILITY plaque fades in to the right of the painted cinematic: KING'S FIRE, "Press [U] or [LB] to hurl Oathkeeper's fire". `src/view/AbilityNotice.js`, shown by `HUDScene.newAbility`, called from `ArenaScene.oathkeeperRaised` / `rurikButtons`.
 - The buttons come from the bindings of whoever plays Rurik (`actionButtons` in `config/controls.js`): P2 on the number pad sees NUM 5; nothing is shown when Rurik is only a companion. It is the tap (Firebolt); the hold (Kingsfire skill) still needs the skill tree. Code only, no new art.
+
+## Cloud, 2026-10-23: Character Select no longer drops you on the old Oath Road
+
+Pause menu > Character Select (and Esc on the pause / death / win screen) started the
+character select with no stage, so picking a hero loaded the old Oath Road test stage
+("some weird old build"). `ArenaScene.selectData()` now sends you back into the run you
+were in: a campaign level resumes at the saved checkpoint (like CONTINUE), any other
+stage restarts that stage. Not on itch yet. The itch packager (tools/build-release.py)
+copies only src/lib/assets fresh each time and the game has no service worker, so no
+stale files ship.
