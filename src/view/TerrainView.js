@@ -747,7 +747,8 @@ export class TerrainView {
     for (const sec of this.stage.sections) {
       const r = sec.rest;
       if (!r) continue;
-      const y0 = r.z - Math.max(0, this.terrain?.groundAt(r.x, r.z) ?? 0);
+      // (a solid shrine stands on its own footprint: the ground it stands on is just in front)
+      const y0 = r.z - Math.max(0, this.terrain?.groundAt(r.x, r.solid ? r.z + 20 : r.z) ?? 0);
       if (r.kind === 'oath' && s.textures.exists('shrine-oath-src')) {
         // the painted OATH SHRINE (assets/env/shrine_oath.png, on magenta: cut out once)
         if (!s.textures.exists('shrine-oath')) s.textures.addCanvas('shrine-oath', keyLayer(s.textures.get('shrine-oath-src').getSourceImage(), 'magenta'));

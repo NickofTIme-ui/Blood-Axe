@@ -38,6 +38,13 @@ const BACK = (d) => ({ z0: LANE_TOP, z1: LANE_TOP + d }); // (against the back o
 // the stables' double gate (view/VillageView.js draws it open once the horses are freed):
 // where the stampede comes out, on its threshold at the back of the yard
 const STABLE_DOOR = { x: 6370, z: 216 };
+// The oath shrines stand at the back of the lane, out of the walk-path, each on a solid
+// footprint nobody walks through or jumps onto (Nick, 2026-10-23: you could walk through
+// them and stand on top). Kneel in front of one: a hero stopped against its footprint is
+// still well inside its reach (stage/Stage.js REST).
+const SHRINE_SQUARE = { x: 2640, z: LANE_TOP + 12, kind: 'oath', solid: true };
+const SHRINE_HALL = { x: 7230, z: LANE_TOP + 12, kind: 'oath', solid: true };
+const shrineFootprint = (r) => ({ kind: 'block', x0: r.x - 52, x1: r.x + 52, z0: LANE_TOP, z1: r.z + 6, top: 400, hideArt: true });
 
 export const STAGE_VILLAGE = {
   millRescue:{type:'executioner'},
@@ -103,7 +110,8 @@ export const STAGE_VILLAGE = {
         { type: 'fire', look: 'cart', x: 1900, z: 470, w: 110, d: 60, phase: 0 },
         { type: 'fire', look: 'cart', x: 2520, z: 380, w: 110, d: 60, phase: 105 },
       ],
-      rest: { x: 2640, z: 320, kind: 'oath' },
+      // (at the back of the lane, out of the walk-path, and solid: data/stageVillage.js terrain)
+      rest: SHRINE_SQUARE,
     },
     {
       id: 'roofs', name: 'THE BURNING ROOFS', x0: 2700, x1: 4300,
@@ -191,7 +199,7 @@ export const STAGE_VILLAGE = {
         // His archers join the fight immediately; wrecking their post stops them.
         { type: 'bombard', look: 'arrows', when: 'boss', silence: 'hallArchers', period: 150, warn: 60, shots: 2, damage: 12, radius: 56, depth: 40 },
       ],
-      rest: { x: 7230, z: 330, kind: 'oath' },
+      rest: SHRINE_HALL,
       // the man who directed the attack: Pitlord Kragg's kind (mace and spiked shield), a captain
       boss: { type: 'gladiator', name: 'Varek, the Ash Captain', health: 3.4, damage: 1.15, size: 1.75,
         escort: ['grunt', 'stalker', 'grunt', 'berserker'],
@@ -233,7 +241,15 @@ export const STAGE_VILLAGE = {
     { kind: 'block', x0: 780, x1: 830, z0: 290, z1: 306, top: 42, look: 'wreckage' },
     { kind: 'block', x0: 816, x1: 846, z0: 364, z1: 380, top: 42, look: 'wreckage', artFlip: true },
 
+    // ---- II THE MARKET SQUARE and VI THE LONGHALL: the shrines' footprints (drawn by view/TerrainView.js drawRests)
+    shrineFootprint(SHRINE_SQUARE),
+    shrineFootprint(SHRINE_HALL),
+
     // ---- III THE BURNING ROOFS
+    // Behind the cart, up against the end wall of the first house, a heap of burnt timbers
+    // too high to climb: the way up is the cart. (Walking up the back of the lane to the
+    // house you stood at its foot drawn over its roof, as if walking up the wall; Nick, 2026-10-23.)
+    { kind: 'block', x0: 2900, x1: 2990, z0: LANE_TOP, z1: 330, top: 400, look: 'wreckage' },
     { kind: 'block', x0: 2900, x1: 2990, z0: 330, z1: 520, top: 45, look: 'cart' }, // a cart against the house: a hop
     { kind: 'block', x0: 2990, x1: 3330, ...FULL, top: 120 },           // +75: a held jump onto the first roof
     { kind: 'pit', x0: 3330, x1: 3480, ...FULL },                      // the burning cellar under the beam

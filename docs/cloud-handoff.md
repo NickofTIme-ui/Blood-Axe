@@ -981,3 +981,14 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - The black box over the burning cellars: their back is now the painted house front in deep shadow (`burningCellar`).
 - Roofs: a ridge beam along the back and an eave board along the lip (painted `surf_beam`, running past the ends), more broken shingle edges, corner and foot shading on the house fronts.
 - New ChatGPT art in `assets/env/village/` (prompts: project files `burning-roofs-art/prompts.md`): `stables_open.png` (swaps in for `stables.png` when the horses break out, replacing the code-drawn gate leaves), `decor_signpost`, `decor_lantern`, `decor_debris`, `decor_debris2` placed by `STAGE_VILLAGE.decor` (`VillageView.drawDecor`). The five files are also already in the PC's blood-axe folder (untracked there).
+
+## Cloud, 2026-10-23: village shrines and the roof-start wall (not on itch)
+
+- Both oath shrines in the Burning Village (market square, longhall) now stand at the back
+  of the lane on a solid, unclimbable footprint (`shrineFootprint` in `src/data/stageVillage.js`;
+  rest `solid: true` makes `TerrainView.drawRests` stand the art on the ground in front).
+  Kneeling still works from in front of them.
+- A heap of burnt timbers, too high to climb, fills the gap behind the cart at the start of
+  the Burning Roofs: you can no longer walk up beside the first house and be drawn over its roof.
+  The way up is the cart.
+- Code only; no new art needed.
