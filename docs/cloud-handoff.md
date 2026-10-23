@@ -1026,3 +1026,7 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 
 - Nick: after the longhall execution Varek's body stayed stiff. A body beheaded on painted kneeling art now kneels its usual beat (sway/shudder as before), then turns into a jointed body (`SpriteCuts.limpen`, `view/FlexibleCut.js`) pushed the way its sentence says (`limp` in the `sentenceCut` table, `effects/Gore.js`) and folds and flops down under gravity. The head-only cut is unchanged; all of it is view-side, the online sim is untouched.
 - Fix in `FlexibleCut.contact`: a band's floor contact is weighted along the band, not the frame's vertical, so a band lying flat (kneeling shins) no longer launches the body into the air.
+
+## Cloud, 2026-10-23: cinematic music on the first footstep, 12.6 s (on main, not on itch)
+- Nick: "have the music start on the opening cinematic as soon as the text goes away and the next scene begins".
+- Measured in `assets/video/opening-cinematic.mp4`: the story card's text fades out by 11.9 s and the first shot (the boots on the march) cuts in at 12.0 s. Then Nick: "the moment the foot step hits the ground". The boot comes down from 12.1 s and its sole lands with a puff of dust at 12.6 s, so `THEME_AT` in `src/core/StartupIntro.js` is 12.6 (was 17). The track has no lead-in silence. A skip still starts the theme at once.

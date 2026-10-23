@@ -1,5 +1,5 @@
 // StartupIntro.js — Once per page launch: the UFO Technologies logo, then the opening
-// cinematic, which crossfades into the title screen. "The Battle" starts 17 s into the
+// cinematic, which crossfades into the title screen. "The Battle" starts 12.6 s into the
 // cinematic (core/Music.js startTitleTheme) and the title screen carries it on.
 // Browsers may block audible autoplay: the logo tries sound, then plays silently with an
 // optional button to restart with sound. The cinematic is silent. Escape, the button or
@@ -11,7 +11,7 @@
 
 import { startTitleTheme } from './Music.js';
 
-const THEME_AT = 17;  // seconds into the cinematic
+const THEME_AT = 12.6; // seconds into the cinematic: the first boot hits the ground (dust kicks up)
 const FADE_MS = 1400; // cinematic -> title crossfade (as long as the title's own fade-in)
 
 let handOver;
@@ -66,7 +66,7 @@ export function playStartupIntro() {
     const finish = () => {
       if (finished) return;
       finished = true;
-      theme(); // skipped before 17 s: the title still gets its music
+      theme(); // skipped before then: the title still gets its music
       video.pause(); // hold the last frame for the crossfade
       sound.hidden = true;
       skip.disabled = true;
