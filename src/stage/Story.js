@@ -217,6 +217,17 @@ export class Story {
   npc(id) { return this.npcs.find((n) => n.id === id); }
   vigilNpc(id){return this.npc(id==='barn'&&this.lost.has('barn')?'elsbeth':id);}
   isRescued(id) { return this.rescued.has(id); }
+  // A section's head count (section.tally: the barn's villagers): how many of the people in
+  // those groups are out, of how many (a group counts its `people`)
+  tally(def) {
+    let saved = 0, total = 0;
+    for (const id of def.npcs) {
+      const n = this.npc(id); if (!n) continue;
+      const k = n.people ?? 1; total += k;
+      if (this.isRescued(id) && n.state !== 'trapped') saved += k; // (a test start marks everyone saved: still shut in is not out)
+    }
+    return { saved, total };
+  }
 
   frames(text) { return Math.min(LINE.max, Math.round(LINE.base + text.length * LINE.perChar)); }
   // How long line i of a beat stays up: the beat's own `times` if it has them (the

@@ -79,10 +79,13 @@ export class HUDScene extends Phaser.Scene {
     this.makeStageHud();
     const ev = this.arena.world.events;
     this.onWave = (n) => this.callout(`WAVE ${n}`, '#e0c080', 30);
+    // (the hangman's about to drop Irvolino, stage/MillRescue.js: his clock jolts)
+    this.onMillWarning = () => { if (this.rescueAlert) this.rescueAlert.jolt = this.time.now; };
+    ev.on('millWarning', this.onMillWarning);
     this.onHit = (e) => { if (e.attacker === this.arena.player && e.defender.team === 'enemy') this.focusId = e.defender.id; };
     ev.on('wave', this.onWave);
     ev.on('hit', this.onHit);
-    this.events.once('shutdown', () => { ev.off('wave', this.onWave); ev.off('hit', this.onHit); });
+    this.events.once('shutdown', () => { ev.off('wave', this.onWave); ev.off('hit', this.onHit); ev.off('millWarning', this.onMillWarning); });
   }
 
   // ------------------------------------------------------------ the stage
@@ -109,12 +112,101 @@ export class HUDScene extends Phaser.Scene {
     this.cardSub.setLetterSpacing?.(3);
     // boss bar (top centre, under the call-out banner)
     this.bossUi = null;
+    this.makeRescueAlert();
+    this.makeTally();
     this.makeDialogue();
     // the stage may already be under way (the HUD starts a frame after the arena)
     const st = this.arena.stage;
     if (st?.section) this.sectionCard(st.index, st.section);
     if (st?.boss?.alive) this.showBoss(st.boss);
     if (this.arena.paused) this.showPause(true);
+  }
+
+  // ------------------------------------------------------------ the execution and the barn
+
+  // THE HANGMAN'S CLOCK (stage/MillRescue.js): top centre, under the call-out banner, while
+  // Irvolino's life is on the rope: what to do and how long the rope has left. It runs down
+  // only while the hangman's at the lever (Nick, 2026-10-23: warn the player he's about to
+  // kill the hostage unless he's stopped).
+  makeRescueAlert() {
+    const W = SETTINGS.width, y = 34, w = 260;
+    const panel = this.add.rectangle(W / 2, y, w + 70, 48, 0x0a0303, 0.78).setStrokeStyle(2, 0x8a2a1a);
+    const title = this.add.text(W / 2, y - 9, '', { fontFamily: FONT.display, fontSize: '18px', align: 'center' }).setOrigin(0.5).setStroke('#0a0000', 5);
+    title.setLetterSpacing?.(2);
+    const track = this.add.rectangle(W / 2 - w / 2, y + 12, w, 7, 0x2a0606).setOrigin(0, 0.5);
+    const fill = this.add.rectangle(W / 2 - w / 2, y + 12, w, 7, 0xd03a1c).setOrigin(0, 0.5);
+    const secs = this.add.text(W / 2 + w / 2 + 6, y + 12, '', { fontFamily: FONT.ui, fontSize: '12px', color: '#ffd0b0' }).setOrigin(0, 0.5).setStroke('#000000', 3);
+    this.rescueAlert = { parts: [panel, title, track, fill, secs], panel, title, track, fill, secs, w, mode: null };
+    for (const o of this.rescueAlert.parts) o.setVisible(false);
+  }
+
+  updateRescueAlert() {
+    const A = this.rescueAlert, st = this.arena.stage, r = st?.millRescue;
+    const f = r?.executioner;
+    const on = !!r && r.started && !r.resolved && st.section?.id === 'mill' && !st.story?.holding;
+    for (const o of A.parts) o.setVisible(on);
+    this.banner.setY(on ? 84 : 36); // (call-outs drop below it while it's up)
+    if (!on) { A.mode = null; return; }
+    const alive = !!f?.alive;
+    const mode = !alive ? 'cut' : r.operating ? 'lever' : 'held';
+    const left = r.timeLeft;
+    const urgent = mode === 'lever' && left <= 4;
+    const look = urgent ? 'final' : mode;
+    if (look !== A.mode) {
+      A.mode = look;
+      A.title.setText({ cut: 'CUT IRVOLINO’S BONDS!', lever: 'STOP THE EXECUTIONER!', final: 'HE’S PULLING THE LEVER!', held: 'KEEP HIM OFF THE LEVER!' }[look]);
+      epicFill(A.title, mode === 'cut' ? ['#fff2b0', '#e0a530', '#6a3c08'] : mode === 'lever' ? ['#ff7a5a', '#d0101a', '#3d0004'] : ['#ffd9a0', '#f07a18', '#6a2004']);
+      A.panel.setStrokeStyle(2, mode === 'cut' ? 0xc89a40 : mode === 'lever' ? 0xc02a1a : 0x9a5a20);
+    }
+    // the rope's time: drains while he works the lever, holds while he's kept off it
+    A.track.setVisible(alive); A.fill.setVisible(alive); A.secs.setVisible(alive);
+    A.fill.scaleX = Math.max(0, left / 25);
+    A.fill.fillColor = urgent ? 0xff2a10 : mode === 'lever' ? 0xd03a1c : 0x9a6a3a;
+    A.secs.setText(`${Math.ceil(left)}s`);
+    // (pulsing while the rope runs, faster at the end)
+    const beat = mode === 'lever' ? 0.75 + 0.25 * Math.sin(this.time.now / (urgent ? 70 : 160)) : 1;
+    // (and jolts when he first takes his place, and again when he's about to pull)
+    const jolt = Math.max(0, 1 - (this.time.now - (A.jolt ?? -1e9)) / 400);
+    A.title.setAlpha(beat).setScale((urgent ? 1 + 0.06 * Math.sin(this.time.now / 70) : 1) + 0.35 * jolt * jolt);
+    A.panel.setAlpha(mode === 'lever' ? 0.85 + 0.15 * beat : 1);
+  }
+
+  // A section's head count (section.tally, the barn): "VILLAGERS SAVED 3 / 9" and a figure
+  // for each of them, lit as they get out, under the objective. Once all are out it says so
+  // and goes.
+  makeTally() {
+    const x = 14, y = 150;
+    const text = this.add.text(x, y, '', { fontFamily: FONT.ui, fontSize: '14px', color: '#f0e0c0' }).setStroke('#000000', 4);
+    this.tallyUi = { x, y, text, pips: [], key: null, done: 0 };
+  }
+
+  updateTally() {
+    const T = this.tallyUi, st = this.arena.stage, def = st?.section?.tally;
+    const story = st?.story;
+    const show = !!def && !!story && !story.holding;
+    if (!show) { T.text.setVisible(false); T.pips.forEach((p) => p.setVisible(false)); return; }
+    const { saved, total } = story.tally(def);
+    if (T.pips.length !== total) {
+      T.pips.forEach((p) => p.destroy());
+      // a little standing figure for each person: dark until they're out
+      T.pips = Array.from({ length: total }, (_, i) => this.add.rectangle(T.x + 4 + i * 11, T.y + 30, 6, 13, 0x3a2c22).setOrigin(0, 1).setStrokeStyle(1, 0x000000));
+    }
+    const key = `${saved}/${total}`;
+    if (key !== T.key) {
+      if (T.key && saved > Number(T.key.split('/')[0])) {
+        // one more group out: the count jumps
+        T.text.setScale(1.25);
+        this.tweens.add({ targets: T.text, scale: 1, duration: 260, ease: 'Back.easeOut' });
+      }
+      T.key = key;
+      T.text.setText(saved >= total ? `ALL ${total} VILLAGERS SAVED` : `VILLAGERS SAVED  ${saved} / ${total}`);
+      T.text.setColor(saved >= total ? '#ffe08a' : '#f0e0c0');
+      if (saved >= total) T.done = this.time.now;
+    }
+    // (all out: it stays a few seconds, then fades away)
+    const fade = saved >= total ? Math.max(0, 1 - (this.time.now - T.done - 3500) / 800) : 1;
+    T.text.setVisible(fade > 0).setAlpha(fade);
+    T.pips.forEach((p, i) => p.setVisible(fade > 0).setAlpha(fade).setFillStyle(i < saved ? 0xffd890 : 0x3a2c22));
   }
 
   // ------------------------------------------------------------ story lines (stage/Story.js)
@@ -420,6 +512,8 @@ export class HUDScene extends Phaser.Scene {
     this.updateDialogue();
     this.updateEnemyStrip();
     this.updateBoss();
+    this.updateRescueAlert();
+    this.updateTally();
     this.waitText.setY(SETTINGS.height - 40 - this.lift);
     if (this.go.visible) this.go.setAlpha(0.55 + 0.45 * Math.sin(this.time.now * 0.008)).setX(SETTINGS.width - 24 + Math.sin(this.time.now * 0.008) * 6);
 

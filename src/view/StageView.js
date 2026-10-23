@@ -9,7 +9,7 @@ import { SETTINGS } from '../config/settings.js';
 import { PHYSICS } from '../effects/Physics.js';
 import { drawStampedeTrail } from './StampedeTrail.js';
 import { DEPTH } from './depths.js';
-import { PICKUPS } from '../data/stage.js';
+import { PICKUPS, PROPS } from '../data/stage.js';
 import { playSfx } from '../core/Sfx.js';
 import { buildPropSheet, PROP_HD, PICKUP_HD, PICKUP_PAINTED, PICKUP_SCALE } from './propSheet.js';
 import { FX } from './stripImporter.js';
@@ -225,6 +225,51 @@ export class StageView {
       beam(10, 30, w - 14, h - 14, 22);
       c.fillStyle = '#1a120c'; c.fillRect(0, h - 14, w, 14);
     });
+    // (the village barn) planks nailed across a doorway, two posts and the boards between,
+    // scorched at the ends; broken: the posts' stumps, a board hanging by a nail, the rest
+    // down in the dirt (PROPS.barricade). Drawn at twice its size, like the others.
+    const barricade = (c, w, h, broken) => {
+      const board = (x, y, L, t, ang, seed) => {
+        c.save(); c.translate(x, y); c.rotate(ang);
+        const g = c.createLinearGradient(0, -t / 2, 0, t / 2);
+        g.addColorStop(0, '#6a4a2c'); g.addColorStop(0.45, '#4e3420'); g.addColorStop(1, '#2a1a0e');
+        c.fillStyle = g; c.fillRect(-L / 2, -t / 2, L, t);
+        c.fillStyle = 'rgba(20,10,4,0.45)'; // grain
+        for (let i = 0; i < 4; i++) c.fillRect(-L / 2 + 6, -t / 2 + 4 + i * (t - 8) / 3, L - 12, 1.5);
+        c.fillStyle = 'rgba(160,120,80,0.25)'; c.fillRect(-L / 2, -t / 2, L, 2); // the lit top edge
+        // charred, glowing ends (the barn's burning)
+        for (const e of [-1, 1]) {
+          const cg = c.createLinearGradient(e * L / 2, 0, e * (L / 2 - 26), 0);
+          cg.addColorStop(0, '#0e0806'); cg.addColorStop(1, 'rgba(14,8,6,0)');
+          c.fillStyle = cg; c.fillRect(e > 0 ? L / 2 - 26 : -L / 2, -t / 2, 26, t);
+        }
+        if (seed % 2) { c.fillStyle = 'rgba(255,110,30,0.7)'; c.fillRect(L / 2 - 12, -t / 2 + 4, 6, 2); }
+        c.fillStyle = '#1a1612'; for (const nx of [-L / 2 + 12, L / 2 - 14]) { c.beginPath(); c.arc(nx, 0, 3, 0, 7); c.fill(); } // nails
+        c.restore();
+      };
+      const post = (x, top) => {
+        const g = c.createLinearGradient(x - 9, 0, x + 9, 0);
+        g.addColorStop(0, '#22160c'); g.addColorStop(0.5, '#4a3220'); g.addColorStop(1, '#1a1008');
+        c.fillStyle = g; c.fillRect(x - 9, top, 18, h - top);
+        c.fillStyle = '#0e0806'; c.beginPath(); c.moveTo(x - 9, top); c.lineTo(x - 2, top - 8); c.lineTo(x + 4, top + 2); c.lineTo(x + 9, top - 4); c.lineTo(x + 9, top + 6); c.lineTo(x - 9, top + 6); c.fill();
+      };
+      if (!broken) {
+        post(14, 10); post(w - 14, 14);
+        board(w / 2, h * 0.24, w - 8, 24, -0.05, 1);
+        board(w / 2, h * 0.5, w + 4, 26, 0.04, 2);
+        board(w / 2, h * 0.76, w - 14, 24, -0.02, 3);
+        board(w / 2, h * 0.5, Math.hypot(w, h) * 0.86, 22, Math.atan2(h * 0.7, w), 5); // the brace, corner to corner
+      } else {
+        post(14, h * 0.62); post(w - 14, h * 0.7);
+        board(w - 30, h * 0.6, w * 0.5, 22, 1.1, 1); // hanging off the right post by a nail
+        board(w * 0.42, h - 12, w * 0.8, 20, 0.06, 2);
+        board(w * 0.6, h - 26, w * 0.6, 18, -0.18, 3);
+      }
+      c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(0, h - 6, w, 6);
+    };
+    const B = PROPS.barricade;
+    this.canvasTex('prop-barricade', B.w * 2, B.h * 2, (c, w, h) => barricade(c, w, h, false));
+    this.canvasTex('prop-barricade-broken', B.w * 2, B.h * 2, (c, w, h) => barricade(c, w, h, true));
     // (the wood) the convoy's prisoner wagon: black iron plates, barred windows with faces
     // at them, the king's black and crimson banner; and the same wrecked (PROPS.wagon)
     const wagon = (c, w, h, wrecked) => {
@@ -551,7 +596,7 @@ export class StageView {
     const key = `prop-${pr.kind}`;
     // (a level's painted prop, data/levelArt.js: sized to the prop, whatever size it was painted)
     const lvl = (this.scene.registry.get('levelArt') ?? []).includes(key);
-    const s = lvl ? (pr.w * 1.3) / this.scene.textures.get(key).getSourceImage().width : this.hd.has(key) ? 0.25 : 0.5;
+    const s = lvl ? (pr.w * 1.3) / this.scene.textures.get(key).getSourceImage().width : this.hd.has(key) ? 0.25 : 0.5 * (pr.size ?? 1);
     if (pr.kind === 'wall') {
       // set into the back wall: the alcove waits behind it
       const y = SETTINGS.world.floorTop - 4;
@@ -559,10 +604,11 @@ export class StageView {
       const img = this.scene.add.image(pr.x, y, key).setOrigin(0.5, 1).setScale(s).setDepth(DEPTH.floor + 2.6);
       return { img, alcove, s };
     }
-    // (y: up on a ledge, it's drawn on the ledge; its shadow too, just over the ledge's top)
-    const y = pr.y ?? 0;
+    // (y: up on a ledge, it's drawn on the ledge; its shadow too, just over the ledge's top.
+    // `lift`: drawn higher than it's struck, on a doorway painted on the back wall)
+    const y = (pr.y ?? 0) + (pr.lift ?? 0);
     const img = this.scene.add.image(pr.x, pr.z - y, key).setOrigin(0.5, 1).setScale(s).setDepth(pr.z);
-    const shadow = this.scene.add.ellipse(pr.x, pr.z - y, pr.w * 1.2, 10, 0x000000, 0.35).setDepth(y ? pr.z - 0.3 : DEPTH.shadows);
+    const shadow = this.scene.add.ellipse(pr.x, pr.z - y, pr.w * 1.2, 10, 0x000000, 0.35).setDepth(y ? pr.z - 0.3 : DEPTH.shadows).setVisible(!pr.lift);
     const v = { img, shadow, s };
     this.siege.setup(pr, v, lvl);
     return v;
@@ -596,7 +642,7 @@ export class StageView {
     // thrown open (painted states from the prop sheet) — not just a vanished object
     const wreck = pr.kind === 'chest' ? 'prop-chest-open' : `prop-${pr.kind}-broken`;
     if (this.scene.textures.exists(wreck)) {
-      v.img.setTexture(wreck).setOrigin(0.5, 1).setPosition(pr.x, pr.z - (pr.y ?? 0)).setDepth(pr.z - 0.2).clearTint();
+      v.img.setTexture(wreck).setOrigin(0.5, 1).setPosition(pr.x, pr.z - (pr.y ?? 0) - (pr.lift ?? 0)).setDepth(pr.z - 0.2).clearTint();
       v.img.setScale(v.s * 1.25, v.s * 0.6);
       this.scene.tweens.add({ targets: v.img, scaleX: v.s, scaleY: v.s, duration: 160, ease: 'Back.easeOut' });
       v.shadow?.setAlpha(0.2);

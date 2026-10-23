@@ -14,6 +14,11 @@ export class BattlefieldAudio {
     this.nextVolley = 0;
     this.steps = new Map();
     scene.world.events.on('millTrapdoor',()=>playSfx(scene,'gateClose',{volume:.75,spread:50,minGapMs:0}));
+    // the hangman's warning (stage/MillRescue.js): steel drawn as he takes his place, a hard
+    // ring of iron when he's about to pull the lever
+    scene.world.events.on('millWarning',({final})=>final
+      ?playSfx(scene,'block',{volume:.9,pitch:-900,spread:30,minGapMs:0})
+      :playSfx(scene,[['swordUnsheath1',1],['swordUnsheath2',1]],{volume:.8,spread:40,minGapMs:0}));
     scene.world.events.on('millBondsCut',()=>playSfx(scene,'bladeOut',{volume:.5,spread:50,minGapMs:0}));
     scene.world.events.on('lockPick', () => playSfx(scene, 'lockUnlock', {volume: 0.5}));
     scene.world.events.on('wayOpen', () => playSfx(scene, 'gateOpen', {volume: 0.55, minGapMs: 400}));
