@@ -1058,3 +1058,7 @@ stale files ship.
   charge and thrust, spells and skill moves. Jumps and air moves are not cancelled.
   Code: `actionCancel` in src/entities/fighterStates.js, called from Fighter.update.
   Replaces the old per-hero `rollCancel` flag (which skipped the kick).
+## Cloud, 2026-10-23: the Ashen Road's obstacles moved to the edges (not on itch)
+- Nick: "Move the obstacles to the sides not in the middle of the beginning of the game, they are annoying".
+- In `src/data/stageVillage.js` terrain, section I: the hay cart (was mid-road at x 470-560, z 390-470) now stands against the back of the road at x 390-480 (clear of the pikes), the rear rubble heap sits a little further back (z 276-292, the secret urn still behind it) and the other heap (was mid-road at z 364-380) is at the front edge (z 478-494). The middle of the road is open from x 300 to 1000.
+- Logic test reworked: every hero walks the road both ways at z 338, 400 and 450 without a block; the cart and both heaps are still solid. Checked in a headless screenshot. No new art.

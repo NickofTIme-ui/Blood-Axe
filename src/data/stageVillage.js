@@ -253,10 +253,12 @@ export const STAGE_VILLAGE = {
     // ---- I THE ASHEN ROAD: a cart to hop (or walk round), a heap of burnt timbers at
     // the back of the road (look: painted, view/TerrainView.js drawPaintedBlock). (It was a
     // line right across the road: the same timbers stamped eight times read as fake.)
-    { kind: 'block', x0: 470, x1: 560, z0: 390, z1: 470, top: 40, look: 'cart' },
-    // Separate footprints for the two painted heaps: the street between them is open.
-    { kind: 'block', x0: 780, x1: 830, z0: 290, z1: 306, top: 42, look: 'wreckage' },
-    { kind: 'block', x0: 816, x1: 846, z0: 364, z1: 380, top: 42, look: 'wreckage', artFlip: true },
+    // All three keep to the edges of the street, the middle of the road left open: in the
+    // middle they were in the way of the first fight (Nick, 2026-10-23). The cart is at the
+    // back of the road, the two heaps one at the back and one at the front edge.
+    { kind: 'block', x0: 390, x1: 480, z0: LANE_TOP, z1: 318, top: 40, look: 'cart' }, // (clear of the pikes)
+    { kind: 'block', x0: 780, x1: 830, z0: 276, z1: 292, top: 42, look: 'wreckage' }, // (the secret urn still behind it)
+    { kind: 'block', x0: 816, x1: 846, z0: 478, z1: 494, top: 42, look: 'wreckage', artFlip: true },
 
     // ---- II THE MARKET SQUARE and VI THE LONGHALL: the well's and the shrines' footprints (drawn by view/TerrainView.js drawRests)
     wellFootprint(WELL),

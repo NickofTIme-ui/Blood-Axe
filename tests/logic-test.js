@@ -4436,17 +4436,20 @@ test('birthright: his dying father gives the sword once, watched or skipped; the
   assert(elder.hold && elder.lines.some((l) => l[2]?.flag === 'oathkeeper'), 'a held scene, with the cue');
 });
 
-test('village: all heroes walk both ways through the opening rubble gap, while the heaps stay solid', () => {
-  for (const hero of Object.values(CHARACTERS)) for (const dir of [-1, 1]) {
+test('village: the opening road keeps its cart and heaps to the edges, the middle open for every hero both ways', () => {
+  // (Nick, 2026-10-23: the obstacles in the middle of the first street were annoying)
+  for (const hero of Object.values(CHARACTERS)) for (const dir of [-1, 1]) for (const z of [338, 400, 450]) {
     const w = new World();
     w.terrain = new Terrain(w, STAGE_VILLAGE.terrain);
-    const p = w.addFighter(new Fighter({ stats: hero, team: 'player', x: dir > 0 ? 720 : 910, z: 338, controller: new Scripted() }));
-    for (let tick = 0; tick < 120; tick++) { p.vx = dir * 120; p.vz = 0; p.integrate(); }
-    assert(dir > 0 ? p.x > 910 : p.x < 720, `${hero.id}: blocked in the empty street`);
-    assert(p.h === 0 && p.floor === 0, 'the gap must remain street-level');
-    assert(w.terrain.wallAt(805, 300, 0), 'rear rubble still blocks walking');
-    assert(w.terrain.wallAt(830, 374, 0), 'front rubble still blocks walking');
+    const p = w.addFighter(new Fighter({ stats: hero, team: 'player', x: dir > 0 ? 300 : 1000, z, controller: new Scripted() }));
+    for (let tick = 0; tick < 420; tick++) { p.vx = dir * 120; p.vz = 0; p.integrate(); }
+    assert(dir > 0 ? p.x > 1000 : p.x < 300, `${hero.id}: blocked on the road at z ${z} (x ${Math.round(p.x)})`);
+    assert(p.h === 0 && p.floor === 0, 'the middle of the road must stay street-level');
   }
+  const t = new Terrain(new World(), STAGE_VILLAGE.terrain);
+  assert(t.wallAt(435, 290, 0), 'the cart at the back of the road still blocks walking');
+  assert(t.wallAt(805, 284, 0), 'rear rubble still blocks walking');
+  assert(t.wallAt(830, 486, 0), 'front rubble still blocks walking');
 });
 
 test('village: nobody walks through the market well or anything painted with it, nor jumps onto it', () => {
