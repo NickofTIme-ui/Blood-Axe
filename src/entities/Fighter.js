@@ -9,7 +9,7 @@
 // On screen, a fighter is drawn at (x, z - h).
 
 import { StateMachine } from '../core/StateMachine.js';
-import { FIGHTER_STATES } from './fighterStates.js';
+import { FIGHTER_STATES, actionCancel } from './fighterStates.js';
 import { STEP, FOOT } from '../stage/Terrain.js';
 import { JUGGLE } from '../combat/Juggle.js';
 
@@ -127,7 +127,7 @@ export class Fighter {
     if (this.shock > 0 && this.shock < 999) this.shock--;
     if (this.exposed > 0 && --this.exposed === 0) this.exposeCool = this.exposeCoolFrames ?? 0; // (the Rogue's EXPOSED)
     else if (this.exposeCool > 0) this.exposeCool--;
-    this.fsm.update();
+    if (!actionCancel(this)) this.fsm.update(); // (a roll / block press cuts a move short)
     if (sc?.planted) { this.vx = 0; this.vz = 0; } // (the killing blow: feet planted, no lunge)
     if (this.pitGuard > 0) { this.pitGuard--; this.invincible = true; } // (just climbed out of a fall)
     this.justLanded = false;

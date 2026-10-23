@@ -206,20 +206,46 @@ test('sprint: a click while moving speeds every hero up, carries into a jump, an
   }
 });
 
-test('roll cancels a swing: wind-up, mid-swing and recovery (but not the kick)', () => {
-  for (const [move, at] of [['attack', 3], ['attack', 14], ['heavy', 6], ['heavy', 30]]) {
+test('roll cancels any action: swings, the kick, wind-up, mid-swing and recovery', () => {
+  for (const [move, at] of [['attack', 3], ['attack', 14], ['heavy', 6], ['heavy', 30], ['kick', 5]]) {
     const t = setup({ script: { 1: [move] }, gap: 300 });
     t.run(at);
     assert(t.p.state !== 'idle' && t.p.state !== 'dodge', `${move}@${at}: should be swinging, is ${t.p.state}`);
     t.p.controller.registerPress('dodge');
     t.run(1);
     assert(t.p.state === 'dodge', `${move}@${at}: expected dodge, got ${t.p.state}`);
+    assert(!t.p.activeAttack, `${move}@${at}: the cut swing leaves no live hitbox`);
   }
-  const k = setup({ script: { 1: ['kick'] }, gap: 300 });
-  k.run(5);
-  k.p.controller.registerPress('dodge');
-  k.run(1);
-  assert(k.p.state === 'kick', `the kick is a commitment, got ${k.p.state}`);
+});
+
+test('block press cancels any action at once (a parry first, a held guard after)', () => {
+  for (const player of Object.keys(CHARACTERS)) {
+    for (const [move, at] of [['attack', 3], ['attack', 12], ['heavy', 8], ['kick', 4], ['magic', 3]]) {
+      const t = setup({ player, script: { 1: [move] }, gap: 300 });
+      t.run(at);
+      if (['idle', 'walk'].includes(t.p.state) || !t.p.grounded) continue; // (no such move for this hero)
+      const from = t.p.state;
+      t.p.controller.registerPress('block');
+      t.p.controller.hold = { block: true };
+      t.run(1);
+      assert(t.p.state === 'parry', `${player} ${from}@${at}: expected parry, got ${t.p.state}`);
+      t.run(15);
+      assert(t.p.state === 'block', `${player} ${from}: held on into a block, got ${t.p.state}`);
+    }
+  }
+  // only a fresh press cuts it: a guard held with no new press leaves the swing be
+  const h = setup({ script: { 1: ['attack'] }, hold: (t) => (t >= 3 ? { block: true } : {}), gap: 300 });
+  h.run(6);
+  assert(h.p.state === 'light1', `held block alone leaves the swing be, got ${h.p.state}`);
+});
+
+test('jumps and air moves are not cancelled by a roll or block press', () => {
+  const t = setup({ script: { 1: ['jump'] }, hold: { jump: true }, gap: 300 });
+  t.run(6);
+  assert(t.p.state === 'jump', `jumping, got ${t.p.state}`);
+  t.p.controller.registerPress('block');
+  t.run(1);
+  assert(t.p.state === 'jump', `still in the jump, got ${t.p.state}`);
 });
 
 test('roll cancel costs stamina like any roll, and needs some', () => {

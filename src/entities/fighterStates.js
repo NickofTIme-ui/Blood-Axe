@@ -179,6 +179,25 @@ export function tryActions(f, allowed = null) {
   return false;
 }
 
+// INSTANT CANCEL (heroes): a fresh roll or block press cuts any action on the ground
+// short at ANY point (wind-up, strike or recovery) for the usual stamina. Swings, kicks,
+// the charge, spells and skills all give way; jumps and air moves don't (nor rolls,
+// finishers or being hit). Fighter.update runs this before the state's own update.
+const CANCELLABLE = new Set([
+  'light1', 'light2', 'light3', 'light4', 'launcher', 'heavy', 'kick', 'shoulder', 'spin',
+  'charge', 'thrust', 'cast', 'bolt', 'force', 'ward', 'viper', 'rkick', 'sweep', 'knife',
+  'mine', 'kingcast', 'kingsfire',
+]);
+export function actionCancel(f) {
+  if (f.team !== 'player' || !f.grounded || !CANCELLABLE.has(f.state)) return false;
+  const c = f.controller;
+  // (block: only a fresh press — a held guard button doesn't eat the swing it was pressed with)
+  const cut = tryActions(f, ['dodge']) ||
+    (!f.stats.skills?.berserk && c.consume('block') && (f.fsm.change('parry'), true));
+  if (cut) { f.activeAttack = null; f.world?.events.emit('actionCancel', { fighter: f }); }
+  return cut;
+}
+
 // Builds a ground attack state from a move's frame data.
 function makeAttackState(moveKey) {
   return {
@@ -194,10 +213,6 @@ function makeAttackState(moveKey) {
       const m = f.move;
       const c = f.controller;
       const phase = movePhase(m, frame);
-
-      // Roll cancel (stats.rollCancel): a roll interrupts a sword swing at ANY point —
-      // wind-up, strike or recovery — for the usual stamina. Not the kick (a commitment).
-      if (f.stats.rollCancel && moveKey !== 'kick' && tryActions(f, ['dodge'])) return;
 
       // HOLD attack (players with a charge move): the tap slash always fires at once,
       // untouched. Keep the button held through it (stats.charge.holdFrames) and once

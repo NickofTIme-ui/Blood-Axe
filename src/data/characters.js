@@ -85,7 +85,6 @@ export const CHARACTERS = {
     meleeMult: 1.3, magicMult: 0.7,
     blockReduction: 0.85, guardEfficiency: 0.8,
     dodge: { iframes: 11, duration: 18, recovery: 9, speed: 785, cost: 16 },
-    rollCancel: true, // a roll cancels any sword swing at any point (fighterStates.js)
     parryWindow: 6, parryWhiffRecovery: 16,
     knockdownFrames: 42, getupFrames: 18, staggerFrames: 48,
 
@@ -243,7 +242,6 @@ export const CHARACTERS = {
     // the blink's timing (the dodge numbers the rest of the game reads): invulnerable for
     // `iframes`, gone for duration, then `recovery`
     dodge: { iframes: 12, duration: 10, recovery: 8, speed: 0, cost: 18 },
-    rollCancel: true, // a blink cuts any staff swing short
     parryWindow: 6, parryWhiffRecovery: 16,
     knockdownFrames: 40, getupFrames: 26, staggerFrames: 50,
 
@@ -414,7 +412,6 @@ export const CHARACTERS = {
     blockReduction: 0.62, guardEfficiency: 1.4, // a light guard: heavy blows break it fast
     // the best dodge in the game: long, quick, invulnerable for most of it
     dodge: { iframes: 17, duration: 20, recovery: 4, speed: 980, cost: 10 },
-    rollCancel: true,
     parryWindow: 7, parryWhiffRecovery: 12,
     knockdownFrames: 26, getupFrames: 12, staggerFrames: 42, // springs straight back up
 
