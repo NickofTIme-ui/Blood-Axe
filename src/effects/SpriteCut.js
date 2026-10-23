@@ -18,7 +18,7 @@
 import { landThud,playSfx } from '../core/Sfx.js';
 import { dyeImage } from '../view/dye.js';
 import { measure } from '../view/frameMeasure.js';
-import { RAGDOLL_GEAR, EXECUTION_GEAR } from '../data/ragdollGear.js';
+import { RAGDOLL_GEAR, EXECUTION_GEAR, EXECUTION_HEAD } from '../data/ragdollGear.js';
 import { cutPlane, spritePoint, cutDistance } from './CutGeometry.js';
 import { FlexibleCut } from '../view/FlexibleCut.js';
 import { FleshChain } from './FleshChain.js';
@@ -30,6 +30,30 @@ const GRAVITY = 1700;
 const HEAD = 0.19;
 
 const rand = (a, b) => a + Math.random() * (b - a);
+
+// An outlined head (data/ragdollGear.js EXECUTION_HEAD) as a cut plane: through the
+// middle of the neck, facing down into the body (ny = 1, like a level cut's), the head's
+// middle its pivot, and the outline kept to sort the pixels by.
+function headPlane({ head, neck: [[ax, ay], [bx, by]] }) {
+  const cx = (ax + bx) / 2, cy = (ay + by) / 2;
+  const mid = head.reduce((m, [x, y]) => ({ x: m.x + x / head.length, y: m.y + y / head.length }), { x: 0, y: 0 });
+  let nx = -(by - ay) / ((bx - ax) || 1e-6), ny = 1;
+  if ((mid.x - cx) * nx + (mid.y - cy) * ny > 0) { nx = -nx; ny = -ny; }
+  return { cx, cy, nx, ny, upper: mid, mask: head, neck: { ax, ay, bx, by } };
+}
+function inside(poly, x, y) {
+  let at = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) at = !at;
+  }
+  return at;
+}
+function alongNeck({ neck: { ax, ay, bx, by } }, x, y) {
+  const lx = bx - ax, ly = by - ay, len = Math.hypot(lx, ly) || 1;
+  const t = ((x - ax) * lx + (y - ay) * ly) / len;
+  return t > -2 && t < len + 2;
+}
 let pieceId = 0;
 
 export class SpriteCuts {
@@ -68,6 +92,10 @@ export class SpriteCuts {
       dir, face, variation: options.variation ?? Math.random(), tilt: options.tilt ?? Math.random(),impact:options.impact,impactSide:options.impactSide });
     // Neck placement on a kneeling pose uses its actual crown as before.
     if (head != null && cut === 'neck') plane.cy = yCut;
+    // ...unless the pose has its head outlined (data/ragdollGear.js EXECUTION_HEAD): then
+    // the blade takes exactly that, parted along the neck, and the shoulders stay on.
+    const headOutline = cut === 'neck' && view.kneelCut ? EXECUTION_HEAD[sh.key.replace(/^enemy-/, '')]?.[view.lastRef] : null;
+    if (headOutline) Object.assign(plane, headPlane(headOutline));
     yCut = Math.round(plane.cy);
     const yc = plane.upper.y;
     const key = s.texture.key;
@@ -225,8 +253,10 @@ export class SpriteCuts {
           const o = (y * W + x) * 4;
           if (src.data[o + 3] < 40) continue;
           const d = plane ? cutDistance(plane,x+.5,y+.5) : y + 0.5 - ly;
-          const out = d < 0 ? up : lo;
-          const a = Math.abs(d);
+          const masked = plane?.mask ? inside(plane.mask, x + 0.5, y + 0.5) : null;
+          const out = masked == null ? (d < 0 ? up : lo) : masked ? up : lo;
+          // (an outlined head: the wound runs along the neck only, not out across the shoulders)
+          const a = masked == null || alongNeck(plane, x + 0.5, y + 0.5) ? Math.abs(d) : Infinity;
           let r = src.data[o]; let g = src.data[o + 1]; let b = src.data[o + 2];
           if (a < FACE) {
             if (x < x0) x0 = x; if (x > x1) x1 = x;
@@ -241,7 +271,7 @@ export class SpriteCuts {
         }
       }
       // the spine: a pale fleck in the cut, toward his back (frames face right: back = left)
-      if (x1 > x0 && cut !== 'legs' && !plane?.lying) {
+      if (x1 > x0 && cut !== 'legs' && !plane?.lying && !plane?.mask) {
         const bx = Math.round(x0 + (x1 - x0) * 0.36);
         for (const img of [up, lo]) {
           for (let x = bx - 2; x <= bx + 2; x++) {

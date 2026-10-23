@@ -93,3 +93,20 @@ export const EXECUTION_GEAR = {
     ],
   },
 };
+
+// Varek's head in his execution poses (same imported-frame coordinates): the outline of
+// his helmeted head, and the neck under it, where the blade parts it. Without these the
+// neck cut is a level line across the frame, and his pauldrons stand as high as his
+// neck (bowed, the helmet sits lower than them): the head would take a slab of shoulder.
+export const EXECUTION_HEAD = {
+  gladiator: {
+    'kneel:1': {
+      head: [[214,304],[224,294],[234,284],[258,288],[268,310],[262,326],[250,336],[236,338],[224,332],[216,320]],
+      neck: [[216,318],[240,338]],
+    },
+    'kneel:2': {
+      head: [[176,286],[186,268],[200,256],[214,252],[226,262],[238,276],[252,290],[242,297],[232,304],[214,304],[198,301],[186,296]],
+      neck: [[196,301],[234,303]],
+    },
+  },
+};
