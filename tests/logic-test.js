@@ -4413,6 +4413,22 @@ test('village: all heroes walk both ways through the opening rubble gap, while t
   }
 });
 
+test('village: nobody walks through the market well or anything painted with it, nor jumps onto it', () => {
+  const { x, z } = STAGE_VILLAGE.well;
+  for (const hero of Object.values(CHARACTERS)) for (const dir of [-1, 1]) for (const lane of [STAGE_VILLAGE.laneTop + 8, z - 20, z]) {
+    const w = new World();
+    w.terrain = new Terrain(w, STAGE_VILLAGE.terrain);
+    const p = w.addFighter(new Fighter({ stats: hero, team: 'player', x: x - dir * 260, z: lane, controller: new Scripted() }));
+    for (let tick = 0; tick < 240; tick++) { p.vx = dir * 120; p.vz = 0; p.integrate(); }
+    assert(dir > 0 ? p.x < x - 150 : p.x > x + 150, `${hero.id} walked into the well (z ${lane}, from the ${dir > 0 ? 'left' : 'right'}: x ${Math.round(p.x)})`);
+  }
+  for (const wx of [x - 140, x, x + 140]) assert(STAGE_VILLAGE.terrain.some((b) => b.kind === 'block' && b.x0 <= wx && b.x1 >= wx && b.z0 <= z - 30 && b.z1 >= z - 4 && b.top >= 300), `no tall footprint at x ${wx}`);
+  // the street in front of it stays open, and the family stands clear of it
+  assert(!new Terrain(new World(), STAGE_VILLAGE.terrain).wallAt(x, z + 8, 0), 'the street in front of the well must stay open');
+  const fam = STAGE_VILLAGE.npcs?.find((n) => n.id === 'mira');
+  if (fam) assert(!new Terrain(new World(), STAGE_VILLAGE.terrain).wallAt(fam.x, fam.z, 0), 'the family at the well must stand clear of its footprint');
+});
+
 for (const [name, fn] of later) {
   try { await fn(); console.log(`  ok   ${name}`); } catch (e) { failed++; console.log(`  FAIL ${name}\n       ${e.message}`); }
 }

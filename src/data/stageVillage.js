@@ -44,6 +44,13 @@ const STABLE_DOOR = { x: 6370, z: 216 };
 // still well inside its reach (stage/Stage.js REST).
 const SHRINE_SQUARE = { x: 2640, z: LANE_TOP + 12, kind: 'oath', solid: true };
 const SHRINE_HALL = { x: 7230, z: LANE_TOP + 12, kind: 'oath', solid: true };
+// The market square's well and everything painted with it (the burning stall on its left,
+// the crates and barrels on its right) stand on one solid footprint, from the back of the
+// lane to just short of the painting's foot (a man stopped against it still stands in front
+// of it, and so does the family held there): you could walk straight through it (Nick, 2026-10-23).
+// The painting is 320 wide centred on x (its opaque part spans x - 155 .. x + 157) and stands on z.
+const WELL = { x: 2250, z: 292 };
+const wellFootprint = (w) => ({ kind: 'block', x0: w.x - 154, x1: w.x + 154, z0: LANE_TOP, z1: w.z - 2, top: 400, hideArt: true });
 const shrineFootprint = (r) => ({ kind: 'block', x0: r.x - 52, x1: r.x + 52, z0: LANE_TOP, z1: r.z + 6, top: 400, hideArt: true });
 // the barn's two sheds, either side of its doors (x 5330): each nailed shut, people inside
 const BARN_WEST = 5226;
@@ -65,7 +72,7 @@ export const STAGE_VILLAGE = {
   // the castle on the horizon: where it stands on the far backdrop and how big (it grows
   // level by level, docs/campaign/plan.md)
   castle: { x: 830, scale: 0.42, detail: 0.3 },
-  well: { x: 2250, z: 292 }, // the market square's well (view only)
+  well: WELL, // the market square's well (drawn by view/VillageView.js; solid: terrain below)
   church: { x:8775, z:302, width:700, height:420, door:{x:8880,z:279} },
   gateTalk: {
     elsbeth:{who:'ELSBETH',before:'Irvolino is gone. Your father got us into the church. Let me help him now.',after:'Hale and I will carry him. He won’t be left alone.'},
@@ -251,7 +258,8 @@ export const STAGE_VILLAGE = {
     { kind: 'block', x0: 780, x1: 830, z0: 290, z1: 306, top: 42, look: 'wreckage' },
     { kind: 'block', x0: 816, x1: 846, z0: 364, z1: 380, top: 42, look: 'wreckage', artFlip: true },
 
-    // ---- II THE MARKET SQUARE and VI THE LONGHALL: the shrines' footprints (drawn by view/TerrainView.js drawRests)
+    // ---- II THE MARKET SQUARE and VI THE LONGHALL: the well's and the shrines' footprints (drawn by view/TerrainView.js drawRests)
+    wellFootprint(WELL),
     shrineFootprint(SHRINE_SQUARE),
     shrineFootprint(SHRINE_HALL),
 

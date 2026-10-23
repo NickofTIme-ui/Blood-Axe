@@ -1003,3 +1003,11 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - Nick's list: replace legacy torch/fire sprites. Survey of all 7 levels found the Burning Village's 5 torch posts were still code-drawn (a black stick and a gradient blob: `assets/env/village/torch.png` never existed), and every small stand-in fire used the same drawn `'flame'` blob. The Iron Gates braziers were painted but their flame never moved.
 - New: `assets/fx/torch-flame-strip.png` (8-frame painted flicker loop, ChatGPT) as `FX_STRIPS.torchflame`, played by `src/view/TorchFlame.js` (each torch on its own frame and speed). Used by the village torch posts, the gates braziers (over the painted fire), VillageView's stand-in roof fires and the cutaway's violet torches (until its painting). New `assets/env/village/torch.png` (ChatGPT): timber post with an empty iron cresset of embers; the living flame sits in it (`TORCH_CUP` in TerrainView).
 - Originals from ChatGPT are in `assets/incoming/torch-flame-v1.png`, `torch-post-v1.png` on the PC; prompts in the project files `torch-fire/torch-fire-prompts.md`. Test: `tests/torch-flame-test.js`.
+
+## Cloud, 2026-10-23: the market square's well is solid (not on itch)
+
+- The well painting in the Burning Village square (well, burning stall, crates and barrels:
+  `assets/env/village/well.png`) now stands on one solid, unclimbable footprint covering its
+  whole width (`wellFootprint` in `src/data/stageVillage.js`, x 2096-2404, from the back of
+  the lane to z 290). Heroes stop just in front of it, so they are drawn over its foot, and
+  Mira's family (z 300) stands clear. Test: "village: nobody walks through the market well".
