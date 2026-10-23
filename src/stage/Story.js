@@ -81,7 +81,7 @@
 // INTERACT is the D-pad's up button (`padUp`; E on the keys). `prompts` lists what a hero
 // standing near someone can do right now, for the view.
 
-import { NARRATION } from '../data/speakers.js';
+import { NARRATION, MINOR, ALWAYS_BOXED } from '../data/speakers.js';
 import { updateStableMaster } from './StableMaster.js';
 
 // (wait: a line never moves on by itself — Nick: the text went by too fast. false: lines
@@ -183,19 +183,35 @@ export class Story {
 
   get busy() { return !!this.current || this.queue.length > 0; }
   get holding() { return !!this.current?.beat.hold; }
-  // The line on screen: { who, text, beat, index, of } (null: none)
+  // The line in the dialogue box: { who, text, beat, index, of } (null: none). A held
+  // scene's lines, but a minor villager's shout-out (bark) floats over him instead; and
+  // Irvolino gets the box whenever he speaks (data/speakers.js, the box rules).
   get line() {
     const c = this.current;
-    if (!c || c.age < 0 || !c.beat.hold) return null;
+    if (!c || c.age < 0) return null;
     const [who, text] = c.beat.lines[c.index];
+    if (c.beat.hold ? this.bark(c) : !ALWAYS_BOXED.has(who)) return null;
     return { who, text, beat: c.beat.id, index: c.index, of: c.beat.lines.length, hold: !!c.beat.hold, passing: this.passing(c.beat), age: c.age };
   }
 
+  // The line floating over a villager's head (view/NpcView.js): { npc, text } (null: none)
   get fieldLine() {
-    const c=this.current;if(!c||c.age<0||c.beat.hold)return null;
+    const c=this.current;if(!c||c.age<0)return null;
     const [who,text]=c.beat.lines[c.index];
-    const n=this.npcs.find(n=>n.id===c.beat.talkedTo||n.id===c.beat.npcTalkFor||n.id===who.toLowerCase()||n.name?.toUpperCase()===who);
+    if(c.beat.hold){const n=this.bark(c);return n?{npc:n,text}:null;}
+    if(ALWAYS_BOXED.has(who))return null;
+    const n=this.speakerNpc(c.beat,who);
     return n&&!['ORYN','VEXA'].includes(who)?{npc:n,text}:null;
+  }
+
+  speakerNpc(b,who){return this.npcs.find(n=>n.id===b.talkedTo||n.id===b.npcTalkFor||n.id===who.toLowerCase()||n.name?.toUpperCase()===who);}
+  // A minor villager's line in a held scene: said as a shout-out over him, not in the box
+  // (his villager, there to be seen; else null and the line keeps the box)
+  bark(c){
+    const who=c.beat.lines[c.index][0];
+    if(!MINOR.has(who))return null;
+    const n=this.npcs.find(n=>n.id===who.toLowerCase()||n.name?.toUpperCase()===who);
+    return n&&!['lost','safe'].includes(n.state)&&!n.insideChurch?n:null;
   }
 
   npc(id) { return this.npcs.find((n) => n.id === id); }
@@ -322,7 +338,7 @@ export class Story {
     const ready = c.age >= minFrames;
     let next = (ready && c.beat.lines[c.index][2]?.autoAdvance)
       || (c.skip && (ready || c.skipAll))
-      || (ready && (this.passing(c.beat) ? c.age >= this.passFrames(text) : !LINE.wait && c.age >= this.lineFrames(c.beat, c.index)));
+      || (ready && (this.passing(c.beat) || this.bark(c) ? c.age >= this.passFrames(text) : !LINE.wait && c.age >= this.lineFrames(c.beat, c.index)));
     if (c.beat.hold && c.age >= Math.max(LINE.minSkip, minFrames)) {
       for (const p of heroes) if (p.controller.consume('jump', 4) || p.controller.consume('attack', 4)) next = true;
     }

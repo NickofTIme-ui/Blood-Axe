@@ -36,13 +36,14 @@ function setup(){
   const {w,st,tick}=setup();let given=0,fatherAtGift;
   w.events.on('campaignFlag',({key})=>{if(key==='oathkeeper'){given++;fatherAtGift=st.story.npc('hakon').state;}});
   const c=st.story.current;
-  while(c.index<7){c.age=1000;c.skip=true;tick();}
+  const dies=c.beat.lines.findIndex(l=>l[2]?.moment==='fatherDies');
+  while(c.index<dies){c.age=1000;c.skip=true;tick();}
   assert.equal(st.story.npc('hakon').state,'dead');assert.equal(given,1,'Father gives the sword before dying');
   assert.notEqual(fatherAtGift,'dead','His father must be alive for the handoff');
   c.age=0;c.skip=true;
   for(let i=0;i<239;i++)tick();
-  assert.equal(c.index,7,'Grief must not disappear on an accidental rapid press');
-  tick();assert.equal(c.index,8);assert.equal(given,1);
+  assert.equal(c.index,dies,'Grief must not disappear on an accidental rapid press');
+  tick();assert.equal(c.index,dies+1);assert.equal(given,1);
   assert.equal(c.beat.lines[c.index][1],'','The death is followed by actual silence');
   assert.equal(c.beat.lines[c.index][2].minFrames,300,'Mourners get five seconds without a dialogue box');
   assert.ok(w.hold,'The raised-sword moment stays protected');

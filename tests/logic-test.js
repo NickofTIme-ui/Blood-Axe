@@ -3682,12 +3682,15 @@ test('keep: the finale has its own track (Nick\'s "12 Showdown"): the whole leve
   assert(STAGE_KEEP.music === 'showdown' && king.music === 'showdown', 'the level and the King');
 });
 
-test('beating any level plays the stage-clear tune (Nick\'s "06 Stage Clear")', () => {
+test('beating a level plays the stage-clear tune (Nick\'s "06 Stage Clear"), except the Burning Village', () => {
   const music = readFileSync(new URL('../src/core/Music.js', import.meta.url), 'utf8');
   assert(/clear: 'assets\/audio\/stage-clear\.mp3'/.test(music), 'the tune is listed');
   assert(readFileSync(new URL('../assets/audio/stage-clear.mp3', import.meta.url)).length > 10000, 'the file is there');
   const arena = readFileSync(new URL('../src/scenes/ArenaScene.js', import.meta.url), 'utf8');
-  assert(/ev\.on\('stageWon', \(\{ stats \}\) => \{\s*playCue\(this, 'clear'\)/.test(arena), 'played first thing when a level is won, campaign or not');
+  assert(/ev\.on\('stageWon', \(\{ stats \}\) => \{\s*(\/\/[^\n]*\s*)?if \(this\.stageData\.clearTune !== false\) playCue\(this, 'clear'\)/.test(arena), 'played first thing when a level is won, campaign or not');
+  // (Nick, 2026-10-23: no fanfare at the end of level 1; every other level keeps it)
+  assert(STAGE_VILLAGE.clearTune === false, 'the Burning Village ends without it');
+  for (const s of Object.values(STAGES)) if (s.id !== 'village') assert(s.clearTune !== false, `${s.id} keeps it`);
 });
 
 test('keep: the King duels: three parries or blocks break his composure and open him; until then his guard turns most of a blow; a blow into his guard is answered', () => {

@@ -356,12 +356,10 @@ export const STAGE_VILLAGE = {
     {
       id: 'elder', at: 8720, calm: true, hold: true,
       lines: [
-        ['RURIK', "Father. I'm here.", {moment:'fatherFound',minFrames:90}],
-        ['HAKON', 'The children... in the church.', {minFrames:120}],
-        ['RURIK', "They're out. You kept them safe.", {minFrames:120}],
-        ['HAKON', 'Good.', {minFrames:90}],
-        ['HAKON', "Take the sword. I can't hold it.", {flag:'oathkeeper',moment:'swordOffered',minFrames:150}],
-        ['RURIK', "Then let go. I've got you.", {minFrames:150}],
+        // (Nick's pass, 2026-10-23)
+        ['RURIK', "Father, I'm here. The children in the church... they are safe.", {moment:'fatherFound',minFrames:150}],
+        ['HAKON', "Good. Take the sword. I can't hold it.", {flag:'oathkeeper',moment:'swordOffered',minFrames:150}],
+        ['RURIK', "Then I'll hold it for both of us.", {minFrames:150}],
         ['HAKON', 'Let me look at you.', {minFrames:180}],
         ['RURIK', 'Father?', {moment:'fatherDies',minFrames:240}],
         ['VOICE', '', {moment:'mourning',minFrames:300,autoAdvance:true}],
@@ -388,5 +386,7 @@ export const STAGE_VILLAGE = {
 
   // the first castle cutaway, after the level (scenes/CutawayScene.js)
   cutaway: 'learns',
+  // no stage-clear fanfare at the end of this level: its farewell stays quiet (Nick, 2026-10-23)
+  clearTune: false,
 };
 

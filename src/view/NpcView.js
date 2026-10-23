@@ -632,7 +632,8 @@ export class NpcView {
     const help=this.story?.npcs.find(n=>n.helpAge>0&&['threatened','trapped','bound'].includes(n.state));
     const field=this.story?.fieldLine;
     const n=field?.npc??help;
-    this.fieldWords.setVisible(!!n&&!this.story?.holding);
+    // (a held scene: only a villager's own shout-out, no help cries)
+    this.fieldWords.setVisible(!!field||(!!n&&!this.story?.holding));
     if(n)this.fieldWords.setText(field?.text??n.helpText).setPosition(n.x,n.z-(n.h??0)-125);
   }
 }

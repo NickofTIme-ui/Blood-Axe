@@ -726,7 +726,8 @@ export class ArenaScene extends Phaser.Scene {
       if (fighter === this.player) this.callout(kind === 'fire' ? 'BURNED!' : kind === 'beam' ? 'CRUSHED!' : kind === 'arrow' ? 'PIERCED!' : 'SLASHED!', '#ff9a30', 20);
     });
     ev.on('stageWon', ({ stats }) => {
-      playCue(this, 'clear'); // (the level's beaten: the stage-clear tune, once, in place of its track)
+      // (the level's beaten: the stage-clear tune, once, in place of its track; not where the level says clearTune: false)
+      if (this.stageData.clearTune !== false) playCue(this, 'clear');
       if (this.stageData.exit) { this.campaignLevelDone(stats, hud); return; }
       // a long slow moment of victory: he falls at a crawl, the screen shudders, the
       // word hangs there, and only then the tally comes up

@@ -13,6 +13,14 @@
 
 export const NARRATION = new Set(['VOICE']);
 
+// DIALOGUE BOX RULES (Nick, 2026-10-23): the box (and a portrait) is for the heroes, the
+// king and his men, and the people who carry the story. The minor villagers below never get
+// one: their lines float over their heads as shout-outs (view/NpcView.js), held scene or not,
+// so play keeps moving. Irvolino the miller (MILLER) is the other way round: whenever he
+// speaks, in a scene or in passing, it's the full box with his portrait.
+export const MINOR = new Set(['HALE', 'MIRA', 'TAM', 'ELSBETH', 'JOREN', 'WENNA', 'ANSEL', 'PIP', 'TOBIN', 'WREN', "TANNER'S BOY"]);
+export const ALWAYS_BOXED = new Set(['MILLER']);
+
 export const SPEAKERS = {
   ELSBETH:{name:'Elsbeth',portrait:'elsbeth'},
   // the Oath Keepers
