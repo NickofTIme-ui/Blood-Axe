@@ -2636,11 +2636,11 @@ test('story: a line said in passing goes by itself, in time for its length; a co
 
 test('village: the barn: smashing the burning beam off its door frees the people inside', () => {
   const world = new World({ seed: 3 });
-  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 5260, z: 300, controller: new Scripted() }));
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 5430, z: 300, controller: new Scripted() }));
   const st = new Stage(world, STAGE_VILLAGE);
   st.start(p);
   st.enterSection(3);
-  p.x = 5260; p.z = 300;
+  p.x = 5430; p.z = 300;
   const barn = st.story.npc('mill-villagers');
   const door = st.props.find((pr) => pr.tag === 'barn');
   assert(barn.state === 'trapped' && door && !door.broken, 'trapped behind the door');
@@ -2650,7 +2650,7 @@ test('village: the barn: smashing the burning beam off its door frees the people
   for (let i = 0; i < 3; i++) { world.tick(); st.update(); }
   assert(barn.state === 'free' && freed.includes('mill-villagers'), `freed (${barn.state})`);
   for (let i = 0; i < 60 * 20; i++) { world.tick(); st.update(); acceptNpcInvitations(st); }
-  assert(barn.state === 'safe' && Math.abs(barn.x-5450)<2, `the other villagers reach shelter (${barn.state})`);
+  assert(barn.state === 'safe' && Math.abs(barn.x-barn.flee.x)<2, `the other villagers reach shelter (${barn.state})`);
   assert(freed.filter((id) => id === 'mill-villagers').length === 1, 'reported once');
 });
 

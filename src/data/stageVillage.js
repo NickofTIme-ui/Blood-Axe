@@ -52,9 +52,9 @@ const SHRINE_HALL = { x: 7230, z: LANE_TOP + 12, kind: 'oath', solid: true };
 const WELL = { x: 2250, z: 292 };
 const wellFootprint = (w) => ({ kind: 'block', x0: w.x - 154, x1: w.x + 154, z0: LANE_TOP, z1: w.z - 2, top: 400, hideArt: true });
 const shrineFootprint = (r) => ({ kind: 'block', x0: r.x - 52, x1: r.x + 52, z0: LANE_TOP, z1: r.z + 6, top: 400, hideArt: true });
-// the barn's two sheds, either side of its doors (x 5330): each nailed shut, people inside
-const BARN_WEST = 5280; // (the three groups crowd the one barred door: all freed by tag 'barn')
-const BARN_EAST = 5380;
+// the barn's two sheds, either side of its doors (x 5500): each nailed shut, people inside
+const BARN_WEST = 5450; // (the three groups crowd the one barred door: all freed by tag 'barn')
+const BARN_EAST = 5550;
 
 export const STAGE_VILLAGE = {
   millRescue:{type:'executioner'},
@@ -157,11 +157,12 @@ export const STAGE_VILLAGE = {
         // and smashing it lets all nine out (Nick, 2026-10-23: one spot, not three; the tally below)
         // (struck at the back of the lane, z 264, but drawn `lift` higher, on the doorway
         // painted on the barn behind)
-        { kind: 'barricade', tag: 'barn', x: 5330, z: 264, lift: 48, drop: null },
+        { kind: 'barricade', tag: 'barn', x: 5500, z: 264, lift: 48, drop: null },
         { kind: 'crate', x: 5560, z: 470, drop: 'health' },
-        // the archers shooting at you since the roofs: two posts either side of the mill
+        // the archers shooting at you since the roofs: two posts either side of the mill (the
+        // right one stands clear of the gallows, the barn past it: Nick, 2026-10-23)
         { kind: 'archers', tag: 'millArchers', x: 4560, z: 300, drop: null },
-        { kind: 'archers', tag: 'millArchers', x: 5150, z: 300, drop: 'mana' },
+        { kind: 'archers', tag: 'millArchers', x: 5280, z: 300, drop: 'mana' },
       ],
       hazards: [
         { type: 'fire', look: 'cart', x: 4620, z: 490, w: 100, d: 50, phase: 60 },
@@ -324,7 +325,7 @@ export const STAGE_VILLAGE = {
     { kind: 'debris2', x: 2120, z: 287, w: 150 },
     { kind: 'lantern', x: 2560, z: 283, w: 60 },
     { kind: 'signpost', x: 4380, z: 284, w: 70 },
-    { kind: 'debris', x: 5450, z: 287, w: 140, flip: true },
+    { kind: 'debris', x: 5620, z: 287, w: 140, flip: true },
     { kind: 'lantern', x: 5900, z: 283, w: 60 },
     { kind: 'debris2', x: 6850, z: 287, w: 150, flip: true },
     { kind: 'lantern', x: 7150, z: 283, w: 60 },
@@ -348,9 +349,9 @@ export const STAGE_VILLAGE = {
     },
     {id:'elsbeth',name:'Elsbeth',x:5330,z:296,pose:'elsbeth',art:'elsbeth',gather:{x:8660,z:330}},
     // (crowd: each of the nine has his own painted look, no two the same: Nick, 2026-10-23)
-    {id:'mill-villagers',crowd:['villager','prisoner-hilde','elder'],name:'The mill villagers',x:5330,z:296,pose:'group',people:3,rescue:'wreckage',tag:'barn',savedAs:'All nine villagers',flee:{x:5450,z:510}},
-    {id:'barn-west',crowd:['prisoner-a','prisoner-tobin','prisoner-bram'],name:'The barn families',x:BARN_WEST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barn',savedAs:'All nine villagers',flee:{x:5240,z:500}},
-    {id:'barn-east',crowd:['prisoner-c','captive','prisoner-b'],name:'The barn hands',x:BARN_EAST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barn',savedAs:'All nine villagers',flee:{x:5600,z:480}},
+    {id:'mill-villagers',crowd:['villager','prisoner-hilde','elder'],name:'The mill villagers',x:5500,z:296,pose:'group',people:3,rescue:'wreckage',tag:'barn',savedAs:'All nine villagers',flee:{x:5620,z:510}},
+    {id:'barn-west',crowd:['prisoner-a','prisoner-tobin','prisoner-bram'],name:'The barn families',x:BARN_WEST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barn',savedAs:'All nine villagers',flee:{x:5410,z:500}},
+    {id:'barn-east',crowd:['prisoner-c','captive','prisoner-b'],name:'The barn hands',x:BARN_EAST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barn',savedAs:'All nine villagers',flee:{x:5680,z:480}},
     { id: 'horses', name: 'the horses', x: 6380, z: 294, pose: 'horses', rescue: 'wreckage', tag: 'stables', flee: null },
     { id: 'stable-master', name: 'Stable master', x: 6130, z: 350, stableMaster: true, warningAt: 5860 },
     // on his knees at Varek's feet in the opening (stage/VillageOpening.js): struck down
