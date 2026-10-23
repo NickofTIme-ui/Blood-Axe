@@ -28,6 +28,7 @@ import { KeepBackdrop } from './KeepView.js';
 import { artKey, PaintedLevel } from './levelArt.js';
 import { LEVEL_ART } from '../data/levelArt.js';
 import { keyLayer } from './envArt.js';
+import { torchFlame } from './TorchFlame.js';
 import { applyAtmosphere, gradient } from './atmosphere.js';
 
 // the painted oath shrine is drawn this tall (about twice a man)
@@ -36,6 +37,10 @@ const SHRINE_H = 170;
 const LANTERN_H = 150;
 // the village's painted torch post (assets/env/village/torch.png): its height on screen (world px)
 const TORCH_H = 112;
+// where the flame sits, as a share of that height up from the foot: the torch post's cresset,
+// the brazier's basket rim
+const TORCH_CUP = 0.88;
+const BRAZIER_CUP = 0.8;
 const LANTERN_AT = [200, 134];
 // the painted log bridge, fitted to a block: `walk` = how far down the picture its top edge
 // is (set on the lane's front edge), `wide` = drawn this much wider than the block (roots
@@ -704,21 +709,24 @@ export class TerrainView {
     for (const l of list) {
       const y0 = l.z - Math.max(0, this.terrain?.groundAt(l.x, l.z) ?? 0);
       const g = s.add.graphics().setDepth(l.z - 0.2);
-      // the painted torch post (the village) or iron brazier (the gates), on magenta: cut out
-      // once; its fire at the top gets a glow
+      // the painted torch post (the village: an iron cresset on a timber post, unlit) or iron
+      // brazier (the gates), on magenta: cut out once; the living flame (view/TorchFlame.js)
+      // burns in its cup, with a glow round it
       const post = this.village ? 'village-torch' : this.theme === 'gates' ? 'gates-brazier' : null;
       if (post && s.textures.exists(`${post}-src`)) {
         if (!s.textures.exists(post)) s.textures.addCanvas(post, keyLayer(s.textures.get(`${post}-src`).getSourceImage(), 'magenta'));
         const img = s.add.image(l.x, y0 + 3, post).setOrigin(0.5, 0.98).setDepth(l.z - 0.2);
         img.setScale(TORCH_H / img.height);
-        const glow = s.add.image(l.x, y0 - TORCH_H * 0.88, 'glow').setScale(2.2).setTint(COL.lantern).setAlpha(0.45).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
+        const cup = y0 - TORCH_H * (this.village ? TORCH_CUP : BRAZIER_CUP);
+        torchFlame(s, l.x, cup, { height: 30, depth: l.z - 0.15 });
+        const glow = s.add.image(l.x, cup - 12, 'glow').setScale(2.2).setTint(COL.lantern).setAlpha(0.45).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
         s.tweens.add({ targets: glow, alpha: { from: 0.3, to: 0.55 }, duration: 260 + (l.x % 200), yoyo: true, repeat: -1 });
         continue;
       }
       if (this.village) {
-        // a torch on a post
+        // a torch on a post (until its painting is in)
         g.fillStyle(0x1a1410, 1).fillRect(l.x - 2, y0 - 70, 4, 70);
-        s.add.image(l.x, y0 - 74, 'flame').setOrigin(0.5, 1).setScale(0.5, 0.7).setTint(COL.lantern).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
+        torchFlame(s, l.x, y0 - 70, { height: 34, depth: l.z - 0.1 });
         s.add.image(l.x, y0 - 80, 'glow').setScale(2.2).setTint(COL.lantern).setAlpha(0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
         continue;
       }

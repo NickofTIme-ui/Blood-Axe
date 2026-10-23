@@ -163,6 +163,9 @@ export const FX_STRIPS = {
   kingsfire: { file: 'assets/fx/kingsfire-pillar-strip.png', frames: 8, height: 340, fps: 15, bg: 'magenta' },
   // the column of fire a floor grate throws up (view/StageView.js); drawn at half scale
   firepit: { file: 'assets/fx/firepit-strip.png', frames: 8, height: 300, fps: 16 },
+  // a torch's flame, looping, on magenta (view/TorchFlame.js): every torch post, brazier and
+  // small roof fire in the levels; until the file exists the old drawn flame stands in
+  torchflame: { file: 'assets/fx/torch-flame-strip.png', frames: 8, height: 128, fps: 12, bg: 'magenta' },
   // the Mage's stone wall: 6 jagged slab variants on magenta (effects/MageFX.js); until
   // the file exists the slabs are drawn as rock shapes
   earthwall: { file: 'assets/fx/earthwall-strip.png', frames: 6, height: 260, bg: 'magenta' },

@@ -23,6 +23,7 @@ import { SETTINGS } from '../config/settings.js';
 import { FONT, epicFill } from '../view/fonts.js';
 import { playSfx } from '../core/Sfx.js';
 import { DialogueBox } from '../view/DialogueBox.js';
+import { torchFlame } from '../view/TorchFlame.js';
 
 export const CUTAWAYS = {
   learns: {
@@ -165,8 +166,8 @@ export class CutawayScene extends Phaser.Scene {
     const lights = painted ? [[442, 70], [29, 119], [720, 254]] : [[130, 120], [490, 120], [850, 120]];
     for (const [x, y] of lights) {
       const glow = this.add.image(x, y, 'glow').setScale(3).setTint(0x9070ff).setAlpha(0.5).setBlendMode(Phaser.BlendModes.ADD);
-      const fl = this.add.image(x, y + 8, 'flame').setOrigin(0.5, 1).setScale(0.5, 0.7).setTint(0xb090ff).setBlendMode(Phaser.BlendModes.ADD).setVisible(!painted);
-      this.tweens.add({ targets: [glow, fl], alpha: { from: 0.35, to: 0.65 }, duration: 300 + x % 200, yoyo: true, repeat: -1 });
+      const fl = torchFlame(this, x, y + 8, { height: 44, tint: 0xb090ff }).setVisible(!painted);
+      this.tweens.add({ targets: glow, alpha: { from: 0.35, to: 0.65 }, duration: 300 + x % 200, yoyo: true, repeat: -1 });
       this.root.add([glow, fl]);
       (this.torches = this.torches ?? []).push(glow, fl);
     }

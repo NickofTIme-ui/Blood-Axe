@@ -15,6 +15,7 @@ import { DEPTH } from './depths.js';
 import { drawCastle } from './castle.js';
 import { PaintedLevel } from './levelArt.js';
 import { PaintedFire } from './PaintedFire.js';
+import { torchFlame } from './TorchFlame.js';
 import { TownChurchView } from './TownChurchView.js';
 
 const COL = {
@@ -224,9 +225,7 @@ export class VillageBackdrop {
 
   flame(x, y, size) {
     const s = this.scene;
-    const f = s.add.image(x, y, 'flame').setOrigin(0.5, 1).setScale(size * 0.9, size * 0.6).setTint(COL.fire)
-      .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor - 0.8).setAlpha(0.85);
-    s.tweens.add({ targets: f, scaleY: size * 0.85, scaleX: size * 0.75, duration: 220 + Math.random() * 180, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    torchFlame(s, x, y, { height: 40 * size, depth: DEPTH.floor - 0.8, alpha: 0.95 });
     const glow = s.add.image(x, y - 20, 'glow').setScale(size * 3).setTint(COL.fire).setAlpha(0.35).setBlendMode(Phaser.BlendModes.ADD)
       .setDepth(DEPTH.floor - 0.85);
     this.flickers.push({ img: glow, base: 0.32, amp: 0.12, rate: 0.15 });

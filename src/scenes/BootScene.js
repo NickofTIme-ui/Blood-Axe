@@ -90,7 +90,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('king-vaurath', 'assets/enemies/king_vaurath_stand.png'); // the king in his cutaways (scenes/CutawayScene.js)
     // the speakers' portraits for the dialogue box (data/speakers.js; one not painted yet gets a stand-in)
     for (const id of PORTRAIT_IDS) this.load.image(`portrait-${id}`, `assets/ui/portraits/${id}.png`);
-    this.load.on('loaderror', (file) => { if (!file.key?.startsWith('plxsrc-') && !file.key?.startsWith('portrait-') && !isLevelArtKey(file.key) && file.key !== 'boss' && file.key !== 'fxsrc-earthwall' && !['pickups-hd-src', 'village-torch-src', 'village-mill-src', 'gates-brazier-src'].includes(file.key)) console.warn(`[boot] Could not load ${file.src}`); }); // (unpainted backdrop layers are expected)
+    this.load.on('loaderror', (file) => { if (!file.key?.startsWith('plxsrc-') && !file.key?.startsWith('portrait-') && !isLevelArtKey(file.key) && file.key !== 'boss' && file.key !== 'fxsrc-earthwall' && file.key !== 'fxsrc-torchflame' && !['pickups-hd-src', 'village-torch-src', 'village-mill-src', 'gates-brazier-src'].includes(file.key)) console.warn(`[boot] Could not load ${file.src}`); }); // (unpainted backdrop layers are expected)
 
     const bar = this.add.rectangle(480 - 150, 270, 0, 6, 0xc0161c).setOrigin(0, 0.5);
     this.add.rectangle(480, 270, 304, 10).setStrokeStyle(1, 0x5a3030);
