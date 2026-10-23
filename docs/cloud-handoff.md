@@ -1021,3 +1021,8 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - `fodder` on a stampede hazard (`Stage.sendFodder`): each time its run is warned, that roster comes on from off-screen on the side the herd is running to, down its lane, straight into the horses (trampled Ashen men still blow apart). Capped at `STAMPEDE.maxFoes` (12) living foes; only while the stables are the current section and no boss is up, even after its waves are beaten.
 - The stables' fight isn't won while a fodder stampede is still running (`Stage.stampedeSending`). Trample damage to heroes 20 (was 26); jumping still clears them.
 - Campaign bot from section 4: same result as main (gets through the stables with no deaths, then stops at Varek kneeling, as before); ~20 s longer at the stables.
+
+## Cloud, 2026-10-23: Varek's headless body goes limp (not on itch)
+
+- Nick: after the longhall execution Varek's body stayed stiff. A body beheaded on painted kneeling art now kneels its usual beat (sway/shudder as before), then turns into a jointed body (`SpriteCuts.limpen`, `view/FlexibleCut.js`) pushed the way its sentence says (`limp` in the `sentenceCut` table, `effects/Gore.js`) and folds and flops down under gravity. The head-only cut is unchanged; all of it is view-side, the online sim is untouched.
+- Fix in `FlexibleCut.contact`: a band's floor contact is weighted along the band, not the frame's vertical, so a band lying flat (kneeling shins) no longer launches the body into the air.

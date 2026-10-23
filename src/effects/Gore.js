@@ -211,13 +211,13 @@ export class Gore {
     else cuts.launch(upper, dir * rand(240, 360), rand(470, 560), dir * rand(9, 14)); // fly
     // the body: how long it stays kneeling, which way and how far it goes over, how fast
     const B = {
-      slump: { stand: 46, speed: 0.003, fall: face, to: 0.5 },
-      linger: { stand: 120, speed: 0.0045, fall: face, to: 1.35, sway: true },
-      back: { stand: 30, speed: 0.004, fall: -face, to: 1.3 },
-      blown: { stand: 6, speed: 0.02, fall: dir, to: Math.PI / 2 * 0.96, vx: dir * 110 },
-      shudder: { stand: 64, speed: 0.014, fall: face, to: 1.45, shudder: true },
+      slump: { stand: 46, speed: 0.003, fall: face, to: 0.5, limp: { push: 45, spin: 1.1 } },
+      linger: { stand: 120, speed: 0.0045, fall: face, to: 1.35, sway: true, limp: { push: 60, spin: 1.5 } },
+      back: { stand: 30, speed: 0.004, fall: -face, to: 1.3, limp: { push: 50, spin: 1.6 } },
+      blown: { stand: 6, speed: 0.02, fall: dir, to: Math.PI / 2 * 0.96, vx: dir * 110, limp: { push: 90, lift: 90, spin: 2.6 } },
+      shudder: { stand: 64, speed: 0.014, fall: face, to: 1.45, shudder: true, limp: { push: 70, spin: 2 } },
     }[e.body] ?? { stand: 46, speed: 0.003, fall: face, to: 0.5 };
-    Object.assign(lower, { stand: B.stand, toppleSpeed: B.speed, fallDir: B.fall, toppleTo: B.to, sway: B.sway, shudder: B.shudder, vx: B.vx ?? 0, bleed: 320 });
+    Object.assign(lower, { stand: B.stand, toppleSpeed: B.speed, fallDir: B.fall, toppleTo: B.to, sway: B.sway, shudder: B.shudder, vx: B.vx ?? 0, bleed: 320, limpLaunch: B.limp });
     this.burst(f.x, f.z, f.h + f.stats.body.h * 0.5, dir, Math.round(60 * this.amount), 1.6);
     return true;
   }

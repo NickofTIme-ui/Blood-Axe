@@ -189,6 +189,10 @@ export class SpriteCuts {
       // beheaded on his knees: the body stays kneeling a long moment, the neck pumping,
       // then slumps forward onto its own front (not over: it's kneeling)
       lower.stand = 46; lower.toppleSpeed = 0.003; lower.fallDir = face; lower.toppleTo = 0.42; lower.bleed = 320;
+      // ...and on painted kneeling art (the whole picture, nothing cropped into the floor)
+      // it goes over limp, not stiff: when it's done kneeling it becomes a jointed body
+      // (view/FlexibleCut.js) that folds at the waist and flops down under its own weight
+      if (painted) lower.limp = { sheet: sh, body: m, sx: s.scaleX, sy: s.scaleY };
     }
     if(['waist','vertical','diagDown','diagUp','legs'].includes(cut)&&!kn){
       for(const piece of [upper,lower]){
@@ -584,6 +588,24 @@ export class SpriteCuts {
     p.chainG=this.scene.add.graphics().setDepth(z+.15);p.mode='flail';return p;
   }
 
+  // A headless body done kneeling (split(): piece.limp) goes over as a jointed body from
+  // exactly where it is now, pushed the way it falls (piece.limpLaunch: effects/Gore.js
+  // sentenceCut) and left to gravity: it folds and flops down rather than tipping stiff.
+  limpen(p) {
+    const { sheet, body, sx, sy } = p.limp;
+    p.limp = null;
+    const img = p.img, c = Math.cos(p.rot), sn = Math.sin(p.rot);
+    const ox = (sheet.ax - img.originX * sheet.fw) * sx, oy = (sheet.ay - img.originY * sheet.fh) * sy;
+    const at = { x: p.x + ox * c - oy * sn, y: p.z - p.h + ox * sn + oy * c, scaleX: sx, scaleY: sy, rotation: p.rot };
+    p.flex = FlexibleCut.create(this.scene, p, at, sheet, body, false);
+    if (!p.flex) return; // (too small to joint: it topples stiff as before)
+    p.life = Math.max(p.life ?? 540, p.age + 900);
+    p.worldPoint = (x, y) => p.flex.worldPoint(x, y);
+    const L = p.limpLaunch ?? {};
+    p.mode = 'fly';
+    p.flex.launch((p.vx ?? 0) + p.fallDir * (L.push ?? 55), L.lift ?? 25, p.fallDir * (L.spin ?? 1.4));
+  }
+
   launch(p, vx, vh, spin, { bowl = false } = {}) {
     if (!p) return;
     Object.assign(p, { mode: 'fly', vx, vh, spin, thrown: true, rest: Math.abs(p.edge) * 0.6, bleed:p.weapon?0:Math.max(p.bleed, 120), landed: false });
@@ -706,7 +728,7 @@ export class SpriteCuts {
         // (a headless body kept kneeling: it sways, or it shudders, before it goes)
         if (p.sway) p.rot = Math.sin(p.age * 0.07) * 0.05 * Math.min(1, p.age / 30);
         if (p.shudder) p.rot = (Math.random() - 0.5) * 0.07 * Math.min(1, p.stand / 30);
-        if (--p.stand <= 0) { p.mode = 'topple'; p.toppleV = 0; }
+        if (--p.stand <= 0) { p.mode = 'topple'; p.toppleV = 0; if (p.limp) this.limpen(p); }
       } else if (p.mode === 'topple') {
         // going over: slow off the vertical, faster the further it leans (its weight)
         p.toppleV += (p.toppleSpeed ?? 0.006) + Math.abs(Math.sin(p.rot)) * 0.006;

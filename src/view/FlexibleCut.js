@@ -1,6 +1,14 @@
 import { FleshChain } from '../effects/FleshChain.js';
 import { measureCanvas } from './frameMeasure.js';
 
+// How far along a band (0 at its first joint, 1 at its second) a point of its outline
+// lies, measured along the band itself: a band lying across the frame (a kneeling man's
+// shins) is weighted by its length, not by the frame's up and down.
+const along=(q,a,b,sx,sy)=>{
+  const lx=(b.x-a.x)*sx,ly=(b.y-a.y)*sy,len=lx*lx+ly*ly||1;
+  return Math.max(0,Math.min(1,((q.x-a.x)*sx*lx+(q.y-a.y)*sy*ly)/len));
+};
+
 // Small overlapping bands of the EXACT cut texture, articulated only at retained
 // anatomical joints. They begin on the original pixels, not a different death pose.
 export class FlexibleCut {
@@ -59,7 +67,7 @@ export class FlexibleCut {
         const x=(q.x-source.x)*this.sx,y=(q.y-source.y)*this.sy;
         const wx=a.x+x*c-y*s,wy=a.y+x*s+y*c;
         const floor=this.piece.z-Math.max(0,this.scene.world?.terrain?.groundAt(wx,this.piece.z)??0);
-        if(wy-floor>penetration){penetration=wy-floor;const axis=this.lying?'x':'y';weight=Math.max(0,Math.min(1,(q[axis]-source[axis])/(end[axis]-source[axis]||1)));}
+        if(wy-floor>penetration){penetration=wy-floor;weight=along(q,source,end,this.sx,this.sy);}
       }
       if(penetration>.01){
         hit=true;const wa=1-weight,wb=weight,amount=penetration/(wa*wa+wb*wb);
