@@ -335,7 +335,7 @@ export const STAGE_VILLAGE = {
     },
     {id:'elsbeth',name:'Elsbeth',x:5330,z:296,pose:'elsbeth',art:'elsbeth',gather:{x:8660,z:330}},
     {id:'mill-villagers',name:'The mill villagers',x:5330,z:296,pose:'group',people:3,rescue:'wreckage',tag:'barn',flee:{x:5450,z:510}},
-    {id:'barn-west',name:'The miller’s kin',x:BARN_WEST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barnWest',flee:{x:5240,z:500}},
+    {id:'barn-west',name:'The barn families',x:BARN_WEST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barnWest',flee:{x:5240,z:500}},
     {id:'barn-east',name:'The barn hands',x:BARN_EAST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barnEast',flee:{x:5600,z:480}},
     { id: 'horses', name: 'the horses', x: 6380, z: 294, pose: 'horses', rescue: 'wreckage', tag: 'stables', flee: null },
     { id: 'stable-master', name: 'Stable master', x: 6130, z: 350, stableMaster: true, warningAt: 5860 },

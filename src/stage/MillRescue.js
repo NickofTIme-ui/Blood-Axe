@@ -9,7 +9,7 @@ const BARKS={
   start:'BY THE KING’S WORD, THIS ONE HANGS!',
   lever:'STAND BACK OR HE DROPS!',
   driven:'GET AWAY FROM MY GALLOWS!',
-  lastWords:'ANY LAST WORDS, MILLER?',
+  lastWords:'ANY LAST WORDS, IRVOLINO?',
   final:'SAY GOODBYE!',
 };
 
