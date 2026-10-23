@@ -345,9 +345,10 @@ export const STAGE_VILLAGE = {
       flee: { x: 4400, z: 510 }, gather: { x: 8660, z: 330 },
     },
     {id:'elsbeth',name:'Elsbeth',x:5330,z:296,pose:'elsbeth',art:'elsbeth',gather:{x:8660,z:330}},
-    {id:'mill-villagers',name:'The mill villagers',x:5330,z:296,pose:'group',people:3,rescue:'wreckage',tag:'barn',savedAs:'All nine villagers',flee:{x:5450,z:510}},
-    {id:'barn-west',name:'The barn families',x:BARN_WEST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barn',savedAs:'All nine villagers',flee:{x:5240,z:500}},
-    {id:'barn-east',name:'The barn hands',x:BARN_EAST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barn',savedAs:'All nine villagers',flee:{x:5600,z:480}},
+    // (crowd: each of the nine has his own painted look, no two the same: Nick, 2026-10-23)
+    {id:'mill-villagers',crowd:['villager','prisoner-hilde','elder'],name:'The mill villagers',x:5330,z:296,pose:'group',people:3,rescue:'wreckage',tag:'barn',savedAs:'All nine villagers',flee:{x:5450,z:510}},
+    {id:'barn-west',crowd:['prisoner-a','prisoner-tobin','prisoner-bram'],name:'The barn families',x:BARN_WEST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barn',savedAs:'All nine villagers',flee:{x:5240,z:500}},
+    {id:'barn-east',crowd:['prisoner-c','captive','prisoner-b'],name:'The barn hands',x:BARN_EAST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barn',savedAs:'All nine villagers',flee:{x:5600,z:480}},
     { id: 'horses', name: 'the horses', x: 6380, z: 294, pose: 'horses', rescue: 'wreckage', tag: 'stables', flee: null },
     { id: 'stable-master', name: 'Stable master', x: 6130, z: 350, stableMaster: true, warningAt: 5860 },
     // on his knees at Varek's feet in the opening (stage/VillageOpening.js): struck down

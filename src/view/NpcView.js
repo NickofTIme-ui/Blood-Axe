@@ -69,7 +69,7 @@ const CELLS = {
   villager: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7 },
   mother: { stand: 0, cower: 1, wave: 2, run: RUN },
   boy: { stand: 0, cower: 1, wave: 2, run: RUN },
-  elder: { stand: 0, sit: 1, wave: 2, kneel: 3 },
+  elder: { stand: 0, sit: 1, wave: 2, kneel: 3, cower: 1 },
   // the wood's captives: bound on the rope, hanging, in the cage, at its bars, limping
   captive: { bound: 0, hang: 1, cower: 2, grip: 3, limp: [4, 5], stand: 4, run: [4, 5] },
   // Nicholas, the guide: the villager's order (wave: he points the way on; cower: braced),
@@ -88,6 +88,7 @@ const GUIDE_STEP = 24; // px of road a beat of the guide's walk covers (at depth
 const WALK_STEP = 16;  // ...a frame of his own eight-frame walk (a full stride: 128 px)
 CELLS.miner = CELLS.villager;
 CELLS['miner-old'] = { stand: 0, sit: 1, wave: 2, kneel: 3, run: HOBBLE };
+CELLS.elder.run = HOBBLE; // (the barn's old man, running out: data/stageVillage.js crowd)
 const PRISONER = { kneel: 0, wave: 1, cower: 2, run: RUN, stand: 6, bound: 0 };
 for (const id of ['tobin', 'hilde', 'bram', 'a', 'b', 'c']) CELLS[`prisoner-${id}`] = PRISONER;
 
@@ -274,7 +275,10 @@ export class NpcView {
       // (the barn's group is the miller's people: Irvolino leads them, data/speakers.js MILLER)
       for (let i = 0; i < 3; i++) {
         const first=this.curN;
-        this.figure(g, n.x - 44 + i * 42, y + (i % 2) * 6, k * (i === 1 ? 0.75 : 1), pose, t + i * 5, tun(i + 4), dir, i === 0 && n.id === 'barn' ? 'irvolino' : undefined);
+        // (crowd: a sheet for each of the three, data/stageVillage.js; otherwise all three
+        // on the villager sheet, the middle one smaller)
+        const who = n.crowd?.[i] ?? (i === 0 && n.id === 'barn' ? 'irvolino' : undefined);
+        this.figure(g, n.x - 44 + i * 42, y + (i % 2) * 6, k * (n.crowd || i !== 1 ? 1 : 0.75), pose, t + i * 5, tun(i + 4), dir, who);
         if(i===0&&n.carrier)for(const img of v.imgs.slice(first,this.curN))img.setAlpha(g.alpha*(n.carrierBlend??0));
       }
       return;
