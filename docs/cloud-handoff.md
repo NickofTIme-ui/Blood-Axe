@@ -1037,3 +1037,7 @@ crispness, not size). Nothing has been run through Magnific yet; start with the 
 - The HUD (bars, counts, style meter, objective, controls hint) stays hidden through the scene and fades in as the fight starts (`HUDScene.chrome` / `updateChrome`). The enemy strip skips cinematic men.
 - The old opening lines (Cinder's "let me finish it", Varek's "hold the mill", the pledge) are gone from it; Rurik's pledge ("Every captain... Each pays.") is now a held beat `pledge` said over the dead villager once the formation is cut down. A skipped scene still kills the villager; a checkpoint start past section I finds him dead.
 - Code only, no new art. Tests: `tests/village-opening-test.js` (watched-through scene), `npm test` all pass.
+
+## 2026-10-23: King's Fire unlock notice (main 94b24ab)
+- When Rurik raises Oathkeeper at the deathbed (line `moment: 'swordRaised'`), a NEW ABILITY plaque fades in to the right of the painted cinematic: KING'S FIRE, "Press [U] or [LB] to hurl Oathkeeper's fire". `src/view/AbilityNotice.js`, shown by `HUDScene.newAbility`, called from `ArenaScene.oathkeeperRaised` / `rurikButtons`.
+- The buttons come from the bindings of whoever plays Rurik (`actionButtons` in `config/controls.js`): P2 on the number pad sees NUM 5; nothing is shown when Rurik is only a companion. It is the tap (Firebolt); the hold (Kingsfire skill) still needs the skill tree. Code only, no new art.
