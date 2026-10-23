@@ -1062,3 +1062,11 @@ stale files ship.
 - Nick: "Move the obstacles to the sides not in the middle of the beginning of the game, they are annoying".
 - In `src/data/stageVillage.js` terrain, section I: the hay cart (was mid-road at x 470-560, z 390-470) now stands against the back of the road at x 390-480 (clear of the pikes), the rear rubble heap sits a little further back (z 276-292, the secret urn still behind it) and the other heap (was mid-road at z 364-380) is at the front edge (z 478-494). The middle of the road is open from x 300 to 1000.
 - Logic test reworked: every hero walks the road both ways at z 338, 400 and 450 without a block; the cart and both heaps are still solid. Checked in a headless screenshot. No new art.
+
+
+## Cloud, 2026-10-23: the Sunder, X, X, Y, Y (not on itch)
+
+- Nick: "X X then Y hits them into the air for a juggle, if you hit Y again you viciously slash them in half in a downward slash". X, X, Y (keys J, J, K) was already Rurik's Rising Cleave launcher. Pressing Y (K) again while the launcher's recovery runs, and only if it connected, is now the SUNDER (`moves.sunder` in `characters.js`, state `sunder` in `fighterStates.js`, tuning `SUNDER` in `combat/Juggle.js`): he leaps up after the launched man (aimed at where he'll top out; the men he launched float while he rises), hangs a beat with the blade overhead, then comes down in one cut.
+- A man still in the air always dies to it, split head to groin with the halves thrown apart (`CombatSystem`: `sunder`, fatality `halfV`, never the attached split), "SUNDERED!" callout. Anyone it catches on the floor takes a 34 chop; a boss (never juggled) just takes the chop. Landing: dust, shake, a 20-frame buried recovery (roll out from frame 10).
+- View: borrows the Leap Smash poses (`anims.plunge`, Oathkeeper only) or the cleave's before he has the sword, plus a big downward smear. No new art needed; a dedicated strip would be a nice-to-have.
+- Tests: two `sunder:` cases in `tests/logic-test.js`; `npm test` all pass.

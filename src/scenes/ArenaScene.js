@@ -286,6 +286,7 @@ export class ArenaScene extends Phaser.Scene {
       light2: [['second', 2], ['swingAlt', 1]],
       light3: 'finisher',
       launcher: 'finisher',
+      sunder: 'heavySwing',
       heavy: 'heavySwing',
       thrust: 'heavySwing',
     };
@@ -293,12 +294,20 @@ export class ArenaScene extends Phaser.Scene {
       const key = SWING_SOUNDS[state];
       if (!key || fighter.stats.archetype) return; // (heroes with their own kit sound their own swings)
       const loud = fighter.team === 'player' ? 1 : 0.4;
-      const vol = state === 'heavy' || state === 'thrust' ? 0.8 : state === 'light3' ? 0.7 : 0.6;
+      const vol = state === 'heavy' || state === 'thrust' || state === 'sunder' ? 0.8 : state === 'light3' ? 0.7 : 0.6;
       playSfx(this, key, { volume: vol * loud, spread: state === 'heavy' ? 100 : 150, minGapMs: 40 });
     });
     ev.on('attackStart', ({ fighter, state }) => {
       if (state === 'airAttack') playSfx(this, [['whiff', 2], ['swingAlt', 1]], { volume: fighter.team === 'player' ? 0.6 : 0.25 });
     });
+    // the Sunder (X, X, Y, Y) slams into the floor: the cut goes on into the ground
+    ev.on('sunderLand', ({ fighter, hit }) => {
+      playSfx(this, 'kick', { volume: 0.85, pitch: -1400, spread: 60, minGapMs: 0 });
+      this.fx.shake(hit ? 9 : 5, 12);
+      if (hit) this.rumble?.(0.7, 0.3, 160);
+      for (let i = 0; i < 10; i++) this.gore.spawn({ x: fighter.x + fighter.facing * 40 + (Math.random() - 0.5) * 50, z: fighter.z, h: 2, vx: (Math.random() - 0.5) * 220, vz: 0, vh: 60 + Math.random() * 140, tint: 0x8a7a60, scale: 0.5 + Math.random() * 0.6, decal: false, life: 22 });
+    });
+    ev.on('kill', (e) => { if (e.sunder) this.callout('SUNDERED!', '#ff2a1a', 34); });
     ev.on('roll', ({ fighter }) => {
       const heroRoll=fighter.team==='player'&&['warrior','rogue'].includes(fighter.stats.id);
       playSfx(this, heroRoll?'heroRoll':'roll', { volume: fighter.team === 'player' ? 0.7 : 0.3, spread: heroRoll?65:120 });

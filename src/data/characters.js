@@ -165,7 +165,20 @@ export const CHARACTERS = {
         knockback: { x: 24, y: 660 }, knockdown: true, guardDamage: 24, staminaCost: 8, lunge: 60,
         hitbox: { x: 4, y: 8, w: 80, h: 104 },
         smear: { arc: [120, -110], r: 82, cx: 6, cy: 70, w: 36, heavy: true },
+        // J, J, K, K (pad X, X, Y, Y): once it has connected, the SUNDER
+        chains: [{ button: 'heavy', next: 'sunder', from: 10, to: 29, onHit: true }],
         cancels: [{ from: 12, to: 29, into: ['jump', 'dodge'] }],
+      },
+      // the SUNDER: he leaps after the man he launched and splits him in half with one
+      // downward cut (combat/Juggle.js SUNDER; timings there, it runs on the leap, not on
+      // startup/active/recovery). A man in the air always dies to it.
+      sunder: {
+        cut: 'chop', overhead: true, sunder: true, spike: true,
+        startup: 0, active: 0, recovery: 0,
+        damage: 34, hitstun: 30, hitstop: 14, shake: 12,
+        knockback: { x: 60, y: 0 }, knockdown: true, breaksGuard: true, guardDamage: 60, staminaCost: 10,
+        hitbox: { x: -4, y: -150, w: 104, h: 280 }, // (from above his head to below his feet: the whole fall)
+        smear: { arc: [-110, 95], r: 92, cx: 8, cy: 74, w: 44, heavy: true },
       },
       air: {
         cut: 'chop',

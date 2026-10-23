@@ -4052,6 +4052,34 @@ test('juggle: bosses are never juggled; a juggle runs out', () => {
   assert(u.d.juggles === JUGGLE.maxHits, 'past the limit he just falls');
 });
 
+// X, X, Y, Y: the launcher, then the SUNDER (combat/Juggle.js)
+function sunderRun({ gap = 60, boss = false } = {}) {
+  const t = setup({ script: { 1: ['attack'], 12: ['attack'], 24: ['heavy'], 36: ['heavy'] }, gap });
+  t.d.stats = { ...t.d.stats, maxHealth: 1e4, boss }; t.d.health = 1e4;
+  const kills = [], states = new Set();
+  t.world.events.on('kill', (e) => kills.push(e));
+  let peak = 0;
+  for (let i = 0; i < 180; i++) { t.world.tick(); states.add(t.p.state); if (t.p.state === 'sunder') peak = Math.max(peak, t.p.h); }
+  return { ...t, kills, states, peak };
+}
+
+test('sunder: X, X, Y, Y leaps after the launched man and splits him in half, however tough', () => {
+  const t = sunderRun();
+  assert(t.states.has('launcher') && t.states.has('sunder'), `launcher then sunder (${[...t.states]})`);
+  assert(t.peak > 60, `he leaps up after him (${t.peak.toFixed(0)} px)`);
+  assert(t.kills.length === 1 && !t.d.alive, 'the man in the air dies to it');
+  const k = t.kills[0];
+  assert(k.sunder && k.fatality === 'halfV' && !k.attachedSplit, `cut clean in half (${k.fatality}, attached ${k.attachedSplit})`);
+  assert(t.p.grounded && t.p.state === 'idle', `he lands and is free again (${t.p.state})`);
+});
+
+test('sunder: only out of a launcher that connected; a boss just takes the chop', () => {
+  const miss = sunderRun({ gap: 400 });
+  assert(miss.states.has('launcher') && !miss.states.has('sunder'), `a whiffed launcher has no follow-up (${[...miss.states]})`);
+  const b = sunderRun({ boss: true });
+  assert(b.d.alive && b.d.health < 1e4 && !b.kills.length, `the boss is hurt, not halved (${b.d.health.toFixed(0)})`);
+});
+
 test('style: hits build a combo and a rank; a blow taken costs most of it; rank pays more blood', () => {
   const t = juggleRun();
   t.run(135);

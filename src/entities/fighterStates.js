@@ -14,7 +14,7 @@ import { FINISH, FINISHERS, CHAIN, IMPALE, impalePin, impalePierce, planFinisher
 import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher } from '../combat/Mage.js';
 import { rogueStates, rollMine,isRogueFinisher, rogueFinisherStart, runRogueFinisher, vaultTarget } from '../combat/Rogue.js';
 import { skillStates, plungeReady } from '../combat/Skills.js';
-import { JUGGLE, juggleLand, airMoveFor } from '../combat/Juggle.js';
+import { JUGGLE, SUNDER, juggleLand, airMoveFor } from '../combat/Juggle.js';
 
 const FEEL = SETTINGS.feel;
 
@@ -244,6 +244,7 @@ function makeAttackState(moveKey) {
       // Combo chains (e.g. light1 -> light2 -> light3).
       for (const ch of m.chains ?? []) {
         if (!inWindow(ch, frame)) continue;
+        if (ch.onHit && !f.attackInfo?.hitList.size) continue; // (only once this swing has landed)
         const next = f.stats.moves[ch.next];
         const into = stateFor(f, ch.next);
         if (usable(f, next) && ready(f, next, into) && c.consume(ch.button)) {
@@ -499,6 +500,76 @@ export const FIGHTER_STATES = {
   light2: makeAttackState('light2'),
   light3: makeAttackState('light3'),
   launcher: makeAttackState('launcher'), // (Rurik's J, J, K: combat/Juggle.js)
+  // the SUNDER (J, J, K, K / X, X, Y, Y, combat/Juggle.js): out of a launcher that
+  // connected he leaps after the man, hangs a beat with the blade overhead, then comes
+  // down in one cut that splits him in half. The hitbox is out from the cut to the floor.
+  sunder: {
+    enter(f) {
+      const launched = f.attackInfo?.hitList ?? new Set(); // (still the launcher's swing)
+      f.sunderTargets = f.world.fighters.filter((v) => launched.has(v.id) && v.alive && !v.grounded);
+      faceInput(f);
+      f.startMove(f.stats.moves.sunder);
+      f.sunderCut = 0;
+      f.landedAt = 0;
+      // leap to meet the highest of them where he'll top out, landing just in front of him
+      const peak = (v) => v.h + Math.max(0, v.vh) ** 2 / (2 * v.stats.gravity);
+      const v = f.sunderTargets.reduce((a, b) => (!a || peak(b) > peak(a) ? b : a), null);
+      const rise = Math.max(SUNDER.minRise, Math.min(SUNDER.maxRise, (v ? peak(v) - f.floor : 0) - 20));
+      const g = f.stats.gravity;
+      f.vh = Math.sqrt(2 * g * rise);
+      f.h = Math.max(f.h, f.floor + 0.01);
+      const t = f.vh / g + SUNDER.hang / 60;
+      if (v) {
+        f.facing = Math.sign(v.x - f.x) || f.facing;
+        const to = v.x - f.facing * SUNDER.reach;
+        f.vx = Math.max(-SUNDER.maxCarry, Math.min(SUNDER.maxCarry, (to - f.x) / t));
+        f.vz = (v.z - f.z) / t;
+      } else { f.vx = f.facing * 120; f.vz = 0; }
+      f.world.events.emit('attackStart', { fighter: f, state: 'sunder', move: f.move });
+    },
+    update(f, frame) {
+      // buried in the ground after the cut, then free
+      if (f.landedAt) {
+        f.vx = 0; f.vz = 0;
+        const t = frame - f.landedAt;
+        if (t >= SUNDER.landCancel && tryActions(f, ['dodge'])) return;
+        if (t >= SUNDER.land) f.fsm.change('idle');
+        return;
+      }
+      if (!f.sunderCut) {
+        // the rise: the men he launched hang there waiting for him
+        for (const v of f.sunderTargets) if (v.alive && !v.grounded && v.state === 'knockdown') v.vh = Math.max(v.vh, SUNDER.hold);
+        if (f.vh <= 0 || (frame > 4 && f.grounded)) {
+          // the top: blade held overhead a beat, then the cut
+          f.hangFrames = (f.hangFrames ?? 0) + 1;
+          f.vh = 0; f.vx *= 0.6; f.vz *= 0.6;
+          if (f.hangFrames >= SUNDER.hang) {
+            f.hangFrames = 0;
+            f.sunderCut = frame;
+            f.vh = -SUNDER.drop;
+            f.vx = 0; f.vz = 0;
+            f.world.events.emit('swing', { fighter: f, move: f.move });
+          }
+        }
+      }
+      if (f.sunderCut) {
+        f.vx = 0; f.vz = 0;
+        f.activeAttack = f.attackInfo;
+        if (f.grounded) {
+          f.activeAttack = null;
+          f.landedAt = frame;
+          f.world.events.emit('sunderLand', { fighter: f, hit: f.attackInfo.hitList.size > 0 });
+        }
+      }
+      if (frame >= SUNDER.timeout) f.fsm.change(f.grounded ? 'idle' : 'jump');
+    },
+    exit(f) {
+      f.activeAttack = null;
+      f.landedAt = 0;
+      f.hangFrames = 0;
+      f.sunderTargets = [];
+    },
+  },
   light4: makeAttackState('light4'), // (the Rogue's fourth hit)
   heavy: makeAttackState('heavy'),
   kick: makeAttackState('kick'),

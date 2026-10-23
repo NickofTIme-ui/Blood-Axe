@@ -4,6 +4,12 @@
 //
 //   LAUNCHER   Rurik's J, J, K (light2 -> heavy): the RISING CLEAVE throws him straight up.
 //              Jump straight out of it when it connects.
+//   SUNDER     ...or press K again (pad: X, X, Y, Y) once the launcher has connected: he
+//              leaps up after the man, hangs a beat with Oathkeeper overhead and comes down
+//              in one downward cut that splits him in half, head to groin (state 'sunder',
+//              entities/fighterStates.js). A man in the air never survives it; anyone it
+//              catches on the floor takes a heavy chop. Bosses aren't juggled, so they
+//              only ever take the chop.
 //   AIR CHAIN  in the air, attack again once an air hit has landed: up to JUGGLE.airHits
 //              swings a jump. The last one is the SPIKE: it drives him into the floor,
 //              where he bounces once (and can be launched again).
@@ -25,6 +31,20 @@ export const JUGGLE = {
   spikeDamage: 1.5, // the spike hits this much harder than an air swing
   fallGravity: 1.8, // a flung enemy comes DOWN this much faster than he went up (else a
                     // man popped up on his way down hangs there, floating)
+};
+
+// The SUNDER (X, X, Y, Y): the leap after the launched man and the cut that halves him.
+export const SUNDER = {
+  minRise: 60,      // he leaps at least this high (px)...
+  maxRise: 190,     // ...and at most this high, to meet the man where he is
+  reach: 34,        // he aims to come down this far in front of the man's centre
+  maxCarry: 420,    // sideways speed cap on the leap
+  hold: 3,          // the launched men float (no fall) while he rises to them
+  hang: 7,          // frames held at the top, blade overhead, before the cut
+  drop: 1500,       // the cut comes down this fast
+  land: 20,         // frames buried in the ground after, before he can move
+  landCancel: 10,   // ...a roll can come out of it from here
+  timeout: 90,      // the whole thing never runs longer than this (frames)
 };
 
 // Can this hit juggle him? (a hero's blow on a man flying through the air)

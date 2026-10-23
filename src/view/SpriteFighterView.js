@@ -21,6 +21,7 @@ import { PLUNGE_LAND, kingsfireOf } from '../combat/Skills.js';
 import { softShadow } from './atmosphere.js';
 import { BladeTrail } from './BladeTrail.js';
 import { MarchCycle } from './MarchCycle.js';
+import { SUNDER } from '../combat/Juggle.js';
 
 const ATTACKS = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'airAttack', 'kick', 'thrust', 'spin', 'shoulder'];
 
@@ -192,6 +193,21 @@ export class SpriteFighterView {
         const hang = f.stats.kit?.plunge?.hang ?? 0;
         if (fr <= hang) return up[Math.min(up.length - 1, 1 + Math.floor((fr / Math.max(1, hang)) * (up.length - 1)))];
         return f.air < 46 ? down : up.at(-1);
+      }
+      // the SUNDER (X, X, Y, Y: combat/Juggle.js), on the Leap Smash poses (else the cleave's):
+      // up after the man with the blade coming overhead, held there, the cut, buried
+      case 'sunder': {
+        const P = a.plunge;
+        const ph = a.heavy?.phases;
+        if (!P && !ph) return a.jump.fall[0];
+        if (f.landedAt) {
+          const t = fr - f.landedAt;
+          if (P) return P.buried[t < SUNDER.land - 9 ? 0 : t < SUNDER.land - 4 ? 1 : 2];
+          return t < SUNDER.land - 6 ? ph.active[0] : ph.recovery.at(-1);
+        }
+        if (f.sunderCut) return P ? P.down[0] : ph.active[0];
+        if (f.vh > 0 && !f.hangFrames) return P ? P.up[0] : ph.startup[Math.min(1, ph.startup.length - 1)];
+        return P ? P.up[1] : ph.startup.at(-1);
       }
       case 'block':
       case 'parry': return a.block.frames[0];
@@ -510,6 +526,20 @@ export class SpriteFighterView {
       }
     }
 
+    // the Sunder: coiled back at the top, stretched long down the cut, slammed into the floor
+    const sundering = st === 'sunder';
+    if (sundering) {
+      if (f.landedAt) {
+        const hit = Math.max(0, 1 - (fr - f.landedAt) / 8);
+        sx *= 1 + 0.18 * hit; sy *= 1 - 0.18 * hit;
+        bob += 5 * hit;
+        push += 3 * hit;
+      } else if (f.sunderCut) {
+        lean += 6;
+        sx *= 0.9; sy *= 1.14;
+      } else if (f.hangFrames) lean -= 8;
+    }
+
     // swings: anticipation -> drive -> settle (see swingMotion)
     const sw = ATTACKS.includes(st) ? this.swingMotion(st, fr) : null;
     if (sw) { lean += sw.lean; push += sw.push; sx *= sw.sx; sy *= sw.sy; bob += sw.bob; }
@@ -560,7 +590,7 @@ export class SpriteFighterView {
     // afterimage: when a swing changes pose through the strike, the last pose lingers a
     // few frames behind him (fills the gap between hand-drawn poses, sells the speed)
     const g = this.ghost;
-    const dropping = plunging && !f.landedAt && fr > (f.stats.kit?.plunge?.hang ?? 0);
+    const dropping = (plunging && !f.landedAt && fr > (f.stats.kit?.plunge?.hang ?? 0)) || (sundering && f.sunderCut && !f.landedAt);
     if (dropping && this.prevPose) {
       // Leap Smash: a trail of himself left up the drop
       const p = this.prevPose;
@@ -602,6 +632,17 @@ export class SpriteFighterView {
         const x = f.x + (i - 2.5) * 11 + Math.sin(fr * 1.7 + i * 2.1) * 3;
         const len = 40 + ((i * 37 + fr * 13) % 50);
         this.smear.lineStyle(i % 2 ? 2 : 3, 0xe8f0ff, 0.35 + (i % 3) * 0.12).lineBetween(x, top - 6 - len, x, top + 20);
+      }
+    }
+    if (sundering && f.sunderCut && f.move?.smear) {
+      // the cut: one huge downward arc of Oathkeeper, from the cut to a beat after the floor
+      const sm = { ...f.move, startup: 1, active: 5, recovery: 12 };
+      const t = fr - f.sunderCut + 1;
+      drawSmear(this.smear, f, sm, t);
+      if (fr !== this.sparkFrame || st !== this.sparkState) {
+        this.sparkFrame = fr;
+        this.sparkState = st;
+        if (f.hitstop === 0) smearSparks(this.scene.gore, f, sm, t);
       }
     }
     if (ATTACKS.includes(st) && f.move) {

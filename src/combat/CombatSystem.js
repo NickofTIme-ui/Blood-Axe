@@ -12,7 +12,7 @@ import { furyArmor } from './Skills.js';
 import { juggles, juggleHit } from './Juggle.js';
 
 const FEEL = SETTINGS.feel;
-const ATTACK_STATES = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'special1', 'special2', 'shoulder'];
+const ATTACK_STATES = ['light1', 'light2', 'light3', 'launcher', 'sunder', 'heavy', 'special1', 'special2', 'shoulder'];
 
 // RIPOSTE: a hero who parries a blow has a moment to answer it. His next hit on the man
 // he parried is a riposte: a sure critical, harder still, with a long freeze.
@@ -203,9 +203,12 @@ export class CombatSystem {
     const crit = riposte || (critChance > 0 && this.world.roll(def.id, 2300 + attacker.id) < critChance);
     // (a juggle hit: the Hangman's Hood trophy pays more for it — data/trophies.js)
     const juggleMult = juggles(attacker, def) ? (attacker.stats.juggleMult ?? 1) : 1;
-    const damage = move.damage * mult * (counter ? FEEL.counterMultiplier : 1) * exposed *
+    // the SUNDER (X, X, Y, Y: combat/Juggle.js): a man caught in the air is cut in half
+    const sunder = !!move.sunder && juggles(attacker, def);
+    let damage = move.damage * mult * (counter ? FEEL.counterMultiplier : 1) * exposed *
       (crit ? FEEL.critMultiplier : 1) * juggleMult * (riposte ? RIPOSTE.mult : 1) *
       (def.ward ?? 1); // (ward: a boss taking only part of a blow: King Vaurath's guard, stage/Stage.js)
+    if (sunder) damage = Math.max(damage, def.health + 1);
     const healthBefore = def.health;
     def.health = Math.max(def.spare || def.immortal ? 1 : 0, def.health - damage); // (spare: a boss beaten to his knees, not killed: stage/Sequence.js; immortal: config/testMode.js)
     def.flash = 6;
@@ -245,7 +248,8 @@ export class CombatSystem {
       // a kill gives back health (the Warden's Chain trophy)
       if (attacker?.stats.killHeal && attacker.alive) attacker.health = Math.min(attacker.stats.maxHealth, attacker.health + attacker.stats.killHeal);
       // How do they come apart? (only rigged enemies can be dismembered)
-      if (def.stats.art && superCrit && move.cut !== 'chop') event.fatality = 'explode'; // overhead blades keep their downward cut
+      if (def.stats.art && sunder) event.fatality = 'halfV'; // (split head to groin, always)
+      else if (def.stats.art && superCrit && move.cut !== 'chop') event.fatality = 'explode'; // overhead blades keep their downward cut
       else if (def.stats.art && move.fatality && !(def.stats.boss && move.cut === 'fire')) event.fatality = move.fatality; // (a mine says how; Rurik's fire never blows a boss apart: his death is his own)
       else if (def.stats.art) {
         event.fatality = chooseFatality({
@@ -257,9 +261,11 @@ export class CombatSystem {
         }, this.world.rngFor(def.id, 21));
       }
       def.fatality = event.fatality ?? 'none';
-      if(event.fatality==='halfV')event.attachedSplit=this.world.rngFor(def.id,23)()<.4;
+      if(event.fatality==='halfV')event.attachedSplit=!sunder&&this.world.rngFor(def.id,23)()<.4; // (a sunder throws the halves apart)
+      event.sunder = sunder;
       // a runner skewered from behind crumples where he stood instead of flying off
       if (move.impale && def.controller?.scared) def.fsm.change('knockdown', { vx: dir * 50, vh: 140 });
+      else if (sunder) def.fsm.change('knockdown', { vx: dir * 40, vh: -200 }); // (the halves come down with the blade)
       else def.fsm.change('knockdown', { vx: dir * Math.max(kb.x, 220), vh: Math.max(kb.y, 380) });
       bus.emit('hit', event);
       bus.emit('kill', event);

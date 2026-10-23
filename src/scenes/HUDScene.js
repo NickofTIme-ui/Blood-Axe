@@ -64,7 +64,7 @@ export class HUDScene extends Phaser.Scene {
 
     // controls hint: shown for a few seconds, then gets out of the way
     const hint = this.hint = this.add.text(SETTINGS.width / 2, SETTINGS.height - 8,
-      'J light  J J K launch  K heavy  O kick  L block (+←/→ turn)  Shift roll  C sprint (+J smash)  U firebolt  Space jump  |  P pause  G gore  M music',
+      'J light  J J K launch (+K sunder)  K heavy  O kick  L block (+←/→ turn)  Shift roll  C sprint (+J smash)  U firebolt  Space jump  |  P pause  G gore  M music',
       { ...style, fontSize: '11px', color: '#b0a590' }).setOrigin(0.5, 1).setStroke('#000000', 3);
     this.tweens.add({ targets: hint, alpha: 0, delay: 7000, duration: 1500 });
     // THE CHROME: the bars, the counts, the style meter, the hint (and the objective, below).
