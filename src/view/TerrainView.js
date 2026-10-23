@@ -51,6 +51,17 @@ function raggedLine(g, x0, x1, y, color, alpha, width, seed) {
   g.lineStyle(width, color, alpha).strokePoints(pts);
 }
 
+// Soft shading as one gradient-filled rect (per-corner alpha), not a stack of strips: the
+// strips overlapped by a fraction of a pixel and showed as fine ruled lines across the art.
+function vFade(g, x, y, w, h, color, a0, a1) {
+  if (w <= 0 || h <= 0) return;
+  g.fillGradientStyle(color, color, color, color, a0, a0, a1, a1).fillRect(x, y, w, h);
+}
+function hFade(g, x, y, w, h, color, a0, a1) {
+  if (w <= 0 || h <= 0) return;
+  g.fillGradientStyle(color, color, color, color, a0, a1, a0, a1).fillRect(x, y, w, h);
+}
+
 // The painted fallen-tree bridge (assets/env/bridge_log.png, on magenta): cut out once.
 function paintedLog(scene) {
   const T = scene.textures;
@@ -61,8 +72,8 @@ function paintedLog(scene) {
 }
 // a w×h rectangle with its outline chipped and wobbling, except along `straight` (the
 // edge where the top face meets the front: kept straight so the two never gap)
-function raggedRect(x, y, w, h, seed, straight) {
-  const a = Math.max(0, Math.min(5, w * 0.08, h * 0.12));
+function raggedRect(x, y, w, h, seed, straight, amp = 5) {
+  const a = Math.max(0, Math.min(amp, w * 0.08, h * 0.12));
   const j = (i, k) => (wob(i * 3 + k, seed) - 0.5) * 2 * a + (wob(i * 7 + k, seed + 3) > 0.9 ? a * 0.8 : 0); // (+ the odd chip)
   const pts = [];
   const step = 9;
@@ -290,6 +301,16 @@ export class TerrainView {
     const s = this.scene;
     const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0); const bot = p.z1 + 40; const H = bot - top; const w = p.x1 - p.x0;
     const d = DEPTH.floor + 4;
+    // its back and sides: the burnt-out house's own charred timber walls going down into the
+    // dark (the painted house front, in shadow), not a flat black box over the drop
+    const wallKey = artKey('village', 'surf-roof_front');
+    if (s.textures.exists(wallKey)) {
+      const img = s.textures.get(wallKey).getSourceImage(); const sc = 150 / img.height;
+      const t = s.add.tileSprite(p.x0, top, w, H, wallKey).setOrigin(0).setTileScale(sc, sc).setTint(0x4a3020).setDepth(d + 0.01);
+      t.tilePositionX = p.x0 / sc; t.tilePositionY = 30 / sc;
+      const shade = gradient(s, 'cellar-back', [[0, 0x000000, 0.55], [0.18, 0x000000, 0.2], [0.5, 0x000000, 0.45], [1, 0x000000, 0.7]]);
+      s.add.image(p.x0, top, shade).setOrigin(0).setDisplaySize(w, H).setDepth(d + 0.02);
+    }
     const heat = gradient(s, 'cellar-heat', [[0, 0x000000, 0], [0.42, 0x1e0603, 0.6], [0.78, 0x6a1606, 0.85], [1, 0xa8320c, 0.95]]);
     s.add.image(p.x0, top, heat).setOrigin(0).setDisplaySize(w, H).setDepth(d + 0.05);
     const wall = gradient(s, 'cellar-wall', [[0, 0x000000, 0.85], [1, 0x000000, 0]], true);
@@ -319,12 +340,10 @@ export class TerrainView {
   drawVeils(list) {
     const s = this.scene;
     for (const v of list) {
-      const g = s.add.graphics().setDepth(DEPTH.floor - 0.5);
-      const top = -400; const bot = SETTINGS.world.floorTop; const soft = 120;
-      for (let x = v.x0; x < v.x1; x += 8) {
-        const k = Math.min(1, (x - v.x0) / soft, (v.x1 - x) / soft);
-        g.fillStyle(0x08040a, v.alpha * k).fillRect(x, top, 8.5, bot - top);
-      }
+      // (one smooth sheet: drawn in strips, the overlaps striped the sky with vertical lines)
+      const top = -400; const bot = SETTINGS.world.floorTop; const w = v.x1 - v.x0; const soft = Math.min(0.45, 120 / w);
+      const k = gradient(s, `veil-${v.x0}-${v.x1}`, [[0, 0x08040a, 0], [soft, 0x08040a, v.alpha], [1 - soft, 0x08040a, v.alpha], [1, 0x08040a, 0]], true);
+      s.add.image(v.x0, top, k).setOrigin(0).setDisplaySize(w, bot - top).setDepth(DEPTH.floor - 0.5);
     }
   }
 
@@ -421,7 +440,7 @@ export class TerrainView {
 
   // A painted surface tile (data/levelArt.js `surfaces`) over one face of a block, lined up
   // with the world so neighbouring blocks continue each other. False if it isn't painted.
-  surface(v, slot, name, x, y, w, h, depth) {
+  surface(v, slot, name, x, y, w, h, depth, amp) {
     const key = artKey(this.theme, `surf-${name}`);
     if (!name || w <= 0 || h <= 0 || !this.scene.textures.exists(key)) return false;
     const conf = LEVEL_ART[this.theme]?.surfaces?.[name] ?? {};
@@ -435,7 +454,7 @@ export class TerrainView {
     v.masks ??= {};
     let m = v.masks[slot];
     if (!m) { m = v.masks[slot] = this.scene.make.graphics({ add: false }); t.setMask(m.createGeometryMask()); }
-    m.clear().fillStyle(0xffffff, 1).fillPoints(raggedRect(x, y, w, h, Math.round(v.b.x0) + (slot === 'top' ? 0 : 11), slot === 'top' ? 'bottom' : 'top'), true);
+    m.clear().fillStyle(0xffffff, 1).fillPoints(raggedRect(x, y, w, h, Math.round(v.b.x0) + (slot === 'top' ? 0 : 11), slot === 'top' ? 'bottom' : 'top', amp), true);
     return true;
   }
 
@@ -502,7 +521,9 @@ export class TerrainView {
     const depth = yTop1 - yTop0;
     // painted tiles when they exist (the wood's fallen trees use its 'log', the village's 'beam')
     const art = { roof: ['roof_top', 'roof_front'], beam: this.village ? ['beam', 'beam'] : ['log', 'log'], board: ['board', null] }[mat];
-    const topArt = this.surface(v, 'top', art[0], x0, yTop0, w, depth, b.z0 - 0.6);
+    // (a roof's outline broken and chipped, shingles missing at its ends, not cut square)
+    const bigRoof = mat === 'roof' && !base && depth > 60;
+    const topArt = this.surface(v, 'top', art[0], x0, yTop0, w, depth, b.z0 - 0.6, bigRoof ? 11 : 5);
     if (!topArt) top.fillStyle(C[0], 1).fillRect(x0, yTop0, w, depth);
     if (topArt) {
       // (painted)
@@ -524,18 +545,21 @@ export class TerrainView {
     // the edges, so you can tell where you can stand, in light and shade rather than drawn
     // lines: a soft dark falloff behind the back edge parts it from the backdrop, the walkable
     // top is warm with firelight and brightest toward the front lip where you land
-    const fade = (g, x, y, ww, hh, color, a0, a1, n = 12) => {
-      for (let i = 0; i < n; i++) g.fillStyle(color, a0 + ((a1 - a0) * i) / (n - 1)).fillRect(x, y + (hh * i) / n, ww, hh / n + 0.5);
-    };
+    const fade = (g, x, y, ww, hh, color, a0, a1) => vFade(g, x, y, ww, hh, color, a0, a1);
     // (not behind a step standing on a roof, or a board: up against the sky or the veiled
     // backdrop it showed as a dark box floating there)
-    if (!base && mat !== 'board') fade(top, x0 - 4, yTop0 - 22, w + 8, 22, 0x000000, 0, 0.7);
+    // A roof has a ridge along its back and an eave board along its lip, running a little past
+    // its ends (painted beam): built, not a box cut square out of the shingles
+    const ridged = bigRoof && topArt && this.surface(v, 'ridge', 'beam', x0 - 10, yTop0 - 9, w + 20, 14, b.z0 - 0.55, 3);
+    if (ridged) v.tiles.ridge.setTint(0x8a7060);
+    if (!base && mat !== 'board' && !ridged) fade(top, x0 - 4, yTop0 - 22, w + 8, 22, 0x000000, 0, 0.7);
     top.fillStyle(0xff9a50, 0.14).fillRect(x0, yTop0, w, depth);
     fade(top, x0, yTop0, w, Math.min(60, depth * 0.45), 0x000000, 0.5, 0);
     fade(top, x0, yTop1 - Math.min(40, depth * 0.45), w, Math.min(40, depth * 0.45), 0xffc890, 0, 0.3);
     this.shadeEnds(v, x0, x1, yTop0, yTop1);
     const down = mat === 'board' ? 12 : mat === 'beam' && overPit ? 18 : Math.max(0, b.top - base) + (overPit ? 120 : 0);
-    const frontArt = art[1] && this.surface(v, 'front', art[1], x0, yTop1 + 1, w, down, b.z1 + 0.4);
+    const frontArt = art[1] && this.surface(v, 'front', art[1], x0, yTop1 + 1, w, down, b.z1 + 0.4, bigRoof ? 6 : 5);
+    if (ridged && frontArt && this.surface(v, 'eave', 'beam', x0 - 10, yTop1 + 1, w + 20, 11, b.z1 + 0.45, 3)) v.tiles.eave.setTint(0x6a5040);
     if (!frontArt) front.fillStyle(C[2], 1).fillRect(x0, yTop1 + 1, w, down);
     if (frontArt) {
       // (painted)
@@ -560,6 +584,13 @@ export class TerrainView {
     // (a house front is in its own shadow, the roof above it in the firelight: the top you
     // stand on is always the lighter of the two)
     if (mat === 'roof') front.fillStyle(0x000000, 0.3).fillRect(x0, yTop1 + 1, w, down);
+    // (its corners turn away into shadow and its foot sits in soot: no hard-cut sides)
+    if (bigRoof && down > 40) {
+      const cw = Math.min(22, w * 0.12);
+      hFade(front, x0, yTop1 + 1, cw, down, 0x000000, 0.55, 0);
+      hFade(front, x1 - cw, yTop1 + 1, cw, down, 0x000000, 0, 0.55);
+      vFade(front, x0, yTop1 + down - 26, w, 26, 0x000000, 0, 0.5);
+    }
     top.setDepth(b.z0 - 0.5);
     front.setDepth(b.z1 + 0.5);
   }
@@ -585,11 +616,9 @@ export class TerrainView {
     const W = Math.min(16, (x1 - x0) * 0.2);
     for (const [ex, dir] of [[x0, 1], [x1, -1]]) {
       if (!lower(ex - dir * 6)) continue;
-      for (let i = 0; i < 8; i++) {
-        const a = 0.55 * (1 - i / 8); const xx = dir > 0 ? ex + (W * i) / 8 : ex - (W * (i + 1)) / 8;
-        top.fillStyle(0x000000, a).fillRect(xx, yTop0, W / 8 + 0.5, yTop1 - yTop0);
-        front.fillStyle(0x000000, a).fillRect(xx, yTop1 + 1, W / 8 + 0.5, Math.max(0, b.top - this.supportTop(b)) + 4);
-      }
+      const xx = dir > 0 ? ex : ex - W; const [a0, a1] = dir > 0 ? [0.55, 0] : [0, 0.55];
+      hFade(top, xx, yTop0, W, yTop1 - yTop0, 0x000000, a0, a1);
+      hFade(front, xx, yTop1 + 1, W, Math.max(0, b.top - this.supportTop(b)) + 4, 0x000000, a0, a1);
     }
   }
 
@@ -601,8 +630,8 @@ export class TerrainView {
     // the capstone: one slab, a crack or two, sooted toward the back, lit at the lip
     top.fillStyle(0x6a5e54, 1).fillRect(x0, yTop0, w, depth);
     top.lineStyle(1, 0x2a2420, 0.9).lineBetween(x0 + w * 0.35, yTop0, x0 + w * 0.42, yTop0 + depth * 0.6).lineBetween(x0 + w * 0.72, yTop0 + depth * 0.3, x1, yTop0 + depth * 0.45);
-    for (let i = 0; i < 10; i++) top.fillStyle(0x000000, 0.05 * (10 - i)).fillRect(x0, yTop0 + (depth * 0.5 * i) / 10, w, depth * 0.05 + 0.5);
-    for (let i = 0; i < 10; i++) top.fillStyle(0xffc890, 0.035 * i).fillRect(x0, yTop1 - 12 + 1.2 * i, w, 1.5);
+    vFade(top, x0, yTop0, w, depth * 0.5, 0x000000, 0.5, 0);
+    vFade(top, x0, yTop1 - 12, w, 12, 0xffc890, 0, 0.32);
     // the stack's face: stone courses, sooted, darkening down to the roof
     front.fillStyle(0x2c2420, 1).fillRect(x0, yTop1 + 1, w, down);
     for (let y = yTop1 + 1, row = 0; y < yTop1 + down; y += 9, row++) {

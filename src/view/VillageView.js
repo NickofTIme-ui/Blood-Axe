@@ -174,9 +174,16 @@ export class VillageBackdrop {
       if (barn && x >= barn.x - 130 && x < barn.x + 150) { x = piece('barn', barn.x - 130, barn.x + 150, () => this.drawBarn(g, barn.x - 130, barn.x + 150, top)); continue; }
       const stab = id === 'stables' && prop('stables');
       if (stab && x >= stab.x - 260 && x < stab.x + 260) {
-        x = piece('stables', stab.x - 260, stab.x + 260, () => this.drawStables(g, stab.x - 260, stab.x + 260, top, stab.x));
-        // (painted: only what changes is drawn over it, the open gate once the horses are out)
-        if (this.art.has('stables')) this.stables = { gx: stab.x, top, painted: true, g: this.scene.add.graphics().setDepth(DEPTH.floor - 0.95) };
+        const img = this.art.piece('stables', stab.x - 260, stab.x + 260);
+        if (img) this.paintedFire.add(img); else this.drawStables(g, stab.x - 260, stab.x + 260, top, stab.x);
+        x = stab.x + 260;
+        // (painted: only what changes is drawn over it, the open gate once the horses are out;
+        // with its own painting of the gate thrown open, that picture takes over instead)
+        if (img) {
+          const open = this.art.piece('stables_open', stab.x - 260, stab.x + 260);
+          open?.setVisible(false);
+          this.stables = { gx: stab.x, top, painted: true, img, open, g: this.scene.add.graphics().setDepth(DEPTH.floor - 0.95) };
+        }
         continue;
       }
       const w = 150 + Math.floor(r() * 90);
@@ -264,7 +271,9 @@ export class VillageBackdrop {
     const inside = !n || n.state === 'trapped';
     const g = S.g.clear();
     S.glow?.setVisible(!inside);
+    if (S.open) { S.open.setVisible(!inside); S.img.setVisible(inside); } // (the gate thrown open: painted)
     if (S.painted && inside) return; // (the painting has them in it)
+    if (S.open) return;
     if (!inside) {
       // the double gate thrown open on the dark of the stable, the fire at the back of it
       // (where the stampede comes out: data/stageVillage.js STABLE_DOOR). The painted gate
@@ -347,6 +356,7 @@ export class VillageBackdrop {
       this.art.ground();
       if (this.data.well) this.drawWell(this.data.well);
       for (const pk of this.data.pikes ?? []) this.drawPikes(pk);
+      this.drawDecor();
       return;
     }
     const g = s.add.graphics().setDepth(DEPTH.floor);
@@ -365,6 +375,24 @@ export class VillageBackdrop {
     g.fillStyle(0x000000, 0.3).fillRect(0, top, this.width, 26);
     if (this.data.well) this.drawWell(this.data.well);
     for (const pk of this.data.pikes ?? []) this.drawPikes(pk);
+  }
+
+  // Street clutter (data/stageVillage.js `decor`): signposts, lantern posts, heaps of burnt
+  // debris, painted pieces standing at the back of the lane. Painted only: nothing drawn in
+  // code for one that isn't there yet.
+  drawDecor() {
+    const top = SETTINGS.world.floorTop - 50;
+    for (const d of this.data.decor ?? []) {
+      const img = this.art.piece(`decor_${d.kind}`, d.x - d.w / 2, d.x + d.w / 2, { depth: d.z - 1, bottom: d.z - top + 4 });
+      if (!img) continue;
+      if (d.flip) img.setFlipX(true);
+      if (d.kind === 'lantern') {
+        // (its flame lights the street round it, flickering)
+        const glow = this.scene.add.image(d.x, d.z - img.displayHeight * 0.62, 'glow').setScale(1.6).setTint(COL.fire)
+          .setAlpha(0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(d.z - 0.9);
+        this.scene.tweens.add({ targets: glow, alpha: { from: 0.28, to: 0.5 }, duration: 240 + (d.x % 180), yoyo: true, repeat: -1 });
+      }
+    }
   }
 
   // Heads on pikes, the raiders' warning: a cluster of crooked spears driven into the mud,

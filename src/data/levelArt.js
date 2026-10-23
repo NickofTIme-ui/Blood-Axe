@@ -34,7 +34,9 @@ export const LEVEL_ART = {
     ],
     wall: { height: 250 },
     ground: true,
-    pieces: ['well', 'mill', 'barn', 'stables', 'longhall', 'gate', 'pikes'],
+    pieces: ['well', 'mill', 'barn', 'stables', 'stables_open', 'longhall', 'gate', 'pikes',
+      // street clutter (data/stageVillage.js `decor`: view/VillageView.js drawDecor)
+      'decor_signpost', 'decor_lantern', 'decor_debris', 'decor_debris2'],
     props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' },
       archers: { file: 'prop_archers.png', pair: true } },
     surfaces: { roof_top: { fit: true }, roof_front: { px: 180 }, beam: { px: 40 }, board: { fit: true } },

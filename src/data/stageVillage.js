@@ -276,6 +276,23 @@ export const STAGE_VILLAGE = {
   // road in, the square, and the gate out. n: how many in the cluster
   pikes: [{ x: 560, z: 292, n: 3 }, { x: 1480, z: 290, n: 2 }, { x: 5080, z: 292, n: 3 }, { x: 8560, z: 294, n: 4 }],
 
+  // street clutter along the back of the lane (view only: view/VillageView.js drawDecor),
+  // painted pieces `decor_<kind>`; one not painted yet is skipped. w: drawn width
+  decor: [
+    { kind: 'debris', x: 300, z: 286, w: 150 },
+    { kind: 'signpost', x: 1330, z: 284, w: 70 },
+    { kind: 'lantern', x: 1760, z: 283, w: 60 },
+    { kind: 'debris2', x: 2120, z: 287, w: 150 },
+    { kind: 'lantern', x: 2560, z: 283, w: 60 },
+    { kind: 'signpost', x: 4380, z: 284, w: 70 },
+    { kind: 'debris', x: 5450, z: 287, w: 140, flip: true },
+    { kind: 'lantern', x: 5900, z: 283, w: 60 },
+    { kind: 'debris2', x: 6850, z: 287, w: 150, flip: true },
+    { kind: 'lantern', x: 7150, z: 283, w: 60 },
+    { kind: 'debris', x: 8350, z: 287, w: 140 },
+    { kind: 'signpost', x: 8900, z: 284, w: 70, flip: true },
+  ],
+
   // the villagers (stage/Story.js; drawn by view/NpcView.js)
   npcs: [
     { id: 'hale', name: 'Hale the smith', x: 960, z: 296, talk: 'hale' }, // (on his feet, so he's seen: Nick, 2026-10-16)
