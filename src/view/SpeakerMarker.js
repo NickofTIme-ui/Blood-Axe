@@ -38,7 +38,7 @@ export class SpeakerMarker {
   update() {
     const g = this.g.clear();
     const line = this.scene.stage?.story?.line;
-    const at = line && this.find(line.who);
+    const at = line?.text.trim() && this.find(line.who); // (a silent line: nobody is speaking)
     if (!at) return;
     const col = Phaser.Display.Color.HexStringToColor(speakerColor(line.who)).color;
     const y = at.y + Math.sin(this.scene.time.now * 0.008) * 3;

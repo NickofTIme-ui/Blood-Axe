@@ -4341,8 +4341,8 @@ test('sentence: every boss in the game has his crimes (the machine none); the Oa
       assert(B.sentence.last || B.sentence.silent, `${id}: ${B.name} has his last words, or keeps silent`);
     }
   }
-  const opening = STAGE_VILLAGE.story.find((b) => b.id === 'opening').lines.map((l) => l[1]).join(' ');
-  assert(opening.includes('Each of them kneels. Each hears his crimes. Each pays.'), 'the pledge');
+  const pledge = STAGE_VILLAGE.story.find((b) => b.id === 'pledge').lines.map((l) => l[1]).join(' ');
+  assert(pledge.includes('Each of them kneels. Each hears his crimes. Each pays.'), 'the pledge');
 });
 
 test('dialogue: every voice in every level has a name and a portrait (or is narration); Nick\'s names on the nameless', () => {

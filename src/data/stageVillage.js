@@ -347,6 +347,8 @@ export const STAGE_VILLAGE = {
     {id:'barn-east',name:'The barn hands',x:BARN_EAST,z:300,pose:'group',people:3,rescue:'wreckage',tag:'barn',savedAs:'All nine villagers',flee:{x:5600,z:480}},
     { id: 'horses', name: 'the horses', x: 6380, z: 294, pose: 'horses', rescue: 'wreckage', tag: 'stables', flee: null },
     { id: 'stable-master', name: 'Stable master', x: 6130, z: 350, stableMaster: true, warningAt: 5860 },
+    // on his knees at Varek's feet in the opening (stage/VillageOpening.js): struck down
+    { id: 'captive', name: 'Captive villager', x: 790, z: 436, pose: 'captive-kneel', art: 'villager' },
     { id: 'hakon', name: 'Hakon', x: 8880, z: 330, pose: 'wounded', art: 'hakon', talk: null },
   ],
 
@@ -354,17 +356,23 @@ export const STAGE_VILLAGE = {
   // other two are with the hero at the start and at the gate (view/NpcView.js).
   story: [
     {
+      // THE STANDOFF (Nick, 2026-10-23; stage/VillageOpening.js): they skid to a stop facing
+      // the Ashen line; the silent third line is Varek's mace coming down on the villager
       id: 'opening', on: 'start', hold: true, delay: 150, // (after the section's title card)
       lines: [
-        ['RURIK', 'Ashen troops. In our streets.'],
-        ['CINDER', 'The ford spat them back out, Captain. Let me finish it.'],
-        ['VAREK', 'No. Hold the mill, Cinder. I will secure the longhall.'],
-        ['VAREK', 'Ranks! Cut them down. Leave nothing for the crows.'],
-        // (the pledge every boss's sentence pays off: stage/Sentence.js)
+        ['RURIK', 'Stand down! Your slaughter ends here!'],
+        ['VAREK', "Oathkeepers... You're too late to save anyone."],
+        ['VAREK', '', { moment: 'openingStrike', minFrames: 84, autoAdvance: true }],
+        ['VAREK', 'Cut them down!'],
+      ],
+    },
+    {
+      // over the villager he struck down, once his men are dead: the pledge every boss's
+      // sentence pays off (stage/Sentence.js)
+      id: 'pledge', after: 'opening', at: 0, calm: true, hold: true,
+      lines: [
         ['RURIK', 'Every captain who led them here. Every one, up to the king who gave the word.'],
-        ['RURIK', 'Swear it. Each of them kneels. Each hears his crimes. Each pays.'],
-        ['VEXA', 'On my blades.'],
-        ['ORYN', 'On my staff. Now go. Find the living.'],
+        ['RURIK', 'Each of them kneels. Each hears his crimes. Each pays.'],
       ],
     },
     {

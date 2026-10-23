@@ -293,6 +293,8 @@ export class Stage {
     if (this.fightOn) this.wakeWaiting();
     this.world.events.emit('sectionStart', { index: i, section: sec });
     if(i===0 && teleport && this.data.openingFormation) this.opening = new VillageOpening(this);
+    // (picked up past the start: the villager Varek struck down at the opening lies where he fell)
+    else if (this.data.openingFormation && !this.opening) { const n = this.story?.npc('captive'); if (n) n.state = 'dead'; }
   }
 
   lockBounds(x0, x1) {
@@ -711,6 +713,7 @@ export class Stage {
       this.opening.update();
       return;
     }
+    this.opening?.tail(); // (the commanders still running off)
     this.stats.frames++;
     const p = this.player;
     this.updateFalls();

@@ -252,6 +252,7 @@ export class NpcView {
     const tun = (i) => TUNIC[(v.seed + i) % TUNIC.length];
     const pose = n.state === 'fleeing' || n.gatherMoving ? 'run' : n.mourning ? (n.pose==='family'||n.pose==='child'?'cower':'kneel') : n.state === 'threatened' || n.cower ? 'cower' : n.state === 'trapped' ? 'wave' : 'stand';
     if (n.state === 'dead' && SPRITES.nicholas && n.art === 'nicholas') { this.figure(g, n.x, y, k, 'lie', t, 0, 1, 'nicholas'); return; }
+    if (n.pose === 'captive-kneel' && this.drawKneeling(n, v, g, y, k, t)) return;
     if (n.state === 'lost' || n.state === 'dead') { this.fallen(g, n.x, y, k, tun(0)); return; }
     if (n.guide) { this.drawGuide(n, v, g, y, k, t, dir); return; }
     if (n.pose === 'wounded') return this.figure(g, n.x, y, k, 'sit', t, tun(0), 1, n.art);
@@ -347,6 +348,21 @@ export class NpcView {
   }
 
   // someone who didn't make it: on the ground, still
+  // The villager on his knees before Varek in the opening (stage/VillageOpening.js), facing
+  // the heroes; struck down, he pitches forward onto his face and the blood spreads under
+  // him. false: the villager sheet isn't painted (the stand-ins draw him).
+  drawKneeling(n, v, g, y, k, t) {
+    if (!this.figure(g, n.x, y, k, 'kneel', t, 0, -1, 'villager')) return false;
+    const img = v.imgs[this.curN - 1];
+    if (n.state !== 'dead') return true;
+    const f = Math.min(1, n.t / 16); // (sim frames since the blow)
+    const fall = f * f;
+    const pool = Math.min(1, n.t / 150);
+    g.fillStyle(0x4a0606, 0.75).fillEllipse(n.x - 44 * k, y + 1, (30 + 70 * pool) * k, (6 + 9 * pool) * k);
+    img.setAngle(-84 * fall).setPosition(n.x + 6 * k * fall, y + 6 * k * fall).setTint(0xd8ccc4);
+    return true;
+  }
+
   fallen(g, x, y, k, tunic) {
     g.fillStyle(0x4a0606, 0.5).fillEllipse(x + 4, y + 2, 56 * k, 10 * k);
     g.fillStyle(tunic, 1).fillRoundedRect(x - 22 * k, y - 9 * k, 40 * k, 10 * k, 4);

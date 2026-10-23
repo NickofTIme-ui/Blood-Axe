@@ -1,7 +1,25 @@
 import { createEnemy } from '../entities/Enemy.js';
 
-// Fixed-tick staging: the formation is real troops; the two commanders are protected
-// scene actors and withdraw before control returns. No boss events or rewards.
+// THE STANDOFF (Nick, 2026-10-23), fixed-tick staging so both online players see it frame
+// for frame. The Ashen grunts stand in formation on the right, Brother Cinder and Varek
+// behind them with a villager on his knees at Varek's feet. The Oath Keepers sprint in
+// from the left and skid to a stop facing the line. The held 'opening' beat
+// (data/stageVillage.js) plays the words; its silent third line is Varek's mace coming
+// down on the villager (OPENING.strike); then "Cut them down!". The two commanders turn and
+// run off to the right, the front rank charges, the HUD comes up and the heroes are freed.
+// The formation is real troops; the commanders are protected scene actors (no boss events
+// or rewards). A skipped scene still kills the villager: what it changes isn't skippable.
+export const OPENING = {
+  rush: 58,       // frames of the sprint in
+  skid: 18,       // then the skid to a stop
+  from: -230, to: 150, // where the heroes run from and stop
+  run: 9,         // the commanders' run off (px a frame)
+  gone: 1420,     // ...until they're this far along, out of sight
+  charge: 30,     // frames the front rank charges before the heroes are let go
+  strikeLine: 2,  // the opening beat's silent line: the strike
+  captive: 'captive',
+};
+
 export class VillageOpening {
   constructor(stage) {
     this.stage = stage;
@@ -9,32 +27,64 @@ export class VillageOpening {
     this.troops = (stage.section.waves[0] ?? []).map((type,i) => {
       const f = createEnemy(stage.world,type,610 + Math.floor(i/3)*62,310+(i%3)*62);
       f.invincible = true; f.cinematic = true;
+      f.front = i < 3; // (the rank nearest the heroes: they charge first)
       return f;
     });
     this.commanders = [
-      { type:'penitent',name:'Brother Cinder',x:790,z:315,size:1.3 },
-      { type:'gladiator',name:'Varek, the Ash Captain',x:845,z:430,size:1.75 },
+      { type:'penitent',name:'Brother Cinder',x:800,z:315,size:1.3 },
+      { type:'gladiator',name:'Varek, the Ash Captain',x:860,z:432,size:1.75,varek:true },
     ].map(def => {
       const f = createEnemy(stage.world,def.type,def.x,def.z);
       f.stats = {...f.stats,name:def.name,size:def.size,boss:false};
       f.invincible = true; f.cinematic = true; f.unbounded = true;
+      if (def.varek) this.varek = f;
       return f;
     });
     stage.waveIndex = 1;
     for (const [i,p] of stage.players.entries()) {
-      p.x = -210-i*46; p.unbounded=true; p.awe=2;
+      p.x = OPENING.from-i*46; p.unbounded=true; p.awe=2;
     }
     stage.world.holdStill(2);
   }
 
-  get progress() { return Math.min(1,this.age/72); }
+  // how far the heroes' run in has got (0..1), the skid included
+  get progress() { return Math.min(1,this.age/(OPENING.rush+OPENING.skid)); }
+  // where a hero is along the run in: a flat sprint, then easing to a stop in the skid
+  runX(t) {
+    const R=OPENING.rush, S=OPENING.skid, span=OPENING.to-OPENING.from;
+    const v=span/(R+S/2); // the sprint's speed (the skid covers half what it would at speed)
+    if(t<=R)return OPENING.from+v*t;
+    if(t>=R+S)return OPENING.to;
+    const k=(t-R)/S;
+    return OPENING.from+v*R+v*S*(k-k*k/2);
+  }
+  get skidding() { return this.age>OPENING.rush && this.age<=OPENING.rush+OPENING.skid; }
 
-  pose(f,x,z,moving) {
-    f.x=x; f.z=z; f.h=f.floor=0; f.vh=f.vz=0;
-    f.vx=moving ? 300 : 0; f.facing=1; f.sprinting=moving;
-    const state=moving?'walk':'idle';
+  pose(f,x,z,moving,facing=1,state=moving?'walk':'idle') {
+    f.vx=(x-f.x)*60; f.x=x; f.z=z; f.h=f.floor=0; f.vh=f.vz=0;
+    f.facing=facing; f.sprinting=moving;
     if(f.state!==state)f.fsm.change(state);
     f.fsm.frame++;
+  }
+
+  get captive() { return this.stage.story?.npc(OPENING.captive); }
+
+  // Varek's mace comes down: a heavy overhead blow, frame-stepped by hand (he stays frozen)
+  strike() {
+    if(this.struck)return;
+    this.struck=1;
+    const f=this.varek;
+    f.facing=-1;
+    if(f.stats.moves.heavy)f.fsm.change('heavy');
+    f.facing=-1;
+  }
+
+  kill() {
+    const n=this.captive;
+    if(n&&n.state!=='dead'){
+      n.state='dead';n.t=0;n.slain=true;
+      this.stage.world.events.emit('openingKill',{npc:n,by:this.varek,x:n.x,z:n.z,dir:-1});
+    }
   }
 
   update() {
@@ -44,20 +94,54 @@ export class VillageOpening {
     this.age++;
     st.world.holdStill(2);
     for(const [i,p] of st.players.entries()) {
-      this.pose(p,-210+360*this.progress-i*46,Math.min(500,440+i*26),this.progress<1);
+      const moving=this.age<=OPENING.rush;
+      // the skid: feet planted, sliding to a stop in his stance
+      this.pose(p,this.runX(Math.min(this.age,OPENING.rush+OPENING.skid))-i*46,Math.min(500,440+i*26),moving);
+      if(this.skidding&&(this.age-OPENING.rush)%3===1)st.world.events.emit('openingSkid',{fighter:p,first:this.age===OPENING.rush+1});
       p.awe=2;
     }
-    for(const f of this.troops){f.awe=2;f.invincible=true;f.vx=f.vz=0;f.facing=-1;}
-    if(this.age>=72&&this.phase==='arrive')this.phase='words';
-    const spent=st.story.done.has('opening') || (st.story.beats.find(b=>b.id==='opening')?.fired&&!st.story.busy);
-    if(spent&&this.phase!=='withdraw') {this.phase='withdraw';this.retreat=0;}
+    if(this.phase!=='withdraw')for(const f of this.troops){f.awe=2;f.invincible=true;f.vx=f.vz=0;f.facing=-1;}
+    if(this.age>=OPENING.rush+OPENING.skid&&this.phase==='arrive')this.phase='words';
+    const story=st.story;
+    const c=story.current;
+    // the silent line: his blow
+    if(c?.beat.id==='opening'&&c.cued?.has(OPENING.strikeLine))this.strike();
+    if(this.struck&&this.struck<999) {
+      const f=this.varek, m=f.move;
+      this.struck++;
+      if(f.state==='heavy'&&m){
+        f.fsm.frame++;
+        if(f.fsm.frame===m.startup+1)this.kill();
+        if(f.fsm.frame>=m.startup+m.active+m.recovery)f.fsm.change('idle');
+      }else this.kill();
+      if(f.state!=='heavy')this.struck=999;
+    }
+    const spent=story.done.has('opening') || (story.beats.find(b=>b.id==='opening')?.fired&&!story.busy);
+    if(spent&&this.phase!=='withdraw') {
+      this.phase='withdraw';this.retreat=0;
+      this.kill(); // (the scene skipped before his blow: it still fell)
+      if(this.varek.state==='heavy')this.varek.fsm.change('idle');
+    }
     if(this.phase==='withdraw') {
       this.retreat++;
-      for(const f of this.commanders)this.pose(f,f.x+5.5,f.z,true);
-      if(this.retreat>=92){
+      // the commanders turn and run off to the right
+      for(const f of this.commanders)this.pose(f,f.x+OPENING.run,f.z,true,1);
+      // the front rank charges at them
+      for(const f of this.troops){
+        f.awe=2;f.invincible=true;
+        if(f.front){
+          const target=st.players.reduce((a,p)=>!a||Math.abs(p.z-f.z)<Math.abs(a.z-f.z)?p:a,null);
+          const dz=target?Math.sign(target.z-f.z)*Math.min(1.5,Math.abs(target.z-f.z)):0;
+          this.pose(f,f.x-4.2,f.z+dz,true,-1);
+        }else{f.vx=f.vz=0;f.facing=-1;}
+      }
+      if(this.retreat>=OPENING.charge){
         this.active=false;this.phase='done';
-        for(const f of this.commanders)f.removeMe=true;
-        for(const f of this.troops){f.cinematic=false;f.invincible=false;f.awe=0;}
+        for(const f of this.troops){
+          f.cinematic=false;f.invincible=false;f.sprinting=false;
+          f.awe=f.front?0:24; // (the rear rank a beat behind)
+          f.fsm.change('idle');
+        }
         for(const p of st.players){
           p.unbounded=false;p.awe=0;p.sprinting=false;p.vx=0;p.fsm.change('idle');
           for(const action of Object.keys(p.controller.pressAge))p.controller.pressAge[action]=Infinity;
@@ -69,11 +153,24 @@ export class VillageOpening {
     return true;
   }
 
+  // After the heroes are let go: the commanders are still running off the screen. Keep
+  // them out of the fight (frozen, untouchable) until they're gone.
+  tail() {
+    if(this.active||!this.commanders.some(f=>!f.removeMe))return;
+    for(const f of this.commanders){
+      if(f.removeMe)continue;
+      f.awe=2;f.invincible=true;
+      this.pose(f,f.x+OPENING.run,f.z,true,1);
+      if(f.x>OPENING.gone)f.removeMe=true; // (well off the screen)
+    }
+  }
+
   cancel() {
     if(!this.active)return;
     this.active=false;
     for(const f of [...this.commanders,...this.troops])f.removeMe=true;
     for(const p of this.stage.players){p.unbounded=false;p.awe=0;p.vx=0;p.sprinting=false;}
     this.stage.world.hold=null;
+    const n=this.captive; if(n)n.state='dead';
   }
 }

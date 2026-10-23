@@ -33,6 +33,44 @@ function setup(section=0){
   assert.ok(st.opening.troops.every(f=>!f.cinematic&&!f.awe),'Formation released to fight');
   assert.equal(bosses,0,'Opening commanders must never trigger boss music');
   assert.ok(!p.unbounded&&!p.controller.peek('heavy'),'Opening restores normal movement and clears buffered attacks');
+  assert.equal(st.story.npc('captive').state,'dead','A skipped scene still has Varek strike the villager down');
+}
+{
+  // Nick's standoff, watched through: the skid, the two lines, the blow, the order, the run
+  const {w,p,st,tick}=setup();const kills=[],skids=[];
+  w.events.on('openingKill',e=>kills.push(st.opening.varek.fsm.frame));
+  w.events.on('openingSkid',e=>skids.push(e));
+  const lines=st.story.beats.find(b=>b.id==='opening').lines.map(l=>l[1]);
+  assert.deepEqual([lines[0],lines[1],lines[3]],['Stand down! Your slaughter ends here!',"Oathkeepers... You're too late to save anyone.",'Cut them down!']);
+  const captive=st.story.npc('captive');
+  assert.ok(captive&&captive.state==='idle'&&captive.x<st.opening.varek.x&&captive.x>Math.max(...st.opening.troops.map(f=>f.x)),'The villager kneels between the line and Varek');
+  let maxX=-1e9,stopAt=null;
+  for(let i=0;i<90;i++){tick();if(p.x>maxX)maxX=p.x;if(stopAt==null&&st.opening.age>58&&Math.abs(p.vx)<1)stopAt=st.opening.age;}
+  assert.ok(Math.abs(p.x-150)<0.01&&maxX<=150.01,'He skids to a stop on his mark, never past it');
+  assert.ok(skids.length>=3,'Dust off his boots through the skid');
+  const press=()=>{p.controller.registerPress('padRight');for(let i=0;i<20;i++)tick();};
+  const at=()=>st.story.line?.index;
+  for(let i=0;i<200&&at()!==0;i++)tick();
+  assert.equal(at(),0);press();
+  assert.equal(at(),1);assert.equal(captive.state,'idle','Still alive while Varek speaks');
+  press();
+  for(let i=0;i<120&&at()!==3;i++)tick();
+  assert.equal(at(),3,'The blow plays out by itself, then the order');
+  assert.equal(captive.state,'dead');assert.equal(kills.length,1);
+  assert.ok(kills[0]>=st.opening.varek.stats.moves.heavy.startup,'He dies as the mace lands');
+  assert.equal(st.story.line.text,'Cut them down!');
+  assert.ok(w.fighters.filter(f=>f.team==='player').every(f=>f.awe>0),'Controls still locked through the order');
+  press();
+  assert.equal(st.opening.phase,'withdraw');
+  const front=st.opening.troops.filter(f=>f.front),fx=front[0].x;
+  for(let i=0;i<10;i++)tick();
+  assert.ok(st.opening.commanders.every(f=>f.facing===1),'The commanders turn and run right');
+  assert.ok(front[0].x<fx-20&&st.opening.troops.filter(f=>!f.front).every(f=>f.x>=610+62-1),'The front rank charges; the rear rank holds');
+  for(let i=0;i<40;i++)tick();
+  assert.ok(!st.opening.active&&st.fightOn&&!p.awe,'The battle begins');
+  for(let i=0;i<120;i++)tick();
+  assert.ok(st.opening.commanders.every(f=>f.removeMe),'Both commanders are gone off the right');
+  assert.ok(!st.livingFoes().some(f=>/Varek|Cinder/.test(f.stats.name)));
 }
 {
   const {w,p,st,tick}=setup(3);let bosses=0,sentences=0;

@@ -44,6 +44,7 @@ export class HUDScene extends Phaser.Scene {
     this.cameras.main.setOrigin(0, 0).setZoom(SETTINGS.renderScale ?? 1); // draw at full resolution
     // my hero's bars top-left; in co-op my partner's top-right
     const p = this.arena.player;
+    const first = this.children.list.length;
     this.barSets = [{ p, bars: this.makePlayerBars(p, 6) }];
     const mate = this.arena.players.find((q) => q !== p);
     if (mate) this.barSets.push({ p: mate, bars: this.makePlayerBars(mate, SETTINGS.width - (HUD_ART.width ?? 290) - 10) });
@@ -65,6 +66,10 @@ export class HUDScene extends Phaser.Scene {
       'J light  J J K launch  K heavy  O kick  L block (+←/→ turn)  Shift roll  C sprint (+J smash)  U firebolt  Space jump  |  P pause  G gore  M music',
       { ...style, fontSize: '11px', color: '#b0a590' }).setOrigin(0.5, 1).setStroke('#000000', 3);
     this.tweens.add({ targets: hint, alpha: 0, delay: 7000, duration: 1500 });
+    // THE CHROME: the bars, the counts, the style meter, the hint (and the objective, below).
+    // It stays down through the level's opening scene (stage/VillageOpening.js) and comes up
+    // as the fight starts (Nick, 2026-10-23).
+    const chrome = this.children.list.slice(first).filter((o) => o !== this.downText && o !== this.waitText);
 
     // call-out banner (top centre)
     this.banner = this.add.text(SETTINGS.width / 2, 36, '', {
@@ -77,6 +82,9 @@ export class HUDScene extends Phaser.Scene {
     this.enemyBars = [];
     this.focusId = null;
     this.makeStageHud();
+    this.chrome = this.add.container(0, 0, [...chrome, this.objective, this.levelText]);
+    this.chromeHidden = !!this.arena.stage?.opening?.active;
+    this.chrome.setAlpha(this.chromeHidden ? 0 : 1);
     const ev = this.arena.world.events;
     this.onWave = (n) => this.callout(`WAVE ${n}`, '#e0c080', 30);
     // (the hangman's about to drop Irvolino, stage/MillRescue.js: his clock jolts)
@@ -449,7 +457,7 @@ export class HUDScene extends Phaser.Scene {
     const view = arena.cameras.main.worldView;
     const p = arena.player;
     const onScreen = arena.world.fighters
-      .filter((f) => f.team === 'enemy' && f.alive && f.x > view.x - 20 && f.x < view.right + 20)
+      .filter((f) => f.team === 'enemy' && f.alive && !f.cinematic && f.x > view.x - 20 && f.x < view.right + 20)
       .sort((a, b) => (a.id === this.focusId ? -1 : b.id === this.focusId ? 1 : Math.abs(a.x - p.x) - Math.abs(b.x - p.x)))
       .slice(0, MAX_ENEMY_BARS);
     for (let i = 0; i < Math.max(onScreen.length, this.enemyBars.length); i++) {
@@ -472,6 +480,19 @@ export class HUDScene extends Phaser.Scene {
       }
       bar.trail.scaleX = bar.shown;
     }
+  }
+
+  // the chrome comes up as the opening scene hands the heroes the fight (and the controls
+  // hint gets its few seconds then, not under the scene)
+  updateChrome() {
+    const hidden = !!this.arena.stage?.opening?.active;
+    if (this.chromeHidden && !hidden) {
+      this.tweens.killTweensOf(this.hint);
+      this.hint.setAlpha(1);
+      this.tweens.add({ targets: this.hint, alpha: 0, delay: 7000, duration: 1500 });
+    }
+    this.chromeHidden = hidden;
+    this.chrome.setAlpha(Phaser.Math.Linear(this.chrome.alpha, hidden ? 0 : 1, hidden ? 0.3 : 0.08));
   }
 
   // ------------------------------------------------------------ per frame
@@ -509,6 +530,7 @@ export class HUDScene extends Phaser.Scene {
     this.waitText.setText(!sess?.waiting ? '' : sess.stall > 240 ? 'Your partner is not responding  —  press R to carry on alone' : 'waiting for your partner…');
 
     this.styleMeter.update(p);
+    this.updateChrome();
     this.updateDialogue();
     this.updateEnemyStrip();
     this.updateBoss();

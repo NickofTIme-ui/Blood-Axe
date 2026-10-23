@@ -297,6 +297,21 @@ export class ArenaScene extends Phaser.Scene {
       playSfx(this, 'jump', { volume: fighter.team === 'player' ? 0.75 : 0.3, spread: 120, minGapMs: 80 });
       this.gore.spark(fighter.x, fighter.z, 2, 0x8a7a60, 8); // dust off the landing
     });
+    // the opening (stage/VillageOpening.js): the heroes' boots skidding them to a stop, and
+    // Varek's mace coming down on the kneeling villager
+    ev.on('openingSkid', ({ fighter, first }) => {
+      this.gore.spark(fighter.x + fighter.facing * 10, fighter.z, 2, 0x9a8a70, 9);
+      if (first) playSfx(this, 'jump', { volume: 0.6, pitch: -400, minGapMs: 0 });
+    });
+    ev.on('openingKill', ({ x, z, dir }) => {
+      if (this.gore.level === 0) this.gore.spark(x, z, 40, 0xffffff, 14);
+      else {
+        this.gore.burst(x, z, 46, dir, 34, 1.3);
+        this.gore.splat(x - 26, z + 2, 1.8);
+      }
+      this.fx.shake(6, 14);
+      playSfx(this, 'stationaryKill', { volume: 0.9, minGapMs: 0 });
+    });
     // Busy fight = the occasional distant sword clash, mixed low.
     this.actionHits = [];
     ev.on('hit', () => {
