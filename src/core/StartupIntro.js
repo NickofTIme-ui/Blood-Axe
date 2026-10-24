@@ -1,6 +1,7 @@
 // StartupIntro.js — Once per page launch: the UFO Technologies logo, then the opening
-// cinematic, which crossfades into the title screen. "The Battle" starts 12.6 s into the
-// cinematic (core/Music.js startTitleTheme) and the title screen carries it on.
+// cinematic, which crossfades into the title screen. "The Battle" starts on the boot stomp,
+// 12.33 s into the cinematic (core/Music.js startTitleTheme), and the title screen carries it
+// on. The track is loaded while the film rolls, so it does not start late.
 // Browsers may block audible autoplay: the logo tries sound, then plays silently with an
 // optional button to restart with sound. The cinematic is silent. Escape, the button or
 // controller B skips the current clip; a failed or stalled clip never blocks the game.
@@ -9,9 +10,15 @@
 // cinematic; introFinished resolves when the cinematic hands over (BootScene waits for it
 // before starting the title screen).
 
-import { startTitleTheme } from './Music.js';
+import { cancelTitleTheme, prepareTitleTheme, scheduleTitleTheme, startTitleTheme } from './Music.js';
 
-const THEME_AT = 12.6; // seconds into the cinematic: the first boot hits the ground (dust kicks up)
+// Seconds into the cinematic: the boot shot cuts in at 12.0 and the front boot's sole hits
+// the ground on frame 296 (12.33 s); the dust follows at 12.6. The track's first beat is at
+// 0 s. Its start is booked on the audio clock in the last second before the stomp; failing
+// that, it is started a frame early (a plain <audio> takes a moment to sound).
+const STOMP_AT = 12.33;
+const BOOK_WITHIN = 1;
+const THEME_LEAD = 0.05;
 const FADE_MS = 1400; // cinematic -> title crossfade (as long as the title's own fade-in)
 
 let handOver;
@@ -33,6 +40,7 @@ export function playStartupIntro() {
     let released = false;
     let waitingForPlay = false;
     let themeStarted = false;
+    let themeBooked = false;
     let padB = false;
     let lastTime = 0;
     let lastProgress = performance.now();
@@ -92,6 +100,7 @@ export function playStartupIntro() {
       lastTime = 0;
       lastProgress = performance.now();
       logoDone();
+      prepareTitleTheme(); // download it now, so it is ready on the stomp
       video.muted = true;
       video.play().catch((e) => { if (e.name !== 'AbortError') finish(); }); // (a background tab pauses it; it resumes on return)
     };
@@ -121,6 +130,12 @@ export function playStartupIntro() {
       if (!document.hidden && !finished && clip === 1 && video.paused) video.play().catch(() => {});
     });
     listen(skip, 'click', (event) => { event.preventDefault(); event.stopPropagation(); next(); });
+    const unbook = () => { // the film stalled before the stomp: book it again once it moves
+      if (!themeBooked || themeStarted) return;
+      cancelTitleTheme();
+      themeBooked = false;
+    };
+    if (clips[1]) { listen(clips[1], 'waiting', unbook); listen(clips[1], 'pause', unbook); }
     for (const v of clips) {
       if (!v) continue;
       listen(v, 'ended', () => { if (v === video) next(); });
@@ -156,7 +171,13 @@ export function playStartupIntro() {
         const b = controllers.some((p) => pressed(p.buttons?.[1])); // standard B / Circle
         if (b && !padB) next();
         padB = b;
-        if (clip === 1 && !themeStarted && video.currentTime >= THEME_AT) theme();
+        if (clip === 1 && !themeStarted) {
+          const left = STOMP_AT - video.currentTime;
+          if (!themeBooked && left > THEME_LEAD && left < BOOK_WITHIN && !video.paused && video.readyState >= 3) {
+            themeBooked = scheduleTitleTheme(left / video.playbackRate);
+          }
+          if (left <= (themeBooked ? 0 : THEME_LEAD)) theme();
+        }
         if (document.hidden || waitingForPlay || video.currentTime !== lastTime) lastProgress = now;
         lastTime = video.currentTime;
         if (now - lastProgress > 15000) next(); // a failed download cannot trap startup

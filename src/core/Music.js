@@ -7,7 +7,7 @@
 import { SETTINGS } from '../config/settings.js';
 
 export const MUSIC = {
-  title: 'assets/audio/title-the-battle.mp3',       // "02 The Battle": opening cinematic (from 12.6 s, the first footstep), title + character select
+  title: 'assets/audio/title-the-battle.mp3',       // "02 The Battle": opening cinematic (from the boot stomp, 12.33 s), title + character select
   sanctuary: 'assets/audio/safety-in-the-sanctuary.mp3', // Hakon approach through the end of the village
   battle: 'assets/audio/gameplay-battle-field.mp3', // arena
   boss: 'assets/audio/boss-theme.mp3',              // the Warlord (until the file is added, the battle track plays on)
@@ -25,31 +25,98 @@ export const MUSIC = {
 const GAIN = { wilderness: 0.42, caves: 0.45, cliffs: 0.54, showdown: 0.46, clear: 0.6, title: 0.55, sentence: 0.85 }; // (sentence: -15.7 dB, left a touch hot)
 
 let current = null; // { key, sound }
-let early = null;   // the title theme the opening cinematic started, before Phaser exists
+let early = null;   // the title theme the opening cinematic started, before Phaser exists (see startTitleTheme)
 
 function volume(key = current?.key) {
   return SETTINGS.audio.muted ? 0 : SETTINGS.audio.music * (GAIN[key] ?? 1);
 }
 
-// Called by the opening cinematic (core/StartupIntro.js) on the first footstep (12.6 s), or when it is skipped
-// sooner. A plain <audio> element, since Phaser does not exist yet; the title screen
-// adopts it, so the track carries on without restarting. Calling it again from a key
-// press or click retries a play the browser blocked. ?mute=1 leaves it to Phaser.
+// The title theme for the opening cinematic (core/StartupIntro.js), before Phaser exists.
+// prepareTitleTheme downloads and decodes it while the film rolls. scheduleTitleTheme then
+// books its start on the audio clock a moment ahead, so the first beat lands on the boot
+// stomp even when the page is busy (Phaser loads during the film and can stall the page for
+// a quarter second). startTitleTheme starts it now: on the stomp if nothing was booked, or
+// when the film is skipped; called again from a key press or click it retries a play the
+// browser blocked. Without Web Audio, or before the decode is done, a plain <audio>
+// element plays it instead. The title screen adopts either, so the track carries on
+// without restarting. ?mute=1 leaves it to Phaser.
+const muteFlag = () => new URLSearchParams(location.search).has('mute');
+let ctx = null;      // the cinematic's AudioContext
+let buffer = null;   // the decoded title theme
+let booked = null;   // { src, gain, at }: a start on the audio clock
+
+export function prepareTitleTheme() {
+  if (muteFlag() || ctx || current) return;
+  try { ctx = new AudioContext(); } catch { return; }
+  fetch(MUSIC.title)
+    .then((r) => r.arrayBuffer())
+    .then((data) => ctx.decodeAudioData(data))
+    .then((b) => { buffer = b; })
+    .catch(() => {});
+  const wake = () => { if (ctx.state === 'suspended' && !document.hidden) ctx.resume().catch(() => {}); };
+  for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, wake); // (a blocked context)
+  document.addEventListener('visibilitychange', () => {
+    if (ctx.state === 'closed') return;
+    if (document.hidden) ctx.suspend().catch(() => {}); else wake();
+  });
+}
+
+// Start the theme `delay` seconds from now. False when it cannot be booked yet.
+export function scheduleTitleTheme(delay) {
+  if (early || current || !buffer || ctx.state !== 'running') return false;
+  cancelTitleTheme();
+  const src = ctx.createBufferSource();
+  const gain = ctx.createGain();
+  src.buffer = buffer;
+  src.loop = true;
+  gain.gain.value = volume('title');
+  src.connect(gain).connect(ctx.destination);
+  const lag = ctx.outputLatency || ctx.baseLatency || 0; // (the speakers are a little behind the clock)
+  const at = ctx.currentTime + Math.max(0, delay - lag);
+  src.start(at);
+  booked = { src, gain, at };
+  return true;
+}
+
+// The film stalled before the stomp: take the booking back.
+export function cancelTitleTheme() {
+  if (!booked || early) return;
+  booked.src.stop();
+  booked.src.disconnect();
+  booked = null;
+}
+
 export function startTitleTheme() {
-  if (new URLSearchParams(location.search).has('mute')) return;
-  if (!early && !current) {
-    const el = new Audio(MUSIC.title);
+  if (muteFlag() || current) return;
+  if (booked && !early) {
+    if (booked.at - ctx.currentTime > 0.1) scheduleTitleTheme(0); // (skipped before the stomp)
+    const { src, gain } = booked;
+    early = {
+      get volume() { return gain.gain.value; },
+      set volume(v) { gain.gain.value = Math.min(1, Math.max(0, v)); },
+      destroy() { src.stop(); ctx.close(); },
+      retry() { if (ctx.state === 'suspended') ctx.resume().catch(() => {}); },
+    };
+    return;
+  }
+  if (!early) {
+    const el = new Audio(MUSIC.title); // (from the cache: prepareTitleTheme fetched it)
     el.loop = true;
     el.volume = volume('title');
-    early = el;
     const retry = () => { if (el.paused && el.src) el.play().catch(() => {}); };
     for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, retry);
     document.addEventListener('visibilitychange', () => {
       if (!el.src) return;
       if (document.hidden) el.pause(); else retry();
     });
+    early = {
+      get volume() { return el.volume; },
+      set volume(v) { el.volume = Math.min(1, Math.max(0, v)); },
+      destroy() { el.pause(); el.removeAttribute('src'); el.load(); },
+      retry,
+    };
   }
-  if (early?.paused) early.play().catch(() => {}); // blocked until the first key or click
+  early.retry(); // blocked until the first key or click
 }
 
 // Fades run on the game's own step, not on a scene's tweens or a timer: a scene's tweens
@@ -73,16 +140,8 @@ function fade(game, snd, to, ms, done) {
 export function playMusic(scene, key) {
   if (current?.key === key) return;
   if (key === 'title' && early) {
-    const el = early;
+    current = { key, sound: early }; // (it has what the crossfade and toggleMute need from a Phaser sound)
     early = null;
-    current = {
-      key,
-      sound: { // what the crossfade and toggleMute need from a Phaser sound
-        get volume() { return el.volume; },
-        set volume(v) { el.volume = Math.min(1, Math.max(0, v)); },
-        destroy() { el.pause(); el.removeAttribute('src'); el.load(); },
-      },
-    };
     current.sound.volume = volume();
     return;
   }
