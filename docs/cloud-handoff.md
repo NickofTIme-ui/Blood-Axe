@@ -1127,3 +1127,8 @@ stale files ship.
 
 ## 2026-10-24: Rurik's opening pledge cut (Nick)
 - Nick: "remove the dialogue rurik says in the beginning about killing every captain on their knees, no longer needed". The held `pledge` beat in src/data/stageVillage.js ("Every captain who led them here..." / "Each of them kneels. Each hears his crimes. Each pays.") is gone; after the first fight play just goes on. Boss sentences (stage/Sentence.js) are unchanged. The logic test now checks the beat stays gone.
+
+## Cloud, 2026-10-24 (later): PRESS ANY KEY before the logo when sound is blocked (branch claude/project-thread-raedb2)
+
+- Nick: the music still was not on the stomp "when the game opens". On a fresh open (no click yet on that site) the browser blocks all sound, so the logo rolled muted and the title theme waited for the first key or click, long after the stomp.
+- Now, when the logo's sound is blocked, `StartupIntro.js` holds on a black PRESS ANY KEY screen (`#intro-start` in index.html). The first key or click starts the logo with sound, which also unlocks the Web Audio clock, so the theme is booked on the stomp as before (measured within 0.03 s). Escape or Skip still skip. A controller button does not count as a press for the browser, so it rolls the logo silently with the old Play with sound button. On itch, the Run game click usually unlocks sound already and the screen does not show.

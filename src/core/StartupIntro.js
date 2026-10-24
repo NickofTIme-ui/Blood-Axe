@@ -2,8 +2,9 @@
 // cinematic, which crossfades into the title screen. "The Battle" starts on the boot stomp,
 // 12.33 s into the cinematic (core/Music.js startTitleTheme), and the title screen carries it
 // on. The track is loaded while the film rolls, so it does not start late.
-// Browsers may block audible autoplay: the logo tries sound, then plays silently with an
-// optional button to restart with sound. The cinematic is silent. Escape, the button or
+// Browsers block sound until the player first presses a key or clicks. Then the logo waits
+// on PRESS ANY KEY (a controller button does not count for the browser, so it rolls the logo
+// silently with an optional button to restart with sound). The cinematic itself is silent. Escape, the button or
 // controller B skips the current clip; a failed or stalled clip never blocks the game.
 //
 // playStartupIntro() resolves when the logo is done, so Phaser can load during the
@@ -31,6 +32,7 @@ export function playStartupIntro() {
   const sound = document.getElementById('intro-sound');
   const skip = document.getElementById('intro-skip');
   const status = document.getElementById('intro-status');
+  const gate = document.getElementById('intro-start');
   const silent = new URLSearchParams(location.search).has('mute');
 
   return new Promise((logoDone) => {
@@ -41,6 +43,7 @@ export function playStartupIntro() {
     let waitingForPlay = false;
     let themeStarted = false;
     let themeBooked = false;
+    let gated = false; // waiting on PRESS ANY KEY
     let padB = false;
     let lastTime = 0;
     let lastProgress = performance.now();
@@ -78,6 +81,7 @@ export function playStartupIntro() {
       video.pause(); // hold the last frame for the crossfade
       sound.hidden = true;
       skip.disabled = true;
+      gate.hidden = true;
       skip.blur();
       status.textContent = '';
       logoDone(); // (if the logo itself failed)
@@ -95,6 +99,8 @@ export function playStartupIntro() {
       clips[0].hidden = true;
       video.hidden = false;
       sound.hidden = true;
+      gated = false;
+      gate.hidden = true;
       status.textContent = '';
       waitingForPlay = false;
       lastTime = 0;
@@ -105,8 +111,31 @@ export function playStartupIntro() {
       video.play().catch((e) => { if (e.name !== 'AbortError') finish(); }); // (a background tab pauses it; it resumes on return)
     };
 
+    // The first key or click: play the logo with sound. (It must start inside the press, or
+    // the browser blocks the sound again.)
+    const ungate = (withSound) => {
+      gated = false;
+      waitingForPlay = false;
+      gate.hidden = true;
+      lastProgress = performance.now();
+      video.muted = silent || !withSound;
+      video.play().catch(() => {
+        video.muted = true;
+        video.play().catch(() => next());
+      });
+      if (!withSound && !silent) {
+        sound.hidden = false;
+        status.textContent = 'Sound is off. Play with sound to hear the intro.';
+      }
+    };
+
     listen(window, 'keydown', (event) => {
       heldKeys.add(event.code);
+      if (gated && event.code !== 'Escape') {
+        event.preventDefault();
+        if (!event.repeat) ungate(true);
+        return;
+      }
       if (finished || event.code === 'Escape') {
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -120,6 +149,7 @@ export function playStartupIntro() {
     });
     listen(window, 'pointerdown', (event) => {
       heldPointers.add(event.pointerId);
+      if (gated && event.target !== skip) { ungate(true); return; }
       if (themeStarted) startTitleTheme();
     });
     const pointerUp = (event) => { heldPointers.delete(event.pointerId); };
@@ -170,6 +200,7 @@ export function playStartupIntro() {
       } else {
         const b = controllers.some((p) => pressed(p.buttons?.[1])); // standard B / Circle
         if (b && !padB) next();
+        else if (gated && controllers.some((p) => p.buttons?.some(pressed))) ungate(false);
         padB = b;
         if (clip === 1 && !themeStarted) {
           const left = STOMP_AT - video.currentTime;
@@ -194,22 +225,9 @@ export function playStartupIntro() {
       } catch (error) {
         if (clip !== 0) return;
         if (error.name !== 'NotAllowedError') { next(); return; }
-        video.muted = true;
-        try {
-          await video.play();
-          if (clip !== 0) { clips[0].pause(); return; }
-          if (!silent) {
-            sound.hidden = false;
-            status.textContent = 'Sound is off. Play with sound to hear the intro.';
-          }
-        } catch (mutedError) {
-          if (clip !== 0) return;
-          if (mutedError.name !== 'NotAllowedError') { next(); return; }
-          waitingForPlay = true;
-          sound.hidden = false;
-          sound.textContent = silent ? 'Play intro' : 'Play with sound';
-          status.textContent = 'Press Play to begin, or skip to the game.';
-        }
+        gated = true;
+        waitingForPlay = true; // (the stall watchdog waits too)
+        gate.hidden = false;
       }
     })();
   });
