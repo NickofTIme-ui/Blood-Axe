@@ -13,6 +13,7 @@ import { S as GS, woundTex, boneStubTex, bandTex, pieceTex, kindForCut } from '.
 import { GutRope } from './GutRope.js';
 import { SETTINGS } from '../config/settings.js';
 import { landThud } from '../core/Sfx.js';
+import { dyeImage } from '../view/dye.js';
 
 const G = 1500;
 // old loose-bit names -> painted pieces (effects/goreArt.js)
@@ -59,6 +60,7 @@ class Chunk {
         .setOrigin(s.ox / s.def.w, s.oy / s.def.h).setScale(s.sx, s.sy).setRotation(s.rot);
       if (it.crop) img.setCrop(...it.crop);
       if (it.tint ?? (s.tint !== 0xffffff ? s.tint : null)) img.setTint(it.tint ?? s.tint);
+      dyeImage(scene, img, s.dye); // (his clothes keep their colour: view/dye.js)
       this.cont.add(img);
       const [cx, cy, cw, ch] = it.crop ?? [0, 0, s.def.w, s.def.h];
       for (const [u, v] of [[cx, cy], [cx + cw, cy], [cx, cy + ch], [cx + cw, cy + ch]]) {

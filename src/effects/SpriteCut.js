@@ -173,6 +173,7 @@ export class SpriteCuts {
           const h = f.z - at.y;
           const img = this.scene.add.image(x, at.y, c.key)
             .setOrigin(c.ox / c.w, c.oy / c.h).setScale(k * face, k).setRotation(s.rotation).setDepth(f.z);
+          dyeImage(this.scene, img, f.dye);
           const thick = Math.min(c.w, c.h) * k;
           const p = this.add({
             img, tex: c.key, x, z: f.z + rand(0.5, 2), h, mode: 'fly', rot: s.rotation, spin: 0, face, k, dir,

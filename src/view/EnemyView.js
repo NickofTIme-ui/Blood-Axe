@@ -533,7 +533,7 @@ export class EnemyView {
         x: w.x, y: w.y,
         rot: this.root.rotation + this.visFacing * i.rotation,
         sx: this.visFacing * i.scaleX, sy: i.scaleY,
-        tint: i.baseTint,
+        tint: i.baseTint, dye: this.f.dye,
       };
     }
     // flail chain points (world) so the chain can drop with the body

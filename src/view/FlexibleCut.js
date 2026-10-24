@@ -1,5 +1,6 @@
 import { FleshChain } from '../effects/FleshChain.js';
 import { measureCanvas } from './frameMeasure.js';
+import { dyeImage } from './dye.js';
 
 // How far along a band (0 at its first joint, 1 at its second) a point of its outline
 // lies, measured along the band itself: a band lying across the frame (a kneeling man's
@@ -46,6 +47,7 @@ export class FlexibleCut {
       const img=scene.add.image(0,0,piece.tex).setOrigin(a.x/sheet.fw,a.y/sheet.fh).setScale(this.sx,this.sy).setDepth(piece.z+.2);
       if(lying)img.setCrop(start,0,end-start+1,sheet.fh);else img.setCrop(0,start,sheet.fw,end-start+1);
       if(piece.img.tintTopLeft!=null)img.setTint(piece.img.tintTopLeft);
+      dyeImage(scene,img,piece.img.dye); // (his clothes keep their colour as he folds)
       const outline=[];
       for(let v=start;v<=end;v+=Math.max(1,Math.floor((end-start)/12))){
         const span=lying?m.spans[v]:m.rows[v];
