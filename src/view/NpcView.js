@@ -69,6 +69,9 @@ const CELLS = {
   villager: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7 },
   mother: { stand: 0, cower: 1, wave: 2, run: RUN },
   boy: { stand: 0, cower: 1, wave: 2, run: RUN },
+  // ...and the boy trapped up on a roof (Tam; drawStranded): clinging, waving (two beats),
+  // calling, flinching from the sparks, reaching down to a hero, relieved, climbing down
+  'boy-roof': { cling: 0, wave: [1, 2], call: 3, flinch: 4, reach: 5, relief: 6, climb: 7, stand: 6 },
   elder: { stand: 0, sit: 1, wave: 2, kneel: 3, cower: 1 },
   // the wood's captives: bound on the rope, hanging, in the cage, at its bars, limping
   captive: { bound: 0, hang: 1, cower: 2, grip: 3, limp: [4, 5], stand: 4, run: [4, 5] },
@@ -92,6 +95,8 @@ const DEATH_SHIFT = 44; const DEATH_HEAD = 112;
 const HOBBLE = [0, 0, 0, 0];
 const GUIDE_STEP = 24; // px of road a beat of the guide's walk covers (at depth scale 1)
 const RUN_STEP = 26;  // px of ground a beat of a sprinter's run covers (stage/Story.js `sprint`)
+const STRANDED_RELIEF = 0.45; // the part of his time freed (stage/Story.js freeFor) he stands relieved, before he climbs down
+const STRANDED_REACH = 230; // a hero this near (x), the stranded child leans down to him
 const WALK_STEP = 16;  // ...a frame of his own eight-frame walk (a full stride: 128 px)
 CELLS.miner = CELLS.villager;
 CELLS['miner-old'] = { stand: 0, sit: 1, wave: 2, kneel: 3, run: HOBBLE };
@@ -161,7 +166,7 @@ export class NpcView {
     const now = this.scene.time.now; const ph = (v.seed ?? 0) * 0.9 + this.curN * 1.7;
     const walk = c === RUN || (this.smooth && Array.isArray(c));
     const br = walk ? 0 : Math.sin(now * 0.0026 + ph);
-    const sway = walk ? 0 : c === HOBBLE ? 4 + 2 * (beat % 2) : pose === 'hang' ? 3.5 * Math.sin(now * 0.0017 + ph) : pose === 'cower' ? 0.9 * Math.sin(now * 0.021 + ph) : 1.1 * Math.sin(now * 0.0011 + ph);
+    const sway = walk ? 0 : c === HOBBLE ? 4 + 2 * (beat % 2) : pose === 'hang' ? 3.5 * Math.sin(now * 0.0017 + ph) : pose === 'cower' || pose === 'cling' ? 0.9 * Math.sin(now * 0.021 + ph) : 1.1 * Math.sin(now * 0.0011 + ph);
     // (tilt, squash: a lean and a give at the knees the stage asks for, stage/MillRescue.js)
     const sq = this.squash ?? 0; const lean = sway + (this.tilt ?? 0);
     img.setTexture(S.key, `f${Math.min(i, S.count - 1)}`).setPosition(x, y).setScale(k * 0.5 * (1 - 0.008 * br) * (1 + sq * 0.5), k * 0.5 * (1 + 0.018 * br) * (1 - sq))
@@ -213,6 +218,41 @@ export class NpcView {
     }
     g.fillStyle(SKIN, 1).fillCircle(x + lean, yb - H - 6 * sc, 6.5 * sc);
     g.fillStyle(0x2a2018, 1).fillRect(x + lean - 6 * sc, yb - H - 13 * sc, 12 * sc, 5 * sc); // hair
+  }
+
+  // A child stranded up high till a hero gets to him (rescue 'reach': Tam on the burning
+  // roofs), on his own painted sheet ('boy-roof'), acting it out. Waiting, he waves and
+  // shouts for help, clings on and flinches from the sparks, by turns, facing the nearest
+  // hero; a hero close by, he leans down to him; reached, he's relieved, then turns and
+  // climbs down the back of the roof, sinking out of sight as he fades (stage/Story.js free)
+  drawStranded(n, g, y, k, t) {
+    if (!SPRITES['boy-roof'] || (n.state !== 'trapped' && n.state !== 'free')) return false;
+    let pose; let dy = 0; let tt = t;
+    let dir = n.dir ?? -1;
+    if (n.state === 'free') {
+      const f = n.t / (n.freeFor ?? 50);
+      pose = f < STRANDED_RELIEF ? 'relief' : 'climb';
+      const c = Math.max(0, (f - STRANDED_RELIEF) / (1 - STRANDED_RELIEF));
+      dy = 18 * c * k;
+      g.setAlpha(1 - c); // (he stays in full view while he's relieved, fading only as he goes)
+    } else {
+      let near = null; let best = Infinity;
+      for (const p of this.stage.players ?? []) {
+        if (!p.alive) continue;
+        const d = Math.abs(p.x - n.x) + Math.abs(p.z - n.z) * 0.5;
+        if (d < best) { best = d; near = p; }
+      }
+      if (near) dir = Math.sign(near.x - n.x) || dir;
+      if (near && Math.abs(near.x - n.x) < STRANDED_REACH && Math.abs(near.z - n.z) < 140) pose = 'reach';
+      else {
+        // (his own beat, so two stranded children don't move as one)
+        const ph = (t + (this.cur?.seed ?? 0) * 37) % 330;
+        pose = ph < 130 ? 'wave' : ph < 190 ? 'call' : ph < 280 || ph >= 310 ? 'cling' : 'flinch';
+        tt = t * 0.5; // (a wave beat every 14 frames, not the run's 7)
+      }
+    }
+    this.figure(g, n.x, y + dy, k, pose, tt, 0, dir, 'boy-roof');
+    return true;
   }
 
   drawNpc(n, v) {
@@ -274,6 +314,7 @@ export class NpcView {
       g.lineStyle(3 * k, 0x6a5038, 1).lineBetween(n.x + 10 * k * dir, y, n.x + 6 * k * dir, y - 44 * k);
       return;
     }
+    if (n.pose === 'child' && n.rescue === 'reach' && this.drawStranded(n, g, y, k, t)) return;
     if (n.pose === 'child') return this.figure(g, n.x, y, k * 0.7 / (SPRITES.boy ? 0.7 : 1), pose, t, tun(1), dir, 'boy');
     if (n.pose === 'family') {
       // (the painted mother carries her child; the drawn one has him at her side)

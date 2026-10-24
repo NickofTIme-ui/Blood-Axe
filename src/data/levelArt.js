@@ -153,6 +153,10 @@ export const SPRITE_SHEETS = {
   villager: { file: 'assets/sprites/npc/villager.png', frames: 8, height: 235, grade: NPC_GRADE },
   mother: { file: 'assets/sprites/npc/mother.png', frames: 6, height: 235, grade: NPC_GRADE },
   boy: { file: 'assets/sprites/npc/boy.png', frames: 6, height: 170, grade: NPC_GRADE },
+  // Tam, the boy trapped up on the burning roofs (view/NpcView.js drawStranded): cling, wave
+  // x2, call, flinch, reach down, relief, climb down (ChatGPT, 2026-10-24, from the boy sheet
+  // above). Height: his standing pose as tall as the boy's (about 157 px)
+  'boy-roof': { file: 'assets/sprites/npc/boy_roof.png', frames: 8, height: 181, grade: NPC_GRADE, centre: true },
   elder: { file: 'assets/sprites/npc/elder.png', frames: 4, height: 228, grade: NPC_GRADE },
   // the villager Varek kills in the opening (view/NpcView.js drawKneeling): begging on his
   // knees, struck, pitching forward, face down (ChatGPT, 2026-10-24). Each pose sits with

@@ -447,7 +447,7 @@ export class Story {
       } else if (n.state === 'escort') this.updateEscort(n, heroes);
       else if (n.state === 'guide') this.updateGuide(n, heroes);
       else if (n.state === 'free') {
-        if (n.t >= NPC.freeFor) { n.state = n.flee ? 'fleeing' : 'safe'; n.t = 0; }
+        if (n.t >= (n.freeFor ?? NPC.freeFor)) { n.state = n.flee ? 'fleeing' : 'safe'; n.t = 0; }
       } else if (n.state === 'fleeing') {
         const dx = n.flee.x - n.x; const dz = (n.flee.z ?? n.z) - n.z;
         const d = Math.hypot(dx, dz);
