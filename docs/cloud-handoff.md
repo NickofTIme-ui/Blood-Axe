@@ -1112,3 +1112,9 @@ stale files ship.
 - Nick: the music still did not land on the stomp. Frame by frame, the front boot's sole hits the ground on frame 296 (12.33 s); the dust at 12.6 s comes after. `STOMP_AT` in `src/core/StartupIntro.js` is 12.33 (`THEME_AT` is gone).
 - The real lag: the 3 MB title track only began downloading at that moment, and the check rode requestAnimationFrame, which stalls 150-270 ms while Phaser loads during the film. Measured about 0.3 s late.
 - Now `prepareTitleTheme` (core/Music.js) fetches and decodes the track when the film starts, and `scheduleTitleTheme` books its start on the Web Audio clock in the last second before the stomp (minus output latency; rebooked if the film stalls or pauses). The title screen adopts it as before. The plain `<audio>` element is the fallback (no Web Audio, decode not done, audio blocked until a click). Measured in Chromium: within 0.03 s of the stomp frame.
+
+## Cloud, 2026-10-24: the rooftop boy, painted and acted out (branch claude/project-thread-dnm3pz, not on main yet)
+
+- Nick: "improve the art and animation of the kid up on the rooftop". Tam (Burning Roofs, `rescue: 'reach'`) used the shared `boy` sheet's single wave pose.
+- New sheet `assets/sprites/npc/boy_roof.png` (ChatGPT on Nick's PC from the boy sheet; raw at `art-work/rooftop-boy/boy-roof-chatgpt.png` there), keyed and re-laid one pose per equal cell, feet on one line: cling, wave A, wave B, call, flinch, reach down, relief, climb down. Sheet `boy-roof` in `data/levelArt.js` (`centre: true`).
+- `NpcView.drawStranded` (any `pose: 'child'` with `rescue: 'reach'`, so also Wren and Pip): waiting, he waves, shouts, clings and flinches by turns on his own beat, facing the nearest hero; a hero within 230 px he reaches down; freed, relief then climbing down the back as he fades. Tam has `freeFor: 120` (Story.js now reads a per-NPC `freeFor`) so the relief shows.
