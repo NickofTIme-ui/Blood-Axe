@@ -139,14 +139,31 @@ export class HUDScene extends Phaser.Scene {
   // only while the hangman's at the lever (Nick, 2026-10-23: warn the player he's about to
   // kill the hostage unless he's stopped).
   makeRescueAlert() {
-    const W = SETTINGS.width, y = 34, w = 260;
-    const panel = this.add.rectangle(W / 2, y, w + 70, 48, 0x0a0303, 0.78).setStrokeStyle(2, 0x8a2a1a);
-    const title = this.add.text(W / 2, y - 9, '', { fontFamily: FONT.display, fontSize: '18px', align: 'center' }).setOrigin(0.5).setStroke('#0a0000', 5);
-    title.setLetterSpacing?.(2);
-    const track = this.add.rectangle(W / 2 - w / 2, y + 12, w, 7, 0x2a0606).setOrigin(0, 0.5);
-    const fill = this.add.rectangle(W / 2 - w / 2, y + 12, w, 7, 0xd03a1c).setOrigin(0, 0.5);
-    const secs = this.add.text(W / 2 + w / 2 + 6, y + 12, '', { fontFamily: FONT.ui, fontSize: '12px', color: '#ffd0b0' }).setOrigin(0, 0.5).setStroke('#000000', 3);
-    this.rescueAlert = { parts: [panel, title, track, fill, secs], panel, title, track, fill, secs, w, mode: null };
+    const W = SETTINGS.width;
+    if (this.textures.exists('executioner-banner')) {
+      // the painted plaque (assets/ui/executioner-banner.png, ChatGPT 2026-10-24, in the pause
+      // frame's iron and bronze, noose and axe crest): the title sits on its plate, the rope's
+      // time runs in its bottom groove. Measured off the 1200 x 288 picture, shown at 0.34.
+      const k = 0.34, top = 2, left = W / 2 - 600 * k;
+      const panel = this.add.image(W / 2, top, 'executioner-banner').setOrigin(0.5, 0).setScale(k);
+      const gx = left + 146 * k, gw = (1056 - 146) * k, gy = top + 224 * k;
+      const title = this.add.text(W / 2, top + 158 * k, '', { fontFamily: FONT.display, fontSize: '17px', align: 'center' }).setOrigin(0.5).setStroke('#0a0000', 5);
+      title.setLetterSpacing?.(2);
+      const track = this.add.rectangle(gx, gy, gw, 6, 0x1a0404, 0.9).setOrigin(0, 0.5);
+      const fill = this.add.rectangle(gx, gy, gw, 6, 0xd03a1c).setOrigin(0, 0.5);
+      const secs = this.add.text(gx + gw - 3, gy, '', { fontFamily: FONT.ui, fontSize: '10px', color: '#ffe0c0' }).setOrigin(1, 0.5).setStroke('#000000', 3);
+      this.rescueAlert = { parts: [panel, title, track, fill, secs], panel, title, track, fill, secs, w: gw, mode: null, painted: true, below: top + 288 * k + 14 };
+    } else {
+      // (the code-drawn stand-in, if the painting didn't load)
+      const y = 34, w = 260;
+      const panel = this.add.rectangle(W / 2, y, w + 70, 48, 0x0a0303, 0.78).setStrokeStyle(2, 0x8a2a1a);
+      const title = this.add.text(W / 2, y - 9, '', { fontFamily: FONT.display, fontSize: '18px', align: 'center' }).setOrigin(0.5).setStroke('#0a0000', 5);
+      title.setLetterSpacing?.(2);
+      const track = this.add.rectangle(W / 2 - w / 2, y + 12, w, 7, 0x2a0606).setOrigin(0, 0.5);
+      const fill = this.add.rectangle(W / 2 - w / 2, y + 12, w, 7, 0xd03a1c).setOrigin(0, 0.5);
+      const secs = this.add.text(W / 2 + w / 2 + 6, y + 12, '', { fontFamily: FONT.ui, fontSize: '12px', color: '#ffd0b0' }).setOrigin(0, 0.5).setStroke('#000000', 3);
+      this.rescueAlert = { parts: [panel, title, track, fill, secs], panel, title, track, fill, secs, w, mode: null, below: 84 };
+    }
     for (const o of this.rescueAlert.parts) o.setVisible(false);
   }
 
@@ -155,7 +172,7 @@ export class HUDScene extends Phaser.Scene {
     const f = r?.executioner;
     const on = !!r && r.started && !r.resolved && st.section?.id === 'mill' && !st.story?.holding;
     for (const o of A.parts) o.setVisible(on);
-    this.banner.setY(on ? 84 : 36); // (call-outs drop below it while it's up)
+    this.banner.setY(on ? A.below : 36); // (call-outs drop below it while it's up)
     if (!on) { A.mode = null; return; }
     const alive = !!f?.alive;
     const mode = !alive ? 'cut' : r.operating ? 'lever' : 'held';
@@ -166,7 +183,8 @@ export class HUDScene extends Phaser.Scene {
       A.mode = look;
       A.title.setText({ cut: 'CUT IRVOLINO’S BONDS!', lever: 'STOP THE EXECUTIONER!', final: 'HE’S PULLING THE LEVER!', held: 'KEEP HIM OFF THE LEVER!' }[look]);
       epicFill(A.title, mode === 'cut' ? ['#fff2b0', '#e0a530', '#6a3c08'] : mode === 'lever' ? ['#ff7a5a', '#d0101a', '#3d0004'] : ['#ffd9a0', '#f07a18', '#6a2004']);
-      A.panel.setStrokeStyle(2, mode === 'cut' ? 0xc89a40 : mode === 'lever' ? 0xc02a1a : 0x9a5a20);
+      if (A.painted) A.panel.setTint(mode === 'lever' ? 0xffd0c8 : 0xffffff);
+      else A.panel.setStrokeStyle(2, mode === 'cut' ? 0xc89a40 : mode === 'lever' ? 0xc02a1a : 0x9a5a20);
     }
     // the rope's time: drains while he works the lever, holds while he's kept off it
     A.track.setVisible(alive); A.fill.setVisible(alive); A.secs.setVisible(alive);
@@ -178,7 +196,7 @@ export class HUDScene extends Phaser.Scene {
     // (and jolts when he first takes his place, and again when he's about to pull)
     const jolt = Math.max(0, 1 - (this.time.now - (A.jolt ?? -1e9)) / 400);
     A.title.setAlpha(beat).setScale((urgent ? 1 + 0.06 * Math.sin(this.time.now / 70) : 1) + 0.35 * jolt * jolt);
-    A.panel.setAlpha(mode === 'lever' ? 0.85 + 0.15 * beat : 1);
+    A.panel.setAlpha(mode === 'lever' && !A.painted ? 0.85 + 0.15 * beat : 1);
   }
 
   // A section's head count (section.tally, the barn): "VILLAGERS SAVED 3 / 9" and a figure

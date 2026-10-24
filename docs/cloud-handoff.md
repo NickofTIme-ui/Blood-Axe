@@ -1080,3 +1080,6 @@ stale files ship.
 ## Dyed grunts keep their colour when finished (24 October 2026)
 
 - Dyed grunts and thralls (`view/dye.js`) went back to olive green when finished: the pieces made at death skipped `dyeImage`. Now dyed: the folding halves (`view/FlexibleCut.js` bands), the loose bits (`SpriteCut.split`) and the doll's pieces (`EnemyView.snapshot` carries `dye`, `Dismember` applies it). Checked in the browser with all six fatalities. Any new code that draws a piece of an enemy must call `dyeImage(scene, img, f.dye)`.
+
+## Executioner banner art (2026-10-24)
+- The hangman's clock in the mill yard (HUDScene.makeRescueAlert) is now a painted plaque, `assets/ui/executioner-banner.png` (texture `executioner-banner`): iron and bronze like the pause frame, noose-and-axe crest. Painted in ChatGPT on Nick's PC (Bloody axe project chat), raw at `assets/incoming/executioner_banner_raw.png` there, magenta keyed out in the cloud. Title on the plate, countdown in the bottom groove; the old code-drawn box stays as a fallback if the picture is missing.
