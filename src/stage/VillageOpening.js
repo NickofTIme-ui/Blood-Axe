@@ -20,14 +20,34 @@ export const OPENING = {
   captive: 'captive',
 };
 
+// The line isn't a grid (Nick's playtest, 2026-10-24): a loose mob, hand-placed, each grunt
+// with his own habits. Until he turns to face the heroes he mills about (pacing his own
+// stretch of road, some of them watching Varek and the villager); after that he holds his
+// ground with the odd shift of weight. The front three charge on the order, each at his own
+// pace and a beat apart; the rear three are let go raggedly after them. Fixed numbers, no
+// dice, so both online players see the same mob.
+export const MOB = [
+  // x, z: where he stands; look: which way he faces while milling (1 = toward Varek);
+  // pace: how far he walks to and fro; rest: frames he stands at each end; turn: the
+  // frame he squares up to the heroes; shift: frames between his weight shifts after that;
+  // delay/speed: his charge; hold: frames he waits after the heroes are let go (rear rank)
+  { x:598, z:452, look:-1, pace:22, rest:20, turn:34, shift:70, delay:0,  speed:4.4 },
+  { x:631, z:371, look: 1, pace:0,  rest:0,  turn:52, shift:95, delay:6,  speed:3.7 },
+  { x:654, z:316, look: 1, pace:34, rest:14, turn:66, shift:83, delay:11, speed:4.0 },
+  { x:690, z:476, look:-1, pace:16, rest:30, turn:44, shift:110, hold:16 },
+  { x:716, z:401, look: 1, pace:0,  rest:0,  turn:72, shift:77, hold:29 },
+  { x:744, z:333, look:-1, pace:26, rest:24, turn:58, shift:101, hold:41 },
+];
+
 export class VillageOpening {
   constructor(stage) {
     this.stage = stage;
     this.age = 0; this.phase = 'arrive'; this.active = true;
     this.troops = (stage.section.waves[0] ?? []).map((type,i) => {
-      const f = createEnemy(stage.world,type,610 + Math.floor(i/3)*62,310+(i%3)*62);
+      const m = MOB[i % MOB.length], f = createEnemy(stage.world,type,m.x,m.z);
       f.invincible = true; f.cinematic = true;
-      f.front = i < 3; // (the rank nearest the heroes: they charge first)
+      f.front = m.hold == null; // (the ones nearest the heroes: they charge first)
+      f.mob = m; f.facing = m.look;
       return f;
     });
     this.commanders = [
@@ -67,6 +87,27 @@ export class VillageOpening {
     f.fsm.frame++;
   }
 
+  // Before the order: one grunt's milling. Pacing his stretch of road and facing the way he
+  // walks until his turn comes; then squared up to the heroes, shifting his weight now and then.
+  mill(f) {
+    const m=f.mob, t=this.age;
+    if(t<m.turn&&m.pace){
+      const leg=m.pace+m.rest, k=(t+m.pace*2)%(leg*2); // (each starts partway along)
+      const out=k<leg, step=Math.min(m.pace,out?k:k-leg);
+      const at=out?step:m.pace-step, walking=(out?k:k-leg)<m.pace;
+      const dir=(out?1:-1)*m.look;
+      this.pose(f,m.x+at*m.look,f.z,walking,walking?dir:m.look);
+      f.sprinting=false;
+      return;
+    }
+    if(t<m.turn){this.pose(f,f.x,f.z,false,m.look);return;}
+    // squared up: every so often a short step, alternately in and out of the lane
+    const s=(t-m.turn)%m.shift, n=Math.floor((t-m.turn)/m.shift);
+    const moving=n>0&&s<8;
+    this.pose(f,f.x,f.z+(moving?(n%2?0.75:-0.75):0),moving,-1);
+    f.sprinting=false;
+  }
+
   get captive() { return this.stage.story?.npc(OPENING.captive); }
 
   // Varek's mace comes down: a heavy overhead blow, frame-stepped by hand (he stays frozen)
@@ -100,7 +141,7 @@ export class VillageOpening {
       if(this.skidding&&(this.age-OPENING.rush)%3===1)st.world.events.emit('openingSkid',{fighter:p,first:this.age===OPENING.rush+1});
       p.awe=2;
     }
-    if(this.phase!=='withdraw')for(const f of this.troops){f.awe=2;f.invincible=true;f.vx=f.vz=0;f.facing=-1;}
+    if(this.phase!=='withdraw')for(const f of this.troops){f.awe=2;f.invincible=true;this.mill(f);}
     if(this.age>=OPENING.rush+OPENING.skid&&this.phase==='arrive')this.phase='words';
     const story=st.story;
     const c=story.current;
@@ -129,17 +170,17 @@ export class VillageOpening {
       // the front rank charges at them
       for(const f of this.troops){
         f.awe=2;f.invincible=true;
-        if(f.front){
+        if(f.front&&this.retreat>f.mob.delay){
           const target=st.players.reduce((a,p)=>!a||Math.abs(p.z-f.z)<Math.abs(a.z-f.z)?p:a,null);
           const dz=target?Math.sign(target.z-f.z)*Math.min(1.5,Math.abs(target.z-f.z)):0;
-          this.pose(f,f.x-4.2,f.z+dz,true,-1);
-        }else{f.vx=f.vz=0;f.facing=-1;}
+          this.pose(f,f.x-f.mob.speed,f.z+dz,true,-1);
+        }else this.pose(f,f.x,f.z,false,-1);
       }
       if(this.retreat>=OPENING.charge){
         this.active=false;this.phase='done';
         for(const f of this.troops){
           f.cinematic=false;f.invincible=false;f.sprinting=false;
-          f.awe=f.front?0:24; // (the rear rank a beat behind)
+          f.awe=f.mob.hold??0; // (the rear rank raggedly after them)
           f.fsm.change('idle');
         }
         for(const p of st.players){

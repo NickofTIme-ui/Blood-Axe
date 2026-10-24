@@ -62,10 +62,12 @@ function setup(section=0){
   assert.ok(w.fighters.filter(f=>f.team==='player').every(f=>f.awe>0),'Controls still locked through the order');
   press();
   assert.equal(st.opening.phase,'withdraw');
-  const front=st.opening.troops.filter(f=>f.front),fx=front[0].x;
+  const front=st.opening.troops.filter(f=>f.front),fx=front[0].x,rear=st.opening.troops.filter(f=>!f.front),rx=rear.map(f=>f.x);
+  assert.equal(new Set(st.opening.troops.map(f=>f.x)).size,6,'No two grunts stand in a column');
+  assert.equal(new Set(st.opening.troops.map(f=>Math.round(f.z))).size,6,'...or in a row');
   for(let i=0;i<10;i++)tick();
   assert.ok(st.opening.commanders.every(f=>f.facing===1),'The commanders turn and run right');
-  assert.ok(front[0].x<fx-20&&st.opening.troops.filter(f=>!f.front).every(f=>f.x>=610+62-1),'The front rank charges; the rear rank holds');
+  assert.ok(front[0].x<fx-20&&rear.every((f,i)=>f.x===rx[i]),'The front rank charges; the rear rank holds');
   for(let i=0;i<40;i++)tick();
   assert.ok(!st.opening.active&&st.fightOn&&!p.awe,'The battle begins');
   for(let i=0;i<120;i++)tick();
