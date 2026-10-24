@@ -143,8 +143,8 @@ export class HUDScene extends Phaser.Scene {
     if (this.textures.exists('executioner-banner')) {
       // the painted plaque (assets/ui/executioner-banner.png, ChatGPT 2026-10-24, in the pause
       // frame's iron and bronze, noose and axe crest): the title sits on its plate, the rope's
-      // time runs in its bottom groove. Measured off the 1200 x 288 picture, shown at 0.34.
-      const k = 0.34, top = 2, left = W / 2 - 600 * k;
+      // time runs in its bottom groove. Measured off the 1200 x 288 picture, shown at 0.3.
+      const k = 0.3, top = 2, left = W / 2 - 600 * k;
       const panel = this.add.image(W / 2, top, 'executioner-banner').setOrigin(0.5, 0).setScale(k);
       const gx = left + 146 * k, gw = (1056 - 146) * k, gy = top + 224 * k;
       const title = this.add.text(W / 2, top + 158 * k, '', { fontFamily: FONT.display, fontSize: '17px', align: 'center' }).setOrigin(0.5).setStroke('#0a0000', 5);
