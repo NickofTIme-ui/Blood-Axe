@@ -1,12 +1,17 @@
 import {createEnemy} from '../entities/Enemy.js';
 import {Controller} from '../core/Controller.js';
 import {toWorldBox,overlaps} from '../combat/Boxes.js';
+import {NPC} from './Story.js';
 
 // The rope's clock, in frames he spends at the lever: his last words, his final warning, the drop
 export const MILL={rope:1500,lastWords:1080,final:1260};
-// Cut free, he gets up (the painted rescue strip, 84 frames), then jumps down off the front
-// of the execution block (Nick, 2026-10-24): a crouch, the leap, a hard landing, then he runs.
-export const LEAP={up:84,crouch:8,air:34,land:12,dx:-34,to:392,peak:34};
+// Cut free (Nick, 2026-10-24: from the cut until he's gone it has to look right), he is
+// drawn as himself from the first frame (view/NpcView.js, his 'irvolino-freed' sheet): the
+// ropes fall, he tears the noose off, drops to a knee, thanks Rurik, gets up. Then he turns
+// for the trees, crouches, jumps off the front of the block, lands hard and sprints away.
+// FREED: [pose, frames] in his freed sheet (data/levelArt.js); LEAP: frames, and px.
+export const FREED=[['bound',6],['shed',12],['noose',16],['kneel',14],['thanks',18],['rise',10],['stand',10]];
+export const LEAP={up:FREED.reduce((a,[,f])=>a+f,0),crouch:9,air:30,land:10,dx:-48,to:392,peak:70,tilt:9,sprint:190};
 // what the hangman shouts (Nick, 2026-10-23: warn the player he's about to kill Irvolino)
 const BARKS={
   start:'BY THE KING’S WORD, THIS ONE HANGS!',
@@ -37,7 +42,7 @@ export class MillRescue {
   update(){
     const st=this.stage,n=this.npc;
     if(this.bark&&++this.bark.age>=this.bark.life)this.bark=null;
-    if(this.outcome){this.age++;if(this.outcome==='saved'&&this.age<LEAP.up)this.npc.t=0;if(this.outcome==='saved'&&this.age===LEAP.up)this.npc.millCaptive=false;if(this.leap)this.jumpDown();return;}
+    if(this.outcome){this.age++;if(this.leap)this.jumpDown();return;}
     if(st.index>3){
       if(st.story.isRescued('barn')){this.outcome='saved';n.millCaptive=false;}
       else if(st.story.lost.has('barn'))this.fail();
@@ -80,32 +85,43 @@ export class MillRescue {
   }
   save(){
     if(this.resolved)return;
-    this.outcome='saved';this.age=0;this.npc.millCaptive=true;
-    this.npc.pose='irvolino';this.stage.story.free(this.npc);
-    this.npc.helpAge=0;this.bark=null;this.stage.world.events.emit('millBondsCut');
-    this.leap={x:this.npc.x,z:this.npc.z,h:this.npc.h};
+    const n=this.npc;
+    this.outcome='saved';this.age=0;n.millCaptive=false;
+    n.pose='irvolino';this.stage.story.free(n);
+    n.helpAge=0;this.bark=null;this.stage.world.events.emit('millBondsCut');
+    this.leap={x:n.x,z:n.z,h:n.h};n.dir=1;n.actArt='irvolino-freed';n.act='bound';
   }
-  // Off the block: he holds still (the story's 'free' clock waits) until he's down, then flees
+  // He holds his spot (the story's 'free' clock waits) through all of it, then runs at once
   jumpDown(){
-    const n=this.npc,L=this.leap,T=this.stage.terrain,t=this.age-LEAP.up;
-    if(t<0)return;
-    n.t=0;n.dir=-1;
+    const n=this.npc,L=this.leap,T=this.stage.terrain,t=this.age;
+    n.t=0;n.shadowH=null;n.tilt=0;n.squash=0;
+    if(t<LEAP.up){
+      // getting free, facing the way he hung (the painted strip's way)
+      let at=0;for(const [pose,f] of FREED){if(t<at+f){n.act=pose;break;}at+=f;}
+      return;
+    }
+    // turned for the trees: down into a crouch for the jump
+    n.dir=-1;n.actArt='irvolino-freed';
     const ground=T?Math.max(0,T.groundAt(L.x+LEAP.dx,LEAP.to)):0;
-    n.shadowH=null;
-    if(t<LEAP.crouch){n.act='cower';return;}
-    const a=t-LEAP.crouch;
+    const c=t-LEAP.up;
+    if(c<LEAP.crouch){n.act='rise';n.squash=.06*Math.sin(Math.PI*c/LEAP.crouch);return;}
+    const a=c-LEAP.crouch;
+    if(a===0)this.stage.world.events.emit('millLeap');
     if(a<LEAP.air){
-      const u=a/LEAP.air;
-      n.x=L.x+LEAP.dx*u;n.z=L.z+(LEAP.to-L.z)*u;
+      // a hop up and out, leaning back on the way up and into the fall on the way down
+      const u=a/LEAP.air,e=u*(2-u)*.35+u*.65;
+      n.x=L.x+LEAP.dx*e;n.z=L.z+(LEAP.to-L.z)*u;
       n.h=L.h+(ground-L.h)*u+LEAP.peak*4*u*(1-u);
-      n.act='leap';n.shadowH=T?Math.max(0,T.groundAt(n.x,n.z)):0;
-      if(a===0)this.stage.world.events.emit('millLeap');
+      n.actArt=null;n.act='leap';n.tilt=LEAP.tilt*(2*u-1);
+      n.shadowH=T?Math.max(0,T.groundAt(n.x,n.z)):0;
       return;
     }
     n.x=L.x+LEAP.dx;n.z=LEAP.to;n.h=ground;
     if(a===LEAP.air)this.stage.world.events.emit('millLanded');
-    if(a<LEAP.air+LEAP.land){n.act='cower';return;}
-    n.act=null;this.leap=null;
+    const d=a-LEAP.air;
+    if(d<LEAP.land){n.act='rise';n.squash=.12*(1-d/LEAP.land);return;}
+    // up and away: no standing about after a landing like that
+    n.act=null;n.actArt=null;this.leap=null;n.sprint=LEAP.sprint;n.t=NPC.freeFor;
   }
   fail(){
     if(this.resolved)return;

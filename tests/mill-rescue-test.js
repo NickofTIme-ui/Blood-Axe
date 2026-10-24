@@ -4,6 +4,7 @@ import {Stage} from '../src/stage/Stage.js';
 import {STAGE_VILLAGE} from '../src/data/stageVillage.js';
 import {createPlayer} from '../src/entities/Player.js';
 import {Controller} from '../src/core/Controller.js';
+import {LEAP,FREED} from '../src/stage/MillRescue.js';
 function setup(){const w=new World({seed:123}),p=createPlayer(w,new Controller(),'warrior',4800,400),st=new Stage(w,STAGE_VILLAGE);st.start(p,{section:3});st.fightOn=true;w.hold=null;return {w,p,st,r:st.millRescue};}
 {
  const {w,p,st,r}=setup();st.fightOn=false;r.update();assert(!r.started);st.fightOn=true;w.hold={};r.update();assert(!r.started);w.hold=null;r.update();assert(r.executioner.alive);
@@ -27,12 +28,16 @@ console.log('Mill rescue: encounter-only timer, hold safety, kill stops clock, s
  const {w,p,st,r}=setup();r.update();r.executioner.health=0;r.update();
  p.x=4860;p.z=296;p.h=70;Object.defineProperty(p,'activeAttack',{configurable:true,value:{move:{hitbox:{x:-20,y:0,w:50,h:125}}}});r.update();
  assert.equal(r.outcome,'saved');const n=st.story.npc('barn');assert.equal(n.h,70);
- let peak=0,airborne=false;
- for(let i=0;i<84+8+34+12+2;i++){r.update();st.story.updateNpcs([]);peak=Math.max(peak,n.h);if(n.act==='leap')airborne=true;
-   if(i<84+8+34)assert.notEqual(n.state,'fleeing','He does not run off before he lands');}
+ assert(!n.millCaptive&&n.actArt==='irvolino-freed'&&n.act==='bound','From the cut he is drawn as himself, not the gallows painting');
+ let peak=0,airborne=false;const seen=new Set();const down=LEAP.up+LEAP.crouch+LEAP.air;
+ for(let i=0;i<down+LEAP.land+1;i++){r.update();st.story.updateNpcs([]);peak=Math.max(peak,n.h);if(n.act==='leap')airborne=true;if(n.actArt==='irvolino-freed')seen.add(n.act);
+   if(i<down)assert.notEqual(n.state,'fleeing','He does not run off before he lands');
+   if(i<LEAP.up-1)assert.equal(n.dir,1,'He gets free facing the way he hung');}
+ for(const [pose] of FREED)assert(seen.has(pose),`He plays ${pose}`);
  assert(airborne,'He leaps');assert(peak>70,'The leap arcs above the block');
  assert.equal(n.h,st.terrain.groundAt(n.x,n.z));assert(n.z>358,'He lands in front of the block');assert.equal(n.act,null);
- for(let i=0;i<60;i++)st.story.updateNpcs([]);assert.equal(n.state,'fleeing');assert.equal(n.h,0);
+ st.story.updateNpcs([]);assert.equal(n.state,'fleeing','He sprints off as soon as he is up from the landing');
+ const x0=n.x;for(let i=0;i<60;i++)st.story.updateNpcs([]);assert.equal(n.h,0);assert(x0-n.x>LEAP.sprint*.8,'He runs for his life');
 }
 {
  // at the lever the hangman asks for his last words, and Irvolino answers him (boxed, the fight goes on)

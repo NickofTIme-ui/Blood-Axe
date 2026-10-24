@@ -451,8 +451,8 @@ export class Story {
       } else if (n.state === 'fleeing') {
         const dx = n.flee.x - n.x; const dz = (n.flee.z ?? n.z) - n.z;
         const d = Math.hypot(dx, dz);
-        const step = NPC.speed / 60;
-        if (d <= step) { n.state = 'safe'; n.t = 0; } else { n.x += (dx / d) * step; n.z += (dz / d) * step; n.dir = Math.sign(dx) || n.dir; }
+        const step = (n.sprint ?? NPC.speed) / 60; // (sprint: one who runs for his life, stage/MillRescue.js)
+        if (d <= step) { n.state = 'safe'; n.t = 0; } else { n.x += (dx / d) * step; n.z += (dz / d) * step; n.dir = Math.sign(dx) || n.dir; n.stride = (n.stride ?? 0) + step; }
         n.h = T ? Math.max(0, T.groundAt(n.x, n.z)) : 0;
       }
       if (n.state === 'safe' && n.gather) {

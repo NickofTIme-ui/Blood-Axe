@@ -1094,3 +1094,9 @@ stale files ship.
 - The box hangs under the speaker's feet (`SpeakerMarker.screenAt` -> `DialogueBox.place`), clamped to the screen; health bars it covers fade. No one on screen: bottom-centre as before.
 - New speaker marker: double chevron in the side's colour.
 - 13 portraits repainted from the in-game sprites (see `docs/portrait-art-prompts.md`); full-size originals and sprite crops in the project files `dialogue-overhaul/`, and on Nick's PC in `art/dialogue-refs/`. Ilse still has the stand-in portrait.
+
+## Cloud, 2026-10-24: Irvolino's gallows release reworked (not on itch)
+
+- Nick (QA report): from the moment his rope is cut until he's off screen the animations didn't look good. Filmed frame by frame: the painted rescue strip was drawn inside the gallows canvas at a different grade, facing right, then swapped to his sprite (hands-over-head cower, facing left) at 84 frames; the "leap" was a frozen run frame that only dropped down; he stood idle for ~50 frames after landing; then a slow skating run with a talk bubble.
+- Now he is one figure from the first frame: the rescue strip re-laid on one floor line as `assets/npcs/mill-rescue/irvolino-freed.png` (`SPRITE_SHEETS['irvolino-freed']`, `CELLS['irvolino-freed']`), graded like his sheet and drawn by `NpcView` (`n.actArt` / `n.act`). Timeline `FREED` + `LEAP` in `src/stage/MillRescue.js`: ropes fall, noose off, knee, thanks, rise, stand; he turns, crouches (squash), hops up and out (tilt), lands with a give at the knees, and sprints off at once (`n.sprint` 190 px/s, legs paced to the ground: `RUN_STEP` in `NpcView`). No talk bubble or halo while he's acting. The gallows canvas keeps a cut rope end swinging (`ropeAge` in `MillHangingArt.js`). `irvolino-rescue.png` is no longer loaded.
+- Frames and a GIF: project files `irvolino-release/`.

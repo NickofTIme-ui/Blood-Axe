@@ -35,6 +35,14 @@ export function drawMillHanging(ctx, images, seconds, options={}) {
     const im=images.rescue,i=Math.min(7,Math.floor(options.rescueAge/12)),cw=im.width/4,ch=im.height/2;
     ctx.drawImage(im,i%4*cw,Math.floor(i/4)*ch,cw,ch,395,147,169,225);
   }
+  // The cut rope: its end swings free over the block and settles
+  if(options.ropeAge!=null){
+    const a=options.ropeAge,swing=.42*Math.sin(a*.16+.6)*Math.exp(-a/55),len=62+6*Math.exp(-a/12);
+    const ex=490+Math.sin(swing)*len,ey=100+Math.cos(swing)*len;
+    ctx.lineCap='round';ctx.beginPath();ctx.moveTo(490,100);ctx.quadraticCurveTo(490+Math.sin(swing*.5)*len*.5,100+len*.5,ex,ey);
+    ctx.strokeStyle='#322315';ctx.lineWidth=6;ctx.stroke();ctx.strokeStyle='#b69865';ctx.lineWidth=3;ctx.stroke();
+    ctx.strokeStyle='#c9ad78';ctx.lineWidth=1.5;for(const f of[-.5,0,.5]){ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(ex+Math.sin(swing+f)*7,ey+Math.cos(swing+f)*7);ctx.stroke();}
+  }
   // Executioner performs the warning and pulls the separate lever.
   if(options.executionerAlive!==false){
   if(images.lever){

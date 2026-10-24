@@ -76,7 +76,9 @@ const CELLS = {
   // and a ninth: lying dead
   nicholas: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7, lie: 8 },
   // Irvolino, the miller: the villager's order
-  irvolino: { stand: 0, cower: 1, wave: 2, run: RUN, leap: 4, sit: 6, kneel: 7 },
+  irvolino: { stand: 0, cower: 1, wave: 2, run: RUN, leap: 3, sit: 6, kneel: 7 },
+  // ...and cut free on the gallows (stage/MillRescue.js FREED)
+  'irvolino-freed': { bound: 0, shed: 1, noose: 2, kneel: 3, thanks: 4, rise: 5, stand: 6, stride: 7 },
   elsbeth: {stand:0,cower:1,wave:2,run:[3,4,5,4],sit:6,kneel:6},
   // ...and his own walk, a full cycle, once it's painted (data/levelArt.js 'nicholas-walk')
   'nicholas-walk': { run: [0, 1, 2, 3, 4, 5, 6, 7], stand: 0 },
@@ -85,6 +87,7 @@ const CELLS = {
 // run, so he hobbles on his standing pose (sinking on each step, like the run)
 const HOBBLE = [0, 0, 0, 0];
 const GUIDE_STEP = 24; // px of road a beat of the guide's walk covers (at depth scale 1)
+const RUN_STEP = 26;  // px of ground a beat of a sprinter's run covers (stage/Story.js `sprint`)
 const WALK_STEP = 16;  // ...a frame of his own eight-frame walk (a full stride: 128 px)
 CELLS.miner = CELLS.villager;
 CELLS['miner-old'] = { stand: 0, sit: 1, wave: 2, kneel: 3, run: HOBBLE };
@@ -155,8 +158,10 @@ export class NpcView {
     const walk = c === RUN || (this.smooth && Array.isArray(c));
     const br = walk ? 0 : Math.sin(now * 0.0026 + ph);
     const sway = walk ? 0 : c === HOBBLE ? 4 + 2 * (beat % 2) : pose === 'hang' ? 3.5 * Math.sin(now * 0.0017 + ph) : pose === 'cower' ? 0.9 * Math.sin(now * 0.021 + ph) : 1.1 * Math.sin(now * 0.0011 + ph);
-    img.setTexture(S.key, `f${Math.min(i, S.count - 1)}`).setPosition(x, y).setScale(k * 0.5 * (1 - 0.008 * br), k * 0.5 * (1 + 0.018 * br))
-      .setAngle(dir < 0 ? -sway : sway)
+    // (tilt, squash: a lean and a give at the knees the stage asks for, stage/MillRescue.js)
+    const sq = this.squash ?? 0; const lean = sway + (this.tilt ?? 0);
+    img.setTexture(S.key, `f${Math.min(i, S.count - 1)}`).setPosition(x, y).setScale(k * 0.5 * (1 - 0.008 * br) * (1 + sq * 0.5), k * 0.5 * (1 + 0.018 * br) * (1 - sq))
+      .setAngle(dir < 0 ? -lean : lean)
       .setFlipX(dir < 0).setDepth(g.depth + 0.01 * this.curN).setAlpha(g.alpha).setTint(this.tint ?? 0xffffff).setVisible(true);
     return true;
   }
@@ -230,7 +235,7 @@ export class NpcView {
     // someone to save: a pale light behind him, pulsing
     // ...and someone with something to say: a warm one (with the bubble over him, drawPrompt)
     const needs = n.state === 'trapped' || n.state === 'threatened';
-    const talks = this.hasWord(n);
+    const talks = !n.act && this.hasWord(n);
     v.halo.setVisible(needs || talks).setPosition(n.x, n.z - n.h - 58).setDepth(n.z - 0.6).setTint(needs ? 0xdfe8ff : 0xffd890)
       .setAlpha(needs || talks ? 0.25 + 0.2 * Math.sin(t * 0.12) : 0);
     if (!show) return;
@@ -284,7 +289,11 @@ export class NpcView {
       }
       return;
     }
-    this.figure(g, n.x, y, k, pose, t, tun(0), dir, n.art);
+    // (a sprinter's legs keep pace with the ground he covers, one beat per RUN_STEP px)
+    const tt = n.sprint && pose === 'run' ? ((n.stride ?? 0) / (RUN_STEP * k)) * 7 : t;
+    this.tilt = n.tilt; this.squash = n.squash;
+    this.figure(g, n.x, y, k, pose, tt, tun(0), dir, n.actArt ?? n.art);
+    this.tilt = this.squash = undefined;
   }
 
   // The guide (Nicholas, stage/Story.js `guide`): walking on ahead, or waiting, looking on
@@ -510,7 +519,7 @@ export class NpcView {
     };
     // someone with something to say, before a hero is near enough for the prompt: a speech
     // bubble bobbing over his head, so he's seen from across the street
-    if (this.hasWord(n)) {
+    if (!n.act && this.hasWord(n)) {
       const by = y - 140 + 4 * Math.sin(this.scene.time.now * 0.004);
       m.fillStyle(0x000000, 0.85).fillRoundedRect(n.x - 21, by - 15, 42, 26, 9).fillTriangle(n.x - 7, by + 9, n.x + 5, by + 9, n.x - 4, by + 19);
       m.fillStyle(0xf6ead0, 1).fillRoundedRect(n.x - 18, by - 12, 36, 20, 7).fillTriangle(n.x - 5, by + 6, n.x + 3, by + 6, n.x - 3, by + 14);

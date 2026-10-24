@@ -184,6 +184,10 @@ export const SPRITE_SHEETS = {
   // villager sheet's 8 poses. He leads the miller's people out of the barn; until he's
   // painted he's the villager.
   irvolino: { file: 'assets/sprites/npc/irvolino.png', frames: 8, height: 235, grade: NPC_GRADE },
+  // ...cut free on the gallows (the painted rescue strip, assets/npcs/mill-rescue/irvolino-rescue.png,
+  // laid out in a row on one floor line): bound, the ropes fall, the noose off, down on a
+  // knee, thanks, rising, standing, a stride. Cut to stand as tall as his own sheet's man.
+  'irvolino-freed': { file: 'assets/npcs/mill-rescue/irvolino-freed.png', frames: 8, height: 206, centre: true, grade: NPC_GRADE },
   elsbeth: {file:'assets/npcs/mill-rescue/elsbeth-row.png',frames:8,height:235,grade:NPC_GRADE},
   // Vincent, the Gatewright (view/VincentView.js; made in ChatGPT from his photo:
   // docs/vincent-art-prompts.md): stand, grip the bars, crank, aim, loose, walk x3, wave
