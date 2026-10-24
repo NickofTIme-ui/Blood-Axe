@@ -638,6 +638,26 @@ export class TerrainView {
   // courses, a flat capstone lit by the fire where you land, its face as tall as the step.
   drawChimney(v, x0, x1, w, yTop0, yTop1, down) {
     const { top, front, b } = v;
+    // painted (assets/env/village/chimney_<art>.png, cut out): the stack, its capstone the top
+    // CAP px of the picture. The cap covers the top you stand on (back edge to front lip, so
+    // wherever you stand on it you're on stone), the brick runs on down to the roof; the
+    // picture a little wider than the block for the cap's overhang (the brick is ~80% of it)
+    const tex = b.art && `village-chimney-${b.art}`;
+    if (tex && this.scene.textures.exists(tex)) {
+      const CAP = 32;
+      const t = this.scene.textures.get(tex);
+      const src = t.getSourceImage();
+      if (!t.has('cap')) { t.add('cap', 0, 0, 0, src.width, CAP); t.add('body', 0, 0, CAP, src.width, src.height - CAP); }
+      const wide = w / 0.8; const cx = (x0 + x1) / 2;
+      const capBot = yTop1 + 3;
+      v.art ??= this.scene.add.image(0, 0, tex, 'body').setOrigin(0.5, 0);
+      v.art.setPosition(cx, capBot - 2).setDisplaySize(wide, yTop1 + down + 3 - capBot + 2).setDepth(b.z1 + 0.5).setVisible(true);
+      v.arts ??= [this.scene.add.image(0, 0, tex, 'cap').setOrigin(0.5, 0)];
+      v.arts[0].setPosition(cx, yTop0 - 2).setDisplaySize(wide, capBot - yTop0 + 2).setDepth(b.z1 + 0.55).setVisible(true);
+      top.fillStyle(0x000000, 0.35).fillEllipse(cx, yTop1 + down + 2, wide + 10, 10);
+      top.setDepth(b.z0 - 0.5);
+      return;
+    }
     const depth = yTop1 - yTop0;
     // the capstone: one slab, a crack or two, sooted toward the back, lit at the lip
     top.fillStyle(0x6a5e54, 1).fillRect(x0, yTop0, w, depth);

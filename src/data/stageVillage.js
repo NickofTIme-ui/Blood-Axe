@@ -282,18 +282,22 @@ export const STAGE_VILLAGE = {
     { kind: 'block', x0: 2990, x1: 3330, ...FULL, top: 120 },           // +75: a held jump onto the first roof
     { kind: 'pit', x0: 3330, x1: 3480, ...FULL },                      // the burning cellar under the beam
     { kind: 'block', x0: 3330, x1: 3480, z0: 385, z1: 440, top: 120 },  // the fallen roof beam: walk it
-    { kind: 'block', x0: 3480, x1: 3680, ...FULL, top: 140 },           // the second roof: a hop up
+    { kind: 'block', x0: 3480, x1: 3680, ...FULL, top: 120 },           // the second roof: level with the beam
+    // (it was a +20 hop up: a step nobody could read, so walking off the beam you bumped
+    // into it; flat across now, Nick 2026-10-24)
     // OPTIONAL: the boy, up at the back of the second roof: three jumps of +45, side by side
     // (a chimney stack, a dormer, the ridge he clings to). Each stands on the roof, so its
     // front is only as tall as the step (view/TerrainView.js supportTop); each is shallow
     // (34 deep, against the back of the lane: hold up and you're lined up), so it shows as a
     // ledge with a lit top, not a tall pale wall
-    { kind: 'block', x0: 3500, x1: 3548, ...BACK(34), top: 185, look: 'chimney' },
-    { kind: 'block', x0: 3564, x1: 3612, ...BACK(34), top: 230 },
-    { kind: 'block', x0: 3628, x1: 3680, ...BACK(34), top: 275 },
+    // (all three painted chimney stacks now, rising like stairs, so it's plain what to climb:
+    // the third was a timbered roof block that read as a house wall; Nick, 2026-10-24)
+    { kind: 'block', x0: 3500, x1: 3548, ...BACK(34), top: 165, look: 'chimney', art: 1 },
+    { kind: 'block', x0: 3564, x1: 3612, ...BACK(34), top: 210, look: 'chimney', art: 2 },
+    { kind: 'block', x0: 3628, x1: 3680, ...BACK(34), top: 255, look: 'chimney', art: 3 },
     { kind: 'pit', x0: 3680, x1: 3980, ...FULL },                      // the cellars, burning
-    { kind: 'crumble', x0: 3740, x1: 3810, z0: 350, z1: 470, top: 150, fall: 40, back: 200 }, // gap 60
-    { kind: 'crumble', x0: 3870, x1: 3940, z0: 350, z1: 470, top: 150, fall: 40, back: 200 }, // gap 60
+    { kind: 'crumble', x0: 3740, x1: 3810, z0: 350, z1: 470, top: 130, fall: 40, back: 200 }, // gap 60
+    { kind: 'crumble', x0: 3870, x1: 3940, z0: 350, z1: 470, top: 130, fall: 40, back: 200 }, // gap 60
     { kind: 'block', x0: 3980, x1: 4180, ...FULL, top: 120 },           // gap 40, down
     { kind: 'block', x0: 4180, x1: 4260, ...FULL, top: 60 },            // and down to the yard
 
