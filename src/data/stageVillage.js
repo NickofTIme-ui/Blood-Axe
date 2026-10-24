@@ -326,8 +326,10 @@ export const STAGE_VILLAGE = {
   ],
 
   // heads on pikes (view only: view/VillageView.js drawPikes): the raiders' warning at the
-  // road in, the square, and the gate out. n: how many in the cluster
-  pikes: [{ x: 560, z: 292, n: 3 }, { x: 1480, z: 290, n: 2 }, { x: 5080, z: 292, n: 3 }, { x: 8560, z: 294, n: 4 }],
+  // road in, the square, the way to the stables and the gate out. n: how many in the cluster
+  // (none in front of a painted building: the mill yard's stood in the mill's doorway; Nick,
+  // 2026-10-24. It stands on the bare street between the barn and the stables now)
+  pikes: [{ x: 560, z: 292, n: 3 }, { x: 1480, z: 290, n: 2 }, { x: 6030, z: 292, n: 3 }, { x: 8560, z: 294, n: 4 }],
 
   // street clutter along the back of the lane (view only: view/VillageView.js drawDecor),
   // painted pieces `decor_<kind>`; one not painted yet is skipped. w: drawn width
