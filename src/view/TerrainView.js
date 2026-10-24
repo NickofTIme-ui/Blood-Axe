@@ -29,6 +29,7 @@ import { artKey, PaintedLevel } from './levelArt.js';
 import { LEVEL_ART } from '../data/levelArt.js';
 import { keyLayer } from './envArt.js';
 import { torchFlame } from './TorchFlame.js';
+import { roofFire, placeRoofFire } from './RoofFire.js';
 import { applyAtmosphere, gradient } from './atmosphere.js';
 
 // the painted oath shrine is drawn this tall (about twice a man)
@@ -375,7 +376,7 @@ export class TerrainView {
     const yTop0 = b.z0 - b.top; const yTop1 = b.z1 - b.top;
     for (const t of Object.values(v.tiles ?? {})) t.setVisible(false); // (shown again below by whichever face is painted)
     if (!b.solid) {
-      v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); v.arts?.forEach((a) => a.setVisible(false)); // (gone: broken through, or fallen)
+      v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); v.arts?.forEach((a) => a.setVisible(false)); placeRoofFire(v.fire, b.x0, 0, false); // (gone: broken through, or fallen)
       return;
     }
     // (a painted set piece stands in for it: the wood's rockslide, view/WoodView.js)
@@ -557,6 +558,12 @@ export class TerrainView {
     // its ends (painted beam): built, not a box cut square out of the shingles
     const ridged = bigRoof && topArt && this.surface(v, 'ridge', 'beam', x0 - 10, yTop0 - 9, w + 20, 14, b.z0 - 0.55, 3);
     if (ridged) v.tiles.ridge.setTint(0x8a7060);
+    // and fire running along the ridge, the length of the roof (view/RoofFire.js): behind
+    // whoever stands on it, in front of the ridge beam (Nick, 2026-10-24)
+    if (bigRoof && this.village) {
+      if (v.fire === undefined) v.fire = roofFire(this.scene, x0 + 4, x1 - 4, yTop0 + 3, { height: 72, depth: b.z0 - 0.45, seed: Math.round(b.x0) });
+      placeRoofFire(v.fire, x0 + 4, yTop0 + 3, true);
+    }
     if (!base && mat !== 'board' && !ridged) fade(top, x0 - 4, yTop0 - 22, w + 8, 22, 0x000000, 0, 0.7);
     top.fillStyle(0xff9a50, 0.14).fillRect(x0, yTop0, w, depth);
     fade(top, x0, yTop0, w, Math.min(60, depth * 0.45), 0x000000, 0.5, 0);
@@ -631,6 +638,26 @@ export class TerrainView {
   // courses, a flat capstone lit by the fire where you land, its face as tall as the step.
   drawChimney(v, x0, x1, w, yTop0, yTop1, down) {
     const { top, front, b } = v;
+    // painted (assets/env/village/chimney_<art>.png, cut out): the stack, its capstone the top
+    // CAP px of the picture. The cap covers the top you stand on (back edge to front lip, so
+    // wherever you stand on it you're on stone), the brick runs on down to the roof; the
+    // picture a little wider than the block for the cap's overhang (the brick is ~80% of it)
+    const tex = b.art && `village-chimney-${b.art}`;
+    if (tex && this.scene.textures.exists(tex)) {
+      const CAP = 32;
+      const t = this.scene.textures.get(tex);
+      const src = t.getSourceImage();
+      if (!t.has('cap')) { t.add('cap', 0, 0, 0, src.width, CAP); t.add('body', 0, 0, CAP, src.width, src.height - CAP); }
+      const wide = w / 0.8; const cx = (x0 + x1) / 2;
+      const capBot = yTop1 + 3;
+      v.art ??= this.scene.add.image(0, 0, tex, 'body').setOrigin(0.5, 0);
+      v.art.setPosition(cx, capBot - 2).setDisplaySize(wide, yTop1 + down + 3 - capBot + 2).setDepth(b.z1 + 0.5).setVisible(true);
+      v.arts ??= [this.scene.add.image(0, 0, tex, 'cap').setOrigin(0.5, 0)];
+      v.arts[0].setPosition(cx, yTop0 - 2).setDisplaySize(wide, capBot - yTop0 + 2).setDepth(b.z1 + 0.55).setVisible(true);
+      top.fillStyle(0x000000, 0.35).fillEllipse(cx, yTop1 + down + 2, wide + 10, 10);
+      top.setDepth(b.z0 - 0.5);
+      return;
+    }
     const depth = yTop1 - yTop0;
     // the capstone: one slab, a crack or two, sooted toward the back, lit at the lip
     top.fillStyle(0x6a5e54, 1).fillRect(x0, yTop0, w, depth);
@@ -669,13 +696,15 @@ export class TerrainView {
     top.fillStyle(0x000000, 0.4);
     for (let i = 0; i < n; i++) {
       const z = cart || n === 1 ? b.z0 + ((b.z1 - b.z0) * (i + 1)) / n : b.z0 + 16 + ((b.z1 - b.z0 - 16) * i) / (n - 1);
-      const flip = b.artFlip ?? (cart ? i !== n - 1 : i % 2 === 1);
-      const dx = cart ? 0 : (i % 2 ? 16 : -10);
-      const k = cart ? 1 : 1 - 0.18 * (i % 2); // (the second heap smaller, set off to the side)
+      // (a block can place its copies by hand, `artLayout`: [{ dx, k, tilt, flip }] per copy)
+      const lay = b.artLayout?.[i] ?? {};
+      const flip = lay.flip ?? b.artFlip ?? (cart ? i !== n - 1 : i % 2 === 1);
+      const dx = lay.dx ?? (cart ? 0 : (i % 2 ? 16 : -10));
+      const k = lay.k ?? (cart ? 1 : 1 - 0.18 * (i % 2)); // (the second heap smaller, set off to the side)
       top.fillEllipse(cx + dx + 4, z - 2, wide * 0.9 * k, cart ? 22 : 16);
       const img = v.arts[i] ??= s.add.image(0, 0, tex).setOrigin(0.5, painted ? 0.97 : 1);
       if (!cart) img.setCrop(0, frame.height * 0.42, frame.width, frame.height * 0.58);
-      img.setPosition(cx + dx, z + 4).setScale((wide * k) / frame.width).setFlipX(flip).setDepth(z + 0.5).setVisible(true);
+      img.setPosition(cx + dx, z + 4).setScale((wide * k) / frame.width).setFlipX(flip).setAngle(lay.tilt ?? 0).setDepth(z + 0.5).setVisible(true);
     }
     top.setDepth(b.z0 - 0.5);
   }

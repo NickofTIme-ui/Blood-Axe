@@ -1113,7 +1113,22 @@ stale files ship.
 - The real lag: the 3 MB title track only began downloading at that moment, and the check rode requestAnimationFrame, which stalls 150-270 ms while Phaser loads during the film. Measured about 0.3 s late.
 - Now `prepareTitleTheme` (core/Music.js) fetches and decodes the track when the film starts, and `scheduleTitleTheme` books its start on the Web Audio clock in the last second before the stomp (minus output latency; rebooked if the film stalls or pauses). The title screen adopts it as before. The plain `<audio>` element is the fallback (no Web Audio, decode not done, audio blocked until a click). Measured in Chromium: within 0.03 s of the stomp frame.
 
-## Cloud, 2026-10-24: the rooftop boy, painted and acted out (branch claude/project-thread-dnm3pz, not on main yet)
+## Cloud, 2026-10-24: fire running along the Burning Roofs (branch claude/project-thread-iomfkt, not on main or itch)
+- Nick: "add some fire to the rooftops, create fresh fire art to run along the roofs".
+- New ChatGPT art: `assets/fx/rooffire-strip.png`, 8 wide, low bands of roof fire (2 across, 4 down), each frame's foot lined up on the same baseline and the magenta already cut to transparency (so the release keeps it a PNG). `FX_STRIPS.rooffire` (columns 2, rows 4). Original sheet on the PC: `assets/incoming/roof-fire-strip.png` (ChatGPT, Bloody axe project chat "Pixel Art Fire Animation Sprite Sheet").
+- `src/view/RoofFire.js` lays the bands end to end along a roof's ridge with an overlap, each on its own frame, speed, height and facing (seeded per roof). `TerrainView.drawVillageBlock` calls it for every big village roof (the first roof, the second roof, the last two roofs), behind whoever stands on the roof and in front of the ridge beam; hidden if the block goes. No fallback: without the strip no fire is drawn.
+- Test: `tests/roof-fire-test.js`. Checked in headless Chromium shots; not played by a person.
+- Sound (Nick, same day: "raise the fire sound when you go near these rooftops"): the village's fire crackle (`assets/audio/sfx/fire-ambience.mp3`, `core/FireAmbience.js`) still plays low through the whole level (`fireBed`), and each roof fire run registers itself on `scene.roofFires`; `FireAmbience.roofPresence` swells the crackle to full (`ROOF = 1`, against the bed's 0.4) as the middle of the screen comes within about half a screen of a burning roof and keeps it there while you're on it.
+## Cloud, 2026-10-24: Burning Roofs flattened, painted chimney steps to Tam (branch claude/project-thread-bj40c0, not on main yet)
+
+- Nick: the step up in front of Rurik (beam onto the second roof, +20) was unreadable. The second roof is now level with the beam and the first roof (top 120); the three steps up to Tam are 165 / 210 / 255 (still +45 each) and the two charred boards after it 130.
+- All three steps are now painted chimney stacks rising like stairs (ChatGPT on Nick's PC; raw at `assets/incoming/chimney_steps_raw.png` there and in project files `roof-chimneys/`), cut out to `assets/env/village/chimney_1..3.png` (`art: n` on the blocks; `TerrainView.drawChimney` draws the capstone over the walkable top and the brick down to the roof; the code-drawn stack stays as the fallback).
+
+
+## 2026-10-24: Rurik's opening pledge cut (Nick)
+- Nick: "remove the dialogue rurik says in the beginning about killing every captain on their knees, no longer needed". The held `pledge` beat in src/data/stageVillage.js ("Every captain who led them here..." / "Each of them kneels. Each hears his crimes. Each pays.") is gone; after the first fight play just goes on. Boss sentences (stage/Sentence.js) are unchanged. The logic test now checks the beat stays gone.
+
+## Cloud, 2026-10-24: the rooftop boy, painted and acted out (on main, not on itch)
 
 - Nick: "improve the art and animation of the kid up on the rooftop". Tam (Burning Roofs, `rescue: 'reach'`) used the shared `boy` sheet's single wave pose.
 - New sheet `assets/sprites/npc/boy_roof.png` (ChatGPT on Nick's PC from the boy sheet; raw at `art-work/rooftop-boy/boy-roof-chatgpt.png` there), keyed and re-laid one pose per equal cell, feet on one line: cling, wave A, wave B, call, flinch, reach down, relief, climb down. Sheet `boy-roof` in `data/levelArt.js` (`centre: true`).

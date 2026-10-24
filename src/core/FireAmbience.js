@@ -8,6 +8,9 @@
 //   near fire    fire grates and burning carts (hazard 'fire'), a burning beam pinning a
 //                door (prop 'wreckage'), a body or a part on fire (effects/Burn.js), a
 //                wall of fire: each one near the middle of the screen lifts it a little.
+//   the roofs    fire running along a roof's ridge (view/RoofFire.js, the Burning Roofs)
+//                swells it louder than anything else as you come up to it and stays up
+//                while you're on that roof (Nick, 2026-10-24: "feel closer to the fire").
 //
 // Kept well under the music and the fight (see BED / NEAR) and it follows the effects
 // volume, SETTINGS.audio.sfx. View only: nothing here touches the simulation.
@@ -17,6 +20,7 @@ import { SETTINGS } from '../config/settings.js';
 const KEY = 'fireAmbience';
 const BED = 0.4;   // audible burning village bed under the music
 const NEAR = 0.65; // stronger crackle near visible flames
+const ROOF = 1;    // right by the burning roofs: the crackle at full
 const EASE = 0.6;  // seconds to settle on a new level
 
 export class FireAmbience {
@@ -59,6 +63,20 @@ export class FireAmbience {
     return Math.min(1, sum);
   }
 
+  // 0..1: how close the middle of the screen is to a burning roof: 1 over it, fading to
+  // nothing a screen and a bit off its end
+  roofPresence() {
+    const view = this.scene.cameras.main.worldView;
+    const mid = view.centerX; const reach = view.width * 0.6;
+    let best = 0;
+    for (const r of this.scene.roofFires ?? []) {
+      if (r.visible === false) continue;
+      const d = Math.max(0, r.x0 - mid, mid - (r.x0 + r.w));
+      best = Math.max(best, 1 - d / reach);
+    }
+    return best;
+  }
+
   // The bed for where you are: the section's own, else the level's.
   bed() {
     const data = this.scene.stageData ?? {};
@@ -68,7 +86,7 @@ export class FireAmbience {
 
   update(delta) {
     if (!this.snd) return;
-    const target = this.scene.leaving ? 0 : Math.max(BED * this.bed(), NEAR * this.presence()) * (this.scene.birthrightActive ? 0.3 : 1);
+    const target = this.scene.leaving ? 0 : Math.max(BED * this.bed(), NEAR * this.presence(), ROOF * this.roofPresence()) * (this.scene.birthrightActive ? 0.3 : 1);
     const k = Math.min(1, Math.min(delta, 100) / 1000 / EASE);
     this.level += (target - this.level) * k;
     try { this.snd.setVolume((SETTINGS.audio.sfx ?? 0.8) * (SETTINGS.audio.fireAmbience ?? 1) * this.level); } catch { this.destroy(); }

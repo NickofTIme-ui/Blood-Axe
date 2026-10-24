@@ -2657,8 +2657,8 @@ test('village: the barn: smashing the burning beam off its door frees the people
 test('village: the boy on the high ridge is saved by reaching him; every hero climbs to him in three jumps', () => {
   // from the back of the second roof: a chimney (+45), a dormer (+45), the ridge (+45). Like
   // a player: aim for the middle of the next step up, jump, steer onto it, land, again
-  const steps = STAGE_VILLAGE.terrain.filter((b) => b.kind === 'block' && b.z0 === STAGE_VILLAGE.laneTop && b.x0 > 3480 && b.x1 <= 3680 && b.top > 140).sort((a, b) => a.top - b.top);
-  assert(steps.length === 3 && steps.every((b, i) => b.top - (i ? steps[i - 1].top : 140) <= 45), 'three steps of +45 at most');
+  const steps = STAGE_VILLAGE.terrain.filter((b) => b.kind === 'block' && b.z0 === STAGE_VILLAGE.laneTop && b.x0 > 3480 && b.x1 <= 3680 && b.top > 120).sort((a, b) => a.top - b.top);
+  assert(steps.length === 3 && steps.every((b, i) => b.top - (i ? steps[i - 1].top : 120) <= 45), 'three steps of +45 at most');
   for (const hero of ['warrior', 'mage', 'rogue']) {
     const world = new World({ seed: 4 });
     let jumps = 0; let hold = 0; let aim = null;
@@ -3234,7 +3234,7 @@ test('village: two of them wait up on the second roof (standing on it, not insid
   p.x = 3430; p.z = 410; p.floor = p.h = 120; p.invincible = true;
   for (let i = 0; i < 200 && !st.livingFoes().length; i++) { world.tick(); st.update(); }
   const foes = st.livingFoes();
-  assert(foes.length === 2 && foes.every((f) => f.floor === 140 && f.h >= 139), foes.map((f) => `${f.stats.name} ${Math.round(f.x)} h${f.h}/${f.floor}`).join(', '));
+  assert(foes.length === 2 && foes.every((f) => f.floor === 120 && f.h >= 119), foes.map((f) => `${f.stats.name} ${Math.round(f.x)} h${f.h}/${f.floor}`).join(', '));
 });
 
 test('wood: the convoy: the wagon rolls once the fight is on; wrecked, its prisoners run free and wait at the pass; left alone, it gets away with them', () => {
@@ -4385,7 +4385,7 @@ test('sentence: no two go alike: the head and the fall are rolled from the lists
   for (const x of BODIES) assert(a.some((o) => o.body === x), `every fall comes up (${x})`);
 });
 
-test('sentence: every boss in the game has his crimes (the machine none); the Oath Keepers swear it at the start', () => {
+test('sentence: every boss in the game has his crimes (the machine none)', () => {
   for (const [id, data] of Object.entries(STAGES)) {
     for (const sec of data.sections) {
       const B = sec.boss;
@@ -4395,8 +4395,8 @@ test('sentence: every boss in the game has his crimes (the machine none); the Oa
       assert(B.sentence.last || B.sentence.silent, `${id}: ${B.name} has his last words, or keeps silent`);
     }
   }
-  const pledge = STAGE_VILLAGE.story.find((b) => b.id === 'pledge').lines.map((l) => l[1]).join(' ');
-  assert(pledge.includes('Each of them kneels. Each hears his crimes. Each pays.'), 'the pledge');
+  // Rurik's opening pledge over the dead villager is cut (Nick, 2026-10-24)
+  assert(!STAGE_VILLAGE.story.some((b) => b.id === 'pledge'), 'no opening pledge');
 });
 
 test('dialogue: every voice in every level has a name and a portrait (or is narration); Nick\'s names on the nameless', () => {

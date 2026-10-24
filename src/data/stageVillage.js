@@ -271,23 +271,33 @@ export const STAGE_VILLAGE = {
     // Behind the cart, up against the end wall of the first house, a heap of burnt timbers
     // too high to climb: the way up is the cart. (Walking up the back of the lane to the
     // house you stood at its foot drawn over its roof, as if walking up the wall; Nick, 2026-10-23.)
-    { kind: 'block', x0: 2900, x1: 2990, z0: LANE_TOP, z1: 330, top: 400, look: 'wreckage' },
-    { kind: 'block', x0: 2900, x1: 2990, z0: 330, z1: 520, top: 45, look: 'cart' }, // a cart against the house: a hop
+    // (Each draws two copies, and stood dead in line one behind the other, two heaps and two
+    // carts in a column, they read as stamped; Nick, 2026-10-24. So they're placed by hand:
+    // a small heap thrown out to the left, a big one against the house; the carts staggered,
+    // different sizes, tipped opposite ways.)
+    { kind: 'block', x0: 2900, x1: 2990, z0: LANE_TOP, z1: 330, top: 400, look: 'wreckage',
+      artLayout: [{ dx: -62, k: 0.76, tilt: -5, flip: true }, { dx: 8, k: 1.12, tilt: 2, flip: false }] },
+    { kind: 'block', x0: 2900, x1: 2990, z0: 330, z1: 520, top: 45, look: 'cart', // a cart against the house: a hop
+      artLayout: [{ dx: -6, k: 1.02, tilt: -3, flip: true }, { dx: -44, k: 0.86, tilt: 6, flip: false }] },
     { kind: 'block', x0: 2990, x1: 3330, ...FULL, top: 120 },           // +75: a held jump onto the first roof
     { kind: 'pit', x0: 3330, x1: 3480, ...FULL },                      // the burning cellar under the beam
     { kind: 'block', x0: 3330, x1: 3480, z0: 385, z1: 440, top: 120 },  // the fallen roof beam: walk it
-    { kind: 'block', x0: 3480, x1: 3680, ...FULL, top: 140 },           // the second roof: a hop up
+    { kind: 'block', x0: 3480, x1: 3680, ...FULL, top: 120 },           // the second roof: level with the beam
+    // (it was a +20 hop up: a step nobody could read, so walking off the beam you bumped
+    // into it; flat across now, Nick 2026-10-24)
     // OPTIONAL: the boy, up at the back of the second roof: three jumps of +45, side by side
     // (a chimney stack, a dormer, the ridge he clings to). Each stands on the roof, so its
     // front is only as tall as the step (view/TerrainView.js supportTop); each is shallow
     // (34 deep, against the back of the lane: hold up and you're lined up), so it shows as a
     // ledge with a lit top, not a tall pale wall
-    { kind: 'block', x0: 3500, x1: 3548, ...BACK(34), top: 185, look: 'chimney' },
-    { kind: 'block', x0: 3564, x1: 3612, ...BACK(34), top: 230 },
-    { kind: 'block', x0: 3628, x1: 3680, ...BACK(34), top: 275 },
+    // (all three painted chimney stacks now, rising like stairs, so it's plain what to climb:
+    // the third was a timbered roof block that read as a house wall; Nick, 2026-10-24)
+    { kind: 'block', x0: 3500, x1: 3548, ...BACK(34), top: 165, look: 'chimney', art: 1 },
+    { kind: 'block', x0: 3564, x1: 3612, ...BACK(34), top: 210, look: 'chimney', art: 2 },
+    { kind: 'block', x0: 3628, x1: 3680, ...BACK(34), top: 255, look: 'chimney', art: 3 },
     { kind: 'pit', x0: 3680, x1: 3980, ...FULL },                      // the cellars, burning
-    { kind: 'crumble', x0: 3740, x1: 3810, z0: 350, z1: 470, top: 150, fall: 40, back: 200 }, // gap 60
-    { kind: 'crumble', x0: 3870, x1: 3940, z0: 350, z1: 470, top: 150, fall: 40, back: 200 }, // gap 60
+    { kind: 'crumble', x0: 3740, x1: 3810, z0: 350, z1: 470, top: 130, fall: 40, back: 200 }, // gap 60
+    { kind: 'crumble', x0: 3870, x1: 3940, z0: 350, z1: 470, top: 130, fall: 40, back: 200 }, // gap 60
     { kind: 'block', x0: 3980, x1: 4180, ...FULL, top: 120 },           // gap 40, down
     { kind: 'block', x0: 4180, x1: 4260, ...FULL, top: 60 },            // and down to the yard
 
@@ -375,15 +385,6 @@ export const STAGE_VILLAGE = {
         ['VAREK', "Oathkeepers... You're too late to save anyone."],
         ['VAREK', '', { moment: 'openingStrike', minFrames: 84, autoAdvance: true }],
         ['VAREK', 'Cut them down!'],
-      ],
-    },
-    {
-      // over the villager he struck down, once his men are dead: the pledge every boss's
-      // sentence pays off (stage/Sentence.js)
-      id: 'pledge', after: 'opening', at: 0, calm: true, hold: true,
-      lines: [
-        ['RURIK', 'Every captain who led them here. Every one, up to the king who gave the word.'],
-        ['RURIK', 'Each of them kneels. Each hears his crimes. Each pays.'],
       ],
     },
     {
