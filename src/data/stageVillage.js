@@ -79,7 +79,7 @@ export const STAGE_VILLAGE = {
     hale:{who:'HALE',before:"He held the church door while we brought the children in. He's been asking for you.",after:"We'll lay him by the altar. No one will leave him alone."},
     mira:{who:'MIRA',before:"He wouldn't come inside until the last child was safe.",after:"I'll light a candle for him. My son will know his name."},
     tam:{who:'TAM',before:"He told me to stay behind the altar. Is he going to be all right?",after:"I'll stay with the others. You don't have to worry about us."},
-    barn:{who:'MILLER',before:"I can still feel the rope. Go to him, Rurik. He's been waiting.",after:"When you're ready, I'll take his weight."},
+    barn:{who:'MILLER',before:"Go on, Rurik. Your father needs you more than we do.",after:"He was a good man, Rurik. We all knew it."},
   },
 
   sections: [
@@ -404,7 +404,9 @@ export const STAGE_VILLAGE = {
     { id: 'tam', on: 'rescued:tam', lines: [['TAM', 'I told them you\'d come. I can climb down the back. Go!']] },
     { id: 'millSilenced', on: 'broken:millArchers', lines: [['RURIK', 'No more arrows from the mill.']] },
     { id: 'barnCry', at: 4900, lines: [['VOICE', 'The barn! They\'ve barred us in!']] },
-    { id: 'barn', on: 'rescued:barn', lines: [['MILLER', 'I thought that was it. Thank you. I’ll find the others at the church.']] },
+    // Irvolino's lines (Nick's QA, 2026-10-24: rewritten again, in ChatGPT)
+    { id: 'millLastWords', on: 'millLastWords', lines: [['MILLER', 'Tell your king the miller didn’t beg.']] },
+    { id: 'barn', on: 'rescued:barn', lines: [['MILLER', 'Rurik! I owe you my neck. I’m heading to the church.']] },
     { id: 'cinder', lines: [['CINDER', 'You broke the ranks. You will not break me.']] },
     { id: 'shrine', at: 7190, calm: true, lines: [['ORYN', '(from across the village) Their captain\'s in the longhall. Kneel at the shrine. Then end him.']] },
     {
@@ -438,7 +440,7 @@ export const STAGE_VILLAGE = {
         ['RURIK', 'I should have been here.', {minFrames:180}],
         ['ORYN', 'We can wait.', {minFrames:150}],
         ['MIRA', 'He put himself between them and my son.', {if:'rescued:mira',minFrames:150}],
-        ['MILLER', "On that trapdoor I wondered who would carry me. Let me carry him.", {if:'rescued:barn',minFrames:180}],
+        ['MILLER', "Let us carry him, Rurik. You've carried enough tonight.", {if:'rescued:barn',minFrames:180}],
         ['ELSBETH', "He won't be left here. Hale and I will carry him.", {if:'rescued:elsbeth',minFrames:180}],
         ['RURIK', 'Give me a moment.', {minFrames:180}],
         ['VOICE', '', {minFrames:180,autoAdvance:true}],

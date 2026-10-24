@@ -34,3 +34,10 @@ console.log('Mill rescue: encounter-only timer, hold safety, kill stops clock, s
  assert.equal(n.h,st.terrain.groundAt(n.x,n.z));assert(n.z>358,'He lands in front of the block');assert.equal(n.act,null);
  for(let i=0;i<60;i++)st.story.updateNpcs([]);assert.equal(n.state,'fleeing');assert.equal(n.h,0);
 }
+{
+ // at the lever the hangman asks for his last words, and Irvolino answers him (boxed, the fight goes on)
+ const {st,r}=setup();let said=null;
+ for(let i=0;i<1300&&!said;i++){r.update();st.story.update();said=st.story.current?.beat.id==='millLastWords'?st.story.current.beat.lines[0]:null;}
+ assert(said,'Irvolino answers the hangman');assert.equal(said[0],'MILLER');assert(r.clock<1260,'He answers before the final warning');
+ console.log('Mill rescue: Irvolino answers the hangman before the drop.');
+}

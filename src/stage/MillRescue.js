@@ -65,6 +65,7 @@ export class MillRescue {
       this.clock++;n.clock=this.clock;
       if(this.clock===1)this.say(BARKS.lever);
       if(this.clock===MILL.lastWords){n.helpAge=210;n.helpText='HE’S AT THE LEVER!';this.say(BARKS.lastWords);}
+      if(this.clock===MILL.lastWords+75)st.story.trigger('millLastWords'); // Irvolino answers him (data/stageVillage.js)
       if(this.clock===MILL.final){this.say(BARKS.final,MILL.rope-MILL.final);st.world.events.emit('millWarning',{text:'HE’S PULLING THE LEVER!',final:true});}
       if(this.clock>=MILL.rope){this.fail();return;}
     }else{
