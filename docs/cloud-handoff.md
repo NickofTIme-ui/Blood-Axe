@@ -1051,6 +1051,7 @@ were in: a campaign level resumes at the saved checkpoint (like CONTINUE), any o
 stage restarts that stage. Not on itch yet. The itch packager (tools/build-release.py)
 copies only src/lib/assets fresh each time and the game has no service worker, so no
 stale files ship.
+
 ## Cloud, 2026-10-23: block and roll cut any move short (not on itch)
 - All three heroes: a fresh block press (parry, then guard if held) or a roll / blink
   press instantly cancels any ground action at any frame: swings, the kick, heavy,
