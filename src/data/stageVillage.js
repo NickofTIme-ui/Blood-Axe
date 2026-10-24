@@ -271,8 +271,14 @@ export const STAGE_VILLAGE = {
     // Behind the cart, up against the end wall of the first house, a heap of burnt timbers
     // too high to climb: the way up is the cart. (Walking up the back of the lane to the
     // house you stood at its foot drawn over its roof, as if walking up the wall; Nick, 2026-10-23.)
-    { kind: 'block', x0: 2900, x1: 2990, z0: LANE_TOP, z1: 330, top: 400, look: 'wreckage' },
-    { kind: 'block', x0: 2900, x1: 2990, z0: 330, z1: 520, top: 45, look: 'cart' }, // a cart against the house: a hop
+    // (Each draws two copies, and stood dead in line one behind the other, two heaps and two
+    // carts in a column, they read as stamped; Nick, 2026-10-24. So they're placed by hand:
+    // a small heap thrown out to the left, a big one against the house; the carts staggered,
+    // different sizes, tipped opposite ways.)
+    { kind: 'block', x0: 2900, x1: 2990, z0: LANE_TOP, z1: 330, top: 400, look: 'wreckage',
+      artLayout: [{ dx: -62, k: 0.76, tilt: -5, flip: true }, { dx: 8, k: 1.12, tilt: 2, flip: false }] },
+    { kind: 'block', x0: 2900, x1: 2990, z0: 330, z1: 520, top: 45, look: 'cart', // a cart against the house: a hop
+      artLayout: [{ dx: -6, k: 1.02, tilt: -3, flip: true }, { dx: -44, k: 0.86, tilt: 6, flip: false }] },
     { kind: 'block', x0: 2990, x1: 3330, ...FULL, top: 120 },           // +75: a held jump onto the first roof
     { kind: 'pit', x0: 3330, x1: 3480, ...FULL },                      // the burning cellar under the beam
     { kind: 'block', x0: 3330, x1: 3480, z0: 385, z1: 440, top: 120 },  // the fallen roof beam: walk it

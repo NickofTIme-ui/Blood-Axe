@@ -676,13 +676,15 @@ export class TerrainView {
     top.fillStyle(0x000000, 0.4);
     for (let i = 0; i < n; i++) {
       const z = cart || n === 1 ? b.z0 + ((b.z1 - b.z0) * (i + 1)) / n : b.z0 + 16 + ((b.z1 - b.z0 - 16) * i) / (n - 1);
-      const flip = b.artFlip ?? (cart ? i !== n - 1 : i % 2 === 1);
-      const dx = cart ? 0 : (i % 2 ? 16 : -10);
-      const k = cart ? 1 : 1 - 0.18 * (i % 2); // (the second heap smaller, set off to the side)
+      // (a block can place its copies by hand, `artLayout`: [{ dx, k, tilt, flip }] per copy)
+      const lay = b.artLayout?.[i] ?? {};
+      const flip = lay.flip ?? b.artFlip ?? (cart ? i !== n - 1 : i % 2 === 1);
+      const dx = lay.dx ?? (cart ? 0 : (i % 2 ? 16 : -10));
+      const k = lay.k ?? (cart ? 1 : 1 - 0.18 * (i % 2)); // (the second heap smaller, set off to the side)
       top.fillEllipse(cx + dx + 4, z - 2, wide * 0.9 * k, cart ? 22 : 16);
       const img = v.arts[i] ??= s.add.image(0, 0, tex).setOrigin(0.5, painted ? 0.97 : 1);
       if (!cart) img.setCrop(0, frame.height * 0.42, frame.width, frame.height * 0.58);
-      img.setPosition(cx + dx, z + 4).setScale((wide * k) / frame.width).setFlipX(flip).setDepth(z + 0.5).setVisible(true);
+      img.setPosition(cx + dx, z + 4).setScale((wide * k) / frame.width).setFlipX(flip).setAngle(lay.tilt ?? 0).setDepth(z + 0.5).setVisible(true);
     }
     top.setDepth(b.z0 - 0.5);
   }
