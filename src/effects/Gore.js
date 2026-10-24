@@ -56,6 +56,11 @@ export class Gore {
       this.decalTiles.push({ x0, x1: x0 + rt.width, rt });
     }
     this.stamp = scene.make.image({ key: 'dot', add: false });
+    // (stamps are queued and painted together once a frame: drawing into a strip costs a
+    // copy of the whole strip, so one copy per frame instead of one per drop of blood)
+    this.decalQueue = [];
+    scene.events?.on('postupdate', this.flushDecals, this);
+    scene.events?.once('shutdown', () => scene.events.off('postupdate', this.flushDecals, this));
     this.dismemberer = new Dismember(this);
     this.dismemberer.minZ = W.floorTop;
     this.dismemberer.maxZ = W.floorBottom;
@@ -68,13 +73,38 @@ export class Gore {
   get decalsLive() { return this.decalTiles[0]?.rt.active ?? false; }
 
   // Stamp `this.stamp` onto the floor at world x (y is already relative to rtY): into every
-  // strip it might overlap, so a splat on a seam isn't cut in half.
+  // strip it might overlap, so a splat on a seam isn't cut in half. Queued as the stamp
+  // looks now; painted at the end of the frame's update (flushDecals).
   drawDecal(x, y) {
+    const st = this.stamp;
     for (const t of this.decalTiles) {
       if (x + DECAL_REACH < t.x0 || x - DECAL_REACH > t.x1) continue;
-      this.stamp.setPosition(x - t.x0, y);
-      t.rt.draw(this.stamp);
+      this.decalQueue.push({ t, x: x - t.x0, y, key: st.texture.key, frame: st.frame.name, tint: st.tintTopLeft, sx: st.scaleX, sy: st.scaleY, rot: st.rotation, alpha: st.alpha });
     }
+  }
+
+  flushDecals() {
+    const Q = this.decalQueue;
+    if (!Q.length) return;
+    this.decalQueue = [];
+    const st = this.stamp;
+    const keep = { key: st.texture.key, frame: st.frame.name, tint: st.tintTopLeft, sx: st.scaleX, sy: st.scaleY, rot: st.rotation, alpha: st.alpha, x: st.x, y: st.y };
+    const look = (e) => {
+      if (st.texture.key !== e.key || st.frame.name !== e.frame) st.setTexture(e.key, e.frame);
+      st.setTint(e.tint).setScale(e.sx, e.sy).setRotation(e.rot).setAlpha(e.alpha).setPosition(e.x, e.y);
+    };
+    for (const t of this.decalTiles) {
+      let open = false;
+      for (const e of Q) {
+        if (e.t !== t) continue;
+        if (!t.rt.active) break;
+        if (!open) { t.rt.beginDraw(); open = true; }
+        look(e);
+        t.rt.batchDraw(st);
+      }
+      if (open) t.rt.endDraw();
+    }
+    look(keep);
   }
 
   get level() { return SETTINGS.gore.level; }
@@ -355,6 +385,7 @@ export class Gore {
   }
 
   clearDecals() {
+    this.decalQueue = [];
     for (const t of this.decalTiles) t.rt.clear();
     this.dismemberer.clear();
   }

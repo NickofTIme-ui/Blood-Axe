@@ -57,14 +57,35 @@ export class PaintedFire {
         .setDisplaySize(display.displayWidth, display.displayHeight);
     }
     overlay.setDepth(display.depth + 0.001);
+    overlay.fireTiled = tiled;
     rec.overlays.push(overlay);
   }
 
+  // Is any of this painting's fire on screen? A tile sprite copies its texture once, when
+  // it's first drawn (Phaser keeps its own copy), so repainting the mask never shows on
+  // one: only plain images count.
+  onScreen(rec, view) {
+    for (const o of rec.overlays) {
+      if (o.fireTiled || !o.visible) continue;
+      const x0 = o.x - o.displayOriginX * Math.abs(o.scaleX); const y0 = o.y - o.displayOriginY * Math.abs(o.scaleY);
+      if (x0 < view.right + 64 && x0 + o.displayWidth > view.x - 64 && y0 < view.bottom + 64 && y0 + o.displayHeight > view.y - 64) return true;
+    }
+    return false;
+  }
+
   update(now) {
-    // Refresh sparse fire masks at 15 Hz, independent of monitor refresh rate.
-    if (now - this.last < 1000 / 15) return;
-    this.last = now;
+    // Refresh sparse fire masks at 15 Hz, independent of monitor refresh rate. Only the
+    // paintings on screen are repainted (each repaint uploads the whole picture to the
+    // graphics card); one coming into view is repainted at once, so it's never stale.
+    const due = now - this.last >= 1000 / 15;
+    if (due) this.last = now;
+    const view = this.scene.cameras?.main?.worldView;
     for (const rec of this.sources.values()) {
+      const seen = !rec.painted || !view || this.onScreen(rec, view);
+      const fresh = seen && !rec.seen;
+      rec.seen = seen;
+      if (!seen || (!due && !fresh)) continue;
+      rec.painted = true;
       const d = rec.image.data;
       for (const p of rec.hot) {
         const f = fireLight(p.x, p.y, now / 1000);

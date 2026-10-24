@@ -8,6 +8,7 @@
 // every man is drawn as painted (his size and pace still vary).
 
 const PIPE = 'EnemyDye';
+const NO_DYE = { hue: 0, sat: 1, val: 1 };
 
 // The cloth band, in degrees of hue: centre, half width, soft edge. Pixels greyer than
 // SAT_MIN (steel, bone) are left alone.
@@ -82,19 +83,22 @@ void main ()
 }
 `;
 
-// One image per batch: its dye is set, it's drawn, the batch is closed.
+// Men in the same dye share a batch: the batch is closed only when the dye changes (the
+// dye is a uniform, so every image in one batch must wear the same one). Changing to or
+// from another pipeline closes the batch anyway.
 function dyePipeline(game) {
   const Single = Phaser.Renderer.WebGL.Pipelines.SinglePipeline;
   class EnemyDyePipeline extends Single {
-    constructor() { super({ game, name: PIPE, fragShader: FRAG }); }
+    constructor() { super({ game, name: PIPE, fragShader: FRAG }); this.dyeOn = null; }
     batchSprite(go, camera, parent) {
-      const d = DYES[go.dye] ?? { hue: 0, sat: 1, val: 1 };
-      this.flush();
+      const d = DYES[go.dye] ?? NO_DYE;
+      if (d !== this.dyeOn) this.flush();
+      this.dyeOn = d;
+      // (unchanged values cost nothing: the shader remembers what it was last given)
       this.set3f('uDye', d.hue / 360, d.sat, d.val);
       this.set4f('uBand', BAND.centre / 360, BAND.half / 360, BAND.soft / 360, BAND.satMin);
       this.set1f('uSatSoft', BAND.satSoft);
       super.batchSprite(go, camera, parent);
-      this.flush();
     }
   }
   return new EnemyDyePipeline();

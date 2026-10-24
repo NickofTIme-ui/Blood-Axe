@@ -33,6 +33,8 @@ const config = {
   height: SETTINGS.height * RS,
   backgroundColor: '#0b0606',
   input: { gamepad: true },
+  // (a laptop with two graphics chips: ask for the strong one, not the power-saving one)
+  render: { powerPreference: 'high-performance' },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   scene: [BootScene, TitleScene, SelectScene, ArenaScene, HUDScene, SkillScene, CutawayScene, BirthrightScene],
 };

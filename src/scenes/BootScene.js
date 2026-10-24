@@ -23,6 +23,9 @@ import { introFinished } from '../core/StartupIntro.js';
 import {HERO_HD} from '../data/heroHdAssets.js';
 import {preloadHeroHd,installHeroHd} from '../view/heroHd.js';
 
+// Textures read only by Boot itself, to cut the game's sheets from (released once it has).
+const BOOT_ONLY_SOURCE = /^(estrip-|hstrip-|lvlsrc-|sprsrc-|plxsrc-|plxcut-|groundsrc-|fxsrc-|hero-src-)|^(skysrc|pillarsrc)$/;
+
 export class BootScene extends Phaser.Scene {
   constructor() {
     super('Boot');
@@ -166,6 +169,7 @@ export class BootScene extends Phaser.Scene {
     this.registry.set('parallax', buildParallax(this, PARALLAX_LAYERS));
     this.registry.set('levelArt', buildLevelArt(this));
     this.buildHeroArt();
+    this.releaseSources();
 
     await introFinished; // the opening cinematic crossfades into the title (core/StartupIntro.js)
     if (this.sys.isActive()) this.scene.start('Title');
@@ -182,6 +186,15 @@ export class BootScene extends Phaser.Scene {
       await new Promise((r) => setTimeout(r, 0));
     }
     return out;
+  }
+
+  // The paintings everything above was cut from are done with: let them go. Each loaded
+  // image sits on the graphics card as a texture of its own, beside the sheet cut from it
+  // (about 1.9 GB of the 4.2 GB this game loads), and a card that runs short of memory
+  // stutters. Only what Boot alone reads goes; pieces cut later in the game keep theirs.
+  releaseSources() {
+    const T = this.textures;
+    for (const key of T.getTextureKeys()) if (BOOT_ONLY_SOURCE.test(key)) T.remove(key);
   }
 
   // Character-select hero art: painted on black, cut out and trimmed to the figure here

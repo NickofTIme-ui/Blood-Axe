@@ -1127,3 +1127,13 @@ stale files ship.
 
 ## 2026-10-24: Rurik's opening pledge cut (Nick)
 - Nick: "remove the dialogue rurik says in the beginning about killing every captain on their knees, no longer needed". The held `pledge` beat in src/data/stageVillage.js ("Every captain who led them here..." / "Each of them kneels. Each hears his crimes. Each pays.") is gone; after the first fight play just goes on. Boss sentences (stage/Sentence.js) are unchanged. The logic test now checks the beat stays gone.
+
+## Cloud, 2026-10-24: frame-rate pass, no gameplay changes (branch claude/project-thread-6y52dm, not on main yet)
+- Nick: "lots of frame drops, optimise, don't change gameplay". Measured with `tools/perf-profile.mjs` (headless Chromium, the sweep bot plays a level, every frame timed, GL calls counted, CPU profile).
+- `view/PaintedFire.js`: the burning buildings' fire masks were repainted and re-uploaded whole (~10 MB) 15 times a second, on screen or not. Now only paintings on screen are repainted (one coming into view is repainted at once). The street wall's tiled overlay never showed repaints (a TileSprite copies its texture once), so it is painted once.
+- `scenes/BootScene.js releaseSources`: the source paintings Boot cuts sheets from (estrip-, lvlsrc-, sprsrc-, plxsrc-, fxsrc-, ...) are removed once cut: textures on the graphics card 4.2 GB -> 2.3 GB.
+- `effects/Gore.js`: floor blood stamps are queued and painted once a frame per strip (`flushDecals` on the scene's postupdate) instead of one RenderTexture draw (and whole-strip copy) per drop.
+- `view/dye.js`: dyed men share a batch until the dye changes (was a flush before and after every one).
+- `view/NpcView.js drawPrompt`: the prompt's colour is set only when it changes (a Text colour change re-renders and re-uploads it).
+- `main.js`: `render.powerPreference: 'high-performance'` (two-GPU laptops get the strong one).
+- Results (headless, software graphics, 600 frames each): Burning Roofs slow frames 222 -> 33; Iron Gates draw calls 139 -> 75 a frame, game-logic time 10 -> 3.6 ms; village road game-logic time 44 -> 6 ms a frame. Texture uploads 5-11 a frame -> under 0.4 on every level tried. npm test passes; `campaign-sweep village --hero warrior` output identical to main (main's own fails there are pre-existing).

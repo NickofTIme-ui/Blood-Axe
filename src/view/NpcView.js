@@ -542,7 +542,10 @@ export class NpcView {
     const q = S.prompts.find((p) => p.npc === n);
     const y = n.z - n.h;
     const text = !q ? '' : q.kind === 'talk' ? 'E  /  D-PAD ▲   TALK' : q.kind === 'open' ? 'HOLD  E  /  D-PAD ▲   OPEN' : 'KILL THEM FIRST';
-    v.tip.setVisible(!!text).setText(text).setPosition(n.x, y - (q?.kind === 'talk' ? 163 : 128)).setColor(q?.kind === 'busy' ? '#ff9a7a' : '#f0e6d0');
+    v.tip.setVisible(!!text).setText(text).setPosition(n.x, y - (q?.kind === 'talk' ? 163 : 128));
+    // (a colour change redraws the words and sends them to the graphics card: only when it changes)
+    const col = q?.kind === 'busy' ? '#ff9a7a' : '#f0e6d0';
+    if (v.tip.style.color !== col) v.tip.setColor(col);
     const bar = (frac, col) => {
       m.fillStyle(0x000000, 0.7).fillRect(n.x - 31, y - 122, 62, 7);
       m.fillStyle(col, 1).fillRect(n.x - 30, y - 121, 60 * Math.max(0, Math.min(1, frac)), 5);
