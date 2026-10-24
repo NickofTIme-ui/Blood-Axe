@@ -20,6 +20,8 @@
     .intro-controls button { border: 1px solid #54e9ff; border-radius: 4px; background: rgba(0, 0, 0, .88); color: #e8fcff; padding: 10px 16px; font: 15px system-ui, sans-serif; cursor: pointer; }
     .intro-controls button:focus-visible { outline: 3px solid #ffad52; outline-offset: 4px; }
     .intro-controls button:hover { background: #10343c; }
+    #intro-start { position: absolute; inset: 0; margin: 0; background: #000; display: flex; align-items: center; justify-content: center; color: #e8dcc8; font: 600 clamp(18px, 3vw, 30px) Georgia, serif; letter-spacing: .3em; cursor: pointer; animation: intro-pulse 1.6s ease-in-out infinite; }
+    @keyframes intro-pulse { 50% { opacity: .45; } }
     #intro-status { position: absolute; left: 20px; bottom: 20px; max-width: 50%; color: #d5f9ff; font: 14px system-ui, sans-serif; }
     [hidden] { display: none !important; }
   </style>
@@ -30,6 +32,7 @@
   <section id="studio-intro" aria-label="UFO Technologies logo and opening cinematic">
     <video id="intro-video" src="assets/video/ufo-technologies-intro.mp4" preload="auto" playsinline aria-hidden="true"></video>
     <video id="cinematic-video" src="assets/video/opening-cinematic.mp4" preload="auto" playsinline muted hidden aria-hidden="true"></video>
+    <p id="intro-start" hidden>PRESS ANY KEY</p>
     <p id="intro-status" role="status" aria-live="polite"></p>
     <div class="intro-controls">
       <button id="intro-sound" type="button" hidden>Play with sound</button>

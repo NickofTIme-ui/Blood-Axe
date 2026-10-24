@@ -1137,3 +1137,14 @@ stale files ship.
 - `view/NpcView.js drawPrompt`: the prompt's colour is set only when it changes (a Text colour change re-renders and re-uploads it).
 - `main.js`: `render.powerPreference: 'high-performance'` (two-GPU laptops get the strong one).
 - Results (headless, software graphics, 600 frames each): Burning Roofs slow frames 222 -> 33; Iron Gates draw calls 139 -> 75 a frame, game-logic time 10 -> 3.6 ms; village road game-logic time 44 -> 6 ms a frame. Texture uploads 5-11 a frame -> under 0.4 on every level tried. npm test passes; `campaign-sweep village --hero warrior` output identical to main (main's own fails there are pre-existing).
+
+## Cloud, 2026-10-24 (later): PRESS ANY KEY before the logo when sound is blocked (branch claude/project-thread-raedb2)
+
+- Nick: the music still was not on the stomp "when the game opens". On a fresh open (no click yet on that site) the browser blocks all sound, so the logo rolled muted and the title theme waited for the first key or click, long after the stomp.
+- Now, when the logo's sound is blocked, `StartupIntro.js` holds on a black PRESS ANY KEY screen (`#intro-start` in index.html). The first key or click starts the logo with sound, which also unlocks the Web Audio clock, so the theme is booked on the stomp as before (measured within 0.03 s). Escape or Skip still skip. A controller button does not count as a press for the browser, so it rolls the logo silently with the old Play with sound button. On itch, the Run game click usually unlocks sound already and the screen does not show.
+
+## Cloud, 2026-10-24: the rooftop boy, painted and acted out (on main, not on itch)
+
+- Nick: "improve the art and animation of the kid up on the rooftop". Tam (Burning Roofs, `rescue: 'reach'`) used the shared `boy` sheet's single wave pose.
+- New sheet `assets/sprites/npc/boy_roof.png` (ChatGPT on Nick's PC from the boy sheet; raw at `art-work/rooftop-boy/boy-roof-chatgpt.png` there), keyed and re-laid one pose per equal cell, feet on one line: cling, wave A, wave B, call, flinch, reach down, relief, climb down. Sheet `boy-roof` in `data/levelArt.js` (`centre: true`).
+- `NpcView.drawStranded` (any `pose: 'child'` with `rescue: 'reach'`, so also Wren and Pip): waiting, he waves, shouts, clings and flinches by turns on his own beat, facing the nearest hero; a hero within 230 px he reaches down; freed, relief then climbing down the back as he fades. Tam has `freeFor: 120` (Story.js now reads a per-NPC `freeFor`) so the relief shows.

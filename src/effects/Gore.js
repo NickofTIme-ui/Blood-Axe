@@ -358,7 +358,9 @@ export class Gore {
   // Black burn mark + a wide blood ring (explosions).
   scorch(x, z, fire = false) {
     if (this.level === 0) return;
-    this.stamp.setScale(9, 3.2).setTint(fire ? 0x120a06 : 0x2a0000).setAlpha(0.7);
+    // (back to the small soft dot first: a splat may have left a 627-px blood-ink frame on the
+    // stamp, and at 9x that's a dark smear over the whole floor, which the stampede piles up)
+    this.stamp.setTexture('dot').setRotation(0).setScale(9, 3.2).setTint(fire ? 0x120a06 : 0x2a0000).setAlpha(0.7);
     this.drawDecal(x, z - this.rtY);
     for (let i = 0; i < 14; i++) {
       const a = rand(0, Math.PI * 2);
@@ -377,7 +379,7 @@ export class Gore {
         .setRotation(rand(-.2,.2)).setAlpha(this.level===1?alpha*.6:alpha);
       this.drawDecal(x,z-this.rtY);return;
     }
-    this.stamp.setRotation(0)
+    this.stamp.setTexture('dot').setRotation(0)
       .setScale(size * rand(1, 1.8), size * rand(0.45, 0.7))
       .setTint(pick(DECAL))
       .setAlpha(this.level === 1 ? alpha * 0.6 : alpha);

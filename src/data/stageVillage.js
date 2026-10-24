@@ -355,6 +355,7 @@ export const STAGE_VILLAGE = {
     },
     {
       id: 'tam', name: 'Tam', x: 3656, z: LANE_TOP + 16, pose: 'child', rescue: 'reach', flee: null, gather: { x: 8800, z: 312 },
+      freeFor: 120, // (time to see him relieved, then climb down the back: view/NpcView.js drawStranded)
     },
     {
       id: 'barn', name: 'Irvolino', x: 4860, z: 296, pose: 'irvolino', art:'irvolino', rescue: 'execution', section:'mill',
