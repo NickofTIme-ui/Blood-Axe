@@ -4063,6 +4063,19 @@ function sunderRun({ gap = 60, boss = false } = {}) {
   return { ...t, kills, states, peak };
 }
 
+test('juggle: a juggled man goes up and comes down where he was hit, not drifting along', () => {
+  const t = juggleRun();
+  let x0 = null, lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < 160; i++) {
+    t.world.tick();
+    if (!t.d.juggles) continue;
+    x0 ??= t.d.x;
+    lo = Math.min(lo, t.d.x); hi = Math.max(hi, t.d.x);
+  }
+  assert(x0 !== null, 'he was juggled');
+  assert(hi - lo < 16, `he barely moves sideways through the juggle (${(hi - lo).toFixed(1)} px)`);
+});
+
 test('sunder: X, X, Y, Y keeps him planted and splits the launched man in half, however tough', () => {
   const t = sunderRun();
   assert(t.states.has('launcher') && t.states.has('sunder'), `launcher then sunder (${[...t.states]})`);

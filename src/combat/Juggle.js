@@ -23,7 +23,9 @@ export const JUGGLE = {
   lift: 340,        // upward speed a juggle hit gives a flying man (first hit)
   decay: 0.84,      // each further hit in the same juggle lifts this much less
   maxHits: 12,      // juggle hits before he simply drops
-  carry: 24,        // sideways push cap while juggled (he stays in reach)
+  carry: 10,        // sideways push cap while juggled (he stays in reach)
+  airDrag: 0.9,     // ...and a juggled man's sideways speed bleeds off this much a frame,
+                    // so he goes up and comes down where he was hit instead of drifting
   heroHang: 300,    // a hero who lands an air hit is held up at least this fast
   airHits: 3,       // air swings a jump, as long as each one connects
   chainFrom: 6,     // frames into an air swing before the next can be pressed (on a hit)
@@ -38,7 +40,9 @@ export const JUGGLE = {
 export const SUNDER = {
   reach: 46,        // the launched man drops in this far in front of him...
   cutHeight: 70,    // ...at about this height when the blade comes down
-  drawIn: 7,        // how hard he's drawn there through the wind-up (per second)
+  drawIn: 7,        // how hard he's drawn there through the wind-up (per second)...
+  maxDrift: 70,     // ...but never sideways faster than this (px/s), and only when he's
+  slack: 30,        // ...more than this off the mark: he isn't reeled in on a string
   windup: 10,       // frames with the blade hauled up overhead before the cut
   cutFrames: 3,     // frames for the blade to come down through him to the floor
   land: 20,         // frames with the blade buried in the ground after, before he can move

@@ -533,9 +533,12 @@ export const FIGHTER_STATES = {
         const tx = f.x + f.facing * SUNDER.reach;
         for (const v of f.sunderTargets) {
           if (!v.alive || v.grounded || v.state !== 'knockdown') continue;
-          v.vx = (tx - v.x) * k;
+          // (gently: a short sideways nudge only if he's well off the mark, and he only
+          // ever comes DOWN to the blade, never floats up to it)
+          const off = tx - v.x;
+          v.vx = Math.abs(off) > SUNDER.slack ? Math.sign(off) * Math.min(SUNDER.maxDrift, (Math.abs(off) - SUNDER.slack) * k) : v.vx * 0.8;
           v.vz = (f.z - v.z) * k;
-          v.vh = Math.max(-900, Math.min(600, (f.floor + SUNDER.cutHeight - v.h) * k));
+          v.vh = Math.min(v.vh, Math.max(-900, (f.floor + SUNDER.cutHeight - v.h) * k));
         }
         if (frame >= SUNDER.windup) {
           f.sunderCut = frame;
@@ -899,7 +902,8 @@ export const FIGHTER_STATES = {
     },
     update(f, frame) {
       if (f.lyingSince === null) {
-        // Still flying through the air.
+        // Still flying through the air. (juggled, his sideways speed bleeds off: combat/Juggle.js)
+        if (f.juggles && !f.grounded) f.vx *= JUGGLE.airDrag;
         if (f.grounded && frame > 1) {
           if (f.health > 0 && juggleLand(f)) return; // (a spike: he bounces once — combat/Juggle.js)
           f.lyingSince = frame;
