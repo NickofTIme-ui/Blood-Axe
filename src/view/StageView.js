@@ -26,6 +26,10 @@ const SIEGE_STONE = { radius: 21 };
 // warning they're loosed (they fly the rest); the arrow texture's size (drawn at 2x) and its
 // scale on screen, its length there; how long (ms) the spent ones stay standing in the ground
 const ARROWS = { perVolley: 7, loose: 0.2, texW: 160, texH: 26, scale: 0.36, arc: 230, seen: 760, len: 160 * 0.9, linger: 3200 };
+// Arrows that feather a man (hazardHit 'arrow'): how many stick in him, how long (ms) they
+// ride along before they fade, the fade itself (game frames: they wait out a pause), and the scale they're drawn at (a little
+// under the ones in the ground: they're buried deeper)
+const PINNED = { min: 1, max: 2, linger: 210, fade: 36, scale: 0.42 };
 
 // The pendulum blades' chain (world px): one link's outer length and width, the round
 // bar it's forged from, the spacing of the links (a link's length less the two bars that
@@ -1085,8 +1089,66 @@ export class StageView {
     }
   }
 
+  // An arrow volley feathering a man: one or two shafts stuck in him, head buried, nocks out
+  // behind, at the slant they came down at. Each is held as a spot on his body (across it,
+  // as a share of his width, on his facing side or his back; up it, as a share of his
+  // height), so it rides along as he staggers, turns or is thrown down (drawPinnedArrows).
+  // The view's own: nothing in the game touches them.
+  pinArrows(f) {
+    const n = PINNED.min + Math.floor(Math.random() * (PINNED.max - PINNED.min + 1));
+    const now = this.scene.world.frame;
+    for (let i = 0; i < n; i++) {
+      const img = this.scene.add.image(0, 0, 'arrow-fly').setOrigin(0.7, 0.5).setScale(PINNED.scale)
+        .setCrop(0, 0, ARROWS.texW * 0.7, ARROWS.texH);
+      (this.pinned ??= []).push({
+        f, img, at: now + i * 4,
+        across: rand(-0.3, 0.3), up: rand(0.45, 0.85),
+        // its slant in his facing (0 = level, pointing the way he faces; down-and-in: it fell on him),
+        // and whether it went in from the front (so its fletching shows ahead of him) or the back
+        tilt: rand(0.55, 1.15), front: Math.random() < 0.5,
+      });
+      img.setVisible(false);
+    }
+  }
+
+  // The arrows stuck in men: follow each to his body, fade after a while, and are let go
+  // when he leaves the field. Lying down (knocked flat, dead) his height runs along the
+  // ground behind him (he goes over on his back), so the arrows lie along it too.
+  drawPinnedArrows() {
+    if (!this.pinned?.length) return;
+    const now = this.scene.world.frame;
+    const on = this.scene.world?.fighters;
+    this.pinned = this.pinned.filter((a) => {
+      const f = a.f;
+      const left = PINNED.linger - (now - a.at);
+      if (left <= 0 || (on && !on.includes(f))) { a.img.destroy(); return false; }
+      if (now < a.at) return true; // (the second shaft bites a beat after the first)
+      const { w, h } = f.stats.body;
+      const face = f.facing || 1;
+      const flat = f.state === 'dead' || (f.state === 'knockdown' && f.lyingSince != null);
+      const side = a.front ? 1 : -1; // (the end you see sticks out the way it went in from)
+      let x; let y; let ang;
+      if (flat) {
+        x = f.x - face * h * a.up * 0.85;
+        y = f.z - f.h - 10 - w * 0.15 * (a.across + 0.3);
+        ang = Math.PI / 2 + (a.tilt - 0.85) * 0.6 * side; // (head down into his chest, the shaft standing up out of him)
+      } else {
+        x = f.x + face * w * a.across;
+        y = f.z - f.h - h * a.up;
+        ang = a.tilt; // (pointing down and forward, in his facing)
+      }
+      // the image's head is at its right: an arrow that came in from the front points back into him
+      const dir = face * side * -1;
+      const rot = flat ? ang : dir > 0 ? ang : Math.PI - ang;
+      a.img.setPosition(x, y).setRotation(rot).setFlipY(!flat && dir < 0)
+        .setDepth(f.z + (a.front ? 0.3 : -0.3)).setAlpha(Math.min(1, left / PINNED.fade)).setVisible(true);
+      return true;
+    });
+  }
+
   // stuck arrows fade out after a while (and are let go)
   drawStuckArrows() {
+    this.drawPinnedArrows();
     for (const im of this.flyPool ?? []) im.setVisible(false); // (the volleys in the air redraw theirs each frame)
     this.flyUsed = 0;
     const now = this.scene.time.now;
@@ -1537,6 +1599,7 @@ export class StageView {
         this.scene.gore.spawn({ x: d.x + rand(-45, 45), z: d.z + rand(0, 24), h: rand(0, 60), vx: (hz.dir ?? 1) * rand(30, 160), vz: rand(20, 120), vh: rand(40, 140), tint: i % 4 ? 0x8a7a64 : 0xff8a30, scale: rand(0.7, 1.5), decal: false, life: rand(30, 55) });
       }
     });
+    ev.on('hazardHit', ({ fighter, kind }) => { if (kind === 'arrow') this.pinArrows(fighter); });
     ev.on('shellLaunch', ({ hazard: hz }) => {
       if (hz.look === 'arrows') {
         // the bowmen loose: a hiss of arrows overhead, the posts' bowmen lean into it
