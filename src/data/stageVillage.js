@@ -155,9 +155,10 @@ export const STAGE_VILLAGE = {
       props: [
         // the barn, nailed shut with the miller's people inside: one barricade across its doors,
         // and smashing it lets all nine out (Nick, 2026-10-23: one spot, not three; the tally below)
-        // (struck at the back of the lane, z 264, but drawn `lift` higher, on the doorway
-        // painted on the barn behind)
-        { kind: 'barricade', tag: 'barn', x: 5500, z: 264, lift: 48, drop: null },
+        // (it stands on the ground across the doors, not `lift`ed onto the painted doorway,
+        // where it floated: Nick, 2026-10-24; and it's solid till smashed, the block
+        // 'barnBoards' below, so nobody walks through it)
+        { kind: 'barricade', tag: 'barn', x: 5500, z: 264, y: 0, opens: 'barnBoards', drop: null },
         { kind: 'crate', x: 5560, z: 470, drop: 'health' },
         // the archers shooting at you since the roofs: two posts either side of the mill (the
         // right one stands clear of the gallows, the barn past it: Nick, 2026-10-23)
@@ -292,6 +293,8 @@ export const STAGE_VILLAGE = {
 
     // ---- IV THE MILL YARD: the mill's raised floor at the back
     { kind: 'block', x0: 4700, x1: 5090, ...BACK(110), top: 70, look: 'mill' },
+    // the barn's barricade (props, above): solid across the doors till it's smashed (Stage.openWay)
+    { kind: 'block', tag: 'barnBoards', x0: 5452, x1: 5548, z0: LANE_TOP, z1: 274, top: 400, hideArt: true },
   ],
 
   // smoke dimming the backdrop behind the roofs, so the roofs you jump on stand out from the

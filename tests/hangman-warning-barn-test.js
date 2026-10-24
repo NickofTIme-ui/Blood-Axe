@@ -41,7 +41,7 @@ function setup(){const w=new World({seed:123}),p=createPlayer(w,new Controller()
  assert.deepEqual(freed.sort(),['barn-east','barn-west','mill-villagers']);
  // a barricade is broken by hits like any prop
  const {st:st2,p:p2,w:w2}=setup();const door=st2.props.find((pr)=>pr.tag==='barn');
- p2.x=door.x-30;p2.z=door.z;p2.facing=1;
+ p2.x=door.x-30;p2.z=door.z+20;p2.facing=1; // (standing in front of the boards: they're solid)
  let hits=0;for(let i=0;i<20&&!door.broken;i++){Object.defineProperty(p2,'activeAttack',{configurable:true,value:{move:{hitbox:{x:0,y:0,w:60,h:80}}}});st2.update();hits++;}
  assert(door.broken,`smashed by blows (${door.hp} left)`);
  // and by real swings from out in front of the doors, not only from the back edge of the lane
@@ -52,6 +52,18 @@ function setup(){const w=new World({seed:123}),p=createPlayer(w,new Controller()
   const bar=st3.props.find((pr)=>pr.tag==='barn');p3.invincible=true;
   for(let i=0;i<400&&!bar.broken;i++){if(i%20===0)c.registerPress('attack');p3.x=bar.x-55;p3.z=bar.z+dz;p3.facing=1;w3.tick();st3.update();}
   assert(bar.broken,`swings from ${dz} in front of the barn doors break the barricade (${bar.hp} left)`);
+ }
+ // and it's solid till then: walking up the lane at it stops in front of the boards, not
+ // inside them (Nick, 2026-10-24: he walked straight through it); smashed, the doorway's clear
+ {
+  const c=new Controller(),w4=new World({seed:123}),p4=createPlayer(w4,c,'warrior',4800,400),st4=new Stage(w4,STAGE_VILLAGE);st4.start(p4,{section:3});st4.fightOn=true;w4.hold=null;
+  for(const f of w4.fighters)if(f.team==='enemy')f.health=0;
+  const bar=st4.props.find((pr)=>pr.tag==='barn');p4.invincible=true;p4.x=bar.x;p4.z=340;
+  assert(!bar.lift,'the barricade stands on the ground, not lifted onto the painted doorway');
+  c.moveZ=-1;for(let i=0;i<240;i++){p4.x=bar.x;w4.tick();st4.update();}
+  assert(p4.z>bar.z,`stopped in front of the barricade (z ${p4.z.toFixed(0)}, boards at ${bar.z})`);
+  st4.breakProp(bar,1);for(let i=0;i<240;i++){p4.x=bar.x;w4.tick();st4.update();}
+  assert(p4.z<bar.z,`through the doorway once it's smashed (z ${p4.z.toFixed(0)})`);
  }
  void p;
 }

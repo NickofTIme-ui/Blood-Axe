@@ -208,8 +208,9 @@ export class Stage {
     for (const [si, sec] of this.sections.entries()) {
       for (const p of sec.props ?? []) {
         const def = PROPS[p.kind];
-        // (y: the ground it stands on — a ledge's top on a stage with terrain)
-        const y = this.terrain ? Math.max(0, this.terrain.groundAt(p.x, p.z)) : 0;
+        // (y: the ground it stands on — a ledge's top on a stage with terrain; or given, for
+        // one standing inside the invisible block that makes it solid: the barn's barricade)
+        const y = p.y ?? (this.terrain ? Math.max(0, this.terrain.groundAt(p.x, p.z)) : 0);
         // (size: this one drawn and hit bigger or smaller than its kind's default)
         const sz = p.size ?? 1;
         this.props.push({ id: id++, section: si, ...p, ...def, w: def.w * sz, h: def.h * sz, y, hp: def.hp, broken: false, hitBy: new Set() });
