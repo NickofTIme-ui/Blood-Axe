@@ -29,6 +29,7 @@ import { artKey, PaintedLevel } from './levelArt.js';
 import { LEVEL_ART } from '../data/levelArt.js';
 import { keyLayer } from './envArt.js';
 import { torchFlame } from './TorchFlame.js';
+import { roofFire, placeRoofFire } from './RoofFire.js';
 import { applyAtmosphere, gradient } from './atmosphere.js';
 
 // the painted oath shrine is drawn this tall (about twice a man)
@@ -375,7 +376,7 @@ export class TerrainView {
     const yTop0 = b.z0 - b.top; const yTop1 = b.z1 - b.top;
     for (const t of Object.values(v.tiles ?? {})) t.setVisible(false); // (shown again below by whichever face is painted)
     if (!b.solid) {
-      v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); v.arts?.forEach((a) => a.setVisible(false)); // (gone: broken through, or fallen)
+      v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); v.arts?.forEach((a) => a.setVisible(false)); placeRoofFire(v.fire, b.x0, 0, false); // (gone: broken through, or fallen)
       return;
     }
     // (a painted set piece stands in for it: the wood's rockslide, view/WoodView.js)
@@ -557,6 +558,12 @@ export class TerrainView {
     // its ends (painted beam): built, not a box cut square out of the shingles
     const ridged = bigRoof && topArt && this.surface(v, 'ridge', 'beam', x0 - 10, yTop0 - 9, w + 20, 14, b.z0 - 0.55, 3);
     if (ridged) v.tiles.ridge.setTint(0x8a7060);
+    // and fire running along the ridge, the length of the roof (view/RoofFire.js): behind
+    // whoever stands on it, in front of the ridge beam (Nick, 2026-10-24)
+    if (bigRoof && this.village) {
+      if (v.fire === undefined) v.fire = roofFire(this.scene, x0 + 4, x1 - 4, yTop0 + 3, { height: 72, depth: b.z0 - 0.45, seed: Math.round(b.x0) });
+      placeRoofFire(v.fire, x0 + 4, yTop0 + 3, true);
+    }
     if (!base && mat !== 'board' && !ridged) fade(top, x0 - 4, yTop0 - 22, w + 8, 22, 0x000000, 0, 0.7);
     top.fillStyle(0xff9a50, 0.14).fillRect(x0, yTop0, w, depth);
     fade(top, x0, yTop0, w, Math.min(60, depth * 0.45), 0x000000, 0.5, 0);

@@ -166,6 +166,9 @@ export const FX_STRIPS = {
   // a torch's flame, looping, on magenta (view/TorchFlame.js): every torch post, brazier and
   // small roof fire in the levels; until the file exists the old drawn flame stands in
   torchflame: { file: 'assets/fx/torch-flame-strip.png', frames: 8, height: 128, fps: 12, bg: 'magenta' },
+  // fire running along a roof's ridge (view/RoofFire.js, the Burning Roofs): 8 wide, low bands
+  // of flame on magenta, 2 across and 4 down, each one's foot on the same line (ChatGPT)
+  rooffire: { file: 'assets/fx/rooffire-strip.png', frames: 8, columns: 2, rows: 4, height: 120, fps: 12, bg: 'magenta' },
   // the Mage's stone wall: 6 jagged slab variants on magenta (effects/MageFX.js); until
   // the file exists the slabs are drawn as rock shapes
   earthwall: { file: 'assets/fx/earthwall-strip.png', frames: 6, height: 260, bg: 'magenta' },
