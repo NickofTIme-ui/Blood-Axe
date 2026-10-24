@@ -46,3 +46,21 @@ console.log('Mill rescue: encounter-only timer, hold safety, kill stops clock, s
  assert(said,'Irvolino answers the hangman');assert.equal(said[0],'MILLER');assert(r.clock<1260,'He answers before the final warning');
  console.log('Mill rescue: Irvolino answers the hangman before the drop.');
 }
+{
+ // the hangman fights (Nick, 2026-10-24: he hopped about and never engaged): a hero at the
+ // foot of the gallows gets the cleaver; left alone he hops back up once and works the lever
+ const {w,p,st,r}=setup();r.update();const e=r.executioner;let jumps=0;const swings=new Set();
+ w.events.on('jump',(ev)=>{if(ev.fighter===e)jumps++;});w.events.on('attackStart',(ev)=>{if(ev.fighter===e)swings.add(ev.state);});
+ const step=()=>{w.tick();st.update();p.health=Math.max(p.health,60);for(const f of w.fighters)if(f.team==='enemy'&&f!==e&&f.alive)f.health=0;};
+ p.x=4950;p.z=410;let fought=false;const clock=r.clock;
+ for(let i=0;i<600;i++){step();fought||=r.fighting;}
+ assert(fought&&e.controller===r.brain,'a hero at the gallows draws him into the fight');
+ assert(swings.size>=2,`he swings at him (${[...swings]})`);assert(e.h<70,'he comes down off the mill floor after him');
+ assert(r.clock<clock+60,'the rope holds while he fights');assert.equal(jumps,0,'no hopping about');
+ p.x=e.x<4950?5650:4320;p.z=450;for(let i=0;i<600;i++)step();
+ assert(!r.fighting&&r.operating,'left alone, he goes back to the lever');assert.equal(e.h,70);assert.equal(jumps,1,'one hop back up');
+ // a hero up on the mill floor with him below: he climbs up after him
+ p.x=4950;p.z=410;for(let i=0;i<200;i++)step();p.x=4800;p.z=300;p.h=p.floor=70;p.vh=0;p.fsm.change('idle');
+ for(let i=0;i<300;i++)step();assert.equal(e.h,70,'he follows him up');assert(r.fighting);
+}
+console.log('Mill rescue: the hangman fights a hero at the gallows, holds the rope while he does, hops back to the lever once and climbs after a man on the mill floor.');

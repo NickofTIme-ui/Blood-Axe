@@ -854,4 +854,13 @@ export const WAVES = [
 ];
 
 export const BAD_GUYS = ['butcher', 'stalker', 'penitent', 'berserker', 'ghoul', 'gladiator'];
-ENEMIES.executioner={...ENEMIES.butcher,id:'executioner',name:'The Hangman',title:'Kill him before he pulls the lever',maxHealth:105,boss:false,variety:null};
+// The hangman at the mill (stage/MillRescue.js): the butcher's cleaver work, but no hook (he
+// has none). In its place the HEADSMAN'S RUSH: the cleaver up over his head as he charges
+// in, then down. He presses in hard, crowd or no crowd (Nick, 2026-10-24: he has to fight).
+ENEMIES.executioner={...ENEMIES.butcher,id:'executioner',name:'The Hangman',title:'Kill him before he pulls the lever',maxHealth:105,boss:false,variety:null,
+  moves:{...ENEMIES.butcher.moves,
+    special1:{anim:'chop',cut:'chop',startup:26,active:4,recovery:30,damage:18,hitstun:30,hitstop:10,shake:6,
+      knockback:{x:280,y:300},knockdown:true,guardDamage:28,lunge:240,hitbox:{x:6,y:0,w:84,h:100}}},
+  ai:{...ENEMIES.butcher.ai,attackRange:80,maxCrowd:9,threatRange:140,attackCooldown:[20,46],
+    heavyChance:0.3,comboChance:0.75,blockChance:0.3,specialEvery:24,
+    specials:[{press:'special1',min:110,max:230,chance:0.5}]}};
