@@ -44,6 +44,15 @@ function setup(){const w=new World({seed:123}),p=createPlayer(w,new Controller()
  p2.x=door.x-30;p2.z=door.z;p2.facing=1;
  let hits=0;for(let i=0;i<20&&!door.broken;i++){Object.defineProperty(p2,'activeAttack',{configurable:true,value:{move:{hitbox:{x:0,y:0,w:60,h:80}}}});st2.update();hits++;}
  assert(door.broken,`smashed by blows (${door.hp} left)`);
+ // and by real swings from out in front of the doors, not only from the back edge of the lane
+ // (Nick, 2026-10-24: hits went straight through the barn wood)
+ for(const dz of [0,40,70]){
+  const c=new Controller(),w3=new World({seed:123}),p3=createPlayer(w3,c,'warrior',4800,400),st3=new Stage(w3,STAGE_VILLAGE);st3.start(p3,{section:3});st3.fightOn=true;w3.hold=null;
+  for(const f of w3.fighters)if(f.team==='enemy')f.health=0;
+  const bar=st3.props.find((pr)=>pr.tag==='barn');p3.invincible=true;
+  for(let i=0;i<400&&!bar.broken;i++){if(i%20===0)c.registerPress('attack');p3.x=bar.x-55;p3.z=bar.z+dz;p3.facing=1;w3.tick();st3.update();}
+  assert(bar.broken,`swings from ${dz} in front of the barn doors break the barricade (${bar.hp} left)`);
+ }
  void p;
 }
 console.log('Hangman warning: shouts, countdown, final warning, held clock; barn: one barricade, nine villagers counted out.');

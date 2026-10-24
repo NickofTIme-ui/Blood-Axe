@@ -121,16 +121,20 @@ export const PICKUPS = {
   trophy: { trophy: true, label: 'TROPHY', color: 0xffb030 }, // boss loot (data/trophies.js): dropped by bosses and elites
 };
 
-// Breakable props: hits to break, size.
+// Breakable props: hits to break, size. reach: how far up or down the lane (z) a swing
+// still lands on it (default 30); hitW: struck across this width instead of w.
 export const PROPS = {
   barrel: { hp: 2, w: 34, h: 46 },
   crate: { hp: 2, w: 42, h: 40 },
   urn: { hp: 1, w: 24, h: 36 },
   chest: { hp: 3, w: 46, h: 38 }, // iron-bound: takes a beating, always holds something good
-  wall: { hp: 5, w: 90, h: 130 }, // a cracked section of the back wall
+  wall: { hp: 5, w: 90, h: 130, reach: 60 }, // a cracked section of the back wall
   bell: { hp: 1, w: 34, h: 70 }, // an iron bell on a post: ring it to call an optional fight (stage.challenge)
   wreckage: { hp: 4, w: 84, h: 56 }, // a burning beam pinning a door shut: smash it and whoever is inside gets out
-  barricade: { hp: 3, w: 96, h: 70 }, // planks nailed across a doorway (the village barn): smash them and whoever is inside gets out
+  // planks nailed across a doorway (the village barn): smash them and whoever is inside gets out
+  // (struck from anywhere in front of the doors, not only from the back edge of the lane:
+  // Nick, 2026-10-24, swings at the barn wood went straight through it)
+  barricade: { hp: 3, w: 96, h: 70, reach: 80, hitW: 125 }, // (hitW: as wide as the painted boards, drawn w * 1.3)
   shackle: { hp: 3, w: 30, h: 84 }, // (the mine) a post a captive is chained to: break it and he's free
   counterweight: { hp: 5, w: 70, h: 120 }, // (the mine) the stone that holds a gate down: break its chain and the gate rises (`opens`)
   rubble: { hp: 6, w: 110, h: 90 }, // (the mine) loose fall in a passage: dig it out (`opens`: the rock wall behind it)

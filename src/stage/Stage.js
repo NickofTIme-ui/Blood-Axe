@@ -946,8 +946,10 @@ export class Stage {
       const hb = f.activeAttack ? toWorldBox(f, info.hitbox ?? info.move.hitbox) : ps.box;
       for (const pr of this.props) {
         if (pr.broken || pr.opened || pr.hitBy.has(info)) continue;
-        const box = { left: pr.x - pr.w / 2, right: pr.x + pr.w / 2, bottom: pr.y, top: pr.y + pr.h, z: pr.z };
-        if (!overlaps(hb, box, f.activeAttack ? (pr.kind === 'wall' ? 60 : 30) : ps.depth)) continue;
+        // (`lift`: drawn higher on the wall behind, so a blow at the boards as drawn lands too)
+        const hw = (pr.hitW ?? pr.w) / 2;
+        const box = { left: pr.x - hw, right: pr.x + hw, bottom: pr.y, top: pr.y + pr.h + (pr.lift ?? 0), z: pr.z };
+        if (!overlaps(hb, box, f.activeAttack ? (pr.reach ?? 30) : Math.max(ps.depth, pr.reach ?? 0))) continue;
         pr.hitBy.add(info);
         // a kick doesn't break a crate or a chest: it sends it skidding off down the lane
         // (Rurik's Sparta kick, the Rogue's crescent kick, the Mage's force blast)
