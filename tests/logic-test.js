@@ -4063,14 +4063,14 @@ function sunderRun({ gap = 60, boss = false } = {}) {
   return { ...t, kills, states, peak };
 }
 
-test('sunder: X, X, Y, Y leaps after the launched man and splits him in half, however tough', () => {
+test('sunder: X, X, Y, Y keeps him planted and splits the launched man in half, however tough', () => {
   const t = sunderRun();
   assert(t.states.has('launcher') && t.states.has('sunder'), `launcher then sunder (${[...t.states]})`);
-  assert(t.peak > 60, `he leaps up after him (${t.peak.toFixed(0)} px)`);
+  assert(t.peak < 1, `his feet never leave the floor (${t.peak.toFixed(1)} px)`);
   assert(t.kills.length === 1 && !t.d.alive, 'the man in the air dies to it');
   const k = t.kills[0];
   assert(k.sunder && k.fatality === 'halfV' && !k.attachedSplit, `cut clean in half (${k.fatality}, attached ${k.attachedSplit})`);
-  assert(t.p.grounded && t.p.state === 'idle', `he lands and is free again (${t.p.state})`);
+  assert(t.p.grounded && t.p.state === 'idle', `he wrenches the blade free and can move again (${t.p.state})`);
 });
 
 test('sunder: only out of a launcher that connected; a boss just takes the chop', () => {

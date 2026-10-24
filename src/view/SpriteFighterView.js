@@ -194,20 +194,15 @@ export class SpriteFighterView {
         if (fr <= hang) return up[Math.min(up.length - 1, 1 + Math.floor((fr / Math.max(1, hang)) * (up.length - 1)))];
         return f.air < 46 ? down : up.at(-1);
       }
-      // the SUNDER (X, X, Y, Y: combat/Juggle.js), on the Leap Smash poses (else the cleave's):
-      // up after the man with the blade coming overhead, held there, the cut, buried
+      // the SUNDER (X, X, Y, Y: combat/Juggle.js), on the cleave's poses, feet planted:
+      // the blade hauled up overhead, brought over, down through him into the floor
       case 'sunder': {
-        const P = a.plunge;
         const ph = a.heavy?.phases;
-        if (!P && !ph) return a.jump.fall[0];
-        if (f.landedAt) {
-          const t = fr - f.landedAt;
-          if (P) return P.buried[t < SUNDER.land - 9 ? 0 : t < SUNDER.land - 4 ? 1 : 2];
-          return t < SUNDER.land - 6 ? ph.active[0] : ph.recovery.at(-1);
-        }
-        if (f.sunderCut) return P ? P.down[0] : ph.active[0];
-        if (f.vh > 0 && !f.hangFrames) return P ? P.up[0] : ph.startup[Math.min(1, ph.startup.length - 1)];
-        return P ? P.up[1] : ph.startup.at(-1);
+        if (!ph) return a.jump.fall[0];
+        const up = ph.startup;
+        if (f.landedAt) return fr - f.landedAt < SUNDER.land - 6 ? ph.active[0] : ph.recovery.at(-1);
+        if (f.sunderCut) return fr - f.sunderCut < 1 ? up.at(-1) : ph.active[0];
+        return up[Math.min(up.length - 2, Math.floor((fr / SUNDER.windup) * (up.length - 1)))];
       }
       case 'block':
       case 'parry': return a.block.frames[0];
@@ -526,18 +521,19 @@ export class SpriteFighterView {
       }
     }
 
-    // the Sunder: coiled back at the top, stretched long down the cut, slammed into the floor
+    // the Sunder: coiled back under the raised blade, driven forward down the cut, the
+    // weight dropping in behind it as it bites into the floor (feet never leave it)
     const sundering = st === 'sunder';
     if (sundering) {
       if (f.landedAt) {
         const hit = Math.max(0, 1 - (fr - f.landedAt) / 8);
-        sx *= 1 + 0.18 * hit; sy *= 1 - 0.18 * hit;
-        bob += 5 * hit;
+        sx *= 1 + 0.1 * hit; sy *= 1 - 0.1 * hit;
+        bob += 3 * hit;
         push += 3 * hit;
       } else if (f.sunderCut) {
-        lean += 6;
-        sx *= 0.9; sy *= 1.14;
-      } else if (f.hangFrames) lean -= 8;
+        lean += 5;
+        push += 2;
+      } else lean -= 6 * Math.min(1, fr / SUNDER.windup);
     }
 
     // swings: anticipation -> drive -> settle (see swingMotion)
@@ -590,7 +586,7 @@ export class SpriteFighterView {
     // afterimage: when a swing changes pose through the strike, the last pose lingers a
     // few frames behind him (fills the gap between hand-drawn poses, sells the speed)
     const g = this.ghost;
-    const dropping = (plunging && !f.landedAt && fr > (f.stats.kit?.plunge?.hang ?? 0)) || (sundering && f.sunderCut && !f.landedAt);
+    const dropping = (plunging && !f.landedAt && fr > (f.stats.kit?.plunge?.hang ?? 0));
     if (dropping && this.prevPose) {
       // Leap Smash: a trail of himself left up the drop
       const p = this.prevPose;

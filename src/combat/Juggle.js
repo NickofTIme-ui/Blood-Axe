@@ -4,9 +4,10 @@
 //
 //   LAUNCHER   Rurik's J, J, K (light2 -> heavy): the RISING CLEAVE throws him straight up.
 //              Jump straight out of it when it connects.
-//   SUNDER     ...or press K again (pad: X, X, Y, Y) once the launcher has connected: he
-//              leaps up after the man, hangs a beat with Oathkeeper overhead and comes down
-//              in one downward cut that splits him in half, head to groin (state 'sunder',
+//   SUNDER     ...or press K again (pad: X, X, Y, Y) once the launcher has connected: feet
+//              planted, he hauls Oathkeeper overhead while the man drops back down in front
+//              of him, then brings it down in one cut that splits him in half, head to groin
+//              and on into the floor (state 'sunder',
 //              entities/fighterStates.js). A man in the air never survives it; anyone it
 //              catches on the floor takes a heavy chop. Bosses aren't juggled, so they
 //              only ever take the chop.
@@ -33,18 +34,16 @@ export const JUGGLE = {
                     // man popped up on his way down hangs there, floating)
 };
 
-// The SUNDER (X, X, Y, Y): the leap after the launched man and the cut that halves him.
+// The SUNDER (X, X, Y, Y): feet planted, the blade overhead, the cut that halves him.
 export const SUNDER = {
-  minRise: 60,      // he leaps at least this high (px)...
-  maxRise: 190,     // ...and at most this high, to meet the man where he is
-  reach: 34,        // he aims to come down this far in front of the man's centre
-  maxCarry: 420,    // sideways speed cap on the leap
-  hold: 3,          // the launched men float (no fall) while he rises to them
-  hang: 7,          // frames held at the top, blade overhead, before the cut
-  drop: 1500,       // the cut comes down this fast
-  land: 20,         // frames buried in the ground after, before he can move
+  reach: 46,        // the launched man drops in this far in front of him...
+  cutHeight: 70,    // ...at about this height when the blade comes down
+  drawIn: 7,        // how hard he's drawn there through the wind-up (per second)
+  windup: 10,       // frames with the blade hauled up overhead before the cut
+  cutFrames: 3,     // frames for the blade to come down through him to the floor
+  land: 20,         // frames with the blade buried in the ground after, before he can move
   landCancel: 10,   // ...a roll can come out of it from here
-  timeout: 90,      // the whole thing never runs longer than this (frames)
+  timeout: 60,      // the whole thing never runs longer than this (frames)
 };
 
 // Can this hit juggle him? (a hero's blow on a man flying through the air)

@@ -1083,3 +1083,8 @@ stale files ship.
 
 ## Executioner banner art (2026-10-24)
 - The hangman's clock in the mill yard (HUDScene.makeRescueAlert) is now a painted plaque, `assets/ui/executioner-banner.png` (texture `executioner-banner`): iron and bronze like the pause frame, noose-and-axe crest. Painted in ChatGPT on Nick's PC (Bloody axe project chat), raw at `assets/incoming/executioner_banner_raw.png` there, magenta keyed out in the cloud. Title on the plate, countdown in the bottom groove; the old code-drawn box stays as a fallback if the picture is missing.
+## Cloud, 2026-10-24: the Sunder stays planted (not on itch)
+
+- Nick: "adjust the X, X, Y combo to keep the character planted during the final swing not that jumping monstrosity". The Sunder no longer leaps. Rurik stays on his feet (`sunder` in `fighterStates.js` zeroes his movement every frame), hauls the blade overhead for `SUNDER.windup` frames while the launched men are drawn down to about chest height `SUNDER.reach` px in front of him, then one cut (`cutFrames`) goes through them into the floor. Hitbox is now floor to 230 px up. Kill, callout, ground slam (`sunderLand`) and the 20-frame buried recovery are unchanged.
+- View: always the cleave's poses now (raised, over, down into the floor), no Leap Smash poses and no drop trail.
+- Test `sunder: X, X, Y, Y keeps him planted...` asserts his feet never leave the floor; `npm test` all pass.
