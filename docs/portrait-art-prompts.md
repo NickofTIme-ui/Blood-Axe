@@ -11,6 +11,21 @@ other one was made in ChatGPT from the prompts below, four to nine to a grid (th
 on Nick's PC in `docs/art-refs/portraits-grid-1..4.png`, not in git) and cut apart into
 256 x 256 squares. To redo one, generate it alone and drop it over its file.
 
+## Matched to the sprites (24 October 2026, Nick's playtest)
+
+Nick's QA: the portraits must look like the characters as they are in the game. These were
+redone in ChatGPT with the in-game sprite attached as the reference (the sprite crops
+and the 1254 px originals are in the project files, `dialogue-overhaul/`): Varek (gladiator
+sprite), Cinder (penitent), Hruk (berserker), the Houndmaster (stalker), the Chain Warden
+(ghoul), Hask and Hrolf (the twin sprite; Hrolf mirrored, with a dented cheek-plate and a
+red neck rag), the King's Executioner (butcher), the Forgemaster (the berserker body, an
+older soot-black smith's face), Hilde, Alex, Hakon (from his painted deathbed art: he had no
+portrait before) and Rurik (from his in-game HD art). The prompt each time: "Attached: the
+in-game sprite of X. Square 1:1 head-and-shoulders portrait of exactly this man: same
+<helmet / hair / armour / weapon / colours, listed from the sprite>. 3/4 view. Same painted
+pixel-art style, orange firelight rim light, plain near-black background. No text, no
+frame." To redo one, attach his sprite again and say what to keep.
+
 ## The style (paste this first, every time)
 
 > Square bust portrait for a dark-fantasy pixel-art game's dialogue box. Head and

@@ -73,13 +73,21 @@ export const SPEAKERS = {
   VINCENT: { name: 'Vincent' },
 };
 
+// FACTION COLOURS (Nick's playtest, 2026-10-24): the box a line comes in says whose side the
+// speaker is on. The king and every man of his: a bloody dark red box. Everyone else (the
+// Oath Keepers, the people they fight for): deep blue. view/DialogueBox.js and the marker
+// over the speaker (view/SpeakerMarker.js) both read it.
+export const FOES = new Set(['VAURATH', 'MALGOR', 'VAREK', 'CINDER', 'HRUK', 'HOUNDMASTER', 'WARDEN', 'OVERSEER', 'ORSK',
+  'HASK', 'HROLF', 'MESSENGER', 'EXECUTIONER', 'FORGEMASTER', 'CAPTAIN']);
+export const speakerSide = (who = '') => (NARRATION.has(who) ? 'none' : FOES.has(who) ? 'foe' : 'ally');
+
 const cap = (w) => w.charAt(0) + w.slice(1).toLowerCase();
 
-// { name, portrait } for a line's `who` (null: narration, nobody's face)
+// { name, portrait, side } for a line's `who` (null: narration, nobody's face)
 export function speakerInfo(who = '') {
   if (NARRATION.has(who)) return null;
   const s = SPEAKERS[who];
-  return { name: s?.name ?? cap(who), portrait: s?.portrait ?? who.toLowerCase() };
+  return { name: s?.name ?? cap(who), portrait: s?.portrait ?? who.toLowerCase(), side: speakerSide(who) };
 }
 
 // every portrait file the game looks for

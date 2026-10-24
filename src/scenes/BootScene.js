@@ -32,6 +32,7 @@ export class BootScene extends Phaser.Scene {
     preloadHeroHd(this);
     for(const name of ['gallows','mechanisms','irvolino-bound','executioner-actions','executioner-lever','irvolino-rescue'])this.load.image(`mill-${name}`,`assets/npcs/mill-rescue/${name}.png`);
     this.load.image('pause-frame','assets/ui/pause-frame.png');
+    for(const side of ['foe','ally'])for(const mode of ['full','compact'])this.load.image(`dialogue-${side}-${mode}`,`assets/ui/dialogue/${side}-${mode}.png`); // the story's red / blue boxes (view/DialogueBox.js)
     this.load.image('executioner-banner','assets/ui/executioner-banner.png'); // the hangman's clock plaque (scenes/HUDScene.js)
     this.load.image('blood-ink-sheet','assets/fx/blood-ink-sheet.png');
     this.load.image('rurik-oathkeeper-raised','assets/cinematics/rurik-oathkeeper-raised.png');

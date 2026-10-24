@@ -249,7 +249,8 @@ export class HUDScene extends Phaser.Scene {
       this.add.rectangle(0, H, W, 30, 0x000000).setOrigin(0, 1).setAlpha(0).setDepth(-1),
     ];
     // the story's text box (view/DialogueBox.js): the full framed box with the speaker's
-    // portrait on quiet ground, a slim strip of it mid-fight so the fight stays in view
+    // portrait on quiet ground, a slim one mid-fight so the fight stays in view; red for the
+    // king's men, blue for everyone else, hung under whoever is speaking
     this.dialogue = new DialogueBox(this, 61);
   }
 
@@ -265,12 +266,14 @@ export class HUDScene extends Phaser.Scene {
       const fight = !hold && (this.arena.stage.livingFoes?.().length ?? 0) > 0;
       D.show(line.who, line.text, fight ? 'compact' : 'full',
         line.hold ? 'CLICK / D-PAD ▶ / N  next     D-PAD ◀ / X  skip     (or SPACE / J)' : 'CLICK / D-PAD ▶ / N  next     D-PAD ◀ / X  skip');
+      // (hung under the speaker's feet when he's on screen: view/SpeakerMarker.js screenAt)
+      D.place(this.arena.speakerMarker?.screenAt() ?? null);
       D.setAlpha(Math.min(1, D.alpha + 0.15));
       if (this.hint.alpha > 0) { this.tweens.killTweensOf(this.hint); this.hint.setAlpha(0); }
     }
     D.update(this.time.now);
     // what lives along the bottom edge (the enemy strip, the partner wait) steps up over the box
-    this.lift = D.alpha * D.height;
+    this.lift = D.onBottom ? D.alpha * D.height : 0;
   }
 
   sectionCard(index, section) {
@@ -490,7 +493,9 @@ export class HUDScene extends Phaser.Scene {
       const bar = f || i < this.enemyBars.length ? this.enemyBar(i) : null;
       if (!bar) continue;
       const vis = !!f;
-      for (const k of ['name', 'rim', 'trail', 'fill']) bar[k].setVisible(vis).setY(bar.baseY[k] - (this.lift ?? 0));
+      // (a bar the story's box hangs over, under a speaker, fades back so the line reads)
+      const under = vis && this.dialogue.covers(bar.rim.getBounds());
+      for (const k of ['name', 'rim', 'trail', 'fill']) bar[k].setVisible(vis).setY(bar.baseY[k] - (this.lift ?? 0)).setAlpha(under ? 0.18 : 1);
       if (!f) continue;
       if (bar.id !== f.id) { bar.id = f.id; bar.shown = f.health / f.stats.maxHealth; }
       const ratio = Math.max(0, f.health / f.stats.maxHealth);
