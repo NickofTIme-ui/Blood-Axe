@@ -31,13 +31,17 @@ export function roofFire(scene, x0, x1, y, { height = 70, depth = 0, seed = 1 } 
     if (left + w >= x1 - 1) break;
     x += w * (0.45 + r() * 0.15);
   }
-  const run = { sprites, x0, y };
+  const run = { sprites, x0, w: x1 - x0, y };
+  // (heard as well as seen: core/FireAmbience.js turns the crackle up as you near a run)
+  if (!scene.roofFires) { scene.roofFires = []; scene.events?.once('shutdown', () => { scene.roofFires = null; }); }
+  scene.roofFires.push(run);
   return placeRoofFire(run, x0, y, true);
 }
 
 // Moves a run with its roof (a shake), or hides it (the roof gone).
 export function placeRoofFire(run, x0, y, visible) {
   if (!run) return run;
+  run.x0 = x0; run.visible = visible;
   for (const f of run.sprites) f.setPosition(x0 + f.dx, y).setVisible(visible);
   return run;
 }

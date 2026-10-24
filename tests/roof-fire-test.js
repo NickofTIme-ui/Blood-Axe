@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { roofFire, placeRoofFire } from '../src/view/RoofFire.js';
 import { FX } from '../src/view/stripImporter.js';
+import { FireAmbience } from '../src/core/FireAmbience.js';
+import { SETTINGS } from '../src/config/settings.js';
 
 const made = (log) => {
   const o = { x: 0, y: 0, visible: true };
@@ -12,6 +14,7 @@ const made = (log) => {
   return o;
 };
 const scene = (log, anims = new Set()) => ({
+  events: { once() {} },
   anims: { exists: (k) => anims.has(k), create: (cfg) => { anims.add(cfg.key); log.push(['anim', cfg]); } },
   add: { sprite: () => { const o = made(log); log.push(['sprite', o]); return o; } },
 });
@@ -45,4 +48,20 @@ assert.ok(run.sprites.some((f) => f.x === 1003) && run.sprites.every((f) => f.y 
 placeRoofFire(run, 1003, 52, false);
 assert.ok(run.sprites.every((f) => !f.visible));
 delete FX.rooffire;
-console.log('Roof fire checks passed: a gapless run the length of the roof, own frames, narrowed on a short roof, follows a shake.');
+
+// heard: the village's crackle swells as the screen comes up to a burning roof
+{
+  let volume = 0;
+  const snd = { isPlaying: false, play() { this.isPlaying = true; }, setVolume(v) { volume = v; }, stop() {}, destroy() {} };
+  const view = { centerX: 0, width: 960 };
+  const sc = { cache: { audio: { exists: () => true } }, sound: { locked: false, add: () => snd, off() {} }, events: { once() {} }, stageData: { fireBed: 1 }, cameras: { main: { worldView: view } }, roofFires: [{ x0: 3000, w: 340, visible: true }] };
+  const amb = new FireAmbience(sc);
+  const settle = (x) => { view.centerX = x; for (let i = 0; i < 400; i++) amb.update(1000 / 60); return volume; };
+  const far = settle(1000); const near = settle(2500); const on = settle(3150);
+  assert.ok(Math.abs(far - SETTINGS.audio.sfx * 0.4) < 0.001, 'far from the roofs: the village bed');
+  assert.ok(near > far && on > near, 'louder coming up to the roof, loudest on it');
+  assert.ok(on >= SETTINGS.audio.sfx * 0.99, 'full crackle on the burning roof');
+  sc.roofFires[0].visible = false;
+  assert.ok(settle(3150) < on, 'a roof that is gone is quiet');
+}
+console.log('Roof fire checks passed: a gapless run the length of the roof, own frames, narrowed on a short roof, follows a shake; the crackle swells near it.');
