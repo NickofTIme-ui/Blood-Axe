@@ -154,6 +154,11 @@ export const SPRITE_SHEETS = {
   mother: { file: 'assets/sprites/npc/mother.png', frames: 6, height: 235, grade: NPC_GRADE },
   boy: { file: 'assets/sprites/npc/boy.png', frames: 6, height: 170, grade: NPC_GRADE },
   elder: { file: 'assets/sprites/npc/elder.png', frames: 4, height: 228, grade: NPC_GRADE },
+  // the villager Varek kills in the opening (view/NpcView.js drawKneeling): begging on his
+  // knees, struck, pitching forward, face down (ChatGPT, 2026-10-24). Each pose sits with
+  // its boots at the same spot in its cell; height: the begging pose as tall as the
+  // villager sheet's kneeling one (170 px)
+  'villager-death': { file: 'assets/sprites/npc/villager_death.png', frames: 4, height: 170, grade: NPC_GRADE },
   captive: { file: 'assets/sprites/npc/captive.png', frames: 6, height: 250 }, // (big: the hanging pose's rope makes it the tallest, and a standing man must still match the heroes)
   // the mine's chained prisoners (view/NpcView.js PRISONERS): the villager and elder sheets
   // again, cut at the heroes' height (a standing man as tall as the captive above) and so

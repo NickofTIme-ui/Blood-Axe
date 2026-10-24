@@ -82,7 +82,11 @@ const CELLS = {
   elsbeth: {stand:0,cower:1,wave:2,run:[3,4,5,4],sit:6,kneel:6},
   // ...and his own walk, a full cycle, once it's painted (data/levelArt.js 'nicholas-walk')
   'nicholas-walk': { run: [0, 1, 2, 3, 4, 5, 6, 7], stand: 0 },
+  // the villager Varek kills in the opening (drawKneeling)
+  'villager-death': { beg: 0, struck: 1, fall: 2, lie: 3, stand: 0 },
 };
+// the opening's villager-death cut (drawKneeling), at depth scale 1
+const DEATH_SHIFT = 44; const DEATH_HEAD = 112;
 // the mine's prisoners: the same sheets cut bigger (data/levelArt.js); the old man has no
 // run, so he hobbles on his standing pose (sinking on each step, like the run)
 const HOBBLE = [0, 0, 0, 0];
@@ -365,10 +369,36 @@ export class NpcView {
   // The villager on his knees before Varek in the opening (stage/VillageOpening.js), facing
   // the heroes; struck down, he pitches forward onto his face and the blood spreads under
   // him. false: the villager sheet isn't painted (the stand-ins draw him).
+  // The villager on his knees at Varek's feet in the opening (stage/VillageOpening.js).
+  // Painted death strip (data/levelArt.js 'villager-death': begging, struck, pitching
+  // forward, face down) when it's in: he shakes, harder as the mace goes up; on the hit
+  // he jolts in the struck pose through the freeze, pitches forward and lands with a
+  // little bounce, the blood spreading from his head. Without it the old kneeling pose
+  // tips over.
   drawKneeling(n, v, g, y, k, t) {
+    const dead = n.state === 'dead';
+    if (SPRITES['villager-death']) {
+      const d = dead ? n.t : -1;
+      const F = n.freeze ?? 9;
+      const pose = !dead ? 'beg' : d < F + 5 ? 'struck' : d < F + 14 ? 'fall' : 'lie';
+      const shake = !dead ? (n.dread ?? 0.25) * 1.4 * Math.sin(t * 2.3) : d < F ? 3 * (1 - d / F) * (d % 2 ? 1 : -1) : 0;
+      const land = pose === 'lie' ? Math.max(0, 1 - (d - F - 14) / 8) : 0;
+      const dy = -4 * k * Math.sin(land * Math.PI); // (the body comes down, bounces once, lies still)
+      // (the cut is as wide as the man lying stretched out, boots at its left edge: the
+      // kneeling man is DEATH_SHIFT px off its middle, his head when he's down DEATH_HEAD)
+      if (!this.figure(g, n.x - DEATH_SHIFT * k + shake * k, y + dy, k, pose, 0, 0, -1, 'villager-death')) return false;
+      const img = v.imgs[this.curN - 1];
+      img.setAngle(0).setScale(k * 0.5);
+      if (dead && d < 2) img.setTintFill(0xffffff); // (the flash of the hit)
+      if (dead) {
+        const pool = Math.min(1, Math.max(0, d - F - 14) / 180);
+        if (pose === 'lie') g.fillStyle(0x4a0606, 0.8).fillEllipse(n.x - DEATH_HEAD * k, y + 1, (14 + 80 * pool) * k, (4 + 10 * pool) * k);
+      }
+      return true;
+    }
     if (!this.figure(g, n.x, y, k, 'kneel', t, 0, -1, 'villager')) return false;
     const img = v.imgs[this.curN - 1];
-    if (n.state !== 'dead') return true;
+    if (!dead) return true;
     const f = Math.min(1, n.t / 16); // (sim frames since the blow)
     const fall = f * f;
     const pool = Math.min(1, n.t / 150);

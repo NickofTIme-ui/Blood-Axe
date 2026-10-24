@@ -328,13 +328,16 @@ export class ArenaScene extends Phaser.Scene {
       if (first) playSfx(this, 'jump', { volume: 0.6, pitch: -400, minGapMs: 0 });
     });
     ev.on('openingKill', ({ x, z, dir }) => {
-      if (this.gore.level === 0) this.gore.spark(x, z, 40, 0xffffff, 14);
+      // the mace lands on the back of his head (about 70 px up on a kneeling man): the
+      // spray goes forward, away from the blow, and hangs in the air through the freeze
+      if (this.gore.level === 0) this.gore.spark(x, z, 70, 0xffffff, 16);
       else {
-        this.gore.burst(x, z, 46, dir, 34, 1.3);
-        this.gore.splat(x - 26, z + 2, 1.8);
+        this.gore.burst(x, z, 70, dir, 40, 1.4);
+        this.gore.mist(x + dir * 10, z, 70, 6);
+        this.gore.splat(x + dir * 30, z + 2, 1.6);
       }
-      this.fx.shake(6, 14);
-      playSfx(this, 'stationaryKill', { volume: 0.9, minGapMs: 0 });
+      this.fx.shake(10, 20);
+      playSfx(this, 'stationaryKill', { volume: 1, minGapMs: 0 });
     });
     // Busy fight = the occasional distant sword clash, mixed low.
     this.actionHits = [];

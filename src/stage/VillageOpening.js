@@ -18,6 +18,11 @@ export const OPENING = {
   charge: 30,     // frames the front rank charges before the heroes are let go
   strikeLine: 2,  // the opening beat's silent line: the strike
   captive: 'captive',
+  // the blow (Nick's QA, 2026-10-24: more weight): the mace hangs at the top of his
+  // swing before it drops, the frame freezes on the hit, then the swing follows through
+  apex: 6,        // frames before contact that the mace is at the top of the swing...
+  hang: 14,       // ...and how long it hangs there (the villager's dread peaks)
+  freeze: 9,      // the hit: everything holds this many frames
 };
 
 // The line isn't a grid (Nick's playtest, 2026-10-24): a loose mob, hand-placed, each grunt
@@ -122,8 +127,9 @@ export class VillageOpening {
 
   kill() {
     const n=this.captive;
+    this.killed=true;
     if(n&&n.state!=='dead'){
-      n.state='dead';n.t=0;n.slain=true;
+      n.state='dead';n.t=0;n.slain=true;n.freeze=OPENING.freeze;
       this.stage.world.events.emit('openingKill',{npc:n,by:this.varek,x:n.x,z:n.z,dir:-1});
     }
   }
@@ -151,12 +157,20 @@ export class VillageOpening {
       const f=this.varek, m=f.move;
       this.struck++;
       if(f.state==='heavy'&&m){
-        f.fsm.frame++;
-        if(f.fsm.frame===m.startup+1)this.kill();
+        const hit=m.startup+1;
+        // the top of the swing: the mace hangs a moment; the hit: the frame freezes
+        const atTop=f.fsm.frame===hit-OPENING.apex&&(this.hung??=0)<OPENING.hang;
+        if(atTop)this.hung++;
+        else if(this.frozen>0)this.frozen--;
+        else f.fsm.frame++;
+        if(f.fsm.frame===hit&&!this.killed){this.kill();this.frozen=OPENING.freeze;}
         if(f.fsm.frame>=m.startup+m.active+m.recovery)f.fsm.change('idle');
       }else this.kill();
       if(f.state!=='heavy')this.struck=999;
     }
+    // the man at his feet: shaking from the start, worse as the mace goes up
+    const n=this.captive;
+    if(n&&n.state!=='dead')n.dread=this.struck?Math.min(1,0.4+(this.hung??0)/OPENING.hang*0.6):0.25;
     const spent=story.done.has('opening') || (story.beats.find(b=>b.id==='opening')?.fired&&!story.busy);
     if(spent&&this.phase!=='withdraw') {
       this.phase='withdraw';this.retreat=0;
