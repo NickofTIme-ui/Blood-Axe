@@ -1088,3 +1088,9 @@ stale files ship.
 - Nick: "adjust the X, X, Y combo to keep the character planted during the final swing not that jumping monstrosity". The Sunder no longer leaps. Rurik stays on his feet (`sunder` in `fighterStates.js` zeroes his movement every frame), hauls the blade overhead for `SUNDER.windup` frames while the launched men are drawn down to about chest height `SUNDER.reach` px in front of him, then one cut (`cutFrames`) goes through them into the floor. Hitbox is now floor to 230 px up. Kill, callout, ground slam (`sunderLand`) and the 20-frame buried recovery are unchanged.
 - View: always the cleave's poses now (raised, over, down into the floor), no Leap Smash poses and no drop trail.
 - Test `sunder: X, X, Y, Y keeps him planted...` asserts his feet never leave the floor; `npm test` all pass.
+## Cloud, 2026-10-24: dialogue box overhaul (branch claude/project-thread-yi79ro, not on main or itch)
+
+- Nick's playtest item 2. The box is red for the king's men (`FOES` in `data/speakers.js`) and deep blue for everyone else, using ChatGPT's painted frames (`docs/art/dialogue-box/frame-*.png`, cut by `python tools/build-dialogue-frames.py` into `assets/ui/dialogue/`).
+- The box hangs under the speaker's feet (`SpeakerMarker.screenAt` -> `DialogueBox.place`), clamped to the screen; health bars it covers fade. No one on screen: bottom-centre as before.
+- New speaker marker: double chevron in the side's colour.
+- 13 portraits repainted from the in-game sprites (see `docs/portrait-art-prompts.md`); full-size originals and sprite crops in the project files `dialogue-overhaul/`, and on Nick's PC in `art/dialogue-refs/`. Ilse still has the stand-in portrait.
