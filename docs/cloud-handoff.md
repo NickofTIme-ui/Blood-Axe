@@ -1128,7 +1128,7 @@ stale files ship.
 ## 2026-10-24: Rurik's opening pledge cut (Nick)
 - Nick: "remove the dialogue rurik says in the beginning about killing every captain on their knees, no longer needed". The held `pledge` beat in src/data/stageVillage.js ("Every captain who led them here..." / "Each of them kneels. Each hears his crimes. Each pays.") is gone; after the first fight play just goes on. Boss sentences (stage/Sentence.js) are unchanged. The logic test now checks the beat stays gone.
 
-## Cloud, 2026-10-24: frame-rate pass, no gameplay changes (branch claude/project-thread-6y52dm, not on main yet)
+## Cloud, 2026-10-24: frame-rate pass, no gameplay changes (ON MAIN at cf67e66, not on itch yet)
 - Nick: "lots of frame drops, optimise, don't change gameplay". Measured with `tools/perf-profile.mjs` (headless Chromium, the sweep bot plays a level, every frame timed, GL calls counted, CPU profile).
 - `view/PaintedFire.js`: the burning buildings' fire masks were repainted and re-uploaded whole (~10 MB) 15 times a second, on screen or not. Now only paintings on screen are repainted (one coming into view is repainted at once). The street wall's tiled overlay never showed repaints (a TileSprite copies its texture once), so it is painted once.
 - `scenes/BootScene.js releaseSources`: the source paintings Boot cuts sheets from (estrip-, lvlsrc-, sprsrc-, plxsrc-, fxsrc-, ...) are removed once cut: textures on the graphics card 4.2 GB -> 2.3 GB.
