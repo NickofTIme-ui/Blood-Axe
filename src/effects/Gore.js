@@ -27,6 +27,9 @@ export function softTex(scene) {
   ctx.fillStyle = g; ctx.fillRect(0, 0, 64, 64);
   scene.textures.addCanvas('soft', c);
 }
+// widest strip of the floor's blood layer (one RenderTexture each)
+const DECAL_TILE = 2048;
+const DECAL_REACH = 320; // (half the widest stamp, with room to spare)
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 export class Gore {
@@ -42,16 +45,36 @@ export class Gore {
     this.drops = []; // flying blood, gibs and sparks
     const W = SETTINGS.world;
     this.rtY = W.floorTop - 60;
-    this.decals = scene.add.renderTexture(0, this.rtY, W.width, SETTINGS.height - this.rtY)
-      .setOrigin(0, 0).setDepth(DEPTH.decals);
+    // (the whole stage, not the test arena's 5600: a campaign level runs to 9400 and more,
+    // and past the old edge blood stopped staining the floor. In strips, so no texture
+    // is wider than a GPU will take)
+    const width = scene.stageWidth ?? W.width;
+    this.decalTiles = [];
+    for (let x0 = 0; x0 < width; x0 += DECAL_TILE) {
+      const rt = scene.add.renderTexture(x0, this.rtY, Math.min(DECAL_TILE, width - x0), SETTINGS.height - this.rtY)
+        .setOrigin(0, 0).setDepth(DEPTH.decals);
+      this.decalTiles.push({ x0, x1: x0 + rt.width, rt });
+    }
     this.stamp = scene.make.image({ key: 'dot', add: false });
     this.dismemberer = new Dismember(this);
     this.dismemberer.minZ = W.floorTop;
     this.dismemberer.maxZ = W.floorBottom;
     this.dismemberer.minX = W.edgePadding;
-    this.dismemberer.maxX = W.width - W.edgePadding;
+    this.dismemberer.maxX = width - W.edgePadding;
     this.puffs = [];
     softTex(scene);
+  }
+
+  get decalsLive() { return this.decalTiles[0]?.rt.active ?? false; }
+
+  // Stamp `this.stamp` onto the floor at world x (y is already relative to rtY): into every
+  // strip it might overlap, so a splat on a seam isn't cut in half.
+  drawDecal(x, y) {
+    for (const t of this.decalTiles) {
+      if (x + DECAL_REACH < t.x0 || x - DECAL_REACH > t.x1) continue;
+      this.stamp.setPosition(x - t.x0, y);
+      t.rt.draw(this.stamp);
+    }
   }
 
   get level() { return SETTINGS.gore.level; }
@@ -132,7 +155,7 @@ export class Gore {
     }
     // A pool spreads under the body once it lands.
     const pool = () => {
-      if (!this.decals.active) return;
+      if (!this.decalsLive) return;
       for (let i = 0; i < 6; i++) this.splat(victim.x + rand(-30, 30), victim.z + rand(-5, 5), rand(2.5, 4.5), 0.6);
     };
     this.scene.time.delayedCall(700, pool);
@@ -261,7 +284,7 @@ export class Gore {
     this.scorch(f.x, f.z);
     // the pool he leaves behind spreads as the last of it rains down
     this.scene.time.delayedCall(450, () => {
-      if (!this.decals.active) return;
+      if (!this.decalsLive) return;
       for (let i = 0; i < 8; i++) this.splat(f.x + rand(-50, 50), f.z + rand(-7, 7), rand(1.6, 3.6), 0.7);
     });
     return true;
@@ -305,8 +328,8 @@ export class Gore {
   // Black burn mark + a wide blood ring (explosions).
   scorch(x, z, fire = false) {
     if (this.level === 0) return;
-    this.stamp.setPosition(x, z - this.rtY).setScale(9, 3.2).setTint(fire ? 0x120a06 : 0x2a0000).setAlpha(0.7);
-    this.decals.draw(this.stamp);
+    this.stamp.setScale(9, 3.2).setTint(fire ? 0x120a06 : 0x2a0000).setAlpha(0.7);
+    this.drawDecal(x, z - this.rtY);
     for (let i = 0; i < 14; i++) {
       const a = rand(0, Math.PI * 2);
       const d = rand(20, 70);
@@ -320,19 +343,19 @@ export class Gore {
     if (this.level === 0) return;
     if(this.bloodArt) {
       this.stamp.setTexture('blood-ink-sheet',`ink-${Math.random()<.5?2:3}`)
-        .setPosition(x,z-this.rtY).setTint(0xffffff).setDisplaySize(size*rand(28,44),size*rand(12,20))
+        .setTint(0xffffff).setDisplaySize(size*rand(28,44),size*rand(12,20))
         .setRotation(rand(-.2,.2)).setAlpha(this.level===1?alpha*.6:alpha);
-      this.decals.draw(this.stamp);return;
+      this.drawDecal(x,z-this.rtY);return;
     }
-    this.stamp.setPosition(x, z - this.rtY)
+    this.stamp.setRotation(0)
       .setScale(size * rand(1, 1.8), size * rand(0.45, 0.7))
       .setTint(pick(DECAL))
       .setAlpha(this.level === 1 ? alpha * 0.6 : alpha);
-    this.decals.draw(this.stamp);
+    this.drawDecal(x, z - this.rtY);
   }
 
   clearDecals() {
-    this.decals.clear();
+    for (const t of this.decalTiles) t.rt.clear();
     this.dismemberer.clear();
   }
 

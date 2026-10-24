@@ -305,7 +305,7 @@ class Chunk {
     const scene = this.sys.scene;
     for (let i = 0; i < n; i++) {
       scene.time.delayedCall(i * 140, () => {
-        if (!gore.decals.active) return;
+        if (!gore.decalsLive) return;
         gore.splat(this.x + (this.mode === 'topple' ? this.fallDir * this.bh * rand(0.2, 0.8) : rand(-8, 8)), this.z + rand(-4, 4), big ? rand(2, 3.8) : rand(0.8, 1.6), 0.6);
       });
     }
