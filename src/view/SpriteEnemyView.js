@@ -28,6 +28,8 @@ import { dyeImage } from './dye.js';
 // On his knees for his sentence (stage/Sentence.js) without painted kneeling art: his
 // standing frame sinks this share of his height into the floor, cropped at the knee.
 const KNEE = 0.27;
+// struck dead standing: game ticks in the painted hit pose, then until he's lying flat
+const DIE = { hit: 5, fall: 16 };
 
 const ATTACKS = ['light1', 'light2', 'light3', 'heavy', 'special1', 'special2', 'airAttack'];
 
@@ -143,7 +145,11 @@ export class SpriteEnemyView {
       case 'guardBreak': return A.hit.frames[0];
       case 'knockdown': return f.lyingSince === null ? A.air.frames[0] : A.lying.frames[0];
       case 'getup': return easedSpread(A.getup.frames, fr / f.stats.getupFrames);
-      case 'dead': return A.lying.frames[0];
+      // struck dead on his feet: the blow lands (hit), he goes over (knocked flying), down
+      case 'dead': {
+        const age = f.deadAge ?? fr;
+        return age < DIE.hit ? A.hit.frames[0] : age < DIE.fall && A.air ? A.air.frames[0] : A.lying.frames[0];
+      }
       // beaten, on his knees for his sentence (stage/Sentence.js): the painted kneel when
       // there is one (0 going down, 1 head bowed, 2 head raised for his last words), else
       // a jolt of the hit pose, then his standing pose sunk to the knee (update())
@@ -262,14 +268,14 @@ export class SpriteEnemyView {
     this.smear.clear();
     this.hook?.setVisible(false);
     this.applyCut();
-    if (P.hidden || this.cutAway) { this.sprite.setVisible(false); this.rig?.hide(); this.rag?.hide(); return; }
+    if (P.hidden || this.cutAway) { this.sprite.setVisible(false); this.rig?.hide(); return; }
 
     // lost an arm: the scared one-armed art — or, without it, the doll (shows the stump)
     const A = this.animSet();
     const doll = !A;
     P.root.setVisible(doll);
     this.sprite.setVisible(!doll);
-    if (doll) { this.rag?.hide(); return; }
+    if (doll) return;
     if (A !== this.A) { this.A = A; this.lastWalkRef = null; this.walkHold = 0; }
     // scared = lost an arm (drawn with the scared art if it exists, else the normal art)
     const scared = !!(f.maimed?.armF || f.maimed?.armB);
@@ -295,8 +301,9 @@ export class SpriteEnemyView {
     }
     this.rig?.hide();
 
-    // floored, or dead: he goes down as dead weight (view/Ragdoll.js), not one stiff picture
-    if (this.ragdoll(f, st, A, P.visFacing, dt)) return;
+    // floored, or dead: his own painted poses, whole (knocked flying, then lying). The old
+    // cut-up ragdoll (view/Ragdoll.js) folded the lying picture at neck, hips and knees and
+    // read as a paper cut-out; it's kept only for halves a killing blow has cut apart.
 
     // same whole-body tint language as the doll: hit flash, wind-up telegraph, stagger
     const s = this.sprite;
@@ -390,6 +397,17 @@ export class SpriteEnemyView {
       else if (f.health <= 0 && kind === 'impale') angle = -5 - Math.sin(fr * 0.7) * 2;
     }
     if (st === 'stagger' || st === 'guardBreak') angle = Math.sin(fr * 0.35) * 4;
+    // knocked flying: the whole painted body tips back on the way up, over on the way down
+    if (st === 'knockdown' && f.lyingSince === null && f.hitstop === 0) angle = Math.max(-14, Math.min(8, -f.vh / 30));
+    // struck dead on his feet: rocked back by the blow, then tipping over as he goes down
+    if (st === 'dead') {
+      const age = f.deadAge ?? fr;
+      if (age < DIE.hit) { angle = -4 * (age / DIE.hit); dx = -age * 0.8; }
+      else if (age < DIE.fall) {
+        const t = (age - DIE.hit) / (DIE.fall - DIE.hit);
+        angle = -6 - 10 * t; dx = -DIE.hit * 0.8 - t * 6; dy = -Math.sin(t * Math.PI) * 5;
+      }
+    }
     if (st === 'burning') {
       // alight: jerks back from the heat, then thrashes — arms and head going, no control
       angle = (fr < 10 ? -8 : Math.sin(fr * 0.8) * 9 + Math.sin(fr * 2.3) * 3);
@@ -481,33 +499,6 @@ export class SpriteEnemyView {
     }
   }
 
-  // Knocked down or killed: the ragdoll draws him from the moment the blow's frozen instant
-  // ends until he gets up (the painted get-up starts from the very pose the doll settles
-  // into) or his body fades. Returns true while it's drawing him.
-  ragdoll(f, st, A, face, dt) {
-    const down = (st === 'knockdown' || st === 'dead') && A.lying;
-    if (!down) { this.rag?.hide(); return false; }
-    const rag = this.rag ?? (this.rag = new Ragdoll(this.scene, this.sheet, this.sheet.key.replace(/^enemy-/, ''), f.dye));
-    const k = depthScale(f.z) / this.res * (f.stats?.size ?? 1);
-    if (!rag.active) {
-      // the frozen instant of the blow keeps his painted hit pose; he falls when it ends
-      if (f.hitstop > 0 && st === 'knockdown' && f.lyingSince === null) { this.setFrameRef(A.hit.frames[0]); return false; }
-      if (!rag.setPose(A.lying.frames[0])) return false;
-      const kind = st === 'knockdown' ? (f.lyingSince === null ? 'knock' : 'lying') : (f.deadAge ?? 0) > 3 ? 'lying' : 'drop';
-      rag.start(f, face, k, kind);
-    }
-    if (f.health <= 0) rag.release();
-    rag.step(f, rag.face, k, f.hitstop > 0 ? 0 : Math.min(4, dt));
-    let alpha = 1;
-    if (st === 'dead') {
-      const age = f.deadAge ?? 0; // (stops counting while the body is still burning)
-      alpha = Math.max(0, 1 - Math.max(0, age - (f.burn?.heat > 0.3 ? 370 : 100)) / 50);
-    }
-    rag.look(f.z, alpha, f.flash > 0 && (f.flash > 3 || this.puppet.age % 4 < 2), f.burn, applyBurn);
-    this.sprite.setVisible(false);
-    return true;
-  }
-
   // A killing blow cut him in two (effects/Gore.js cutSprite): what's left of him that has
   // joints goes down as a ragdoll too — the headless body crumples, the legs fold, the
   // top half flops as it flies — instead of a stiff cut-out toppling over. The cut pieces
@@ -552,15 +543,13 @@ export class SpriteEnemyView {
     }
   }
 
-  // A blow is about to cut him up (effects/Gore.js cutSprite): if he's down as a ragdoll,
-  // he's the painted lying pose again for the cut.
+  // A blow is about to cut him up (effects/Gore.js cutSprite): lying in his painted
+  // lying pose, he's cut as a body on the ground, laid flat.
   prepareCut() {
-    this.cutLying = !!this.rag?.active;
-    if (!this.rag?.active) return;
-    const f = this.f;
-    this.rag.hide();
     const ref = this.A.lying?.frames[0];
-    if (ref) this.setFrameRef(ref);
+    this.cutLying = !!ref && this.lastRef === ref;
+    if (!this.cutLying) return;
+    const f = this.f;
     const k = depthScale(f.z) / this.res * (f.stats?.size ?? 1);
     this.sprite.setVisible(true).setPosition(f.x, f.z - f.h).setScale(k * this.puppet.visFacing, k).setAngle(0).setAlpha(1);
   }
@@ -597,7 +586,6 @@ export class SpriteEnemyView {
   hideAll() {
     this.puppet.hideAll();
     this.sprite.setVisible(false);
-    this.rag?.hide();
     this.chain.clear();
     this.hook?.setVisible(false);
   }
@@ -609,6 +597,5 @@ export class SpriteEnemyView {
     this.smear.destroy();
     this.hook?.destroy();
     this.rig?.destroy();
-    this.rag?.destroy();
   }
 }

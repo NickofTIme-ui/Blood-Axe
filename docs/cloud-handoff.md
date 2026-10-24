@@ -1070,3 +1070,9 @@ stale files ship.
 - A man still in the air always dies to it, split head to groin with the halves thrown apart (`CombatSystem`: `sunder`, fatality `halfV`, never the attached split), "SUNDERED!" callout. Anyone it catches on the floor takes a 34 chop; a boss (never juggled) just takes the chop. Landing: dust, shake, a 20-frame buried recovery (roll out from frame 10).
 - View: borrows the Leap Smash poses (`anims.plunge`, Oathkeeper only) or the cleave's before he has the sword, plus a big downward smear. No new art needed; a dedicated strip would be a nice-to-have.
 - Tests: two `sunder:` cases in `tests/logic-test.js`; `npm test` all pass.
+
+## Cloud, 2026-10-24: enemies go down whole, no more cut-out ragdoll (not on itch)
+
+- Nick: "now im seing the art split and cut like southpark characters". Cause: since 2026-10-16 every painted enemy that was knocked down or killed was drawn by `view/Ragdoll.js`, which cut his lying picture into four hinged bands (head, torso, thighs, shins) and folded them at the joints, so a man knocked into the air showed as a paper doll bent into a V.
+- `SpriteEnemyView` no longer uses it for knockdowns or deaths. He's drawn whole from his own react strip: knocked flying = pose 4 (the whole body tips back rising, a little forward falling), lying = pose 5. Struck dead on his feet: hit pose for 5 ticks, rocked back, then the knocked-flying pose tipping over for 11 ticks, then lying (`DIE` at the top of the file). A lying corpse that gets cut is still cut as a body on the ground (`prepareCut`).
+- The ragdoll is kept only for halves a killing blow has already cut apart (`ragdollCut`). Gear no longer flies loose off ordinary corpses (it stays in the painted lying pose).
