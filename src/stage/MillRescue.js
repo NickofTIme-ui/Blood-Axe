@@ -4,6 +4,9 @@ import {toWorldBox,overlaps} from '../combat/Boxes.js';
 
 // The rope's clock, in frames he spends at the lever: his last words, his final warning, the drop
 export const MILL={rope:1500,lastWords:1080,final:1260};
+// Cut free, he gets up (the painted rescue strip, 84 frames), then jumps down off the front
+// of the execution block (Nick, 2026-10-24): a crouch, the leap, a hard landing, then he runs.
+export const LEAP={up:84,crouch:8,air:34,land:12,dx:-34,to:392,peak:34};
 // what the hangman shouts (Nick, 2026-10-23: warn the player he's about to kill Irvolino)
 const BARKS={
   start:'BY THE KING’S WORD, THIS ONE HANGS!',
@@ -34,7 +37,7 @@ export class MillRescue {
   update(){
     const st=this.stage,n=this.npc;
     if(this.bark&&++this.bark.age>=this.bark.life)this.bark=null;
-    if(this.outcome){this.age++;if(this.outcome==='saved'&&this.age<84)this.npc.t=0;if(this.outcome==='saved'&&this.age===84)this.npc.millCaptive=false;return;}
+    if(this.outcome){this.age++;if(this.outcome==='saved'&&this.age<LEAP.up)this.npc.t=0;if(this.outcome==='saved'&&this.age===LEAP.up)this.npc.millCaptive=false;if(this.leap)this.jumpDown();return;}
     if(st.index>3){
       if(st.story.isRescued('barn')){this.outcome='saved';n.millCaptive=false;}
       else if(st.story.lost.has('barn'))this.fail();
@@ -79,6 +82,29 @@ export class MillRescue {
     this.outcome='saved';this.age=0;this.npc.millCaptive=true;
     this.npc.pose='irvolino';this.stage.story.free(this.npc);
     this.npc.helpAge=0;this.bark=null;this.stage.world.events.emit('millBondsCut');
+    this.leap={x:this.npc.x,z:this.npc.z,h:this.npc.h};
+  }
+  // Off the block: he holds still (the story's 'free' clock waits) until he's down, then flees
+  jumpDown(){
+    const n=this.npc,L=this.leap,T=this.stage.terrain,t=this.age-LEAP.up;
+    if(t<0)return;
+    n.t=0;n.dir=-1;
+    const ground=T?Math.max(0,T.groundAt(L.x+LEAP.dx,LEAP.to)):0;
+    n.shadowH=null;
+    if(t<LEAP.crouch){n.act='cower';return;}
+    const a=t-LEAP.crouch;
+    if(a<LEAP.air){
+      const u=a/LEAP.air;
+      n.x=L.x+LEAP.dx*u;n.z=L.z+(LEAP.to-L.z)*u;
+      n.h=L.h+(ground-L.h)*u+LEAP.peak*4*u*(1-u);
+      n.act='leap';n.shadowH=T?Math.max(0,T.groundAt(n.x,n.z)):0;
+      if(a===0)this.stage.world.events.emit('millLeap');
+      return;
+    }
+    n.x=L.x+LEAP.dx;n.z=LEAP.to;n.h=ground;
+    if(a===LEAP.air)this.stage.world.events.emit('millLanded');
+    if(a<LEAP.air+LEAP.land){n.act='cower';return;}
+    n.act=null;this.leap=null;
   }
   fail(){
     if(this.resolved)return;

@@ -76,7 +76,7 @@ const CELLS = {
   // and a ninth: lying dead
   nicholas: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7, lie: 8 },
   // Irvolino, the miller: the villager's order
-  irvolino: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7 },
+  irvolino: { stand: 0, cower: 1, wave: 2, run: RUN, leap: 4, sit: 6, kneel: 7 },
   elsbeth: {stand:0,cower:1,wave:2,run:[3,4,5,4],sit:6,kneel:6},
   // ...and his own walk, a full cycle, once it's painted (data/levelArt.js 'nicholas-walk')
   'nicholas-walk': { run: [0, 1, 2, 3, 4, 5, 6, 7], stand: 0 },
@@ -248,10 +248,11 @@ export class NpcView {
       return;
     }
     const dir = n.dir ?? -1;
-    v.shadow.setPosition(n.x, y).setDepth(n.h > 0 ? n.z - 0.4 : DEPTH.shadows);
+    v.shadow.setPosition(n.x, n.z - (n.shadowH ?? n.h)).setDepth(n.h > 0 ? n.z - 0.4 : DEPTH.shadows);
     g.setDepth(n.z);
     const tun = (i) => TUNIC[(v.seed + i) % TUNIC.length];
-    const pose = n.state === 'fleeing' || n.gatherMoving ? 'run' : n.mourning ? (n.pose==='family'||n.pose==='child'?'cower':'kneel') : n.state === 'threatened' || n.cower ? 'cower' : n.state === 'trapped' ? 'wave' : 'stand';
+    // (n.act: a pose the stage plays for a moment, stage/MillRescue.js jumpDown)
+    const pose = n.act ?? (n.state === 'fleeing' || n.gatherMoving ? 'run' : n.mourning ? (n.pose==='family'||n.pose==='child'?'cower':'kneel') : n.state === 'threatened' || n.cower ? 'cower' : n.state === 'trapped' ? 'wave' : 'stand');
     if (n.state === 'dead' && SPRITES.nicholas && n.art === 'nicholas') { this.figure(g, n.x, y, k, 'lie', t, 0, 1, 'nicholas'); return; }
     if (n.pose === 'captive-kneel' && this.drawKneeling(n, v, g, y, k, t)) return;
     if (n.state === 'lost' || n.state === 'dead') { this.fallen(g, n.x, y, k, tun(0)); return; }

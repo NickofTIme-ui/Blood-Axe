@@ -22,3 +22,15 @@ function setup(){const w=new World({seed:123}),p=createPlayer(w,new Controller()
  st.story.npc('hakon').state='dead';st.story.done.add('vow');for(let i=0;i<365;i++)st.story.updateChurchProcession();assert(e.insideChurch);assert(!st.story.npc('barn').insideChurch,'Dead Irvolino never returns for the procession');
 }
 console.log('Mill rescue: encounter-only timer, hold safety, kill stops clock, strike height, persistent failure, replacement identity and retry reset passed.');
+{
+ // cut free, he jumps down off the front of the block, lands on the ground, then runs
+ const {w,p,st,r}=setup();r.update();r.executioner.health=0;r.update();
+ p.x=4860;p.z=296;p.h=70;Object.defineProperty(p,'activeAttack',{configurable:true,value:{move:{hitbox:{x:-20,y:0,w:50,h:125}}}});r.update();
+ assert.equal(r.outcome,'saved');const n=st.story.npc('barn');assert.equal(n.h,70);
+ let peak=0,airborne=false;
+ for(let i=0;i<84+8+34+12+2;i++){r.update();st.story.updateNpcs([]);peak=Math.max(peak,n.h);if(n.act==='leap')airborne=true;
+   if(i<84+8+34)assert.notEqual(n.state,'fleeing','He does not run off before he lands');}
+ assert(airborne,'He leaps');assert(peak>70,'The leap arcs above the block');
+ assert.equal(n.h,st.terrain.groundAt(n.x,n.z));assert(n.z>358,'He lands in front of the block');assert.equal(n.act,null);
+ for(let i=0;i<60;i++)st.story.updateNpcs([]);assert.equal(n.state,'fleeing');assert.equal(n.h,0);
+}
