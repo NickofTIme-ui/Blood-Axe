@@ -4385,7 +4385,7 @@ test('sentence: no two go alike: the head and the fall are rolled from the lists
   for (const x of BODIES) assert(a.some((o) => o.body === x), `every fall comes up (${x})`);
 });
 
-test('sentence: every boss in the game has his crimes (the machine none); the Oath Keepers swear it at the start', () => {
+test('sentence: every boss in the game has his crimes (the machine none)', () => {
   for (const [id, data] of Object.entries(STAGES)) {
     for (const sec of data.sections) {
       const B = sec.boss;
@@ -4395,8 +4395,8 @@ test('sentence: every boss in the game has his crimes (the machine none); the Oa
       assert(B.sentence.last || B.sentence.silent, `${id}: ${B.name} has his last words, or keeps silent`);
     }
   }
-  const pledge = STAGE_VILLAGE.story.find((b) => b.id === 'pledge').lines.map((l) => l[1]).join(' ');
-  assert(pledge.includes('Each of them kneels. Each hears his crimes. Each pays.'), 'the pledge');
+  // Rurik's opening pledge over the dead villager is cut (Nick, 2026-10-24)
+  assert(!STAGE_VILLAGE.story.some((b) => b.id === 'pledge'), 'no opening pledge');
 });
 
 test('dialogue: every voice in every level has a name and a portrait (or is narration); Nick\'s names on the nameless', () => {

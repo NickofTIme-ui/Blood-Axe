@@ -387,15 +387,6 @@ export const STAGE_VILLAGE = {
       ],
     },
     {
-      // over the villager he struck down, once his men are dead: the pledge every boss's
-      // sentence pays off (stage/Sentence.js)
-      id: 'pledge', after: 'opening', at: 0, calm: true, hold: true,
-      lines: [
-        ['RURIK', 'Every captain who led them here. Every one, up to the king who gave the word.'],
-        ['RURIK', 'Each of them kneels. Each hears his crimes. Each pays.'],
-      ],
-    },
-    {
       id: 'hale', calm: true, // (fired by talking to him)
       lines: [
         ['HALE', 'Oath Keepers? They said the ford took you.'],

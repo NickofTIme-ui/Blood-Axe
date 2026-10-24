@@ -1123,3 +1123,7 @@ stale files ship.
 
 - Nick: the step up in front of Rurik (beam onto the second roof, +20) was unreadable. The second roof is now level with the beam and the first roof (top 120); the three steps up to Tam are 165 / 210 / 255 (still +45 each) and the two charred boards after it 130.
 - All three steps are now painted chimney stacks rising like stairs (ChatGPT on Nick's PC; raw at `assets/incoming/chimney_steps_raw.png` there and in project files `roof-chimneys/`), cut out to `assets/env/village/chimney_1..3.png` (`art: n` on the blocks; `TerrainView.drawChimney` draws the capstone over the walkable top and the brick down to the roof; the code-drawn stack stays as the fallback).
+
+
+## 2026-10-24: Rurik's opening pledge cut (Nick)
+- Nick: "remove the dialogue rurik says in the beginning about killing every captain on their knees, no longer needed". The held `pledge` beat in src/data/stageVillage.js ("Every captain who led them here..." / "Each of them kneels. Each hears his crimes. Each pays.") is gone; after the first fight play just goes on. Boss sentences (stage/Sentence.js) are unchanged. The logic test now checks the beat stays gone.
