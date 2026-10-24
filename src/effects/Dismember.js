@@ -428,7 +428,7 @@ export class Dismember {
       if (GUTS.includes(kind)) for (let j = 1; j < Math.round(SETTINGS.gore.guts ?? 1); j++) list.push(pick(GUTS));
     }
     for (const kind of list) {
-      const g = pieceTex(this.scene, PIECE_OF[kind] ?? 'meat', Math.floor(Math.random() * 6), this.skin);
+      const g = pieceTex(this.scene, PIECE_OF[kind] ?? 'meat', Math.floor(Math.random() * 120), this.skin);
       const snap = { key: g.key, def: g, ox: g.ox, oy: g.oy, x: x + rand(-6, 6), y: y + rand(-6, 6), rot: rand(0, 6.28), sx: g.scale, sy: g.scale, tint: 0xffffff };
       const c = this.fly([{ snap }], z + rand(-6, 6), {
         vx: (dir * rand(40, 200) + rand(-160, 160)) * power,

@@ -72,6 +72,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('bodies-src', 'assets/env/bodies.png'); // the painted fallen villagers (view/NpcView.js drawBodies)
     this.load.spritesheet('stable-master', 'assets/npcs/stable-master-frames.png',{frameWidth:338,frameHeight:240});
     this.load.image('gore-painted-atlas','assets/fx/gore-painted-atlas.png');
+    this.load.image('gore-organs-atlas','assets/fx/gore-organs-atlas.png'); // high-detail organs and gut (effects/goreArt.js ORGAN_CELLS)
     this.load.image('rubble-wall-src', 'assets/env/mine/rubble_wall.png'); // the cave's boulder wall (view/TerrainView.js drawRubble)
     this.load.image('collapse-wall-src', 'assets/env/mine/collapse_wall.png'); // the mine's spike chase: the wall's face (view/StageView.js paintedCollapse)
     this.load.image('collapse-spikes-src', 'assets/env/mine/collapse_spikes.png'); // ...and its six spikes
