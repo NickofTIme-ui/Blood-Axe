@@ -345,7 +345,9 @@ export const STAGE_VILLAGE = {
     { kind: 'debris2', x: 6850, z: 287, w: 150, flip: true },
     { kind: 'lantern', x: 7150, z: 283, w: 60 },
     { kind: 'debris', x: 8350, z: 287, w: 140 },
-    { kind: 'signpost', x: 8900, z: 284, w: 70, flip: true },
+    // (by the road out, between the church and the north gate: at x 8900 it stood in the
+    // church doorway; Nick, 2026-10-24)
+    { kind: 'signpost', x: 9150, z: 284, w: 70, flip: true },
   ],
 
   // the villagers (stage/Story.js; drawn by view/NpcView.js)
