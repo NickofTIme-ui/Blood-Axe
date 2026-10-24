@@ -76,7 +76,10 @@ export class Gore {
   // strip it might overlap, so a splat on a seam isn't cut in half. Queued as the stamp
   // looks now; painted at the end of the frame's update (flushDecals).
   drawDecal(x, y) {
-    const st = this.stamp;
+    // (never wider than a strip's reach: a stamp left on a big frame once smeared one dark
+    // mark over the whole floor, see scorch)
+    const st = this.stamp, wide = Math.max(st.displayWidth, st.displayHeight);
+    if (wide > DECAL_REACH * 2) st.setScale(st.scaleX * DECAL_REACH * 2 / wide, st.scaleY * DECAL_REACH * 2 / wide);
     for (const t of this.decalTiles) {
       if (x + DECAL_REACH < t.x0 || x - DECAL_REACH > t.x1) continue;
       this.decalQueue.push({ t, x: x - t.x0, y, key: st.texture.key, frame: st.frame.name, tint: st.tintTopLeft, sx: st.scaleX, sy: st.scaleY, rot: st.rotation, alpha: st.alpha });
@@ -377,7 +380,7 @@ export class Gore {
       this.stamp.setTexture('blood-ink-sheet',`ink-${Math.random()<.5?2:3}`)
         .setTint(0xffffff).setDisplaySize(size*rand(28,44),size*rand(12,20))
         .setRotation(rand(-.2,.2)).setAlpha(this.level===1?alpha*.6:alpha);
-      this.drawDecal(x,z-this.rtY);return;
+      this.drawDecal(x,z-this.rtY);this.stamp.setTexture('dot').setRotation(0);return;
     }
     this.stamp.setTexture('dot').setRotation(0)
       .setScale(size * rand(1, 1.8), size * rand(0.45, 0.7))
