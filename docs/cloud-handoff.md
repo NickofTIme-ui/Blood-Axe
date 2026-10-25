@@ -11,6 +11,11 @@ branch, or ChatGPT's work gets lost.
   signpost moved off the church door, head pikes at 0.6 size, and the mill-rescue
   test update. The Red-Blood palette (`claude/redblood-palette`) was dropped at
   Nick's request and is not on main. Not uploaded to itch.
+- 25 October 2026: HUD cleanup. In play only the health, stamina and magic bars
+  show (plus dialogue, hangman clock, barn tally, boss/enemy bars, combo meter);
+  location, objective, level, kills, secrets and gore moved to the pause screen
+  (`HUDScene.pauseInfo`, `view/PauseMenu.js`). The bottom controls line is gone.
+  Not uploaded to itch.
 
 # Hand-off to the cloud session (2 October 2026)
 
