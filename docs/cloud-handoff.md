@@ -1,3 +1,17 @@
+# READ FIRST: where the latest build lives (25 October 2026)
+
+Nick also edits the game with ChatGPT. Those edits live only in his PC folder
+`Documents\Codex\Blood Axe Builds` (the one labelled "latest") and are never saved
+to git. So cloud work must start from what the PC thread bundles into git (for
+example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
+branch, or ChatGPT's work gets lost.
+
+- 25 October 2026: main moved from `9681a37` to `dc564a9` with ChatGPT's Oct 24-25
+  work (impale repair, Irvolino waits then escapes slower, street clutter), the
+  signpost moved off the church door, head pikes at 0.6 size, and the mill-rescue
+  test update. The Red-Blood palette (`claude/redblood-palette`) was dropped at
+  Nick's request and is not on main. Not uploaded to itch.
+
 # Hand-off to the cloud session (2 October 2026)
 
 The local machine only collects art now (ChatGPT can't be reached from the cloud).
