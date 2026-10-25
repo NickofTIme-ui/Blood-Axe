@@ -871,6 +871,7 @@ export class ArenaScene extends Phaser.Scene {
       const gate=st.props.find(p=>p.tag==='stables');
       if(gate)st.breakProp(gate,1);
     }
+    if(kind==='gore')this.goreShowcase();
     if(['handoff','raise'].includes(kind)){
       this.player.x=8830;this.player.z=330;
       this.player.controller.registerPress('padUp');
@@ -882,6 +883,26 @@ export class ArenaScene extends Phaser.Scene {
         for(let i=0;i<=c.index;i++)st.story.lineCue(c,i);
       });
     }
+  }
+
+  // Test scene: a man walks up and is cut down, each a different way in turn, so the
+  // severed pieces' bounce, tumble and settle can be watched (effects/SpriteCut.js).
+  goreShowcase(){
+    const kinds=['decap','halfH','halfV','limbs','headPop','explode'];
+    let n=0,target=null;
+    // (the street's own fight is sent away: only the one man at a time)
+    this.events.on('update',()=>{for(const f of this.world.fighters)if(f.team==='enemy'&&f!==target&&f.alive)f.removeMe=true;});
+    this.time.addEvent({delay:1300,loop:true,callback:()=>{
+      const p=this.player;
+      if(target?.alive){
+        const kind=kinds[n++%kinds.length];
+        this.world.combat.resolve(p,target,{damage:9999,cut:'slash',unblockable:true,fatality:kind,knockback:{x:220,y:380}},{kind:'melee',dir:p.facing,contact:{x:target.x,h:target.h+target.stats.body.h*.5}});
+        this.popup(target.x,target.z-170,kind.toUpperCase(),'#e0c080');
+        target=null;return;
+      }
+      target=createEnemy(this.world,'grunt',p.x+p.facing*120,p.z);
+      target.facing=-p.facing;if(target.controller)target.controller.cooldown=9999;
+    }});
   }
 
   // On to the campaign's next level: the same heroes, the health they walked out with.

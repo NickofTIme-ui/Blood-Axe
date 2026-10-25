@@ -17,7 +17,8 @@
 
 import { landThud,playSfx } from '../core/Sfx.js';
 import { dyeImage } from '../view/dye.js';
-import { measure } from '../view/frameMeasure.js';
+import { measure, measureCanvas } from '../view/frameMeasure.js';
+import { stepRigid, pieceHull, boxHull } from './Physics.js';
 import { RAGDOLL_GEAR, EXECUTION_GEAR, EXECUTION_HEAD } from '../data/ragdollGear.js';
 import { cutPlane, spritePoint, cutDistance } from './CutGeometry.js';
 import { FlexibleCut } from '../view/FlexibleCut.js';
@@ -546,6 +547,21 @@ export class SpriteCuts {
     half.loose = [];
   }
 
+  // A piece's outline around its pivot, as drawn (effects/Physics.js pieceHull): from its
+  // own pixels when it has its own texture, else a rough ball the size of its cut.
+  hullOf(p) {
+    const img = p.img;
+    const src = p.tex && this.scene.textures.exists(p.tex) ? this.scene.textures.get(p.tex).getSourceImage() : null;
+    if (src?.getContext) {
+      try {
+        const hull = pieceHull(measureCanvas(src), img.originX * src.width, img.originY * src.height, img.scaleX, img.scaleY);
+        if (hull.length >= 4) return hull;
+      } catch { /* (unreadable: the ball below) */ }
+    }
+    const r = Math.max(6, Math.abs(p.edge ?? 6));
+    return boxHull(-r, -r, r, r);
+  }
+
   // The middle of a piece's cut face, in world (screen) coordinates.
   cutPoint(p) {
     return p.worldPoint(p.bandOff.x, p.bandOff.y);
@@ -609,7 +625,7 @@ export class SpriteCuts {
 
   launch(p, vx, vh, spin, { bowl = false } = {}) {
     if (!p) return;
-    Object.assign(p, { mode: 'fly', vx, vh, spin, thrown: true, rest: Math.abs(p.edge) * 0.6, bleed:p.weapon?0:Math.max(p.bleed, 120), landed: false });
+    Object.assign(p, { mode: 'fly', vx, vh, spin, thrown: true, rest: Math.abs(p.edge) * 0.6, bleed:p.weapon?0:Math.max(p.bleed, 120), landed: false, asleep: false, still: 0 });
     p.flex?.launch(vx,vh,spin);
     p.h = Math.max(p.h, p.rest + 1);
     if (bowl) p.bowl = new Set();
@@ -660,6 +676,36 @@ export class SpriteCuts {
         // sitting on its own legs, sliding very slowly along the cut, swaying
         if (p.age < 60) p.x += p.dir * 0.12;
         p.rot = Math.sin(p.age * 0.22) * 0.03 * Math.max(0, 1 - p.age / 90) - p.dir * Math.min(0.06, p.age * 0.001);
+      } else if (p.mode === 'fly' && !p.weapon) {
+        // a head, a lump of him: a rigid body on the floor (effects/Physics.js stepRigid) —
+        // it bounces lower each time, skids, tips onto whatever side it settles on
+        p.hull ??= this.hullOf(p);
+        if (!p.landed) { p.vx *= 0.998; p.spin *= 0.997; } // (a little air drag)
+        const floor = Math.max(0, this.scene.world?.terrain?.groundAt?.(p.x, p.z) ?? 0);
+        const hit = stepRigid(p, p.hull, floor, { gravity: GRAVITY, bounce: p.gib ? 0.42 : 0.36, friction: p.roll ? 0.9 : 0.6, roll: p.roll });
+        if (b && (p.x < b.minX + 4 || p.x > b.maxX - 4)) {
+          p.x = Math.max(b.minX + 4, Math.min(b.maxX - 4, p.x));
+          p.vx = -p.vx * 0.35; p.spin = -p.spin * 0.5; p.asleep = false;
+          gore?.burst(p.x, p.z, p.h, Math.sign(p.vx) || 1, Math.round((p.gib ? 5 : 16) * (gore.amount ?? 1)), 0.8);
+          if (!p.gib) this.scene.fx?.shake(3, 6);
+        }
+        if (p.bowl) this.bowlInto(p);
+        if (p.thrown && !p.landed && gore?.level > 0 && p.age % 2 === 0) {
+          const cp = this.cutPoint(p);
+          gore.spawn({ x: cp.x, z: p.z + rand(-2, 2), h: Math.max(1, p.z - cp.y), vx: -p.vx * 0.1 + rand(-20, 20), vz: 0, vh: rand(-10, 30), tint: 0x7a0303, scale: rand(0.35, 0.7) });
+        }
+        if (hit > 140 && !p.landed) {
+          // the first hard landing: the wet thud, a spray, blood thrown about
+          p.landed = true;
+          landThud(this.scene, p.gib);
+          if (gore?.level > 0) {
+            gore.burst(p.x, p.z, 4, Math.sign(p.vx) || p.face, Math.round((p.gib ? 6 : 16) * (gore.amount ?? 1)), 0.6);
+            for (let i = 0; i < (p.gib ? 1 : 3); i++) gore.splat(p.x + rand(-26, 26) * (p.gib ? 0.4 : 1), p.z + rand(-4, 4), rand(1.6, 3) * (p.gib ? 0.6 : 1));
+          }
+        } else if (hit > 260 && gore?.level > 0) gore.splat(p.x, p.z, p.gib ? 0.7 : 1.2); // (coming down again)
+        else if (hit) p.landed = true;
+        // smeared along where it skids or rolls
+        if (p.touching && !p.asleep && Math.abs(p.vx) > 40 && p.age % 4 === 0 && gore?.level > 0) gore.splat(p.x, p.z + rand(-1, 1), rand(0.5, 0.9) * (p.gib ? 0.6 : 1), 0.55);
       } else if (p.mode === 'fly') {
         p.vh -= GRAVITY / 60;
         p.h += p.vh / 60;

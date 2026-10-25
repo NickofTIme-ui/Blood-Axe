@@ -12,9 +12,16 @@ export class FleshChain {
     for(const p of pts){p.px=p.x-(vx-(p.y-cy)*w)/60;p.py=p.y-(vy+(p.x-cx)*w)/60;}
     this.asleep=false;this.quiet=0;this.age=0;
   }
+  // How much of a fall a point keeps as it strikes the floor (vy px/frame): flails and
+  // chains a little; a severed piece (skid set) bounces off a hard landing, lower and
+  // lower, and not at all off a soft one.
+  rebound(vy){
+    if(!this.skid)return .16;
+    return Math.max(0,Math.min(1,(vy*60-200)/650))*(this.bounce??.28);
+  }
   step(floor,bounds,radius=4){
     if(this.asleep)return;
-    this.age=(this.age??0)+1;
+    this.age=(this.age??0)+1;this.bounced=false;
     const r=i=>Array.isArray(radius)?radius[i]:radius;
     let impact=0;
     let touching=false;
@@ -34,7 +41,7 @@ export class FleshChain {
         const bottom=floor(p.x)-r(i);
         if(p.y>bottom){
           const vx=p.x-p.px,vy=p.y-p.py;p.y=bottom;
-          if(pass===0){impact=Math.max(impact,vy*60);p.px=p.x-vx*.68;p.py=p.y+Math.max(0,vy)*.16;}
+          if(pass===0){impact=Math.max(impact,vy*60);p.px=p.x-vx*(this.skid&&vy*60>200?.82:.68);p.py=p.y+Math.max(0,vy)*this.rebound(vy);if(this.skid&&this.rebound(vy)>0)this.bounced=true;}
         }
         if(bounds)p.x=Math.max(bounds.minX+r(i),Math.min(bounds.maxX-r(i),p.x));
       }
@@ -42,9 +49,13 @@ export class FleshChain {
     }
     // Bleed away energy after contact; a corpse must settle, not wriggle forever.
     const resting=touching||this.points.every((p,i)=>floor(p.x)-r(i)-p.y<1.5);
+    // (a piece that skids keeps its slide a moment, and a frame it bounced keeps its
+    // bounce; once it has been down a while it is calmed as before)
+    this.down=resting?(this.down??0)+1:0;
+    const calm=this.skid&&this.down<40?.9:.6;
     let speed=0;
     for(const p of this.points){
-      if(resting){p.px=p.x-(p.x-p.px)*.6;p.py=p.y-(p.y-p.py)*.6;}
+      if(resting&&!this.bounced){p.px=p.x-(p.x-p.px)*calm;p.py=p.y-(p.y-p.py)*.6;}
       speed=Math.max(speed,Math.hypot(p.x-p.px,p.y-p.py));
     }
     this.quiet=resting&&speed<(this.age>120?.38:.12)?this.quiet+1:0;

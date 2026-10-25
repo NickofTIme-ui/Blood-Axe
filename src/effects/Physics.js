@@ -47,3 +47,83 @@ export function landDebris(d, floor, material) {
     d.vx = d.vz = d.spin = 0;
   }
 }
+
+// A severed piece's outline as a few points around its pivot (local px, unrotated,
+// scaled as drawn): left and right edges of `n` rows of its opaque pixels (m from
+// view/frameMeasure.js measureCanvas). Whatever of it is lowest is what meets the floor.
+export function pieceHull(m, ox, oy, sx, sy, n = 7) {
+  const hull = [];
+  if (m?.y0 == null) return hull;
+  for (let i = 0; i < n; i++) {
+    const y = Math.round(m.y0 + (m.y1 - m.y0) * i / (n - 1));
+    let row = null;
+    for (let d = 0; !row && d < 4; d++) row = m.rows[y + (i < n / 2 ? d : -d)];
+    if (!row) continue;
+    for (const x of row) hull.push({ x: (x + 0.5 - ox) * sx, y: (y + 0.5 - oy) * sy });
+  }
+  return hull;
+}
+
+// The same from a box (x0..x1, y0..y1 around the pivot), its corners rounded off:
+// painted meat and doll parts are blobs, not bricks.
+export function boxHull(x0, y0, x1, y1) {
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, a = (x1 - x0) / 2, b = (y1 - y0) / 2;
+  return [[1, 0.55], [0.55, 1], [-0.55, 1], [-1, 0.55], [-1, -0.55], [-0.55, -1], [0.55, -1], [1, -0.55]]
+    .map(([u, v]) => ({ x: cx + u * a, y: cy + v * b }));
+}
+
+// One 60 Hz tick of a thrown rigid piece: gravity and air, then if any of its outline is
+// in the floor, an impulse at the lowest point (two nearly level points count as a flat
+// face between them). That is what makes it bounce lower each time, skid, and turn the
+// way a real lump turns: off a corner it tips over onto its flattest side and rocks
+// still at whatever angle it lands, never snapped to a tidy 0 or 90 degrees.
+//   b      { x, h, vx, vh, rot, spin } — h height above the floor line, vh up (px/s)
+//   floor  the floor's height under the piece
+//   o      { bounce, friction, gravity, roll }: roll < 1 keeps a round thing rolling
+// Returns the speed it struck at (px/s, 0 if it didn't). Sets b.asleep once it's still.
+export function stepRigid(b, hull, floor, o = {}) {
+  if (b.asleep) return 0;
+  const DT = 1 / 60;
+  b.vh -= (o.gravity ?? 1700) * DT;
+  b.x += b.vx * DT; b.h += b.vh * DT; b.rot += b.spin * DT;
+  if (!hull.length) hull = [{ x: 0, y: 0 }];
+  const c = Math.cos(b.rot), s = Math.sin(b.rot);
+  let low = Infinity, i2 = 0;
+  b.inertia ??= Math.max(4, hull.reduce((t, p) => t + p.x * p.x + p.y * p.y, 0) / hull.length * 0.5);
+  for (const p of hull) { const ry = p.x * s + p.y * c; low = Math.min(low, b.h - ry); }
+  const pen = floor - low;
+  if (pen <= 0) { b.touching = 0; if (b.down) b.down++; return 0; }
+  // the contact: the lowest point, or the middle of a face lying flat
+  let rx = 0, ry = 0, n = 0;
+  for (const p of hull) {
+    const y = p.x * s + p.y * c;
+    if (b.h - y - low < 1.2) { rx += p.x * c - p.y * s; ry += y; n++; }
+  }
+  rx /= n; ry /= n; i2 = b.inertia;
+  b.h += pen;
+  b.touching = (b.touching ?? 0) + 1;
+  const vn = b.vh - b.spin * rx; // (how fast that point is going into the floor)
+  let impact = 0, j = 0;
+  if (vn < 0) {
+    impact = -vn;
+    const e = impact > 140 ? (o.bounce ?? 0.3) : 0;
+    j = -(1 + e) * vn / (1 + rx * rx / i2);
+    b.vh += j; b.spin -= rx * j / i2;
+  }
+  // the floor grips it: friction at the contact skids it slower and rolls it over
+  const vt = b.vx - b.spin * ry;
+  const lim = (o.friction ?? 0.5) * Math.max(j, 1700 * DT);
+  const jt = Math.max(-lim, Math.min(lim, -vt / (1 + ry * ry / i2)));
+  b.vx += jt; b.spin -= ry * jt / i2;
+  if (o.roll) { b.vx *= o.roll; b.spin *= o.roll; }
+  else if (impact < 140) b.spin *= 0.94; // (resting on its side: it rocks, then it's still)
+  b.spin = Math.max(-30, Math.min(30, b.spin));
+  // a second after it first came down, whatever's left of a slow wobble is soaked up,
+  // and nothing is still moving three seconds on
+  b.down = (b.down ?? 0) + 1;
+  if (b.down > 60 && impact < 140 && Math.abs(b.vx) < 40) { b.vx *= 0.85; b.spin *= 0.8; }
+  if (Math.abs(b.vx) < 6 && Math.abs(b.spin) < 0.4 && Math.abs(b.vh) < 30) b.still = (b.still ?? 0) + 1;
+  else b.still = 0;
+  if (b.still > 10 || b.down > 180) { b.vx = b.vh = b.spin = 0; b.asleep = true; }
+  return impact;
+}

@@ -1,6 +1,7 @@
 import { FleshChain } from '../effects/FleshChain.js';
 import { measureCanvas } from './frameMeasure.js';
 import { dyeImage } from './dye.js';
+import { landThud } from '../core/Sfx.js';
 
 // How far along a band (0 at its first joint, 1 at its second) a point of its outline
 // lies, measured along the band itself: a band lying across the frame (a kneeling man's
@@ -56,6 +57,7 @@ export class FlexibleCut {
       return{img,outline,rest:Math.atan2((b.y-a.y)*this.sy,(b.x-a.x)*this.sx)};
     });
     this.chain.contacts=(points,pass)=>this.contact(points,pass);
+    this.chain.skid=true;this.chain.bounce=this.bands.length>2?.24:.3; // (a big piece lands heavier)
     piece.img.setVisible(false);this.draw();
   }
   launch(vx,vh,spin){this.chain.launch(vx,-vh,spin);}
@@ -73,8 +75,16 @@ export class FlexibleCut {
       }
       if(penetration>.01){
         hit=true;const wa=1-weight,wb=weight,amount=penetration/(wa*wa+wb*wb);
+        const va=a.y-a.py,vb=b.y-b.py;
         a.y-=amount*wa;b.y-=amount*wb;
-        if(pass===0)for(const p of [a,b]){p.py=p.y;p.px=p.x-(p.x-p.px)*.72;}
+        // it strikes, rebounds off a hard landing (the end that hit hardest the most:
+        // that is what tips it over), and skids on, the floor dragging at it
+        if(pass===0)[[a,va],[b,vb]].forEach(([p,v])=>{
+          const e=this.chain.rebound(Math.max(0,v));
+          this.impact=Math.max(this.impact??0,v*60);
+          if(e>0)this.chain.bounced=true;
+          p.py=p.y+Math.max(0,v)*e;p.px=p.x-(p.x-p.px)*(v*60>200?.8:.9);
+        });
       }
     });
     return hit;
@@ -90,10 +100,15 @@ export class FlexibleCut {
   worldPoint(x,y){return this.point({x:this.pivot.x+x/this.sx,y:this.pivot.y+y/this.sy});}
   step(){
     const p=this.piece,scene=this.scene;
-    const impact=this.chain.step(x=>p.z-Math.max(0,scene.world?.terrain?.groundAt(x,p.z)??0),scene.world?.bounds,this.radii);
-    if(impact>130&&!this.thudded){this.thudded=true;scene.gore?.splat(p.x,p.z,1.6);}
+    this.impact=0;
+    const impact=Math.max(this.chain.step(x=>p.z-Math.max(0,scene.world?.terrain?.groundAt(x,p.z)??0),scene.world?.bounds,this.radii)??0,this.impact);
+    const gore=scene.gore;
+    if(impact>130&&!this.thudded){this.thudded=true;gore?.splat(p.x,p.z,1.6);landThud(scene,false);}
+    else if(impact>320&&this.thudded){gore?.splat(p.x,p.z,1);landThud(scene,true);} // (a second, lighter knock as it comes down again)
     const center=this.chain.points[Math.floor(this.chain.points.length/2)],old=p.x;
     p.x=center.x;p.h=p.z-center.y;p.vx=(p.x-old)*60;p.vh=0;
+    // a short smear where it skids along the floor
+    if(this.chain.down>0&&!this.chain.asleep&&Math.abs(p.vx)>45&&this.chain.age%4===0&&gore?.level>0)gore.splat(p.x,p.z+(Math.random()-.5)*2,.6+Math.random()*.4,.55);
     const a=this.chain.points[0],b=this.chain.points[1],sa=this.source[0],sb=this.source[1];
     p.rot=Math.atan2(b.y-a.y,b.x-a.x)-Math.atan2((sb.y-sa.y)*this.sy,(sb.x-sa.x)*this.sx);
     this.draw();

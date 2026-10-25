@@ -13,6 +13,7 @@ import { S as GS, woundTex, boneStubTex, bandTex, pieceTex, kindForCut } from '.
 import { GutRope } from './GutRope.js';
 import { SETTINGS } from '../config/settings.js';
 import { landThud } from '../core/Sfx.js';
+import { stepRigid, boxHull } from './Physics.js';
 import { dyeImage } from '../view/dye.js';
 
 const G = 1500;
@@ -71,6 +72,7 @@ class Chunk {
     }
     this.bw = maxX - minX;
     this.bh = maxY - minY;
+    this.hull = boxHull(minX - pivot.x, minY - pivot.y, maxX - pivot.x, maxY - pivot.y); // (what meets the floor)
     this.rad = Math.max(2, Math.min(this.bw, this.bh) * 0.4);
     this.cont.setDepth(this.z + 0.4);
   }
@@ -178,35 +180,25 @@ class Chunk {
     }
 
     if (this.mode === 'fly') {
-      this.vh -= G * DT;
-      this.x += this.vx * DT;
+      // a rigid lump on the floor (effects/Physics.js stepRigid): a heavy wet bounce, lower
+      // each time, a skid, and it tips onto whichever side it comes to rest on
+      const wasDown = this.touching;
+      const hit = this.rested ? 0 : stepRigid(this, this.hull, 0, { gravity: G, bounce: this.rad < 8 ? 0.4 : 0.3, friction: 0.6 });
       this.z += this.vz * DT;
-      this.h += this.vh * DT;
-      this.rot += this.spin * DT;
-      if (this.h <= this.rad) {
-        this.h = this.rad;
-        if (this.vh < -160) {
-          // heavy wet thud: small bounce, loses most of its spin
-          if (!this.landed) { gore.burst(this.x, this.z, 2, Math.sign(this.vx) || 1, Math.round(10 * gore.amount), 0.5); landThud(this.sys.scene, this.rad < 8); }
-          this.landed = true;
-          this.vh = -this.vh * 0.2;
-          this.vx *= 0.6; this.vz *= 0.45; this.spin *= 0.4;
-          gore.splat(this.x, this.z, 1 + this.rad / 6);
-        } else {
-          // sliding on the wet floor: brief, smearing blood, then it stops dead
-          this.vh = 0;
-          this.vx *= 0.9; this.vz *= 0.85; this.spin *= 0.7;
-          if (Math.abs(this.vx) > 30 && this.age % 3 === 0 && this.wounds) gore.splat(this.x, this.z, 0.7 + this.rad / 10, 0.55);
-          // settle flat: long pieces lie down (eased, no wobble)
-          const base = this.bh > this.bw ? Math.PI / 2 : 0;
-          const target = base + Math.round((this.rot - base) / Math.PI) * Math.PI;
-          this.rot += (target - this.rot) * 0.2;
-          if (!this.rested && Math.abs(this.vx) < 6 && Math.abs(target - this.rot) < 0.02) {
-            this.rot = target; this.vx = 0; this.vz = 0; this.spin = 0;
-            this.rested = true; this.onRest();
-          }
-        }
-      } else if (this.trail && this.age < 60 && this.age % 2 === 0 && gore.level > 0) {
+      if (hit > 140) {
+        if (!this.landed) { gore.burst(this.x, this.z, 2, Math.sign(this.vx) || 1, Math.round(10 * gore.amount), 0.5); landThud(this.sys.scene, this.rad < 8); }
+        else if (hit > 260) gore.splat(this.x, this.z, 0.6 + this.rad / 10);
+        if (!this.landed) gore.splat(this.x, this.z, 1 + this.rad / 6);
+        this.landed = true;
+        this.vz *= 0.45;
+      }
+      if (this.touching) {
+        this.landed = true;
+        this.vz *= 0.85;
+        // sliding on the wet floor, smearing blood
+        if (Math.abs(this.vx) > 30 && this.age % 3 === 0 && this.wounds) gore.splat(this.x, this.z, 0.7 + this.rad / 10, 0.55);
+        if (this.asleep && !this.rested) { this.vz = 0; this.rested = true; this.onRest(); }
+      } else if (!wasDown && this.trail && this.age < 60 && this.age % 2 === 0 && gore.level > 0) {
         const p = this.worldPoint(0, 0);
         gore.spawn({ x: p.x, z: this.z, h: this.z - p.y, vx: this.vx * 0.15, vz: 0, vh: 0, tint: 0x7a0303, scale: 0.4 });
       }

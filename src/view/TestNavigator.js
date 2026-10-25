@@ -13,6 +13,7 @@ export const TEST_SCENES=[
   ['Opening formation',0,'opening'],['Mill yard / Brother Cinder',3,'cinder'],
   ['Stable stampede',4,'horses'],['Varek’s last stand',5,'varek'],
   ['Hakon & Oathkeeper',6,'handoff'],['Raised-sword reveal',6,'raise'],
+  ['Severed pieces: bounce & settle',1,'gore'],
 ];
 
 export class TestNavigator {

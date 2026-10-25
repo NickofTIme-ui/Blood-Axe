@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { PHYSICS, limitTurn } from '../src/effects/Physics.js';
+import { PHYSICS, limitTurn, stepRigid, boxHull, pieceHull } from '../src/effects/Physics.js';
+import { FleshChain } from '../src/effects/FleshChain.js';
 import { Ragdoll } from '../src/view/Ragdoll.js';
 import { Gore } from '../src/effects/Gore.js';
 
@@ -55,4 +56,33 @@ for (const material of [null, PHYSICS.wood, PHYSICS.stone, PHYSICS.pottery]) {
   assert.equal(splats, material ? 0 : 1);
   assert.ok(destroyed && gore.drops.length === 0);
 }
-console.log('Physics checks passed: spin, repeated launches, severed torso, settling, debris materials, blood and cleanup.');
+// Severed pieces (heads, gibs, doll parts): a hard landing bounces, each bounce lower,
+// the piece never sinks into the floor, and it comes to rest, tipped onto a side, within
+// three seconds whatever it was doing.
+for (const [w, h, vx, spin] of [[40, 14, 250, 9], [16, 16, 300, 14], [60, 24, -200, -5], [8, 30, 0, 8]]) {
+  const hull = boxHull(-w / 2, -h / 2, w / 2, h / 2);
+  const b = { x: 0, h: 90, vx, vh: 420, rot: 0.3, spin };
+  const ups = []; let t = 0;
+  for (; t < 400 && !b.asleep; t++) {
+    const hit = stepRigid(b, hull, 0, { bounce: 0.3 });
+    if (hit > 140) ups.push(b.vh);
+    const low = Math.min(...hull.map(p => b.h - (p.x * Math.sin(b.rot) + p.y * Math.cos(b.rot))));
+    assert.ok(Number.isFinite(b.x + b.h + b.rot) && low > -0.01, 'Piece sank into the floor');
+  }
+  assert.ok(b.asleep && t <= 240, 'Piece never came to rest');
+  assert.ok(ups.length >= 1 && Math.max(...ups) > 60, 'A hard landing should bounce');
+  assert.ok(ups[0] < 0.4 * 700, 'Bounce must stay modest');
+}
+// a piece's outline from its pixels sits around its pivot, mirrored with it
+const rows = Array.from({ length: 20 }, (_, y) => (y >= 4 && y <= 15 ? [3, 12] : null));
+const hullR = pieceHull({ rows, y0: 4, y1: 15 }, 8, 10, 1, 1), hullL = pieceHull({ rows, y0: 4, y1: 15 }, 8, 10, -1, 1);
+assert.ok(hullR.length >= 8 && hullR.every((p, i) => p.x === -hullL[i].x));
+// a severed half (jointed) still settles when it is allowed to skid and bounce
+{
+  const c = new FleshChain([0, 30, 60, 90].map(x => ({ x, y: 300 })));
+  c.skid = true; c.bounce = 0.28; c.launch(260, -420, 2);
+  let t = 0;
+  for (; t < 600 && !c.asleep; t++) { c.step(() => 400, { minX: -1000, maxX: 1000 }, 6); assert.ok(c.points.every(p => p.y <= 394.001)); }
+  assert.ok(c.asleep, 'Severed half never settled');
+}
+console.log('Physics checks passed: spin, repeated launches, severed torso, settling, debris materials, blood and cleanup, severed pieces bounce and settle.');

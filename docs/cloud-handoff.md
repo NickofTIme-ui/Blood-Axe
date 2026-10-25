@@ -23,6 +23,13 @@ branch, or ChatGPT's work gets lost.
   The shared props take each level's light, with soft contact shadows and grit
   under every prop and painted block (`src/view/propGround.js`).
 
+- 25 October 2026 (branch `claude/project-thread-gzwx2v`, not on main until Nick says
+  push): severed pieces bounce better. Heads, gibs and doll bits are rigid bodies on the
+  floor (`effects/Physics.js stepRigid`: bounce lower each time, skid, tip onto a side and
+  rest at a natural angle); jointed halves (`FleshChain` with `skid`) bounce off a hard
+  landing and skid instead of stopping dead, with a thud and a short smear. F8 test scene
+  "Severed pieces: bounce & settle" cuts men down six ways in turn.
+
 # Hand-off to the cloud session (2 October 2026)
 
 The local machine only collects art now (ChatGPT can't be reached from the cloud).
