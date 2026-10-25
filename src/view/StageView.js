@@ -18,6 +18,7 @@ import { DANGER } from './dangerCue.js';
 import { cutPieces, keyLayer } from './envArt.js';
 import { drawScorpion, listenScorpion } from './VincentView.js';
 import { SiegeAnim } from './SiegeAnim.js';
+import { propLight, lightProp, rimGlow, groundUnder, moveGround } from './propGround.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 // A catapult's stone in the air (drawStone): its radius on screen
@@ -38,6 +39,9 @@ const CHAIN = {
   length: 12, width: 7.5, wire: 2, pitch: 8,
   dark: 0x140e0b, shade: 0x3a2e28, iron: 0x5e4d42, light: 0xc09c80, glint: 0xf0dcc8, rust: 0x8a4424, rustDark: 0x5a2814,
 };
+
+// the shared, painted-once props that take each level's light (view/propGround.js)
+const LIT_PROPS = new Set(['barrel', 'crate', 'urn', 'chest', 'bell']);
 
 export class StageView {
   constructor(scene, stage) {
@@ -614,6 +618,18 @@ export class StageView {
     const img = this.scene.add.image(pr.x, pr.z - y, key).setOrigin(0.5, 1).setScale(s).setDepth(pr.z);
     const shadow = this.scene.add.ellipse(pr.x, pr.z - y, pr.w * 1.2, 10, 0x000000, 0.35).setDepth(y ? pr.z - 0.3 : DEPTH.shadows).setVisible(!pr.lift);
     const v = { img, shadow, s };
+    // sat into the street, not stuck on it (view/propGround.js): the shared crates, barrels
+    // and chests in the level's own light, the fire's glow on one side; under everything that
+    // stands on the ground, a soft pool of shadow and some grit in place of the flat ring
+    if (!pr.lift) {
+      if (LIT_PROPS.has(pr.kind)) {
+        v.light = propLight(this.stage.data?.id, this.stage.sections[pr.section]?.light);
+        lightProp(img, v.light);
+        v.rim = rimGlow(this.scene, v.light, pr.x, pr.z - y, img.displayWidth, img.displayHeight, pr.z);
+      }
+      v.ground = groundUnder(this.scene, pr.x, pr.z - y, Math.min(img.displayWidth, pr.w * 1.4), pr.z, { seed: pr.id });
+      shadow.setVisible(false);
+    }
     this.siege.setup(pr, v, lvl);
     return v;
   }
@@ -624,7 +640,7 @@ export class StageView {
     playSfx(this.scene, pr.kind === 'wall' ? 'block' : 'kick', { volume: 0.5, pitch: pr.kind === 'wall' ? -600 : -200, minGapMs: 0 });
     this.scene.tweens.add({ targets: v.img, x: pr.x + dir * 4, duration: 40, yoyo: true, repeat: 1 });
     this.chips(pr, 6, dir);
-    if (pr.kind !== 'wall') v.img.setTint(0xd8c8b8); // knocked about: duller, dustier
+    if (pr.kind !== 'wall') { if (v.light) lightProp(v.img, v.light, 0.85); else v.img.setTint(0xd8c8b8); } // knocked about: duller, dustier
     if (pr.kind === 'wall') v.img.setTint(0xffffff - 0x101010 * (5 - pr.hp));
   }
 
@@ -647,12 +663,17 @@ export class StageView {
     const wreck = pr.kind === 'chest' ? 'prop-chest-open' : `prop-${pr.kind}-broken`;
     if (this.scene.textures.exists(wreck)) {
       v.img.setTexture(wreck).setOrigin(0.5, 1).setPosition(pr.x, pr.z - (pr.y ?? 0) - (pr.lift ?? 0)).setDepth(pr.z - 0.2).clearTint();
+      if (v.light) lightProp(v.img, v.light, 0.9); // (what's left of it, in the same light)
+      moveGround(v.ground, pr.x, pr.z - (pr.y ?? 0));
+      v.ground?.slice(0, 2).forEach((g) => g.setAlpha(g.alpha * 0.6)); // (lower now: less shadow)
+      v.rim?.setPosition(pr.x - v.img.displayWidth * 0.32, pr.z - (pr.y ?? 0) - v.img.displayHeight * 0.4).setAlpha(0.25);
       v.img.setScale(v.s * 1.25, v.s * 0.6);
       this.scene.tweens.add({ targets: v.img, scaleX: v.s, scaleY: v.s, duration: 160, ease: 'Back.easeOut' });
       v.shadow?.setAlpha(0.2);
     } else {
       v.img.destroy();
       v.shadow?.destroy();
+      v.rim?.destroy();
     }
     if (v.alcove) {
       v.alcove.setVisible(true).setAlpha(0);
@@ -1548,6 +1569,7 @@ export class StageView {
       const v=this.propSprites.get(prop.id);
       if(!v)return;
       v.img.setTexture('prop-chest-open').clearTint();
+      if(v.light)lightProp(v.img,v.light);
       this.scene.tweens.add({targets:v.img,scaleY:v.s*1.08,duration:120,yoyo:true,ease:'Sine.easeOut'});
     });
     ev.on('bladeStruck', ({ hazard, dir, force }) => {
@@ -1661,6 +1683,8 @@ export class StageView {
       const t = pr.fly.left;
       v.img.setPosition(pr.x, pr.z - (pr.y ?? 0) - Math.abs(Math.sin(t * 0.045)) * 9).setAngle(Math.sin(t * 0.09) * 7 * pr.fly.dir);
       v.shadow?.setPosition(pr.x, pr.z - (pr.y ?? 0));
+      moveGround(v.ground, pr.x, pr.z - (pr.y ?? 0), { grit: false }); // (its grit stays where it stood)
+      v.rim?.setPosition(pr.x - v.img.displayWidth * 0.32, pr.z - (pr.y ?? 0) - v.img.displayHeight * 0.55);
       if (Math.floor(t / 40) !== Math.floor((t + 11) / 40)) this.chips(pr, 2, -pr.fly.dir);
     }
   }
@@ -1673,14 +1697,15 @@ export class StageView {
       const v = this.propSprites.get(pr.id);
       if (!v?.img?.active) continue;
       if (pr.escaped) {
-        if (!v.gone) { v.gone = true; this.scene.tweens.add({ targets: [v.img, v.shadow], alpha: 0, duration: 900 }); }
+        if (!v.gone) { v.gone = true; this.scene.tweens.add({ targets: [v.img, v.shadow, ...(v.ground ?? []), v.rim].filter(Boolean), alpha: 0, duration: 900 }); }
         continue;
       }
-      if (v.gone) { v.gone = false; v.img.setAlpha(1); v.shadow?.setAlpha(0.35); } // (back where it started: the checkpoint)
+      if (v.gone) { v.gone = false; v.img.setAlpha(1); v.shadow?.setAlpha(0.35); v.ground?.forEach((g, i) => g.setAlpha(i ? 1 : 0.85)); v.rim?.setAlpha(0.4); } // (back where it started: the checkpoint)
       const moving = pr.x > (pr.roll.from ?? pr.x);
       const t = this.scene.time.now / 16.7;
       v.img.setPosition(pr.x, pr.z - (pr.y ?? 0) - (moving ? Math.abs(Math.sin(t * 0.25)) * 2 : 0)).setAngle(moving ? Math.sin(t * 0.13) * 0.8 : 0);
       v.shadow?.setPosition(pr.x, pr.z - (pr.y ?? 0));
+      moveGround(v.ground, pr.x, pr.z - (pr.y ?? 0));
       if (moving && Math.floor(t) % 6 === 0) {
         this.scene.gore.spawn({ x: pr.x - pr.w / 2 + 10, z: pr.z + 4, h: 4, vx: -rand(20, 70), vz: 0, vh: rand(20, 60), tint: 0x3a2e22, scale: rand(0.4, 0.8), decal: false, life: 30 });
       }

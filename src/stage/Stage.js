@@ -108,7 +108,7 @@ import { STAGE, PICKUPS, PROPS } from '../data/stage.js';
 import { ENEMIES, HORDE_SIZE } from '../data/enemies.js';
 import { createEnemy, offscreenX, inView } from '../entities/Enemy.js';
 import { toWorldBox, overlaps } from '../combat/Boxes.js';
-import { Terrain, PIT_LOST } from './Terrain.js';
+import { Terrain, PIT_LOST, STEP } from './Terrain.js';
 import { Story } from './Story.js';
 import { Sequence } from './Sequence.js';
 import { Sentence } from './Sentence.js';
@@ -177,6 +177,13 @@ const DUEL = { composure: 3, ward: 0.3, open: 160, counter: { damage: 14, reach:
 // A twin whose brother falls: harder and faster (boss.grief overrides)
 const GRIEF = { damage: 1.3, speed: 1.2 };
 
+// Footprints of the solid things in the street (half width, half depth, height): the
+// breakables by kind, the painted clutter by kind (its half width a share of its drawn w).
+const SOLID_PROPS = { barrel: 0.42, crate: 0.46, urn: 0.42, chest: 0.46, bell: 0.3 };
+const SOLID_DEPTH = 9; // px each side of a prop's foot line
+const DECOR_FOOT = { signpost: { w: 0.18, d: 6, h: 140 }, lantern: { w: 0.18, d: 6, h: 140 }, debris: { w: 0.36, d: 10, h: 40 }, debris2: { w: 0.36, d: 10, h: 40 } };
+const SOLID_EDGE = 6; // how close a man gets to one (px)
+
 export class Stage {
   constructor(world, data = STAGE, opts = {}) {
     this.world = world;
@@ -218,9 +225,20 @@ export class Stage {
       }
       for (const h of sec.hazards ?? []) this.hazards.push({ id: id++, section: si, ...h, t: h.phase ?? 0, cool: new Map() });
     }
+    // Things in the street you can't walk through (Nick, 2026-10-25: "you can walk through
+    // most of them"): the small breakables while they stand, and the painted clutter
+    // (data `decor`, `pikes`). Fighters slide round them like the terrain's walls and jump
+    // over the low ones (entities/Fighter.js integrate).
+    this.solidDecor = [
+      ...(data.decor ?? []).map((d) => ({ x: d.x, z: d.z - 6, hw: d.w * (DECOR_FOOT[d.kind]?.w ?? 0.3), hd: DECOR_FOOT[d.kind]?.d ?? 8, top: DECOR_FOOT[d.kind]?.h ?? 90 })),
+      ...(data.pikes ?? []).map((pk) => ({ x: pk.x, z: pk.z - 4, hw: (40 + (pk.n ?? 3) * 34) * 0.6 * 0.4, hd: 8, top: 120 })),
+    ];
+    world.solidAt = (x, z, h) => this.solidAt(x, z, h);
     // (`upto`: a bombardment that keeps falling on the sections after its own, up to and
     // including that one: the archers ahead shoot at you all the way until you reach them)
     for (const hz of this.hazards) hz.last = hz.upto ? Math.max(hz.section, this.sections.findIndex((s) => s.id === hz.upto)) : hz.section;
+    // (a man flung or charging into a crate smashes it: entities/Fighter.js bump)
+    world.events.on('solidSmashed', ({ prop, dir }) => { if (prop.kind !== 'bell') this.breakProp(prop, dir); });
     world.events.on('kill', (e) => {
       if (e.defender?.team !== 'enemy') return;
       this.stats.kills++;
@@ -998,6 +1016,23 @@ export class Stage {
         this.world.events.emit('propEscaped', { prop: pr });
       }
     }
+  }
+
+  // A solid prop or piece of clutter at (x, z) for feet at height h (null: the way is clear).
+  // A prop knocked flying, broken, or hung on the back wall isn't one.
+  solidAt(x, z, h) {
+    for (const pr of this.props) {
+      const k = SOLID_PROPS[pr.kind];
+      if (!k || pr.broken || pr.fly || pr.lift || pr.escaped) continue;
+      const y = pr.y ?? 0;
+      if (h >= y + pr.h - STEP || h + 60 < y) continue; // (over it, or on the ground under its ledge)
+      if (Math.abs(x - pr.x) < pr.w * k + SOLID_EDGE && Math.abs(z - pr.z) < SOLID_DEPTH + SOLID_EDGE) return { soft: true, prop: pr, x0: pr.x - pr.w * k, x1: pr.x + pr.w * k, z0: pr.z - SOLID_DEPTH, z1: pr.z + SOLID_DEPTH };
+    }
+    for (const d of this.solidDecor) {
+      if (h >= d.top - STEP) continue;
+      if (Math.abs(x - d.x) < d.hw + SOLID_EDGE && Math.abs(z - d.z) < d.hd + SOLID_EDGE) return { soft: true, x0: d.x - d.hw, x1: d.x + d.hw, z0: d.z - d.hd, z1: d.z + d.hd };
+    }
+    return null;
   }
 
   breakProp(pr, dir, blast = false) {

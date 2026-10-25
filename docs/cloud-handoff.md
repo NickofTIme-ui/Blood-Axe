@@ -16,6 +16,12 @@ branch, or ChatGPT's work gets lost.
   location, objective, level, kills, secrets and gore moved to the pause screen
   (`HUDScene.pauseInfo`, `view/PauseMenu.js`). The bottom controls line is gone.
   Not uploaded to itch.
+- 25 October 2026 (cloud, on main, not on itch):
+  props are solid and sit in the picture. Crates, barrels, chests, urns and bells
+  block you until broken (a man flung or charging into one smashes it), and so do
+  the village's signposts, lanterns, debris heaps and head pikes (`Stage.solidAt`).
+  The shared props take each level's light, with soft contact shadows and grit
+  under every prop and painted block (`src/view/propGround.js`).
 
 # Hand-off to the cloud session (2 October 2026)
 

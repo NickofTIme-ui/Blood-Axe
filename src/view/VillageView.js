@@ -10,6 +10,7 @@
 // rooftops across the valley, the house fronts along the back of the street (the barn,
 // the longhall, the north gate where the level ends), then the street itself.
 
+import { groundUnder } from './propGround.js';
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { drawCastle } from './castle.js';
@@ -385,6 +386,7 @@ export class VillageBackdrop {
       const img = this.art.piece(`decor_${d.kind}`, d.x - d.w / 2, d.x + d.w / 2, { depth: d.z - 1, bottom: d.z - top + 4 });
       if (!img) continue;
       if (d.flip) img.setFlipX(true);
+      groundUnder(this.scene, d.x, d.z - 2, d.w * (d.kind.startsWith('debris') ? 0.8 : 0.45), d.z - 1, { seed: d.x }); // (sat in the mud: view/propGround.js)
       if (d.kind === 'lantern') {
         // (its flame lights the street round it, flickering)
         const glow = this.scene.add.image(d.x, d.z - img.displayHeight * 0.62, 'glow').setScale(1.6).setTint(COL.fire)
@@ -401,7 +403,7 @@ export class VillageBackdrop {
     // (the painting is three pikes 1.5x as tall as wide: at w it stood two heroes high with
     // heads twice a man's, so it is drawn at 0.6 of that, the spears a head over a hero; Nick, 2026-10-25)
     const pw = w * 0.6;
-    if (this.art.piece('pikes', x - pw / 2, x + pw / 2, { depth: z - 1, bottom: z - (SETTINGS.world.floorTop - 50) })) return;
+    if (this.art.piece('pikes', x - pw / 2, x + pw / 2, { depth: z - 1, bottom: z - (SETTINGS.world.floorTop - 50) })) { groundUnder(this.scene, x, z - 2, pw * 0.7, z - 1, { seed: x }); return; }
     const g = this.scene.add.graphics().setDepth(z - 1);
     for (let i = 0; i < n; i++) {
       const px = x - w / 2 + 20 + i * 34 + ((i * 7) % 5);

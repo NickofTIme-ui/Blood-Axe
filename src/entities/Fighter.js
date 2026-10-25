@@ -136,27 +136,51 @@ export class Fighter {
     if (this.flash > 0) this.flash--;
   }
 
+  // Walked or flung into a prop: a man thrown hard into a crate or barrel (or charging
+  // into it) smashes it (stage/Stage.js breakProp); one walking into it just stops.
+  bump(o, vx) {
+    if (!o?.prop || Math.abs(vx) < 200 || (this.state !== 'knockdown' && this.state !== 'charge')) return;
+    this.world.events.emit('solidSmashed', { prop: o.prop, dir: Math.sign(vx), fighter: this });
+  }
+
+  // Walking straight into a prop with no up or down held: he edges round it, toward its
+  // nearer end (a crate never pins a man, or a walking-on grunt, in place).
+  slideRound(o, dt) {
+    if (!o.soft || Math.abs(this.vz) > 20) return;
+    const up = this.z - o.z0 < o.z1 - this.z;
+    const b = this.world.bounds;
+    const dir = (up && o.z0 - 8 > b.minZ) || o.z1 + 8 > b.maxZ ? -1 : 1;
+    const nz = this.z + dir * Math.max(60, Math.abs(this.vx) * 0.8) * dt;
+    if (!this.world.terrain?.wallAt(this.x, nz, this.h) && !this.world.solidAt?.(this.x, nz, this.h)) this.z = nz;
+  }
+
   integrate() {
     const dt = 1 / 60;
     const b = this.world.bounds;
     const T = this.world.terrain;
     const wasGrounded = this.grounded;
 
-    if (T && !this.ghost) {
+    const solid = this.world.solidAt; // (the street's props and clutter: stage/Stage.js solidAt)
+    if ((T || solid) && !this.ghost) {
       // one axis at a time against the terrain's walls, so he slides along them
       // (in the air he keeps pushing: a jump into a ledge's face carries on over its top
       // the moment he's high enough, instead of dying against it)
       const air = this.h > this.floor || this.vh > 0;
+      const wall = (x, z) => T?.wallAt(x, z, this.h) || solid?.(x, z, this.h);
       const nx = this.x + this.vx * dt;
-      if (!T.wallAt(nx, this.z, this.h)) this.x = nx;
-      else { if (!air) this.vx = 0; this.walled = true; }
+      const hitX = wall(nx, this.z);
+      if (!hitX) this.x = nx;
+      else { this.bump(hitX, this.vx); this.slideRound(hitX, dt); if (!air) this.vx = 0; this.walled = true; }
       const nz = this.z + this.vz * dt;
-      if (!T.wallAt(this.x, nz, this.h)) this.z = nz;
+      if (!wall(this.x, nz)) this.z = nz;
       else { if (!air) this.vz = 0; this.walled = true; }
       // carried into a wall (a finisher places both men itself): out the nearest side once it lets go
       if (this.state !== 'execute' && this.state !== 'executed') {
-        const out = T.pushOut(this.x, this.z, this.h, b);
+        const out = T?.pushOut(this.x, this.z, this.h, b);
         if (out) { this.x = out.x; this.z = out.z; }
+        // (inside a prop: dropped on it, spawned on it) out its nearest side, left or right
+        const o = solid?.(this.x, this.z, this.h);
+        if (o) this.x = this.x - o.x0 < o.x1 - this.x ? o.x0 - 7 : o.x1 + 7;
       }
     } else {
       this.x += this.vx * dt;

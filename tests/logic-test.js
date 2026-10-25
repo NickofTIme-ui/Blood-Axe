@@ -872,6 +872,37 @@ test('co-op: a fallen hero rises beside his partner; both down = back to the che
   assert(stage.stats.deaths === 1, 'one death counted');
 });
 
+test('props: crates, barrels and chests are solid till broken; a man thrown into one smashes it; the street clutter is solid', () => {
+  const world = new World({ seed: 3 });
+  class Walker extends Controller { sample() { this.held = {}; this.moveX = 1; this.moveZ = this.mz ?? 0; } }
+  const walk = new Walker();
+  const hero = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 300, z: 430, controller: walk }));
+  const stage = new Stage(world);
+  stage.start([hero]);
+  for (const f of world.fighters) if (f.team === 'enemy') f.removeMe = true;
+  world.tick();
+  const crate = { id: 999, section: stage.index, kind: 'crate', ...PROPS.crate, x: hero.x + 80, z: hero.z, y: 0, broken: false, hitBy: new Set() };
+  stage.props.push(crate);
+  const x0 = hero.x;
+  walk.mz = 1; // (holding down-right into it: he stays put)
+  for (let i = 0; i < 90; i++) { world.tick(); hero.z = crate.z; }
+  assert(hero.x > x0 + 20 && hero.x < crate.x - crate.w * 0.3, `stopped at the crate, not inside it (hero ${hero.x.toFixed(0)}, crate ${crate.x})`);
+  // walking into it without up or down held, he edges round it
+  hero.x = crate.x - 60; hero.z = crate.z;
+  walk.mz = 0;
+  for (let i = 0; i < 120; i++) world.tick();
+  assert(hero.x > crate.x + crate.w * 0.4, `edged round it (hero ${hero.x.toFixed(0)}, ${hero.z.toFixed(0)})`);
+  // an enemy flung into it breaks it
+  const foe = createEnemy(world, 'grunt', crate.x - 60, crate.z);
+  foe.fsm.change('knockdown', { vx: 500, vh: 60 });
+  for (let i = 0; i < 30 && !crate.broken; i++) world.tick();
+  assert(crate.broken, 'a man thrown into the crate smashes it');
+  // the village's signposts and debris heaps are solid
+  const v = new Stage(new World({ seed: 1 }), STAGE_VILLAGE);
+  const sign = STAGE_VILLAGE.decor.find((d) => d.kind === 'signpost');
+  assert(v.solidAt(sign.x, sign.z - 6, 0) && !v.solidAt(sign.x, sign.z + 60, 0), 'the signpost stands where it is drawn, and only there');
+});
+
 test('waves: every enemy starts off every screen and walks on (no popping in)', () => {
   // a hero at the start (the camera pinned to the left wall), hugging the right wall, mid-room
   for (const at of ['start', 'wall', 'middle']) {
@@ -2378,6 +2409,9 @@ function routeRun(hero) {
       // (down the lane at 415; through the gallery in front of the balcony, clear of the blades' lanes)
       const lane = p.x > 4880 && p.x < 5700 ? 365 : 415;
       this.held = {}; this.moveX = 1; this.moveZ = Math.abs(p.z - lane) > 6 ? Math.sign(lane - p.z) : 0;
+      // (a crate or a signpost in the way: round it, like a player)
+      const solid = this.world.solidAt?.(p.x + 30, p.z, p.h);
+      if (solid) this.moveZ = p.z < (solid.z0 + solid.z1) / 2 ? -1 : 1;
       if (!T) return; // (a level without ledges or pits: just walk)
       if (this.jumpFor > 0) { this.jumpFor--; this.held.jump = p.h < this.jumpTo + 34; }
       if (!p.grounded) {
@@ -2485,6 +2519,9 @@ function campaignRun(data, hero, { kill = true, frames = 60 * 300, onTick = null
       const p = this.me; const T = this.world.terrain;
       const lane = 415;
       this.held = {}; this.moveX = 1; this.moveZ = Math.abs(p.z - lane) > 6 ? Math.sign(lane - p.z) : 0;
+      // (a crate or a signpost in the way: round it, like a player)
+      const solid = this.world.solidAt?.(p.x + 30, p.z, p.h);
+      if (solid) this.moveZ = p.z < (solid.z0 + solid.z1) / 2 ? -1 : 1;
       if (!T) return; // (a level without ledges or pits: just walk)
       if (this.jumpFor > 0) { this.jumpFor--; this.held.jump = p.h < this.jumpTo + 34; }
       if (!p.grounded) {

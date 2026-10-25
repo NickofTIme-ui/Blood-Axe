@@ -16,6 +16,7 @@
 // z0), its front face just in front of them (depth z1), so whoever is on it, behind it or
 // in front of it is drawn the right way round.
 
+import { groundUnder, moveGround } from './propGround.js';
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { playSfx, playSplash } from '../core/Sfx.js';
@@ -693,7 +694,6 @@ export class TerrainView {
     const n = cart ? (b.z1 - b.z0 > 120 ? 2 : 1) : Math.max(1, Math.round((b.z1 - b.z0) / 50)); // (a heap or two, never a stamped row)
     const wide = x1 - x0 + (cart ? 70 : 60); const cx = (x0 + x1) / 2;
     v.arts ??= [];
-    top.fillStyle(0x000000, 0.4);
     for (let i = 0; i < n; i++) {
       const z = cart || n === 1 ? b.z0 + ((b.z1 - b.z0) * (i + 1)) / n : b.z0 + 16 + ((b.z1 - b.z0 - 16) * i) / (n - 1);
       // (a block can place its copies by hand, `artLayout`: [{ dx, k, tilt, flip }] per copy)
@@ -701,7 +701,10 @@ export class TerrainView {
       const flip = lay.flip ?? b.artFlip ?? (cart ? i !== n - 1 : i % 2 === 1);
       const dx = lay.dx ?? (cart ? 0 : (i % 2 ? 16 : -10));
       const k = lay.k ?? (cart ? 1 : 1 - 0.18 * (i % 2)); // (the second heap smaller, set off to the side)
-      top.fillEllipse(cx + dx + 4, z - 2, wide * 0.9 * k, cart ? 22 : 16);
+      // (a soft pool of shadow and grit where it meets the street: view/propGround.js)
+      v.grounds ??= [];
+      v.grounds[i] ??= groundUnder(s, cx + dx + 4, z - 2, wide * 0.8 * k, z + 0.5, { seed: b.id * 7 + i, deep: cart ? 1.2 : 1 });
+      moveGround(v.grounds[i], cx + dx + 4, z - 2);
       const img = v.arts[i] ??= s.add.image(0, 0, tex).setOrigin(0.5, painted ? 0.97 : 1);
       if (!cart) img.setCrop(0, frame.height * 0.42, frame.width, frame.height * 0.58);
       img.setPosition(cx + dx, z + 4).setScale((wide * k) / frame.width).setFlipX(flip).setAngle(lay.tilt ?? 0).setDepth(z + 0.5).setVisible(true);
