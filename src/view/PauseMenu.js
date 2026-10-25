@@ -7,7 +7,9 @@ const TITLE = "'Cinzel', Georgia, serif";
 const PAD = {0:'A',1:'B',2:'X',3:'Y',4:'LB',5:'RB',6:'LT',7:'RT',8:'View',9:'Menu',10:'L3',12:'D-pad Up',13:'D-pad Down',14:'D-pad Left',15:'D-pad Right'};
 const ACTIONS = [['Move','move'],['Light attack / combo','attack'],['Heavy attack','heavy'],['Block / parry','block'],['Dodge roll','dodge'],['Kick','kick'],['Jump','jump'],['Spell','magic'],['Sprint','sprint'],['Talk / interact','padUp']];
 
-// One compact pause panel; control bindings live on their own nested page.
+// One compact pause panel; control bindings live on their own nested page. The main page has
+// the buttons on the left and, on the right, what the HUD used to show in play: where you are,
+// the objective, kills, secrets, level, gore (HUDScene.pauseInfo; Nick, 2026-10-25).
 export class PauseMenu {
   constructor(scene, arena) { this.scene=scene;this.arena=arena;this.page='main';this.index=0;this.nodes=[];this.visible=false; }
   show(on) { this.visible=on;if(on){this.page='main';this.index=0;this.render();}else this.root?.setVisible(false); }
@@ -25,7 +27,10 @@ export class PauseMenu {
     this.text(cx,155,this.page==='main'?'OATH OF VENGEANCE':'Keyboard & Gamepad',15,'#baaa8b',TYPE).setOrigin(.5);
     if(this.page==='main') {
       this.items=['Resume','Controller Settings','Character Select','Quit to Main Menu'];
-      this.items.forEach((label,i)=>this.button(label,i,211+i*56));
+      const info=this.scene.pauseInfo?.()??[];
+      const bx=info.length?cx-150:cx;
+      this.items.forEach((label,i)=>this.button(label,i,211+i*56,bx,info.length?290:532));
+      if(info.length)this.info(info,cx+20,190);
       this.text(cx,438,'↑ ↓ / D-pad   Navigate     Enter / A   Select     Esc / B   Resume',15,'#c2b394').setOrigin(.5);
     } else {
       this.items=['Back'];
@@ -42,11 +47,28 @@ export class PauseMenu {
     this.root=this.scene.add.container(0,0,this.nodes).setDepth(2000);
     this.refresh();
   }
-  button(label,i,y) {
-    const cx=SETTINGS.width/2;
-    const bg=this.rect(cx,y,532,44,0x191410,.82).setStrokeStyle(1,0x584631).setInteractive({useHandCursor:true});
+  // the run so far: a gold label over each value, down a thin rule
+  // (short values, the counts, share a line: KILLS  SECRETS  GORE)
+  info(rows,x,y) {
+    this.rect(x-12,y+120,1,248,0x584631,.9);
+    const short=([,v])=>!v.includes('\n')&&v.length<=10;
+    for(let i=0;i<rows.length;){
+      const line=[rows[i++]];
+      if(short(line[0]))while(i<rows.length&&line.length<3&&short(rows[i]))line.push(rows[i++]);
+      let h=0;
+      line.forEach(([label,value],k)=>{
+        const lx=x+k*100;
+        this.text(lx,y,label,12,'#c9a86b',TITLE).setOrigin(0,0);
+        const v=this.text(lx,y+15,value,15,'#e6d8bd').setOrigin(0,0).setWordWrapWidth(290).setLineSpacing(1);
+        h=Math.max(h,v.height);
+      });
+      y+=15+h+8;
+    }
+  }
+  button(label,i,y,cx=SETTINGS.width/2,w=532) {
+    const bg=this.rect(cx,y,w,44,0x191410,.82).setStrokeStyle(1,0x584631).setInteractive({useHandCursor:true});
     const text=this.text(cx,y,label,20,'#e6d8bd',TITLE).setOrigin(.5);
-    const arrow=this.text(cx-246,y,'◆',12,'#e2b969');
+    const arrow=this.text(cx-w/2+20,y,'◆',12,'#e2b969');
     bg.on('pointerover',()=>{this.index=i;this.refresh();});
     bg.on('pointerdown',()=>{this.index=i;this.choose();});
     this.rows.push({bg,text,arrow});

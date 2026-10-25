@@ -2,8 +2,12 @@
 //
 //   top-left       the hero's knight-armour health / stamina / magic bars (view/hudArt.js)
 //   top-centre     the call-out banner (WAVE 2, DECAPITATED!, STRIKE! x3, GUARD BREAK...)
-//   top-right      wave, kills, gore level
+//   top-right      the combo counter and style rank
 //   bottom strip   name + health of every enemy currently on screen
+//
+// The plain readouts (where you are, the objective, kills, secrets, level, gore) are not on
+// screen in play: they're on the pause screen (pauseInfo, view/PauseMenu.js; Nick, 2026-10-25:
+// "everything except the health, stamina and magic bars goes, show it when you pause").
 //
 // Nothing is written over the fighters themselves. ArenaScene sends call-outs with
 // `arena.callout(text, colour)`.
@@ -56,18 +60,11 @@ export class HUDScene extends Phaser.Scene {
       .setOrigin(0.5).setStroke('#000000', 4).setDepth(40);
 
     const style = { fontFamily: FONT.ui, fontSize: '13px', color: '#d9c7a3', fontStyle: 'normal' };
-    this.info = this.add.text(SETTINGS.width - 12, mate ? 92 : 10, '', { ...style, align: 'right' }).setOrigin(1, 0)
-      .setStroke('#000000', 3);
-    // the combo counter and style rank (combat/Style.js), right side under the kill count
-    this.styleMeter = new StyleMeter(this, SETTINGS.width - 14, mate ? 170 : 92);
+    // the combo counter and style rank (combat/Style.js), right side (under my partner's bars)
+    this.styleMeter = new StyleMeter(this, SETTINGS.width - 14, mate ? 92 : 12);
     this.debugText = this.add.text(12, 112, '', { ...style, fontFamily: 'monospace', fontStyle: '', fontSize: '11px', color: '#7fffa0' });
 
-    // controls hint: shown for a few seconds, then gets out of the way
-    const hint = this.hint = this.add.text(SETTINGS.width / 2, SETTINGS.height - 8,
-      'J light  J J K launch (+K sunder)  K heavy  O kick  L block (+←/→ turn)  Shift roll  C sprint (+J smash)  U firebolt  Space jump  |  P pause  G gore  M music',
-      { ...style, fontSize: '11px', color: '#b0a590' }).setOrigin(0.5, 1).setStroke('#000000', 3);
-    this.tweens.add({ targets: hint, alpha: 0, delay: 7000, duration: 1500 });
-    // THE CHROME: the bars, the counts, the style meter, the hint (and the objective, below).
+    // THE CHROME: the bars and the style meter.
     // It stays down through the level's opening scene (stage/VillageOpening.js) and comes up
     // as the fight starts (Nick, 2026-10-23).
     const chrome = this.children.list.slice(first).filter((o) => o !== this.downText && o !== this.waitText);
@@ -84,7 +81,7 @@ export class HUDScene extends Phaser.Scene {
     this.enemyBars = [];
     this.focusId = null;
     this.makeStageHud();
-    this.chrome = this.add.container(0, 0, [...chrome, this.objective, this.levelText]);
+    this.chrome = this.add.container(0, 0, chrome);
     this.chromeHidden = !!this.arena.stage?.opening?.active;
     this.chrome.setAlpha(this.chromeHidden ? 0 : 1);
     const ev = this.arena.world.events;
@@ -103,12 +100,8 @@ export class HUDScene extends Phaser.Scene {
   makeStageHud() {
     const W = SETTINGS.width;
     const H = SETTINGS.height;
-    // objective, under the hero's bars
-    this.objective = this.add.text(14, 90, '', { fontFamily: FONT.ui, fontSize: '13px', color: '#e8d4b0' })
-      .setStroke('#000000', 4).setAlpha(0.95);
-    // blood, level and unspent skill points (progression/Progress.js)
-    this.levelText = this.add.text(14, 128, '', { fontFamily: FONT.ui, fontSize: '12px', color: '#ff9a7a' })
-      .setStroke('#000000', 4).setAlpha(0.9);
+    // the objective (and how, if the section teaches something): shown on the pause screen
+    this.objective = '';
     // GO → at the right edge, pulsing, while the way on is open
     this.go = this.add.text(W - 24, H / 2 - 20, 'GO\n→', { fontFamily: FONT.display, fontSize: '40px', align: 'center' })
       .setOrigin(1, 0.5).setStroke('#000000', 6).setVisible(false);
@@ -200,10 +193,10 @@ export class HUDScene extends Phaser.Scene {
   }
 
   // A section's head count (section.tally, the barn): "VILLAGERS SAVED 3 / 9" and a figure
-  // for each of them, lit as they get out, under the objective. Once all are out it says so
+  // for each of them, lit as they get out, under the hero's bars. Once all are out it says so
   // and goes.
   makeTally() {
-    const x = 14, y = 150;
+    const x = 14, y = 92;
     const text = this.add.text(x, y, '', { fontFamily: FONT.ui, fontSize: '14px', color: '#f0e0c0' }).setStroke('#000000', 4);
     this.tallyUi = { x, y, text, pips: [], key: null, done: 0 };
   }
@@ -269,7 +262,6 @@ export class HUDScene extends Phaser.Scene {
       // (hung under the speaker's feet when he's on screen: view/SpeakerMarker.js screenAt)
       D.place(this.arena.speakerMarker?.screenAt() ?? null);
       D.setAlpha(Math.min(1, D.alpha + 0.15));
-      if (this.hint.alpha > 0) { this.tweens.killTweensOf(this.hint); this.hint.setAlpha(0); }
     }
     D.update(this.time.now);
     // what lives along the bottom edge (the enemy strip, the partner wait) steps up over the box
@@ -282,7 +274,7 @@ export class HUDScene extends Phaser.Scene {
     epicFill(this.card, ['#ff7a5a', '#d0101a', '#5a0006']);
     this.cardSub.setText(`${roman}  ·  ${section.objective}`);
     // (a section that teaches something says how, under the objective)
-    this.objective.setText(`▸ ${section.objective}${section.hint ? `\n   ${section.hint}` : ''}`);
+    this.objective = `${section.objective}${section.hint ? `\n${section.hint}` : ''}`;
     this.showGo(false);
     this.tweens.killTweensOf([this.card, this.cardSub]);
     for (const t of [this.card, this.cardSub]) {
@@ -294,7 +286,7 @@ export class HUDScene extends Phaser.Scene {
 
   showGo(on) {
     this.go.setVisible(on);
-    if (on) this.objective.setText('▸ Press on →');
+    if (on) this.objective = 'Press on →';
   }
 
   showBoss(boss) {
@@ -378,7 +370,27 @@ export class HUDScene extends Phaser.Scene {
     const prompt = this.add.text(W / 2, H * (C ? 0.8 : 0.74), `${C?.onward ? `${C.onward}      ` : ''}ESC  —  CHOOSE ANOTHER`, { fontFamily: FONT.ui, fontSize: '15px', color: '#cdb391' })
       .setOrigin(0.5).setStroke('#000000', 3).setAlpha(0).setDepth(D + 3);
     this.tweens.add({ targets: prompt, alpha: 0.9, delay: 2400, duration: 900 });
-    this.objective.setText('');
+    this.objective = '';
+  }
+
+  // What the pause screen tells you about the run (view/PauseMenu.js): [label, value] rows.
+  pauseInfo() {
+    const arena = this.arena, st = arena.stage, P = arena.progress;
+    const rows = [];
+    if (st) {
+      rows.push(['LOCATION', st.section?.name ?? '']);
+      if (this.objective) rows.push(['OBJECTIVE', this.objective]);
+    }
+    if (P) {
+      // blood, level and unspent skill points (progression/Progress.js)
+      const id = arena.heroIds?.[arena.player.seat] ?? arena.characterId;
+      const pts = P.available(id);
+      rows.push(['LEVEL', `LV ${P.level}  ·  ${P.toNext} blood to next${pts > 0 ? `\n${pts} SKILL POINT${pts > 1 ? 'S' : ''}: kneel at a shrine` : ''}`]);
+    }
+    if (st) rows.push(['KILLS', `${st.stats.kills}`], ['SECRETS', `${st.stats.secrets} / ${st.secretsTotal}`]);
+    else rows.push(['WAVE', `${arena.wave}`], ['KILLS', `${arena.kills}`]);
+    rows.push(['GORE', SETTINGS.gore.names[SETTINGS.gore.level]]);
+    return rows;
   }
 
   // The pause menu. Built once, then just shown and hidden.
@@ -512,15 +524,9 @@ export class HUDScene extends Phaser.Scene {
     }
   }
 
-  // the chrome comes up as the opening scene hands the heroes the fight (and the controls
-  // hint gets its few seconds then, not under the scene)
+  // the chrome comes up as the opening scene hands the heroes the fight
   updateChrome() {
     const hidden = !!this.arena.stage?.opening?.active;
-    if (this.chromeHidden && !hidden) {
-      this.tweens.killTweensOf(this.hint);
-      this.hint.setAlpha(1);
-      this.tweens.add({ targets: this.hint, alpha: 0, delay: 7000, duration: 1500 });
-    }
     this.chromeHidden = hidden;
     this.chrome.setAlpha(Phaser.Math.Linear(this.chrome.alpha, hidden ? 0 : 1, hidden ? 0.3 : 0.08));
   }
@@ -529,12 +535,6 @@ export class HUDScene extends Phaser.Scene {
 
   update() {
     const p = this.arena.player;
-    const P = this.arena.progress;
-    if (P && this.levelText) {
-      const id = this.arena.heroIds?.[p.seat] ?? this.arena.characterId;
-      const pts = P.available(id);
-      this.levelText.setText(`LV ${P.level}  ·  ${P.toNext} blood to next${pts > 0 ? `  ·  ${pts} SKILL POINT${pts > 1 ? 'S' : ''} — kneel at a shrine` : ''}`);
-    }
     for (const set of this.barSets) {
       const q = set.p;
       const s = q.stats;
@@ -568,14 +568,6 @@ export class HUDScene extends Phaser.Scene {
     this.updateTally();
     this.waitText.setY(SETTINGS.height - 40 - this.lift);
     if (this.go.visible) this.go.setAlpha(0.55 + 0.45 * Math.sin(this.time.now * 0.008)).setX(SETTINGS.width - 24 + Math.sin(this.time.now * 0.008) * 6);
-
-    const st = this.arena.stage;
-    this.info.setText([
-      st ? `${st.section?.name ?? ''}   KILLS ${st.stats.kills}` : `WAVE ${this.arena.wave}   KILLS ${this.arena.kills}`,
-      st ? `SECRETS ${st.stats.secrets}/${st.secretsTotal}` : '',
-      `GORE: ${SETTINGS.gore.names[SETTINGS.gore.level]}`,
-      SETTINGS.debug ? 'DEBUG ON' : '',
-    ].join('\n'));
 
     if (SETTINGS.debug) {
       this.debugText.setText([
