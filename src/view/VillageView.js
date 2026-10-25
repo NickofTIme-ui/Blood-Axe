@@ -398,7 +398,10 @@ export class VillageBackdrop {
   // a head on each, blood run down the shafts, a crow on one. (Painted: 'pikes'.)
   drawPikes({ x, z, n = 3 }) {
     const w = 40 + n * 34;
-    if (this.art.piece('pikes', x - w / 2, x + w / 2, { depth: z - 1, bottom: z - (SETTINGS.world.floorTop - 50) })) return;
+    // (the painting is three pikes 1.5x as tall as wide: at w it stood two heroes high with
+    // heads twice a man's, so it is drawn at 0.6 of that, the spears a head over a hero; Nick, 2026-10-25)
+    const pw = w * 0.6;
+    if (this.art.piece('pikes', x - pw / 2, x + pw / 2, { depth: z - 1, bottom: z - (SETTINGS.world.floorTop - 50) })) return;
     const g = this.scene.add.graphics().setDepth(z - 1);
     for (let i = 0; i < n; i++) {
       const px = x - w / 2 + 20 + i * 34 + ((i * 7) % 5);
