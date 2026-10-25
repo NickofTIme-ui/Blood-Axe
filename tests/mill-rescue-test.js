@@ -36,7 +36,9 @@ console.log('Mill rescue: encounter-only timer, hold safety, kill stops clock, s
  for(const [pose] of FREED)assert(seen.has(pose),`He plays ${pose}`);
  assert(airborne,'He leaps');assert(peak>70,'The leap arcs above the block');
  assert.equal(n.h,st.terrain.groundAt(n.x,n.z));assert(n.z>358,'He lands in front of the block');assert.equal(n.act,null);
- st.story.updateNpcs([]);assert.equal(n.state,'fleeing','He sprints off as soon as he is up from the landing');
+ // (Nick, 2026-10-24, in ChatGPT: he waits about six seconds so you can talk to him, then goes, calmer)
+ st.story.updateNpcs([]);assert.equal(n.state,'free','He stays a moment after the landing to be spoken to');
+ for(let i=0;i<n.freeFor;i++)st.story.updateNpcs([]);assert.equal(n.state,'fleeing','Then he leaves');
  const x0=n.x;for(let i=0;i<60;i++)st.story.updateNpcs([]);assert.equal(n.h,0);assert(x0-n.x>LEAP.sprint*.8,'He runs for his life');
 }
 {
