@@ -299,6 +299,7 @@ export class SpriteEnemyView {
       this.rig.tint(f.hitstop > 0 && by.fsm.frame <= IMPALE.stab + 1 && f.hitstop > IMPALE.hitstop - 2);
       return;
     }
+    if(this.rig?.on&&this.rig.releaseOffset)this.impaleRelease={...this.rig.releaseOffset,tick};
     this.rig?.hide();
 
     // floored, or dead: his own painted poses, whole (knocked flying, then lying). The old
@@ -480,6 +481,11 @@ export class SpriteEnemyView {
     else if (this.cropped) { s.setCrop(); this.cropped = false; }
     const k = depthScale(f.z) / this.res * (f.stats?.size ?? 1); // (a boss can be drawn bigger: makeBoss)
     s.setPosition(f.x + dx * f.facing, f.z - f.h + dy).setDepth(f.z);
+    if(this.impaleRelease){
+      const fade=Math.max(0,1-(tick-this.impaleRelease.tick)/10);
+      s.x+=this.impaleRelease.x*fade;s.y+=this.impaleRelease.y*fade;
+      if(!fade)this.impaleRelease=null;
+    }
     s.setScale(k * face * (1 - breathe * 0.006) * wide, k * (1 + breathe * 0.014) * tall);
     s.angle = angle * face;
     s.setAlpha(alpha);

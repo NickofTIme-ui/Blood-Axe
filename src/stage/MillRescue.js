@@ -1,7 +1,6 @@
 import {createEnemy} from '../entities/Enemy.js';
 import {Controller} from '../core/Controller.js';
 import {toWorldBox,overlaps} from '../combat/Boxes.js';
-import {NPC} from './Story.js';
 
 // The rope's clock, in frames he spends at the lever: his last words, his final warning, the drop
 export const MILL={rope:1500,lastWords:1080,final:1260};
@@ -11,7 +10,7 @@ export const MILL={rope:1500,lastWords:1080,final:1260};
 // for the trees, crouches, jumps off the front of the block, lands hard and sprints away.
 // FREED: [pose, frames] in his freed sheet (data/levelArt.js); LEAP: frames, and px.
 export const FREED=[['bound',6],['shed',12],['noose',16],['kneel',14],['thanks',18],['rise',10],['stand',10]];
-export const LEAP={up:FREED.reduce((a,[,f])=>a+f,0),crouch:9,air:30,land:10,dx:-48,to:392,peak:70,tilt:9,sprint:190};
+export const LEAP={up:FREED.reduce((a,[,f])=>a+f,0),crouch:9,air:30,land:10,dx:-48,to:392,peak:70,tilt:9,sprint:72};
 // Where he works the drop, and how he fights for it (Nick, 2026-10-24: he hopped about the
 // yard and never fought). A hero who comes at him, or hurts him, gets the cleaver: the
 // butcher's own brain (entities/Enemy.js) takes him. With nobody on him he goes back up to
@@ -179,7 +178,7 @@ export class MillRescue {
     const d=a-LEAP.air;
     if(d<LEAP.land){n.act='rise';n.squash=.12*(1-d/LEAP.land);return;}
     // up and away: no standing about after a landing like that
-    n.act=null;n.actArt=null;this.leap=null;n.sprint=LEAP.sprint;n.t=NPC.freeFor;
+    n.act=null;n.actArt=null;this.leap=null;n.sprint=LEAP.sprint;n.t=0;
   }
   fail(){
     if(this.resolved)return;

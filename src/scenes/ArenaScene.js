@@ -1317,7 +1317,9 @@ export class ArenaScene extends Phaser.Scene {
         // the blade goes through: no slow motion — a hard freeze (hit-stop, in the game
         // logic), one sharp kick of the camera, the heaviest stab sound, a rumble
         const ph = impalePierce(v);            // height on his body
-        const outX = () => v.x + dir * v.stats.body.w * 0.4;
+        const wound = () => this.views.get(v.id)?.rig?.pin;
+        const outX = () => wound()?.x ?? (v.x + dir * v.stats.body.w * 0.4);
+        const outH = () => wound() ? v.z-wound().y : v.h+ph;
         playSfx(this, 'kick', { volume: 1, pitch: -500, spread: 40, minGapMs: 0 });
         playSfx(this, 'finisher', { volume: 0.95, pitch: -450, spread: 40, minGapMs: 0 });
         this.fx.shake(6, 5);
@@ -1329,7 +1331,7 @@ export class ArenaScene extends Phaser.Scene {
         // while he's on the steel it runs out of him and down, wherever the blade takes him
         this.everyTick(IMPALE.kick - IMPALE.stab, (t) => {
           if (v.state !== 'executed') return false;
-          if (t % 3 === 0) g.spawn({ x: outX() + rnd(-4, 4), z: v.z + rnd(-2, 2), h: v.h + ph - 3, vx: dir * rnd(5, 45), vz: rnd(-8, 8), vh: rnd(-20, 20), tint: 0x7a0303, scale: rnd(0.3, 0.55) });
+          if (t % 3 === 0) g.spawn({ x: outX() + rnd(-4, 4), z: v.z + rnd(-2, 2), h: outH() - 3, vx: dir * rnd(5, 45), vz: rnd(-8, 8), vh: rnd(-20, 20), tint: 0x7a0303, scale: rnd(0.3, 0.55) });
           if (t % 14 === 0) g.splat(v.x + rnd(-10, 14), v.z + rnd(-3, 3), rnd(0.8, 1.6));
           return true;
         });

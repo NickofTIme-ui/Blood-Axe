@@ -95,7 +95,8 @@ const fix = (strips, extra) => {
 
 export const ENEMY_STRIPS = {
   // the fodder: no special move, so no special strip
-  grunt: (({ special, kneel, ...rest }) => rest)(set('grunt')), // (never a boss: no kneel either)
+  grunt: {...(({ special, kneel, ...rest }) => rest)(set('grunt')),
+    impaled:{file:`${DIR}/grunt_impaled.png`,frames:4,ref:0,optional:true}},
   butcher: fix((({ kneel, ...rest }) => rest)(set('butcher')), {
     doom: { holes: [[182, 279]] }, // the gap between the hook's chain and his leg
   }),
