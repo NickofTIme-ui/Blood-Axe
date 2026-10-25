@@ -14,6 +14,7 @@ export const TEST_SCENES=[
   ['Stable stampede',4,'horses'],['Varek’s last stand',5,'varek'],
   ['Hakon & Oathkeeper',6,'handoff'],['Raised-sword reveal',6,'raise'],
   ['Severed pieces: bounce & settle',1,'gore'],
+  ['Impale finisher (hold attack behind a runner)',2,'impale'],
 ];
 
 export class TestNavigator {

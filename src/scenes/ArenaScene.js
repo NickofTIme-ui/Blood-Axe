@@ -28,6 +28,7 @@ import { WrathFX } from '../effects/WrathFX.js';
 import { ProjectileView } from '../view/ProjectileView.js';
 import { DebugDraw } from '../view/DebugDraw.js';
 import { DEPTH } from '../view/depths.js';
+import { bladeWorldPoint } from '../view/BladeTrail.js';
 import { Spotlight } from '../view/Spotlight.js';
 import { EnemyView } from '../view/EnemyView.js';
 import { SpriteEnemyView } from '../view/SpriteEnemyView.js';
@@ -866,6 +867,21 @@ export class ArenaScene extends Phaser.Scene {
       st.fightOn=true;st.waveIndex=99;st.waveDelay=0;
       this.player.x=(st.section.fightAt??st.section.x0+200)+50;
     }
+    if(kind==='impale'){
+      // the impale, on demand (Nick, 2026-10-25): on the quiet end of the roofs, clear of
+      // their fight, a one-armed grunt runs from you; another each time one is finished
+      for(const e of this.world.fighters)if(e.team==='enemy'&&e.x>=st.section.x0&&e.x<st.section.x1)e.removeMe=true;
+      this.player.x=st.section.x0+420;this.player.facing=-1;
+      const runner=()=>{
+        const p=this.player,w=this.world;
+        if(this.paused||w.fighters.some(e=>e.testRunner&&e.state!=='dead'))return;
+        const e=createEnemy(w,'grunt',p.x+p.facing*80,p.z,{entering:false});
+        e.maimed={armB:true};e.testRunner=true;e.facing=p.facing;st.setOnGround(e);
+        this.callout('GET BEHIND HIM AND HOLD ATTACK','#ffd27a',22);
+      };
+      this.time.delayedCall(600,runner);
+      this.time.addEvent({delay:1800,loop:true,callback:runner});
+    }
     if(kind==='horses'){
       this.player.x=6250;
       const gate=st.props.find(p=>p.tag==='stables');
@@ -1358,20 +1374,55 @@ export class ArenaScene extends Phaser.Scene {
         });
         break;
       }
-      case 'raised':
-        // full height: a small, low settle as his whole weight hangs on the blade
-        this.fx.shake(1.6, 9);
-        this.rumble(0.5, 0.15, 200);
-        playSfx(this, 'swingAlt', { volume: 0.35, pitch: -900, spread: 30, minGapMs: 0 });
+      case 'raised': {
+        // heaved up off his feet: the weight comes onto the blade — a heavy jolt, and the
+        // wound opens as he slides down the steel
+        this.fx.shake(4, 8);
+        this.rumble(0.8, 0.3, 160);
+        playSfx(this, 'finisher', { volume: 0.6, pitch: -900, spread: 30, minGapMs: 0 });
+        playSfx(this, 'swingAlt', { volume: 0.4, pitch: -1000, spread: 30, minGapMs: 0 });
+        const pin = this.views.get(v.id)?.rig?.pin;
+        if (bloody && pin) {
+          g.burst(pin.x, v.z, v.z - pin.y, dir, Math.round(22 * amt), 1.1);
+          for (let i = 0; i < 4; i++) g.splat(v.x + rnd(-14, 14), v.z + rnd(-3, 3), rnd(1, 2));
+        }
         break;
-      case 'kick':
-        // booted off: the blade comes out of him
-        playSfx(this, 'bladeOut', { volume: 0.9, spread: 60, minGapMs: 0 });
-        this.rumble(0.7, 0.9, 110);
-        this.slowmo(0.45, 200);
-        this.kickImpact(v.x - dir * 8, v.z, v.h + H * 0.5, dir);
-        if (bloody) this.everyTick(30, (t) => { if (t % 2 === 0) g.spawn({ x: v.x - dir * 6, z: v.z, h: v.h + H * 0.5, vx: -dir * rnd(10, 60), vz: 0, vh: rnd(0, 40), tint: 0x7a0303, scale: rnd(0.3, 0.6) }); });
+      }
+      case 'kick': {
+        // BOOM: the boot lands, the blade rips back out of him and he goes flying off it,
+        // spraying out of both holes, trailing blood the length of his flight
+        const pin = this.views.get(v.id)?.rig?.pin;
+        const hero = this.views.get(p.id)?.sprite;
+        const boot = hero?.texture.key.endsWith('-finImpale')
+          ? bladeWorldPoint(hero, { x: 490, y: 300 })
+          : { x: p.x + dir * 72, y: p.z - p.h - 78 };
+        const woundX = pin?.x ?? v.x, woundH = pin ? v.z - pin.y : v.h + H * 0.68;
+        playSfx(this, 'kick', { volume: 1, pitch: -700, spread: 30, minGapMs: 0 });
+        playSfx(this, 'bladeOut', { volume: 1, spread: 40, minGapMs: 0 });
+        playSfx(this, 'bloodSplatter', { volume: 0.9, spread: 60, minGapMs: 0 });
+        this.fx.shake(10, 12);
+        this.rumble(1, 1, 180);
+        this.slowmo(0.55, 160);
+        // a hot, tight flash where the boot hits (not a ring: the body is the show)
+        const fl = this.add.circle(boot.x, boot.y, 7, 0xffe0b0, 0.7).setDepth(v.z + 2).setBlendMode(Phaser.BlendModes.ADD);
+        this.tweens.add({ targets: fl, scale: 2.4, alpha: 0, duration: 90, ease: 'Quad.easeOut', onComplete: () => fl.destroy() });
+        g.spark(boot.x, v.z, v.z - boot.y, 0xffffff, 12);
+        this.callout('OFF THE BLADE!', '#ff2a1a', 26);
+        if (!bloody) break;
+        g.burst(woundX, v.z, woundH, dir, Math.round(40 * amt), 1.9);   // out the front, the way he goes
+        g.burst(woundX, v.z, woundH, -dir, Math.round(18 * amt), 1.1);  // back along the blade as it comes out
+        g.mist(woundX, v.z, woundH, 3);
+        g.dismemberer?.bits(woundX, v.z - woundH, v.z, ['meat1', 'sinew', 'meat3'], 4, 0.8, dir);
+        // the trail: it pours out of him all the way through the air, and splashes where he lands
+        this.everyTick(46, (t) => {
+          if (t > 6 && v.h <= v.floor + 1) { g.splat(v.x, v.z, rnd(2.5, 4)); return false; } // (down)
+          const hh = v.h + H * 0.55;
+          g.spawn({ x: v.x - dir * rnd(0, 8), z: v.z + rnd(-2, 2), h: hh, vx: -dir * rnd(20, 90), vz: rnd(-10, 10), vh: rnd(20, 90), tint: 0x8a0303, scale: rnd(0.4, 0.75) });
+          if (t % 6 === 0) g.splat(v.x - dir * rnd(10, 40), v.z + rnd(-4, 4), rnd(1.2, 2.4));
+          return true;
+        });
         break;
+      }
       case 'sever':
         this.slowmo(0.28, 420);
         this.fx.shake(7, 12);

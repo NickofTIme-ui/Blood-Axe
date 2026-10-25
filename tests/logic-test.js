@@ -539,7 +539,8 @@ test('finisher: hold attack = impale, lifted on the blade, then booted off', () 
   assert(stabAt !== null && stabAt >= 18, `stab after the wind-up, at ${stabAt}`);
   assert(offBlade < 0.5, `locked to the blade (off by ${offBlade.toFixed(1)})`);
   assert(maxH > 60, `hoisted clear of the ground, ${maxH.toFixed(0)}`);
-  assert(maxStep < 6, `lifted smoothly, biggest step ${maxStep.toFixed(1)}`);
+  // (the heave is quick now, with the painted pose, but still over a dozen frames)
+  assert(maxStep < 10, `heaved up, not teleported: biggest step ${maxStep.toFixed(1)}`);
   assert(kickedVx > 200, `kicked off the blade, vx ${kickedVx}`);
   assert(!r.alive, 'dead');
 });

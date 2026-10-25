@@ -316,9 +316,10 @@ function finisherBeat(f, ex, type, v) {
       v.execRelease = { vx: dir * 30, vh: 70 };
       executionKill(f, v, ex.kind, dir);
       break;
-    case 'kick':  // booted off the blade into whoever's in front of him
-      v.execRelease = { vx: dir * 480, vh: 230, bowl: true };
-      f.hitstop = 6;
+    case 'kick':  // booted off the blade, hard, into whoever's in front of him (both
+      // freeze on the boot for an instant first)
+      v.execRelease = { vx: dir * 640, vh: 300, bowl: true };
+      f.hitstop = v.hitstop = IMPALE.kickstop;
       executionKill(f, v, ex.kind, dir);
       break;
     case 'boot':  // the top half gets punted off the legs; the fighter himself is done

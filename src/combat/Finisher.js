@@ -26,18 +26,26 @@ export const FINISH = {
 // Beats are the moments things happen; the views and effects hang off them.
 export const FINISHERS = {
   throat: { total: 74, approach: 8, gap: 20, beats: [{ at: 24, type: 'slit' }, { at: 52, type: 'drop' }] },
-  // catch → coil → THRUST (20) → tiny hit-stop → brace → slow heavy lift → held aloft → boot
-  impale: { total: 140, approach: 10, gap: 76, beats: [{ at: 20, type: 'stab' }, { at: 60, type: 'raised' }, { at: 104, type: 'kick' }] },
+  // three beats (Nick, 2026-10-25): he's FLEEING — BOOM, run through the back — lifted on
+  // the blade, feet dangling — BOOM, booted off it. coil → THRUST (18) → hit-stop → HEAVE
+  // (snaps up with the painted pose) → hang there kicking, then limp → knee up → KICK (78)
+  impale: { total: 112, approach: 10, gap: 76, beats: [{ at: 18, type: 'stab' }, { at: 30, type: 'raised' }, { at: 78, type: 'kick' }] },
   halve: { total: 98, approach: 8, gap: 46, beats: [{ at: 14, type: 'sever' }, { at: 56, type: 'boot' }] },
 };
 // Impale: once the blade is in, the victim is LOCKED to it — his body goes wherever this
 // point on the sword goes. [frame, px ahead of Ulric, px above the ground], matched to the
-// drawn poses (ulric_finimpale): level thrust, brace under the weight, heave, held high.
-// (As he's hoisted he slides down the steel toward the crossguard.)
+// drawn poses (ulric_finimpale): level thrust (pose 2), the heave (pose 3, where he's held:
+// at that height his dangling legs hang where the boot of the kick lands). He slides down
+// the blade until `chamber`, Ulric rocks back to load the kick, and at `kick` the boot
+// sends him off it.
 export const IMPALE = {
-  stab: 20, liftFrom: 34, raised: 60, kick: 104,
-  hitstop: 5, // frames frozen at the deepest point (~83 ms)
-  pin: [[20, 76, 71], [34, 75, 68], [46, 62, 116], [60, 37, 152], [90, 37, 152], [104, 62, 128]],
+  stab: 18, liftFrom: 26, raised: 38, chamber: 72, kick: 78,
+  hitstop: 6,  // frames frozen with the blade in him (~100 ms)
+  kickstop: 5, // ...and on the boot (~83 ms)
+  // his weight drags him down the steel toward the crossguard while he hangs there —
+  // into the boot's reach: how far along the blade (hilt 0 .. point 1) he's stuck
+  slide: [0.52, 0.26],
+  pin: [[18, 76, 72], [26, 76, 72], [38, 54, 137], [72, 42, 125], [78, 42, 125]],
 };
 const smooth = (t) => t * t * (3 - 2 * t);
 export function impalePin(frame) {
@@ -54,6 +62,13 @@ export function impalePin(frame) {
   const L = K[K.length - 1];
   return { x: L[1], y: L[2] };
 }
+// Where along the blade he's stuck at this frame of the impale (see IMPALE.slide).
+export function impaleSlide(frame) {
+  const [a, b] = IMPALE.slide;
+  const t = Math.max(0, Math.min(1, (frame - IMPALE.raised) / (IMPALE.chamber - IMPALE.raised)));
+  return a + (b - a) * smooth(t);
+}
+
 // How high on HIS body the blade goes through (px above his feet): chest-high on a man,
 // lower on a giant — the sword is where Ulric's arms are.
 export function impalePierce(v) {

@@ -1,10 +1,11 @@
 // The enemy's original upper body and a continuous lower-body skin hang from the
 // painted blade. Only rendering changes here; the combat timeline stays in Finisher.
-import {IMPALE,impalePierce} from '../combat/Finisher.js';
+import {IMPALE,impalePierce,impaleSlide} from '../combat/Finisher.js';
 import {depthScale} from './depths.js';
 import {measure,midAt} from './frameMeasure.js';
 import {impaleBlade,exposedBlade} from './ImpaleBlade.js';
 import {drawLowerSkin} from './ImpaleSkin.js';
+import {dyeImage} from './dye.js';
 
 const RAD=Math.PI/180,OVERLAP=5;
 let serial=0;
@@ -45,8 +46,10 @@ export class ImpaledRig{
   }
   draw(f,by,ref,face){
     this.setPose(ref,f);
+    // his clothes keep their dye on the blade (view/dye.js)
+    if(this.torso.dye!==f.dye)for(const p of [this.torso,this.lower])dyeImage(this.scene,p,f.dye);
     const J=this.J,k=depthScale(f.z)/this.sheet.res*(f.stats.size??1),tick=f.world?.frame??0,fr=by.fsm.frame;
-    const blade=impaleBlade(this.scene,by);
+    const blade=impaleBlade(this.scene,by,Math.round(impaleSlide(fr)*50)/50);
     const pin=blade?.pin??this.pin??{x:f.x,y:f.z-f.h-J.pierce*k};
     const first=!this.on;
     if(first){this.on=true;this.tick=tick;this.sT.a=this.hangingArt?-7:5;this.sT.v=3;this.sL.a=0;this.sL.v=0;this.previousPin={...pin};}
@@ -58,7 +61,9 @@ export class ImpaledRig{
     if(steps)this.sL.v+=kick*.08;
     for(let i=0;i<steps;i++){
       this.sT.step(this.hangingArt?(fr<IMPALE.stab+4?-6:4+lift*8):(fr<IMPALE.stab+4?20:12+lift*48),.16,.72);
-      this.sL.step(lift*(-7+Math.sin((fr-IMPALE.raised)*.09)*2),.045,.82);
+      // hanging there: his legs thrash for a moment, then go slack and just swing
+      const up=Math.max(0,fr-IMPALE.liftFrom),thrash=Math.max(0,1-up/30);
+      this.sL.step(lift*(-6+Math.sin(up*.55)*14*thrash+Math.sin(up*.09)*3),.09,.8);
     }
     this.previousPin={...pin};this.pin={...pin};
     const angle=this.sT.a*RAD*by.facing,c=Math.cos(angle),s=Math.sin(angle);

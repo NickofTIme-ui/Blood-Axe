@@ -570,6 +570,13 @@ export class SpriteFighterView {
         lean += s * 2.5;
         if (fr >= IMPALE.liftFrom) push += (Math.random() - 0.5) * 0.9; // the strain
       }
+      // loading the kick: he rocks back off the man on his blade, then BOOM
+      if (fr >= IMPALE.chamber && fr < IMPALE.kick) {
+        const s = (fr - IMPALE.chamber) / (IMPALE.kick - IMPALE.chamber);
+        push -= 4 * s;
+        lean -= 5 * s;
+        bob += 1.5 * s;
+      }
     }
 
     // holding a man from behind (throat): he's drawn in front of Ulric
