@@ -1,0 +1,16 @@
+blade-hit-07.wav, blade-hit-08.wav and guts-and-gore-59.wav
+(renamed from blade_hit_07.wav, blade_hit_08.wav, guts_and_gore_59.wav)
+
+Source: "Free Deadly Kombat Sound Effects" by Daniel Barros (Daniel SoundsGood)
+https://danielsoundsgood.itch.io/free-deadly-kombat-sound-effects
+(downloaded by Nick as "Deadly Kombat Free version.rar")
+
+The pack itself carries no license file; its "File List" PDF only describes the
+pack. The terms are on the itch.io page (checked 2026-10-25):
+
+  "non-exclusive license - you're free to use this library in your commercial games."
+  "I kindly ask you to add @danielsoundsgood on your game credits."
+  "No license to claim as your own work."
+
+So: fine to ship in Blood Axe, including paid builds. Credit @danielsoundsgood
+in the game's credits / itch page. Don't redistribute the sounds as a pack.

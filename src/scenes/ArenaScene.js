@@ -51,7 +51,7 @@ import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
 import { playMusic, playCue, stopMusic, toggleMute } from '../core/Music.js';
 import { syncSanctuaryMusic } from '../core/SanctuaryMusic.js';
-import { playSfx, fleshBite } from '../core/Sfx.js';
+import { playSfx, fleshBite, FLESH_CUT } from '../core/Sfx.js';
 import { BattlefieldAudio } from '../core/BattlefieldAudio.js';
 import {MillRescueView} from '../view/MillRescueView.js';
 import { runTickJobs } from '../core/TickJobs.js';
@@ -187,10 +187,10 @@ export class ArenaScene extends Phaser.Scene {
       if (e.move.shoulder) this.shoulderImpact(e);
       else if (e.kind === 'melee' && e.attacker?.stats.blade) this.oathkeeperBite(e);
       // a sword cut from our side (not a kick, the shoulder or fire; the Mage and Rogue
-      // sound their own): now and then the blade biting flesh
+      // sound their own): now and then the blade biting flesh (one of three takes)
       if (e.kind === 'melee' && e.attacker?.team === 'player' && !e.attacker.stats.archetype
         && e.move.fx !== 'kick' && !e.move.shoulder && e.move.cut !== 'fire' && fleshBite()) {
-        playSfx(this, 'stationaryKill', { volume: 0.75, spread: 120, minGapMs: 60 });
+        playSfx(this, FLESH_CUT, { volume: 0.75, spread: 120, minGapMs: 60 });
       }
     });
     // the SHOULDER SMASH sets off: a grunt, the plant, dust off his back foot
@@ -694,6 +694,7 @@ export class ArenaScene extends Phaser.Scene {
     }
     if (e.fatality === 'explode') cam.flash(120, 140, 10, 10);
     if (e.fatality === 'halfH' || e.fatality === 'halfV') playSfx(this, 'bloodSplatter', { volume: 0.9, spread: 80, minGapMs: 60 });
+    if (e.fatality === 'halfV') playSfx(this, 'splitGore', { volume: 0.85, spread: 80, minGapMs: 60 }); // split top to bottom: the guts too
     if (e.fatality === 'decap') playSfx(this, [['headOff', 1], ['limbOff', 1]], { volume: 0.9, spread: 80, minGapMs: 60 });
     if (e.fatality === 'limbs') playSfx(this, 'limbOff', { volume: 0.9, spread: 80, minGapMs: 60 });
   }

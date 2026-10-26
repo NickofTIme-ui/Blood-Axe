@@ -54,6 +54,11 @@ export const SFX = {
   limbOff: 'assets/audio/sfx/limb-off.mp3',             // an arm (or a head, or legs) cut off
   bladeOut: 'assets/audio/sfx/blade-out.mp3',           // the sword pulled out of an impaled man
   stationaryKill: 'assets/audio/sfx/stationary-kill.mp3', // Nick's: a blade biting flesh, mixed into sword and Rogue hits
+  // two more blade-in-flesh hits, taking turns with stationaryKill on sword cuts (FLESH_CUT below)
+  // from Daniel Barros's free Deadly Kombat library: see deadly-kombat-LICENSE.txt
+  bladeHit7: 'assets/audio/sfx/blade-hit-07.wav',
+  bladeHit8: 'assets/audio/sfx/blade-hit-08.wav',
+  splitGore: 'assets/audio/sfx/guts-and-gore-59.wav', // same pack: wet gore under the splatter when a man splits top to bottom
   // the Mage's lightning: made in code by tools/sfx-gen/electric.js (ours outright, no licence)
   elecCharge: 'assets/audio/sfx/elec-charge.wav',   // hum and sparks building in the lantern
   elecZap: 'assets/audio/sfx/elec-zap.wav',         // a bolt leaving the staff
@@ -117,6 +122,9 @@ export function fleshBite(chance = 0.5) {
   fleshLast = bite;
   return bite;
 }
+
+// The blade-in-flesh sound for a sword cut: one of these, picked at random.
+export const FLESH_CUT = [['stationaryKill', 1], ['bladeHit7', 1], ['bladeHit8', 1]];
 
 // key can be a list of [key, weight] pairs to pick one at random (variations).
 export function playSfx(scene, key, { volume = 1, pitch = 0, spread = 150, minGapMs = 45 } = {}) {
