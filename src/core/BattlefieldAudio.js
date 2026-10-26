@@ -45,7 +45,7 @@ export class BattlefieldAudio {
         const stride = f.sprinting ? 77 : 64;
         if (state.distance >= stride) {
           state.distance %= stride;
-          playSfx(s,'stoneStep',{volume:f.sprinting?0.42:0.29,spread:90,minGapMs:70});
+          playSfx(s,'stoneStep',{volume:f.sprinting?0.5:0.29,spread:90,minGapMs:70});
         }
       } else if (!moving) state.distance = 0;
       this.steps.set(f,state);
