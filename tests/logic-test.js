@@ -385,6 +385,25 @@ test('every enemy has art, anims, specials that exist, and is in a wave', () => 
   }
 });
 
+test("Gorrak and Sliv are tuned to Nick's numbers; the hangman who shares Gorrak's moves is not", () => {
+  const world = new World();
+  const g = createEnemy(world, 'butcher', 600, 420), b = ENEMIES.butcher;
+  const sz = g.stats.size / 1.29; // (his rolled variety, before the tune)
+  assert(sz >= 0.94 && sz <= 1.06, `Gorrak drawn ${g.stats.size.toFixed(2)}x`);
+  assert(g.stats.body.h === Math.round(b.body.h * 1.29) && g.stats.body.w === Math.round(b.body.w * 1.29), 'Gorrak body grows 29%');
+  assert(Math.abs(g.stats.moves.heavy.hitbox.w - b.moves.heavy.hitbox.w * 1.29) < 1e-6, 'his swings reach 29% further');
+  assert(Math.abs(g.stats.meleeMult - b.meleeMult * 1.2) < 1e-6, 'Gorrak hits 20% harder');
+  assert(Math.abs(g.controller.ai.attackRange - b.ai.attackRange * 1.29) < 1e-6, 'he fights from his longer reach');
+  const pace = g.stats.walkSpeed / (b.walkSpeed * 0.9);
+  assert(pace >= 0.88 && pace <= 1.14, 'Gorrak walks 10% slower');
+  const s = createEnemy(world, 'stalker', 640, 420), k = ENEMIES.stalker;
+  assert(s.stats.body.h === Math.round(k.body.h * 1.1), 'Sliv body grows 10%');
+  const sp = s.stats.walkSpeed / (k.walkSpeed * 1.05);
+  assert(sp >= 0.88 && sp <= 1.14 && s.stats.meleeMult === k.meleeMult, 'Sliv 5% quicker, same hits');
+  const h = createEnemy(world, 'executioner', 680, 420);
+  assert(h.stats.body.h === b.body.h && h.stats.meleeMult === b.meleeMult, 'the hangman keeps his own size and hits');
+});
+
 test('each bad guy fights and lands hits (specials included)', () => {
   for (const id of ['hound', 'butcher', 'stalker', 'penitent', 'berserker', 'ghoul', 'gladiator']) {
     const world = new World();

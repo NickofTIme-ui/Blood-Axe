@@ -262,6 +262,7 @@ export const ENEMIES = {
     look: { color: 0x6b4a32, accent: 0xc8c8c8, skin: 0xb06a48 },
 
     variety: { speed: [0.88, 1.14], size: [0.94, 1.06], toughness: 1 },
+    tuned: { size: 1.29, damage: 1.2, speed: 0.9 }, // (Nick, 2026-10-26: bigger, harder, slower)
 
     maxHealth: 130, maxStamina: 80,
     walkSpeed: 110, depthSpeed: 80,
@@ -327,6 +328,7 @@ export const ENEMIES = {
     look: { color: 0x4a5230, accent: 0xc8c8c8, skin: 0xa8704e },
 
     variety: { speed: [0.88, 1.14], size: [0.94, 1.06], toughness: 1 },
+    tuned: { size: 1.1, speed: 1.05 }, // (Nick, 2026-10-26: bigger and quicker)
 
     maxHealth: 80, maxStamina: 90,
     walkSpeed: 175, depthSpeed: 120,

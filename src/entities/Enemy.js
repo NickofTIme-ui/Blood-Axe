@@ -396,6 +396,28 @@ export class EnemyBrain extends Controller {
   }
 }
 
+// A kind made bigger, harder-hitting or quicker than the art it shares (data/enemies.js
+// `tuned`, Nick's numbers): bigger means drawn bigger AND hit and hurt over more ground, so
+// the body, every swing's hitbox and the reach his brain fights at all grow with him.
+function retune(f) {
+  const s = f.stats;
+  const { size = 1, damage = 1, speed = 1 } = s.tuned;
+  const box = (b) => ({ x: b.x * size, y: b.y * size, w: b.w * size, h: b.h * size });
+  const moves = {};
+  for (const [k, m] of Object.entries(s.moves)) moves[k] = m.hitbox ? { ...m, hitbox: box(m.hitbox) } : m;
+  f.stats = {
+    ...s, moves,
+    size: s.size * size,
+    body: { ...s.body, w: Math.round(s.body.w * size), h: Math.round(s.body.h * size) },
+    meleeMult: s.meleeMult * damage,
+    walkSpeed: s.walkSpeed * speed, depthSpeed: s.depthSpeed * speed,
+  };
+  const ai = { ...s.ai };
+  for (const k of ['attackRange', 'minRange', 'threatRange']) if (Number.isFinite(ai[k])) ai[k] *= size;
+  if (ai.specials) ai.specials = ai.specials.map((p) => ({ ...p, min: p.min * size, max: p.max * size }));
+  f.controller.ai = ai;
+}
+
 // opts.entering: he starts off-screen (offscreenX) and walks on before he fights.
 export function createEnemy(world, typeId, x, z, opts = {}) {
   const stats = ENEMIES[typeId];
@@ -430,6 +452,7 @@ function vary(world, f) {
     walkSpeed: s.walkSpeed * pace, depthSpeed: s.depthSpeed * pace,
     maxHealth: Math.round(s.maxHealth * (1 + (size - 1) * (v.toughness ?? 0))),
   };
+  if (s.tuned) retune(f);
   f.health = f.stats.maxHealth;
   f.dye = v.dyes?.length ? v.dyes[Math.floor(world.roll(f.id, 43) * v.dyes.length)] : null;
 }
