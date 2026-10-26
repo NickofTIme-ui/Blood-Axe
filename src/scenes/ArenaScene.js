@@ -1399,6 +1399,7 @@ export class ArenaScene extends Phaser.Scene {
           : { x: p.x + dir * 72, y: p.z - p.h - 78 };
         const woundX = pin?.x ?? v.x, woundH = pin ? v.z - pin.y : v.h + H * 0.68;
         playSfx(this, 'kick', { volume: 1, pitch: -700, spread: 30, minGapMs: 0 });
+        playSfx(this, 'impaleKick', { volume: 1, spread: 30, minGapMs: 0 });
         playSfx(this, 'bladeOut', { volume: 1, spread: 40, minGapMs: 0 });
         playSfx(this, 'bloodSplatter', { volume: 0.9, spread: 60, minGapMs: 0 });
         this.fx.shake(10, 12);

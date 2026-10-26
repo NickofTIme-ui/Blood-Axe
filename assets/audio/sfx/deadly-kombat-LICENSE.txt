@@ -1,5 +1,5 @@
-blade-hit-07.wav, blade-hit-08.wav and guts-and-gore-59.wav
-(renamed from blade_hit_07.wav, blade_hit_08.wav, guts_and_gore_59.wav)
+blade-hit-07.wav, blade-hit-08.wav, guts-and-gore-59.wav and face-hit-finisher-19.wav
+(renamed from blade_hit_07.wav, blade_hit_08.wav, guts_and_gore_59.wav, face_hit_finisher_19.wav)
 
 Source: "Free Deadly Kombat Sound Effects" by Daniel Barros (Daniel SoundsGood)
 https://danielsoundsgood.itch.io/free-deadly-kombat-sound-effects

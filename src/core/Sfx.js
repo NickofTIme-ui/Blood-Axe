@@ -59,6 +59,7 @@ export const SFX = {
   bladeHit7: 'assets/audio/sfx/blade-hit-07.wav',
   bladeHit8: 'assets/audio/sfx/blade-hit-08.wav',
   splitGore: 'assets/audio/sfx/guts-and-gore-59.wav', // same pack: wet gore under the splatter when a man splits top to bottom
+  impaleKick: 'assets/audio/sfx/face-hit-finisher-19.wav', // same pack: the boot landing as Rurik kicks a man off his sword (impale finisher)
   // the Mage's lightning: made in code by tools/sfx-gen/electric.js (ours outright, no licence)
   elecCharge: 'assets/audio/sfx/elec-charge.wav',   // hum and sparks building in the lantern
   elecZap: 'assets/audio/sfx/elec-zap.wav',         // a bolt leaving the staff
