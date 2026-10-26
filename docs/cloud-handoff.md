@@ -47,6 +47,10 @@ branch, or ChatGPT's work gets lost.
   in him) and 10 (kick contact) for both swords, keyed and cut onto the HD sheets, and
   hanging-limp strips for the stalker, butcher, ghoul, penitent, berserker and
   gladiator (`assets/enemies/strips/<id>_impaled.png`).
+- 26 October 2026 (on main, not on itch): new Deadly Kombat sound effects in
+  `assets/audio/sfx` (two blade hits take turns on sword cuts; guts and gore play under a
+  vertical split; sprint footsteps 0.42 -> 0.5). Licence: `assets/audio/sfx/deadly-kombat-LICENSE.txt`.
+  The itch page must credit @danielsoundsgood for these sounds.
 
 # Hand-off to the cloud session (2 October 2026)
 
