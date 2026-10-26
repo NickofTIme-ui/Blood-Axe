@@ -131,6 +131,11 @@ export const ENEMY_STRIPS = {
   orsk: bossSet('orsk'),
   twin: bossSet('twin'),
 };
+// hanging limp on Rurik's blade (the impale finisher, view/ImpaledRig.js): intact, back
+// arm gone, front arm gone, both gone. ChatGPT, 2026-10-25 (the grunt's came first)
+for (const id of ['stalker', 'butcher', 'ghoul', 'penitent', 'berserker', 'gladiator']) {
+  ENEMY_STRIPS[id].impaled = { file: `${DIR}/${id}_impaled.png`, frames: 4, ref: 0, optional: true };
+}
 
 const seq = (strip, ids) => ids.map((i) => `${strip}:${i}`);
 // the standard phase layouts

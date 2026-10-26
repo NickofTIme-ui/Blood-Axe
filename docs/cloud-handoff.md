@@ -35,8 +35,10 @@ branch, or ChatGPT's work gets lost.
   dangling while he slides down the blade (30-72), rock back and kick him off (78).
   The overhead and knee-up poses (4, 5) are no longer used; they put him out of the
   boot's reach. Dyed grunts keep their dye on the blade. F8 > "Impale finisher".
-  New hero kick-off poses and hanging art for non-grunt enemies are asked of ChatGPT:
-  `/mnt/project-files/impale-finisher/chatgpt-poses.md`.
+  ChatGPT's new art is in (same day): finImpale poses 8 (lift), 9 (knee up, blade still
+  in him) and 10 (kick contact) for both swords, keyed and cut onto the HD sheets, and
+  hanging-limp strips for the stalker, butcher, ghoul, penitent, berserker and
+  gladiator (`assets/enemies/strips/<id>_impaled.png`).
 
 # Hand-off to the cloud session (2 October 2026)
 

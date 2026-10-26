@@ -120,11 +120,11 @@ export const ANIM_OVERRIDES = {
     chargeWalk: { needs: ['chargeWalk'], frames: seq('chargeWalk', [0, 1, 1, 2, 3, 4, 5, 5, 6, 7]) },
     // finisher poses keyed to the timeline frames (FINISHERS in combat/Finisher.js):
     // throat — reach in, grab, blade across at 24 (the slit), let him drop at 52
-    // impale — coil, drive it in at 18, heave him up at 30 and hold him there (his legs
-    //          dangling), rock back and kick him off at 78 (IMPALE in combat/Finisher.js).
-    //          (pose 4, the sword straight overhead, would hang him out of the boot's reach;
-    //          pose 5, the knee-up, lifts the blade out of line with him: neither is used)
-    fin_impale: { needs: ['finImpale'], keys: [[0, 'finImpale:0'], [13, 'finImpale:1'], [18, 'finImpale:2'], [30, 'finImpale:3'], [78, 'finImpale:6'], [96, 'finImpale:7']] },
+    // impale — coil, drive it in at 18, lift (pose 8, ChatGPT 2026-10-25), heave him up
+    //          at 32 and hold him there (legs dangling), knee up with him still on the
+    //          blade at 70 (9), kick him off it at 78 (10) (IMPALE in combat/Finisher.js).
+    //          Poses 4 and 5 (overhead, knee-up with the sword high) hang him out of reach.
+    fin_impale: { needs: ['finImpale'], keys: [[0, 'finImpale:0'], [13, 'finImpale:1'], [18, 'finImpale:2'], [24, 'finImpale:8'], [32, 'finImpale:3'], [70, 'finImpale:9'], [78, 'finImpale:10'], [96, 'finImpale:7']] },
     fin_throat: { needs: ['finThroat'], keys: [[0, 'finThroat:0'], [4, 'finThroat:1'], [10, 'finThroat:2'], [24, 'finThroat:3'], [30, 'finThroat:4'], [52, 'finThroat:5'], [60, 'finThroat:6'], [68, 'finThroat:7']] },
     launcher: { needs: ['launcher'], phases: { startup: seq('launcher', [0, 1]), active: seq('launcher', [2, 3]), recovery: seq('launcher', [4]) } },
     // Kingsfire (SpriteFighterView): the startup poses spread over the gathering, the

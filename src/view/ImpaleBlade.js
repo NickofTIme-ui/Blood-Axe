@@ -1,9 +1,10 @@
 import {bladeWorldPoint} from './BladeTrail.js';
 
-// Landmarks measured on the shipped 696 x 480 HD finisher frames. These belong to the
+// Landmarks measured on the shipped 696 x 480 HD finisher frames (8 and 9: the lift and
+// the kick chamber, added 2026-10-25). These belong to the
 // artwork, not the simulation timeline: the attachment follows every painted pose.
-const STEEL={2:[[439,316],[562,315]],3:[[409,230],[500,148]],4:[[425,178],[513,90]],5:[[442,164],[544,90]]};
-const OATH={2:[[424,306],[547,306]],3:[[403,221],[489,138]],4:[[407,187],[498,98]],5:[[422,169],[526,97]]};
+const STEEL={8:[[435,295],[602,229]],9:[[382,225],[496,146]],2:[[439,316],[562,315]],3:[[409,230],[500,148]],4:[[425,178],[513,90]],5:[[442,164],[544,90]]};
+const OATH={8:[[419,275],[530,191]],9:[[442,230],[534,144]],2:[[424,306],[547,306]],3:[[403,221],[489,138]],4:[[407,187],[498,98]],5:[[422,169],[526,97]]};
 const point=([x,y])=>({x,y});
 export const bladeFraction=.52;
 export function impaleBlade(scene,by,frac=bladeFraction){

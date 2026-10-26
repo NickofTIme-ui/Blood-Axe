@@ -1393,8 +1393,8 @@ export class ArenaScene extends Phaser.Scene {
         // spraying out of both holes, trailing blood the length of his flight
         const pin = this.views.get(v.id)?.rig?.pin;
         const hero = this.views.get(p.id)?.sprite;
-        const boot = hero?.texture.key.endsWith('-finImpale')
-          ? bladeWorldPoint(hero, { x: 490, y: 300 })
+        const boot = hero?.texture.key.endsWith('-finImpale') // (the sole, on pose 10)
+          ? bladeWorldPoint(hero, hero.texture.key.startsWith('ulricOath') ? { x: 521, y: 282 } : { x: 508, y: 286 })
           : { x: p.x + dir * 72, y: p.z - p.h - 78 };
         const woundX = pin?.x ?? v.x, woundH = pin ? v.z - pin.y : v.h + H * 0.68;
         playSfx(this, 'kick', { volume: 1, pitch: -700, spread: 30, minGapMs: 0 });
