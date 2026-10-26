@@ -1398,8 +1398,10 @@ export class ArenaScene extends Phaser.Scene {
           ? bladeWorldPoint(hero, hero.texture.key.startsWith('ulricOath') ? { x: 521, y: 282 } : { x: 508, y: 286 })
           : { x: p.x + dir * 72, y: p.z - p.h - 78 };
         const woundX = pin?.x ?? v.x, woundH = pin ? v.z - pin.y : v.h + H * 0.68;
-        playSfx(this, 'kick', { volume: 1, pitch: -700, spread: 30, minGapMs: 0 });
-        playSfx(this, 'impaleKick', { volume: 1, spread: 30, minGapMs: 0 });
+        playSfx(this, 'kick', { volume: 0.7, pitch: -700, spread: 30, minGapMs: 0 });
+        // the face-hit crack on top, a beat behind the boot and loud: played with the
+        // kick, blade-out and splatter it was buried under them
+        this.time.delayedCall(70, () => playSfx(this, 'impaleKick', { volume: 1.4, spread: 30, minGapMs: 0 }));
         playSfx(this, 'bladeOut', { volume: 1, spread: 40, minGapMs: 0 });
         playSfx(this, 'bloodSplatter', { volume: 0.9, spread: 60, minGapMs: 0 });
         this.fx.shake(10, 12);
