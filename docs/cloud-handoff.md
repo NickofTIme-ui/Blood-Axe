@@ -29,8 +29,7 @@ branch, or ChatGPT's work gets lost.
   rest at a natural angle); jointed halves (`FleshChain` with `skid`) bounce off a hard
   landing and skid instead of stopping dead, with a thud and a short smear. F8 test scene
   "Severed pieces: bounce & settle" cuts men down six ways in turn.
-- 25 October 2026 (branch `claude/project-thread-uv978p`, not on main until Nick says
-  push): impale finisher rebuilt as three beats. Run through the back of a fleeing
+- 26 October 2026 (cloud, on main, not on itch): impale finisher rebuilt as three beats. Run through the back of a fleeing
   man (18), heaved up on the painted heave pose and held there, legs thrashing then
   dangling while he slides down the blade (30-72), rock back and kick him off (78).
   The overhead and knee-up poses (4, 5) are no longer used; they put him out of the
