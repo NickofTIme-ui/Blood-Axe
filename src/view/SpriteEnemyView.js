@@ -21,7 +21,7 @@ import { Heading, headingAnim } from './Heading.js';
 import { applyBurn } from '../effects/Burn.js';
 import { IMPALE } from '../combat/Finisher.js';
 import { BodyFeel, easedSpread, swingBody } from './animFeel.js';
-import { DANGER, dangerGlint } from './dangerCue.js';
+import { DANGER, dangerGlint, isDanger } from './dangerCue.js';
 import { SENTENCE } from '../stage/Sentence.js';
 import { dyeImage } from './dye.js';
 
@@ -315,15 +315,17 @@ export class SpriteEnemyView {
       this.flashAge = (this.flashAge ?? 0) + 1;
       if (this.flashAge <= 4 || (f.hitstop === 0 && P.age % 4 < 2)) s.setTintFill(0xffffff);
       else s.setTint(0xff8a7a);
-    } else if (ATTACKS.includes(st) && m && (st === 'heavy' || m.superArmor || m.chain) && fr <= m.startup && Math.floor(fr / 3) % 2 === 0) {
+    } else if (ATTACKS.includes(st) && m && isDanger(st, m) && fr <= m.startup && Math.floor(fr / 3) % 2 === 0) {
       s.setTint(DANGER.tint);
     } else if ((st === 'stagger' || st === 'guardBreak') && Math.floor(fr / 4) % 2 === 0) {
       s.setTint(0xffe080);
     }
-    // ...and the danger glint at its start (view/dangerCue.js): a shape, not only a colour
-    const winding = ATTACKS.includes(st) && m && (st === 'heavy' || m.superArmor || m.chain) && fr <= m.startup;
-    if (winding && !this.wasWinding && f.alive) dangerGlint(this.scene, f, m.startup);
-    this.wasWinding = winding;
+    // ...and the danger glint at its start (view/dangerCue.js): a shape, not only a colour;
+    // a plain swing gets the small tell (each new swing, a combo's next cut too)
+    const winding = ATTACKS.includes(st) && m && fr <= m.startup && f.team !== 'player';
+    const swing = winding ? f.fsm.enterCount : null;
+    if (winding && swing !== this.wasWinding && f.alive) dangerGlint(this.scene, f, m.startup, !isDanger(st, m));
+    this.wasWinding = swing;
     this.prevFlash = f.flash;
     // scorched / roasting / charred (effects/Burn.js): his own art, darkened in stages,
     // from the side that's in the fire

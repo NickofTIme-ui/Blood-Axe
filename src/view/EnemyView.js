@@ -16,7 +16,7 @@ import { ENEMY_ART, P } from './enemyArt.js';
 import { woundTex } from '../effects/goreArt.js';
 import { FONT } from './fonts.js';
 import { softShadow } from './atmosphere.js';
-import { DANGER } from './dangerCue.js';
+import { DANGER, isDanger } from './dangerCue.js';
 import { dyeImage } from './dye.js';
 
 const D2R = Math.PI / 180;
@@ -357,7 +357,7 @@ export class EnemyView {
       if (early || (f.hitstop === 0 && this.age % 4 < 2)) { tint = 0xffffff; fill = true; }
       else tint = 0xff8a7a;
     }
-    else if (ATTACKS.includes(st) && m && (st === 'heavy' || m.superArmor || m.chain) && fr <= m.startup && Math.floor(fr / 3) % 2 === 0) tint = DANGER.tint;
+    else if (ATTACKS.includes(st) && m && isDanger(st, m) && fr <= m.startup && Math.floor(fr / 3) % 2 === 0) tint = DANGER.tint;
     else if ((st === 'stagger' || st === 'guardBreak') && Math.floor(fr / 4) % 2 === 0) tint = 0xffe080;
     else if (f.parryActive) tint = 0xcfe6ff;
     this.prevFlash = f.flash;

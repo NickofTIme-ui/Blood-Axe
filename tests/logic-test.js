@@ -297,9 +297,9 @@ test('parry staggers the attacker', () => {
   // Grunt attacks the player; player taps block right before the hit.
   const t = setup({ dummyScript: { 1: ['attack'] } });
   t.p.facing = 1;
-  // grunt light1 startup = 10 -> active at frame 11. Tap block at frame 8.
-  t.p.controller.script = { 8: ['block'] };
-  t.run(20);
+  // grunt light1 startup = 21 -> active at frame 22. Tap block at frame 19.
+  t.p.controller.script = { 19: ['block'] };
+  t.run(31);
   assert(t.log.includes('parry'), `log ${t.log}`);
   assert(t.d.state === 'stagger', `grunt should be staggered, is ${t.d.state}`);
 });
@@ -308,10 +308,10 @@ test('riposte: the first hit after a parry is a sure, heavier critical; later hi
   const t = setup({ dummyScript: { 1: ['attack'] } });
   t.d.stats = { ...t.d.stats, maxHealth: 1e4 }; t.d.health = 1e4;
   t.p.facing = 1;
-  t.p.controller.script = { 8: ['block'], 24: ['attack'], 60: ['attack'] };
+  t.p.controller.script = { 19: ['block'], 35: ['attack'], 71: ['attack'] };
   const hits = [];
   t.world.events.on('hit', (e) => { if (e.attacker === t.p) hits.push(e); });
-  t.run(100);
+  t.run(111);
   assert(t.log.includes('parry'), 'parried');
   assert(hits.length >= 2, `two answers land (${hits.length})`);
   assert(hits[0].riposte && hits[0].crit, 'the first is a riposte');
@@ -321,11 +321,11 @@ test('riposte: the first hit after a parry is a sure, heavier critical; later hi
 
 test('dodge i-frames avoid a hit', () => {
   const t = setup({ dummyScript: { 1: ['attack'] }, gap: 50 });
-  t.p.controller.script = { 8: ['dodge'] };
-  t.run(20);
+  t.p.controller.script = { 19: ['dodge'] };
+  t.run(31);
   assert(!t.log.includes('hit'), `should dodge, log ${t.log}`);
   const control = setup({ dummyScript: { 1: ['attack'] }, gap: 50 }); // same, no dodge
-  control.run(20);
+  control.run(31);
   assert(control.log.includes('hit'), 'control case should be hit');
 });
 
@@ -1427,9 +1427,9 @@ test('rogue: shadow window — dodging a blow at the last instant, then hitting 
   e.health = 1e4; e.stats = { ...e.stats, maxHealth: 1e4 };
   e.controller.script = { 1: ['attack'] };
   // dodge just as his swing comes out
-  t.p.controller.script = { 11: ['dodge'], 40: ['attack'] };
-  t.p.controller.hold = (n) => (n >= 11 && n < 13 ? { right: true } : n >= 38 && n < 42 ? { left: true } : {}); // (through him, then turn on him)
-  t.run(37);
+  t.p.controller.script = { 22: ['dodge'], 51: ['attack'] };
+  t.p.controller.hold = (n) => (n >= 22 && n < 24 ? { right: true } : n >= 49 && n < 53 ? { left: true } : {}); // (through him, then turn on him)
+  t.run(48);
   t.p.x = e.x + 50; // (back within reach, as a sidestep past him would leave her)
   t.run(23);
   assert(t.seen('shadowWindow').length === 1, `perfect dodge (${t.seen('shadowWindow').length})`);
@@ -2375,13 +2375,13 @@ test('rurik: Iron Wall turns a parry into a riposte; Oath of Fury holds him up w
   const t = setup({ dummyScript: { 1: ['attack'] } });
   t.p.stats = rurikWith('bloodrush', 'ironWall');
   t.p.facing = 1;
-  t.p.controller.script = { 8: ['block'] };
-  t.run(20);
+  t.p.controller.script = { 19: ['block'] };
+  t.run(31);
   assert(t.log.includes('parry') && t.d.health <= t.d.stats.maxHealth - 25, `parried and hit back (${t.d.health})`);
   const f = setup({ dummyScript: { 1: ['attack'] } });
   f.p.stats = rurikWith('bloodrush', 'ironWall', 'oathOfFury');
   f.p.health = f.p.stats.maxHealth * 0.2;
-  f.run(25);
+  f.run(36);
   assert(f.log.includes('hit') && !['hitstun', 'stagger', 'knockdown'].includes(f.p.state), `took the blow and kept his feet (${f.p.state})`);
 });
 

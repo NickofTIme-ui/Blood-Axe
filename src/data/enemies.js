@@ -41,6 +41,15 @@
 //                    10% more, 0 = all the same
 //     dyes           colours his clothes can be dyed (view/dye.js), null = as painted
 
+// TELEGRAPH (Nick, 2026-10-26: "every attack has a brief second you can roll or block"):
+// the shortest wind-up (startup frames, 60 a second) any enemy swing may have, so the
+// pose, and the small tell or the red danger glint (view/dangerCue.js), give you time to
+// answer. A swing he opens with: 21 (350 ms). A combo's next cut, already coming at you:
+// 18 (300 ms). One that breaks a guard or can't be blocked: 30 (500 ms). A combo's next
+// cut comes only after the last one has struck (its chain opens after the active frames),
+// never cut in over a wind-up. Enforced by tests/enemy-telegraph-test.js.
+export const TELEGRAPH = { open: 21, follow: 18, heavy: 30 };
+
 // Shared physics for all humanoid enemies.
 const BASE = {
   maxMana: 0, manaRegen: 0,
@@ -77,22 +86,22 @@ export const ENEMIES = {
     moves: {
       light1: {
         anim: 'slash', cut: 'slash',
-        startup: 10, active: 3, recovery: 16,
+        startup: 21, active: 3, recovery: 16,
         damage: 8, hitstun: 20, hitstop: 4, shake: 1,
         knockback: { x: 80, y: 0 }, guardDamage: 12, lunge: 40,
         hitbox: { x: 8, y: 40, w: 56, h: 34 },
-        chains: [{ button: 'attack', next: 'light2', from: 8, to: 29 }],
+        chains: [{ button: 'attack', next: 'light2', from: 25, to: 40 }],
       },
       light2: {
         anim: 'backslash', cut: 'slash',
-        startup: 9, active: 3, recovery: 20,
+        startup: 18, active: 3, recovery: 20,
         damage: 9, hitstun: 22, hitstop: 5, shake: 2,
         knockback: { x: 180, y: 220 }, knockdown: true, guardDamage: 14, lunge: 60,
         hitbox: { x: 8, y: 30, w: 58, h: 40 },
       },
       heavy: {
         anim: 'chop', cut: 'chop',
-        startup: 24, active: 4, recovery: 26,       // long, readable wind-up
+        startup: 30, active: 4, recovery: 26,       // long, readable wind-up
         damage: 18, hitstun: 28, hitstop: 9, shake: 5,
         knockback: { x: 280, y: 300 }, knockdown: true, breaksGuard: true,
         guardDamage: 30, staminaCost: 0, lunge: 90,
@@ -170,14 +179,14 @@ export const ENEMIES = {
     moves: {
       light1: { // the snap: a short lunge, jaws first
         anim: 'bite', cut: 'pierce',
-        startup: 9, active: 3, recovery: 18,
+        startup: 21, active: 3, recovery: 18,
         damage: 7, hitstun: 18, hitstop: 4, shake: 1,
         knockback: { x: 60, y: 0 }, guardDamage: 10, lunge: 110,
         hitbox: { x: 20, y: 14, w: 52, h: 30 },
       },
       heavy: { // the pounce: a long leap that bowls you over
         anim: 'pounce', cut: 'pierce',
-        startup: 20, active: 7, recovery: 26,
+        startup: 21, active: 7, recovery: 26,
         damage: 13, hitstun: 26, hitstop: 7, shake: 3,
         knockback: { x: 240, y: 240 }, knockdown: true,
         guardDamage: 26, lunge: 340,
@@ -223,7 +232,7 @@ export const ENEMIES = {
     moves: {
       light1: { // the drum grinds forward
         anim: 'grind', cut: 'crush',
-        startup: 16, active: 14, recovery: 22,
+        startup: 21, active: 14, recovery: 22,
         damage: 9, hitstun: 22, hitstop: 4, shake: 3,
         knockback: { x: 220, y: 120 }, knockdown: true, guardDamage: 20, lunge: 60,
         hitbox: { x: 40, y: 0, w: 90, h: 90 },
@@ -273,15 +282,15 @@ export const ENEMIES = {
     moves: {
       light1: { // Hack â€” diagonal cleaver chop
         anim: 'slash', cut: 'cleave',
-        startup: 12, active: 3, recovery: 16,
+        startup: 21, active: 3, recovery: 16,
         damage: 10, hitstun: 22, hitstop: 5, shake: 2,
         knockback: { x: 90, y: 0 }, guardDamage: 14, lunge: 45,
         hitbox: { x: 10, y: 40, w: 64, h: 44 },
-        chains: [{ button: 'attack', next: 'light2', from: 10, to: 30 }],
+        chains: [{ button: 'attack', next: 'light2', from: 25, to: 39 }],
       },
       light2: { // Backhand Hack
         anim: 'backslash', cut: 'cleave',
-        startup: 10, active: 3, recovery: 22,
+        startup: 18, active: 3, recovery: 22,
         damage: 12, hitstun: 24, hitstop: 7, shake: 3,
         knockback: { x: 220, y: 240 }, knockdown: true, guardDamage: 16, lunge: 60,
         hitbox: { x: 8, y: 30, w: 66, h: 50 },
@@ -339,30 +348,30 @@ export const ENEMIES = {
     moves: {
       light1: { // Quick Poke â€” right dagger
         anim: 'stab', cut: 'pierce',
-        startup: 6, active: 2, recovery: 12,
+        startup: 21, active: 2, recovery: 12,
         damage: 6, hitstun: 18, hitstop: 3, shake: 0,
         knockback: { x: 50, y: 0 }, guardDamage: 8, lunge: 70,
         hitbox: { x: 12, y: 50, w: 58, h: 22 },
-        chains: [{ button: 'attack', next: 'light2', from: 6, to: 20 }],
+        chains: [{ button: 'attack', next: 'light2', from: 24, to: 35 }],
       },
       light2: { // Double Poke â€” left dagger
         anim: 'stabB', cut: 'pierce',
-        startup: 5, active: 2, recovery: 12,
+        startup: 18, active: 2, recovery: 12,
         damage: 6, hitstun: 18, hitstop: 3, shake: 0,
         knockback: { x: 60, y: 0 }, guardDamage: 8, lunge: 70,
         hitbox: { x: 12, y: 44, w: 58, h: 22 },
-        chains: [{ button: 'attack', next: 'light3', from: 5, to: 19 }],
+        chains: [{ button: 'attack', next: 'light3', from: 21, to: 32 }],
       },
       light3: { // Gut Stab â€” both blades, knocks down
         anim: 'thrust', cut: 'pierce',
-        startup: 9, active: 3, recovery: 20,
+        startup: 18, active: 3, recovery: 20,
         damage: 11, hitstun: 24, hitstop: 7, shake: 3,
         knockback: { x: 240, y: 200 }, knockdown: true, guardDamage: 14, lunge: 120,
         hitbox: { x: 10, y: 36, w: 66, h: 28 },
       },
       heavy: { // Lunging Shank â€” dives across the floor, blade first
         anim: 'thrust', cut: 'pierce',
-        startup: 18, active: 8, recovery: 24,
+        startup: 30, active: 8, recovery: 24,
         damage: 17, hitstun: 28, hitstop: 9, shake: 4,
         knockback: { x: 300, y: 260 }, knockdown: true, breaksGuard: true,
         guardDamage: 28, lunge: 330,
@@ -419,7 +428,7 @@ export const ENEMIES = {
         damage: 14, hitstun: 24, hitstop: 7, shake: 3,
         knockback: { x: 180, y: 0 }, guardDamage: 20, lunge: 20,
         hitbox: { x: 30, y: 30, w: 100, h: 50 },
-        chains: [{ button: 'attack', next: 'light2', from: 30, to: 52 }],
+        chains: [{ button: 'attack', next: 'light2', from: 37, to: 52 }],
       },
       light2: { // Return Swing
         anim: 'swingChain', chain: true, cut: 'blunt',
@@ -480,23 +489,23 @@ export const ENEMIES = {
     moves: {
       light1: { // Axe Hack
         anim: 'slash', cut: 'cleave',
-        startup: 9, active: 3, recovery: 14,
+        startup: 21, active: 3, recovery: 14,
         damage: 10, hitstun: 22, hitstop: 5, shake: 2,
         knockback: { x: 90, y: 0 }, guardDamage: 12, lunge: 60,
         hitbox: { x: 10, y: 40, w: 66, h: 44 },
-        chains: [{ button: 'attack', next: 'light2', from: 8, to: 26 }],
+        chains: [{ button: 'attack', next: 'light2', from: 25, to: 38 }],
       },
       light2: { // Rising Hack
         anim: 'uppercut', cut: 'cleave',
-        startup: 8, active: 3, recovery: 16,
+        startup: 18, active: 3, recovery: 16,
         damage: 10, hitstun: 22, hitstop: 5, shake: 2,
         knockback: { x: 100, y: 0 }, guardDamage: 12, lunge: 60,
         hitbox: { x: 8, y: 40, w: 66, h: 60 },
-        chains: [{ button: 'attack', next: 'light3', from: 8, to: 27 }],
+        chains: [{ button: 'attack', next: 'light3', from: 22, to: 37 }],
       },
       light3: { // Skull Splitter
         anim: 'chop', cut: 'chop',
-        startup: 12, active: 4, recovery: 24,
+        startup: 18, active: 4, recovery: 24,
         damage: 16, hitstun: 26, hitstop: 9, shake: 5,
         knockback: { x: 280, y: 300 }, knockdown: true, guardDamage: 20, lunge: 90,
         hitbox: { x: 6, y: 10, w: 76, h: 90 },
@@ -511,7 +520,7 @@ export const ENEMIES = {
       },
       special1: { // Berserk Rush â€” shoulder barge, can't be stopped
         anim: 'charge', cut: 'blunt', superArmor: true,
-        startup: 24, active: 18, recovery: 22,
+        startup: 30, active: 18, recovery: 22,
         damage: 14, hitstun: 26, hitstop: 8, shake: 5,
         knockback: { x: 360, y: 300 }, knockdown: true, breaksGuard: true,
         guardDamage: 30, lunge: 400,
@@ -554,11 +563,11 @@ export const ENEMIES = {
     moves: {
       light1: { // Rusty Knife â€” quick slash with the left hand
         anim: 'stabB', cut: 'slash', needs: 'armB',
-        startup: 7, active: 3, recovery: 14,
+        startup: 21, active: 3, recovery: 14,
         damage: 7, hitstun: 20, hitstop: 4, shake: 1,
         knockback: { x: 70, y: 0 }, guardDamage: 10, lunge: 55,
         hitbox: { x: 10, y: 45, w: 54, h: 30 },
-        chains: [{ button: 'attack', next: 'light2', from: 7, to: 24 }],
+        chains: [{ button: 'attack', next: 'light2', from: 25, to: 38 }],
       },
       light2: { // Chain Mace â€” swung out on its chain
         anim: 'swingChain', chain: true, cut: 'blunt',
@@ -619,15 +628,15 @@ export const ENEMIES = {
     moves: {
       light1: { // Mace Bash
         anim: 'slash', cut: 'blunt',
-        startup: 11, active: 3, recovery: 16,
+        startup: 21, active: 3, recovery: 16,
         damage: 11, hitstun: 22, hitstop: 6, shake: 2,
         knockback: { x: 110, y: 0 }, guardDamage: 14, lunge: 45,
         hitbox: { x: 10, y: 45, w: 64, h: 44 },
-        chains: [{ button: 'attack', next: 'light2', from: 10, to: 30 }],
+        chains: [{ button: 'attack', next: 'light2', from: 25, to: 40 }],
       },
       light2: { // Mace Uppercut â€” launches
         anim: 'uppercut', cut: 'blunt',
-        startup: 10, active: 3, recovery: 22,
+        startup: 18, active: 3, recovery: 22,
         damage: 12, hitstun: 24, hitstop: 7, shake: 4,
         knockback: { x: 150, y: 520 }, knockdown: true, guardDamage: 16, lunge: 50,
         hitbox: { x: 8, y: 40, w: 62, h: 70 },
@@ -642,7 +651,7 @@ export const ENEMIES = {
       },
       special1: { // Shield Rush â€” spiked shield charge
         anim: 'bash', cut: 'blunt', needs: 'armB',
-        startup: 22, active: 12, recovery: 24,
+        startup: 30, active: 12, recovery: 24,
         damage: 12, hitstun: 36, hitstop: 8, shake: 5,
         knockback: { x: 380, y: 200 }, knockdown: true, breaksGuard: true,
         guardDamage: 40, lunge: 360,
@@ -686,15 +695,15 @@ export const ENEMIES = {
     moves: {
       light1: { // Gauntlet Backhand
         anim: 'slash', cut: 'blunt',
-        startup: 13, active: 4, recovery: 18,
+        startup: 21, active: 4, recovery: 18,
         damage: 13, hitstun: 24, hitstop: 7, shake: 3,
         knockback: { x: 200, y: 0 }, guardDamage: 18, lunge: 60,
         hitbox: { x: 16, y: 60, w: 104, h: 76 },
-        chains: [{ button: 'attack', next: 'light2', from: 12, to: 34 }],
+        chains: [{ button: 'attack', next: 'light2', from: 26, to: 42 }],
       },
       light2: { // Glaive Sweep: wide and level, clears the lane
         anim: 'slash', cut: 'cleave',
-        startup: 15, active: 4, recovery: 24,
+        startup: 18, active: 4, recovery: 24,
         damage: 16, hitstun: 26, hitstop: 8, shake: 5,
         knockback: { x: 300, y: 260 }, knockdown: true, guardDamage: 24, lunge: 70,
         hitbox: { x: 10, y: 50, w: 156, h: 70, depth: 26 },
@@ -709,7 +718,7 @@ export const ENEMIES = {
       },
       special1: { // Bull Charge: the spiked shoulder, the length of the room
         anim: 'bash', cut: 'blunt',
-        startup: 26, active: 18, recovery: 30,
+        startup: 30, active: 18, recovery: 30,
         damage: 18, hitstun: 38, hitstop: 9, shake: 7,
         knockback: { x: 460, y: 260 }, knockdown: true, breaksGuard: true,
         guardDamage: 50, lunge: 430,
@@ -775,19 +784,19 @@ ENEMIES.king = {
   moves: {
     light1: { // the first cut
       anim: 'slash', cut: 'slash',
-      startup: 9, active: 3, recovery: 14,
+      startup: 21, active: 3, recovery: 14,
       damage: 11, hitstun: 20, hitstop: 6, shake: 2,
       knockback: { x: 120, y: 0 }, guardDamage: 14, lunge: 50,
       hitbox: { x: 12, y: 46, w: 92, h: 50 },
-      chains: [{ button: 'attack', next: 'light2', from: 9, to: 26 }],
+      chains: [{ button: 'attack', next: 'light2', from: 25, to: 38 }],
     },
     light2: { // the second, back the other way
       anim: 'backslash', cut: 'slash',
-      startup: 9, active: 3, recovery: 16,
+      startup: 18, active: 3, recovery: 16,
       damage: 12, hitstun: 22, hitstop: 6, shake: 3,
       knockback: { x: 140, y: 0 }, guardDamage: 16, lunge: 50,
       hitbox: { x: 12, y: 44, w: 92, h: 52 },
-      chains: [{ button: 'attack', next: 'light3', from: 12, to: 34 }],
+      chains: [{ button: 'attack', next: 'light3', from: 22, to: 43 }],
     },
     light3: { // the third, held back a beat: it catches the early dodge
       anim: 'chop', cut: 'cleave',
@@ -798,7 +807,7 @@ ENEMIES.king = {
     },
     heavy: { // the thrust: a long straight lunge, a gleam on the blade first
       anim: 'thrust', cut: 'pierce',
-      startup: 26, active: 5, recovery: 26,
+      startup: 30, active: 5, recovery: 26,
       damage: 22, hitstun: 30, hitstop: 10, shake: 6,
       knockback: { x: 380, y: 200 }, knockdown: true, breaksGuard: true,
       guardDamage: 40, lunge: 200,

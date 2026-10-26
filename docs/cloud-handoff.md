@@ -6,6 +6,15 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 26 October 2026 (branch `claude/project-thread-ihhtr6`, not on main until Nick says
+  push): every enemy swing has a readable wind-up (`TELEGRAPH` in `data/enemies.js`):
+  at least 350 ms for a swing he opens with, 300 ms for a combo's next cut, 500 ms for
+  one that breaks a guard or can't be blocked. The Ashen grunt's slash was 167 ms and
+  his combo cut in over it with a 150 ms knockdown backslash; now 350 ms, and a combo's
+  next cut waits until the last one has struck. Every plain swing also flashes a small
+  pale glint as it winds up (`view/dangerCue.js`; the red one stays for big moves).
+  Damage, recovery and how often they attack are unchanged.
+  `tests/enemy-telegraph-test.js` enforces it. Not uploaded to itch.
 - 25 October 2026: main moved from `9681a37` to `dc564a9` with ChatGPT's Oct 24-25
   work (impale repair, Irvolino waits then escapes slower, street clutter), the
   signpost moved off the church door, head pikes at 0.6 size, and the mill-rescue
