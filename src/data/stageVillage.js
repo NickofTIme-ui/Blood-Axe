@@ -282,13 +282,15 @@ export const STAGE_VILLAGE = {
     // OPTIONAL: the boy, up at the back of the second roof: three jumps of +45, side by side
     // (a chimney stack, a dormer, the ridge he clings to). Each stands on the roof, so its
     // front is only as tall as the step (view/TerrainView.js supportTop); each is shallow
-    // (34 deep, against the back of the lane: hold up and you're lined up), so it shows as a
+    // (48 deep, against the back of the lane: hold up and you're lined up), so it shows as a
     // ledge with a lit top, not a tall pale wall
+    // (they were 34 deep: walking along the roof just in front, you passed right across the
+    // painted stacks as if through them; as deep as they're wide now, Nick 2026-10-26)
     // (all three painted chimney stacks now, rising like stairs, so it's plain what to climb:
     // the third was a timbered roof block that read as a house wall; Nick, 2026-10-24)
-    { kind: 'block', x0: 3500, x1: 3548, ...BACK(34), top: 165, look: 'chimney', art: 1 },
-    { kind: 'block', x0: 3564, x1: 3612, ...BACK(34), top: 210, look: 'chimney', art: 2 },
-    { kind: 'block', x0: 3628, x1: 3680, ...BACK(34), top: 255, look: 'chimney', art: 3 },
+    { kind: 'block', x0: 3500, x1: 3548, ...BACK(48), top: 165, look: 'chimney', art: 1 },
+    { kind: 'block', x0: 3564, x1: 3612, ...BACK(48), top: 210, look: 'chimney', art: 2 },
+    { kind: 'block', x0: 3628, x1: 3680, ...BACK(48), top: 255, look: 'chimney', art: 3 },
     { kind: 'pit', x0: 3680, x1: 3980, ...FULL },                      // the cellars, burning
     { kind: 'crumble', x0: 3740, x1: 3810, z0: 350, z1: 470, top: 130, fall: 40, back: 200 }, // gap 60
     { kind: 'crumble', x0: 3870, x1: 3940, z0: 350, z1: 470, top: 130, fall: 40, back: 200 }, // gap 60

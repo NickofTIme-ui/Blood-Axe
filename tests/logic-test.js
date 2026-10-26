@@ -2746,6 +2746,17 @@ test('village: the boy on the high ridge is saved by reaching him; every hero cl
   }
 });
 
+test('village: the chimney stacks on the second roof are solid as deep as they look (no walking through them)', () => {
+  const steps = STAGE_VILLAGE.terrain.filter((b) => b.look === 'chimney');
+  assert(steps.length === 3 && steps.every((b) => b.z1 - b.z0 >= b.x1 - b.x0 - 4), 'each stack as deep as it is wide');
+  const T = new Terrain(new World({ seed: 1 }), STAGE_VILLAGE.terrain);
+  for (const b of steps) {
+    // a man on the roof, walking along just in front of the stack's painted base: a wall
+    for (const z of [b.z0 + 4, (b.z0 + b.z1) / 2, b.z1 - 2]) assert(T.wallAt((b.x0 + b.x1) / 2, z, 120), `x ${b.x0} z ${z}: solid`);
+    assert(!T.wallAt((b.x0 + b.x1) / 2, b.z1 + 12, 120), 'clear in front of it');
+  }
+});
+
 test('village: the archers by the mill shoot from the roofs on; their arrows stagger both sides; wreck their posts and the arrows stop', () => {
   const world = new World({ seed: 6 });
   const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 3160, z: 410, controller: new Scripted() }));
