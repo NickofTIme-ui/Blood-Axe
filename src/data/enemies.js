@@ -73,7 +73,7 @@ export const ENEMIES = {
     look: { color: 0x5b6b2f, accent: 0x777777, skin: 0x9aa37a },
 
     variety: {
-      speed: [0.78, 1.25], size: [0.86, 1.16], toughness: 1.5,
+      speed: [0.78, 1.25], size: [1.0, 1.16], toughness: 1.5,
       dyes: [null, null, 'crimson', 'frost', 'violet', 'ash', 'rust', 'moss'],
     },
 
@@ -133,7 +133,7 @@ export const ENEMIES = {
     body: { w: 44, h: 96 },
     look: { color: 0x4a5428, accent: 0x666666, skin: 0x8a937a },
     variety: {
-      speed: [0.78, 1.25], size: [0.86, 1.16], toughness: 1,
+      speed: [0.78, 1.25], size: [1.0, 1.16], toughness: 1,
       dyes: [null, null, 'crimson', 'frost', 'violet', 'ash', 'rust', 'moss'],
     },
 
