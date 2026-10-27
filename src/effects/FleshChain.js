@@ -12,7 +12,7 @@ export class FleshChain {
     const pts=this.points,cx=pts.reduce((s,p)=>s+p.x,0)/pts.length,cy=pts.reduce((s,p)=>s+p.y,0)/pts.length;
     const w=Math.max(-3,Math.min(3,spin));
     for(const p of pts){p.px=p.x-(vx-(p.y-cy)*w)/60;p.py=p.y-(vy+(p.x-cx)*w)/60;}
-    this.asleep=false;this.quiet=0;this.age=0;
+    this.asleep=false;this.quiet=0;this.age=0;this.foot=null;this.felled=0;
   }
   // How much of a fall a point keeps as it strikes the floor (vy px/frame): flails and
   // chains a little; a severed piece (skid set) bounces off a hard landing, lower and
@@ -53,17 +53,23 @@ export class FleshChain {
     const resting=touching||this.points.every((p,i)=>floor(p.x)-r(i)-p.y<1.5);
     // A severed piece can't stay stood up on its end (legs on their feet, a half on its
     // cut): its weight takes it over the way it leans until it lies along the floor.
-    const standing=this.skid&&(touching||this.points.some((p,i)=>floor(p.x)-r(i)-p.y<1.5))&&this.standing();
-    // (it turns about where it stands, slowly off the vertical and faster as it goes, like
-    // a felled post: a nudge alone can't shift a wide cut face or a pair of feet)
+    const standing=this.skid&&!(this.felled>=Math.PI/2)&&(touching||this.points.some((p,i)=>floor(p.x)-r(i)-p.y<1.5))&&this.standing();
+    // (it turns about the foot it stands on, slowly off the vertical and faster as it goes,
+    // like a felled post: a nudge alone can't shift a wide cut face or a pair of feet. The
+    // foot and the way it falls are chosen once, and it turns a quarter turn at most:
+    // turning on whatever end is lowest each time would cartwheel it along the floor.)
     if(standing){
-      const low=this.points.reduce((a,p)=>p.y>a.y?p:a),top=this.points.reduce((a,p)=>p.y<a.y?p:a);
-      const lean=Math.sign(top.x-low.x)||this.lean||1;this.lean=lean;
-      this.tip=Math.min(.07,(this.tip??0)+.003);
-      const c=Math.cos(lean*this.tip),s=Math.sin(lean*this.tip);
-      for(const p of this.points)for(const [k,j] of [['x','y'],['px','py']]){
-        const dx=p[k]-low.x,dy=p[j]-low.y;p[k]=low.x+dx*c-dy*s;p[j]=low.y+dx*s+dy*c;
+      if(!this.foot){
+        const low=this.points.reduce((a,p)=>p.y>a.y?p:a),top=this.points.reduce((a,p)=>p.y<a.y?p:a);
+        this.foot=low;this.lean=Math.sign(top.x-low.x)||this.lean||1;this.felled=0;
       }
+      const low=this.foot,lean=this.lean;
+      this.tip=Math.min(.07,(this.tip??0)+.003);this.felled+=this.tip;
+      const c=Math.cos(lean*this.tip),s=Math.sin(lean*this.tip),ox=low.x,oy=low.y;
+      for(const p of this.points)for(const [k,j] of [['x','y'],['px','py']]){
+        const dx=p[k]-ox,dy=p[j]-oy;p[k]=ox+dx*c-dy*s;p[j]=oy+dx*s+dy*c;
+      }
+      this.points.forEach((p,i)=>{const bottom=floor(p.x)-r(i);if(p.y>bottom){p.py+=bottom-p.y;p.y=bottom;}}); // (never through the floor)
     }else this.tip=0;
     // (a piece that skids keeps its slide a moment, and a frame it bounced keeps its
     // bounce; once it has been down a while it is calmed as before)

@@ -23,6 +23,10 @@ branch, or ChatGPT's work gets lost.
   A man killed by fire goes down and burns lying flat (the death pose ran on `deadAge`,
   which stops while he burns, so he burned standing in the hit pose; it now runs on
   `deadFor`, and one who died lying stays down). `tests/settle-flat-test.js`.
+  Follow-up the same day: no more "walking" (a piece that won't tip with one shove is
+  eased over in place; a felled half turns on one foot, a quarter turn at most), the
+  strip of flesh between a split man's halves (`SplitSeam`) tears once both are down so
+  they don't tent up, and flat now means within 14 degrees (`FLAT_TILT` 0.25).
 - 26 October 2026 (branch `claude/project-thread-ihhtr6`, not on main until Nick says
   push): every enemy swing has a readable wind-up (`TELEGRAPH` in `data/enemies.js`):
   at least 350 ms for a swing he opens with, 300 ms for a combo's next cut, 500 ms for

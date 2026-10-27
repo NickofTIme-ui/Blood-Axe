@@ -12,7 +12,9 @@ export class SplitSeam {
     this.age++;
     const p=this.a.points[this.ia],q=this.b.points[this.ib];
     const dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy);
-    if(d>85||this.age>360)return false;
+    // (it tears once both halves are down: holding their middles together would prop them
+    // up in a tent instead of letting each fall flat)
+    if(d>85||this.age>360||(this.a.down>8&&this.b.down>8))return false;
     if(d>this.length+.2){
       const amount=Math.min(2.5,(d-this.length)*.5),x=dx/d*amount,y=dy/d*amount;
       for(const [point,sign] of [[p,1],[q,-1]]){point.x+=x*sign;point.y+=y*sign;point.px+=x*sign;point.py+=y*sign;}

@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { stepRigid, boxHull, longAxis, tiltOf, FLAT_TILT } from '../src/effects/Physics.js';
 import { FleshChain } from '../src/effects/FleshChain.js';
+import { SplitSeam } from '../src/effects/SplitSeam.js';
 import { World } from '../src/core/World.js';
 import { Fighter } from '../src/entities/Fighter.js';
 import { Controller } from '../src/core/Controller.js';
@@ -20,8 +21,13 @@ for (const [w, h] of [[8, 30], [10, 50], [6, 60], [14, 28], [40, 14]]) {
     for (const [vx, vh, spin] of [[0, 0, 0], [0, -300, 0], [120, 200, 3], [-200, 420, -6]]) {
       const hull = boxHull(-w / 2, -h / 2, w / 2, h / 2);
       const b = { x: 0, h: 40, vx, vh, rot, spin };
-      let t = 0;
-      for (; t < 600 && !b.asleep; t++) stepRigid(b, hull, 0, { bounce: 0.3, friction: 0.6 });
+      let t = 0, landedAt = null;
+      for (; t < 600 && !b.asleep; t++) {
+        stepRigid(b, hull, 0, { bounce: 0.3, friction: 0.6 });
+        // once it's down and nearly still it may tip over, but never walk off along the floor
+        if (landedAt === null && b.touching && Math.abs(b.vx) < 20 && Math.abs(b.vh) < 60) landedAt = b.x;
+      }
+      if (landedAt !== null) assert.ok(Math.abs(b.x - landedAt) < Math.max(w, h) * 0.75, `piece ${w}x${h} walked ${Math.round(b.x - landedAt)}px after landing`);
       assert.ok(b.asleep && t <= 301, `piece ${w}x${h} never came to rest`);
       const tilt = tiltOf(longAxis(hull).ang + b.rot);
       assert.ok(flat(tilt), `piece ${w}x${h} dropped at ${rot} rests ${(tilt * 180 / Math.PI).toFixed(0)}° off flat`);
@@ -52,10 +58,28 @@ for (const n of [3, 4, 5]) {
     let t = 0;
     for (; t < 1200 && !c.asleep; t++) c.step(() => 400, { minX: -1000, maxX: 1000 }, 6);
     assert.ok(c.asleep, 'standing half never settled');
+    const mid = c.points.reduce((s, p) => s + p.x, 0) / n;
+    if (!vx) assert.ok(Math.abs(mid) < n * 24, `standing half walked ${Math.round(mid)}px while going over`);
     const tilt = tiltOf(longAxis(c.points).ang);
     assert.ok(flat(tilt), `standing half (${n} joints) rests ${(tilt * 180 / Math.PI).toFixed(0)}° off flat`);
     chains++;
   }
+}
+
+// A split man's two halves are held by a strip of flesh while they fall; once both are
+// on the floor it tears, so they lie flat side by side instead of tented up together.
+{
+  const half = (x0) => { const c = new FleshChain([0, 1, 2, 3].map(i => ({ x: x0, y: 394 - (3 - i) * 24 }))); c.skid = true; c.bounce = 0.28; return c; };
+  const a = half(-2), b = half(2);
+  a.launch(-40, -30, -0.7); b.launch(40, -30, 0.7);
+  const seam = new SplitSeam(a, b);
+  let held = true;
+  for (let t = 0; t < 1200 && !(a.asleep && b.asleep); t++) {
+    for (const c of [a, b]) c.step(() => 400, { minX: -1000, maxX: 1000 }, 6);
+    if (held) held = seam.step();
+  }
+  assert.ok(!held && a.asleep && b.asleep, 'split halves never came apart and settled');
+  for (const c of [a, b]) assert.ok(flat(tiltOf(longAxis(c.points).ang)), 'a split half was left propped up');
 }
 
 // Killed by fire: he goes down, and while his body burns (which can take seconds) the

@@ -89,7 +89,7 @@ export function longAxis(points) {
 export const tiltOf = (a) => a - Math.round(a / Math.PI) * Math.PI;
 
 // A long piece lying further off the flat than this is still standing: it goes over.
-export const FLAT_TILT = 0.35;
+export const FLAT_TILT = 0.25;
 
 // One 60 Hz tick of a thrown rigid piece: gravity and air, then if any of its outline is
 // in the floor, an impulse at the lowest point (two nearly level points count as a flat
@@ -142,7 +142,14 @@ export function stepRigid(b, hull, floor, o = {}) {
   b.long ??= longAxis(hull);
   const tilt = b.long.ratio > 1.3 ? tiltOf(b.long.ang + b.rot) : 0;
   const standing = Math.abs(tilt) > FLAT_TILT;
-  if (standing && impact < 140) b.spin -= (Math.sign(tilt) || 1) * 0.45;
+  // A short shove the way it leans first (a real tip-over); if that hasn't put it down
+  // within half a second, it's eased over where it lies: turned about its own middle, its
+  // slide stopped. (Shoving it on and on would cartwheel it along the floor: walking.)
+  if (standing && impact < 140 && b.touching) {
+    b.tipping = (b.tipping ?? 0) + 1;
+    if (b.tipping <= 30) b.spin -= (Math.sign(tilt) || 1) * 0.45;
+    else { b.spin = 0; b.vx *= 0.7; b.rot -= tilt * 0.18; }
+  }
   b.spin = Math.max(-30, Math.min(30, b.spin));
   // a second after it first came down, whatever's left of a slow wobble is soaked up,
   // and nothing is still moving three seconds on
