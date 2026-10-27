@@ -6,8 +6,7 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 27 October 2026 (cloud, branch `claude/project-thread-biadbh`, not on main until Nick
-  says push): bodies and severed pieces always settle flat. A long rigid piece
+- 27 October 2026 (cloud, ON MAIN, not on itch): bodies and severed pieces always settle flat. A long rigid piece
   (`effects/Physics.js stepRigid`) left standing on an end or a corner tips over the way
   it leans until it lies along its length (`longAxis`, `FLAT_TILT`); a jointed half
   (`FleshChain`, e.g. legs left on their feet) is pushed over the same way and can't
