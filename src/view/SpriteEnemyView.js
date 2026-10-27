@@ -147,7 +147,9 @@ export class SpriteEnemyView {
       case 'getup': return easedSpread(A.getup.frames, fr / f.stats.getupFrames);
       // struck dead on his feet: the blow lands (hit), he goes over (knocked flying), down
       case 'dead': {
-        const age = f.deadAge ?? fr;
+        // (not deadAge: that stops while he burns, and he'd burn standing; and one who
+        // died where he lay doesn't get up to go down again)
+        const age = f.diedLying ? DIE.fall : f.deadFor ?? fr;
         return age < DIE.hit ? A.hit.frames[0] : age < DIE.fall && A.air ? A.air.frames[0] : A.lying.frames[0];
       }
       // beaten, on his knees for his sentence (stage/Sentence.js): the painted kneel when
@@ -404,7 +406,7 @@ export class SpriteEnemyView {
     if (st === 'knockdown' && f.lyingSince === null && f.hitstop === 0) angle = Math.max(-14, Math.min(8, -f.vh / 30));
     // struck dead on his feet: rocked back by the blow, then tipping over as he goes down
     if (st === 'dead') {
-      const age = f.deadAge ?? fr;
+      const age = f.diedLying ? DIE.fall : f.deadFor ?? fr;
       if (age < DIE.hit) { angle = -4 * (age / DIE.hit); dx = -age * 0.8; }
       else if (age < DIE.fall) {
         const t = (age - DIE.hit) / (DIE.fall - DIE.hit);

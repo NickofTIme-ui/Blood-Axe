@@ -673,9 +673,11 @@ export class SpriteCuts {
         p.x = a.x; p.h = p.z - a.y;
         p.rot = p.bleedDir < 0 ? Math.atan2(ux, -uy) : Math.atan2(-ux, uy);
       } else if (p.mode === 'perch') {
-        // sitting on its own legs, sliding very slowly along the cut, swaying
+        // sitting on its own legs, sliding very slowly along the cut, swaying — and if no
+        // boot comes, it slides off on its own and both go down: nothing is left standing
         if (p.age < 60) p.x += p.dir * 0.12;
         p.rot = Math.sin(p.age * 0.22) * 0.03 * Math.max(0, 1 - p.age / 90) - p.dir * Math.min(0.06, p.age * 0.001);
+        if (p.age > 200) this.launch(p, p.dir * 70, 40, p.dir * 2.5);
       } else if (p.mode === 'fly' && !p.weapon) {
         // a head, a lump of him: a rigid body on the floor (effects/Physics.js stepRigid) —
         // it bounces lower each time, skids, tips onto whatever side it settles on

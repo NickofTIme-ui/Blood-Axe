@@ -949,9 +949,12 @@ export const FIGHTER_STATES = {
       f.dead = true;
       f.activeAttack = null;
       f.deadAge = 0;
+      f.deadFor = 0; // (how long he's been dead: he goes down on this, burning or not)
+      f.diedLying = f.fsm?.prevName === 'knockdown'; // (already down: he stays down)
     },
     update(f) {
       f.invincible = true;
+      f.deadFor++;
       // a corpse that's alight stays until it has burnt out; a charred one lingers longer
       if (!(f.burn && (f.burn.lit || f.burn.cool > 0))) f.deadAge++;
       if (f.team === 'enemy' && f.deadAge > (f.burn?.heat > 0.3 ? 420 : 150)) f.removeMe = true; // corpse fades, then removed

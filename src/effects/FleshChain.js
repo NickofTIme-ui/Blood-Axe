@@ -1,5 +1,7 @@
 // Fixed-step presentation physics for a severed piece's remaining joints.
 // No springs across the cut: the two pieces are completely independent.
+import { longAxis, tiltOf, FLAT_TILT } from './Physics.js';
+
 export class FleshChain {
   constructor(points){
     this.points=points.map(p=>({...p,px:p.x,py:p.y}));
@@ -49,17 +51,30 @@ export class FleshChain {
     }
     // Bleed away energy after contact; a corpse must settle, not wriggle forever.
     const resting=touching||this.points.every((p,i)=>floor(p.x)-r(i)-p.y<1.5);
+    // A severed piece can't stay stood up on its end (legs on their feet, a half on its
+    // cut): its weight takes it over the way it leans until it lies along the floor.
+    const standing=this.skid&&(touching||this.points.some((p,i)=>floor(p.x)-r(i)-p.y<1.5))&&this.standing();
+    if(standing){
+      const low=this.points.reduce((a,p)=>p.y>a.y?p:a),top=this.points.reduce((a,p)=>p.y<a.y?p:a);
+      const lean=Math.sign(top.x-low.x)||this.lean||1,tall=Math.max(1,low.y-top.y);this.lean=lean;
+      for(const p of this.points)p.px-=lean*.12*(low.y-p.y)/tall;
+    }
     // (a piece that skids keeps its slide a moment, and a frame it bounced keeps its
     // bounce; once it has been down a while it is calmed as before)
     this.down=resting?(this.down??0)+1:0;
     const calm=this.skid&&this.down<40?.9:.6;
     let speed=0;
     for(const p of this.points){
-      if(resting&&!this.bounced){p.px=p.x-(p.x-p.px)*calm;p.py=p.y-(p.y-p.py)*.6;}
+      if(resting&&!this.bounced&&!standing){p.px=p.x-(p.x-p.px)*calm;p.py=p.y-(p.y-p.py)*.6;}
       speed=Math.max(speed,Math.hypot(p.x-p.px,p.y-p.py));
     }
-    this.quiet=resting&&speed<(this.age>120?.38:.12)?this.quiet+1:0;
+    this.quiet=resting&&(!standing||this.age>900)&&speed<(this.age>120?.38:.12)?this.quiet+1:0;
     if(this.quiet>24){this.asleep=true;for(const p of this.points){p.px=p.x;p.py=p.y;}}
     return impact;
+  }
+  // its length is standing off the floor (further from flat than FLAT_TILT)
+  standing(){
+    const L=longAxis(this.points);
+    return L.ratio>1.3&&Math.abs(tiltOf(L.ang))>FLAT_TILT;
   }
 }
