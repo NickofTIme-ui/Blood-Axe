@@ -2757,6 +2757,21 @@ test('village: the chimney stacks on the second roof are solid as deep as they l
   }
 });
 
+test('village: the church by the north gate is solid across its painted walls; its door steps and the gathering stay clear', () => {
+  const c = STAGE_VILLAGE.church;
+  const T = new Terrain(new World({ seed: 1 }), STAGE_VILLAGE.terrain);
+  // walking along the back of the lane, past the tower, the nave and the far wing: a wall
+  for (const x of [c.x - 320, c.x - 200, c.x, c.door.x, c.x + 200, c.x + 320]) {
+    for (const z of [STAGE_VILLAGE.laneTop, 260, 270]) assert(T.wallAt(x, z, 0), `x ${x} z ${z}: inside the church`);
+    assert(!T.wallAt(x, 282, 0), `x ${x}: clear just in front of its walls`);
+  }
+  // and not too high to jump onto
+  assert(T.wallAt(c.x, 260, 200), 'too tall to stand on');
+  // clear either side of it (the road in, the gap to the gate), on the door steps, and where the saved gather
+  for (const [x, z] of [[c.x - 360, 260], [c.x + 360, 260], [c.door.x, c.door.z + 2], [9280, 300]]) assert(!T.wallAt(x, z, 0), `x ${x} z ${z}: clear`);
+  for (const n of STAGE_VILLAGE.npcs) for (const g of [n.gather, n]) if (g && g.x > c.x - 350 && g.x < c.x + 350) assert(!T.wallAt(g.x, g.z, 0), `${n.id} at ${g.x},${g.z}: clear`);
+});
+
 test('village: the archers by the mill shoot from the roofs on; their arrows stagger both sides; wreck their posts and the arrows stop', () => {
   const world = new World({ seed: 6 });
   const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 3160, z: 410, controller: new Scripted() }));

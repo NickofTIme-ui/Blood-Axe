@@ -55,6 +55,12 @@ const shrineFootprint = (r) => ({ kind: 'block', x0: r.x - 52, x1: r.x + 52, z0:
 // the barn's two sheds, either side of its doors (x 5500): each nailed shut, people inside
 const BARN_WEST = 5450; // (the three groups crowd the one barred door: all freed by tag 'barn')
 const BARN_EAST = 5550;
+// The church by the north gate (view/TownChurchView.js): the painting is 700 wide centred on
+// x, its foot on z. Its walls and tower stand on one solid footprint from the back of the lane
+// to the foot of its walls (z ~274; the door's steps come out in front of that, to ~280, and
+// stay walkable): you could walk almost right through it (Nick, 2026-10-27).
+const CHURCH = { x: 8775, z: 302, width: 700, height: 420, door: { x: 8880, z: 279 } };
+const churchFootprint = (c) => ({ kind: 'block', x0: c.x - 340, x1: c.x + 338, z0: LANE_TOP, z1: c.z - 30, top: 400, hideArt: true });
 
 export const STAGE_VILLAGE = {
   millRescue:{type:'executioner'},
@@ -73,7 +79,7 @@ export const STAGE_VILLAGE = {
   // level by level, docs/campaign/plan.md)
   castle: { x: 830, scale: 0.42, detail: 0.3 },
   well: WELL, // the market square's well (drawn by view/VillageView.js; solid: terrain below)
-  church: { x:8775, z:302, width:700, height:420, door:{x:8880,z:279} },
+  church: CHURCH,
   gateTalk: {
     elsbeth:{who:'ELSBETH',before:'Irvolino is gone. Your father got us into the church. Let me help him now.',after:'Hale and I will carry him. He won’t be left alone.'},
     hale:{who:'HALE',before:"He held the church door while we brought the children in. He's been asking for you.",after:"We'll lay him by the altar. No one will leave him alone."},
@@ -301,6 +307,9 @@ export const STAGE_VILLAGE = {
     { kind: 'block', x0: 4700, x1: 5090, ...BACK(110), top: 70, look: 'mill' },
     // the barn's barricade (props, above): solid across the doors till it's smashed (Stage.openWay)
     { kind: 'block', tag: 'barnBoards', x0: 5452, x1: 5548, z0: LANE_TOP, z1: 274, top: 400, hideArt: true },
+
+    // ---- VII THE NORTH GATE: the church's walls (CHURCH, above)
+    churchFootprint(CHURCH),
   ],
 
   // smoke dimming the backdrop behind the roofs, so the roofs you jump on stand out from the
