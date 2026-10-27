@@ -460,6 +460,12 @@ test('fatalities: valid results, heavy blades split, blunt pops heads, fire expl
   assert((count({ cut: 'blunt', damage: 25 }).headPop ?? 0) > 600, 'big blunt hits should crush skulls');
   assert((count({ cut: 'fire', damage: 35 }).explode ?? 0) > 1000, 'fireball kills should blow people up');
   assert((count({ cut: 'slash', damage: 12, rel: 0.9 }).decap ?? 0) > 700, 'high slashes should take heads');
+  // Nick wants heads off and head-to-groin splits to be the common sight on blade kills
+  for (const cut of ['slash', 'cleave']) {
+    const mid = count({ cut, damage: 20, rel: 0.5 });
+    assert((mid.decap ?? 0) + (mid.halfV ?? 0) > 800, `mid-body ${cut} kills should often take the head or split: ${JSON.stringify(mid)}`);
+    assert((mid.halfV ?? 0) > 200, `${cut} kills should sometimes split head to groin: ${JSON.stringify(mid)}`);
+  }
 });
 
 test('maim: only blades, only on big hits, never the same arm twice', () => {

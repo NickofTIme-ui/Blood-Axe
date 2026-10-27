@@ -11,7 +11,8 @@
 //
 // "Hard enough" = power. Weak finishing blows lop off a limb; strong ones cut people
 // in half or blow them apart. Where the blow lands matters too: a high hit (rel near 1)
-// is far more likely to take the head.
+// is far more likely to take the head. Heads and head-to-groin splits are weighted
+// up on purpose: Nick wants them to be the common sight (2026-10-27).
 
 export const FATALITIES = ['none', 'limbs', 'decap', 'headPop', 'halfH', 'halfV', 'explode'];
 
@@ -60,18 +61,19 @@ export function chooseFatality({ cut = 'slash', damage = 10, overkill = 0, count
       break;
     case 'cleave':
       add('halfH', brutal ? 8 : hard ? 4 : 1.5);
-      add('decap', high ? 3 : 1);
+      add('decap', high ? 6 : 2.5);
       add('limbs', 2);
-      add('halfV', brutal ? 1.5 : 0);
+      add('halfV', brutal ? 4 : hard ? 3 : 1.5);
       break;
     case 'slash':
-      add('decap', high ? 5 : 2);
+      add('decap', high ? 8 : 4);
       add('limbs', 3);
       add('halfH', brutal ? 4 : hard ? 2.5 : 0.5);
+      add('halfV', brutal ? 2.5 : hard ? 1.5 : 0.6);
       break;
     case 'pierce':
       add('limbs', 3);
-      add('decap', hard ? 2 : 0.6);
+      add('decap', hard ? 3 : 1.2);
       add('none', 1.5);
       break;
     case 'blunt':
@@ -91,10 +93,11 @@ export function chooseFatality({ cut = 'slash', damage = 10, overkill = 0, count
       if(t.limbs)t.limbs*=4;
       if(t.decap)t.decap*=.08;
       if(t.halfH)t.halfH*=.6;
+      if(t.halfV)t.halfV*=.5;
     }else if(rel>.72){
       if(t.decap)t.decap*=2;
       if(t.limbs)t.limbs*=.45;
-    }else if(t.decap)t.decap*=.55;
+    }else if(t.decap)t.decap*=.9;
   }
   return pickWeighted(t, rng);
 }
