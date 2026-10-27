@@ -55,6 +55,7 @@ class Chunk {
     this.landed = false;
     this.trail = true;
     let minX = Infinity; let maxX = -Infinity; let minY = Infinity; let maxY = -Infinity;
+    const hull = [];
     for (const it of items) {
       const s = it.snap;
       const img = scene.add.image(s.x - pivot.x, s.y - pivot.y, s.key)
@@ -69,10 +70,13 @@ class Chunk {
         minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
         minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
       }
+      // what meets the floor: each part's own outline, turned the way it's drawn (not the
+      // box around it, which stands a slanted bone up on a square end)
+      for (const q of boxHull(cx, cy, cx + cw, cy + ch)) { const p = partPoint(s, q.x, q.y); hull.push({ x: p.x - pivot.x, y: p.y - pivot.y }); }
     }
     this.bw = maxX - minX;
     this.bh = maxY - minY;
-    this.hull = boxHull(minX - pivot.x, minY - pivot.y, maxX - pivot.x, maxY - pivot.y); // (what meets the floor)
+    this.hull = hull;
     this.rad = Math.max(2, Math.min(this.bw, this.bh) * 0.4);
     this.cont.setDepth(this.z + 0.4);
   }
@@ -617,6 +621,7 @@ export class Dismember {
     });
     const look = { ...c.look, thick: 7 + (c.look.kind === 'heavy' ? 1.5 : 0), guts: true };
     upper.edge(a, b, true, look).fountain(mid, c.torsoUp + Math.PI, 1.1, 90).drip(mid, Math.PI / 2, 300);
+    upper.long = { ang: c.torsoUp, ratio: 2 }; // (the top half lies down along its spine, never sat up on its cut: Physics.js stepRigid)
 
     const lower = this.topple([
       ...this.items(S, ['thighB', 'shinB']),

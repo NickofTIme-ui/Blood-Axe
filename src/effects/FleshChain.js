@@ -54,11 +54,17 @@ export class FleshChain {
     // A severed piece can't stay stood up on its end (legs on their feet, a half on its
     // cut): its weight takes it over the way it leans until it lies along the floor.
     const standing=this.skid&&(touching||this.points.some((p,i)=>floor(p.x)-r(i)-p.y<1.5))&&this.standing();
+    // (it turns about where it stands, slowly off the vertical and faster as it goes, like
+    // a felled post: a nudge alone can't shift a wide cut face or a pair of feet)
     if(standing){
       const low=this.points.reduce((a,p)=>p.y>a.y?p:a),top=this.points.reduce((a,p)=>p.y<a.y?p:a);
-      const lean=Math.sign(top.x-low.x)||this.lean||1,tall=Math.max(1,low.y-top.y);this.lean=lean;
-      for(const p of this.points)p.px-=lean*.12*(low.y-p.y)/tall;
-    }
+      const lean=Math.sign(top.x-low.x)||this.lean||1;this.lean=lean;
+      this.tip=Math.min(.07,(this.tip??0)+.003);
+      const c=Math.cos(lean*this.tip),s=Math.sin(lean*this.tip);
+      for(const p of this.points)for(const [k,j] of [['x','y'],['px','py']]){
+        const dx=p[k]-low.x,dy=p[j]-low.y;p[k]=low.x+dx*c-dy*s;p[j]=low.y+dx*s+dy*c;
+      }
+    }else this.tip=0;
     // (a piece that skids keeps its slide a moment, and a frame it bounced keeps its
     // bounce; once it has been down a while it is calmed as before)
     this.down=resting?(this.down??0)+1:0;

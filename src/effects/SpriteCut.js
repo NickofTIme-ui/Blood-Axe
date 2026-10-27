@@ -150,6 +150,9 @@ export class SpriteCuts {
     });
     upper.other = lower;
     lower.other = upper;
+    // a half of a man lies down along his length, head to feet flat on the floor, never sat
+    // up on its cut however squat it is (effects/Physics.js stepRigid; a head may sit up)
+    for (const half of cut === 'neck' ? [lower] : [upper, lower]) half.long = { ang: plane.lying ? 0 : Math.PI / 2, ratio: 2 };
     // Spray out of the actual cut face, rotating with each falling half.
     const normalLength=Math.hypot(plane.nx*s.scaleX,plane.ny*s.scaleY)||1;
     for(const piece of [upper,lower]) {

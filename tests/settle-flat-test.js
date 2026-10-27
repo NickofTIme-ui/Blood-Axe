@@ -30,6 +30,17 @@ for (const [w, h] of [[8, 30], [10, 50], [6, 60], [14, 28], [40, 14]]) {
   }
 }
 
+// A squat top half (a torso with its arms out, near as wide as it is tall) still lies down
+// along its spine instead of sitting up on its cut (its body axis is given: SpriteCut,
+// Dismember halfH).
+for (const rot of [0, 0.15, -0.2]) {
+  const hull = boxHull(-17, -15, 17, 15);
+  const b = { x: 0, h: 30, vx: 60, vh: 0, rot, spin: 0, long: { ang: Math.PI / 2, ratio: 2 } };
+  for (let t = 0; t < 600 && !b.asleep; t++) stepRigid(b, hull, 0, { bounce: 0.36, friction: 0.6 });
+  assert.ok(b.asleep && flat(tiltOf(Math.PI / 2 + b.rot)), `a squat half sat up at ${(b.rot * 180 / Math.PI).toFixed(0)}°`);
+  rigid++;
+}
+
 // Jointed halves (FlexibleCut's chain): a pair of legs left standing on its feet, a half
 // dropped onto its cut end, nudged or not, goes over and lies along the floor.
 let chains = 0;
