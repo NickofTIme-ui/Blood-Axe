@@ -130,9 +130,30 @@ export class WrathFX {
     s.tweens.add({ targets: b, scale: size * 3, alpha: 0, duration: 380, ease: 'Cubic.easeOut', onComplete: () => b.destroy() });
   }
 
-  // the floor split from the sword's point, glowing like a forge
+  // the floor split from the sword's point, glowing like a forge: the painted brand
+  // (assets/fx/kingswrath-mark.png, ChatGPT) when it's in, laid flat on the floor, white-hot
+  // at first (an additive copy over it), then cooling to a charred scar that fades; else
+  // glowing lines drawn here
   cracks(x, z, y, n, wrath) {
     const s = this.scene;
+    if (s.textures.exists('kingswrath-mark')) {
+      const src = s.textures.get('kingswrath-mark').getSourceImage();
+      const sx = (wrath ? 520 : 330) / src.width, sy = sx * 0.36;
+      const hold = wrath ? 2600 : 1500;
+      const scar = s.add.image(x, y, 'kingswrath-mark').setDepth(DEPTH.decals + 2).setScale(sx * 0.55, sy * 0.55);
+      const heat = s.add.image(x, y, 'kingswrath-mark').setDepth(DEPTH.decals + 2.1).setScale(sx * 0.55, sy * 0.55)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      // (it tears open from the point out, then the fire in it dies down)
+      s.tweens.add({ targets: [scar, heat], scaleX: sx, scaleY: sy, duration: 140, ease: 'Back.easeOut' });
+      s.tweens.add({ targets: heat, alpha: 0, delay: 350, duration: 1500, ease: 'Quad.easeIn', onComplete: () => heat.destroy() });
+      const cool = { t: 0 };
+      s.tweens.add({
+        targets: cool, t: 1, delay: 600, duration: hold, ease: 'Sine.easeIn',
+        onUpdate: () => { const c = Math.round(255 - 120 * cool.t); scar.setTint((c << 16) | (Math.round(c * 0.86) << 8) | Math.round(c * 0.8)); },
+      });
+      s.tweens.add({ targets: scar, alpha: 0, delay: 600 + hold, duration: 1400, ease: 'Quad.easeIn', onComplete: () => scar.destroy() });
+      return;
+    }
     const g = s.add.graphics().setDepth(DEPTH.decals + 2).setBlendMode(Phaser.BlendModes.ADD);
     const lines = [];
     for (let i = 0; i < n; i++) {

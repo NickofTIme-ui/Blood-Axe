@@ -39,6 +39,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('executioner-banner','assets/ui/executioner-banner.png'); // the hangman's clock plaque (scenes/HUDScene.js)
     this.load.image('blood-ink-sheet','assets/fx/blood-ink-sheet.png');
     this.load.image('impale-puncture-rim', 'assets/fx/impale-puncture-rim.png');
+    this.load.image('kingswrath-mark', 'assets/fx/kingswrath-mark.png'); // the brand Oathkeeper burns into the floor (effects/WrathFX.js cracks)
     this.load.image('rurik-oathkeeper-raised','assets/cinematics/rurik-oathkeeper-raised.png');
     this.load.image('hakon-farewell','assets/cinematics/church-hakon-farewell-somber.png');
     this.load.image('hakon-last-breath','assets/cinematics/church-hakon-last-breath-somber.png');
