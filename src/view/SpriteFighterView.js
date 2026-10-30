@@ -368,7 +368,7 @@ export class SpriteFighterView {
       this.chargeMoving = false;
     }
 
-    this.march.update(f);
+    this.march.update(f, headingAnim(this.meta.anims, this.heading.dir)?.stride);
     const ref = this.frameFor();
     this.poseChanged = ref !== this.lastFrameRef;
     this.setFrameRef(ref);
