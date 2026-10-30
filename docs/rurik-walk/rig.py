@@ -13,8 +13,8 @@ def load(pdir):
 def scale(im,s): return scale2(im,s,s)
 def scale2(im,sx,sy): return im.resize((round(im.width*sx),round(im.height*sy)),Image.LANCZOS)
 # piece coords (px in each cut-out); body piece origin is its own bbox
-CFG=dict(hip=(495,346), farhip=(-16,-6), shoulder=(522,90), arm_top=(58,26),
-         neck=(520,21), head_neck=(193,124), sshoulder=(430,136), sarm_top=(110,30),
+CFG=dict(hip=(495,346), farhip=(-16,-6), shoulder=(548,88), arm_top=(58,26),
+         neck=(520,21), head_neck=(193,124), sshoulder=(412,132), sarm_top=(110,30),
          thigh_top=40, thigh_knee=30, shin_top=45, shin_ankle=25, boot_scale=0.74,
          leg_len=0.78, leg_w=0.92, head_scale=1.22,
          ankle=0.30, ankle_y=0.15, sole_in=0.04)
@@ -97,11 +97,11 @@ def frame(t,W=1600,H=1300,ground=1220,cx=760):
     at=lambda p,dx=0:(lambda v:(hip[0]+v[0]+dx,hip[1]+v[1]))(rotpt(p,CFG['hip'],tor))
     # free (far) arm, behind everything: swings forward with the near leg, its shoulder
     # rolls forward too (shoulders turn against the hips)
-    paste(c,parts['arm'],CFG['arm_top'],14*roll-3+tor*0.5,at(CFG['shoulder'],4*roll))
+    paste(c,parts['arm'],CFG['arm_top'],15*roll+2+tor*0.5,at(CFG['shoulder'],4*roll))
     draw_leg(c,Lf,'f',(cx,hy)); draw_leg(c,Ln,'n',(cx,hy))
     paste(c,sway_torso(t,vel),CFG['hip'],tor,hip)
     # head: steadier than the torso, a small nod settling after each footfall
     paste(c,sway_head(t,vel),(CFG['head_neck'][0]*CFG['head_scale'],CFG['head_neck'][1]*CFG['head_scale']),tor*0.4+1.6*math.sin(2*ph-1.4),at(CFG['neck'],-2*roll))
     # sword arm in front: the heavy blade swings back a little as the near leg comes forward
-    paste(c,parts['sarm'],CFG['sarm_top'],-5*roll+tor*0.6,at(CFG['sshoulder'],-7*roll))
+    paste(c,parts['sarm'],CFG['sarm_top'],-5*roll+tor*0.6,at(CFG['sshoulder'],-4*roll))
     return c,hy,Ln,Lf
