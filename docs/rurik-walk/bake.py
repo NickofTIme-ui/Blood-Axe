@@ -4,10 +4,12 @@ sys.path.insert(0,__import__('os').path.dirname(__file__))
 import rig
 from PIL import Image
 pdir,old,out_hd,out_strip=sys.argv[1:5]; N=int(sys.argv[5]) if len(sys.argv)>5 else 12
-rig.parts={n:Image.open(pdir+'/'+n+'.png').convert('RGBA') for n in rig.parts}
+import json, os
+if os.path.exists(pdir+'/cfg.json'): rig.CFG.update({k:tuple(v) if isinstance(v,list) else v for k,v in json.load(open(pdir+'/cfg.json')).items()})
+rig.load(pdir)
 FW,FH,COLS=416,480,6
 frames=[rig.frame(i/N)[0] for i in range(N)]
-GROUND=1180
+GROUND=1220
 hs=[GROUND-f.getbbox()[1] for f in frames]; H=np.median(hs)
 scale=224/H
 def headx(f):

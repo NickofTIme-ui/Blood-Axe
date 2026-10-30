@@ -1,7 +1,7 @@
 import sys, numpy as np
 from PIL import Image
 from scipy import ndimage
-def extract(path, outdir):
+def extract(path, outdir, names=None):
     a=np.asarray(Image.open(path).convert('RGB')).astype(int)
     r,g,b=a[...,0],a[...,1],a[...,2]
     bg=(r>140)&(b>140)&(r-g>70)&(b-g>70)
@@ -21,10 +21,10 @@ def extract(path, outdir):
     fix=edge&(spill>30)
     rgb[...,0]=np.where(fix,np.minimum(rgb[...,0],rgb[...,1]+50),rgb[...,0]); rgb[...,2]=np.where(fix,np.minimum(rgb[...,2],rgb[...,1]+25),rgb[...,2])
     rgba[...,:3]=rgb.clip(0,255)
-    names=['body','nthigh','nshin','nboot','fthigh','fshin','fboot']
+    names=names or ['body','nthigh','nshin','nboot','fthigh','fshin','fboot']
     for nm,p in zip(names,parts):
         x0,y0,x1,y1,s,l=p
         m=(lab[y0:y1,x0:x1]==l)
         crop=rgba[y0:y1,x0:x1].copy(); crop[...,3]=np.where(m,crop[...,3],0)
         Image.fromarray(crop,'RGBA').save(f'{outdir}/{nm}.png'); print(nm,p[:4],s)
-if __name__=='__main__': extract(sys.argv[1],sys.argv[2])
+if __name__=='__main__': extract(sys.argv[1],sys.argv[2],sys.argv[3].split(',') if len(sys.argv)>3 else None)
