@@ -6,12 +6,9 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 30 October 2026 (cloud, ON MAIN, not on itch): Rurik's side walk is rigged. ChatGPT
-  painted him once in pieces (torso, head, sword arm, free arm, thighs, shins, boots, both
-  looks); `docs/rurik-walk` bakes them into 16 poses in
-  `assets/sprites/heroes-hd/rurik-<sheet>-walk2.png`. The walk anim's `stride: 80`
-  (`data/spriteStrips.js`) drives `view/MarchCycle.js` so his feet stay planted. Up/down
-  and diagonal walks are still the old frames.
+- 30 October 2026 (cloud): a rigged Rurik side walk (ChatGPT-painted pieces) went to main
+  as 470b1bb and was REVERTED the same day: Nick wanted the original walk back. The pieces
+  and rig scripts are kept in project files `rurik-walk/`, not in the repo.
 - 27 October 2026 (cloud, ON MAIN, not on itch): the mark Kingsfire / the King's Wrath leaves on the floor is now painted:
   `assets/fx/kingswrath-mark.png` (ChatGPT, a burning crown brand in a molten crater,
   magenta keyed out; the other two takes are in project files `kings-wrath-mark/`).
