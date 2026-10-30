@@ -14,6 +14,12 @@ def extract(path, outdir, names=None):
         if s<2000: continue
         ys,xs=np.where(lab==i+1); parts.append((xs.min(),ys.min(),xs.max()+1,ys.max()+1,int(s),i+1))
     parts.sort(key=lambda p:(p[1]>650, p[0]))
+    if names and names[0]=='torso':
+        top=[p for p in parts if p[1]<=650]; bot=[p for p in parts if p[1]>650]
+        torso=max(top,key=lambda p:p[4]); rest=[p for p in top if p is not torso]
+        head=min(rest,key=lambda p:p[1]); rest=[p for p in rest if p is not head]
+        sarm=max(rest,key=lambda p:p[3]-p[1]); arm=[p for p in rest if p is not sarm][0]
+        parts=[torso,head,sarm,arm]+bot
     rgba=np.dstack([a,np.where(fg,255,0)]).astype(np.uint8)
     # despill
     rgb=rgba[...,:3].astype(int); spill=np.minimum(rgb[...,0],rgb[...,2])-rgb[...,1]

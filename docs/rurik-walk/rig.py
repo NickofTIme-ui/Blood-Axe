@@ -1,17 +1,18 @@
 # rig.py: Rurik's side walk from ChatGPT-painted pieces (docs/rurik-walk/README.md)
 import math, numpy as np
 from PIL import Image
-NAMES=['body','arm','nthigh','nshin','nboot','fthigh','fshin','fboot']
+NAMES=['torso','head','sarm','arm','nthigh','nshin','nboot','fthigh','fshin','fboot']
 parts={}
 def load(pdir):
     for n in NAMES: parts[n]=Image.open(f'{pdir}/{n}.png').convert('RGBA')
     parts['nboot']=scale(parts['nboot'],CFG['boot_scale']); parts['fboot']=scale(parts['fboot'],CFG['boot_scale'])
 def scale(im,s): return im.resize((round(im.width*s),round(im.height*s)),Image.LANCZOS)
 # piece coords (px in each cut-out); body piece origin is its own bbox
-CFG=dict(hip=(464,470), farhip=(-16,-6), shoulder=(530,225), arm_top=(60,45),
+CFG=dict(hip=(495,346), farhip=(-16,-6), shoulder=(570,96), arm_top=(58,22),
+         neck=(520,21), head_neck=(193,124), sshoulder=(430,136), sarm_top=(110,30),
          thigh_top=40, thigh_knee=30, shin_top=45, shin_ankle=25, boot_scale=0.82,
          ankle=0.30, ankle_y=0.15, sole_in=0.04)
-KF=[(0.00,32,4,16),(0.12,25,18,0),(0.30,10,10,0),(0.48,-12,8,0),(0.60,-28,22,-22),(0.72,-12,62,-16),(0.86,18,48,0)]
+KF=[(0.00,32,6,18),(0.10,26,24,0),(0.30,10,14,0),(0.48,-12,10,0),(0.60,-28,26,-26),(0.70,-14,64,-24),(0.80,6,68,-8),(0.90,24,38,8)]
 ST=0.60
 def interp(t,idx):
     t%=1; n=len(KF); ts=[k[0] for k in KF]
@@ -57,21 +58,24 @@ def draw_leg(canvas,L,pre,off):
     paste(canvas,bt,boot_pts()[0],L['c'],o(L['ank']))
     paste(canvas,sh,(sh.width/2,CFG['shin_top']),L['b'],o(L['knee']))
     paste(canvas,th,(th.width/2,CFG['thigh_top']),L['a'],o(L['hip']))
-def sway_body(t,bob_vel):
-    # cape and hair trail: everything behind the back moves with a lag, more toward the ends
-    b=np.array(parts['body']).astype(np.float32); H,W=b.shape[:2]
-    hx,hy=CFG['hip']; back=hx-120
+def warp(im,dxf,dyf):
+    b=np.array(im).astype(np.float32); H,W=b.shape[:2]
     yy,xx=np.mgrid[0:H,0:W].astype(np.float32)
-    w=np.clip((back-xx)/250,0,1)*np.clip((yy-60)/450,0,1.2)          # cape: behind the back, lower = more
-    hair=np.clip((back+60-xx)/200,0,1)*np.clip((220-yy)/120,0,1)       # hair streaming back
-    ph=2*math.pi*2*t
-    dx=w*(10*math.sin(ph-1.2))+hair*(6*math.sin(ph-0.8))
-    dy=w*(-bob_vel*0.9)+w*(5*math.cos(ph-1.2))
+    dx,dy=dxf(xx,yy),dyf(xx,yy)
     sx=np.clip(xx-dx,0,W-1); sy=np.clip(yy-dy,0,H-1)
     x0=np.floor(sx).astype(int); y0=np.floor(sy).astype(int); x1=np.minimum(x0+1,W-1); y1=np.minimum(y0+1,H-1)
     fx=(sx-x0)[...,None]; fy=(sy-y0)[...,None]
     out=b[y0,x0]*(1-fx)*(1-fy)+b[y0,x1]*fx*(1-fy)+b[y1,x0]*(1-fx)*fy+b[y1,x1]*fx*fy
     return Image.fromarray(out.clip(0,255).astype(np.uint8),'RGBA')
+def sway_torso(t,bob_vel):
+    # the cape trails: everything behind the back moves with a lag, more toward the hem
+    back=CFG['hip'][0]-120; ph=2*math.pi*2*t
+    w=lambda x,y:np.clip((back-x)/250,0,1)*np.clip((y-40)/450,0,1.2)
+    return warp(parts['torso'],lambda x,y:w(x,y)*10*math.sin(ph-1.2),lambda x,y:w(x,y)*(-bob_vel*0.9+5*math.cos(ph-1.2)))
+def sway_head(t,bob_vel):
+    nx=CFG['head_neck'][0]-50; ph=2*math.pi*2*t
+    w=lambda x,y:np.clip((nx-x)/180,0,1)
+    return warp(parts['head'],lambda x,y:w(x,y)*7*math.sin(ph-0.9),lambda x,y:w(x,y)*(-bob_vel*0.7+3*math.cos(ph-0.9)))
 def hip_drop(t):
     hipN=(0,0); hipF=(CFG['farhip'][0],CFG['farhip'][1])
     Ln=leg(hipN,t); Lf=leg(hipF,t+0.5)
@@ -80,14 +84,18 @@ def frame(t,W=1600,H=1300,ground=1220,cx=760):
     low,Ln,Lf=hip_drop(t); hy=ground-low
     vel=(hip_drop(t+0.01)[0]-hip_drop(t-0.01)[0])/0.02/40   # px per 1/40 cycle
     ph=2*math.pi*t
-    lean=1.6*math.sin(2*ph+0.6)+1.0                            # slight forward lean, rocks each step
-    c=Image.new('RGBA',(W,H))
-    hip=(cx,hy)
-    # free (far) arm: swings opposite the far leg, i.e. with the near leg; behind the body
-    arm_ang=22*math.cos(ph)+4
-    sh=rotpt((CFG['shoulder'][0],CFG['shoulder'][1]),CFG['hip'],lean)
-    paste(c,parts['arm'],CFG['arm_top'],arm_ang+lean*0.5,(hip[0]+sh[0],hip[1]+sh[1]))
+    lean=1.4*math.sin(2*ph+0.6)+1.0      # forward lean that rocks a little each step
+    tor=-lean                             # torso angle (negative = tipped forward)
+    roll=math.cos(ph)                     # +1 when the near leg is forward
+    c=Image.new('RGBA',(W,H)); hip=(cx,hy)
+    at=lambda p,dx=0:(lambda v:(hip[0]+v[0]+dx,hip[1]+v[1]))(rotpt(p,CFG['hip'],tor))
+    # free (far) arm, behind everything: swings forward with the near leg, its shoulder
+    # rolls forward too (shoulders turn against the hips)
+    paste(c,parts['arm'],CFG['arm_top'],22*roll+4+tor*0.5,at(CFG['shoulder'],7*roll))
     draw_leg(c,Lf,'f',(cx,hy)); draw_leg(c,Ln,'n',(cx,hy))
-    body=sway_body(t,vel)
-    paste(c,body,CFG['hip'],-lean,hip)
+    paste(c,sway_torso(t,vel),CFG['hip'],tor,hip)
+    # head: steadier than the torso, a small nod settling after each footfall
+    paste(c,sway_head(t,vel),CFG['head_neck'],tor*0.4+1.6*math.sin(2*ph-1.4),at(CFG['neck'],-2*roll))
+    # sword arm in front: the heavy blade swings back a little as the near leg comes forward
+    paste(c,parts['sarm'],CFG['sarm_top'],-5*roll+tor*0.6,at(CFG['sshoulder'],-7*roll))
     return c,hy,Ln,Lf

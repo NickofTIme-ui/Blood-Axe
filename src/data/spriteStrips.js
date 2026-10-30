@@ -17,7 +17,7 @@ export const CHARACTER_STRIPS = {
   ulric: {
     // walk2 sets the size; the others were drawn "same scale" so they borrow its scale
     // (crouched or tucked poses would otherwise be blown up to full standing height)
-    walk2:   { file: 'assets/sprites/strips/ulric_walk2.png', frames: 12, align: 'median', ground: 'drawn' },
+    walk2:   { file: 'assets/sprites/strips/ulric_walk2.png', frames: 16, align: 'median', ground: 'drawn' },
     // the same walk seen from other sides (view/Heading.js): U = from behind (walking
     // away, up the screen), D = from the front, UD / DD = three-quarter back / front
     walkU:   { file: 'assets/sprites/strips/ulric_walkU.png', frames: 8, align: 'median', ground: 'drawn' },
@@ -92,9 +92,9 @@ export const ANIM_OVERRIDES = {
     // going in or out of a swing) with smooth eased breathing on top (SpriteFighterView)
     idle: { needs: ['combo1'], frames: seq('combo1', [0]), fps: 1, loop: true, breathe: true },
     // Continuous, distance-driven march; use every drawing without duplicate holds.
-    // Side walk: ChatGPT-painted body and leg pieces, rigged into a 12-pose stride
+    // Side walk: ChatGPT-painted body and leg pieces, rigged into a 16-pose stride
     // (docs/rurik-walk). stride = world px per full cycle, so the planted foot doesn't slide.
-    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]), fps: 11, loop: true, march: true, stride: 92 },
+    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]), fps: 11, loop: true, march: true, stride: 94 },
     walkU: { needs: ['walkU'], frames: seq('walkU', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
     walkD: { needs: ['walkD'], frames: seq('walkD', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
     walkUD: { needs: ['walkUD'], frames: seq('walkUD', [0, 1, 2, 3, 4, 5, 6, 7, 8]), fps: 11, loop: true, march: true },
