@@ -94,7 +94,7 @@ export const ANIM_OVERRIDES = {
     // Continuous, distance-driven march; use every drawing without duplicate holds.
     // Side walk: ChatGPT-painted body and leg pieces, rigged into a 16-pose stride
     // (docs/rurik-walk). stride = world px per full cycle, so the planted foot doesn't slide.
-    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]), fps: 11, loop: true, march: true, stride: 94 },
+    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]), fps: 11, loop: true, march: true, stride: 80 },
     walkU: { needs: ['walkU'], frames: seq('walkU', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
     walkD: { needs: ['walkD'], frames: seq('walkD', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
     walkUD: { needs: ['walkUD'], frames: seq('walkUD', [0, 1, 2, 3, 4, 5, 6, 7, 8]), fps: 11, loop: true, march: true },

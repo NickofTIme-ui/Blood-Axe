@@ -32,6 +32,10 @@ turning against the hips). The torso rocks a degree or two each step, the head s
 steadier with a small nod, and the cape and hair are warped so they trail and lag the bob.
 
 bake.py prints `stride_world`: world px per full cycle. It is the walk anim's `stride`
-in data/spriteStrips.js (94), which view/MarchCycle.js uses so the feet don't slide.
+in data/spriteStrips.js (80), which view/MarchCycle.js uses so the feet don't slide.
 
 Not redone yet: the up/down and three-quarter walks (walkU/D/UD/DD).
+
+Round 5 (Nick: "his head shrunk"): the painted legs were long, so sizing the whole figure
+to his old height shrank the upper body. rig.py now draws the legs at 78% length / 92%
+width, boots at 74% and the head at 122% (CFG leg_len, leg_w, boot_scale, head_scale).
