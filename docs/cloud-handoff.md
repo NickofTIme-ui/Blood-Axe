@@ -6,6 +6,18 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 2 November 2026 (cloud, branch `claude/project-thread-98rwfm` on top of the props branch
+  `claude/project-thread-b5hipz` + main, NOT on main, not on itch): GRAB AND THROW. D-pad right
+  (F on the keys, NUM 9 for keyboard player 2) grabs the man in front (`combat/Grab.js`; no
+  bosses or giants), hoists him and yokes him across the shoulders (walk slowly with him), the
+  next press of grab / attack / heavy / kick throws him where the stick points. He flies flat
+  and low (`GRAB.float`), plows through men (they go down and bowl on), smashes props
+  (`Fighter.bump`) and a ledge's drop kills him (his thrower's kill). D-pad right still moves a
+  story line on when nobody is in reach. Rurik's 8 painted poses: `assets/sprites/heroes-hd/
+  rurik-ulricOath-grab.png`, baked by `tools/bake-grab-strip.py`, listed in `data/grabArt.js`
+  (NOT in heroHdAssets.js, which the PC's compile-hero-hd.mjs regenerates). The ChatGPT
+  originals are in project files `grab-throw/`. Mage and Rogue borrow poses for now.
+  `tests/grab-throw-test.js`. `'grab'` is appended to `core/TickInput.js` ACTIONS (online).
 - 2 November 2026, round 3 (cloud, same branch, NOT on main): props sized to the fighters (Nick:
   "a lot of them are tiny"): view/StageView.js PROP_HEIGHT fits each painting to a height (barrel 70,
   crate 60, stall 150, lamp post about 185) whatever size it was painted; data/stage.js PROPS w/h to

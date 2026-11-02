@@ -132,6 +132,10 @@ export const ANIM_OVERRIDES = {
     kingsfire: { needs: ['wrath'], phases: { startup: seq('wrath', [0, 1, 2]), active: seq('wrath', [3, 4]), recovery: seq('wrath', [5]) } },
     // launch off the rear foot, arms and blade driven fully out and HELD, then pull back
     thrust: { needs: ['thrust'], phases: { startup: seq('thrust', [0, 1]), active: seq('thrust', [2, 3, 3, 3]), recovery: seq('thrust', [3, 3, 4, 5]) } },
+    // GRAB AND THROW (combat/Grab.js, SpriteFighterView grabFrame): 0 ready, 1 the lunge,
+    // 2 hauling him in, 3 the heave, 4 the yoke, 5 the yoke mid-stride, 6 leaning back,
+    // 7 the throw (data/grabArt.js; until his strip is in he borrows the nearest poses)
+    grab: { needs: ['grab'], poses: seq('grab', [0, 1, 2, 3, 4, 5, 6, 7]) },
   },
 };
 // With Oathkeeper: the same moves, plus his own poses for what still came off the old sheet

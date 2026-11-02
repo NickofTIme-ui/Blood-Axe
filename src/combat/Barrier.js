@@ -118,7 +118,7 @@ export class Barriers {
       for (const f of w.fighters) {
         if (f.removeMe) continue;
         // (a finisher places its victims itself)
-        if (f.state === 'executed' || f.state === 'execute') continue;
+        if (f.state === 'executed' || f.state === 'execute' || f.state === 'grabbed') continue;
         let side = b.sides.get(f.id);
         if (side === undefined) {
           side = Math.sign(f.x - b.x) || 1;

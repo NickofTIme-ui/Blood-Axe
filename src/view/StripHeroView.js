@@ -104,6 +104,19 @@ export class StripHeroView {
       case 'dead':
       case 'burning': return A.lying.frames[0];
       case 'getup': return easedSpread(A.getup.frames, fr / Math.max(1, f.stats.getupFrames));
+      // GRAB AND THROW (combat/Grab.js): her / his own painted strip when it's in (anims.grab
+      // poses, as Rurik's), else the guard raised for the hold and a spell's release for the throw
+      case 'grab': {
+        const g = f.grab ?? {};
+        const own = A.grab?.poses;
+        const up = A.block.frames[0];
+        const out = (A.force ?? A.knife ?? A.bolt ?? A.block).frames;
+        const P = own ?? [A.idle.frames[0], A.hitstun.frames[0], up, up, up, up, out[0], out[out.length - 1]];
+        if (g.released != null) return P[7];
+        if (g.throwAt != null) return P[6];
+        if (g.caughtAt == null) return P[1];
+        return fr - g.caughtAt < 10 ? P[2] : f.carrying && own ? (Math.floor(tick / 14) % 2 ? P[5] : P[4]) : P[4];
+      }
       case 'execute': {
         // his own finisher strip when it's drawn, else the borrowed poses
         const fin = A[`fin_${f.exec?.kind}`]?.frames ?? A.finisher?.[f.exec?.kind];

@@ -82,6 +82,7 @@
 // standing near someone can do right now, for the view.
 
 import { NARRATION, MINOR, ALWAYS_BOXED } from '../data/speakers.js';
+import { grabTarget } from '../combat/Grab.js';
 import { updateStableMaster } from './StableMaster.js';
 
 // (wait: a line never moves on by itself — Nick: the text went by too fast. false: lines
@@ -357,7 +358,9 @@ export class Story {
     // whole conversation (the fight buttons stay the fight's)
     if (c.age >= Math.max(LINE.minSkip, minFrames)) {
       for (const p of heroes) {
-        if (p.controller.consume('padRight', 4)) next = true;
+        // (not when that press grabbed a man: combat/Grab.js)
+        const grabbing = p.state === 'grab' && p.fsm.frame <= 1 || (p.controller.peek('grab') && grabTarget(p));
+        if (!grabbing && p.controller.consume('padRight', 4)) next = true;
         if (p.controller.consume('padLeft', 4)) { next = true; c.skipAll = true; c.index = c.beat.lines.length - 1; }
       }
     }

@@ -3,6 +3,7 @@
 // automated tests (see tests/logic-test.js).
 
 import { SETTINGS } from '../config/settings.js';
+import { updateThrown } from '../combat/Grab.js';
 import { EventBus } from './EventBus.js';
 import { CombatSystem } from '../combat/CombatSystem.js';
 import { Projectile } from '../entities/Projectile.js';
@@ -125,6 +126,7 @@ export class World {
     for (const p of this.projectiles) p.update(this.bounds);
     this.separate();
     this.bowling();
+    updateThrown(this); // (a thrown man plows through the men in his road: combat/Grab.js)
     this.barriers.update(); // (last word on where people stand: nobody is shoved through a wall)
     this.mines.update();
     this.combat.update();
@@ -146,7 +148,7 @@ export class World {
   separate() {
     // (nobody gets shoved out of an execution: it places both of them itself; a boss walking
     // in isn't held back by a hero standing in his road, or he'd never arrive)
-    const fs = this.fighters.filter((f) => f.alive && f.grounded && !['dodge', 'blink', 'viper', 'vault', 'execute', 'executed', 'bossEntrance'].includes(f.state));
+    const fs = this.fighters.filter((f) => f.alive && f.grounded && !['dodge', 'blink', 'viper', 'vault', 'execute', 'executed', 'bossEntrance', 'grab', 'grabbed'].includes(f.state));
     for (let i = 0; i < fs.length; i++) {
       for (let j = i + 1; j < fs.length; j++) {
         const a = fs[i];

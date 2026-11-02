@@ -26,6 +26,7 @@ export const CONTROLS = {
     kick:   ['O'],          // forward Sparta kick: breaks guards, sends people flying
     jump:   ['SPACE'],
     sprint: ['C'],          // sprint on / off (while moving)
+    grab:   ['F'],          // grab the man in front of you, then press again to throw him (left stick / keys aim)
 
     // Menus / system
     confirm: ['ENTER', 'J', 'SPACE'],
@@ -40,6 +41,7 @@ export const CONTROLS = {
     // padUp: INTERACT (E): talk to a survivor, open a cage's lock (hold) — stage/Story.js
     // padDown: Rurik's 360 WHIRLWIND CLEAVE once he has Executioner's Arc (H on the keys)
     // padRight / padLeft: a story line — on to the next (N) / skip the conversation (X)
+    // (D-pad right is also GRAB — `grab` above: with a man in reach it grabs him instead)
     padUp: ['E'], padDown: ['H'], padLeft: ['X'], padRight: ['N'],
   },
 
@@ -53,6 +55,7 @@ export const CONTROLS = {
     kick:   [5],     // RB — Sparta kick
     magic:  [4, 6],  // LB or LT
     sprint: [10],    // click the left stick: sprint on / off
+    grab:   [15],    // D-pad right: grab, then again (or X / Y / RB) to throw where the stick points
     confirm: [0, 9],
     pause:   [9],    // Start
     restart: [3],    // Y — only acts on the death screen (it's the heavy button in a fight)
@@ -75,7 +78,7 @@ export const CONTROLS_P2 = {
   keyboard: {
     left: ['LEFT'], right: ['RIGHT'], up: ['UP'], down: ['DOWN'],
     attack: ['NUMPAD_ONE'], heavy: ['NUMPAD_TWO'], block: ['NUMPAD_THREE'],
-    dodge: ['NUMPAD_ZERO'], kick: ['NUMPAD_FOUR'], magic: ['NUMPAD_FIVE'], jump: ['NUMPAD_SIX'], sprint: ['NUMPAD_SEVEN'],
+    dodge: ['NUMPAD_ZERO'], kick: ['NUMPAD_FOUR'], magic: ['NUMPAD_FIVE'], jump: ['NUMPAD_SIX'], sprint: ['NUMPAD_SEVEN'], grab: ['NUMPAD_NINE'],
     confirm: ['NUMPAD_ONE', 'ENTER'], pause: ['ENTER'], restart: [], menu: [], debug: [], gore: [], mute: [],
     padUp: ['NUMPAD_EIGHT'], padRight: ['NUMPAD_NINE'], padLeft: ['NUMPAD_ADD'],
   },

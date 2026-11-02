@@ -159,6 +159,9 @@ export class SpriteEnemyView {
         if (A.kneel) return A.kneel.frames[fr < SENTENCE.drop * 0.5 ? 0 : f.defiant ? 2 : 1];
         return fr < 8 ? A.hit.frames[0] : A.idle.frames[0];
       case 'jump': return A.air.frames[0];
+      // picked up and yoked overhead (combat/Grab.js): his stance, upright, turned flat by
+      // grabSpin (the hit and knocked-flying poses lean back: turned, they'd hang askew)
+      case 'grabbed': return A.idle.frames[0];
       // held by an executioner: struggling in his grip / run through / frozen in terror
       case 'executed':
         // caught, but still running: a few more stumbling strides before he's stopped
@@ -492,6 +495,7 @@ export class SpriteEnemyView {
     }
     s.setScale(k * face * (1 - breathe * 0.006) * wide, k * (1 + breathe * 0.014) * tall);
     s.angle = angle * face;
+    this.grabSpin(s, f, tick);
     s.setAlpha(alpha);
 
     this.drawHook();
@@ -507,6 +511,33 @@ export class SpriteEnemyView {
         if (f.hitstop === 0) smearSparks(this.scene.gore, f, sm, fr);
       }
     }
+  }
+
+  // Grabbed and yoked (combat/Grab.js): turned over flat across the hero's shoulders,
+  // kicking; thrown: he tumbles end over end until he lands. Both turn him about the middle
+  // of his body (the sim's x / h are his middle while he's held), not about his feet.
+  grabSpin(s, f, tick) {
+    const held = f.state === 'grabbed' && f.grabbedBy;
+    const flying = f.state === 'knockdown' && f.thrown && f.lyingSince === null;
+    if (!held && !flying) { this.thrownAt = null; return; }
+    const half = f.stats.body.h * 0.5 * depthScale(f.z) * (f.stats.size ?? 1);
+    let deg;
+    let cx; let cy;
+    if (held) {
+      const dir = f.grabbedBy.facing;
+      deg = 90 * (f.grabRot ?? 0) * dir + Math.sin(tick * 0.55) * 5 * (f.grabRot ?? 0);
+      cx = f.x; cy = f.z - f.h;
+      this.spinDir = dir;
+    } else {
+      if (this.thrownAt == null) this.thrownAt = tick;
+      const dir = Math.sign(f.vx) || this.spinDir || 1;
+      deg = 90 * dir + (tick - this.thrownAt) * 15 * dir;
+      cx = f.x; cy = f.z - f.h - half * 0.6;
+    }
+    // turn him about the middle of his body: half a body up from his feet (the frame's origin)
+    const r = (deg * Math.PI) / 180;
+    s.setPosition(cx - Math.sin(r) * half, cy + Math.cos(r) * half);
+    s.angle = deg;
   }
 
   // A killing blow cut him in two (effects/Gore.js cutSprite): what's left of him that has

@@ -22,6 +22,7 @@ import { softShadow } from './atmosphere.js';
 import { BladeTrail } from './BladeTrail.js';
 import { MarchCycle } from './MarchCycle.js';
 import { SUNDER } from '../combat/Juggle.js';
+import { GRAB } from '../combat/Grab.js';
 
 const ATTACKS = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'airAttack', 'kick', 'thrust', 'spin', 'shoulder'];
 
@@ -146,6 +147,7 @@ export class SpriteFighterView {
 
     switch (st) {
       case 'execute': return this.finisherFrame(fr);
+      case 'grab': return this.grabFrame(fr);
       case 'charge': {
         // both hands onto the hilt, draw back, then fully coiled and held
         const fs = a.charge?.frames;
@@ -335,6 +337,30 @@ export class SpriteFighterView {
     const kind = ex.kind === 'pending' ? 'throat' : ex.kind;
     const own = a[`fin_${kind}`];
     return keyAt(own?.keys ?? FIN_KEYS[kind], fr);
+  }
+
+  // GRAB AND THROW (combat/Grab.js): his own painted strip (anims.grab: 0 ready, 1 the
+  // lunge, 2 hauling him in, 3 the heave, 4 the yoke, 5 the yoke mid-stride, 6 leaning back,
+  // 7 the throw) when it's in; until then the nearest poses he has.
+  grabFrame(fr) {
+    const f = this.f;
+    const g = f.grab ?? {};
+    const own = this.meta.anims.grab;
+    const has = (ref) => this.scene.textures.exists(`${this.key}-${ref.split(':')[0]}`);
+    const pick = (...refs) => refs.find(has) ?? 'combo1:0';
+    const P = own ? own.poses : [
+      pick('combo1:0'), pick('shoulder:4', 'kick:1'), pick('charge:1'), pick('finImpale:8', 'charge:3'),
+      pick('finImpale:3', 'charge:3'), pick('finImpale:3', 'charge:3'), pick('cast:1', 'finImpale:3'), pick('cast:3', 'combo3:3'),
+    ];
+    if (g.released != null) return fr - g.released < GRAB.recover * 0.7 ? P[7] : P[0];
+    if (g.throwAt != null) return P[6];
+    if (g.caughtAt == null) return fr < GRAB.catch - 2 ? P[0] : P[1];
+    const since = fr - g.caughtAt;
+    if (since < GRAB.lift * 0.3) return P[2];
+    if (since < GRAB.lift * 0.75) return P[3];
+    // yoked: a heavy step when he walks with him
+    if (f.carrying) return Math.floor((f.world?.frame ?? 0) / 14) % 2 ? P[5] : P[4];
+    return P[4];
   }
 
   setFrameRef(ref) {

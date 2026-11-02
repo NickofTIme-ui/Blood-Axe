@@ -1,12 +1,14 @@
 import {HERO_HD} from '../data/heroHdAssets.js';
 import {ANIM_OVERRIDES} from '../data/spriteStrips.js';
 import {HERO_ANIMS} from '../data/heroStrips.js';
+import {GRAB_SHEETS} from '../data/grabArt.js';
+const SHEETS=[...HERO_HD.sheets,...GRAB_SHEETS]; // (the grab and throw: data/grabArt.js)
 
 const textureKey=s=>['ulric','ulricOath'].includes(s.key)?`${s.key}-${s.name}`:`hero-${s.key}-${s.name}`;
-export function preloadHeroHd(scene){for(const s of HERO_HD.sheets)if(s.baseFirst==null)scene.load.image(textureKey(s),s.file);}
+export function preloadHeroHd(scene){for(const s of SHEETS)if(s.baseFirst==null)scene.load.image(textureKey(s),s.file);}
 export function installHeroHd(scene){
  const have={ulric:new Set(),ulricOath:new Set(),mage:new Set(),rogue:new Set()};
- for(const s of HERO_HD.sheets){
+ for(const s of SHEETS){
   if(s.baseFirst!=null)continue;const key=textureKey(s),tex=scene.textures.get(key);
   for(let i=0;i<s.frames;i++)tex.add(`f${i}`,0,i%s.cols*s.fw,Math.floor(i/s.cols)*s.fh,s.fw,s.fh);
   tex.setFilter(Phaser.Textures.FilterMode.LINEAR);have[s.key].add(s.name);

@@ -927,7 +927,7 @@ export class Stage {
     if (st !== 'blow') return;
     const T = this.terrain; const B = this.world.bounds;
     for (const f of this.world.fighters) {
-      if (!f.alive || f.entering || f.held || f.stats.machine || f.state === 'executed' || f.state === 'execute') continue;
+      if (!f.alive || f.entering || f.held || f.stats.machine || f.state === 'executed' || f.state === 'execute' || f.state === 'grabbed') continue;
       if (f.x < hz.x0 || f.x > hz.x1 || (hz.ground && !f.grounded)) continue;
       if (hz.shelter && f.z <= hz.shelter.z) continue;
       const band = hz.bands ? hz.bands.find((q) => f.z >= q.z0 && f.z < q.z1) : hz;
@@ -1756,7 +1756,7 @@ export class Stage {
   // A hazard hurting anyone (players and enemies alike).
   hurt(hz, f, dmg, dir, kind) {
     const crushed=kind==='trample'&&f.team!=='player'&&!f.stats.boss;
-    if (!f.alive || (f.invincible&&!crushed) || f.entering || f.cinematic || f.state === 'executed' || f.state === 'execute' || hz.cool.has(f.id)) return;
+    if (!f.alive || (f.invincible&&!crushed) || f.entering || f.cinematic || f.state === 'executed' || f.state === 'execute' || f.state === 'grabbed' || hz.cool.has(f.id)) return;
     if(crushed)dmg=f.health+f.stats.maxHealth;
     if ((f.spare || f.immortal) && f.health - dmg < 1) dmg = Math.max(0, f.health - 1); // (beaten to his knees, never killed: Sequence.js; immortal: config/testMode.js)
     if (kind === 'fire' && f.state === 'knockdown' && f.lyingSince === null) return; // already thrown clear

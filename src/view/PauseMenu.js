@@ -5,7 +5,7 @@ import { pressed } from '../core/TickInput.js';
 const TYPE = "'Source Sans 3', Arial, sans-serif";
 const TITLE = "'Cinzel', Georgia, serif";
 const PAD = {0:'A',1:'B',2:'X',3:'Y',4:'LB',5:'RB',6:'LT',7:'RT',8:'View',9:'Menu',10:'L3',12:'D-pad Up',13:'D-pad Down',14:'D-pad Left',15:'D-pad Right'};
-const ACTIONS = [['Move','move'],['Light attack / combo','attack'],['Heavy attack','heavy'],['Block / parry','block'],['Dodge roll','dodge'],['Kick','kick'],['Jump','jump'],['Spell','magic'],['Sprint','sprint'],['Talk / interact','padUp']];
+const ACTIONS = [['Move','move'],['Light attack / combo','attack'],['Heavy attack','heavy'],['Block / parry','block'],['Dodge roll','dodge'],['Kick','kick'],['Jump','jump'],['Spell','magic'],['Sprint','sprint'],['Grab / throw','grab'],['Talk / interact','padUp']];
 
 // One compact pause panel; control bindings live on their own nested page. The main page has
 // the buttons on the left and, on the right, what the HUD used to show in play: where you are,

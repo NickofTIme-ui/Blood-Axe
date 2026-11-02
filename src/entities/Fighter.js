@@ -12,6 +12,7 @@ import { StateMachine } from '../core/StateMachine.js';
 import { FIGHTER_STATES, actionCancel } from './fighterStates.js';
 import { STEP, FOOT } from '../stage/Terrain.js';
 import { JUGGLE } from '../combat/Juggle.js';
+import { GRAB } from '../combat/Grab.js';
 
 let nextId = 1;
 
@@ -143,7 +144,9 @@ export class Fighter {
   bump(o, vx, vz = 0) {
     if (!o?.prop) return false;
     const rolling = this.state === 'dodge' && Math.hypot(vx, vz) >= 150;
-    if (!rolling && (Math.abs(vx) < 200 || (this.state !== 'knockdown' && this.state !== 'charge'))) return false;
+    // (a thrown man smashes through whichever way he was thrown: combat/Grab.js)
+    const speed = this.thrown ? Math.hypot(vx, vz) : Math.abs(vx);
+    if (!rolling && (speed < 200 || (this.state !== 'knockdown' && this.state !== 'charge'))) return false;
     this.world.events.emit('solidSmashed', { prop: o.prop, dir: Math.sign(vx) || Math.sign(o.prop.x - this.x) || this.facing, fighter: this });
     return !!o.prop.broken;
   }
@@ -175,15 +178,15 @@ export class Fighter {
       const nx = this.x + this.vx * dt;
       const hitX = wall(nx, this.z);
       if (!hitX) this.x = nx;
-      else if (this.bump(hitX, this.vx)) { this.x = nx; this.vx *= 0.72; } // (through it, the pieces flying)
+      else if (this.bump(hitX, this.vx)) { this.x = nx; this.vx *= this.thrown ? 0.86 : 0.72; } // (through it, the pieces flying)
       else { this.slideRound(hitX, dt); if (!air) this.vx = 0; this.walled = true; }
       const nz = this.z + this.vz * dt;
       const hitZ = wall(this.x, nz);
       if (!hitZ) this.z = nz;
-      else if (this.state === 'dodge' && this.bump(hitZ, this.vx, this.vz)) this.z = nz; // (rolled through it)
+      else if ((this.state === 'dodge' || this.thrown) && this.bump(hitZ, this.vx, this.vz)) { this.z = nz; if (this.thrown) this.vz *= 0.72; } // (rolled or thrown through it)
       else { if (!air) this.vz = 0; this.walled = true; }
       // carried into a wall (a finisher places both men itself): out the nearest side once it lets go
-      if (this.state !== 'execute' && this.state !== 'executed') {
+      if (this.state !== 'execute' && this.state !== 'executed' && this.state !== 'grabbed') {
         const out = T?.pushOut(this.x, this.z, this.h, b);
         if (out) { this.x = out.x; this.z = out.z; }
         // (inside a prop: dropped on it, spawned on it) out its nearest side, left or right
@@ -207,7 +210,9 @@ export class Fighter {
     if (this.h > this.floor || this.vh > 0) {
       // (a flung enemy falls hard: combat/Juggle.js fallGravity)
       const heavy = this.vh < 0 && this.team !== 'player' && this.state === 'knockdown';
-      this.vh -= this.stats.gravity * (heavy ? JUGGLE.fallGravity : 1) * dt;
+      // (thrown: a long, flat flight into whatever's in his road — combat/Grab.js)
+      const thrown = this.thrown && !this.thrown.landed && !this.thrown.chain ? GRAB.float : 1;
+      this.vh -= this.stats.gravity * (heavy ? JUGGLE.fallGravity : 1) * thrown * dt;
       this.h += this.vh * dt;
       if (this.h <= this.floor) {
         this.landedFrom = this.peakH !== undefined ? this.peakH - this.floor : 0;

@@ -15,6 +15,7 @@ import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher } from '
 import { rogueStates, rollMine,isRogueFinisher, rogueFinisherStart, runRogueFinisher, vaultTarget } from '../combat/Rogue.js';
 import { skillStates, plungeReady } from '../combat/Skills.js';
 import { JUGGLE, SUNDER, juggleLand, airMoveFor } from '../combat/Juggle.js';
+import { grabStates, grabTarget, thrownLand } from '../combat/Grab.js';
 
 const FEEL = SETTINGS.feel;
 
@@ -143,6 +144,12 @@ export function tryActions(f, allowed = null) {
   if (ok('kick') && usable(f, s.moves.kick) && ready(f, s.moves.kick, stateFor(f, 'kick')) && c.consume('kick')) {
     f.fsm.change(stateFor(f, 'kick'));
     return true;
+  }
+  // GRAB AND THROW (combat/Grab.js): D-pad right / F — only with a man in reach (the
+  // same press moves a story line on otherwise: stage/Story.js)
+  if (ok('grab') && f.team === 'player' && c.peek('grab')) {
+    c.consume('grab');
+    if (f.grounded && grabTarget(f)) { f.fsm.change('grab'); return true; }
   }
   // Rurik's WHIRLWIND CLEAVE (Executioner's Arc, combat/Skills.js): D-pad down / H
   if (ok('spin') && s.moves.spin && c.peek('padDown') && ready(f, s.moves.spin, 'spin')) {
@@ -893,7 +900,7 @@ export const FIGHTER_STATES = {
   knockdown: {
     enter(f, p) {
       f.vx = p.vx ?? 0;
-      f.vz = 0;
+      f.vz = p.vz ?? 0; // (sideways only when thrown that way: combat/Grab.js)
       f.vh = p.vh ?? 250;
       f.h = Math.max(f.h, 0.01);
       f.lyingSince = null;
@@ -902,6 +909,7 @@ export const FIGHTER_STATES = {
       if (f.lyingSince === null) {
         // Still flying through the air.
         if (f.grounded && frame > 1) {
+          if (f.thrown && thrownLand(f)) return; // (thrown: slammed into the ground — combat/Grab.js)
           if (f.health > 0 && juggleLand(f)) return; // (a spike: he bounces once — combat/Juggle.js)
           f.lyingSince = frame;
           f.world.events.emit('landHard', { fighter: f });
@@ -966,4 +974,5 @@ export const FIGHTER_STATES = {
 Object.assign(FIGHTER_STATES, mageStates({ tryActions, stopMoving, friction, faceInput, aimTurn }));
 // ...and the Rogue's (combat/Rogue.js)
 Object.assign(FIGHTER_STATES, rogueStates({ tryActions, stopMoving, friction, faceInput, makeAttackState }));
+Object.assign(FIGHTER_STATES, grabStates({ stopMoving, friction })); // (grab and throw: combat/Grab.js)
 Object.assign(FIGHTER_STATES, skillStates({ tryActions, stopMoving, friction, movePhase, faceInput, aimTurn, inWindow })); // (the skill tree's moves: combat/Skills.js)

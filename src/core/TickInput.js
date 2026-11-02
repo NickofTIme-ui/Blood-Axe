@@ -16,7 +16,9 @@ export const ACTIONS = ['left', 'right', 'up', 'down', 'attack', 'heavy', 'block
   'confirm', 'pause', 'restart', 'menu', 'sprint', 'padUp', 'padDown', 'padLeft', 'padRight',
   // (not a button: held while this machine's campaign tally is up, so online both games
   // know when both players are ready to move on: ArenaScene.netWonKeys)
-  'ready'];
+  'ready',
+  // D-pad right / F: grab and throw (combat/Grab.js)
+  'grab'];
 const BIT = Object.fromEntries(ACTIONS.map((a, i) => [a, 1 << i]));
 
 export const EMPTY = [0, 0, 0, 0];

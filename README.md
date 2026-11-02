@@ -34,6 +34,7 @@ from files opened directly, so the game needs that little server.
 | Light attack (tap 3× for combo) | J | X |
 | Heavy attack (breaks guard) | K | Y |
 | **Sparta kick** (breaks blocks & shields, sends them bowling into others) | O | RB |
+| **Grab and throw**: grab the man in front, he's hoisted across your shoulders (walk with him), press again (or attack) to throw him the way you're pointing: through other men, through crates and barrels, off ledges | F, then F / J / K / O | D-pad Right, then D-pad Right / X / Y / RB |
 | Block (hold) / **Parry** (tap just before a hit) | L | RT |
 | Turn your guard while blocking | ← / → while holding block | stick while holding RT |
 | Dodge roll (invincible at the start; up/down rolls into or out of the screen) | Shift or I (+ direction) | B |
