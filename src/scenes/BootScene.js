@@ -22,6 +22,7 @@ import { warmGore } from '../effects/goreArt.js';
 import { introFinished } from '../core/StartupIntro.js';
 import {HERO_HD} from '../data/heroHdAssets.js';
 import {preloadHeroHd,installHeroHd} from '../view/heroHd.js';
+import { preloadBloodied } from '../view/BloodCoat.js';
 
 // Textures read only by Boot itself, to cut the game's sheets from (released once it has).
 const BOOT_ONLY_SOURCE = /^(estrip-|hstrip-|lvlsrc-|sprsrc-|plxsrc-|plxcut-|groundsrc-|fxsrc-|hero-src-)|^(skysrc|pillarsrc)$/;
@@ -33,12 +34,12 @@ export class BootScene extends Phaser.Scene {
 
   preload() {
     preloadHeroHd(this);
+    preloadBloodied(this); // his bloodied repaints (view/BloodCoat.js)
     for(const name of ['gallows','mechanisms','irvolino-bound','executioner-actions','executioner-lever'])this.load.image(`mill-${name}`,`assets/npcs/mill-rescue/${name}.png`);
     this.load.image('pause-frame','assets/ui/pause-frame.png');
     for(const side of ['foe','ally'])for(const mode of ['full','compact'])this.load.image(`dialogue-${side}-${mode}`,`assets/ui/dialogue/${side}-${mode}.png`); // the story's red / blue boxes (view/DialogueBox.js)
     this.load.image('executioner-banner','assets/ui/executioner-banner.png'); // the hangman's clock plaque (scenes/HUDScene.js)
     this.load.image('blood-ink-sheet','assets/fx/blood-ink-sheet.png');
-    this.load.image('hero-blood-splats','assets/fx/hero-blood-splats.png'); // blood on the heroes (view/BloodCoat.js)
     this.load.image('impale-puncture-rim', 'assets/fx/impale-puncture-rim.png');
     this.load.image('kingswrath-mark', 'assets/fx/kingswrath-mark.png'); // the brand Oathkeeper burns into the floor (effects/WrathFX.js cracks)
     this.load.image('rurik-oathkeeper-raised','assets/cinematics/rurik-oathkeeper-raised.png');
