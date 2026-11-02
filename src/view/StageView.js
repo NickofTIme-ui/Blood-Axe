@@ -18,6 +18,7 @@ import { DANGER } from './dangerCue.js';
 import { cutPieces, keyLayer } from './envArt.js';
 import { drawScorpion, listenScorpion } from './VincentView.js';
 import { SiegeAnim } from './SiegeAnim.js';
+import { PropShatter, SHATTER, LAMP_ART } from './PropShatter.js';
 import { propLight, lightProp, rimGlow, groundUnder, moveGround } from './propGround.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -51,7 +52,12 @@ export class StageView {
     this.buildSections();
     this.propSprites = new Map();
     this.siege = new SiegeAnim(this); // (the archer posts and catapults: view/SiegeAnim.js)
-    for (const pr of stage.props) this.propSprites.set(pr.id, this.makeProp(pr));
+    this.shatter = new PropShatter(this); // (props bursting into pieces of themselves: view/PropShatter.js)
+    for (const pr of stage.props) {
+      const v = this.makeProp(pr);
+      if (pr.under !== undefined) v.ground?.forEach((g) => g.setVisible(false)); // (stacked: its shadow is the crate under it)
+      this.propSprites.set(pr.id, v);
+    }
     this.pickupSprites = new Map();
     this.listen();
   }
@@ -601,6 +607,7 @@ export class StageView {
   // ------------------------------------------------------------ props
 
   makeProp(pr) {
+    if (pr.kind === 'lamppost' || pr.kind === 'haycart') return this.makeStreetProp(pr);
     const key = `prop-${pr.kind}`;
     // (a level's painted prop, data/levelArt.js: sized to the prop, whatever size it was painted)
     const lvl = (this.scene.registry.get('levelArt') ?? []).includes(key);
@@ -634,8 +641,42 @@ export class StageView {
     return v;
   }
 
+  // The village's lamp posts and hay carts: their paintings are the street clutter's
+  // (assets/env/village/decor_lantern.png, the whole half of prop_cart.png)
+  makeStreetProp(pr) {
+    const lamp = pr.kind === 'lamppost';
+    const key = lamp ? 'lvl-village-decor_lantern' : 'cartwreck';
+    const T = this.scene.textures;
+    const src = T.exists(key) ? T.get(key).getSourceImage() : null;
+    const drawW = lamp ? 60 : pr.w * 1.45; // (a lamp post as wide as the street clutter's: 60)
+    const y = pr.y ?? 0;
+    const img = this.scene.add.image(pr.x, pr.z - y, key).setOrigin(0.5, 1).setDepth(pr.z);
+    const s = src ? drawW / src.width : 1;
+    img.setScale(s);
+    if (pr.flip) img.setFlipX(true);
+    const v = { img, s };
+    v.ground = groundUnder(this.scene, pr.x, pr.z - y - 2, lamp ? drawW * 0.45 : drawW * 0.75, pr.z - 1, { seed: pr.id });
+    if (lamp) {
+      // (its flame lights the street round it, flickering, as the street clutter's did)
+      const L = this.shatter.lanternAt(v);
+      v.glow = this.scene.add.image(L.x, L.y, 'glow').setScale(1.6).setTint(0xff8a30).setAlpha(0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(pr.z + 0.1);
+      this.scene.tweens.add({ targets: v.glow, alpha: { from: 0.28, to: 0.5 }, duration: 240 + (pr.x % 180), yoyo: true, repeat: -1 });
+    }
+    return v;
+  }
+
   propHit(pr, dir) {
     const v = this.propSprites.get(pr.id);
+    if (SHATTER[pr.kind]) {
+      // knocked: it rocks on its foot and settles back, a crack of wood
+      v.img.setAngle(0);
+      this.scene.tweens.add({ targets: v.img, angle: dir * (pr.kind === 'lamppost' ? 4 : pr.kind === 'haycart' ? 2 : 7), duration: 70, yoyo: true, ease: 'Quad.easeOut' });
+      if (pr.kind === 'lamppost' || pr.kind === 'haycart') {
+        playSfx(this.scene, 'doorClose2', { volume: 0.6, pitch: -400 + Math.random() * 300, minGapMs: 0 });
+        this.chips(pr, 8, dir);
+        return;
+      }
+    }
     if (pr.kind === 'archers' || pr.kind === 'catapult') this.siege.hit(pr, dir);
     playSfx(this.scene, pr.kind === 'wall' ? 'block' : 'kick', { volume: 0.5, pitch: pr.kind === 'wall' ? -600 : -200, minGapMs: 0 });
     this.scene.tweens.add({ targets: v.img, x: pr.x + dir * 4, duration: 40, yoyo: true, repeat: 1 });
@@ -644,12 +685,30 @@ export class StageView {
     if (pr.kind === 'wall') v.img.setTint(0xffffff - 0x101010 * (5 - pr.hp));
   }
 
-  propBreak(pr, dir, blast = false) {
+  propBreak(pr, dir, blast = false, power = 1) {
     const v = this.propSprites.get(pr.id);
+    if (pr.kind === 'lamppost') {
+      this.chips(pr, 10, dir);
+      v.ground?.forEach((g) => g.setAlpha(g.alpha * 0.5));
+      this.shatter.topple(pr, v, dir, 30);
+      return;
+    }
+    // it bursts into pieces of its own painting, flying the way it was driven (view/PropShatter.js)
+    const shard = SHATTER[pr.kind] && v.img?.active && !pr.fly;
+    if (shard) {
+      v.img.setAngle(0);
+      this.shatter.burst(pr, v.img, dir || 1, blast ? 3 : Math.max(1, power));
+      if (power >= 3 || blast) this.scene.fx?.shake(5, 12);
+      if (pr.kind === 'haycart') {
+        v.img.destroy(); v.glow?.destroy();
+        v.ground?.slice(0, 2).forEach((g) => g.setAlpha(g.alpha * 0.4));
+        return;
+      }
+    } else if (SHATTER[pr.kind]) this.shatter.burst(pr, v.img, dir || 1, 3);
     if (pr.kind === 'archers' || pr.kind === 'catapult') this.siege.burst(pr, dir); // (before the wreck goes in: it cuts the chunks from the piece as it stood)
-    playSfx(this.scene, 'kick', { volume: blast ? 1 : 0.8, pitch: blast ? -700 : -400, minGapMs: 0 });
+    if (!SHATTER[pr.kind]) playSfx(this.scene, 'kick', { volume: blast ? 1 : 0.8, pitch: blast ? -700 : -400, minGapMs: 0 });
     this.scene.fx?.shake(pr.kind === 'wall' || blast ? 6 : 3, blast ? 14 : 10);
-    this.chips(pr, pr.kind === 'wall' ? 40 : blast ? 46 : 18, dir);
+    this.chips(pr, pr.kind === 'wall' ? 40 : blast ? 46 : SHATTER[pr.kind] ? 10 : 18, dir);
     v.img.setAngle(0);
     if (blast) {
       // burst on an enemy: splinters both ways, a ring of dust, a hard flash
@@ -1564,7 +1623,26 @@ export class StageView {
     const ev = this.scene.world.events;
     listenScorpion(this);
     ev.on('propHit', ({ prop, dir }) => this.propHit(prop, dir));
-    ev.on('propBreak', ({ prop, dir, blast }) => this.propBreak(prop, dir, blast));
+    ev.on('propBreak', ({ prop, dir, blast, power }) => this.propBreak(prop, dir, blast, power));
+    ev.on('propImpact', ({ prop }) => { const v = this.propSprites.get(prop.id); if (v) this.shatter.lampLands(prop, v); });
+    // a hay cart catches (a lamp fell on it): the painted cart alight, then charred
+    ev.on('propIgnite', ({ prop }) => {
+      const v = this.propSprites.get(prop.id);
+      if (!v?.img?.active) return;
+      if (this.scene.textures.exists('cartwreck-broken')) v.img.setTexture('cartwreck-broken');
+      playSfx(this.scene, 'fireWhoosh', { volume: 0.9, pitch: -400, minGapMs: 0 });
+      this.scene.gore.spark(prop.x, prop.z, 30, 0xffa040, 30);
+    });
+    ev.on('propBurnt', ({ prop }) => {
+      const v = this.propSprites.get(prop.id);
+      if (!v?.img?.active || prop.broken) return;
+      v.img.setTexture('cartwreck').setTint(0x3a2c26);
+    });
+    // a crate stacked on one that broke lands: a thud and dust
+    ev.on('propLand', ({ prop }) => {
+      playSfx(this.scene, 'kick', { volume: 0.6, pitch: -900, minGapMs: 0 });
+      this.shatter.dust(prop, 0x8a7a64, 1);
+    });
     ev.on('chestOpen', ({prop}) => {
       const v=this.propSprites.get(prop.id);
       if(!v)return;
@@ -1689,6 +1767,21 @@ export class StageView {
     }
   }
 
+  // crates stacked on others: where they are now (one comes down when what it stood on goes)
+  syncStacked() {
+    for (const pr of this.stage.props) {
+      if (pr.under === undefined || pr.broken) continue;
+      const v = this.propSprites.get(pr.id);
+      if (!v?.img?.active || pr.fly) continue;
+      const y = pr.y ?? 0;
+      v.img.setPosition(pr.x, pr.z - y).setDepth(pr.z);
+      if (pr.fall) v.img.setAngle(v.img.angle + pr.fall.dir * 3);
+      else if (v.img.angle && !this.scene.tweens.isTweening(v.img)) v.img.setAngle(0);
+      v.rim?.setPosition(pr.x - v.img.displayWidth * 0.32, pr.z - y - v.img.displayHeight * 0.55);
+      if (v.ground && !v.landed && !pr.fall && pr.y === (pr.floorY ?? 0)) { v.landed = true; moveGround(v.ground, pr.x, pr.z - y); v.ground.forEach((g) => g.setVisible(true)); }
+    }
+  }
+
   // the convoy's wagon rolling up the road (Stage.updateRolling): it rocks on its wheels and
   // throws up mud; gone round the bend once it escapes
   syncRolling() {
@@ -1718,6 +1811,8 @@ export class StageView {
     this.chestHint.setVisible(!!chest && !chest.opened);
     if(chest)this.chestHint.setPosition(chest.x,chest.z-(chest.y??0)-chest.h-10).setDepth(chest.z+100);
     this.siege.update();
+    this.syncStacked();
+    this.shatter.update(this.scene.game.loop.delta);
     this.syncRolling();
     this.syncKicked();
     this.syncPickups();

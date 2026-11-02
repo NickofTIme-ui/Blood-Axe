@@ -6,6 +6,21 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 2 November 2026 (cloud, NOT on main until Nick says push, not on itch): level 1's props
+  smash well and there are more of them (Nick: "more barrels next to each other", "if a guy
+  gets knocked flying into barrels it all smashes nicely, or a torch lamp post"). Barrels and
+  crates stand in clusters, some crates stacked; a man flung into them goes through and they go
+  over in a row (`Stage.js` CHAIN: power 1 a light swing, 2 a heavy, 3 a body or a kicked
+  crate); a stacked crate comes down when the one under it goes. Four street lamps
+  (`lamppost`, the painted `decor_lantern`) are props now: they topple the way they're hit,
+  the lantern bursts where it lands and its oil burns for ~4 s (burns anyone in it). Two hay
+  carts (`haycart`, the painted `prop_cart.png` whole half): smash to planks and hay; a lamp
+  knocked onto the square's cart sets it alight (its painted burning half), ~12 s, then it's
+  charred. The stable herd smashes props in its lane. `view/PropShatter.js` cuts each breaking
+  prop into pieces of its own painting (staves, boards, shards) that fly, bounce and settle
+  flat, plus spilt ale / straw / grain / hay, dust and layered sound. No new art yet; still
+  wanted from ChatGPT: fence sections (whole + broken), a smashed lamp post, a smashed hay
+  cart, stacked-barrel and sack variants. `tests/prop-smash-test.js`.
 - 30 October 2026 (cloud): a rigged Rurik side walk (ChatGPT-painted pieces) went to main
   as 470b1bb and was REVERTED the same day: Nick wanted the original walk back. The pieces
   and rig scripts are kept in project files `rurik-walk/`, not in the repo.

@@ -138,9 +138,11 @@ export class Fighter {
 
   // Walked or flung into a prop: a man thrown hard into a crate or barrel (or charging
   // into it) smashes it (stage/Stage.js breakProp); one walking into it just stops.
+  // Smashed through it (it broke): he carries on, a little slower (true).
   bump(o, vx) {
-    if (!o?.prop || Math.abs(vx) < 200 || (this.state !== 'knockdown' && this.state !== 'charge')) return;
+    if (!o?.prop || Math.abs(vx) < 200 || (this.state !== 'knockdown' && this.state !== 'charge')) return false;
     this.world.events.emit('solidSmashed', { prop: o.prop, dir: Math.sign(vx), fighter: this });
+    return !!o.prop.broken;
   }
 
   // Walking straight into a prop with no up or down held: he edges round it, toward its
@@ -170,7 +172,8 @@ export class Fighter {
       const nx = this.x + this.vx * dt;
       const hitX = wall(nx, this.z);
       if (!hitX) this.x = nx;
-      else { this.bump(hitX, this.vx); this.slideRound(hitX, dt); if (!air) this.vx = 0; this.walled = true; }
+      else if (this.bump(hitX, this.vx)) { this.x = nx; this.vx *= 0.72; } // (through it, the pieces flying)
+      else { this.slideRound(hitX, dt); if (!air) this.vx = 0; this.walled = true; }
       const nz = this.z + this.vz * dt;
       if (!wall(this.x, nz)) this.z = nz;
       else { if (!air) this.vz = 0; this.walled = true; }

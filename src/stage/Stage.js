@@ -179,8 +179,25 @@ const GRIEF = { damage: 1.3, speed: 1.2 };
 
 // Footprints of the solid things in the street (half width, half depth, height): the
 // breakables by kind, the painted clutter by kind (its half width a share of its drawn w).
-const SOLID_PROPS = { barrel: 0.42, crate: 0.46, urn: 0.42, chest: 0.46, bell: 0.3 };
+const SOLID_PROPS = { barrel: 0.42, crate: 0.46, urn: 0.42, chest: 0.46, bell: 0.3, lamppost: 0.3, haycart: 0.42 };
 const SOLID_DEPTH = 9; // px each side of a prop's foot line
+const SOLID_DEEP = { haycart: 16 }; // (a cart is deeper than a barrel)
+// SMASHING THINGS (Nick, 2026-11-02: "if a guy gets knocked flying into barrels it all
+// smashes nicely"): a prop that breaks with force behind it knocks into the ones packed
+// round it. `power` is how hard: a light swing 1 (the next barrel only rocks and cracks),
+// a heavy 2, a man flung into them or a kicked crate bursting 3; each prop it passes to
+// takes one less, so a body through a row of barrels goes through two or three of them.
+const CHAIN = {
+  kinds: ['barrel', 'crate', 'urn', 'chest', 'lamppost', 'haycart'],
+  gap: 16,      // px between their sides: still touching
+  depth: 28,    // px up or down the lane
+  delay: 5,     // ticks before the next one goes (a ripple you can see, not all at once)
+  body: 3,      // a man flung or charging into one
+};
+// A lamp post knocked over: it falls for `fall` ticks, lands `reach` px along the street, and
+// its lantern's oil burns there (a blaze, `oil` ticks); a hay cart it lands on catches and
+// burns (`cart` ticks). Anyone standing in a blaze burns like in a fire grate.
+const LAMP = { fall: 30, reach: 100, oil: 260, oilW: 76, oilD: 30, cart: 720 };
 const DECOR_FOOT = { signpost: { w: 0.18, d: 6, h: 140 }, lantern: { w: 0.18, d: 6, h: 140 }, debris: { w: 0.36, d: 10, h: 40 }, debris2: { w: 0.36, d: 10, h: 40 } };
 const SOLID_EDGE = 6; // how close a man gets to one (px)
 
@@ -220,7 +237,14 @@ export class Stage {
         const y = p.y ?? (this.terrain ? Math.max(0, this.terrain.groundAt(p.x, p.z)) : 0);
         // (size: this one drawn and hit bigger or smaller than its kind's default)
         const sz = p.size ?? 1;
-        this.props.push({ id: id++, section: si, ...p, ...def, w: def.w * sz, h: def.h * sz, y, hp: def.hp, broken: false, hitBy: new Set() });
+        const pr = { id: id++, section: si, ...p, ...def, w: def.w * sz, h: def.h * sz, y, hp: def.hp, broken: false, hitBy: new Set() };
+        // (`stack`: stacked on the prop listed just before it; it comes down when that one goes)
+        if (p.stack) {
+          const under = this.props[this.props.length - 1];
+          pr.under = under.id; pr.x = under.x + (p.dx ?? 0); pr.z = under.z + 1; pr.y = under.y + under.h - 5;
+          pr.floorY = under.y;
+        }
+        this.props.push(pr);
         if (p.secret) this.secretsTotal++;
       }
       for (const h of sec.hazards ?? []) this.hazards.push({ id: id++, section: si, ...h, t: h.phase ?? 0, cool: new Map() });
@@ -238,7 +262,10 @@ export class Stage {
     // including that one: the archers ahead shoot at you all the way until you reach them)
     for (const hz of this.hazards) hz.last = hz.upto ? Math.max(hz.section, this.sections.findIndex((s) => s.id === hz.upto)) : hz.section;
     // (a man flung or charging into a crate smashes it: entities/Fighter.js bump)
-    world.events.on('solidSmashed', ({ prop, dir }) => { if (prop.kind !== 'bell') this.breakProp(prop, dir); });
+    world.events.on('solidSmashed', ({ prop, dir }) => { if (prop.kind !== 'bell') this.strikeProp(prop, dir, CHAIN.body); });
+    this.chain = [];   // props about to be knocked by the one that just went (CHAIN)
+    this.blazes = [];  // burning lamp oil, a burning hay cart (LAMP)
+    this.propTick = 0;
     world.events.on('kill', (e) => {
       if (e.defender?.team !== 'enemy') return;
       this.stats.kills++;
@@ -389,6 +416,7 @@ export class Stage {
     if(this.checkpoint===3)this.millRescue?.reset();
     for (const hz of this.hazards) if (hz.type === 'collapse' && hz.section <= this.checkpoint) hz.front = null; // (the rock starts again behind you)
     for (const hz of this.hazards) if (hz.type === 'bombard') hz.shells = []; // (nothing left in the air)
+    this.chain = []; this.blazes = this.blazes.filter((b) => b.cart); // (spilt oil out; a cart alight burns on)
     for (const hz of this.hazards) if (hz.type === 'ballista') { hz.bolts = []; hz.aim = null; hz.next = null; hz.bossDone = false; } // (and the scorpion reloads)
     // (a wagon still rolling here goes back to where it started, its people still in it)
     for (const pr of this.props) {
@@ -973,21 +1001,111 @@ export class Stage {
         // a kick doesn't break a crate or a chest: it sends it skidding off down the lane
         // (Rurik's Sparta kick, the Rogue's crescent kick, the Mage's force blast)
         const shoves = f.activeAttack ? info.move.bowl || info.move.fx === 'rkick' : true;
-        if (shoves && KICKED.kinds.includes(pr.kind)) {
+        if (shoves && KICKED.kinds.includes(pr.kind) && !pr.fall && !(pr.y > (this.terrain ? Math.max(0, this.terrain.groundAt(pr.x, pr.z)) : 0) + 4)) {
           if (!pr.fly) {
             pr.fly = { dir: f.facing, left: KICKED.range };
             this.world.events.emit('propKick', { prop: pr, dir: f.facing, by: f });
           }
           continue;
         }
-        pr.hp -=f.activeAttack ? (info.move.breaksGuard || info.move.bowl ? 2 : 1) : ps.smash; // heavies and kicks smash
+        const heavy = f.activeAttack ? (info.move.breaksGuard || info.move.bowl ? 2 : 1) : ps.smash;
+        pr.hp -= heavy; // heavies and kicks smash
         const dir = Math.sign(pr.x - f.x) || f.facing;
         if (pr.hp > 0) { this.world.events.emit('propHit', { prop: pr, dir }); continue; }
-        this.breakProp(pr, dir);
+        this.breakProp(pr, dir, false, Math.min(2, heavy));
       }
     }
     this.updateKicked();
     this.updateRolling();
+    this.propTick++;
+    this.updateChain();
+    this.updateStacks();
+    this.updateBlazes();
+  }
+
+  // A blow of `power` on a prop from outside a swing (a man flung into it, the next one in a
+  // row going over): it loses that much and breaks, or rocks and cracks.
+  strikeProp(pr, dir, power) {
+    if (pr.broken || pr.opened || pr.escaped) return;
+    if (!CHAIN.kinds.includes(pr.kind)) { this.breakProp(pr, dir); return; } // (as before: one bump and it's gone)
+    pr.hp -= power;
+    if (pr.hp > 0) { this.world.events.emit('propHit', { prop: pr, dir, chain: true }); return; }
+    this.breakProp(pr, dir, false, power);
+  }
+
+  // The ones packed against a prop that broke with force get knocked in turn (CHAIN).
+  knockNeighbours(pr, dir, power) {
+    if (power <= 0) return;
+    for (const q of this.props) {
+      if (q === pr || q.broken || q.opened || !CHAIN.kinds.includes(q.kind) || q.under === pr.id) continue;
+      const dx = q.x - pr.x;
+      if (Math.abs(q.z - pr.z) > CHAIN.depth || Math.abs(dx) > (pr.w + q.w) / 2 + CHAIN.gap) continue;
+      if (Math.abs(dx) > 12 && Math.sign(dx) !== dir) continue; // (only the ones it's driven into)
+      if (this.chain.some((c) => c.id === q.id)) continue;
+      this.chain.push({ id: q.id, dir, power: power - 1 || 1, at: this.propTick + CHAIN.delay + Math.round(Math.abs(dx) / 20) });
+    }
+  }
+
+  updateChain() {
+    if (!this.chain.length) return;
+    const due = this.chain.filter((c) => c.at <= this.propTick);
+    this.chain = this.chain.filter((c) => c.at > this.propTick);
+    for (const c of due) {
+      const q = this.props.find((p) => p.id === c.id);
+      if (q) this.strikeProp(q, c.dir, c.power);
+    }
+  }
+
+  // One stacked on a prop that broke comes down: it drops, lands with a crack (and may go).
+  updateStacks() {
+    for (const pr of this.props) {
+      const d = pr.fall;
+      if (!d || pr.broken) continue;
+      d.vh -= 0.7;
+      pr.y += d.vh;
+      pr.x += d.dir * 1.2;
+      if (pr.y > (pr.floorY ?? 0)) continue;
+      pr.y = pr.floorY ?? 0;
+      pr.fall = null;
+      this.world.events.emit('propLand', { prop: pr });
+      this.strikeProp(pr, d.dir, 1);
+    }
+  }
+
+  // Lamp oil and a hay cart alight: they burn whoever stands in them, then go out.
+  updateBlazes() {
+    for (const b of this.blazes) {
+      if (b.at === this.propTick && b.lamp) this.lampLands(b);
+      if (b.at > this.propTick) continue;
+      b.left--;
+      for (const [id, c] of b.hz.cool) { if (c <= 1) b.hz.cool.delete(id); else b.hz.cool.set(id, c - 1); }
+      if (b.left <= 0) { if (b.cart) { b.cart.burning = false; b.cart.burnt = true; this.world.events.emit('propBurnt', { prop: b.cart }); } continue; }
+      for (const f of this.world.fighters) {
+        if (Math.abs(f.x - b.x) > b.w / 2 || Math.abs(f.z - b.z) > b.d / 2 || f.h - b.y > 40) continue;
+        this.hurt(b.hz, f, FIRE.damage, Math.sign(f.x - b.x) || 1, 'fire');
+      }
+    }
+    this.blazes = this.blazes.filter((b) => b.left > 0);
+  }
+
+  // The lamp post comes down: what it lands on is smashed, its oil spills burning, and a hay
+  // cart it falls on catches.
+  lampLands(b) {
+    const pr = b.lamp;
+    this.world.events.emit('propImpact', { prop: pr, x: b.x, z: b.z, dir: b.dir });
+    for (const q of this.props) {
+      if (q === pr || q.broken || !CHAIN.kinds.includes(q.kind) || Math.abs(q.z - pr.z) > 34) continue;
+      const lo = Math.min(pr.x, b.x + b.dir * 20); const hi = Math.max(pr.x, b.x + b.dir * 20);
+      if (q.x + q.w / 2 < lo || q.x - q.w / 2 > hi) continue;
+      if (q.kind === 'haycart' && !q.burning && !q.burnt) this.ignite(q);
+      else if (q.kind !== 'haycart') this.chain.push({ id: q.id, dir: b.dir, power: 2, at: this.propTick + 1 });
+    }
+  }
+
+  ignite(cart) {
+    cart.burning = true;
+    this.blazes.push({ x: cart.x, z: cart.z, y: cart.y ?? 0, w: cart.w * 0.9, d: 44, left: LAMP.cart, at: this.propTick, cart, hz: { cool: new Map() } });
+    this.world.events.emit('propIgnite', { prop: cart });
   }
 
   // A terrain block with this `tag` stops being there (a portcullis raised by its
@@ -1023,10 +1141,11 @@ export class Stage {
   solidAt(x, z, h) {
     for (const pr of this.props) {
       const k = SOLID_PROPS[pr.kind];
-      if (!k || pr.broken || pr.fly || pr.lift || pr.escaped) continue;
+      if (!k || pr.broken || pr.fly || pr.lift || pr.escaped || pr.fall) continue;
       const y = pr.y ?? 0;
       if (h >= y + pr.h - STEP || h + 60 < y) continue; // (over it, or on the ground under its ledge)
-      if (Math.abs(x - pr.x) < pr.w * k + SOLID_EDGE && Math.abs(z - pr.z) < SOLID_DEPTH + SOLID_EDGE) return { soft: true, prop: pr, x0: pr.x - pr.w * k, x1: pr.x + pr.w * k, z0: pr.z - SOLID_DEPTH, z1: pr.z + SOLID_DEPTH };
+      const dz = SOLID_DEEP[pr.kind] ?? SOLID_DEPTH;
+      if (Math.abs(x - pr.x) < pr.w * k + SOLID_EDGE && Math.abs(z - pr.z) < dz + SOLID_EDGE) return { soft: true, prop: pr, x0: pr.x - pr.w * k, x1: pr.x + pr.w * k, z0: pr.z - dz, z1: pr.z + dz };
     }
     for (const d of this.solidDecor) {
       if (h >= d.top - STEP) continue;
@@ -1035,11 +1154,24 @@ export class Stage {
     return null;
   }
 
-  breakProp(pr, dir, blast = false) {
+  breakProp(pr, dir, blast = false, power = 0) {
     if (pr.broken || pr.opened) return;
     pr.broken = true;
     pr.fly = null;
-    this.world.events.emit('propBreak', { prop: pr, dir, blast });
+    pr.fall = null;
+    this.world.events.emit('propBreak', { prop: pr, dir, blast, power });
+    // what was stacked on it comes down (updateStacks); the ones packed round it get knocked
+    for (const q of this.props) {
+      if (q.under !== pr.id || q.broken) continue;
+      q.under = null;
+      q.fall = { vh: 1.5, dir: dir * 0.6 || 0 };
+    }
+    this.knockNeighbours(pr, dir, blast ? 3 : power);
+    // a lamp post topples the way it was struck (LAMP)
+    if (pr.kind === 'lamppost') {
+      const d = dir || 1;
+      this.blazes.push({ lamp: pr, x: pr.x + d * LAMP.reach, z: pr.z + 4, y: pr.y ?? 0, w: LAMP.oilW, d: LAMP.oilD, dir: d, left: LAMP.oil, at: this.propTick + LAMP.fall, hz: { cool: new Map() } });
+    }
     const lastOfTag = !pr.tag || !this.props.some((q) => q.tag === pr.tag && !q.broken);
     if (pr.opens && lastOfTag) this.openWay(pr.opens); // (two chains on one gate: both must go)
     if (pr.tag && lastOfTag) this.world.events.emit('propsDown', { tag: pr.tag });
@@ -1274,6 +1406,11 @@ export class Stage {
     }
     if (k === (hz.warn ?? STAMPEDE.warn) && S.phase === 'run') this.world.events.emit('stampedeBurst', { hazard: hz });
     if (S.phase !== 'run') return;
+    // the herd goes straight through whatever stands in its lane: barrels, crates, a cart
+    for (const pr of this.props) {
+      if (pr.broken || !CHAIN.kinds.includes(pr.kind) || pr.kind === 'lamppost') continue;
+      if (S.heads.some((hd) => Math.abs(pr.x - hd.x) <= STAMPEDE.reach + pr.w / 2 && Math.abs(pr.z - hd.z) <= hz.d / 2 + 8)) this.breakProp(pr, S.dir, false, 3);
+    }
     for (const f of this.world.fighters) {
       if (f.h > 70) continue; // (jumped clear)
       const hit = S.heads.find((hd) => Math.abs(f.x - hd.x) <= STAMPEDE.reach && Math.abs(f.z - hd.z) <= hz.d / 2);
