@@ -46,7 +46,7 @@ export class BattlefieldAudio {
         if (state.distance >= stride) {
           state.distance %= stride;
           // sprinting: the step brought up to full level, so it carries over the music
-          if (f.sprinting) playSfx(s,'sprintStep',{volume:0.5,spread:90,minGapMs:70});
+          if (f.sprinting) playSfx(s,'sprintStep',{volume:0.415,spread:90,minGapMs:70});
           else playSfx(s,'stoneStep',{volume:0.29,spread:90,minGapMs:70});
         }
       } else if (!moving) state.distance = 0;
