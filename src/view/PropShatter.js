@@ -29,6 +29,11 @@ export const SHATTER = {
   urn: { pieces: 10, stretch: 1, spill: 'grain', dust: 0xb0a080, sound: [['block', 1300, 0.55], ['kick', 400, 0.5]] },
   haycart: { pieces: 14, stretch: 0.45, spill: 'hay', dust: 0xa89060, sound: [['kick', -900, 1], ['doorClose2', -300, 0.9], ['chestClose2', 200, 0.6]] },
   lamppost: { pieces: 0, dust: 0x8a7a64 },
+  stall: { pieces: 14, stretch: 0.6, dust: 0x8a7a64, sound: [['kick', -800, 1], ['doorClose2', -200, 0.9]] },
+  trestle: { pieces: 9, stretch: 0.5, dust: 0x8a7a64, sound: [['kick', -600, 0.9], ['doorClose1', 0, 0.8]] },
+  rack: { pieces: 8, stretch: 0.5, dust: 0x8a7a64, sound: [['kick', -600, 0.9], ['doorClose1', 200, 0.8]] },
+  handcart: { pieces: 11, stretch: 0.5, dust: 0x8a7a64, sound: [['kick', -800, 1], ['doorClose2', -100, 0.9]] },
+  fence: { pieces: 8, stretch: 0.35, dust: 0x8a7a64, sound: [['kick', -450, 0.8], ['doorClose2', 400, 0.8]] },
 };
 const RES = 2;          // pieces cut at 2 texture px per screen px
 const GRAVITY = 1500;   // px/s², the splinters
@@ -39,7 +44,8 @@ const SPILL = {
   ale: { colors: [0x6a4418, 0x8a5a20, 0x4a2c10], n: 26, puddle: 0x2a1a0c, wet: true },
   straw: { colors: [0xc8a860, 0xa88848, 0xe0c880], n: 22 },
   grain: { colors: [0xc8b088, 0xa89068, 0x6a5038], n: 30 },
-  hay: { colors: [0xd0b060, 0xb09040, 0xe8d080, 0x8a7030], n: 60 },
+  hay: { colors: [0xd0b060, 0xb09040, 0xe8d080, 0x8a7030], n: 60, bits: ['deb-straw-0', 'deb-straw-1'] },
+  apples: { colors: [0x8a1e14, 0x6a8a2a], n: 4, bits: ['deb-apple-0', 'deb-apple-1'], big: 10 },
 };
 // a lamp post's painting (assets/env/village/decor_lantern.png): where its post stands and
 // where its lantern hangs, as shares of the picture (it falls about the foot of the post)
@@ -173,7 +179,7 @@ export class PropShatter {
         tint, spin: rand(-14, 14) * hard, long: p.h > p.w * 1.25 ? 'v' : p.w > p.h * 1.25 ? 'h' : null,
       });
     }
-    this.spill(pr, dir, power);
+    this.spill(pr, dir, power, key);
     this.dust(pr, S.dust, power);
     for (const [k, pitch, vol] of S.sound ?? []) playSfx(this.scene, k, { volume: vol * Math.min(1, 0.75 + power * 0.12), pitch: pitch + rand(-120, 120), minGapMs: 0 });
   }
@@ -187,8 +193,8 @@ export class PropShatter {
   }
 
   // What it held, out across the street.
-  spill(pr, dir, power) {
-    const S = SPILL[SHATTER[pr.kind]?.spill];
+  spill(pr, dir, power, key = '') {
+    const S = SPILL[key.includes('crate-v1') ? 'apples' : key.includes('sack') ? 'grain' : SHATTER[pr.kind]?.spill];
     if (!S) return;
     const gore = this.scene.gore;
     const y = pr.y ?? 0;
@@ -199,6 +205,13 @@ export class PropShatter {
         tint: pick(S.colors), texture: 'px', scale: S.wet ? rand(0.8, 1.6) : rand(0.6, 1.4), decal: false,
         life: S.wet ? rand(26, 50) : rand(90, 200), spin: S.wet ? 0 : rand(-12, 12), material: S.wet ? null : PHYSICS.wood,
       });
+    }
+    // painted pieces of what it held: apples and turnips rolling out, tufts of hay
+    const T = this.scene.textures;
+    const bits = (S.bits ?? []).filter((k) => T.exists(k));
+    for (let i = 0; bits.length && i < (S.big ?? 8); i++) {
+      gore.spawn({ x: pr.x + rand(-pr.w / 3, pr.w / 3), z: pr.z + rand(-2, 8), h: y + rand(6, pr.h * 0.7), vx: dir * rand(30, 170) + rand(-60, 60), vz: rand(-20, 40), vh: rand(80, 260),
+        tint: 0xffffff, texture: pick(bits), scale: rand(0.2, 0.3), decal: false, life: rand(300, 500), spin: rand(-8, 8), material: PHYSICS.wood });
     }
     if (pr.kind === 'haycart') {
       // the hay goes up in a cloud and drifts down a while after
@@ -219,6 +232,21 @@ export class PropShatter {
   // A puff of dust and splinter-grit, low and wide.
   dust(pr, color, power) {
     const y = pr.z - (pr.y ?? 0);
+    const g = this.scene.gore;
+    // the painted cloud of dust (and, off wood, a burst of splinters) (view/propArt.js fx_hits)
+    // (the painted puff and splinter burst, playing: view/propArt.js fx_strips)
+    if (this.scene.textures.exists('fxa-dust-0')) {
+      g.fxAnim('dust', pr.x, y - pr.h * 0.3, pr.z + 1, { size: pr.w * 1.7 + power * 18, ms: 70, flip: Math.random() < 0.5, alpha: 0.85 });
+      if (power > 0 && pr.kind !== 'urn' && pr.kind !== 'lamppost') g.fxAnim('splinter', pr.x, y - pr.h * 0.5, pr.z + 1.5, { size: pr.w * 1.8 + power * 24, ms: 40, flip: Math.random() < 0.5 });
+      return;
+    }
+    if (this.scene.textures.exists('fx-dust')) {
+      for (let i = 0; i < 1 + Math.min(2, power); i++) {
+        g.fx('fx-dust', pr.x + rand(-pr.w / 3, pr.w / 3), y - pr.h * rand(0.2, 0.45), pr.z + 1, { size: pr.w * rand(1.3, 1.9) + power * 14, dur: rand(650, 950), grow: 1.5, alpha: 0.75, drift: rand(10, 30) });
+      }
+      if (power > 0 && pr.kind !== 'urn') g.fx('fx-splinters', pr.x, y - pr.h * 0.5, pr.z + 1.5, { size: pr.w * 1.6 + power * 20, dur: 260, grow: 1.4, flip: Math.random() < 0.5 });
+      return;
+    }
     for (let i = 0; i < 5 + power * 2; i++) {
       const puff = this.scene.add.image(pr.x + rand(-pr.w / 2, pr.w / 2), y - rand(4, pr.h * 0.5), 'glow')
         .setTint(color).setAlpha(0.32).setScale(rand(0.5, 0.9)).setDepth(pr.z + 1);
@@ -249,13 +277,18 @@ export class PropShatter {
   }
 
   // It hits the street: a bounce, the glass bursts, the flame catches the oil.
-  lampLands(pr, v) {
+  // (paired: the lamp-and-cart painting shows the fall, so only the burst and the sound here;
+  // quiet: just lay the fallen lamp down, no burst: it fell a while ago)
+  lampLands(pr, v, paired = false, quiet = false) {
     const img = v.img;
     const d = v.falling?.dir ?? 1;
     v.falling = null;
-    img.setAngle(d * 90);
-    this.scene.tweens.add({ targets: img, angle: d * 82, duration: 90, yoyo: true, ease: 'Quad.easeOut' });
-    const L = this.lanternAt(v);
+    if (quiet) { this.layFallen(pr, v, d, true); return; }
+    if (!paired) {
+      img.setAngle(d * 90);
+      this.scene.tweens.add({ targets: img, angle: d * 82, duration: 90, yoyo: true, ease: 'Quad.easeOut' });
+    }
+    const L = paired ? { x: pr.x + 80, y: pr.z - 50 } : this.lanternAt(v);
     v.glow?.destroy(); v.glow = null;
     playSfx(this.scene, 'kick', { volume: 1, pitch: -1100, minGapMs: 0 });
     playSfx(this.scene, 'block', { volume: 0.6, pitch: 1500, minGapMs: 0 }); // (glass)
@@ -269,7 +302,30 @@ export class PropShatter {
     gore.spark(L.x, pr.z, h, 0xffc060, 30);
     const flash = this.scene.add.image(L.x, pr.z - h, 'glow').setTint(0xff9030).setBlendMode(Phaser.BlendModes.ADD).setScale(1).setAlpha(0.9).setDepth(pr.z + 2);
     this.scene.tweens.add({ targets: flash, scale: 4.5, alpha: 0, duration: 420, ease: 'Cubic.easeOut', onComplete: () => flash.destroy() });
+    this.scene.gore.fx('fx-fireburst', L.x, pr.z - Math.min(h, 20) - 14, pr.z + 2, { size: 90, add: true, dur: 600, grow: 1.4, drift: 20 });
     this.dust(pr, SHATTER.lamppost.dust, 2);
+    if (!paired) this.layFallen(pr, v, d);
+  }
+
+  // the painted fallen lamp, lantern smashed and its oil alight, with the snapped stump left
+  // standing where it stood (view/propArt.js street): it takes over from the turning post
+  layFallen(pr, v, d, now = false) {
+    const img = v.img;
+    const T = this.scene.textures;
+    if (T.exists('lamp-fallen')) {
+      const fw = 128;
+      const fallen = this.scene.add.image(pr.x + d * fw * 0.5, pr.z + 2, 'lamp-fallen').setOrigin(0.5, 1).setFlipX(d < 0)
+        .setScale(fw / T.get('lamp-fallen').getSourceImage().width).setDepth(pr.z + 1);
+      const stump = T.exists('lamp-stump') ? this.scene.add.image(pr.x + 6, pr.z, 'lamp-stump').setOrigin(0.5, 1)
+        .setScale(30 / T.get('lamp-stump').getSourceImage().width).setDepth(pr.z) : null;
+      fallen.setAlpha(now ? 1 : 0);
+      if (now) img.setVisible(false);
+      else {
+        this.scene.tweens.add({ targets: fallen, alpha: 1, duration: 60 });
+        this.scene.tweens.add({ targets: img, alpha: 0, duration: 60, onComplete: () => img.setVisible(false) });
+      }
+      v.fallen = fallen; v.stump = stump;
+    }
   }
 
   // ------------------------------------------------------------ per frame

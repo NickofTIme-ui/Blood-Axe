@@ -18,13 +18,14 @@ import { HUD_SRC, buildHudArt } from '../view/hudArt.js';
 import { preloadGrounds, buildGrounds, buildSky, buildPillars, buildParallax } from '../view/envArt.js';
 import { PARALLAX_LAYERS } from '../data/parallax.js';
 import { preloadLevelArt, buildLevelArt, isLevelArtKey } from '../view/levelArt.js';
+import { preloadPropArt, buildPropArt, isPropArtKey } from '../view/propArt.js';
 import { warmGore } from '../effects/goreArt.js';
 import { introFinished } from '../core/StartupIntro.js';
 import {HERO_HD} from '../data/heroHdAssets.js';
 import {preloadHeroHd,installHeroHd} from '../view/heroHd.js';
 
 // Textures read only by Boot itself, to cut the game's sheets from (released once it has).
-const BOOT_ONLY_SOURCE = /^(estrip-|hstrip-|lvlsrc-|sprsrc-|plxsrc-|plxcut-|groundsrc-|fxsrc-|hero-src-)|^(skysrc|pillarsrc)$/;
+const BOOT_ONLY_SOURCE = /^(props2src-|estrip-|hstrip-|lvlsrc-|sprsrc-|plxsrc-|plxcut-|groundsrc-|fxsrc-|hero-src-)|^(skysrc|pillarsrc)$/;
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -97,10 +98,11 @@ export class BootScene extends Phaser.Scene {
     // the layered backdrop (data/parallax.js): any layer not painted yet simply isn't there
     for (const L of PARALLAX_LAYERS) this.load.image(`plxsrc-${L.name}`, `assets/env/parallax/${L.file}`);
     preloadLevelArt(this); // (the campaign levels' painted art: data/levelArt.js)
+    preloadPropArt(this); // (the props and debris repainted, 2026-11-02: view/propArt.js)
     this.load.image('king-vaurath', 'assets/enemies/king_vaurath_stand.png'); // the king in his cutaways (scenes/CutawayScene.js)
     // the speakers' portraits for the dialogue box (data/speakers.js; one not painted yet gets a stand-in)
     for (const id of PORTRAIT_IDS) this.load.image(`portrait-${id}`, `assets/ui/portraits/${id}.png`);
-    this.load.on('loaderror', (file) => { if (!file.key?.startsWith('plxsrc-') && !file.key?.startsWith('portrait-') && !isLevelArtKey(file.key) && file.key !== 'boss' && file.key !== 'fxsrc-earthwall' && file.key !== 'fxsrc-torchflame' && !['pickups-hd-src', 'village-torch-src', 'village-mill-src', 'gates-brazier-src'].includes(file.key) && !file.key?.startsWith('village-chimney-')) console.warn(`[boot] Could not load ${file.src}`); }); // (unpainted backdrop layers are expected)
+    this.load.on('loaderror', (file) => { if (!file.key?.startsWith('plxsrc-') && !file.key?.startsWith('portrait-') && !isLevelArtKey(file.key) && !isPropArtKey(file.key) && file.key !== 'boss' && file.key !== 'fxsrc-earthwall' && file.key !== 'fxsrc-torchflame' && !['pickups-hd-src', 'village-torch-src', 'village-mill-src', 'gates-brazier-src'].includes(file.key) && !file.key?.startsWith('village-chimney-')) console.warn(`[boot] Could not load ${file.src}`); }); // (unpainted backdrop layers are expected)
 
     const bar = this.add.rectangle(480 - 150, 270, 0, 6, 0xc0161c).setOrigin(0, 0.5);
     this.add.rectangle(480, 270, 304, 10).setStrokeStyle(1, 0x5a3030);
@@ -171,6 +173,7 @@ export class BootScene extends Phaser.Scene {
     this.registry.set('pillars', buildPillars(this));
     this.registry.set('parallax', buildParallax(this, PARALLAX_LAYERS));
     this.registry.set('levelArt', buildLevelArt(this));
+    this.registry.set('propArt', buildPropArt(this));
     this.buildHeroArt();
     this.releaseSources();
 

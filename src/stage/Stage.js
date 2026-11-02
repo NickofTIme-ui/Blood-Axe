@@ -179,16 +179,16 @@ const GRIEF = { damage: 1.3, speed: 1.2 };
 
 // Footprints of the solid things in the street (half width, half depth, height): the
 // breakables by kind, the painted clutter by kind (its half width a share of its drawn w).
-const SOLID_PROPS = { barrel: 0.42, crate: 0.46, urn: 0.42, chest: 0.46, bell: 0.3, lamppost: 0.3, haycart: 0.42 };
+const SOLID_PROPS = { barrel: 0.42, crate: 0.46, urn: 0.42, chest: 0.46, bell: 0.3, lamppost: 0.3, haycart: 0.42, fence: 0.48, stall: 0.48, trestle: 0.48, rack: 0.46, handcart: 0.44 };
 const SOLID_DEPTH = 9; // px each side of a prop's foot line
-const SOLID_DEEP = { haycart: 16 }; // (a cart is deeper than a barrel)
+const SOLID_DEEP = { haycart: 16, stall: 14, handcart: 14, trestle: 12 }; // (a cart is deeper than a barrel)
 // SMASHING THINGS (Nick, 2026-11-02: "if a guy gets knocked flying into barrels it all
 // smashes nicely"): a prop that breaks with force behind it knocks into the ones packed
 // round it. `power` is how hard: a light swing 1 (the next barrel only rocks and cracks),
 // a heavy 2, a man flung into them or a kicked crate bursting 3; each prop it passes to
 // takes one less, so a body through a row of barrels goes through two or three of them.
 const CHAIN = {
-  kinds: ['barrel', 'crate', 'urn', 'chest', 'lamppost', 'haycart'],
+  kinds: ['barrel', 'crate', 'urn', 'chest', 'lamppost', 'haycart', 'fence', 'stall', 'trestle', 'rack', 'handcart'],
   gap: 16,      // px between their sides: still touching
   depth: 28,    // px up or down the lane
   delay: 5,     // ticks before the next one goes (a ripple you can see, not all at once)
@@ -198,6 +198,11 @@ const CHAIN = {
 // its lantern's oil burns there (a blaze, `oil` ticks); a hay cart it lands on catches and
 // burns (`cart` ticks). Anyone standing in a blaze burns like in a fire grate.
 const LAMP = { fall: 30, reach: 100, oil: 260, oilW: 76, oilD: 30, cart: 720 };
+// Knocked about, not only broken (Nick, 2026-11-02: "you could knock a crate over or off
+// something it's standing on"): a crate up on another is knocked off by a blow (or shaken off
+// when the one under it is hit), tumbles down and lands; a barrel struck lightly tips over
+// onto its side and rolls off down the lane, into whatever's there (a man: he's bowled over).
+const TUMBLE = { off: 3.2, shake: 1.6, roll: 4.2, drag: 0.968, stop: 0.35, tipH: 30, bowl: 6 };
 const DECOR_FOOT = { signpost: { w: 0.18, d: 6, h: 140 }, lantern: { w: 0.18, d: 6, h: 140 }, debris: { w: 0.36, d: 10, h: 40 }, debris2: { w: 0.36, d: 10, h: 40 } };
 const SOLID_EDGE = 6; // how close a man gets to one (px)
 
@@ -239,8 +244,9 @@ export class Stage {
         const sz = p.size ?? 1;
         const pr = { id: id++, section: si, ...p, ...def, w: def.w * sz, h: def.h * sz, y, hp: def.hp, broken: false, hitBy: new Set() };
         // (`stack`: stacked on the prop listed just before it; it comes down when that one goes)
+        // (several can stand on one table or stall: each on the last one that isn't itself up on something)
         if (p.stack) {
-          const under = this.props[this.props.length - 1];
+          const under = [...this.props].reverse().find((q) => q.section === si && q.under === undefined);
           pr.under = under.id; pr.x = under.x + (p.dx ?? 0); pr.z = under.z + 1; pr.y = under.y + under.h - 5;
           pr.floorY = under.y;
         }
@@ -1009,9 +1015,10 @@ export class Stage {
           continue;
         }
         const heavy = f.activeAttack ? (info.move.breaksGuard || info.move.bowl ? 2 : 1) : ps.smash;
-        pr.hp -= heavy; // heavies and kicks smash
         const dir = Math.sign(pr.x - f.x) || f.facing;
-        if (pr.hp > 0) { this.world.events.emit('propHit', { prop: pr, dir }); continue; }
+        if (heavy < 2 && this.knockAbout(pr, dir)) continue; // (knocked off its stack, or over)
+        pr.hp -= heavy; // heavies and kicks smash
+        if (pr.hp > 0) { this.world.events.emit('propHit', { prop: pr, dir }); this.shakeOff(pr, dir); continue; }
         this.breakProp(pr, dir, false, Math.min(2, heavy));
       }
     }
@@ -1020,6 +1027,7 @@ export class Stage {
     this.propTick++;
     this.updateChain();
     this.updateStacks();
+    this.updateTumble();
     this.updateBlazes();
   }
 
@@ -1028,9 +1036,66 @@ export class Stage {
   strikeProp(pr, dir, power) {
     if (pr.broken || pr.opened || pr.escaped) return;
     if (!CHAIN.kinds.includes(pr.kind)) { this.breakProp(pr, dir); return; } // (as before: one bump and it's gone)
+    if (power < 2 && this.knockAbout(pr, dir)) return;
     pr.hp -= power;
-    if (pr.hp > 0) { this.world.events.emit('propHit', { prop: pr, dir, chain: true }); return; }
+    if (pr.hp > 0) { this.world.events.emit('propHit', { prop: pr, dir, chain: true }); this.shakeOff(pr, dir); return; }
     this.breakProp(pr, dir, false, power);
+  }
+
+  // A light blow that moves it rather than breaks it: a crate up on another is knocked off; a
+  // barrel standing whole tips over and rolls (it cracks: one more blow and it goes). True: done.
+  knockAbout(pr, dir) {
+    if (pr.broken || pr.fall || pr.tumble) return false;
+    if (pr.under != null) {
+      pr.under = null;
+      pr.fall = { vh: 2.6, dir: dir * TUMBLE.off, spin: 1 };
+      this.world.events.emit('propKnocked', { prop: pr, dir });
+      return true;
+    }
+    if (pr.kind === 'barrel' && !pr.look && !pr.tipped && pr.hp >= 2 && !(pr.y > 0)) {
+      pr.hp -= 1;
+      pr.tipped = true;
+      pr.h = TUMBLE.tipH;
+      // it rolls off across the lane, toward the open street, and a little the way it was struck
+      const zDir = pr.z < (this.world.bounds.minZ + this.world.bounds.maxZ) / 2 ? 1 : -1;
+      pr.tumble = { dir, zDir, speed: TUMBLE.roll, hit: new Set() };
+      this.world.events.emit('propTip', { prop: pr, dir, zDir });
+      return true;
+    }
+    return false;
+  }
+
+  // the one stacked on it is shaken off by the blow
+  shakeOff(pr, dir) {
+    for (const q of this.props) {
+      if (q.under !== pr.id || q.broken || q.fall) continue;
+      q.under = null;
+      q.fall = { vh: 1.8, dir: dir * TUMBLE.shake, spin: 1 };
+      this.world.events.emit('propKnocked', { prop: q, dir });
+    }
+  }
+
+  // A tipped barrel rolling: slows in the mud, bowls over men in its way, knocks into props.
+  updateTumble() {
+    const b = this.world.bounds;
+    for (const pr of this.props) {
+      const t = pr.tumble;
+      if (!t || pr.broken) continue;
+      const nx = pr.x + t.dir * t.speed * 0.45; const nz = pr.z + t.zDir * t.speed * 0.6;
+      const ground = this.terrain ? Math.max(0, this.terrain.groundAt(nx, nz)) : 0;
+      const blocked = ground !== (pr.y ?? 0) || nz < b.minZ + 4 || nz > b.maxZ - 4 || nx < b.minX + 10 || nx > b.maxX - 10;
+      if (!blocked) { pr.x = nx; pr.z = nz; }
+      t.speed *= TUMBLE.drag;
+      for (const f of this.world.fighters) {
+        if (f.team !== 'enemy' || !f.alive || t.hit.has(f.id) || f.h > 30 || Math.abs(f.x - pr.x) > pr.w / 2 + 8 || Math.abs(f.z - pr.z) > 16) continue;
+        t.hit.add(f.id);
+        this.hurt({ cool: new Map() }, f, TUMBLE.bowl, t.dir, 'crate');
+        t.speed *= 0.6;
+      }
+      const into = this.props.find((q) => q !== pr && !q.broken && CHAIN.kinds.includes(q.kind) && !q.tumble && Math.abs(q.x - pr.x) < (q.w + pr.w) / 2 - 4 && Math.abs(q.z - pr.z) < 16);
+      if (into) { this.strikeProp(into, t.dir, 1); t.speed = 0; }
+      if (blocked || t.speed < TUMBLE.stop) { pr.tumble = null; this.world.events.emit('propRest', { prop: pr }); }
+    }
   }
 
   // The ones packed against a prop that broke with force get knocked in turn (CHAIN).
@@ -1063,7 +1128,7 @@ export class Stage {
       if (!d || pr.broken) continue;
       d.vh -= 0.7;
       pr.y += d.vh;
-      pr.x += d.dir * 1.2;
+      pr.x += d.dir;
       if (pr.y > (pr.floorY ?? 0)) continue;
       pr.y = pr.floorY ?? 0;
       pr.fall = null;
@@ -1141,7 +1206,7 @@ export class Stage {
   solidAt(x, z, h) {
     for (const pr of this.props) {
       const k = SOLID_PROPS[pr.kind];
-      if (!k || pr.broken || pr.fly || pr.lift || pr.escaped || pr.fall) continue;
+      if (!k || pr.broken || pr.fly || pr.lift || pr.escaped || pr.fall || pr.tumble) continue;
       const y = pr.y ?? 0;
       if (h >= y + pr.h - STEP || h + 60 < y) continue; // (over it, or on the ground under its ledge)
       const dz = SOLID_DEEP[pr.kind] ?? SOLID_DEPTH;
@@ -1164,7 +1229,7 @@ export class Stage {
     for (const q of this.props) {
       if (q.under !== pr.id || q.broken) continue;
       q.under = null;
-      q.fall = { vh: 1.5, dir: dir * 0.6 || 0 };
+      q.fall = { vh: 1.5, dir: dir * 0.7 || 0 };
     }
     this.knockNeighbours(pr, dir, blast ? 3 : power);
     // a lamp post topples the way it was struck (LAMP)

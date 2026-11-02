@@ -41,12 +41,33 @@ const run=(w,st,n)=>{for(let i=0;i<n;i++){w.tick();st.update();}};
  assert(p.x>first.x+20,`he went on through it (x ${Math.round(p.x)})`);
 }
 {
- // a light swing breaking one only rocks the next (it cracks: one more hit)
+ // a hero dodge-rolling into barrels rolls straight through them, smashing them
+ const {w,p,st}=setup();
+ const b=st.props.find((pr)=>pr.x===1606);
+ p.x=1560;p.z=300;p.controller.moveX=1;p.fsm.change('dodge');
+ for(let i=0;i<20;i++){w.tick();st.update();}
+ assert(b.broken,'rolled through the barrel');assert(p.x>b.x,`and out the other side (x ${Math.round(p.x)})`);
+}
+{
+ // a light swing breaking one knocks the next barrel over: it rolls off into the lane, cracked
  const {w,st}=setup();
  const a=st.props.find((pr)=>pr.x===1606),b=st.props.find((pr)=>pr.x===1640);
- const hits=[];w.events.on('propHit',(e)=>hits.push(e.prop.id));
- st.breakProp(a,1,false,1);run(w,st,30);
- assert(!b.broken&&b.hp===1&&hits.includes(b.id),'the next one rocks and cracks');
+ const z0=b.z;
+ st.breakProp(a,1,false,1);run(w,st,90);
+ assert(!b.broken&&b.hp===1&&b.tipped,'the next one tips over, cracked');
+ assert(b.z>z0+5,`and rolls out into the lane (into the barrel in front of it) (z ${z0} -> ${Math.round(b.z)})`);
+ assert(!b.tumble,'and comes to rest');
+}
+{
+ // a crate up on another is knocked off it by a light blow, tumbles down and lands
+ const {w,p,st}=setup();
+ const top=st.props.find((pr)=>pr.section===1&&pr.under!==undefined&&pr.under!==null);
+ const x0=top.x;const landed=[];w.events.on('propLand',(e)=>landed.push(e.prop));
+ st.strikeProp(top,1,1);
+ assert(top.fall&&!top.broken,'knocked off, not broken');
+ run(w,st,60);
+ assert(landed.includes(top));assert(top.x>x0+15,'it came down off the side');assert.equal(top.y,0);
+ void p;
 }
 {
  // a crate stacked on another comes down when it goes, and lands
@@ -57,7 +78,7 @@ const run=(w,st,n)=>{for(let i=0;i<n;i++){w.tick();st.update();}};
  assert(!st.solidAt(top.x,top.z,0)?.prop||st.solidAt(top.x,top.z,0).prop!==top,'(the one below is what you walk into)');
  const landed=[];w.events.on('propLand',(e)=>landed.push(e.prop));
  st.breakProp(base,1,false,0);run(w,st,60);
- assert.equal(landed.length,1,'it lands');assert.equal(top.y,base.y,'on the ground');
+ assert(landed.includes(top),'it lands');assert.equal(top.y,base.y,'on the ground');
  assert(top.broken||top.hp<2,'and the fall cracks it');
 }
 {

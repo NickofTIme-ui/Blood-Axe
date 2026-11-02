@@ -144,8 +144,45 @@ export class Gore {
     }
   }
 
-  // Non-gory impact sparks (shown even with gore OFF).
+  // A painted effect (view/propArt.js fx_hits: 'fx-flash', 'fx-streak', 'fx-drops',
+  // 'fx-splash', 'fx-dust', 'fx-splinters', 'fx-fireburst', 'fx-smoke'), played once: it
+  // pops up at `size` px across, grows a little and fades. False if it isn't painted.
+  fx(key, x, y, depth, { size = 60, tint = null, add = false, dur = 160, grow = 1.4, rot = 0, flip = false, alpha = 1, drift = 0 } = {}) {
+    const T = this.scene.textures;
+    if (!T.exists(key)) return false;
+    const img = this.scene.add.image(x, y, key).setDepth(depth).setRotation(rot).setFlipX(flip).setAlpha(alpha);
+    img.setScale(size / T.get(key).getSourceImage().width);
+    if (tint != null) img.setTint(tint);
+    if (add) img.setBlendMode(Phaser.BlendModes.ADD);
+    this.scene.tweens.add({ targets: img, scale: img.scale * grow, alpha: 0, y: y - drift, duration: dur, ease: 'Cubic.easeOut', onComplete: () => img.destroy() });
+    return true;
+  }
+
+  // A painted effect that plays (view/propArt.js fx_strips: `fxa-<name>-0..5`): six frames,
+  // `ms` each, at `size` px across. False if it isn't painted.
+  fxAnim(name, x, y, depth, { size = 80, tint = null, add = false, ms = 45, flip = false, rot = 0, alpha = 1 } = {}) {
+    const T = this.scene.textures;
+    if (!T.exists(`fxa-${name}-0`)) return false;
+    const img = this.scene.add.image(x, y, `fxa-${name}-0`).setDepth(depth).setFlipX(flip).setRotation(rot).setAlpha(alpha);
+    img.setScale(size / T.get(`fxa-${name}-0`).getSourceImage().width);
+    if (tint != null) img.setTint(tint);
+    if (add) img.setBlendMode(Phaser.BlendModes.ADD);
+    let f = 0;
+    this.scene.time.addEvent({ delay: ms, repeat: 5, callback: () => { f++; if (f > 5 || !img.active) { img.destroy(); return; } img.setTexture(`fxa-${name}-${f}`); } });
+    return true;
+  }
+
+  // Non-gory impact sparks (shown even with gore OFF): the painted flash and a streak or two
+  // of sparks flying off it (Nick, 2026-11-02: the old dots were the last of the old art).
   spark(x, z, h, color = 0xfff2a0, count = 8) {
+    // (the painted impact, playing; tinted toward the spark's colour)
+    if (this.fxAnim('impact', x, z - h, z + 2, { size: 40 + count * 2.5, tint: color === 0xffffff ? null : color, add: true, ms: 35, rot: rand(-0.4, 0.4), flip: Math.random() < 0.5 })) return;
+    if (this.fx('fx-flash', x, z - h, z + 2, { size: 26 + count * 2.2, tint: color, add: true, dur: 140, grow: 1.6 })) {
+      for (let i = 0; i < Math.min(3, Math.ceil(count / 8)); i++) {
+        this.fx('fx-streak', x, z - h, z + 2, { size: 20 + count * 1.6, tint: color, add: true, dur: 170, grow: 1.5, rot: rand(0, Math.PI * 2), flip: Math.random() < 0.5 });
+      }
+      return;
+    }
     for (let i = 0; i < count; i++) {
       const a = rand(0, Math.PI * 2);
       const s = rand(120, 380);
@@ -160,6 +197,9 @@ export class Gore {
 
   onHit(e) {
     if (this.level === 0) return this.spark(e.x, e.z, e.h, 0xffffff, 6);
+    // the blow lands: a painted flash where it struck, and a spray of blood thrown the way it went
+    this.fx('fx-flash', e.x, e.z - e.h, e.z + 3, { size: 34 + Math.min(40, e.damage * 1.5), tint: 0xffe0c0, add: true, dur: 110, grow: 1.5 });
+    if (!this.fxAnim('blood', e.x + e.dir * 22, e.z - e.h, e.z + 2, { size: (70 + Math.min(70, e.damage * 2.4)) * (this.level === 1 ? 0.7 : 1), ms: 40, flip: e.dir < 0 })) this.fx('fx-drops', e.x + e.dir * 18, e.z - e.h, e.z + 2, { size: (50 + Math.min(60, e.damage * 2)) * (this.level === 1 ? 0.7 : 1), dur: 260, grow: 1.25, flip: e.dir < 0, alpha: 0.95, drift: -8 });
     const count = Math.round(Math.min(40, 4 + e.damage * 1.3) * this.amount);
     this.burst(e.x, e.z, e.h, e.dir, count, e.move.hitstop >= 8 ? 1.4 : 1);
     this.splat(e.defender.x + e.dir * rand(5, 30), e.z + rand(-4, 4), rand(0.8, 1.6));

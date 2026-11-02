@@ -130,7 +130,14 @@ export const PROPS = {
   chest: { hp: 3, w: 46, h: 38 }, // iron-bound: takes a beating, always holds something good
   // (the village, Nick 2026-11-02: more to smash, and it smashes well; stage/Stage.js CHAIN, LAMP)
   lamppost: { hp: 2, w: 30, h: 120 }, // a street lamp on its post: it topples, the lantern bursts, the oil burns
-  haycart: { hp: 5, w: 120, h: 64, reach: 40 }, // a hay cart left in the street: smashes to boards and hay; burns if a lamp falls on it
+  haycart: { hp: 5, w: 120, h: 64, reach: 40 },
+  fence: { hp: 2, w: 96, h: 46 },
+  // things crates and barrels stand on (`stack: true` on the props after one): break it, or
+  // knock them, and they come down (stage/Stage.js knockAbout, updateStacks)
+  stall: { hp: 5, w: 104, h: 46, reach: 40 }, // a market stall: its counter, under a ragged awning
+  trestle: { hp: 3, w: 92, h: 50 },           // boards on two trestles
+  rack: { hp: 3, w: 80, h: 24 },              // a barrel rack
+  handcart: { hp: 4, w: 100, h: 40 },         // a hand cart, its bed // a length of split-rail fence: smashed through, its rails fly // a hay cart left in the street: smashes to boards and hay; burns if a lamp falls on it
   wall: { hp: 5, w: 90, h: 130, reach: 60 }, // a cracked section of the back wall
   bell: { hp: 1, w: 34, h: 70 }, // an iron bell on a post: ring it to call an optional fight (stage.challenge)
   wreckage: { hp: 4, w: 84, h: 56 }, // a burning beam pinning a door shut: smash it and whoever is inside gets out

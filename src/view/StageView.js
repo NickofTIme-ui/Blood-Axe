@@ -22,6 +22,8 @@ import { PropShatter, SHATTER, LAMP_ART } from './PropShatter.js';
 import { propLight, lightProp, rimGlow, groundUnder, moveGround } from './propGround.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
+// a colour darkened (k < 1) or lightened
+const shade = (c, k) => (Math.min(255, ((c >> 16) & 255) * k) << 16) | (Math.min(255, ((c >> 8) & 255) * k) << 8) | Math.min(255, (c & 255) * k);
 // A catapult's stone in the air (drawStone): its radius on screen
 const SIEGE_STONE = { radius: 21 };
 // An arrow volley (Stage bombard `look: 'arrows'`): arrows a volley; how far through the
@@ -42,7 +44,38 @@ const CHAIN = {
 };
 
 // the shared, painted-once props that take each level's light (view/propGround.js)
-const LIT_PROPS = new Set(['barrel', 'crate', 'urn', 'chest', 'bell']);
+// the lamp-and-cart painting (view/propArt.js lampcart): where in a frame the post's foot
+// stands (shares of the frame), and how big it's drawn (world px per px of a 256-wide frame)
+const PAIR = { postX: 0.195, groundY: 0.895, scale: 0.85 };
+const LIT_PROPS = new Set(['barrel', 'crate', 'urn', 'chest', 'bell', 'fence', 'stall', 'trestle', 'rack', 'handcart']);
+// the painted kinds of each (view/propArt.js), one picked per prop
+const VARIANTS = {
+  barrel: ['barrel-v0', 'barrel-v1', 'barrel-v2', 'barrel-v3', 'barrel-v4', 'barrel-v5', 'barrel-v6', 'barrel-grey', 'barrel-tar'],
+  crate: ['crate-v0', 'crate-v1', 'crate-v2', 'crate-v3', 'crate-v4', 'crate-v5', 'crate-v6', 'crate-blue', 'crate-fish'],
+};
+// the big pieces a break throws (view/propArt.js chunks)
+const CHUNKS = {
+  barrel: ['chk-staves', 'chk-head-0', 'chk-head-1', 'chk-hoop-0', 'chk-hoop-1', 'chk-stave-long'],
+  crate: ['chk-panel-grey', 'chk-lid-pine', 'chk-panel-bone', 'chk-bracket', 'chk-nails', 'chk-plank'],
+  chest: ['chk-panel-tar', 'chk-hinge', 'chk-padlock', 'chk-bracket'],
+  fence: ['chk-plank', 'chk-post', 'chk-nails'],
+  haycart: ['chk-wheel', 'chk-hub', 'chk-plank', 'chk-post'],
+  handcart: ['chk-wheel', 'chk-hub', 'chk-plank'],
+  stall: ['chk-awning', 'chk-post', 'chk-plank', 'chk-trestle-leg'],
+  trestle: ['chk-trestle-leg', 'chk-plank', 'chk-plank'],
+  rack: ['chk-post', 'chk-plank', 'chk-bracket'],
+};
+// the loose bits each kind throws off (view/propArt.js debris)
+const SPLINTERS = ['deb-splinter-0', 'deb-splinter-1', 'deb-splinter-2', 'deb-splinter-3'];
+const PLANKS = ['deb-plank-2', 'deb-plank-3', 'deb-plank-4', 'deb-plank-5'];
+const DEBRIS = {
+  barrel: ['deb-stave-0', 'deb-stave-1', 'deb-stave-3', ...SPLINTERS],
+  crate: [...PLANKS, ...SPLINTERS], chest: [...PLANKS, ...SPLINTERS], fence: ['deb-plank-0', 'deb-plank-1', ...PLANKS, ...SPLINTERS],
+  stall: ['deb-plank-0', ...PLANKS, ...SPLINTERS], trestle: [...PLANKS, ...SPLINTERS], rack: [...PLANKS, ...SPLINTERS], handcart: [...PLANKS, ...SPLINTERS],
+  urn: ['deb-shard-0', 'deb-shard-1', 'deb-shard-2'],
+  haycart: [...PLANKS, ...SPLINTERS, 'deb-straw-0', 'deb-straw-1'],
+  lamppost: [...SPLINTERS, 'deb-glass-0', 'deb-glass-1'],
+};
 
 export class StageView {
   constructor(scene, stage) {
@@ -55,9 +88,11 @@ export class StageView {
     this.shatter = new PropShatter(this); // (props bursting into pieces of themselves: view/PropShatter.js)
     for (const pr of stage.props) {
       const v = this.makeProp(pr);
+      this.vary(pr, v);
       if (pr.under !== undefined) v.ground?.forEach((g) => g.setVisible(false)); // (stacked: its shadow is the crate under it)
       this.propSprites.set(pr.id, v);
     }
+    this.makePairs();
     this.pickupSprites = new Map();
     this.listen();
   }
@@ -79,6 +114,7 @@ export class StageView {
     // the painted sheet first (view/propSheet.js); anything it doesn't supply is painted
     // here instead (canvasTex leaves an existing texture alone)
     this.painted = buildPropSheet(this.scene);
+    this.art2 = this.scene.registry.get('propArt') ?? new Set(); // (the second repaint: view/propArt.js)
     this.hd = buildPropSheet(this.scene, 'props-hd-src', PROP_HD, 3, 2, true); // (replaces the old breakables)
     // the pickups at full detail (drawn at 1 / PICKUP_SCALE): the repainted sheet where it exists
     this.pickupHd = buildPropSheet(this.scene, 'props-src', PICKUP_HD, 4, 4, true);
@@ -608,10 +644,10 @@ export class StageView {
 
   makeProp(pr) {
     if (pr.kind === 'lamppost' || pr.kind === 'haycart') return this.makeStreetProp(pr);
-    const key = `prop-${pr.kind}`;
+    const key = this.propKey(pr);
     // (a level's painted prop, data/levelArt.js: sized to the prop, whatever size it was painted)
     const lvl = (this.scene.registry.get('levelArt') ?? []).includes(key);
-    const s = lvl ? (pr.w * 1.3) / this.scene.textures.get(key).getSourceImage().width : this.hd.has(key) ? 0.25 : 0.5 * (pr.size ?? 1);
+    const s = lvl ? (pr.w * 1.3) / this.scene.textures.get(key).getSourceImage().width : this.hd.has(key) || this.art2.has(key) ? 0.25 : 0.5 * (pr.size ?? 1);
     if (pr.kind === 'wall') {
       // set into the back wall: the alcove waits behind it
       const y = SETTINGS.world.floorTop - 4;
@@ -638,7 +674,98 @@ export class StageView {
       shadow.setVisible(false);
     }
     this.siege.setup(pr, v, lvl);
+    v.key = key;
     return v;
+  }
+
+  // Which painting: the repainted barrels and crates come in several kinds (view/propArt.js),
+  // one picked by the prop's id (or named in the level: `look: 'sack'`, 'keg')
+  propKey(pr) {
+    const base = `prop-${pr.kind}`;
+    if (pr.look && this.art2.has(`prop-${pr.look}`)) return `prop-${pr.look}`;
+    const kinds = (VARIANTS[pr.kind] ?? []).map((k) => `prop-${k}`).filter((k) => this.art2.has(k));
+    return kinds.length ? kinds[(pr.id * 7 + (pr.x >> 4)) % kinds.length] : base;
+  }
+
+  // A lamp post with a hay cart just past it (the market square's): drawn together as one
+  // painting, ChatGPT's eight frames of the lamp going over onto the cart and the cart burning
+  // (view/propArt.js lampcart), so the fall and the fire are painted, not the post turned in code
+  makePairs() {
+    if (!this.art2.has('lampcart-0')) return;
+    for (const L of this.stage.props) {
+      if (L.kind !== 'lamppost') continue;
+      const C = this.stage.props.find((q) => q.kind === 'haycart' && q.x - L.x > 50 && q.x - L.x < 180 && Math.abs(q.z - L.z) < 30);
+      if (!C) continue;
+      const lv = this.propSprites.get(L.id); const cv = this.propSprites.get(C.id);
+      const T = this.scene.textures.get('lampcart-0').getSourceImage();
+      // (the frame's post foot at the lamp's foot, its cart standing on the cart's line)
+      const img = this.scene.add.image(L.x + 5, C.z, 'lampcart-0').setOrigin(PAIR.postX, PAIR.groundY).setScale(PAIR.scale * 256 / T.width).setDepth(C.z);
+      const pair = { img, lamp: L, cart: C, lv, cv, state: 'standing' };
+      lv.pair = pair; cv.pair = pair;
+      lv.img.setVisible(false); cv.img.setVisible(false);
+    }
+  }
+
+  pairFrame(pair, i) {
+    if (pair.img.active) pair.img.setTexture(`lampcart-${i}`);
+  }
+
+  // back to two separate things (the cart smashed first, or the lamp knocked the other way)
+  unpair(pair) {
+    if (!pair.img.active) return;
+    pair.img.destroy();
+    pair.lv.pair = null; pair.cv.pair = null;
+    if (!pair.lamp.broken) pair.lv.img.setVisible(true);
+    else this.shatter.lampLands(pair.lamp, pair.lv, false, true);
+    pair.cv.img.setVisible(true);
+  }
+
+  // the cart alight: catching, roaring (two frames, flickering), dying down; then burnt out
+  syncPairs() {
+    for (const pr of this.stage.props) {
+      const pair = pr.kind === 'haycart' ? this.propSprites.get(pr.id)?.pair : null;
+      if (!pair || pair.state !== 'burning' || !pair.img.active) continue;
+      const t = this.scene.time.now - pair.lit;
+      const b = this.stage.blazes.find((q) => q.cart === pr);
+      const left = b?.left ?? 0;
+      const f = t < 350 ? 3 : t < 800 ? 4 : left < 100 ? 6 : 4 + (Math.floor(t / 260) % 2);
+      this.pairFrame(pair, f);
+      if (Math.random() < 0.12) this.scene.gore.spawn({ x: pr.x + rand(-50, 50), z: pr.z, h: rand(40, 110), vx: rand(-15, 15), vz: 0, vh: rand(60, 140), tint: 0xffa040, scale: rand(0.3, 0.6), decal: false, life: rand(25, 45) });
+    }
+  }
+
+  // big painted pieces thrown off a break: a lid, a panel, a hoop, a wheel (view/propArt.js chunks)
+  chunks(pr, dir, power) {
+    const keys = (CHUNKS[pr.kind] ?? []).filter((k) => this.art2.has(k));
+    if (!keys.length) return;
+    const n = Math.min(4, 1 + Math.floor(power / 1.5) + (pr.w > 90 ? 1 : 0));
+    for (let i = 0; i < n; i++) {
+      this.scene.gore.spawn({
+        x: pr.x + rand(-pr.w / 3, pr.w / 3), z: pr.z + rand(-3, 6), h: (pr.y ?? 0) + rand(pr.h * 0.3, pr.h * 0.9),
+        vx: dir * rand(60, 200) * (0.7 + power * 0.2) + rand(-60, 60), vz: rand(-30, 40), vh: rand(160, 360),
+        tint: 0xffffff, texture: keys[Math.floor(Math.random() * keys.length)], scale: rand(0.2, 0.27), decal: false, life: rand(420, 600), spin: rand(-9, 9), material: PHYSICS.wood,
+      });
+    }
+  }
+
+  // No two alike (Nick, 2026-11-02: "the barrels and crates feel copy and pasted"): each
+  // barrel and crate a little bigger or smaller, turned the other way, set a touch askew,
+  // weathered lighter or darker. Fixed by its id, so it's the same every time you play.
+  vary(pr, v) {
+    if (!['barrel', 'crate', 'urn'].includes(pr.kind) || !v?.img) return;
+    let h = (pr.id * 2654435761) >>> 0;
+    const next = () => { h = (h ^ (h >>> 15)) * 2246822519 >>> 0; return (h & 0xffff) / 0xffff; };
+    const sc = 0.86 + next() * 0.24;
+    v.s *= sc;
+    v.img.setScale(v.s);
+    if (next() < 0.5) v.img.setFlipX(true);
+    v.tilt = (next() - 0.5) * (pr.kind === 'crate' ? 6 : 3);
+    v.img.setAngle(v.tilt);
+    if (v.light) {
+      const k = 0.8 + next() * 0.22;
+      v.light = { ...v.light, top: shade(v.light.top, k), low: shade(v.light.low, k) };
+      lightProp(v.img, v.light);
+    }
   }
 
   // The village's lamp posts and hay carts: their paintings are the street clutter's
@@ -667,10 +794,14 @@ export class StageView {
 
   propHit(pr, dir) {
     const v = this.propSprites.get(pr.id);
+    // worn down a blow at a time: the painted cracked stage, where there is one (view/propArt.js stages)
+    if (v?.key && !pr.tipped && this.art2.has(`${v.key}-cracked`) && v.img.texture.key !== `${v.key}-cracked`) v.img.setTexture(`${v.key}-cracked`);
+    if (v?.pair && pr.kind === 'lamppost') this.scene.tweens.add({ targets: v.pair.img, angle: dir * 1.5, duration: 70, yoyo: true });
     if (SHATTER[pr.kind]) {
       // knocked: it rocks on its foot and settles back, a crack of wood
-      v.img.setAngle(0);
-      this.scene.tweens.add({ targets: v.img, angle: dir * (pr.kind === 'lamppost' ? 4 : pr.kind === 'haycart' ? 2 : 7), duration: 70, yoyo: true, ease: 'Quad.easeOut' });
+      const base = pr.tipped ? (v.tipped?.dir ?? 1) * 90 : v.spun ?? v.tilt ?? 0;
+      v.img.setAngle(base);
+      if (!pr.fall && !pr.tumble) this.scene.tweens.add({ targets: v.img, angle: base + dir * (pr.kind === 'lamppost' ? 4 : pr.kind === 'haycart' ? 2 : 7), duration: 70, yoyo: true, ease: 'Quad.easeOut' });
       if (pr.kind === 'lamppost' || pr.kind === 'haycart') {
         playSfx(this.scene, 'doorClose2', { volume: 0.6, pitch: -400 + Math.random() * 300, minGapMs: 0 });
         this.chips(pr, 8, dir);
@@ -690,17 +821,31 @@ export class StageView {
     if (pr.kind === 'lamppost') {
       this.chips(pr, 10, dir);
       v.ground?.forEach((g) => g.setAlpha(g.alpha * 0.5));
+      // beside its hay cart, struck toward it: the painted fall onto the cart plays (pairFrame)
+      if (v.pair && dir > 0 && !v.pair.cart.broken) { v.pair.state = 'falling'; this.pairFrame(v.pair, 1); playSfx(this.scene, 'doorOpen1', { volume: 0.7, pitch: -700, minGapMs: 0 }); return; }
+      if (v.pair) this.unpair(v.pair);
       this.shatter.topple(pr, v, dir, 30);
       return;
     }
+    if (SHATTER[pr.kind] && v.img?.active) this.chunks(pr, dir, blast ? 3 : power);
+    if (pr.kind === 'haycart' && v.pair) this.unpair(v.pair);
     // it bursts into pieces of its own painting, flying the way it was driven (view/PropShatter.js)
     const shard = SHATTER[pr.kind] && v.img?.active && !pr.fly;
     if (shard) {
-      v.img.setAngle(0);
+      v.img.setAngle(0).setOrigin(0.5, 1).setPosition(pr.x, pr.z - (pr.y ?? 0) - (pr.lift ?? 0));
       this.shatter.burst(pr, v.img, dir || 1, blast ? 3 : Math.max(1, power));
       if (power >= 3 || blast) this.scene.fx?.shake(5, 12);
       if (pr.kind === 'haycart') {
-        v.img.destroy(); v.glow?.destroy();
+        // what's left: the smashed cart, or (alight, or burnt out) the charred one (view/propArt.js street)
+        const left = pr.burning || pr.burnt ? 'haycart-burnt' : 'haycart-smashed';
+        v.glow?.destroy();
+        if (this.art2.has(left)) {
+          const w = v.img.displayWidth;
+          v.img.setTexture(left).clearTint().setScale(w / this.scene.textures.get(left).getSourceImage().width).setDepth(pr.z - 0.2);
+          if (pr.burnt) v.img.setTint(0xb0a090);
+          v.img.setScale(v.img.scaleX * 1.15, v.img.scaleY * 0.7);
+          this.scene.tweens.add({ targets: v.img, scaleY: v.img.scaleX / 1.15, scaleX: v.img.scaleX / 1.15, duration: 180, ease: 'Back.easeOut' });
+        } else v.img.destroy();
         v.ground?.slice(0, 2).forEach((g) => g.setAlpha(g.alpha * 0.4));
         return;
       }
@@ -719,7 +864,9 @@ export class StageView {
     }
     // what's left of it stays where it stood: the smashed barrel, the shards, the chest
     // thrown open (painted states from the prop sheet) — not just a vanished object
-    const wreck = pr.kind === 'chest' ? 'prop-chest-open' : `prop-${pr.kind}-broken`;
+    const wreck = pr.kind === 'chest' ? 'prop-chest-open' : this.scene.textures.exists(`${v.key}-broken`) ? `${v.key}-broken`
+      : pr.kind === 'barrel' && v.key?.includes('tar') ? 'prop-barrel-tar-broken'
+      : this.art2.has(`prop-${pr.kind}-v0-broken`) && v.key !== `prop-${pr.kind}` ? `prop-${pr.kind}-v0-broken` : `prop-${pr.kind}-broken`;
     if (this.scene.textures.exists(wreck)) {
       v.img.setTexture(wreck).setOrigin(0.5, 1).setPosition(pr.x, pr.z - (pr.y ?? 0) - (pr.lift ?? 0)).setDepth(pr.z - 0.2).clearTint();
       if (v.light) lightProp(v.img, v.light, 0.9); // (what's left of it, in the same light)
@@ -742,6 +889,22 @@ export class StageView {
   }
 
   chips(pr, n, dir) {
+    // the painted loose bits (view/propArt.js debris): staves and hoops off a barrel, boards and
+    // splinters off a crate or a fence, shards off a pot, glass off a lantern
+    const bits = DEBRIS[pr.kind]?.filter((k) => this.art2.has(k));
+    if (bits?.length) {
+      const gore = this.scene.gore;
+      for (let i = 0; i < Math.ceil(n * 0.6); i++) {
+        const key = bits[Math.floor(Math.random() * bits.length)];
+        gore.spawn({
+          x: pr.x + rand(-pr.w / 2, pr.w / 2), z: pr.z + rand(-4, 6), h: (pr.y ?? 0) + rand(8, pr.h),
+          vx: dir * rand(40, 240) + rand(-80, 80), vz: rand(-40, 40), vh: rand(120, 360),
+          tint: 0xffffff, texture: key, scale: rand(0.17, 0.27), decal: false, life: rand(240, 420), spin: rand(-12, 12),
+          material: PHYSICS[pr.kind === 'urn' ? 'pottery' : 'wood'],
+        });
+      }
+      return;
+    }
     const colors = pr.kind === 'wall' ? [0x5a524a, 0x3e3732, 0x8a8070] : pr.kind === 'urn' ? [0x9a5a3a, 0x3a1e14]
       : pr.kind === 'chest' ? [0x5a3418, 0x3a3a42, 0xc8a040] : [0x7a4a24, 0x3a2210, 0x5a5a62];
     const gore = this.scene.gore;
@@ -1624,19 +1787,56 @@ export class StageView {
     listenScorpion(this);
     ev.on('propHit', ({ prop, dir }) => this.propHit(prop, dir));
     ev.on('propBreak', ({ prop, dir, blast, power }) => this.propBreak(prop, dir, blast, power));
-    ev.on('propImpact', ({ prop }) => { const v = this.propSprites.get(prop.id); if (v) this.shatter.lampLands(prop, v); });
+    ev.on('propImpact', ({ prop }) => {
+      const v = this.propSprites.get(prop.id);
+      if (!v) return;
+      if (v.pair?.state === 'falling') { this.pairFrame(v.pair, 2); this.shatter.lampLands(prop, v, true); return; }
+      this.shatter.lampLands(prop, v);
+    });
     // a hay cart catches (a lamp fell on it): the painted cart alight, then charred
     ev.on('propIgnite', ({ prop }) => {
       const v = this.propSprites.get(prop.id);
+      if (v?.pair) { v.pair.state = 'burning'; v.pair.lit = this.scene.time.now; playSfx(this.scene, 'fireWhoosh', { volume: 0.9, pitch: -400, minGapMs: 0 }); return; }
       if (!v?.img?.active) return;
-      if (this.scene.textures.exists('cartwreck-broken')) v.img.setTexture('cartwreck-broken');
+      // the hay catches: a burst of flame, then the painted cart alight fades in over it
+      const g = this.scene.gore;
+      g.fx('fx-fireburst', prop.x, prop.z - (prop.y ?? 0) - 40, prop.z + 2, { size: 150, add: true, dur: 700, grow: 1.5, drift: 30 });
+      g.fx('fx-smoke', prop.x, prop.z - 90, prop.z + 1, { size: 140, dur: 2200, grow: 1.8, alpha: 0.7, drift: 70 });
+      if (this.scene.textures.exists('cartwreck-broken')) {
+        const lit = this.scene.add.image(v.img.x, v.img.y, 'cartwreck-broken').setOrigin(0.5, 1).setScale(v.img.scaleX, v.img.scaleY).setFlipX(v.img.flipX).setDepth(v.img.depth + 0.01).setAlpha(0);
+        this.scene.tweens.add({ targets: lit, alpha: 1, duration: 900, onComplete: () => { if (v.img.active) v.img.setTexture('cartwreck-broken'); lit.destroy(); } });
+      }
       playSfx(this.scene, 'fireWhoosh', { volume: 0.9, pitch: -400, minGapMs: 0 });
-      this.scene.gore.spark(prop.x, prop.z, 30, 0xffa040, 30);
     });
     ev.on('propBurnt', ({ prop }) => {
       const v = this.propSprites.get(prop.id);
+      if (v?.pair) { v.pair.state = 'burnt'; this.pairFrame(v.pair, 7); this.scene.gore.fx('fx-smoke', prop.x, prop.z - 90, prop.z + 1, { size: 120, dur: 3000, grow: 1.8, alpha: 0.6, drift: 80 }); return; }
       if (!v?.img?.active || prop.broken) return;
-      v.img.setTexture('cartwreck').setTint(0x3a2c26);
+      // burnt out: the charred skeleton of the cart (view/propArt.js), smoking
+      if (this.art2.has('haycart-burnt')) {
+        const w = v.img.displayWidth;
+        v.img.setTexture('haycart-burnt').clearTint().setScale(w / this.scene.textures.get('haycart-burnt').getSourceImage().width);
+        this.scene.gore.fx('fx-smoke', prop.x, prop.z - 70, prop.z + 1, { size: 120, dur: 3000, grow: 1.8, alpha: 0.6, drift: 80 });
+      } else v.img.setTexture('cartwreck').setTint(0x3a2c26);
+    });
+    // knocked off its stack: it tumbles, turning over as it drops (syncStacked)
+    ev.on('propKnocked', ({ prop }) => {
+      playSfx(this.scene, 'doorClose2', { volume: 0.55, pitch: -200 + Math.random() * 300, minGapMs: 0 });
+      this.chips(prop, 4, prop.fall?.dir > 0 ? 1 : -1);
+    });
+    // a barrel knocked over: it goes down on its side, then rolls (syncTumble)
+    ev.on('propTip', ({ prop, dir }) => {
+      const v = this.propSprites.get(prop.id);
+      if (!v?.img?.active) return;
+      playSfx(this.scene, 'kick', { volume: 0.7, pitch: -600, minGapMs: 0 });
+      playSfx(this.scene, 'doorClose1', { volume: 0.5, pitch: 200, minGapMs: 0 });
+      this.chips(prop, 6, dir);
+      v.tipped = { t: 0, dir, w: v.img.displayWidth, h: v.img.displayHeight };
+      v.rim?.setVisible(false);
+    });
+    ev.on('propRest', ({ prop }) => {
+      playSfx(this.scene, 'kick', { volume: 0.35, pitch: -300, minGapMs: 0 });
+      this.shatter.dust(prop, 0x8a7a64, 0);
     });
     // a crate stacked on one that broke lands: a thud and dust
     ev.on('propLand', ({ prop }) => {
@@ -1775,10 +1975,46 @@ export class StageView {
       if (!v?.img?.active || pr.fly) continue;
       const y = pr.y ?? 0;
       v.img.setPosition(pr.x, pr.z - y).setDepth(pr.z);
-      if (pr.fall) v.img.setAngle(v.img.angle + pr.fall.dir * 3);
-      else if (v.img.angle && !this.scene.tweens.isTweening(v.img)) v.img.setAngle(0);
+      if (pr.fall) { v.spun = (v.spun ?? 0) + pr.fall.dir * (pr.fall.spin ? 2.2 : 1); v.img.setAngle(v.spun); }
+      else if (v.spun) {
+        // down: it settles on whichever face it landed nearest (a crate lands on a side)
+        const flat = Math.round(v.spun / 90) * 90;
+        v.spun += (flat - v.spun) * 0.3;
+        if (Math.abs(flat - v.spun) < 0.5) v.spun = flat % 360 || 0;
+        v.img.setAngle(v.spun);
+      }
       v.rim?.setPosition(pr.x - v.img.displayWidth * 0.32, pr.z - y - v.img.displayHeight * 0.55);
       if (v.ground && !v.landed && !pr.fall && pr.y === (pr.floorY ?? 0)) { v.landed = true; moveGround(v.ground, pr.x, pr.z - y); v.ground.forEach((g) => g.setVisible(true)); }
+    }
+  }
+
+  // tipped barrels: going over onto their side, then rolling down the lane, bobbing on the staves
+  syncTumble() {
+    for (const pr of this.stage.props) {
+      if (!pr.tipped || pr.broken) continue;
+      const v = this.propSprites.get(pr.id);
+      const T = v?.tipped;
+      if (!T || !v.img.active) continue;
+      T.t = Math.min(1, T.t + 0.12);
+      const e = 1 - (1 - T.t) * (1 - T.t);
+      const y = pr.z - (pr.y ?? 0);
+      // (turned about its middle: lying down, it is as tall as it was wide)
+      const cy = y - (T.h / 2) * (1 - e) - (T.w / 2) * e;
+      const bob = pr.tumble ? Math.abs(Math.sin(pr.x * 0.08 + pr.z * 0.12)) * 2 : 0;
+      // once it's down: the painted barrel lying on its side (view/propArt.js street)
+      if (T.t >= 1 && this.art2.has('prop-barrel-tipped')) {
+        // (rolling: the painted barrel on its side throwing dust; at rest, lying still; a tar barrel spills its tar)
+        const tar = v.key?.includes('tar');
+        const want = pr.tumble && this.art2.has('barrel-rolling') ? 'barrel-rolling' : tar && this.art2.has('barrel-tarspill') ? 'barrel-tarspill' : 'prop-barrel-tipped';
+        if (T.art !== want) { T.art = want; v.img.setTexture(want).setScale(v.s * 0.92).setFlipX(T.dir < 0); if (v.light) lightProp(v.img, v.light); }
+        v.img.setOrigin(0.5, 1).setAngle(0).setPosition(pr.x, y - bob).setDepth(pr.z);
+        moveGround(v.ground, pr.x, y, { grit: false });
+        if (pr.tumble && Math.random() < 0.3) this.scene.gore.spawn({ x: pr.x, z: pr.z + 3, h: 2, vx: rand(-20, 20), vz: -pr.tumble.zDir * rand(10, 40), vh: rand(20, 60), tint: 0x3a2e22, scale: rand(0.4, 0.8), decal: false, life: 25 });
+        continue;
+      }
+      v.img.setOrigin(0.5, 0.5).setPosition(pr.x, cy - bob).setAngle(T.dir * 90 * e + (v.tilt ?? 0) * (1 - e)).setDepth(pr.z);
+      moveGround(v.ground, pr.x, y, { grit: false });
+      if (pr.tumble && Math.random() < 0.3) this.scene.gore.spawn({ x: pr.x, z: pr.z + 3, h: 2, vx: rand(-20, 20), vz: -pr.tumble.zDir * rand(10, 40), vh: rand(20, 60), tint: 0x3a2e22, scale: rand(0.4, 0.8), decal: false, life: 25 });
     }
   }
 
@@ -1812,6 +2048,8 @@ export class StageView {
     if(chest)this.chestHint.setPosition(chest.x,chest.z-(chest.y??0)-chest.h-10).setDepth(chest.z+100);
     this.siege.update();
     this.syncStacked();
+    this.syncPairs();
+    this.syncTumble();
     this.shatter.update(this.scene.game.loop.delta);
     this.syncRolling();
     this.syncKicked();

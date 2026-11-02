@@ -6,6 +6,22 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 2 November 2026, round 2 (cloud, branch `claude/project-thread-b5hipz`, NOT on main, not on
+  itch). Nick: "the barrels and crates feel copy and pasted", knock crates over or off things,
+  the lamp onto the cart "looked bad", "make more art", "replace ALL OLD OUTDATED ART", "ROLL
+  through breakable objects". ChatGPT painted 12 sheets on the PC (the PC branch `props-v2-art`
+  holds the originals in `assets/incoming/props-v2/`); the game loads them, scaled to 1024 wide,
+  from `assets/env/props2/` and `view/propArt.js` cuts them (`PROP_SHEETS2`). What changed:
+  9 barrel and 9 crate kinds picked per prop (`StageView` VARIANTS) plus size, tilt, flip and
+  weathering (`vary`); cracked stages on hit; sacks, kegs, a long crate, a tall crate; fences;
+  a market stall, trestle tables, a barrel rack and a hand cart with things standing on them
+  (`stack: true` puts a prop on the last base before it); a light blow knocks a stacked prop off
+  or tips a barrel over to roll across the lane (`Stage.js` TUMBLE, painted rolling / tar-spill
+  barrels); a dodge roll smashes through breakables (`Fighter.bump`); the square's lamp and hay
+  cart are drawn as one painting and play ChatGPT's 8-frame fall-and-fire (`makePairs`); the
+  old 'px' chips and 'dot' sparks are replaced by painted debris, big chunks, and animated
+  impacts, blood spray, splinter bursts and dust (`Gore.fx`, `Gore.fxAnim`). The PC's own
+  hand-off notes asking for these (on `props-v2-art`) are covered by this.
 - 2 November 2026 (cloud, NOT on main until Nick says push, not on itch): level 1's props
   smash well and there are more of them (Nick: "more barrels next to each other", "if a guy
   gets knocked flying into barrels it all smashes nicely, or a torch lamp post"). Barrels and

@@ -107,6 +107,13 @@ export const STAGE_VILLAGE = {
         { kind: 'barrel', x: 664, z: 300, drop: null },
         { kind: 'barrel', x: 648, z: 316, drop: null },
         { kind: 'chest', x: 920, z: 510, drop: 'health' },
+        // a fence along the front of the road (view/propArt.js: smashed through, its rails fly)
+        { kind: 'fence', x: 500, z: 512, drop: null },
+        { kind: 'fence', x: 594, z: 514, drop: null },
+        // Hale's trestle table by the road's end, a crate and a pot on it: knock them off
+        { kind: 'trestle', x: 1060, z: 300, drop: null },
+        { kind: 'crate', stack: true, dx: -18, drop: null },
+        { kind: 'urn', stack: true, dx: 22, drop: null },
         // a street lamp by the road's end (it topples, its oil burns: stage/Stage.js LAMP)
         { kind: 'lamppost', x: 1180, z: 283, drop: null },
         // a secret: tucked behind the heap of burnt timbers at the back of the road
@@ -132,12 +139,18 @@ export const STAGE_VILLAGE = {
         { kind: 'barrel', x: 1640, z: 305, drop: 'health' },
         { kind: 'barrel', x: 1622, z: 322, drop: null },
         { kind: 'crate', x: 1678, z: 302, drop: null },
+        { kind: 'barrel', x: 1712, z: 300, drop: null, look: 'keg' },
         // a street lamp, and a hay cart left beside it: knock the lamp over onto the cart and
         // the hay goes up (Stage.js LAMP)
         { kind: 'lamppost', x: 1760, z: 283, drop: null },
-        { kind: 'haycart', x: 1890, z: 300, drop: null },
+        { kind: 'haycart', x: 1850, z: 300, drop: null },
+        // a market stall beyond it, its fish and stock still up on the counter
+        { kind: 'stall', x: 1990, z: 298, drop: null },
+        { kind: 'crate', stack: true, dx: -22, look: 'crate-fish', drop: null },
+        { kind: 'urn', stack: true, dx: 24, drop: 'mana' },
         // a stall's stock by the far corner of the square
         { kind: 'barrel', x: 2524, z: 506, drop: null },
+        { kind: 'crate', x: 2632, z: 500, drop: null, look: 'sack' },
         { kind: 'crate', x: 2560, z: 500, drop: 'mana' },
         { kind: 'crate', stack: true, dx: -3, drop: null },
         { kind: 'crate', x: 2598, z: 504, drop: null },
@@ -197,7 +210,15 @@ export const STAGE_VILLAGE = {
         { kind: 'barrel', x: 4436, z: 492, drop: null },
         { kind: 'crate', x: 5150, z: 490, drop: null },
         { kind: 'crate', stack: true, dx: 2, drop: null },
-        { kind: 'crate', x: 5188, z: 494, drop: null },
+        { kind: 'crate', x: 5188, z: 494, drop: null, look: 'crate-long' },
+        { kind: 'crate', x: 5110, z: 300, drop: null, look: 'sack' },
+        { kind: 'crate', x: 5142, z: 304, drop: null, look: 'sack' },
+        { kind: 'fence', x: 4880, z: 512, drop: null },
+        // the miller's hand cart, sacks of grain on it
+        { kind: 'handcart', x: 5320, z: 500, drop: null },
+        { kind: 'crate', stack: true, dx: -16, look: 'sack', drop: null },
+        { kind: 'crate', stack: true, dx: 18, look: 'sack', drop: null },
+        { kind: 'fence', x: 4974, z: 514, drop: null },
         // the archers shooting at you since the roofs: two posts either side of the mill (the
         // right one stands clear of the gallows, the barn past it: Nick, 2026-10-23)
         { kind: 'archers', tag: 'millArchers', x: 4560, z: 300, drop: null },
@@ -229,10 +250,18 @@ export const STAGE_VILLAGE = {
         { kind: 'barrel', x: 5840, z: 498, drop: null },
         { kind: 'barrel', x: 5824, z: 514, drop: null },
         { kind: 'lamppost', x: 5900, z: 283, drop: null },
+        // a barrel rack by the stable wall, two up on it
+        { kind: 'rack', x: 6200, z: 296, drop: null },
+        { kind: 'barrel', stack: true, dx: -18, drop: null },
+        { kind: 'barrel', stack: true, dx: 18, drop: null },
         { kind: 'haycart', x: 6570, z: 298, drop: null, flip: true },
         { kind: 'crate', x: 7000, z: 470, drop: 'health' },
         { kind: 'crate', stack: true, dx: 3, drop: null },
         { kind: 'crate', x: 7038, z: 476, drop: null },
+        // the paddock fence along the front of the yard (in the herd's lane: they go through it)
+        { kind: 'fence', x: 6760, z: 512, drop: null },
+        { kind: 'fence', x: 6854, z: 514, drop: null },
+        { kind: 'fence', x: 6948, z: 512, drop: null },
       ],
       hazards: [
         { type: 'fire', look: 'cart', x: 6720, z: 330, w: 100, d: 50, phase: 30 },
@@ -258,6 +287,9 @@ export const STAGE_VILLAGE = {
       props: [
         { kind: 'lamppost', x: 7150, z: 283, drop: null },
         // the hall's stores along the back of the street
+        { kind: 'trestle', x: 7880, z: 300, drop: null },
+        { kind: 'crate', stack: true, dx: -20, drop: null },
+        { kind: 'barrel', stack: true, dx: 20, look: 'keg2', drop: null },
         { kind: 'crate', x: 7480, z: 296, drop: null },
         { kind: 'crate', x: 7518, z: 300, drop: null },
         { kind: 'crate', stack: true, dx: -2, drop: null },
