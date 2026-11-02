@@ -143,7 +143,9 @@ export class SpriteEnemyView {
       case 'stagger':
       case 'burning':
       case 'guardBreak': return A.hit.frames[0];
-      case 'knockdown': return f.lyingSince === null ? A.air.frames[0] : A.lying.frames[0];
+      case 'knockdown':
+        if (f.lyingSince === null && f.thrown?.missile && !f.thrown.landed) return A.missile ? loop({ fps: 10, ...A.missile }) : A.idle.frames[0];
+        return f.lyingSince === null ? A.air.frames[0] : A.lying.frames[0];
       case 'getup': return easedSpread(A.getup.frames, fr / f.stats.getupFrames);
       // struck dead on his feet: the blow lands (hit), he goes over (knocked flying), down
       case 'dead': {
@@ -161,7 +163,9 @@ export class SpriteEnemyView {
       case 'jump': return A.air.frames[0];
       // picked up and yoked overhead (combat/Grab.js): his stance, upright, turned flat by
       // grabSpin (the hit and knocked-flying poses lean back: turned, they'd hang askew)
-      case 'grabbed': return A.idle.frames[0];
+      // by the scruff of the neck (the bouncer): legs still going, feet scrabbling at the floor
+      case 'grabbed': return f.byNeck ? loop({ ...A.walk, fps: 16 }) : A.idle.frames[0];
+      // thrown head first like a missile: his own flying pose when it's painted (anims.missile)
       // held by an executioner: struggling in his grip / run through / frozen in terror
       case 'executed':
         // caught, but still running: a few more stumbling strides before he's stopped
@@ -517,8 +521,9 @@ export class SpriteEnemyView {
   // kicking; thrown: he tumbles end over end until he lands. Both turn him about the middle
   // of his body (the sim's x / h are his middle while he's held), not about his feet.
   grabSpin(s, f, tick) {
-    const held = f.state === 'grabbed' && f.grabbedBy;
+    const held = f.state === 'grabbed' && f.grabbedBy && !f.byNeck;
     const flying = f.state === 'knockdown' && f.thrown && f.lyingSince === null;
+    if (f.state === 'grabbed' && f.byNeck) { s.angle = 8 * f.facing; return; } // (hauled forward, leaning into it)
     if (!held && !flying) { this.thrownAt = null; return; }
     const half = f.stats.body.h * 0.5 * depthScale(f.z) * (f.stats.size ?? 1);
     let deg;
@@ -531,8 +536,15 @@ export class SpriteEnemyView {
     } else {
       if (this.thrownAt == null) this.thrownAt = tick;
       const dir = Math.sign(f.vx) || this.spinDir || 1;
-      deg = 90 * dir + (tick - this.thrownAt) * 15 * dir;
       cx = f.x; cy = f.z - f.h - half * 0.6;
+      if (f.thrown.missile && !f.thrown.landed) {
+        // head first, rigid, pointing along his flight (screen: along the lane, down the
+        // lane's depth, minus his rise); a painted flying pose is drawn flat already
+        const sx = f.vx; const sy = f.vz * 0.7 - f.vh;
+        const along = (Math.atan2(sx, -sy) * 180) / Math.PI;
+        deg = this.A.missile ? along - 90 * Math.sign(sx || dir) : along;
+        if (this.A.missile) { s.angle = deg; s.setPosition(cx, cy + half * 0.6); return; }
+      } else deg = 90 * dir + (tick - this.thrownAt) * 15 * dir;
     }
     // turn him about the middle of his body: half a body up from his feet (the frame's origin)
     const r = (deg * Math.PI) / 180;

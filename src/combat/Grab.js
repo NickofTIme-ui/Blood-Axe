@@ -15,6 +15,14 @@
 //           any point (a press during the lift throws the moment he's up); thrown anyway
 //           after `hold` frames
 //   throw   leaning back (`windup`), the release, then `recover` frames to get his feet back
+//
+// THE BOUNCER (Nick, 2026-11-02): grab him while pushing the stick toward him and the hero
+// takes him by the scruff of the neck instead, like a bouncer with a drunk: turned round,
+// his feet barely off the floor, frog-marched ahead of the hero (smashing whatever he's
+// marched into) until the next press hurls him away.
+//
+// Thrown, he flies like a MISSILE, head first and rigid, most of the time (`missile`); the
+// rest of the time he tumbles end over end.
 export const GRAB = {
   reach: 72, depth: 24, high: 30, // how far in front, across the lane, how far off the ground
   catch: 6, whiff: 22,            // frames: the hands close / the empty grab is over
@@ -26,6 +34,11 @@ export const GRAB = {
   speed: 820, speedZ: 470, vh: 110, slam: 22, through: 16,
   releaseH: 0.35, float: 0.3,     // leaves the hands at this x the hero's height; gravity x this until he lands (a long, flat flight)
   plow: 0.86,                     // the thrown body keeps this much of its speed per man it hits
+  missile: 0.75,                  // share of throws that fly head first (the rest tumble)
+  // the bouncer: frames to clamp on and turn him round; how far in front he's held and how
+  // high off the floor; how fast he's marched (x the walk) with the stick and without; how
+  // long until he's thrown anyway; the shove's wind-up
+  neck: { clamp: 8, off: 0.7, lift: 7, march: 0.85, push: 0.35, hold: 180, windup: 6 },
 };
 
 const NO_GRAB = new Set(['executed', 'execute', 'kneel', 'dead', 'knockdown', 'getup', 'grabbed', 'grab', 'bossEntrance', 'burning']);
@@ -65,6 +78,15 @@ export function carryPose(f) {
   const fr = f.fsm.frame;
   const dir = f.facing;
   let off = 30; let h = H * 0.42; let rot = 0;
+  if (g?.mode === 'neck' && g.caughtAt != null) {
+    // by the scruff: pulled in, hoisted onto his toes, a jolt with each of the hero's steps
+    const N = GRAB.neck;
+    const t = ease(Math.min(1, (fr - g.caughtAt) / N.clamp));
+    off = 30 + (N.off * H - 30) * t; // (his arm's length out: off is a share of the hero's height)
+    h = N.lift * t + (f.carrying ? Math.abs(Math.sin(fr * 0.32)) * 4 : 0);
+    if (g.throwAt != null) off -= 8 * ease(Math.min(1, (fr - g.throwAt) / N.windup));
+    return { x: f.x + dir * off, z: f.z + 0.5, h: (f.floor ?? 0) + h, rot: 0, dir, neck: true };
+  }
   if (g?.caughtAt != null) {
     const t = Math.min(1, Math.max(0, (fr - g.caughtAt) / GRAB.lift));
     // pulled in tight first, then up and over
@@ -112,8 +134,53 @@ function release(f, v) {
   v.h = (f.floor ?? 0) + f.stats.body.h * GRAB.releaseH; // (hurled forward and down off the shoulders: low enough to go into crates and men)
   v.lastAttacker = f; // (thrown off a ledge into a pit: his kill — stage/Stage.js pitKill)
   v.fsm.change('knockdown', { vx: dx * GRAB.speed, vz: dz * GRAB.speedZ, vh: GRAB.vh });
-  v.thrown = { by: f, hit: new Set([v.id]), dx, dz, landed: false, spin: Math.sign(dx) || f.facing };
+  // head first like a missile, mostly; now and then he tumbles (view/SpriteEnemyView.js grabSpin)
+  const missile = f.world.roll(v.id, 3100) < GRAB.missile;
+  v.thrown = { by: f, hit: new Set([v.id]), dx, dz, landed: false, spin: Math.sign(dx) || f.facing, missile };
+  if (Math.abs(dx) > 0.2) v.facing = Math.sign(dx); // (head first: he faces the way he flies)
   f.world.events.emit('grabThrow', { fighter: f, victim: v, dx, dz });
+}
+
+// THE BOUNCER: marching him by the neck. The stick steers (he's pushed on slowly with no
+// stick), whatever he's marched into breaks or goes over, and the next press (or time
+// running out) hurls him away.
+const MARCHED = { cut: 'blunt', damage: 8, knockdown: true, unblockable: true, hitstop: 4, knockback: { x: 220, y: 220 } };
+function neckMarch(f, v, frame, since) {
+  const N = GRAB.neck;
+  const g = f.grab;
+  const c = f.controller;
+  if (g.throwAt == null) {
+    if (throwPressed(c)) g.queued = true;
+    const ready = since >= N.clamp;
+    if (ready) {
+      const moving = Math.hypot(c.moveX, c.moveZ) > 0.3;
+      if (Math.abs(c.moveX) > 0.5) f.facing = Math.sign(c.moveX);
+      f.vx = moving ? c.moveX * f.stats.walkSpeed * N.march : f.facing * f.stats.walkSpeed * N.push;
+      f.vz = moving ? c.moveZ * f.stats.depthSpeed * N.march : 0;
+      f.carrying = true;
+      // his head goes first into whatever's in the way
+      const o = f.world.solidAt?.(v.x + f.facing * 14, v.z, v.h + 20);
+      if (o?.prop) f.world.events.emit('solidSmashed', { prop: o.prop, dir: f.facing, fighter: v });
+      for (const e of f.world.fighters) {
+        if (e === v || e.team !== v.team || !e.alive || e.invincible || g.rammed?.has(e.id)) continue;
+        if (['knockdown', 'getup', 'grabbed', 'executed', 'kneel', 'bossEntrance'].includes(e.state)) continue;
+        if (Math.abs(e.x - (v.x + f.facing * 16)) > 30 || Math.abs(e.z - v.z) > 22) continue;
+        (g.rammed ??= new Set()).add(e.id);
+        const keep = f.hitstop;
+        f.world.combat.resolve(f, e, MARCHED, { dir: f.facing, kind: 'melee', fromX: v.x, contact: { x: e.x, h: e.h + e.stats.body.h * 0.7 } });
+        f.hitstop = keep;
+        f.world.events.emit('bowl', { fighter: e, by: v, x: e.x, z: e.z, h: 60 });
+      }
+    } else { f.vx = 0; f.vz = 0; }
+    if (ready && (g.queued || since >= N.clamp + N.hold)) {
+      g.throwAt = frame;
+      f.vx = 0; f.vz = 0; f.carrying = false;
+      f.world.events.emit('grabWindup', { fighter: f, victim: v, neck: true });
+    }
+    return;
+  }
+  f.vx = 0; f.vz = 0;
+  if (frame - g.throwAt === N.windup) { release(f, v); g.released = frame; }
 }
 
 export function grabStates({ stopMoving, friction }) {
@@ -123,7 +190,9 @@ export function grabStates({ stopMoving, friction }) {
         stopMoving(f);
         const mx = f.controller.moveX;
         if (Math.abs(mx) > 0.5) f.facing = Math.sign(mx);
-        f.grab = { victim: null, caughtAt: null, throwAt: null, queued: false };
+        // pushing toward him as you grab: the bouncer's grip on his neck; else the yoke
+        const fwd = f.controller.moveX * f.facing > 0.5;
+        f.grab = { victim: null, caughtAt: null, throwAt: null, queued: false, mode: fwd ? 'neck' : 'yoke' };
         f.activeAttack = null;
         f.move = null;
         f.world.events.emit('grabStart', { fighter: f });
@@ -158,6 +227,7 @@ export function grabStates({ stopMoving, friction }) {
         const v = g.victim;
         if (!v || v.state !== 'grabbed' || v.grabbedBy !== f) { f.fsm.change('idle'); return; }
         const since = frame - g.caughtAt;
+        if (g.mode === 'neck') return neckMarch(f, v, frame, since);
         if (g.throwAt == null) {
           if (throwPressed(c)) g.queued = true;
           const up = since >= GRAB.lift;
@@ -205,10 +275,12 @@ export function grabStates({ stopMoving, friction }) {
         const p = carryPose(by);
         f.x = p.x; f.z = p.z; f.h = p.h;
         f.grabRot = p.rot;
-        f.facing = -by.facing; // (he was facing the man who picked him up)
+        // (yoked: he was facing the man who picked him up; by the neck: turned round, marched off)
+        f.facing = p.neck ? by.facing : -by.facing;
+        f.byNeck = !!p.neck;
         f.vh = f.stats.gravity / 60; // held up: cancel this step's gravity
       },
-      exit(f) { f.ghost = false; f.grabRot = 0; },
+      exit(f) { f.ghost = false; f.grabRot = 0; f.byNeck = false; },
     },
   };
 }

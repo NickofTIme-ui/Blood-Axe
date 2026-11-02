@@ -135,4 +135,53 @@ for (const hero of ['warrior', 'mage', 'rogue']) {
   assert.ok(first.broken, 'the barrel he was thrown into is smashed');
 }
 
-console.log('Grab and throw checks passed: D-pad right / F, the yoke and the slow carry, thrown where the stick points, through a crowd, into barrels; dropped when hit; no bosses.');
+{
+  // the bouncer: pushing toward him as you grab takes him by the neck, turned round, feet
+  // barely off the ground, and marches him (he smashes what he's marched into)
+  const { w, p, e } = setup('warrior');
+  const m = w.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x: 620, z: 420, controller: new Controller() }));
+  p.controller.mx = 1;
+  p.controller.queue.push('grab');
+  run(w, GRAB.catch + GRAB.neck.clamp + 4);
+  assert.equal(e.state, 'grabbed');
+  assert.equal(p.grab.mode, 'neck', 'pushing toward him: by the neck');
+  assert.ok(e.byNeck && e.facing === p.facing, 'turned round, marched in front of him');
+  assert.ok(e.h > 0 && e.h < 20, `feet barely off the ground (h ${Math.round(e.h)})`);
+  assert.ok(e.x - p.x > 20, `held out in front (dx ${Math.round(e.x - p.x)})`);
+  const x0 = p.x;
+  run(w, 60);
+  assert.ok(p.x > x0 + 40, `frog-marched forward (${Math.round(p.x - x0)} px)`);
+  assert.ok(m.state === 'knockdown' || m.health < m.stats.maxHealth, 'the man in the way is rammed');
+  p.controller.queue.push('grab');
+  run(w, GRAB.neck.windup + 3);
+  assert.equal(e.state, 'knockdown', 'and shoved away');
+  assert.ok(!e.byNeck);
+}
+
+{
+  // standing still as you grab: the yoke
+  const { w, p } = setup('warrior');
+  p.controller.queue.push('grab');
+  run(w, GRAB.catch + 2);
+  assert.equal(p.grab.mode, 'yoke');
+}
+
+{
+  // thrown: mostly head first like a missile, sometimes the tumble
+  let missiles = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const w = new World({ seed });
+    const p = w.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 400, z: 420, controller: new Pad() }));
+    const e = w.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x: 450, z: 420, controller: new Controller() }));
+    e.facing = -1; e.id += seed * 7;
+    p.controller.queue.push('grab');
+    run(w, GRAB.catch + GRAB.lift + 4);
+    p.controller.queue.push('grab');
+    run(w, GRAB.windup + 3);
+    assert.ok(e.thrown, 'thrown');
+    if (e.thrown.missile) { missiles++; assert.equal(e.facing, p.facing, 'head first: faces the way he flies'); }
+  }
+  assert.ok(missiles >= 22 && missiles <= 38, `mostly missiles (${missiles} of 40)`);
+}
+
+console.log('Grab and throw checks passed: D-pad right / F, the yoke and the slow carry, thrown where the stick points, through a crowd, into barrels; the bouncer neck grip and march; mostly missiles; dropped when hit; no bosses.');

@@ -115,6 +115,7 @@ export class StripHeroView {
         if (g.released != null) return P[7];
         if (g.throwAt != null) return P[6];
         if (g.caughtAt == null) return P[1];
+        if (g.mode === 'neck') return own ? P[1] : out[out.length - 1]; // (the bouncer's grip: arm out on his neck)
         return fr - g.caughtAt < 10 ? P[2] : f.carrying && own ? (Math.floor(tick / 14) % 2 ? P[5] : P[4]) : P[4];
       }
       case 'execute': {

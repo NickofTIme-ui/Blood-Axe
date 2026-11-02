@@ -352,10 +352,19 @@ export class SpriteFighterView {
       pick('combo1:0'), pick('shoulder:4', 'kick:1'), pick('charge:1'), pick('finImpale:8', 'charge:3'),
       pick('finImpale:3', 'charge:3'), pick('finImpale:3', 'charge:3'), pick('cast:1', 'finImpale:3'), pick('cast:3', 'combo3:3'),
     ];
-    if (g.released != null) return fr - g.released < GRAB.recover * 0.7 ? P[7] : P[0];
-    if (g.throwAt != null) return P[6];
-    if (g.caughtAt == null) return fr < GRAB.catch - 2 ? P[0] : P[1];
+    const Q = g.mode === 'neck' ? this.meta.anims.neck?.poses ?? P : P;
+    if (g.released != null) return fr - g.released < GRAB.recover * 0.7 ? Q[7] : Q[0];
+    if (g.throwAt != null) return Q[6];
+    if (g.caughtAt == null) return fr < GRAB.catch - 2 ? Q[0] : Q[1];
     const since = fr - g.caughtAt;
+    // the bouncer's grip: the clamp, then the frog-march (own strip anims.neck: 0 ready,
+    // 1 the clamp, 2-5 the steps, 6 wound up, 7 the shove)
+    if (g.mode === 'neck') {
+      const N = this.meta.anims.neck?.poses;
+      if (!N) return since < GRAB.neck.clamp || !f.carrying ? P[1] : Math.floor((f.world?.frame ?? 0) / 12) % 2 ? P[5] : P[1];
+      if (since < GRAB.neck.clamp || !f.carrying) return N[1];
+      return N[2 + Math.floor((f.world?.frame ?? 0) / 9) % 4];
+    }
     if (since < GRAB.lift * 0.3) return P[2];
     if (since < GRAB.lift * 0.75) return P[3];
     // yoked: a heavy step when he walks with him

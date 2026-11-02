@@ -18,6 +18,15 @@ branch, or ChatGPT's work gets lost.
   (NOT in heroHdAssets.js, which the PC's compile-hero-hd.mjs regenerates). The ChatGPT
   originals are in project files `grab-throw/`. Mage and Rogue borrow poses for now.
   `tests/grab-throw-test.js`. `'grab'` is appended to `core/TickInput.js` ACTIONS (online).
+  Round 2 (Nick: missiles mostly, plus a bouncer grip): 3 in 4 throws fly head first like a
+  missile (`GRAB.missile`, `thrown.missile`, drawn with the enemy's painted `<id>_fly.png`
+  strip when it's in: 0 stance for scale, 1-4 flying flat, head right; SpriteEnemyView
+  grabSpin points him along his flight), the rest tumble. Pushing toward the man as you grab
+  takes him BY THE NECK instead (`GRAB.neck`, `neckMarch`): held out at arm's length, feet
+  barely off the ground, frog-marched where the stick steers, ramming men and props, then
+  shoved away on the next press. Rurik's bouncer poses: `rurik-{ulric,ulricOath}-neck.png`
+  (bake with `... 6 240`: sized by the upright pose 6; touching figures are split by growing
+  each body outward).
 - 2 November 2026, round 3 (cloud, same branch, NOT on main): props sized to the fighters (Nick:
   "a lot of them are tiny"): view/StageView.js PROP_HEIGHT fits each painting to a height (barrel 70,
   crate 60, stall 150, lamp post about 185) whatever size it was painted; data/stage.js PROPS w/h to

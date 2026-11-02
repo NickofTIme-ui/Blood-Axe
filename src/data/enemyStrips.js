@@ -137,6 +137,13 @@ for (const id of ['stalker', 'butcher', 'ghoul', 'penitent', 'berserker', 'gladi
   ENEMY_STRIPS[id].impaled = { file: `${DIR}/${id}_impaled.png`, frames: 4, ref: 0, optional: true };
 }
 
+// thrown head first like a missile (the grab and throw, combat/Grab.js): 0 his ready stance
+// (for the size), 1-4 flying flat, head to the right. ChatGPT, 2026-11-02. Optional: without
+// it his stance is turned head first instead (view/SpriteEnemyView.js grabSpin)
+for (const id of ['grunt', 'stalker', 'butcher', 'ghoul', 'penitent', 'berserker', 'gladiator']) {
+  ENEMY_STRIPS[id].fly = { file: `${DIR}/${id}_fly.png`, frames: 5, ref: 0, optional: true };
+}
+
 const seq = (strip, ids) => ids.map((i) => `${strip}:${i}`);
 // the standard phase layouts
 const quick = (s) => ({ needs: [s], phases: { startup: seq(s, [0, 1]), active: seq(s, [2]), recovery: seq(s, [3, 4]) } });
@@ -165,6 +172,8 @@ const COMMON = {
   drop: { needs: ['drop'], frames: seq('drop', [0, 1, 2]) },
   // on his knees for his sentence, when painted (picked in SpriteEnemyView)
   kneel: { needs: ['kneel'], frames: seq('kneel', [0, 1, 2]) },
+  // thrown head first (combat/Grab.js), when painted
+  missile: { needs: ['fly'], frames: seq('fly', [1, 2, 3, 4]), fps: 10, loop: true },
 };
 
 export const ENEMY_ANIMS = {

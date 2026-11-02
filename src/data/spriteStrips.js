@@ -136,6 +136,8 @@ export const ANIM_OVERRIDES = {
     // 2 hauling him in, 3 the heave, 4 the yoke, 5 the yoke mid-stride, 6 leaning back,
     // 7 the throw (data/grabArt.js; until his strip is in he borrows the nearest poses)
     grab: { needs: ['grab'], poses: seq('grab', [0, 1, 2, 3, 4, 5, 6, 7]) },
+    // the bouncer's grip: 0 ready, 1 the clamp, 2-5 the frog-march, 6 wound up, 7 the shove
+    neck: { needs: ['neck'], poses: seq('neck', [0, 1, 2, 3, 4, 5, 6, 7]) },
   },
 };
 // With Oathkeeper: the same moves, plus his own poses for what still came off the old sheet
