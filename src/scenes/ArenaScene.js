@@ -18,6 +18,7 @@ import { FighterView } from '../view/FighterView.js';
 import { SpriteFighterView } from '../view/SpriteFighterView.js';
 import { MageView } from '../view/MageView.js';
 import { StripHeroView } from '../view/StripHeroView.js';
+import { BloodCoats } from '../view/BloodCoat.js';
 import { MageFX } from '../effects/MageFX.js';
 import { Parallax } from '../view/Parallax.js';
 import { HoundView } from '../view/HoundView.js';
@@ -163,6 +164,7 @@ export class ArenaScene extends Phaser.Scene {
     this.wave = 0;
     this.waveTimer = 60;
     this.kills = 0;
+    this.bloodCoats = new BloodCoats(this);
 
     // Views follow the world: one view per fighter.
     const ev = this.world.events;
@@ -237,6 +239,7 @@ export class ArenaScene extends Phaser.Scene {
     this.wrathFX = new WrathFX(this); // Rurik's Kingsfire and the King's Wrath, and men blown apart by his fire (effects/WrathFX.js)
     ev.on('kill', (e) => {
       this.kills++;
+      this.bloodCoats.onKill(e); // (experiment: the heroes get spattered: view/BloodCoat.js)
       if (e.finisher) return; // executions do their own gore (setupFinishers)
       // killed by fire (a grate, or a fire spell that didn't blow him apart): no fountain
       // of blood — he burns (the 'burning' state, effects/Burn.js)
@@ -1652,6 +1655,7 @@ export class ArenaScene extends Phaser.Scene {
     this.syncSentenceMusic();
     syncSanctuaryMusic(this);
     for (const v of this.views.values()) v.update();
+    this.bloodCoats.update();
     this.liftShadows();
     this.terrainView?.update();
     this.npcView?.update();
