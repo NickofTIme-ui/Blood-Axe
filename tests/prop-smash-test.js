@@ -22,7 +22,7 @@ const run=(w,st,n)=>{for(let i=0;i<n;i++){w.tick();st.update();}};
 {
  // a man flung into the market's barrels: he goes through, and the ones packed by it go too
  const {w,st}=setup();
- const row=st.props.filter((pr)=>pr.section===1&&pr.x<1700&&pr.z<330);
+ const row=st.props.filter((pr)=>pr.section===1&&pr.x<1700&&pr.z<380);
  assert(row.length>=4);
  const first=row.find((pr)=>pr.x===1606);
  w.events.emit('solidSmashed',{prop:first,dir:1});
@@ -35,7 +35,7 @@ const run=(w,st,n)=>{for(let i=0;i<n;i++){w.tick();st.update();}};
  // the real thing: a man knocked flying into them smashes through and carries on
  const {w,p,st}=setup();
  const first=st.props.find((pr)=>pr.x===1606);
- p.x=1560;p.z=300;p.h=20;p.fsm.change('knockdown',{vx:720,vh:160});
+ p.x=1560;p.z=334;p.h=20;p.fsm.change('knockdown',{vx:720,vh:160});
  for(let i=0;i<20;i++){w.tick();st.update();}
  assert(first.broken,'the barrel he was thrown into is smashed');
  assert(p.x>first.x+20,`he went on through it (x ${Math.round(p.x)})`);
@@ -44,7 +44,7 @@ const run=(w,st,n)=>{for(let i=0;i<n;i++){w.tick();st.update();}};
  // a hero dodge-rolling into barrels rolls straight through them, smashing them
  const {w,p,st}=setup();
  const b=st.props.find((pr)=>pr.x===1606);
- p.x=1560;p.z=300;p.controller.moveX=1;p.fsm.change('dodge');
+ p.x=1560;p.z=334;p.controller.moveX=1;p.fsm.change('dodge');
  for(let i=0;i<20;i++){w.tick();st.update();}
  assert(b.broken,'rolled through the barrel');assert(p.x>b.x,`and out the other side (x ${Math.round(p.x)})`);
 }

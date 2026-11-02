@@ -313,11 +313,11 @@ export class PropShatter {
     const img = v.img;
     const T = this.scene.textures;
     if (T.exists('lamp-fallen')) {
-      const fw = 128;
+      const fw = 190;
       const fallen = this.scene.add.image(pr.x + d * fw * 0.5, pr.z + 2, 'lamp-fallen').setOrigin(0.5, 1).setFlipX(d < 0)
         .setScale(fw / T.get('lamp-fallen').getSourceImage().width).setDepth(pr.z + 1);
       const stump = T.exists('lamp-stump') ? this.scene.add.image(pr.x + 6, pr.z, 'lamp-stump').setOrigin(0.5, 1)
-        .setScale(30 / T.get('lamp-stump').getSourceImage().width).setDepth(pr.z) : null;
+        .setScale(44 / T.get('lamp-stump').getSourceImage().width).setDepth(pr.z) : null;
       fallen.setAlpha(now ? 1 : 0);
       if (now) img.setVisible(false);
       else {

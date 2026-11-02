@@ -47,6 +47,14 @@ const CHAIN = {
 // the lamp-and-cart painting (view/propArt.js lampcart): where in a frame the post's foot
 // stands (shares of the frame), and how big it's drawn (world px per px of a 256-wide frame)
 const PAIR = { postX: 0.195, groundY: 0.895, scale: 0.85 };
+// How tall each painted prop stands in the street, against a fighter about 135 tall (Nick,
+// 2026-11-02: "the prop sizes weird, a lot of them are tiny"): a barrel to his hip, a crate a
+// little under, a stall's awning over his head. Fitted to the painting's own height, so a small
+// painting and a big one come out the same size (by `look`, then by kind).
+const PROP_HEIGHT = {
+  barrel: 70, crate: 60, urn: 52, chest: 50, fence: 64, trestle: 64, stall: 150, rack: 54, handcart: 72,
+  keg: 52, keg2: 54, 'crate-fish': 46, 'crate-long': 54, sack: 56, 'barrel-tar': 68,
+};
 const LIT_PROPS = new Set(['barrel', 'crate', 'urn', 'chest', 'bell', 'fence', 'stall', 'trestle', 'rack', 'handcart']);
 // the painted kinds of each (view/propArt.js), one picked per prop
 const VARIANTS = {
@@ -647,7 +655,10 @@ export class StageView {
     const key = this.propKey(pr);
     // (a level's painted prop, data/levelArt.js: sized to the prop, whatever size it was painted)
     const lvl = (this.scene.registry.get('levelArt') ?? []).includes(key);
-    const s = lvl ? (pr.w * 1.3) / this.scene.textures.get(key).getSourceImage().width : this.hd.has(key) || this.art2.has(key) ? 0.25 : 0.5 * (pr.size ?? 1);
+    const fit = !lvl && (this.hd.has(key) || this.art2.has(key)) ? PROP_HEIGHT[key.replace(/^prop-/, '')] ?? PROP_HEIGHT[pr.kind] : 0;
+    const s = lvl ? (pr.w * 1.3) / this.scene.textures.get(key).getSourceImage().width
+      : fit ? (fit * (pr.size ?? 1)) / this.scene.textures.get(key).getSourceImage().height
+      : this.hd.has(key) || this.art2.has(key) ? 0.25 : 0.5 * (pr.size ?? 1);
     if (pr.kind === 'wall') {
       // set into the back wall: the alcove waits behind it
       const y = SETTINGS.world.floorTop - 4;
@@ -743,7 +754,7 @@ export class StageView {
       this.scene.gore.spawn({
         x: pr.x + rand(-pr.w / 3, pr.w / 3), z: pr.z + rand(-3, 6), h: (pr.y ?? 0) + rand(pr.h * 0.3, pr.h * 0.9),
         vx: dir * rand(60, 200) * (0.7 + power * 0.2) + rand(-60, 60), vz: rand(-30, 40), vh: rand(160, 360),
-        tint: 0xffffff, texture: keys[Math.floor(Math.random() * keys.length)], scale: rand(0.2, 0.27), decal: false, life: rand(420, 600), spin: rand(-9, 9), material: PHYSICS.wood,
+        tint: 0xffffff, texture: keys[Math.floor(Math.random() * keys.length)], scale: rand(0.27, 0.36), decal: false, life: rand(420, 600), spin: rand(-9, 9), material: PHYSICS.wood,
       });
     }
   }
@@ -775,7 +786,7 @@ export class StageView {
     const key = lamp ? 'lvl-village-decor_lantern' : 'cartwreck';
     const T = this.scene.textures;
     const src = T.exists(key) ? T.get(key).getSourceImage() : null;
-    const drawW = lamp ? 60 : pr.w * 1.45; // (a lamp post as wide as the street clutter's: 60)
+    const drawW = lamp ? 92 : pr.w * 1.45; // (a lamp post taller than a man: 92 wide, about 185 tall)
     const y = pr.y ?? 0;
     const img = this.scene.add.image(pr.x, pr.z - y, key).setOrigin(0.5, 1).setDepth(pr.z);
     const s = src ? drawW / src.width : 1;
@@ -2006,7 +2017,7 @@ export class StageView {
         // (rolling: the painted barrel on its side throwing dust; at rest, lying still; a tar barrel spills its tar)
         const tar = v.key?.includes('tar');
         const want = pr.tumble && this.art2.has('barrel-rolling') ? 'barrel-rolling' : tar && this.art2.has('barrel-tarspill') ? 'barrel-tarspill' : 'prop-barrel-tipped';
-        if (T.art !== want) { T.art = want; v.img.setTexture(want).setScale(v.s * 0.92).setFlipX(T.dir < 0); if (v.light) lightProp(v.img, v.light); }
+        if (T.art !== want) { T.art = want; v.img.setTexture(want).setScale((T.h * 1.05) / this.scene.textures.get(want).getSourceImage().width).setFlipX(T.dir < 0); if (v.light) lightProp(v.img, v.light); }
         v.img.setOrigin(0.5, 1).setAngle(0).setPosition(pr.x, y - bob).setDepth(pr.z);
         moveGround(v.ground, pr.x, y, { grit: false });
         if (pr.tumble && Math.random() < 0.3) this.scene.gore.spawn({ x: pr.x, z: pr.z + 3, h: 2, vx: rand(-20, 20), vz: -pr.tumble.zDir * rand(10, 40), vh: rand(20, 60), tint: 0x3a2e22, scale: rand(0.4, 0.8), decal: false, life: 25 });

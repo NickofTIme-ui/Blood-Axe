@@ -6,6 +6,12 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 2 November 2026, round 3 (cloud, same branch, NOT on main): props sized to the fighters (Nick:
+  "a lot of them are tiny"): view/StageView.js PROP_HEIGHT fits each painting to a height (barrel 70,
+  crate 60, stall 150, lamp post about 185) whatever size it was painted; data/stage.js PROPS w/h to
+  match. Level 1 props re-laid in groups (by doors, the well, the market, some out in the street)
+  instead of rows along the back and front edges. A tipped barrel rolls clear of the ones it was
+  packed against. The test walker keeps to z 415: keep props off that line or it gets stuck.
 - 2 November 2026, round 2 (cloud, branch `claude/project-thread-b5hipz`, NOT on main, not on
   itch). Nick: "the barrels and crates feel copy and pasted", knock crates over or off things,
   the lamp onto the cart "looked bad", "make more art", "replace ALL OLD OUTDATED ART", "ROLL

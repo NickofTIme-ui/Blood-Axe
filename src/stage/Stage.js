@@ -197,12 +197,12 @@ const CHAIN = {
 // A lamp post knocked over: it falls for `fall` ticks, lands `reach` px along the street, and
 // its lantern's oil burns there (a blaze, `oil` ticks); a hay cart it lands on catches and
 // burns (`cart` ticks). Anyone standing in a blaze burns like in a fire grate.
-const LAMP = { fall: 30, reach: 100, oil: 260, oilW: 76, oilD: 30, cart: 720 };
+const LAMP = { fall: 30, reach: 150, oil: 260, oilW: 76, oilD: 30, cart: 720 };
 // Knocked about, not only broken (Nick, 2026-11-02: "you could knock a crate over or off
 // something it's standing on"): a crate up on another is knocked off by a blow (or shaken off
 // when the one under it is hit), tumbles down and lands; a barrel struck lightly tips over
 // onto its side and rolls off down the lane, into whatever's there (a man: he's bowled over).
-const TUMBLE = { off: 3.2, shake: 1.6, roll: 4.2, drag: 0.968, stop: 0.35, tipH: 30, bowl: 6 };
+const TUMBLE = { off: 3.2, shake: 1.6, roll: 4.2, drag: 0.968, stop: 0.35, tipH: 40, bowl: 6 };
 const DECOR_FOOT = { signpost: { w: 0.18, d: 6, h: 140 }, lantern: { w: 0.18, d: 6, h: 140 }, debris: { w: 0.36, d: 10, h: 40 }, debris2: { w: 0.36, d: 10, h: 40 } };
 const SOLID_EDGE = 6; // how close a man gets to one (px)
 
@@ -1058,7 +1058,9 @@ export class Stage {
       pr.h = TUMBLE.tipH;
       // it rolls off across the lane, toward the open street, and a little the way it was struck
       const zDir = pr.z < (this.world.bounds.minZ + this.world.bounds.maxZ) / 2 ? 1 : -1;
-      pr.tumble = { dir, zDir, speed: TUMBLE.roll, hit: new Set() };
+      // (not stopped dead by the ones it was packed against: it rolls clear of them)
+      const near = new Set(this.props.filter((q) => q !== pr && Math.abs(q.x - pr.x) < (q.w + pr.w) / 2 && Math.abs(q.z - pr.z) < 16).map((q) => q.id));
+      pr.tumble = { dir, zDir, speed: TUMBLE.roll, hit: new Set(), near };
       this.world.events.emit('propTip', { prop: pr, dir, zDir });
       return true;
     }
@@ -1092,7 +1094,7 @@ export class Stage {
         this.hurt({ cool: new Map() }, f, TUMBLE.bowl, t.dir, 'crate');
         t.speed *= 0.6;
       }
-      const into = this.props.find((q) => q !== pr && !q.broken && CHAIN.kinds.includes(q.kind) && !q.tumble && Math.abs(q.x - pr.x) < (q.w + pr.w) / 2 - 4 && Math.abs(q.z - pr.z) < 16);
+      const into = this.props.find((q) => q !== pr && !t.near.has(q.id) && !q.broken && CHAIN.kinds.includes(q.kind) && !q.tumble && Math.abs(q.x - pr.x) < (q.w + pr.w) / 2 - 4 && Math.abs(q.z - pr.z) < 16);
       if (into) { this.strikeProp(into, t.dir, 1); t.speed = 0; }
       if (blocked || t.speed < TUMBLE.stop) { pr.tumble = null; this.world.events.emit('propRest', { prop: pr }); }
     }
