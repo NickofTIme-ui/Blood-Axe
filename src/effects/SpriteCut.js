@@ -31,6 +31,9 @@ const GRAVITY = 1700;
 const HEAD = 0.19;
 
 const rand = (a, b) => a + Math.random() * (b - a);
+// Was this x inside the room's walls? A piece the room moved on from (the heroes walked
+// into the next section) is left where it lies, not dragged after them to the new wall.
+const insideWalls = (b, x) => x >= b.minX + 4 && x <= b.maxX - 4;
 
 // An outlined head (data/ragdollGear.js EXECUTION_HEAD) as a cut plane: through the
 // middle of the neck, facing down into the body (ny = 1, like a level cut's), the head's
@@ -687,8 +690,9 @@ export class SpriteCuts {
         p.hull ??= this.hullOf(p);
         if (!p.landed) { p.vx *= 0.998; p.spin *= 0.997; } // (a little air drag)
         const floor = Math.max(0, this.scene.world?.terrain?.groundAt?.(p.x, p.z) ?? 0);
+        const was = p.x;
         const hit = stepRigid(p, p.hull, floor, { gravity: GRAVITY, bounce: p.gib ? 0.42 : 0.36, friction: p.roll ? 0.9 : 0.6, roll: p.roll });
-        if (b && (p.x < b.minX + 4 || p.x > b.maxX - 4)) {
+        if (b && insideWalls(b, was) && (p.x < b.minX + 4 || p.x > b.maxX - 4)) {
           p.x = Math.max(b.minX + 4, Math.min(b.maxX - 4, p.x));
           p.vx = -p.vx * 0.35; p.spin = -p.spin * 0.5; p.asleep = false;
           gore?.burst(p.x, p.z, p.h, Math.sign(p.vx) || 1, Math.round((p.gib ? 5 : 16) * (gore.amount ?? 1)), 0.8);
@@ -714,11 +718,12 @@ export class SpriteCuts {
       } else if (p.mode === 'fly') {
         p.vh -= GRAVITY / 60;
         p.h += p.vh / 60;
+        const was = p.x;
         p.x += p.vx / 60;
         p.rot += p.spin / 60; // radians per second
         if (!p.landed) { p.vx *= 0.998; p.spin *= 0.997; } // (a little air drag)
         // off the arena walls
-        if (b && (p.x < b.minX + 4 || p.x > b.maxX - 4)) {
+        if (b && insideWalls(b, was) && (p.x < b.minX + 4 || p.x > b.maxX - 4)) {
           p.x = Math.max(b.minX + 4, Math.min(b.maxX - 4, p.x));
           p.vx = -p.vx * 0.35; p.spin = -p.spin * 0.5;
           if(!p.weapon)gore?.burst(p.x, p.z, p.h, Math.sign(p.vx) || 1, Math.round((p.gib ? 5 : 16) * (gore.amount ?? 1)), 0.8);

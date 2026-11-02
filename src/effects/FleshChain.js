@@ -45,7 +45,9 @@ export class FleshChain {
           const vx=p.x-p.px,vy=p.y-p.py;p.y=bottom;
           if(pass===0){impact=Math.max(impact,vy*60);p.px=p.x-vx*(this.skid&&vy*60>200?.82:.68);p.py=p.y+Math.max(0,vy)*this.rebound(vy);if(this.skid&&this.rebound(vy)>0)this.bounced=true;}
         }
-        if(bounds)p.x=Math.max(bounds.minX+r(i),Math.min(bounds.maxX-r(i),p.x));
+        // the room's walls stop a piece flying into them; one already past a wall (the
+        // room moved on without it: the heroes walked into the next section) stays put
+        if(bounds&&p.px>=bounds.minX+r(i)&&p.px<=bounds.maxX-r(i))p.x=Math.max(bounds.minX+r(i),Math.min(bounds.maxX-r(i),p.x));
       }
       if(this.contacts)touching=this.contacts(this.points,pass)||touching;
     }

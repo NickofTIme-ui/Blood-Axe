@@ -108,3 +108,27 @@ for (const n of [3, 4, 5]) {
 }
 
 console.log(`Settle-flat checks passed: ${rigid} rigid pieces and ${chains} jointed halves lie flat, burning corpses lie down.`);
+
+// A body left behind when the heroes walk on into the next section (the room's walls move
+// on past it: Varek's body in the longhall when they reach the church, Nick 2026-11-02)
+// stays where it lies: it isn't dragged, or flung, after them to the new wall.
+{
+  const c = new FleshChain([0, 30, 60, 90].map((x) => ({ x: 7600 + x, y: 296 })));
+  const bounds = { minX: 7130, maxX: 9370 };
+  const floor = () => 300;
+  for (let t = 0; t < 8; t++) c.step(floor, bounds, 4); // (still settling)
+  const before = c.points.map((p) => p.x);
+  bounds.minX = 8430; // (the north gate's section locked in)
+  for (let t = 0; t < 240; t++) c.step(floor, bounds, 4);
+  c.points.forEach((p, i) => assert.ok(Math.abs(p.x - before[i]) < 5, `left-behind body moved ${Math.round(p.x - before[i])}px when the room moved on`));
+  // ...and a dead man left behind isn't pulled to the new wall either
+  const w = new World({ width: 10000 });
+  const f = w.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x: 7600, z: 420, controller: new Controller() }));
+  w.bounds.minX = 7130;
+  f.health = 0; f.fsm.change('dead');
+  w.tick();
+  w.bounds.minX = 8430;
+  for (let t = 0; t < 30; t++) w.tick();
+  assert.equal(Math.round(f.x), 7600, 'a corpse left behind is dragged to the new wall');
+}
+console.log('left-behind bodies stay put: ok');

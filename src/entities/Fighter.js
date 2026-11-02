@@ -186,7 +186,7 @@ export class Fighter {
       this.x += this.vx * dt;
       this.z += this.vz * dt;
     }
-    if (!this.unbounded) this.x = Math.max(b.minX, Math.min(b.maxX, this.x)); // (a boss walking in from off-screen)
+    if (!this.unbounded && !this.dead) this.x = Math.max(b.minX, Math.min(b.maxX, this.x)); // (a boss walking in from off-screen; a corpse the room moved on from stays where it lies)
     this.z = Math.max(b.minZ, Math.min(b.maxZ, this.z));
 
     if (T) {
