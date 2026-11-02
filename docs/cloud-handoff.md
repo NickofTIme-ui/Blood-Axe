@@ -43,6 +43,11 @@ branch, or ChatGPT's work gets lost.
   flat, plus spilt ale / straw / grain / hay, dust and layered sound. No new art yet; still
   wanted from ChatGPT: fence sections (whole + broken), a smashed lamp post, a smashed hay
   cart, stacked-barrel and sack variants. `tests/prop-smash-test.js`.
+- 2 November 2026 (cloud, ON MAIN, not on itch): Varek's body no longer flies toward the
+  church when you walk up to the north gate. Gore pieces and corpses were clamped to the
+  room's walls every frame, and locking the gate section moved the left wall past the
+  longhall. Walls now only stop what was inside them (`SpriteCut insideWalls`, `FleshChain`
+  checks the last position, dead fighters aren't clamped). `tests/settle-flat-test.js`.
 - 30 October 2026 (cloud): a rigged Rurik side walk (ChatGPT-painted pieces) went to main
   as 470b1bb and was REVERTED the same day: Nick wanted the original walk back. The pieces
   and rig scripts are kept in project files `rurik-walk/`, not in the repo.

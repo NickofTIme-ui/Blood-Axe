@@ -8,6 +8,7 @@ import { SETTINGS } from '../config/settings.js';
 export const SFX = {
   heroRoll: 'assets/audio/sfx/hero-roll.wav',
   stoneStep: 'assets/audio/sfx/stone-chain-step.wav',
+  sprintStep: 'assets/audio/sfx/sprint-step.wav', // the same step brought up to full level (the original is very quiet): sprinting
   stoneJump: 'assets/audio/sfx/stone-jump.wav',
   doorOpen1: 'assets/audio/sfx/door-open-1.wav',
   doorOpen2: 'assets/audio/sfx/door-open-2.wav',
