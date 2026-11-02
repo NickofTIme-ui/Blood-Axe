@@ -104,7 +104,7 @@
 // opts.flags (the campaign's one-time flags: a sequence's progress). start(players,
 // { section }) starts at a later section's checkpoint.
 
-import { STAGE, PICKUPS, PROPS } from '../data/stage.js';
+import { STAGE, PICKUPS, PROPS, PROP_LOOKS, PROP_VARIANTS } from '../data/stage.js';
 import { ENEMIES, HORDE_SIZE } from '../data/enemies.js';
 import { createEnemy, offscreenX, inView } from '../entities/Enemy.js';
 import { toWorldBox, overlaps } from '../combat/Boxes.js';
@@ -255,6 +255,7 @@ export class Stage {
       }
       for (const h of sec.hazards ?? []) this.hazards.push({ id: id++, section: si, ...h, t: h.phase ?? 0, cool: new Map() });
     }
+    this.fitLooks();
     // Things in the street you can't walk through (Nick, 2026-10-25: "you can walk through
     // most of them"): the small breakables while they stand, and the painted clutter
     // (data `decor`, `pikes`). Fighters slide round them like the terrain's walls and jump
@@ -1031,6 +1032,37 @@ export class Stage {
     this.updateBlazes();
   }
 
+  // Each prop takes its size from its painted look (data/stage.js PROP_LOOKS), so what's seen,
+  // struck and stood on match; one with things stood on it gets a flat-topped look, and those
+  // stand on the middle of its top face, never out past its edge. A look not named in the
+  // level is picked by the prop's id, so it's the same every game (and on both online machines).
+  fitLooks() {
+    const byId = new Map(this.props.map((q) => [q.id, q]));
+    const flat = (k) => PROP_LOOKS[k]?.top && !PROP_LOOKS[k].open && !PROP_LOOKS[k].round;
+    for (const pr of this.props) {
+      const under = pr.under != null ? byId.get(pr.under) : null;
+      if (!pr.look && PROP_VARIANTS[pr.kind]) {
+        const bearing = this.props.some((q) => q.under === pr.id);
+        let pool = PROP_VARIANTS[pr.kind].filter((k) => (!bearing || flat(k)) && (!under?.vw || PROP_LOOKS[k].h * PROP_LOOKS[k].ar <= under.vw * 0.95));
+        if (!pool.length) pool = PROP_VARIANTS[pr.kind];
+        pr.look = pool[(pr.id * 7 + (pr.x >> 4)) % pool.length];
+      } else if (!pr.look && PROP_LOOKS[pr.kind]) pr.look = pr.kind;
+      const L = PROP_LOOKS[pr.look];
+      if (!L || L.kind !== pr.kind) continue;
+      // (a little bigger or smaller than the next: no two alike)
+      let hh = (pr.id * 2654435761) >>> 0; hh = (hh ^ (hh >>> 15)) * 2246822519 >>> 0;
+      const j = ['barrel', 'crate', 'urn'].includes(pr.kind) ? 0.94 + ((hh & 0xffff) / 0xffff) * 0.12 : 1;
+      pr.h = Math.round(L.h * j * (pr.size ?? 1));
+      pr.vw = Math.round(pr.h * L.ar);
+      pr.w = Math.round(pr.vw * (['barrel', 'crate', 'urn', 'chest'].includes(pr.kind) ? 0.86 : 0.92));
+      if (under) {
+        const room = Math.max(0, ((under.vw ?? under.w) - pr.vw) / 2);
+        pr.x = under.x + Math.max(-room, Math.min(room, pr.dx ?? 0));
+        pr.y = under.y + Math.round(under.h * (PROP_LOOKS[under.look]?.top ?? 0.92));
+      }
+    }
+  }
+
   // A blow of `power` on a prop from outside a swing (a man flung into it, the next one in a
   // row going over): it loses that much and breaks, or rocks and cracks.
   strikeProp(pr, dir, power) {
@@ -1052,7 +1084,7 @@ export class Stage {
       this.world.events.emit('propKnocked', { prop: pr, dir });
       return true;
     }
-    if (pr.kind === 'barrel' && !pr.look && !pr.tipped && pr.hp >= 2 && !(pr.y > 0)) {
+    if (pr.kind === 'barrel' && !['keg', 'keg2'].includes(pr.look) && !pr.tipped && pr.hp >= 2 && !(pr.y > 0)) {
       pr.hp -= 1;
       pr.tipped = true;
       pr.h = TUMBLE.tipH;

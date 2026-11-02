@@ -123,6 +123,37 @@ export const PICKUPS = {
 
 // Breakable props: hits to break, size. reach: how far up or down the lane (z) a swing
 // still lands on it (default 30); hitW: struck across this width instead of w.
+// Each painted look of a prop: its kind, how tall it stands (world px, against a fighter about
+// 135 tall), the painting's width over height, and for the things others stand on (`top`)
+// how far up its height a thing set on it rests (the middle of its top face in the 3/4 view).
+// `open`: a produce crate, open at the top (apples, turnips, fish): nothing stands on it.
+// `round`: a domed lid: nothing stands on it either. The game takes a prop's size from its
+// look, so what you hit, what you stand on and what you see are the same size
+// (stage/Stage.js; view/StageView.js draws it to h). (Nick, 2026-11-02: "a case of tomatoes
+// hanging halfway off a barrel defying gravity")
+export const PROP_LOOKS = {
+  'barrel-v0': { kind: 'barrel', h: 70, ar: 0.655 }, 'barrel-v1': { kind: 'barrel', h: 66, ar: 0.82 },
+  'barrel-v2': { kind: 'barrel', h: 70, ar: 0.694 }, 'barrel-v3': { kind: 'barrel', h: 70, ar: 0.741 },
+  'barrel-v4': { kind: 'barrel', h: 70, ar: 0.741 }, 'barrel-v5': { kind: 'barrel', h: 70, ar: 0.759 },
+  'barrel-v6': { kind: 'barrel', h: 72, ar: 0.546 }, 'barrel-grey': { kind: 'barrel', h: 66, ar: 0.857 },
+  'barrel-tar': { kind: 'barrel', h: 66, ar: 0.829 }, keg: { kind: 'barrel', h: 50, ar: 0.927 }, keg2: { kind: 'barrel', h: 52, ar: 0.876 },
+  'crate-v0': { kind: 'crate', h: 56, ar: 0.82, top: 0.86 }, 'crate-v1': { kind: 'crate', h: 50, ar: 1.025, open: true },
+  'crate-v2': { kind: 'crate', h: 54, ar: 1.378, top: 0.84 }, 'crate-v3': { kind: 'crate', h: 54, ar: 1.17, round: true },
+  'crate-v4': { kind: 'crate', h: 52, ar: 0.905, open: true }, 'crate-v5': { kind: 'crate', h: 58, ar: 0.925, top: 0.86 },
+  'crate-v6': { kind: 'crate', h: 56, ar: 1.0, top: 0.84 }, 'crate-blue': { kind: 'crate', h: 60, ar: 0.915, top: 0.86 },
+  'crate-fish': { kind: 'crate', h: 42, ar: 1.1, open: true }, 'crate-long': { kind: 'crate', h: 50, ar: 1.37, top: 0.84 },
+  sack: { kind: 'crate', h: 54, ar: 0.806, open: true },
+  urn: { kind: 'urn', h: 50, ar: 0.533 }, chest: { kind: 'chest', h: 48, ar: 1.18 },
+  fence: { kind: 'fence', h: 62, ar: 1.79 }, trestle: { kind: 'trestle', h: 62, ar: 1.57, top: 0.86 },
+  stall: { kind: 'stall', h: 150, ar: 0.89, top: 0.36 }, rack: { kind: 'rack', h: 52, ar: 1.625, top: 0.34 },
+  handcart: { kind: 'handcart', h: 70, ar: 1.235, top: 0.5 },
+};
+// the looks a prop is given when the level doesn't name one (picked by its id: the same every game)
+export const PROP_VARIANTS = {
+  barrel: ['barrel-v0', 'barrel-v1', 'barrel-v2', 'barrel-v3', 'barrel-v4', 'barrel-v5', 'barrel-v6', 'barrel-grey', 'barrel-tar'],
+  crate: ['crate-v0', 'crate-v2', 'crate-v5', 'crate-v6', 'crate-blue', 'crate-v3', 'crate-v1', 'crate-v4', 'crate-fish'],
+};
+
 export const PROPS = {
   barrel: { hp: 2, w: 42, h: 64 },
   crate: { hp: 2, w: 50, h: 56 },
