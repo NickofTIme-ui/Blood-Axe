@@ -6,6 +6,11 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026 (cloud, Nick: "push"): ON MAIN now, not on itch: more blood on the player
+  (`claude/project-thread-m9afol` e1e14ac). Close kills bloody him about twice as fast, the blood
+  stays 40 s, and a new soaked stage (`tools/soak-bloodied.py`) goes past fully bloodied. Adds
+  about 1.8 MB of PNGs (4 `heroes-hd/*-soaked.png`): mind the 500 MB itch limit. npm test passes.
+
 - 3 November 2026 (cloud, Nick: "push"): ON MAIN, not on itch: THE OVERHEAD LIFT IS CUT (Nick: "i dont like the overhead lift ... make it
   better or cut it out"). Every grab is now the neck grab (bouncer march), whichever way the
   stick points. The yoke's `*_held.png` strips were removed from the game (originals in project
