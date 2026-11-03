@@ -20,6 +20,8 @@ import { depthScale } from './depths.js';
 import { Heading, headingAnim } from './Heading.js';
 import { applyBurn } from '../effects/Burn.js';
 import { IMPALE } from '../combat/Finisher.js';
+// yoked: past this much of the lift he's drawn with his painted overhead struggle, laid flat
+const GRAB_FLAT = 0.5;
 import { BodyFeel, easedSpread, swingBody } from './animFeel.js';
 import { DANGER, dangerGlint, isDanger } from './dangerCue.js';
 import { SENTENCE } from '../stage/Sentence.js';
@@ -164,7 +166,11 @@ export class SpriteEnemyView {
       // picked up and yoked overhead (combat/Grab.js): his stance, upright, turned flat by
       // grabSpin (the hit and knocked-flying poses lean back: turned, they'd hang askew)
       // by the scruff of the neck (the bouncer): legs still going, feet scrabbling at the floor
-      case 'grabbed': return f.byNeck ? loop({ ...A.walk, fps: 16 }) : A.idle.frames[0];
+      case 'grabbed':
+        if (f.byNeck) return loop({ ...A.walk, fps: 16 });
+        // yoked: seized (the shock), then struggling overhead, when painted (grabSpin lays it flat)
+        if (A.struggle) return (f.grabRot ?? 0) < GRAB_FLAT ? A.seized.frames[0] : loop(A.struggle);
+        return A.idle.frames[0];
       // thrown head first like a missile: his own flying pose when it's painted (anims.missile)
       // held by an executioner: struggling in his grip / run through / frozen in terror
       case 'executed':
@@ -530,6 +536,16 @@ export class SpriteEnemyView {
     let cx; let cy;
     if (held) {
       const dir = f.grabbedBy.facing;
+      const rot = f.grabRot ?? 0;
+      if (this.A.struggle && rot >= GRAB_FLAT) {
+        // his painted struggle is flat already (head to the right): head the way the hero
+        // faces, tipped up as he's still being swung over, bucking as he fights
+        s.scaleX = Math.abs(s.scaleX) * dir;
+        s.angle = (rot - 1) * 90 * dir + Math.sin(tick * 0.45) * 3;
+        s.setPosition(f.x, f.z - f.h + half * 0.55 + Math.abs(Math.sin(tick * 0.3)) * 2);
+        this.spinDir = dir;
+        return;
+      }
       deg = 90 * (f.grabRot ?? 0) * dir + Math.sin(tick * 0.55) * 5 * (f.grabRot ?? 0);
       cx = f.x; cy = f.z - f.h;
       this.spinDir = dir;
