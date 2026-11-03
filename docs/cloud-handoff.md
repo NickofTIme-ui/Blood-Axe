@@ -6,6 +6,11 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026 (cloud, Nick: "push all and update itch"): main fb46c3f adds grab and throw
+  round 3 (yoked enemies react: shocked when seized, kicking overhead; `*_held.png` strips for 7
+  enemies). No other ready branch was left unmerged (32i4yn, 94qroq, zktpa8 are already on main).
+  No ChatGPT build on the PC newer than 2026-10-25. This is the build for the next itch upload.
+
 - 3 November 2026 (cloud, Nick: "push and merge all"): ON MAIN now, not on itch: props rounds 1-4
   (`claude/project-thread-b5hipz` ea6eb64), grab and throw rounds 1-2 (`claude/project-thread-98rwfm`
   7a3e22f), Hale the smith (`claude/project-thread-iyr5y2` 20a34de), bloodied Ulric v3
