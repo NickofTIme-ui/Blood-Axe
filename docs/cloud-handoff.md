@@ -6,6 +6,11 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026 (cloud, Nick: "push"): ON MAIN now, not on itch: more blood on the player
+  (`claude/project-thread-m9afol` 2755a19). Close kills bloody him about twice as fast, the blood
+  stays 40 s, and a new soaked stage (`tools/soak-bloodied.py`) goes past fully bloodied. Adds
+  about 1.8 MB of PNGs (4 `heroes-hd/*-soaked.png`): mind the 500 MB itch limit. npm test passes.
+
 - 3 November 2026 (cloud, Nick: "push"): ON MAIN now, not on itch: grab and throw round 4
   (neck-grabbed enemies react: `*_scruff.png` nabbed / frog-marched strips for 7 enemies, and the
   yoke's shock holds to 70% of the hoist). Merged from `claude/project-thread-98rwfm` 736d1ea.
