@@ -6,6 +6,9 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026 (cloud, Nick: "push"): archer posts shoot 40% slower (ARROW_SLOW 1.4 on the
+  gap between arrow volleys, src/stage/Stage.js) and their volley sound is 20% louder
+  (VOLLEY_GAIN, src/core/BattlefieldAudio.js). ON MAIN, not on itch yet.
 - 3 November 2026 (cloud, Nick: "push all"): rank screen (rmac4e 877a20e) and level 1 art review
   fixes (kfk79v 21f7db7) MERGED TO MAIN. NOT on itch yet.
 - 3 November 2026 (cloud, `claude/project-thread-rmac4e`, now ON MAIN, not on itch):
