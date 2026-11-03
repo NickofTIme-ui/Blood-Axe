@@ -6,6 +6,10 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026: ITCH IS LIVE at main 5750081, upload 20259644 (replaced 20246803). Zip 463.1 MiB,
+  unpacked 472.5 MiB (944 files) at quality 72 with the lossless PNG pass. Everything on main up
+  to here is on itch (skill tree art, grab rounds 4-5, more player blood, level 1 props, juggle fix).
+
 - 3 November 2026 (cloud, Nick: "push and merge everything, update itch"): every test branch
   checked against main. The only change still missing was the juggle drift fix from
   `claude/project-thread-8afo8z` (c5cc425): a juggled man's sideways speed bleeds off
