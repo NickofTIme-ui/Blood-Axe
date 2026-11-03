@@ -6,12 +6,19 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026 (cloud, Nick: "push and merge all"): FOUR TEST BRANCHES NOW ON MAIN, NOT on
+  itch: executioner floating boots removed (y1ni7o f12d42d), Rurik's grab hand on the held man's
+  shoulder (0i504c c151cda), bloody Rurik blood-only layers (3etkgt f30dda0, note below), and more
+  room to move (gl7gns 5fbe1fe: lane back edge 250 on every level, front 530, Terrain.js stretches
+  ledges/pits laid at the old 282/520 edges). With the wind-up change below, main is ahead of itch
+  by five changes. npm test passes. No unmerged test-branch work left.
+
 - 3 November 2026 (cloud, Nick: "the hits come too fast", then "push"): ENEMY WIND-UPS 150 ms
   LONGER, ON MAIN (a5d4136), NOT on itch. `WINDUP_EXTRA = 9` frames is added to every enemy
   move's startup at load (end of `src/data/enemies.js`), combo windows shifted with it;
   `TELEGRAPH` minimums now 30 / 27 / 39 frames (500 / 450 / 650 ms). Damage unchanged.
 
-- 3 November 2026 (cloud, TEST BRANCH `claude/project-thread-3etkgt`, not main/itch): bloody Rurik
+- 3 November 2026 (cloud, `claude/project-thread-3etkgt`, now ON MAIN, not itch): bloody Rurik
   fixes. The whole-body ChatGPT repaints showed as a second Rurik (limbs/sword not where his own
   are), and every swing was drawn clean. Now every Rurik sheet has a blood-only layer
   (assets/sprites/heroes-hd/blood/, 1.7 MB, half size) baked by tools/bake-blood-layers.py from
