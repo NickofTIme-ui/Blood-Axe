@@ -227,6 +227,20 @@ export class ArenaScene extends Phaser.Scene {
       this.lastBowl = now;
       this.callout(this.bowlCount > 1 ? `STRIKE! x${this.bowlCount + 1}` : 'STRIKE!', '#ffd24a');
     });
+    // GRAB AND THROW (combat/Grab.js): hurled away screaming, the same screams as a man going
+    // over a ledge (view/TerrainView.js pitDrop, never the same one twice running); the heave
+    // whooshes, and he hits the ground with a thud, a jolt and dust
+    ev.on('grabThrow', ({ victim }) => {
+      playSfx(this, 'heavySwing', { volume: 0.5, pitch: -300, spread: 100 });
+      this.fx.shake(2, 5);
+      this.fallScream(victim);
+    });
+    ev.on('grabSlam', ({ fighter: f }) => {
+      playSfx(this, 'kick', { volume: 0.55, pitch: -600, spread: 120, minGapMs: 40 });
+      playSfx(this, 'goreLand', { volume: 0.5, pitch: -200, spread: 120, minGapMs: 40 });
+      this.fx.shake(5, 9);
+      this.gore.spark(f.x, f.z, f.floor ?? 0, 0xb09a7a, 14);
+    });
     ev.on('guardSwap', ({ fighter: f }) => {
       // steel glint as the guard whips round
       this.gore.spark(f.x + f.facing * 18, f.z, 70, 0xdfe8ff, 10);
@@ -1164,6 +1178,18 @@ export class ArenaScene extends Phaser.Scene {
     j.t = 0;
     j.n = n;
     this.tickJobs.push(j);
+  }
+
+  // A man screaming as he goes flying or over the edge: one of the three falling screams,
+  // never the same one twice running; once per flight (a thrown man who then drops into a
+  // pit doesn't scream twice).
+  fallScream(f) {
+    const now = this.world.frame;
+    if (f && now - (f.screamedAt ?? -999) < 120) return;
+    if (f) f.screamedAt = now;
+    const keys = ['fallScream1', 'fallScream2', 'fallScream3'].filter((k) => k !== this.lastScream);
+    this.lastScream = keys[Math.floor(Math.random() * keys.length)];
+    playSfx(this, this.lastScream, { volume: 0.9, spread: 60, minGapMs: 0 });
   }
 
   setupFinishers(ev) {

@@ -144,15 +144,10 @@ for (const id of ['grunt', 'stalker', 'butcher', 'ghoul', 'penitent', 'berserker
   ENEMY_STRIPS[id].fly = { file: `${DIR}/${id}_fly.png`, frames: 5, ref: 0, optional: true };
 }
 
-// yoked up (the grab, combat/Grab.js): 0 his ready stance (for the size), 1 seized (shocked,
-// still upright), 2-5 held overhead flat on his back, head to the right, struggling (a loop).
-// ChatGPT, 2026-11-03 (Nick: "they must react while being grabbed, a shocked look on their
-// face"). Optional: without it his stance is turned flat (view/SpriteEnemyView.js grabSpin)
-for (const id of ['grunt', 'stalker', 'butcher', 'ghoul', 'penitent', 'berserker', 'gladiator']) {
-  ENEMY_STRIPS[id].held = { file: `${DIR}/${id}_held.png`, frames: 6, ref: 0, optional: true };
-}
+// (the yoked-up `_held` strips were dropped with the overhead lift, 2026-11-03; originals in
+// project files grab-throw/enemy-held/)
 // by the scruff (the bouncer's grip): 0 stance, 1 seized from behind, 2-5 frog-marched on his
-// toes, flailing (a loop). Listed once painted; until then the neck grab shows his seized pose
+// toes, flailing (a loop). Listed once painted; until then the neck grab shows his walk
 const SCRUFF_DRAWN = ['grunt', 'stalker', 'butcher', 'ghoul', 'penitent', 'berserker', 'gladiator']; // ChatGPT, 2026-11-03
 for (const id of SCRUFF_DRAWN) {
   ENEMY_STRIPS[id].scruff = { file: `${DIR}/${id}_scruff.png`, frames: 6, ref: 0, optional: true };
@@ -188,9 +183,6 @@ const COMMON = {
   kneel: { needs: ['kneel'], frames: seq('kneel', [0, 1, 2]) },
   // thrown head first (combat/Grab.js), when painted
   missile: { needs: ['fly'], frames: seq('fly', [1, 2, 3, 4]), fps: 10, loop: true },
-  // yoked up, when painted: the shock of being seized, then the struggle overhead
-  seized: { needs: ['held'], frames: seq('held', [1]) },
-  struggle: { needs: ['held'], frames: seq('held', [2, 3, 4, 5]), fps: 9, loop: true },
   nabbed: { needs: ['scruff'], frames: seq('scruff', [1]) },
   marched: { needs: ['scruff'], frames: seq('scruff', [2, 3, 4, 5]), fps: 10, loop: true },
 };

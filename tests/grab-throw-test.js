@@ -1,6 +1,7 @@
-// Grab and throw (Nick, 2026-11-02): D-pad right / F grabs the man in front, he's yoked
-// overhead, the next press throws him the way the stick points; he plows through men,
-// smashes props and goes off ledges (combat/Grab.js).
+// Grab and throw (Nick, 2026-11-02): D-pad right / F grabs the man in front by the neck (the
+// overhead yoke was cut 2026-11-03), the next press throws him the way the stick points in an
+// arc; he slams down, bounces, skids; he plows through men, smashes props and goes off
+// ledges (combat/Grab.js).
 import assert from 'node:assert/strict';
 import { World } from '../src/core/World.js';
 import { Controller } from '../src/core/Controller.js';
@@ -38,27 +39,27 @@ assert.ok(CONTROLS.keyboard.grab.includes('F'));
 assert.ok(ACTIONS.includes('grab') && ACTIONS.indexOf('grab') > ACTIONS.indexOf('ready'), 'grab appended to the online button list');
 
 for (const hero of ['warrior', 'mage', 'rogue']) {
-  // grab, lift, yoke, then thrown the way the stick points (up the lane here)
+  // grab (standing still: still the neck grab, no overhead lift), march, then thrown the way
+  // the stick points (up the lane here)
   const { w, p, e } = setup(hero);
   p.controller.queue.push('grab');
   run(w, 3);
   assert.equal(p.state, 'grab', `${hero}: grab starts`);
   run(w, GRAB.catch + 2);
   assert.equal(e.state, 'grabbed', `${hero}: the grunt is caught`);
-  run(w, GRAB.lift + 4);
-  assert.ok(e.h > p.stats.body.h * 0.8, `${hero}: he's up over the shoulders (h ${Math.round(e.h)})`);
-  assert.ok(Math.abs(e.x - p.x) < 20, `${hero}: across the shoulders, not in front (dx ${Math.round(e.x - p.x)})`);
-  // carrying him: a slow walk
+  assert.equal(p.grab.mode, 'neck', `${hero}: by the neck, never the yoke`);
+  run(w, GRAB.neck.clamp + 4);
+  assert.ok(e.byNeck && e.h < 20, `${hero}: held by the neck, feet barely off the floor (h ${Math.round(e.h)})`);
   p.controller.mx = 1;
   const x0 = p.x;
   run(w, 30);
-  assert.ok(p.x > x0 + 20 && p.x < x0 + p.stats.walkSpeed * 0.5 * 0.7, `${hero}: walks slowly with him (${Math.round(p.x - x0)} px)`);
+  assert.ok(p.x > x0 + 20, `${hero}: marches him forward (${Math.round(p.x - x0)} px)`);
   assert.equal(e.state, 'grabbed');
   // stick up + throw: he goes up the lane
   p.controller.mx = 0; p.controller.mz = -1;
   const z0 = e.z;
   p.controller.queue.push('attack');
-  run(w, GRAB.windup + 3);
+  run(w, GRAB.neck.windup + 3);
   assert.equal(e.state, 'knockdown', `${hero}: thrown`);
   run(w, 20);
   assert.ok(e.z < z0 - 40, `${hero}: thrown up the lane (z ${Math.round(z0)} -> ${Math.round(e.z)})`);
@@ -86,7 +87,7 @@ for (const hero of ['warrior', 'mage', 'rogue']) {
     return o;
   });
   p.controller.queue.push('grab');
-  run(w, GRAB.catch + GRAB.lift + 4);
+  run(w, GRAB.catch + GRAB.neck.clamp + 4);
   p.controller.mx = 1;
   p.controller.queue.push('grab');
   run(w, 50);
@@ -99,7 +100,7 @@ for (const hero of ['warrior', 'mage', 'rogue']) {
   // hit while carrying him: he's dropped
   const { w, p, e } = setup();
   p.controller.queue.push('grab');
-  run(w, GRAB.catch + GRAB.lift + 4);
+  run(w, GRAB.catch + GRAB.neck.clamp + 4);
   p.fsm.change('hitstun', { frames: 10 });
   run(w, 2);
   assert.equal(e.state, 'knockdown', 'dropped when the hero is hit');
@@ -127,7 +128,7 @@ for (const hero of ['warrior', 'mage', 'rogue']) {
   const e = w.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x: 1560, z: 334, controller: new Controller() }));
   e.facing = -1;
   p.controller.queue.push('grab');
-  run(w, GRAB.catch + GRAB.lift + 4, st);
+  run(w, GRAB.catch + GRAB.neck.clamp + 4, st);
   assert.equal(e.state, 'grabbed');
   p.controller.mx = 1;
   p.controller.queue.push('grab');
@@ -159,11 +160,24 @@ for (const hero of ['warrior', 'mage', 'rogue']) {
 }
 
 {
-  // standing still as you grab: the yoke
-  const { w, p } = setup('warrior');
+  // the throw's weight: the heave freezes him a beat, the body arcs up then drops, slams,
+  // bounces on still going his way, and skids along the ground once he's down
+  const { w, p, e } = setup('warrior');
   p.controller.queue.push('grab');
-  run(w, GRAB.catch + 2);
-  assert.equal(p.grab.mode, 'yoke');
+  run(w, GRAB.catch + GRAB.neck.clamp + 4);
+  p.controller.queue.push('grab');
+  let thrownAt = null; let releaseH = 0; let peak = 0; let landed = null; let bounced = false; let lyingX = null;
+  for (let i = 0; i < 200; i++) {
+    w.tick();
+    if (thrownAt == null && e.thrown) { thrownAt = i; releaseH = e.h; assert.ok(p.hitstop > 0, 'the heave: a beat of hitstop on the thrower'); }
+    if (thrownAt != null && landed == null) peak = Math.max(peak, e.h);
+    if (e.thrown?.landed && landed == null) landed = i;
+    if (landed != null && e.h > 5) bounced = true;
+    if (e.lyingSince != null && lyingX == null) lyingX = e.x;
+  }
+  assert.ok(peak > releaseH + 25, `an arc: up from ${Math.round(releaseH)} to ${Math.round(peak)}`);
+  assert.ok(bounced, 'he bounces off the slam');
+  assert.ok(lyingX != null && e.x > lyingX + 15, `and skids once he's down (${Math.round(e.x - (lyingX ?? e.x))} px)`);
 }
 
 {
@@ -175,13 +189,13 @@ for (const hero of ['warrior', 'mage', 'rogue']) {
     const e = w.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x: 450, z: 420, controller: new Controller() }));
     e.facing = -1; e.id += seed * 7;
     p.controller.queue.push('grab');
-    run(w, GRAB.catch + GRAB.lift + 4);
+    run(w, GRAB.catch + GRAB.neck.clamp + 4);
     p.controller.queue.push('grab');
-    run(w, GRAB.windup + 3);
+    run(w, GRAB.neck.windup + 3);
     assert.ok(e.thrown, 'thrown');
     if (e.thrown.missile) { missiles++; assert.equal(e.facing, p.facing, 'head first: faces the way he flies'); }
   }
   assert.ok(missiles >= 22 && missiles <= 38, `mostly missiles (${missiles} of 40)`);
 }
 
-console.log('Grab and throw checks passed: D-pad right / F, the yoke and the slow carry, thrown where the stick points, through a crowd, into barrels; the bouncer neck grip and march; mostly missiles; dropped when hit; no bosses.');
+console.log('Grab and throw checks passed: D-pad right / F, every grab by the neck (no overhead lift), thrown in an arc where the stick points, slam, bounce and skid, through a crowd, into barrels; the bouncer neck grip and march; mostly missiles; dropped when hit; no bosses.');

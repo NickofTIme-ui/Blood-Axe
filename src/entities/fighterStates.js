@@ -15,7 +15,7 @@ import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher } from '
 import { rogueStates, rollMine,isRogueFinisher, rogueFinisherStart, runRogueFinisher, vaultTarget } from '../combat/Rogue.js';
 import { skillStates, plungeReady } from '../combat/Skills.js';
 import { JUGGLE, SUNDER, juggleLand, airMoveFor } from '../combat/Juggle.js';
-import { grabStates, grabTarget, thrownLand } from '../combat/Grab.js';
+import { GRAB, grabStates, grabTarget, thrownLand } from '../combat/Grab.js';
 
 const FEEL = SETTINGS.feel;
 
@@ -904,6 +904,7 @@ export const FIGHTER_STATES = {
       f.vh = p.vh ?? 250;
       f.h = Math.max(f.h, 0.01);
       f.lyingSince = null;
+      f.skid = false; // (thrown: he skids once he's down — combat/Grab.js thrownLand)
     },
     update(f, frame) {
       if (f.lyingSince === null) {
@@ -919,7 +920,7 @@ export const FIGHTER_STATES = {
       }
       // Lying on the ground: players can't be hit while down; enemies CAN (finish them).
       f.invincible = f.team === 'player';
-      friction(f, 0.8);
+      friction(f, f.skid ? GRAB.skid : 0.8);
       if (frame - f.lyingSince >= f.stats.knockdownFrames) f.fsm.change('getup');
     },
   },

@@ -854,8 +854,9 @@ export class TerrainView {
       this.dust(b, 18);
     });
     // going over: a scream, never the same one twice running — or, into water, a splash
-    ev.on('pitDrop', () => {
+    ev.on('pitDrop', ({ fighter }) => {
       if (this.water) { playSplash(this.scene); return; }
+      if (this.scene.fallScream) { this.scene.fallScream(fighter); return; } // (shared with thrown men: scenes/ArenaScene.js)
       const keys = ['fallScream1', 'fallScream2', 'fallScream3'].filter((k) => k !== this.lastScream);
       this.lastScream = keys[Math.floor(Math.random() * keys.length)];
       playSfx(this.scene, this.lastScream, { volume: 0.9, spread: 60, minGapMs: 0 });

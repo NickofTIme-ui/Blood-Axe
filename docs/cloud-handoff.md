@@ -6,6 +6,16 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026 (cloud, branch `claude/project-thread-98rwfm`, NOT on main until Nick says
+  push, not on itch): THE OVERHEAD LIFT IS CUT (Nick: "i dont like the overhead lift ... make it
+  better or cut it out"). Every grab is now the neck grab (bouncer march), whichever way the
+  stick points. The yoke's `*_held.png` strips were removed from the game (originals in project
+  files grab-throw/enemy-held/). THROWS (Nick: "make the physics of throwing feel better"): a
+  real arc (vh 250, float 0.45), a 4-frame heave hitstop, the slam keeps half his speed and
+  bounces him, then he skids (friction 0.9); a whoosh on the throw, a thud, jolt and dust on the
+  slam. Thrown men SCREAM with the ledge-fall screams (ArenaScene.fallScream, shared with
+  pitDrop so a thrown man who goes over a ledge screams once).
+
 - 3 November 2026 (cloud, Nick: "push"): ON MAIN now, not on itch: grab and throw round 4
   (neck-grabbed enemies react: `*_scruff.png` nabbed / frog-marched strips for 7 enemies, and the
   yoke's shock holds to 70% of the hoist). Merged from `claude/project-thread-98rwfm` 736d1ea.

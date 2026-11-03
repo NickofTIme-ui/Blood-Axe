@@ -1,6 +1,7 @@
 // Grab.js — GRAB AND THROW (Nick, 2026-11-02): D-pad right (F on the keys) grabs the man
-// in front of you, the hero hoists him up and YOKES him across his shoulders, and the
-// next press (grab, attack, heavy or kick) CHUCKS him the way the left stick points.
+// in front of you by the scruff of the neck (THE BOUNCER, below), and the next press (grab,
+// attack, heavy or kick) CHUCKS him the way the left stick points. (The overhead yoke was
+// cut on 2026-11-03, Nick: "i dont like the overhead lift"; carryPose still has its pose.)
 // A thrown man plows through the men in his road (they go down with him), smashes any
 // prop he hits (entities/Fighter.js bump) and goes over the edge of any drop he's thrown
 // across (stage/Stage.js pits: his death is the thrower's kill).
@@ -16,8 +17,7 @@
 //           after `hold` frames
 //   throw   leaning back (`windup`), the release, then `recover` frames to get his feet back
 //
-// THE BOUNCER (Nick, 2026-11-02): grab him while pushing the stick toward him and the hero
-// takes him by the scruff of the neck instead, like a bouncer with a drunk: turned round,
+// THE BOUNCER (Nick, 2026-11-02): the hero takes him by the scruff of the neck instead, like a bouncer with a drunk: turned round,
 // his feet barely off the floor, frog-marched ahead of the hero (smashing whatever he's
 // marched into) until the next press hurls him away.
 //
@@ -31,8 +31,14 @@ export const GRAB = {
   carrySpeed: 0.5,                // x his walk while carrying
   // the throw: px/s along the lane and across it, up; damage to the man thrown (on landing)
   // and to each man he's thrown through
-  speed: 820, speedZ: 470, vh: 110, slam: 22, through: 16,
-  releaseH: 0.35, float: 0.3,     // leaves the hands at this x the hero's height; gravity x this until he lands (a long, flat flight)
+  // (2026-11-03, Nick: "make the physics of throwing feel better": a real arc up and a hard
+  // drop instead of a flat glide, a heave that freezes for a beat, a slam he bounces off
+  // with his momentum kept, then a skid along the dirt)
+  speed: 760, speedZ: 450, vh: 250, slam: 22, through: 16,
+  releaseH: 0.35, float: 0.45,    // leaves the hands at this x the hero's height; gravity x this until he lands (the descent is faster still: Juggle fallGravity)
+  heave: 4,                       // hitstop frames on the thrower as he lets go (the weight of it)
+  bounce: { keep: 0.5, vh: 170 }, // the slam: share of his speed he keeps, how high he bounces
+  skid: 0.9,                      // friction per frame once he's down (a lying man: 0.8)
   plow: 0.86,                     // the thrown body keeps this much of its speed per man it hits
   missile: 0.75,                  // share of throws that fly head first (the rest tumble)
   // the bouncer: frames to clamp on and turn him round; how far in front he's held and how
@@ -138,6 +144,7 @@ function release(f, v) {
   const missile = f.world.roll(v.id, 3100) < GRAB.missile;
   v.thrown = { by: f, hit: new Set([v.id]), dx, dz, landed: false, spin: Math.sign(dx) || f.facing, missile };
   if (Math.abs(dx) > 0.2) v.facing = Math.sign(dx); // (head first: he faces the way he flies)
+  f.hitstop = Math.max(f.hitstop ?? 0, GRAB.heave);
   f.world.events.emit('grabThrow', { fighter: f, victim: v, dx, dz });
 }
 
@@ -190,9 +197,8 @@ export function grabStates({ stopMoving, friction }) {
         stopMoving(f);
         const mx = f.controller.moveX;
         if (Math.abs(mx) > 0.5) f.facing = Math.sign(mx);
-        // pushing toward him as you grab: the bouncer's grip on his neck; else the yoke
-        const fwd = f.controller.moveX * f.facing > 0.5;
-        f.grab = { victim: null, caughtAt: null, throwAt: null, queued: false, mode: fwd ? 'neck' : 'yoke' };
+        // every grab is the bouncer's grip on his neck (the overhead yoke was cut, Nick 2026-11-03)
+        f.grab = { victim: null, caughtAt: null, throwAt: null, queued: false, mode: 'neck' };
         f.activeAttack = null;
         f.move = null;
         f.world.events.emit('grabStart', { fighter: f });
@@ -227,27 +233,7 @@ export function grabStates({ stopMoving, friction }) {
         const v = g.victim;
         if (!v || v.state !== 'grabbed' || v.grabbedBy !== f) { f.fsm.change('idle'); return; }
         const since = frame - g.caughtAt;
-        if (g.mode === 'neck') return neckMarch(f, v, frame, since);
-        if (g.throwAt == null) {
-          if (throwPressed(c)) g.queued = true;
-          const up = since >= GRAB.lift;
-          if (since === GRAB.lift) f.world.events.emit('grabYoke', { fighter: f, victim: v });
-          if (up) {
-            // yoked: a slow, heavy walk with him; the stick turns him
-            f.vx = c.moveX * f.stats.walkSpeed * GRAB.carrySpeed;
-            f.vz = c.moveZ * f.stats.depthSpeed * GRAB.carrySpeed;
-            f.carrying = Math.hypot(f.vx, f.vz) > 4;
-            if (Math.abs(c.moveX) > 0.5) f.facing = Math.sign(c.moveX);
-          } else { f.vx = 0; f.vz = 0; }
-          if (up && (g.queued || since >= GRAB.lift + GRAB.hold)) {
-            g.throwAt = frame;
-            f.vx = 0; f.vz = 0; f.carrying = false;
-            f.world.events.emit('grabWindup', { fighter: f, victim: v });
-          }
-          return;
-        }
-        f.vx = 0; f.vz = 0;
-        if (frame - g.throwAt === GRAB.windup) { release(f, v); g.released = frame; }
+        return neckMarch(f, v, frame, since);
       },
       exit(f) {
         // cut short (hit, a hold, anything): he lets go
@@ -333,10 +319,17 @@ export function thrownLand(f) {
   const by = t.by;
   const keep = by?.hitstop ?? 0;
   const dir = Math.sign(f.vx) || t.spin;
+  const vx = f.vx;
   const vz = f.vz;
   f.world.combat.resolve(by ?? f, f, SLAM, { dir, kind: 'melee', fromX: f.x - dir * 10, contact: { x: f.x, h: f.h + 10 } });
   if (by) by.hitstop = keep;
-  f.vz = vz * 0.35;
+  // he bounces off the ground still going the way he was thrown, then skids to a stop
+  if (f.state === 'knockdown') {
+    f.vx = vx * GRAB.bounce.keep;
+    f.vz = vz * GRAB.bounce.keep * 0.7;
+    f.vh = GRAB.bounce.vh;
+  }
+  f.skid = true;
   f.world.events.emit('grabSlam', { fighter: f, by });
   return f.state === 'knockdown' && f.lyingSince === null;
 }
