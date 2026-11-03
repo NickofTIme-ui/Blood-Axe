@@ -6,6 +6,11 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026 (cloud, Nick: "push"): ON MAIN now, not on itch: grab and throw round 4
+  (neck-grabbed enemies react: `*_scruff.png` nabbed / frog-marched strips for 7 enemies, and the
+  yoke's shock holds to 70% of the hoist). Merged from `claude/project-thread-98rwfm` 736d1ea.
+  npm test passes. Next itch upload should include it.
+
 - 3 November 2026: ITCH IS LIVE at main ccc6dd6, upload 20246803 (replaced 20041047). Zip 485.9 MB,
   unpacked 496.9 MB at JPEG quality 72 (78 was 503.8 MB, over itch's 500 MB limit; the next art
   growth needs a smarter shrink). A first try, 20246541, cached CDN 404s and was replaced.
@@ -47,7 +52,7 @@ branch, or ChatGPT's work gets lost.
   his back, head right, kicking and screaming; anims `seized` / `struggle`). SpriteEnemyView:
   past half the lift (`GRAB_FLAT`) he's drawn with the struggle loop laid across the shoulders,
   head the way the hero faces. Without the strip the old turned stance stays.
-  Round 4 (Nick: "many enemies did not react"): the neck grab (stick toward him as you grab)
+  Round 4 (Nick: "many enemies did not react"; ON MAIN 3 Nov, not on itch): the neck grab (stick toward him as you grab)
   used his plain walk. Now `<id>_scruff.png` for all 7 (0 stance, 1 nabbed from behind, 2-5
   frog-marched on his toes, flailing; anims `nabbed` / `marched`, listed in SCRUFF_DRAWN), and
   the yoke's shock holds to 70% of the hoist (GRAB_FLAT). Hounds (paper doll, no painted
