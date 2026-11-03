@@ -6,6 +6,11 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026 (cloud, Nick: "the hits come too fast", then "push"): ENEMY WIND-UPS 150 ms
+  LONGER, ON MAIN (a5d4136), NOT on itch. `WINDUP_EXTRA = 9` frames is added to every enemy
+  move's startup at load (end of `src/data/enemies.js`), combo windows shifted with it;
+  `TELEGRAPH` minimums now 30 / 27 / 39 frames (500 / 450 / 650 ms). Damage unchanged.
+
 - 3 November 2026: ITCH IS LIVE at main 5750081, upload 20259644 (replaced 20246803). Zip 463.1 MiB,
   unpacked 472.5 MiB (944 files) at quality 72 with the lossless PNG pass. Everything on main up
   to here is on itch (skill tree art, grab rounds 4-5, more player blood, level 1 props, juggle fix).
