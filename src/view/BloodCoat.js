@@ -1,29 +1,33 @@
-// BloodCoat.js — EXPERIMENT (2026-11-02): the heroes get bloodier as they cut men down.
-// ChatGPT repainted his animation sheets with him already bloodied (the blood is part of
-// the painting: it follows his armour and moves with him). Those repaints are lined up
-// on the clean sheets and drawn over him, fading in as he kills up close and drying off
-// slowly after; he's washed clean when he's knocked out and gets back up.
+// BloodCoat.js — the heroes get bloodier as they cut men down (2026-11-02, reworked 11-03).
+// ChatGPT repainted some of Rurik's sheets with him soaked in blood. Drawn whole over him,
+// those repaints showed as a second Rurik (ChatGPT never paints his limbs and sword in
+// quite the same place), and every other pose (all his swings) was drawn clean.
 //
-// A pose with no bloodied repaint yet is simply drawn clean (only some of Ulric's
-// sheets are done: BLOODIED below).
+// Now each of his sheets has a BLOOD LAYER (tools/bake-blood-layers.py): only the blood,
+// transparent everywhere else, baked onto his own drawing frame for frame from the blood
+// ChatGPT painted. It's faded over him as he kills up close and dries off slowly after;
+// he's washed clean when he's knocked out and gets back up.
 //
 // Tuning: BLOOD below. Only heroes (fighters with a style meter) get a coat.
+import { HERO_HD } from '../data/heroHdAssets.js';
+import { GRAB_SHEETS } from '../data/grabArt.js';
 
-// The bloodied repaints: texture key of the clean sheet -> its bloodied twin (same
-// layout, frame for frame; made by tools/line-up-bloodied.py). Each also has a 'soaked'
-// twin (the same file with -soaked for -blood; made by tools/soak-bloodied.py): the
-// repaint's blood pushed deeper, wetter and wider, faded in past fully bloodied.
+// Texture key of a clean sheet -> its blood layer (half size: drawn doubled).
+const layerFile = (file) => `assets/sprites/heroes-hd/blood/${file.split('/').pop().replace(/\.png$/, '')}-blood.png`;
 export const BLOODIED = {
-  'ulric-walk2': 'assets/sprites/heroes-hd/rurik-ulric-walk2-blood.png', // (his old sword, before the birthright)
-  'ulric-combo1': 'assets/sprites/heroes-hd/rurik-ulric-combo1-blood.png',
-  'ulricOath-walk2': 'assets/sprites/heroes-hd/rurik-ulricOath-walk2-blood.png',
-  'ulricOath-combo1': 'assets/sprites/heroes-hd/rurik-ulricOath-combo1-blood.png',
+  ulric: layerFile(HERO_HD.base.file),
+  ulricOath: layerFile(HERO_HD.base.file),
 };
+for (const s of [...HERO_HD.sheets, ...GRAB_SHEETS]) {
+  if (s.hero === 'rurik' && s.baseFirst == null && (s.key === 'ulric' || s.key === 'ulricOath')) BLOODIED[`${s.key}-${s.name}`] = layerFile(s.file);
+}
+const LAYER_RES = 0.5; // the layers are baked at half his HD size
 
 export const BLOOD = {
   reach: 260,        // kills further off than this (spells, thrown knives) leave no blood on him
   fullReach: 90,     // within this he gets the whole spray
-  most: 2,           // 0 clean .. 1 bloodied (the repaint) .. 2 soaked
+  most: 2,           // 0 clean .. 1 bloodied .. 2 soaked
+  perLevel: 0.6,     // how strongly the blood layer shows per level (1 = 0.6, 2 = full)
   perKill: 0.45,     // how much bloodier an ordinary close kill makes him...
   perGoryKill: 0.8,  // ...and one where the man came apart (or was executed)
   dryAfter: 2400,    // ticks after his last kill before he starts drying off (40 s)
@@ -31,14 +35,10 @@ export const BLOOD = {
   fadeIn: 0.06,      // how fast the blood comes up on him each tick (so a kill reads as a splash)
 };
 
-const bloodKey = (k) => `${k}-blood`;
-const soakKey = (k) => `${k}-soaked`;
+const layerKey = (file) => `blood:${file}`;
 
 export function preloadBloodied(scene) {
-  for (const [k, file] of Object.entries(BLOODIED)) {
-    scene.load.image(bloodKey(k), file);
-    scene.load.image(soakKey(k), file.replace(/-blood\.png$/, '-soaked.png'));
-  }
+  for (const file of new Set(Object.values(BLOODIED))) scene.load.image(layerKey(file), file);
 }
 
 // How much bloodier a kill makes the attacker: 0 (none) .. perGoryKill (point blank).
@@ -55,17 +55,18 @@ export function sprayAmount(e) {
   return near * (gory ? BLOOD.perGoryKill : BLOOD.perKill);
 }
 
-// The bloodied twin of a clean frame, or null. (Its frames are added on first use, cut
-// exactly like the clean sheet's.)
-function twinFor(scene, key, frame, soaked = false) {
+// The blood layer of a clean frame, or null. (Its frames are added on first use, cut
+// like the clean sheet's at half size.)
+export function layerFor(scene, key, frame) {
   if (!BLOODIED[key]) return null;
-  const bk = soaked ? soakKey(key) : bloodKey(key);
+  const bk = layerKey(BLOODIED[key]);
   if (!scene.textures.exists(bk)) return null;
   const tex = scene.textures.get(bk);
   if (!tex.has(frame)) {
     const clean = scene.textures.get(key).get(frame);
     if (!clean || clean.name !== frame) return null;
-    tex.add(frame, 0, clean.cutX, clean.cutY, clean.cutWidth, clean.cutHeight);
+    const r = LAYER_RES;
+    tex.add(frame, 0, Math.round(clean.cutX * r), Math.round(clean.cutY * r), Math.round(clean.cutWidth * r), Math.round(clean.cutHeight * r));
     tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
   }
   return bk;
@@ -76,7 +77,6 @@ class Coat {
     this.scene = scene;
     this.f = fighter;
     this.img = scene.add.image(0, 0, '__WHITE').setVisible(false);
-    this.soak = scene.add.image(0, 0, '__WHITE').setVisible(false);
     this.target = 0;  // how bloodied he is (0 clean .. 1 bloodied .. 2 soaked)
     this.shown = 0;   // what's drawn (eases up to target)
     this.lastKill = -1e9;
@@ -105,22 +105,22 @@ class Coat {
     this.shown += Math.sign(this.target - this.shown) * Math.min(Math.abs(this.target - this.shown), BLOOD.fadeIn);
 
     const show = this.shown > 0.01 && s.visible && s.alpha > 0 && !s.tintFill;
-    this.draw(this.img, show && twinFor(this.scene, s.texture.key, s.frame.name), s, Math.min(1, this.shown), 0.001);
-    this.draw(this.soak, show && this.shown > 1 && twinFor(this.scene, s.texture.key, s.frame.name, true), s, this.shown - 1, 0.002);
+    this.draw(this.img, show && layerFor(this.scene, s.texture.key, s.frame.name), s, Math.min(1, this.shown * BLOOD.perLevel), 0.001);
   }
 
-  // One layer over him: a twin texture, laid exactly on his sprite at alpha `a`.
+  // The blood layer over him, laid exactly on his sprite at alpha `a`.
   draw(img, key, s, a, above) {
     img.setVisible(!!key);
     if (!key) return;
+    const k = 1 / LAYER_RES;
     img.setTexture(key, s.frame.name).setOrigin(s.originX, s.originY).setPosition(s.x, s.y)
-      .setScale(s.scaleX, s.scaleY).setAngle(s.angle).setFlip(s.flipX, s.flipY)
+      .setScale(s.scaleX * k, s.scaleY * k).setAngle(s.angle).setFlip(s.flipX, s.flipY)
       .setDepth(s.depth + above).setAlpha(a * s.alpha);
     if (s.isTinted) img.setTint(s.tintTopLeft, s.tintTopRight, s.tintBottomLeft, s.tintBottomRight);
     else img.clearTint();
   }
 
-  destroy() { this.img.destroy(); this.soak.destroy(); }
+  destroy() { this.img.destroy(); }
 }
 
 // All the heroes' coats, kept by the scene (scenes/ArenaScene.js).

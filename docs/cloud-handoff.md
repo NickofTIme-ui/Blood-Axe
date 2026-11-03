@@ -11,6 +11,13 @@ branch, or ChatGPT's work gets lost.
   move's startup at load (end of `src/data/enemies.js`), combo windows shifted with it;
   `TELEGRAPH` minimums now 30 / 27 / 39 frames (500 / 450 / 650 ms). Damage unchanged.
 
+- 3 November 2026 (cloud, TEST BRANCH `claude/project-thread-3etkgt`, not main/itch): bloody Rurik
+  fixes. The whole-body ChatGPT repaints showed as a second Rurik (limbs/sword not where his own
+  are), and every swing was drawn clean. Now every Rurik sheet has a blood-only layer
+  (assets/sprites/heroes-hd/blood/, 1.7 MB, half size) baked by tools/bake-blood-layers.py from
+  the ChatGPT repaints (kept in tools/blood-source/, out of the build). Re-run it (python3, needs
+  opencv-python-headless + scipy) after any Rurik sheet changes, or that pose's blood won't line up.
+
 - 3 November 2026: ITCH IS LIVE at main 5750081, upload 20259644 (replaced 20246803). Zip 463.1 MiB,
   unpacked 472.5 MiB (944 files) at quality 72 with the lossless PNG pass. Everything on main up
   to here is on itch (skill tree art, grab rounds 4-5, more player blood, level 1 props, juggle fix).
