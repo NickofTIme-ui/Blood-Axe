@@ -33,13 +33,17 @@ export const LEVEL_ART = {
       { name: 'mid', key: 'magenta', scroll: 0.45, bottom: -20, height: 230 },
     ],
     wall: { height: 250 },
+    wallMore: ['wall_b', 'wall_c'], // (more rows of houses, so the street doesn't repeat: Nick's level 1 review, 2026-11-03)
     ground: true,
     pieces: ['well', 'mill', 'barn', 'stables', 'stables_open', 'longhall', 'gate', 'pikes',
       // street clutter (data/stageVillage.js `decor`: view/VillageView.js drawDecor)
-      'decor_signpost', 'decor_lantern', 'decor_debris', 'decor_debris2'],
+      'decor_signpost', 'decor_lantern', 'decor_debris', 'decor_debris2',
+      // a roof's end (view/TerrainView.js drawVillageBlock): painted as the right end, mirrored for the left
+      'roof_gable'],
     props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' },
       archers: { file: 'prop_archers.png', pair: true }, barricade: { file: 'prop_barricade.png', pair: true } },
-    surfaces: { roof_top: { fit: true }, roof_front: { px: 180 }, beam: { px: 40 }, board: { fit: true } },
+    surfaces: { roof_top: { fit: true }, roof_front: { px: 180 }, beam: { px: 40 }, board: { fit: true },
+      eave: { fit: true, key: 'magenta' } }, // (a roof's slate edge hanging over its house front)
   },
   wood: {
     dir: 'assets/env/wood/',

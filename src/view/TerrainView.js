@@ -376,6 +376,7 @@ export class TerrainView {
     const x0 = b.x0 + shake; const x1 = b.x1 + shake; const w = x1 - x0;
     const yTop0 = b.z0 - b.top; const yTop1 = b.z1 - b.top;
     for (const t of Object.values(v.tiles ?? {})) t.setVisible(false); // (shown again below by whichever face is painted)
+    v.gables?.forEach((g) => g.setVisible(false)); v.flank?.setVisible(false);
     if (!b.solid) {
       v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); v.arts?.forEach((a) => a.setVisible(false)); placeRoofFire(v.fire, b.x0, 0, false); // (gone: broken through, or fallen)
       return;
@@ -447,6 +448,52 @@ export class TerrainView {
 
   // A painted surface tile (data/levelArt.js `surfaces`) over one face of a block, lined up
   // with the world so neighbouring blocks continue each other. False if it isn't painted.
+  // A big roof's two painted ends (data/levelArt.js 'roof_gable'): standing from the eave up
+  // past the ridge, the inner side faded into the roof's own slates
+  roofEnds(v, x0, x1, yTop0, yTop1, b) {
+    const key = artKey('village', 'roof_gable');
+    if (!this.scene.textures.exists(key)) return;
+    if (!v.gables) {
+      const fk = `${key}-soft`;
+      if (!this.scene.textures.exists(fk)) {
+        const src = this.scene.textures.get(key).getSourceImage();
+        const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+        const x = c.getContext('2d'); x.drawImage(src, 0, 0);
+        x.globalCompositeOperation = 'destination-in';
+        const g = x.createLinearGradient(0, 0, src.width, 0); // (one fill: destination-in clears what it doesn't cover)
+        g.addColorStop(0, 'rgba(0,0,0,0.15)'); g.addColorStop(0.12, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,1)');
+        x.fillStyle = g; x.fillRect(0, 0, src.width, src.height);
+        this.scene.textures.addCanvas(fk, c);
+      }
+      v.gables = [0, 1].map((i) => this.scene.add.image(0, 0, fk).setOrigin(1, 1).setFlipX(i === 0).setTint(0xb8a8a0));
+    }
+    // The painting's bargeboard runs from its peak (PEAK, in its own pixels) down to the
+    // gutter at its outer foot (FOOT). Scaled so the peak stands just over the ridge, and
+    // squeezed sideways on a short roof so the two ends never meet.
+    const W = v.gables[0].width, H = v.gables[0].height;
+    const PEAK = { u: 52, v: 115 }, FOOT = { u: 690, v: 1330 };
+    const footY = yTop1 + 14;
+    const sy = (footY - (yTop0 - 30)) / (H - PEAK.v);
+    const sx = Math.min(sy, ((x1 - x0) * 0.38) / (W - PEAK.u));
+    const [L, R] = v.gables;
+    R.setOrigin(1, 1).setScale(sx, sy).setPosition(x1 + 10, footY).setDepth(b.z0 - 0.4).setVisible(true);
+    L.setOrigin(0, 1).setScale(sx, sy).setPosition(x0 - 10, footY).setDepth(b.z0 - 0.4).setVisible(true);
+    // ...and outside the bargeboard the roof's flank falls away into shadow, so the end
+    // reads as a sloping gable and not more shingles past it
+    v.flank ??= this.scene.add.graphics();
+    const g = v.flank.clear().setDepth(b.z0 - 0.45).setVisible(true);
+    for (const side of [1, -1]) {
+      const ox = side > 0 ? x1 + 10 : x0 - 10;
+      const at = (p) => ({ x: ox - side * (W - p.u) * sx, y: footY - (H - p.v) * sy });
+      const pk = at(PEAK), ft = at(FOOT);
+      const edge = side > 0 ? x1 : x0;
+      const top = Math.max(yTop0, pk.y);
+      const t = (top - pk.y) / ((ft.y - pk.y) || 1); // (where the board crosses the roof's back edge)
+      const cx = pk.x + (ft.x - pk.x) * t;
+      g.fillStyle(0x0a0604, 0.78).fillPoints([{ x: cx, y: top }, ft, { x: edge, y: ft.y }, { x: edge, y: top }], true);
+    }
+  }
+
   surface(v, slot, name, x, y, w, h, depth, amp) {
     const key = artKey(this.theme, `surf-${name}`);
     if (!name || w <= 0 || h <= 0 || !this.scene.textures.exists(key)) return false;
@@ -572,7 +619,12 @@ export class TerrainView {
     this.shadeEnds(v, x0, x1, yTop0, yTop1);
     const down = mat === 'board' ? 12 : mat === 'beam' && overPit ? 18 : Math.max(0, b.top - base) + (overPit ? 120 : 0);
     const frontArt = art[1] && this.surface(v, 'front', art[1], x0, yTop1 + 1, w, down, b.z1 + 0.4, bigRoof ? 6 : 5);
-    if (ridged && frontArt && this.surface(v, 'eave', 'beam', x0 - 10, yTop1 + 1, w + 20, 11, b.z1 + 0.45, 3)) v.tiles.eave.setTint(0x6a5040);
+    // the roof's slate edge hanging over the house front, and its two ends (painted gable
+    // ends, the right one mirrored for the left): a house's roof, not a box of shingles
+    // (Nick's level 1 review, 2026-11-03). Without the paintings, the old eave board.
+    const slates = ridged && frontArt && this.surface(v, 'eave', 'eave', x0 - 12, yTop1 - 14, w + 24, 46, b.z1 + 0.45, 2);
+    if (slates) { v.tiles.eave.setTint(0xd8ccc4); this.roofEnds(v, x0, x1, yTop0, yTop1, b); }
+    else if (ridged && frontArt && this.surface(v, 'eave', 'beam', x0 - 10, yTop1 + 1, w + 20, 11, b.z1 + 0.45, 3)) v.tiles.eave.setTint(0x6a5040);
     if (!frontArt) front.fillStyle(C[2], 1).fillRect(x0, yTop1 + 1, w, down);
     if (frontArt) {
       // (painted)

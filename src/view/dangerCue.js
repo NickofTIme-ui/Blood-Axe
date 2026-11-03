@@ -11,7 +11,26 @@
 
 import { DEPTH } from './depths.js';
 
-export const DANGER = { tint: 0xff6a58, glint: 0xff3a2a };
+export const DANGER = { tint: 0xff6a58, glint: 0xff3a2a, soft: 0xffb8a8 };
+
+// The wind-up on a painted body (Nick's level 1 review, 2026-11-03): not a solid red fill
+// any more (a full-body multiply turned Varek into a red silhouette and lost his painting),
+// but a hot red edge around him and the faintest warm lift on the body. WebGL: an outer
+// glow switched on and off; the canvas renderer falls back to the soft tint.
+// `pulse` 0..1 throbs the edge through the wind-up. The glow is taken off again after it, so
+// an enemy only pays for the effect while he's winding up.
+export function dangerEdge(sprite, on, pulse = 1) {
+  const fx = sprite.preFX;
+  if (!fx) { if (on && pulse > 0.5) sprite.setTint(DANGER.soft); return; }
+  if (on) {
+    sprite.dangerGlow ??= fx.addGlow(DANGER.glint, 3, 0, false, 0.1, 10);
+    sprite.dangerGlow.outerStrength = 1.5 + 3 * pulse;
+    if (pulse > 0.5) sprite.setTint(DANGER.soft);
+  } else if (sprite.dangerGlow) {
+    fx.remove(sprite.dangerGlow);
+    sprite.dangerGlow = null;
+  }
+}
 
 // a big one (the red glint and tint) or a plain swing (the small tell)
 export const isDanger = (st, m) => st === 'heavy' || !!(m.superArmor || m.chain || m.breaksGuard || m.unblockable);

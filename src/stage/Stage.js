@@ -835,7 +835,7 @@ export class Stage {
         this.regularSpawned=true;
         const def=sec.regular;
         const f=createEnemy(this.world,def.type,offscreenX(this.world,this.players,1),380,{entering:true});
-        f.stats={...f.stats,name:def.name,size:def.size??1,boss:false,noFinisher:true,maxHealth:Math.round(f.stats.maxHealth*(def.health??1))};
+        f.stats={...f.stats,name:def.name,named:true,size:def.size??1,boss:false,noFinisher:true,maxHealth:Math.round(f.stats.maxHealth*(def.health??1))};
         f.health=f.stats.maxHealth;
         this.setOnGround(f);
         if(def.escort?.length)this.spawnWave(def.escort);

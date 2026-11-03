@@ -143,7 +143,7 @@ export const STAGE_VILLAGE = {
       hazards: [],
     },
     {
-      id: 'square', name: 'THE MARKET SQUARE', x0: 1400, x1: 2700,
+      id: 'square', ground: 'v-square', groundFade: 160, name: 'THE MARKET SQUARE', x0: 1400, x1: 2700,
       spawn: { x: 1460, z: 440 },
       objective: 'Save the family at the well',
       hint: 'The burning carts flare up: watch for the glow',
@@ -212,7 +212,7 @@ export const STAGE_VILLAGE = {
       ],
     },
     {
-      id: 'mill', name: 'THE MILL YARD', x0: 4300, x1: 5700,
+      id: 'mill', ground: 'v-mill', groundFade: 160, name: 'THE MILL YARD', x0: 4300, x1: 5700,
       spawn: { x: 4360, z: 440 },
       objective: 'Stop the execution. Break the rear guard',
       hint: 'Kill the hangman! Strike Irvolino’s bonds before the trapdoor falls',
@@ -253,7 +253,7 @@ export const STAGE_VILLAGE = {
       // bar off the gate and they bolt out of it, down the yard and along three lanes in
       // turn, trampling whoever stands in their way (Ashen men or Oath Keepers). The fight
       // goes on through it.
-      id: 'stables', name: 'THE BURNING STABLES', x0: 5700, x1: 7100,
+      id: 'stables', ground: 'v-stables', groundFade: 160, name: 'THE BURNING STABLES', x0: 5700, x1: 7100,
       spawn: { x: 5760, z: 440 },
       objective: 'Free the horses',
       hint: 'Smash the bar off the stable gate. Then mind the stampede',
@@ -290,7 +290,7 @@ export const STAGE_VILLAGE = {
       ],
     },
     {
-      id: 'hall', name: 'THE LONGHALL', x0: 7100, x1: 8400,
+      id: 'hall', ground: 'v-hall', groundFade: 160, name: 'THE LONGHALL', x0: 7100, x1: 8400,
       spawn: { x: 7160, z: 440 },
       objective: 'Kill the Ash Captain',
       hint: 'His archers are firing: wreck their post',
@@ -331,7 +331,7 @@ export const STAGE_VILLAGE = {
         } },
     },
     {
-      id: 'gate', name: 'THE NORTH GATE', x0: 8400, x1: 9400,
+      id: 'gate', ground: 'v-church', groundFade: 160, name: 'THE NORTH GATE', x0: 8400, x1: 9400,
       spawn: { x: 8460, z: 440 },
       objective: 'The road north',
       hint: '',
@@ -415,8 +415,8 @@ export const STAGE_VILLAGE = {
 
   // the dead (view only): some were beyond saving before the Oath Keepers came home
   bodies: [
-    { x: 380, z: 470, pose: 0 }, { x: 990, z: 500, pose: 1 }, { x: 1520, z: 330, pose: 2 },
-    { x: 2050, z: 490, pose: 0 }, { x: 4450, z: 320, pose: 1 }, { x: 7600, z: 500, pose: 2 }, { x: 8600, z: 470, pose: 0 },
+    { x: 380, z: 470, pose: 0 }, { x: 990, z: 500, pose: 3 }, { x: 1520, z: 330, pose: 4 },
+    { x: 2050, z: 490, pose: 1 }, { x: 4450, z: 320, pose: 5 }, { x: 7600, z: 500, pose: 2 }, { x: 8600, z: 470, pose: 3 },
   ],
 
   // heads on pikes (view only: view/VillageView.js drawPikes): the raiders' warning at the

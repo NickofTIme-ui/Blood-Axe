@@ -12,6 +12,13 @@ export const GROUNDS = {
   cathedral: 'assets/env/options/ground-option1-cathedral.png',
   village: 'assets/env/options/ground-option2-village.png',
   castle: 'assets/env/options/ground-option3-castle.png',
+  // the Burning Village's own pavings, one per part of the street (data/stageVillage.js
+  // sections' `ground`; Nick's level 1 review, 2026-11-03)
+  'v-square': 'assets/env/village/ground_square.jpg',
+  'v-mill': 'assets/env/village/ground_mill.jpg',
+  'v-stables': 'assets/env/village/ground_stables.jpg',
+  'v-hall': 'assets/env/village/ground_hall.jpg',
+  'v-church': 'assets/env/village/ground_church.jpg',
 };
 
 // Make an image tile seamlessly left-to-right by blending its last `frac` into its start.

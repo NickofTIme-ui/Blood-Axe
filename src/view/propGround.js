@@ -11,7 +11,7 @@
 // By stage id: `top` and `low` the tint at the top and the foot, `rim` the fire's glow on its
 // side (none: a cold-lit level)
 export const PROP_LIGHT = {
-  village: { top: 0xc8a48c, low: 0x6a5242, rim: 0xff9040 },
+  village: { top: 0xb0907a, low: 0x4c3a2e, rim: 0xff9040 }, // (a step darker: they still stood out bright against the night street; Nick's level 1 review, 2026-11-03)
   gallowsWood: { top: 0xaab09c, low: 0x4c5248 },
   hollowMountain: { top: 0xc8a882, low: 0x4c3c2e, rim: 0xffa050 },
   shatteredAscent: { top: 0xb8bccc, low: 0x5a5e6e },
@@ -40,7 +40,7 @@ export function lightProp(img, L, k = 1) {
 export function rimGlow(scene, L, x, y, w, h, depth) {
   if (!L.rim) return null;
   return scene.add.image(x - w * 0.32, y - h * 0.55, 'glow').setTint(L.rim).setDisplaySize(w * 0.9, h * 1.25)
-    .setAlpha(0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(depth + 0.1);
+    .setAlpha(0.3).setBlendMode(Phaser.BlendModes.ADD).setDepth(depth + 0.1);
 }
 
 // A soft pool of shadow and a scatter of grit under a thing of width w standing at (x, y),

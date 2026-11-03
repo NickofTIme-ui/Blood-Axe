@@ -130,7 +130,7 @@ export class DialogueBox {
     this.arrowX = B.w - (mode === 'full' ? 12 : 9);
     this.arrow.setPosition(this.arrowX, B.h - (mode === 'full' ? 7 : 4)).setFontSize(mode === 'full' ? 15 : 12).setStroke(C.stroke, 3);
     epicFill(this.arrow, C.name);
-    // (the controls ride small just outside the box, so they cost it no room)
+    // (the controls ride small along the box's foot: placeHint)
     this.hint.setText(hint).setColor(C.hint).setVisible(mode === 'full' && !!hint);
     this.placeHint();
     return this;
@@ -164,11 +164,12 @@ export class DialogueBox {
     return this;
   }
 
-  // the hint goes under the box, or over it when the box is on the bottom edge
+  // the hint sits small inside the box, along its foot left of the arrow: it used
+  // to ride over the box on the bottom edge, out among the fighters (Nick's level 1 review,
+  // 2026-11-03)
   placeHint() {
     const B = BOX[this.mode ?? 'full'];
-    const under = this.root.y + B.h + 16 < SETTINGS.height;
-    this.hint.setPosition(B.w - 4, under ? B.h + 14 : -4);
+    this.hint.setPosition(B.w - 30, B.h - 9);
   }
 
   update(time) {

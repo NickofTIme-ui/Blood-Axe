@@ -76,6 +76,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('keep-hall', 'assets/env/keep_hall.png'); // the Black Keep's throne room (scenes/CutawayScene.js)
     this.load.image('bridge-log-src', 'assets/env/bridge_log.png'); // the painted log bridge (view/TerrainView.js drawBlock)
     this.load.image('bodies-src', 'assets/env/bodies.png'); // the painted fallen villagers (view/NpcView.js drawBodies)
+    this.load.image('bodies2-src', 'assets/env/bodies2.png'); // three more of them (Nick's level 1 review, 2026-11-03)
     this.load.spritesheet('stable-master', 'assets/npcs/stable-master-frames.png',{frameWidth:338,frameHeight:240});
     this.load.image('gore-painted-atlas','assets/fx/gore-painted-atlas.png');
     this.load.image('gore-organs-atlas','assets/fx/gore-organs-atlas.png'); // high-detail organs and gut (effects/goreArt.js ORGAN_CELLS)
