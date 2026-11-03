@@ -9,7 +9,7 @@ import { SETTINGS } from '../config/settings.js';
 import { PHYSICS } from '../effects/Physics.js';
 import { drawStampedeTrail } from './StampedeTrail.js';
 import { DEPTH } from './depths.js';
-import { PICKUPS, PROPS } from '../data/stage.js';
+import { PICKUPS, PROPS, PROP_LOOKS } from '../data/stage.js';
 import { playSfx } from '../core/Sfx.js';
 import { buildPropSheet, PROP_HD, PICKUP_HD, PICKUP_PAINTED, PICKUP_SCALE } from './propSheet.js';
 import { FX } from './stripImporter.js';
@@ -47,14 +47,6 @@ const CHAIN = {
 // the lamp-and-cart painting (view/propArt.js lampcart): where in a frame the post's foot
 // stands (shares of the frame), and how big it's drawn (world px per px of a 256-wide frame)
 const PAIR = { postX: 0.195, groundY: 0.895, scale: 0.85 };
-// How tall each painted prop stands in the street, against a fighter about 135 tall (Nick,
-// 2026-11-02: "the prop sizes weird, a lot of them are tiny"): a barrel to his hip, a crate a
-// little under, a stall's awning over his head. Fitted to the painting's own height, so a small
-// painting and a big one come out the same size (by `look`, then by kind).
-const PROP_HEIGHT = {
-  barrel: 70, crate: 60, urn: 52, chest: 50, fence: 64, trestle: 64, stall: 150, rack: 54, handcart: 72,
-  keg: 52, keg2: 54, 'crate-fish': 46, 'crate-long': 54, sack: 56, 'barrel-tar': 68,
-};
 const LIT_PROPS = new Set(['barrel', 'crate', 'urn', 'chest', 'bell', 'fence', 'stall', 'trestle', 'rack', 'handcart']);
 // the painted kinds of each (view/propArt.js), one picked per prop
 const VARIANTS = {
@@ -655,9 +647,10 @@ export class StageView {
     const key = this.propKey(pr);
     // (a level's painted prop, data/levelArt.js: sized to the prop, whatever size it was painted)
     const lvl = (this.scene.registry.get('levelArt') ?? []).includes(key);
-    const fit = !lvl && (this.hd.has(key) || this.art2.has(key)) ? PROP_HEIGHT[key.replace(/^prop-/, '')] ?? PROP_HEIGHT[pr.kind] : 0;
+    // (a painted look: drawn exactly as tall as the game holds it, data/stage.js PROP_LOOKS)
+    const fit = !lvl && PROP_LOOKS[pr.look] && key === `prop-${pr.look}` ? pr.h : 0;
     const s = lvl ? (pr.w * 1.3) / this.scene.textures.get(key).getSourceImage().width
-      : fit ? (fit * (pr.size ?? 1)) / this.scene.textures.get(key).getSourceImage().height
+      : fit ? fit / this.scene.textures.get(key).getSourceImage().height
       : this.hd.has(key) || this.art2.has(key) ? 0.25 : 0.5 * (pr.size ?? 1);
     if (pr.kind === 'wall') {
       // set into the back wall: the alcove waits behind it
@@ -693,6 +686,7 @@ export class StageView {
   // one picked by the prop's id (or named in the level: `look: 'sack'`, 'keg')
   propKey(pr) {
     const base = `prop-${pr.kind}`;
+    if ((this.scene.registry.get('levelArt') ?? []).includes(base)) return base; // (a level's own painting of it)
     if (pr.look && this.art2.has(`prop-${pr.look}`)) return `prop-${pr.look}`;
     const kinds = (VARIANTS[pr.kind] ?? []).map((k) => `prop-${k}`).filter((k) => this.art2.has(k));
     return kinds.length ? kinds[(pr.id * 7 + (pr.x >> 4)) % kinds.length] : base;
@@ -766,11 +760,11 @@ export class StageView {
     if (!['barrel', 'crate', 'urn'].includes(pr.kind) || !v?.img) return;
     let h = (pr.id * 2654435761) >>> 0;
     const next = () => { h = (h ^ (h >>> 15)) * 2246822519 >>> 0; return (h & 0xffff) / 0xffff; };
-    const sc = 0.86 + next() * 0.24;
-    v.s *= sc;
-    v.img.setScale(v.s);
+    next(); // (its size is the game's: data/stage.js PROP_LOOKS, stage/Stage.js fitLooks)
     if (next() < 0.5) v.img.setFlipX(true);
-    v.tilt = (next() - 0.5) * (pr.kind === 'crate' ? 6 : 3);
+    // (set a touch askew, standing on its own: not one with things on it, nor one up on another)
+    const bearing = this.stage.props.some((q) => q.under === pr.id);
+    v.tilt = bearing || pr.under != null ? 0 : (next() - 0.5) * (pr.kind === 'crate' ? 4 : 2);
     v.img.setAngle(v.tilt);
     if (v.light) {
       const k = 0.8 + next() * 0.22;

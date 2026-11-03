@@ -51,7 +51,7 @@ const run=(w,st,n)=>{for(let i=0;i<n;i++){w.tick();st.update();}};
 {
  // a light swing breaking one knocks the next barrel over: it rolls off into the lane, cracked
  const {w,st}=setup();
- const a=st.props.find((pr)=>pr.x===1606),b=st.props.find((pr)=>pr.x===1640);
+ const a=st.props.find((pr)=>pr.x===1606),b=st.props.find((pr)=>pr.x===1652);
  const z0=b.z;
  st.breakProp(a,1,false,1);run(w,st,90);
  assert(!b.broken&&b.hp===1&&b.tipped,'the next one tips over, cracked');
