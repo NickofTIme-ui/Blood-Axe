@@ -6,6 +6,15 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026 (cloud, Nick: "push"): ON MAIN, not on itch: the
+  SKILL TREE IS PAINTED (Nick: "make the skill tree look very high end", ChatGPT art). Candlelit
+  shrine backdrop, a war banner per branch (the cloth is dyed in code, `banner-cloth.png` +
+  `banner-trim.png`), iron-and-gold plaques (dormant / awake / major), 21 skill medallions, and a
+  nine-sliced carved panel for the description (the trophies page uses it too). Assets
+  `assets/ui/skilltree/` (~2.5 MB), cut by `tools/cut-skilltree-art.py` from project files
+  `skill-tree-art/originals/`; keys in `src/data/skillTreeArt.js`. A new skill needs its icon
+  painted and listed in the cut script.
+
 - 3 November 2026 (cloud, Nick: "push"): ON MAIN now, not on itch: more blood on the player
   (`claude/project-thread-m9afol` e1e14ac). Close kills bloody him about twice as fast, the blood
   stays 40 s, and a new soaked stage (`tools/soak-bloodied.py`) goes past fully bloodied. Adds

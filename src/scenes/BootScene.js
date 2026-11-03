@@ -24,6 +24,7 @@ import { introFinished } from '../core/StartupIntro.js';
 import {HERO_HD} from '../data/heroHdAssets.js';
 import {preloadHeroHd,installHeroHd} from '../view/heroHd.js';
 import { preloadBloodied } from '../view/BloodCoat.js';
+import { preloadSkillTreeArt } from '../data/skillTreeArt.js';
 
 // Textures read only by Boot itself, to cut the game's sheets from (released once it has).
 const BOOT_ONLY_SOURCE = /^(props2src-|estrip-|hstrip-|lvlsrc-|sprsrc-|plxsrc-|plxcut-|groundsrc-|fxsrc-|hero-src-)|^(skysrc|pillarsrc)$/;
@@ -93,6 +94,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('select-bg', 'assets/ui/select-bg.jpg');
     for (const id of Object.keys(CHARACTERS)) this.load.image(`hero-src-${id}`, `assets/ui/hero-${id}-hd.png`);
     this.load.image('oathkeeper-art', 'assets/ui/oathkeeper.png'); // Rurik's blade, painted (the skill screen's lore page)
+    preloadSkillTreeArt(this); // (the skill tree, painted: data/skillTreeArt.js)
     this.load.image('props-hd-src', 'assets/env/props-hd.png'); // the breakables, repainted
     this.load.image('props-src', 'assets/env/props.png'); // painted props & traps (view/propSheet.js)
     this.load.image('pickups-hd-src', 'assets/env/pickups-hd.png'); // the pickups, repainted (until then: cut from props.png)

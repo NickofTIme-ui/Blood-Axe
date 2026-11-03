@@ -9,11 +9,10 @@
 //                     one (Rurik's OATHKEEPER, data/oathkeeper.js) → SKILLS
 //   ESC / B / BACKSPACE, or the pad's B / Back / Start, or the button: back to the fight
 //
-// The look is drawn in code: the hero's portrait looming out of the dark behind the tree,
-// each branch a hanging war banner in its colour, the skills as framed plates on it joined
-// by chain, the tiers numbered I-III down the side, and the chosen skill read out on a
-// panel at the foot. A painted frame and icons can still replace it
-// (docs/gallows-art-needed.md).
+// The look is painted (ChatGPT, 2026-11-03: data/skillTreeArt.js): a candlelit war shrine
+// behind it all, each branch a hanging war banner dyed in its colour, each skill an iron and
+// gold plaque on it with the skill's painted medallion in its socket (a taken skill's plaque
+// wakes and glows), and the chosen skill read out on a carved panel at the foot.
 
 import { SETTINGS } from '../config/settings.js';
 import { InputManager } from '../core/InputManager.js';
@@ -23,6 +22,7 @@ import { OATHKEEPER } from '../data/oathkeeper.js';
 import { CHARACTERS } from '../data/characters.js';
 import { FONT, epicFill } from '../view/fonts.js';
 import { playSfx } from '../core/Sfx.js';
+import { PLATE } from '../data/skillTreeArt.js';
 
 const KIND_LABEL = { upgrade: 'UPGRADE', behaviour: 'NEW BEHAVIOUR', active: 'NEW ABILITY', passive: 'PASSIVE', mobility: 'MOBILITY', major: 'MAJOR' };
 const TIER = ['I', 'II', 'III'];
@@ -30,8 +30,9 @@ const css = (c) => '#' + c.toString(16).padStart(6, '0');
 const shade = (c, k) => Phaser.Display.Color.ValueToColor(c).darken(k).color;
 const tint = (c, k) => Phaser.Display.Color.ValueToColor(c).lighten(k).color;
 
-// the panel at the foot of the screen, and where the tree sits above it
-const LAYOUT = { top: 86, rowGap: 96, cardH: 70, deskY: 434, deskH: 80 };
+// where the tree sits: the banners, the three rows of plaques, and the panel at the foot
+const LAYOUT = { bannerTop: 78, bannerH: 344, nameY: 120, rows: [184, 260, 336], deskY: 424, deskH: 90 };
+const DESK_SLICE = [100, 100, 56, 56]; // (the carved panel's corners, in its 1200px source)
 
 export class SkillScene extends Phaser.Scene {
   constructor() { super('Skills'); }
@@ -56,20 +57,19 @@ export class SkillScene extends Phaser.Scene {
     const W = SETTINGS.width;
     const H = SETTINGS.height;
     this.cameras.main.setOrigin(0, 0).setZoom(SETTINGS.renderScale ?? 1); // full resolution
-    this.add.rectangle(0, 0, W, H, 0x050203, 0.97).setOrigin(0);
     this.backdrop();
     this.controls = new InputManager(this, undefined, { menu: true }); // (the D-pad moves the cursor here)
     this.openedAt = this.time.now;
     const C = CHARACTERS[this.heroId];
     const name = this.arena.player.stats.name ?? this.heroId;
-    const title = this.add.text(W / 2, 26, name.toUpperCase(), { fontFamily: FONT.display, fontSize: '32px' })
+    const title = this.add.text(W / 2, 22, name.toUpperCase(), { fontFamily: FONT.display, fontSize: '32px' })
       .setOrigin(0.5).setStroke('#000000', 6);
     title.setLetterSpacing?.(6);
     epicFill(title, ['#ffe6b8', '#e08a3a', '#6a2006']);
-    this.subtitle = this.add.text(W / 2, 50, '', { fontFamily: FONT.ui, fontSize: '12px', color: '#d8b04a' }).setOrigin(0.5).setStroke('#000000', 3);
+    this.subtitle = this.add.text(W / 2, 43, '', { fontFamily: FONT.ui, fontSize: '12px', color: '#d8b04a' }).setOrigin(0.5).setStroke('#000000', 3);
     this.subtitle.setLetterSpacing?.(4);
     this.epithet = C?.title ?? (C?.className ?? '').toUpperCase();
-    this.header = this.add.text(W / 2, 68, '', { fontFamily: FONT.ui, fontSize: '13px', color: '#e8d4b0' }).setOrigin(0.5).setStroke('#000000', 3);
+    this.header = this.add.text(W / 2, 60, '', { fontFamily: FONT.ui, fontSize: '13px', color: '#e8d4b0' }).setOrigin(0.5).setStroke('#000000', 3);
     this.footer = this.add.text(18, H - 14, '', { fontFamily: FONT.ui, fontSize: '12px', color: '#a89878' }).setOrigin(0, 0.5).setStroke('#000000', 3);
     // leaving can never be a puzzle: a big button that says so, and a click on it works too
     const back = this.add.text(W - 18, H - 14, '[ ESC / B ]  BACK TO THE FIGHT', { fontFamily: FONT.ui, fontSize: '14px', color: '#ffd24a' })
@@ -93,29 +93,35 @@ export class SkillScene extends Phaser.Scene {
     this.showMode();
   }
 
-  // The hero looming out of the dark behind everything, and a vignette.
+  // The painted shrine, the hero looming out of the dark in the middle of it, and embers.
   backdrop() {
     const W = SETTINGS.width;
     const H = SETTINGS.height;
+    if (this.textures.exists('st-bg')) this.add.image(W / 2, H / 2, 'st-bg').setDisplaySize(W, H);
+    else this.add.rectangle(0, 0, W, H, 0x050203, 0.97).setOrigin(0);
     const key = `hero-${this.heroId}`;
     if (this.textures.exists(key)) {
       const src = this.textures.get(key).getSourceImage();
-      const p = this.add.image(W / 2, H + 40, key).setOrigin(0.5, 1).setScale((H * 1.25) / src.height).setAlpha(0.13).setTint(0xffb080);
-      this.tweens.add({ targets: p, alpha: 0.18, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      const p = this.add.image(W / 2, H + 40, key).setOrigin(0.5, 1).setScale((H * 1.25) / src.height).setAlpha(0.1).setTint(0xffb080);
+      this.tweens.add({ targets: p, alpha: 0.15, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     }
+    // a soft dark band behind the title so it reads over the arch
     const g = this.add.graphics();
-    for (let i = 0; i < 14; i++) {
-      const k = i / 13;
-      g.fillStyle(0x000000, 0.06).fillRect(0, 0, W * 0.12 * k, H).fillRect(W - W * 0.12 * k, 0, W * 0.12 * k, H);
-    }
+    for (let i = 0; i < 10; i++) g.fillStyle(0x000000, 0.05).fillRect(0, 0, W, 8 + i * 8);
     // embers drifting up through it
-    this.motes = Array.from({ length: 26 }, () => {
-      const m = this.add.circle(Math.random() * W, Math.random() * H, 1 + Math.random() * 1.6, Math.random() < 0.5 ? 0xff9a3a : 0xffd080, 0.5)
+    this.motes = Array.from({ length: 34 }, () => {
+      const m = this.add.circle(Math.random() * W, Math.random() * H, 0.8 + Math.random() * 1.6, Math.random() < 0.5 ? 0xff9a3a : 0xffd080, 0.55)
         .setBlendMode(Phaser.BlendModes.ADD);
-      m.v = 0.2 + Math.random() * 0.5;
+      m.v = 0.15 + Math.random() * 0.45;
       m.sway = Math.random() * 6;
       return m;
     });
+  }
+
+  // the carved panel, nine-sliced so its gold corners keep their shape at any size
+  desk(x, y, w, h) {
+    const [l, r, t, b] = DESK_SLICE;
+    return this.add.nineslice(x, y, 'st-desk', null, w * 2, h * 2, l, r, t, b).setScale(0.5).setOrigin(0, 0);
   }
 
   buildTree() {
@@ -123,100 +129,94 @@ export class SkillScene extends Phaser.Scene {
     const L = LAYOUT;
     const before = new Set(this.children.list);
     const n = this.tree.branches.length;
-    const colW = Math.min(280, (W - 70) / n);
-    const cardW = Math.min(236, colW - 22);
-    this.cardW = cardW;
-    const x0 = W / 2 - (colW * (n - 1)) / 2 + 12;
-    this.lines = this.add.graphics();
-    this.banners = this.add.graphics();
+    const colW = Math.min(280, (W - 60) / n);
+    const pw = Math.min(222, colW - 8); // a plaque's width
+    this.plateW = pw;
+    const x0 = W / 2 - (colW * (n - 1)) / 2;
+    const cloth = this.textures.get('st-banner-cloth').getSourceImage();
+    const bw = Math.min(colW - 4, 250);
+    const ds = this.textures.get('st-plate-dormant').getSourceImage();
+    const plateH = ds.height / ds.width;
     // the tier numerals down the left side
     for (let r = 0; r < 3; r++) {
-      const cy = L.top + 74 + r * L.rowGap;
-      this.add.text(x0 - colW / 2 - 4, cy, TIER[r], { fontFamily: FONT.display, fontSize: '20px', color: '#6a5034' }).setOrigin(0.5).setStroke('#000000', 4);
+      const t = this.add.text(x0 - colW / 2 - 2, L.rows[r], TIER[r], { fontFamily: FONT.display, fontSize: '18px', color: '#8a6a40' }).setOrigin(0.5).setStroke('#000000', 4);
+      if (x0 - colW / 2 - 2 < 10) t.setVisible(false); // (no room with four branches)
     }
     this.cards = [];
+    const sealedOf = (br) => br.needs && !this.progress.hasFlag(br.needs);
     this.tree.branches.forEach((br, c) => {
       const cx = x0 + c * colW;
-      // the banner: a hanging cloth in the branch's colour, swallow-tailed at the foot
-      const bw = cardW + 14;
-      const top = L.top - 6;
-      const bot = L.top + 74 + 2 * L.rowGap + L.cardH / 2 + 10;
-      const dark = shade(br.color, 80);
-      const g = this.banners;
-      g.fillStyle(0x000000, 0.5).fillRect(cx - bw / 2 + 4, top + 4, bw, bot - top);
-      g.fillGradientStyle(shade(br.color, 62), shade(br.color, 62), dark, dark, 0.75).fillRect(cx - bw / 2, top, bw, bot - top);
-      g.fillStyle(0x050203, 1).fillTriangle(cx - 16, bot + 1, cx + 16, bot + 1, cx, bot - 14);
-      g.lineStyle(2, shade(br.color, 35), 0.9).strokeRect(cx - bw / 2, top, bw, bot - top);
-      g.lineStyle(1, 0xd8b04a, 0.35).strokeRect(cx - bw / 2 + 4, top + 4, bw - 8, bot - top - 8);
-      // the pole it hangs from
-      g.fillStyle(0x3a2616, 1).fillRect(cx - bw / 2 - 8, top - 6, bw + 16, 6);
-      g.fillStyle(0xd8b04a, 1).fillCircle(cx - bw / 2 - 8, top - 3, 4).fillCircle(cx + bw / 2 + 8, top - 3, 4);
-      const head = this.add.text(cx, L.top + 12, br.name, { fontFamily: FONT.display, fontSize: n > 3 ? '16px' : '18px', color: css(tint(br.color, 12)) })
+      const sealed = sealedOf(br); // (Rurik's fire, before Oathkeeper is his)
+      // the banner: the cloth dyed in the branch's colour, then its gold trim and pole over it
+      const sx = bw / cloth.width;
+      const sy = L.bannerH / cloth.height;
+      this.add.image(cx + 5, L.bannerTop + 6, 'st-banner-cloth').setOrigin(0.5, 0).setScale(sx, sy).setTint(0x000000).setAlpha(0.45);
+      const dye = sealed || br.planned ? 0x3a3430 : shade(br.color, 38);
+      this.add.image(cx, L.bannerTop, 'st-banner-cloth').setOrigin(0.5, 0).setScale(sx, sy).setTint(dye);
+      this.add.image(cx, L.bannerTop, 'st-banner-trim').setOrigin(0.5, 0).setScale(sx, sy).setTint(sealed ? 0x8a8070 : 0xffffff);
+      const head = this.add.text(cx, L.nameY, br.name, { fontFamily: FONT.display, fontSize: n > 3 ? '15px' : '18px', color: css(tint(br.color, 22)), align: 'center' })
         .setOrigin(0.5).setStroke('#000000', 5);
       head.setLetterSpacing?.(1);
-      const sealed = br.needs && !this.progress.hasFlag(br.needs); // (Rurik's fire, before Oathkeeper is his)
-      this.add.text(cx, L.top + 30, sealed ? 'Sealed: the blade of his blood' : br.blurb, { fontFamily: FONT.ui, fontSize: '11px', color: '#c8b088' }).setOrigin(0.5).setStroke('#000000', 3);
+      this.add.text(cx, L.nameY + 18, sealed ? 'Sealed: the blade of his blood' : br.blurb, { fontFamily: FONT.ui, fontSize: '10px', color: '#e8d4b0', align: 'center', wordWrap: { width: colW - 12 } })
+        .setOrigin(0.5, 0).setStroke('#000000', 3);
+    });
+    // the threads of light between the plaques: over the banners, under the plaques
+    this.lines = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
+    this.tree.branches.forEach((br, c) => {
+      const cx = x0 + c * colW;
       br.nodes.forEach((node, r) => {
-        const cy = L.top + 74 + r * L.rowGap;
-        const frame = this.add.graphics();
-        const glow = this.add.rectangle(cx, cy, cardW + 10, L.cardH + 10, br.color, 0).setBlendMode(Phaser.BlendModes.ADD);
-        const gem = this.add.graphics();
-        const label = this.add.text(cx + 8, cy - 13, node.name, { fontFamily: FONT.ui, fontSize: n > 3 ? '15px' : '16px', color: '#e8d4b0' }).setOrigin(0.5).setStroke('#000000', 3);
-        const sub = this.add.text(cx + 8, cy + 12, '', { fontFamily: FONT.ui, fontSize: '10px', color: '#a89878' }).setOrigin(0.5);
-        this.cards.push({ c, r, n: node, br, frame, glow, gem, label, sub, cx, cy });
+        const cy = L.rows[r];
+        const major = node.kind === 'major';
+        const plate = this.add.image(cx, cy, major ? 'st-plate-major' : 'st-plate-dormant');
+        const k = plate.width ? pw / plate.width : 1;
+        plate.setScale(k).setOrigin(0.5, major ? PLATE.majorBodyY : 0.5);
+        const ph = plateH * pw; // (the plaque's body; a major's horns rise above it)
+        // a glow round the plaque: gold on the cursor, the branch's colour once taken (WebGL only)
+        const fx = plate.preFX?.addGlow(0xffd27a, 0, 0, false, 0.1, 12);
+        // the taken plaque's shine, laid over it
+        const shine = this.add.image(cx, cy, major ? 'st-plate-major' : 'st-plate-awake').setScale(k).setOrigin(0.5, major ? PLATE.majorBodyY : 0.5)
+          .setAlpha(0);
+        if (major) shine.setBlendMode(Phaser.BlendModes.ADD).setTint(tint(br.color, 10));
+        // the cursor: the plaque lit up in gold, breathing (update)
+        const cursor = this.add.image(cx, cy, major ? 'st-plate-major' : 'st-plate-awake').setScale(k).setOrigin(0.5, major ? PLATE.majorBodyY : 0.5)
+          .setBlendMode(Phaser.BlendModes.ADD).setTint(0xffc860).setAlpha(0);
+        const left = cx - pw / 2;
+        const icon = this.add.image(left + PLATE.socket.x * pw, cy + (PLATE.socket.y - 0.5) * ph, `st-icon-${node.id}`);
+        icon.setDisplaySize(PLATE.socket.r * pw * 2.08, PLATE.socket.r * pw * 2.08);
+        const tx = left + ((PLATE.text.x0 + PLATE.text.x1) / 2) * pw;
+        const tw = (PLATE.text.x1 - PLATE.text.x0) * pw;
+        const label = this.add.text(tx, cy - 6, node.name, { fontFamily: FONT.ui, fontSize: n > 3 ? '13px' : '14px', color: '#e8d4b0' }).setOrigin(0.5).setStroke('#000000', 3);
+        if (label.width > tw) label.setScale(tw / label.width);
+        const sub = this.add.text(tx, cy + 9, '', { fontFamily: FONT.ui, fontSize: '9px', color: '#a89878' }).setOrigin(0.5).setStroke('#000000', 2);
+        sub.setLetterSpacing?.(1);
+        this.cards.push({ c, r, n: node, br, plate, shine, cursor, fx, icon, label, sub, cx, cy, ph, major });
       });
     });
-    // the reading desk at the foot
-    const d = this.add.graphics();
-    d.fillStyle(0x000000, 0.6).fillRect(34, L.deskY + 4, W - 64, L.deskH);
-    d.fillGradientStyle(0x22140c, 0x22140c, 0x0e0806, 0x0e0806, 0.96).fillRect(30, L.deskY, W - 60, L.deskH);
-    d.lineStyle(2, 0x8a6430, 1).strokeRect(30, L.deskY, W - 60, L.deskH);
-    d.lineStyle(1, 0xd8b060, 0.5).strokeRect(35, L.deskY + 5, W - 70, L.deskH - 10);
-    this.deskName = this.add.text(48, L.deskY + 10, '', { fontFamily: FONT.display, fontSize: '19px', color: '#ffffff' }).setStroke('#000000', 4);
-    this.deskKind = this.add.text(W - 48, L.deskY + 14, '', { fontFamily: FONT.ui, fontSize: '12px', color: '#d8b04a' }).setOrigin(1, 0);
-    this.desc = this.add.text(48, L.deskY + 36, '', { fontFamily: FONT.ui, fontSize: '13px', color: '#f0e0c0', wordWrap: { width: W - 100 }, lineSpacing: 1 });
+    // the carved panel at the foot: the chosen skill's medallion, its name, and what it does
+    this.desk(30, L.deskY, W - 60, L.deskH);
+    const ix = 30 + 58;
+    const iy = L.deskY + L.deskH / 2;
+    this.deskHalo = this.add.circle(ix, iy, 37, 0xffd27a, 0.18).setBlendMode(Phaser.BlendModes.ADD);
+    this.deskIcon = this.add.image(ix, iy, `st-icon-${this.tree.branches[0].nodes[0].id}`).setDisplaySize(66, 66);
+    this.deskName = this.add.text(ix + 52, L.deskY + 14, '', { fontFamily: FONT.display, fontSize: '19px', color: '#ffffff' }).setStroke('#000000', 4);
+    this.deskKind = this.add.text(W - 84, L.deskY + 18, '', { fontFamily: FONT.ui, fontSize: '11px', color: '#d8b04a' }).setOrigin(1, 0).setStroke('#000000', 3);
+    this.desc = this.add.text(ix + 52, L.deskY + 40, '', { fontFamily: FONT.ui, fontSize: '13px', color: '#f0e0c0', wordWrap: { width: W - 30 - (ix + 52) - 26 }, lineSpacing: 1 }).setStroke('#000000', 2);
     this.treeObjs = this.children.list.filter((o) => !before.has(o));
   }
 
-  // A plate on the banner: dark iron, a bevel, a gem by its kind that lights when taken.
-  drawCard(k, state, sel) {
-    const L = LAYOUT;
-    const w = this.cardW;
-    const h = L.cardH;
-    const x = k.cx - w / 2;
-    const y = k.cy - h / 2;
-    const col = k.br.color;
+  // A plaque by its state: the plaque wakes when taken, the medallion dims when it can't be had.
+  paintCard(k, state, sel) {
     const owned = state === 'owned';
-    const open = state === 'ready';
-    const g = k.frame.clear();
-    g.fillStyle(0x000000, 0.55).fillRect(x + 3, y + 4, w, h);
-    const top = owned ? shade(col, 30) : 0x1e1612;
-    const bot = owned ? shade(col, 58) : 0x0c0806;
-    g.fillGradientStyle(top, top, bot, bot, 1).fillRect(x, y, w, h);
-    g.fillStyle(0xffffff, owned ? 0.12 : 0.04).fillRect(x + 2, y + 2, w - 4, 3); // the bevel's light edge
-    const edge = sel ? 0xffe0a0 : owned ? tint(col, 10) : open ? 0xb08a4a : 0x3a3028;
-    g.lineStyle(sel ? 3 : 2, edge, 1).strokeRect(x, y, w, h);
-    g.lineStyle(1, 0x000000, 0.8).strokeRect(x + 3, y + 3, w - 6, h - 6);
-    // rivets
-    g.fillStyle(owned ? 0xd8b04a : 0x5a4a38, 1);
-    for (const [px, py] of [[x + 5, y + 5], [x + w - 5, y + 5], [x + 5, y + h - 5], [x + w - 5, y + h - 5]]) g.fillCircle(px, py, 1.8);
-    if (k.n.kind === 'major') { g.lineStyle(1, 0xd8b04a, owned ? 0.9 : 0.4).strokeRect(x - 4, y - 4, w + 8, h + 8); }
-    // the gem: its shape says what kind of skill it is
-    const gx = x + 18;
-    const gy = k.cy;
-    const fill = owned ? tint(col, 25) : open ? shade(col, 30) : 0x2a221c;
-    const G = k.gem.clear();
-    G.fillStyle(0x000000, 0.7).fillCircle(gx, gy, 11);
-    G.lineStyle(2, owned ? 0xd8b04a : 0x6a5034, 1).strokeCircle(gx, gy, 11);
-    G.fillStyle(fill, 1);
-    const kind = k.n.kind;
-    if (kind === 'major') {
-      const pts = []; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5; const r = i % 2 ? 3.6 : 8.5; pts.push({ x: gx + Math.cos(a) * r, y: gy + Math.sin(a) * r }); }
-      G.fillPoints(pts, true);
-    } else if (kind === 'active') G.fillTriangle(gx - 7, gy + 6, gx + 7, gy + 6, gx, gy - 8);
-    else if (kind === 'passive' || kind === 'behaviour') G.fillCircle(gx, gy, 6.5);
-    else G.fillPoints([{ x: gx, y: gy - 8 }, { x: gx + 7, y: gy }, { x: gx, y: gy + 8 }, { x: gx - 7, y: gy }], true);
-    if (owned) G.fillStyle(0xffffff, 0.7).fillCircle(gx - 2.5, gy - 3, 2);
+    if (!k.major) k.plate.setTexture('st-plate-dormant');
+    k.shine.setAlpha(owned ? (k.major ? 0.35 : 1) : 0);
+    k.icon.setTint(owned ? 0xffffff : state === 'ready' ? 0xe0d8d0 : state === 'points' ? 0x9a8c7c : 0x4a423a);
+    k.plate.setTint(owned || state === 'ready' || state === 'points' ? 0xffffff : 0x9a9088);
+    if (k.fx) {
+      k.fx.color = sel ? 0xffd27a : tint(k.br.color, 20);
+      k.fx.outerStrength = sel ? 3 : owned ? 1.4 : 0;
+    }
+    k.cursor.setAlpha(0);
+    k.sel = sel;
   }
 
   // ------------------------------------------------------------ trophies (boss loot)
@@ -226,11 +226,12 @@ export class SkillScene extends Phaser.Scene {
     const before = new Set(this.children.list);
     this.trophyCards = Object.keys(TROPHIES).map((id, i) => {
       const cx = W / 2 + ((i % 5) - 2) * 180;
-      const cy = 140 + Math.floor(i / 5) * 92;
-      const box = this.add.rectangle(cx, cy, 168, 76, 0x161210, 1).setStrokeStyle(2, 0x3a3028);
-      const label = this.add.text(cx, cy - 16, '', { fontFamily: FONT.ui, fontSize: '13px', color: '#e8d4b0', align: 'center', wordWrap: { width: 156 } }).setOrigin(0.5);
-      const sub = this.add.text(cx, cy + 20, '', { fontFamily: FONT.ui, fontSize: '11px', color: '#a89878' }).setOrigin(0.5);
-      return { id, box, label, sub };
+      const cy = 132 + Math.floor(i / 5) * 96;
+      const box = this.desk(cx - 86, cy - 42, 172, 84);
+      const hi = this.add.rectangle(cx, cy, 146, 50, 0xffd27a, 0).setBlendMode(Phaser.BlendModes.ADD);
+      const label = this.add.text(cx, cy - 7, '', { fontFamily: FONT.ui, fontSize: '13px', color: '#e8d4b0', align: 'center', wordWrap: { width: 140 } }).setOrigin(0.5).setStroke('#000000', 3);
+      const sub = this.add.text(cx, cy + 13, '', { fontFamily: FONT.ui, fontSize: '9px', color: '#a89878' }).setOrigin(0.5).setStroke('#000000', 2);
+      return { id, box, hi, label, sub };
     });
     this.trophyDesc = this.add.text(W / 2, SETTINGS.height - 76, '', { fontFamily: FONT.ui, fontSize: '15px', color: '#f0e0c0', align: 'center', wordWrap: { width: W - 120 } }).setOrigin(0.5);
     this.trophyObjs = this.children.list.filter((o) => !before.has(o));
@@ -246,10 +247,12 @@ export class SkillScene extends Phaser.Scene {
       const own = P.owns(k.id);
       const on = worn.includes(k.id);
       const sel = i === this.pick;
-      k.box.setFillStyle(on ? Phaser.Display.Color.ValueToColor(R.color).darken(60).color : 0x161210, 1);
-      k.box.setStrokeStyle(sel ? 4 : 2, sel ? 0xffe0a0 : own ? R.color : 0x3a3028);
+      k.box.setTint(on ? tint(R.color, 30) : own ? 0xffffff : 0x8a8078);
+      k.hi.setFillStyle(sel ? 0xffd27a : R.color, sel ? 0.2 : on ? 0.12 : 0);
       k.label.setText(own ? T.name : '? ? ?').setColor(own ? (on ? '#ffffff' : R.css) : '#5a5048');
       k.sub.setText(`${R.label}  ·  ${on ? 'WORN' : own ? 'carried' : T.boss ? `from ${T.boss}` : 'not found'}`);
+      k.sub.setScale(Math.min(1, 140 / Math.max(1, k.sub.width)));
+      k.label.setScale(Math.min(1, 140 / Math.max(1, k.label.width)));
     });
     const k = this.trophyCards[this.pick];
     const T = TROPHIES[k.id];
@@ -385,36 +388,42 @@ export class SkillScene extends Phaser.Scene {
       const why = P.blocker(this.heroId, k.n.id);
       const owned = why === 'owned';
       const sel = k.c === this.col && k.r === this.row;
-      this.drawCard(k, owned ? 'owned' : why === null ? 'ready' : 'shut', sel);
-      k.glow.setFillStyle(k.br.color, owned ? 0.16 : 0);
-      k.label.setColor(owned ? '#ffffff' : why === null ? '#f0e0c0' : '#7a6e60');
-      const state = why === 'planned' ? 'PLANNED' : why === 'sealed' ? 'when Oathkeeper is his' : owned ? 'TAKEN' : why === 'excluded' ? 'SHUT' : why === 'locked' ? 'needs the one above' : why === 'points' ? 'not enough points' : 'ready';
-      k.sub.setText(`${KIND_LABEL[k.n.kind] ?? ''}  ·  ${k.n.cost} pt${k.n.cost > 1 ? 's' : ''}  ·  ${state}`).setColor(owned ? '#ffe0b0' : '#a89878');
+      this.paintCard(k, owned ? 'owned' : why === null ? 'ready' : why === 'points' ? 'points' : 'shut', sel);
+      k.label.setColor(owned ? '#fff4dc' : why === null || why === 'points' ? '#f0e0c0' : '#8a7e70');
+      const state = why === 'planned' ? 'PLANNED' : why === 'sealed' ? 'SEALED' : owned ? 'TAKEN' : why === 'excluded' ? 'SHUT' : why === 'locked' ? 'LOCKED' : why === 'points' ? `${k.n.cost} PTS` : `${k.n.cost} PTS · READY`;
+      k.sub.setText(state).setColor(owned ? '#ffd890' : why === null ? '#e0c080' : '#8a7e70');
       if (k.r > 0) {
-        // chain links down the banner, lit in the branch's colour once the one above is taken
+        // a thread of light down the banner from the plaque above, lit once that one is taken
         const up = this.card(k.c, k.r - 1);
         const lit = P.has(this.heroId, up.n.id);
-        const y0 = up.cy + LAYOUT.cardH / 2 + 1;
-        const y1 = k.cy - LAYOUT.cardH / 2 - 1;
-        for (let y = y0, i = 0; y < y1 - 4; y += 7, i++) {
-          g.lineStyle(2, lit ? tint(k.br.color, 15) : 0x4a3a2c, 1);
-          if (i % 2) g.strokeEllipse(k.cx, y + 3, 4, 8); else g.strokeEllipse(k.cx, y + 3, 7, 7);
-        }
+        const y0 = up.cy + up.ph / 2 - 2;
+        const y1 = k.cy - k.ph / 2 + (k.major ? -6 : 2);
+        const col = lit ? tint(k.br.color, 25) : 0x3a2e24;
+        g.lineStyle(lit ? 9 : 3, col, lit ? 0.25 : 0.5).lineBetween(k.cx, y0, k.cx, y1);
+        g.lineStyle(lit ? 3 : 1, lit ? tint(k.br.color, 55) : 0x5a4a38, lit ? 0.85 : 0.6).lineBetween(k.cx, y0, k.cx, y1);
+        if (lit) g.fillStyle(tint(k.br.color, 70), 0.9).fillCircle(k.cx, y1, 2.2);
       }
     }
-    // the choice at the top: the two majors that shut each other out
+    // the choice at the top: the two majors that shut each other out, joined by a red bar
     const a = this.cards.find((k) => k.n.excl?.length);
     const b = a && this.cards.find((k) => k.n.id === a.n.excl[0]);
     if (a && b) {
-      g.lineStyle(2, 0x8a2a2a, 0.9);
-      const l = Math.min(a.cx, b.cx) + this.cardW / 2 + 2;
-      const r = Math.max(a.cx, b.cx) - this.cardW / 2 - 2;
-      for (let x = l; x < r; x += 10) g.lineBetween(x, a.cy, Math.min(r, x + 5), a.cy);
+      const l = Math.min(a.cx, b.cx) + this.plateW / 2 - 2;
+      const r = Math.max(a.cx, b.cx) - this.plateW / 2 + 2;
+      if (r > l) g.lineStyle(4, 0xc02a1a, 0.35).lineBetween(l, a.cy, r, a.cy).lineStyle(1, 0xff7050, 0.9).lineBetween(l, a.cy, r, a.cy);
+      if (!this.orMark) {
+        this.orMark = this.add.text((l + r) / 2, a.cy - 1, 'OR', { fontFamily: FONT.display, fontSize: '11px', color: '#ff9070' }).setOrigin(0.5).setStroke('#000000', 4);
+        this.treeObjs.push(this.orMark);
+      }
     }
     const k = this.card(this.col, this.row);
-    this.deskName.setText(k.n.name.toUpperCase()).setColor(css(tint(k.br.color, 20)));
+    const why = P.blocker(this.heroId, k.n.id);
+    this.deskIcon.setTexture(`st-icon-${k.n.id}`).setDisplaySize(66, 66).setTint(k.icon.tintTopLeft);
+    this.deskHalo.setFillStyle(why === 'owned' ? tint(k.br.color, 20) : 0xffd27a, why === 'owned' ? 0.3 : 0.12);
+    this.deskName.setText(k.n.name.toUpperCase()).setColor(css(tint(k.br.color, 25)));
     this.deskKind.setText(`${k.br.name}  ·  TIER ${TIER[k.r]}  ·  ${KIND_LABEL[k.n.kind] ?? ''}  ·  ${k.n.cost} POINTS`);
-    this.desc.setText(`${k.n.text}${k.n.excl?.length ? '  (You can have this OR the other major at the top: respec to change your mind.)' : ''}`);
+    const how = why === 'owned' ? '' : why === 'locked' ? '  Take the one above it first.' : why === 'points' ? '  Not enough points yet.' : why === 'sealed' ? '  Sealed until Oathkeeper is his.' : why === 'excluded' ? '  Shut: you took the other major.' : '';
+    this.desc.setText(`${k.n.text}${k.n.excl?.length ? '  (This OR the other major at the top: respec to change your mind.)' : ''}${how}`);
   }
 
   close() {
@@ -449,6 +458,12 @@ export class SkillScene extends Phaser.Scene {
       m.y -= m.v;
       m.x += Math.sin((m.y + m.sway * 40) / 40) * 0.2;
       if (m.y < -4) { m.y = H + 4; m.x = Math.random() * SETTINGS.width; }
+    }
+    const pulse = 2.2 + Math.sin(this.time.now / 260) * 1.2;
+    for (const k of this.cards ?? []) {
+      if (!k.sel) continue;
+      if (k.fx) k.fx.outerStrength = pulse;
+      k.cursor.setAlpha(0.22 + Math.sin(this.time.now / 260) * 0.12);
     }
     const c = this.controls;
     c.tick(false);
@@ -492,13 +507,18 @@ export class SkillScene extends Phaser.Scene {
     }
   }
 
-  // A skill taken: the plate flares in its branch's colour.
+  // A skill taken: the plaque flares in its branch's colour and sparks fly off the medallion.
   taken(k) {
-    const f = this.add.rectangle(k.cx, k.cy, this.cardW, LAYOUT.cardH, tint(k.br.color, 30), 0.7).setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({ targets: f, alpha: 0, scaleX: 1.12, scaleY: 1.3, duration: 420, ease: 'Cubic.easeOut', onComplete: () => f.destroy() });
-    for (let i = 0; i < 14; i++) {
-      const s = this.add.circle(k.cx + (Math.random() - 0.5) * this.cardW, k.cy + (Math.random() - 0.5) * LAYOUT.cardH, 1.5 + Math.random() * 2, tint(k.br.color, 40), 1).setBlendMode(Phaser.BlendModes.ADD);
-      this.tweens.add({ targets: s, y: s.y - 30 - Math.random() * 40, alpha: 0, duration: 500 + Math.random() * 400, onComplete: () => s.destroy() });
+    const f = this.add.image(k.cx, k.cy, k.major ? 'st-plate-major' : 'st-plate-awake').setScale(k.plate.scaleX)
+      .setOrigin(0.5, k.major ? PLATE.majorBodyY : 0.5).setBlendMode(Phaser.BlendModes.ADD).setTint(tint(k.br.color, 30));
+    this.tweens.add({ targets: f, alpha: 0, scaleX: f.scaleX * 1.1, scaleY: f.scaleY * 1.3, duration: 480, ease: 'Cubic.easeOut', onComplete: () => f.destroy() });
+    const ring = this.add.circle(k.icon.x, k.icon.y, k.icon.displayWidth / 2, tint(k.br.color, 40), 0.8).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: ring, scale: 2.4, alpha: 0, duration: 520, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+    for (let i = 0; i < 18; i++) {
+      const s = this.add.circle(k.icon.x + (Math.random() - 0.5) * 20, k.icon.y + (Math.random() - 0.5) * 20, 1.2 + Math.random() * 2, tint(k.br.color, 40), 1).setBlendMode(Phaser.BlendModes.ADD);
+      const a = Math.random() * Math.PI * 2;
+      const d = 20 + Math.random() * 50;
+      this.tweens.add({ targets: s, x: s.x + Math.cos(a) * d, y: s.y + Math.sin(a) * d - 20, alpha: 0, duration: 500 + Math.random() * 400, onComplete: () => s.destroy() });
     }
   }
 }
