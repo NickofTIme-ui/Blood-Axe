@@ -21,6 +21,7 @@ export function preloadLevelArt(scene) {
     const load = (name, file) => scene.load.image(src(theme, name), `${A.dir}${file}`);
     for (const L of A.layers ?? []) load(L.name, `${L.name}.png`);
     if (A.wall) load('wall', 'wall.png');
+    for (const w of A.wallMore ?? []) load(w, `${w}.png`);
     if (A.ground) load('ground', 'ground.png');
     for (const p of A.pieces ?? []) load(p, `${p}.png`);
     for (const [k, p] of Object.entries(A.props ?? {})) load(`prop-${k}`, p.file);
@@ -52,8 +53,17 @@ export function buildLevelArt(scene) {
         T.addCanvas(tmp, L.key === 'opaque' ? part(T.get(src(theme, L.name)).getSourceImage(), 0, T.get(src(theme, L.name)).getSourceImage().width) : keyed(src(theme, L.name), L.key));
         if (makeSeamless(scene, tmp, artKey(theme, L.name), 0.08)) made.push(artKey(theme, L.name));
       }
+      // more rows of houses (`wallMore`, Nick's level 1 review 2026-11-03): the back wall
+      // runs through every painted row in turn, cross-faded where one meets the next, so the
+      // street doesn't repeat every few houses
+      if (A.wall && have('wall') && (A.wallMore ?? []).some(have)) {
+        const rows = ['wall', ...A.wallMore.filter(have)].map((n) => keyLayer(T.get(src(theme, n)).getSourceImage(), 'magenta'));
+        // (one texture no wider than 4096, what every graphics card takes: the rows are drawn
+        // at about the size the game shows them anyway)
+        add(artKey(theme, 'wall'), chainSeamless(rows, 0.06, 4096));
+      }
       for (const [name, kind] of [['wall', 'magenta'], ['ground', 'opaque']]) {
-        if (!A[name] || !have(name)) continue;
+        if (!A[name] || !have(name) || made.includes(artKey(theme, name))) continue;
         const tmp = `${src(theme, name)}-cut`;
         if (T.exists(tmp)) T.remove(tmp);
         const img = T.get(src(theme, name)).getSourceImage();
@@ -87,7 +97,7 @@ export function buildLevelArt(scene) {
       for (const k of Object.keys(A.surfaces ?? {})) {
         if (!have(`surf-${k}`)) continue;
         const img = T.get(src(theme, `surf-${k}`)).getSourceImage();
-        add(artKey(theme, `surf-${k}`), part(img, 0, img.width));
+        add(artKey(theme, `surf-${k}`), A.surfaces[k].key === 'magenta' ? keyLayer(img, 'magenta') : part(img, 0, img.width));
       }
     } catch (err) {
       console.warn(`[boot] level art for ${theme} failed`, err);
@@ -167,6 +177,47 @@ export function gradeSheet(canvas, { contrast = 1, saturation = 1, outline = 0, 
     }
   }
   ctx.putImageData(img, 0, 0);
+}
+
+// Pictures of the same height laid end to end into one strip that tiles: each fades in over
+// the last `frac` of the one before it, and the first over the last (the wrap).
+function chainSeamless(imgs, frac, maxW = Infinity) {
+  const wide = imgs.reduce((a, im) => a + (im.width / im.height) * (1 - frac), 0); // (width per pixel of height)
+  const h = Math.min(imgs[0].height, Math.floor(maxW / wide) - 2);
+  const fit = imgs.map((im) => { // (the same height as the first)
+    if (im.height === h) return im;
+    const c = document.createElement('canvas'); c.width = Math.round(im.width * h / im.height); c.height = h;
+    c.getContext('2d').drawImage(im, 0, 0, c.width, h); return c;
+  });
+  const ov = Math.round(fit[0].width * frac);
+  const W = fit.reduce((a, im) => a + im.width - ov, 0);
+  const out = document.createElement('canvas'); out.width = W; out.height = h;
+  const ctx = out.getContext('2d');
+  // a picture with its left `ov` fading in from nothing
+  const fadedIn = (im) => {
+    const c = document.createElement('canvas'); c.width = im.width; c.height = h;
+    const x = c.getContext('2d'); x.drawImage(im, 0, 0);
+    x.globalCompositeOperation = 'destination-in';
+    // (one fill over the whole picture: under destination-in, whatever a fill doesn't cover is cleared)
+    const g = x.createLinearGradient(0, 0, im.width, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(ov / im.width, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,1)');
+    x.fillStyle = g; x.fillRect(0, 0, im.width, h);
+    return c;
+  };
+  let x = 0;
+  fit.forEach((im, i) => {
+    if (i === 0) ctx.drawImage(im, 0, 0);
+    else { ctx.clearRect(x + ov, 0, im.width - ov, h); ctx.drawImage(fadedIn(im), x, 0); }
+    x += im.width - ov;
+  });
+  // the wrap: the last picture's tail, fading out, laid over the start
+  const last = fit[fit.length - 1];
+  const tail = document.createElement('canvas'); tail.width = ov; tail.height = h;
+  const t = tail.getContext('2d'); t.drawImage(last, last.width - ov, 0, ov, h, 0, 0, ov, h);
+  t.globalCompositeOperation = 'destination-in';
+  const g = t.createLinearGradient(0, 0, ov, 0); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  t.fillStyle = g; t.fillRect(0, 0, ov, h);
+  ctx.drawImage(tail, 0, 0);
+  return out;
 }
 
 // The painted pieces of one level's backdrop, ready to draw.

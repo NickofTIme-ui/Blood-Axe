@@ -584,6 +584,28 @@ export class StageView {
 
   // ------------------------------------------------------------ sections
 
+  // A section's own paving, tiled from x0 to x1 and faded out over `fade` px at each end
+  // (drawn once into a canvas at the game's render scale, so it costs one image)
+  fadedGround(key, src, x0, x1, top, h, s, fade, tint) {
+    const R = SETTINGS.renderScale ?? 1;
+    const w = x1 - x0 + fade * 2;
+    const cv = document.createElement('canvas');
+    cv.width = Math.ceil(w * R); cv.height = Math.ceil(h * R);
+    const c = cv.getContext('2d');
+    const tw = src.width * s * R; const th = cv.height;
+    for (let x = -((x0 - fade) * R % tw); x < cv.width; x += tw) c.drawImage(src, Math.floor(x), 0, Math.ceil(tw) + 1, th);
+    c.globalCompositeOperation = 'destination-in';
+    const g = c.createLinearGradient(0, 0, cv.width, 0);
+    const f = (fade * 2) / w;
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(f, 'rgba(0,0,0,1)');
+    g.addColorStop(1 - f, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = g; c.fillRect(0, 0, cv.width, cv.height);
+    const tex = `${key}-fade-${x0}`;
+    if (this.scene.textures.exists(tex)) this.scene.textures.remove(tex);
+    this.scene.textures.addCanvas(tex, cv);
+    return this.scene.add.image(x0 - fade, top, tex).setOrigin(0).setScale(1 / R).setDepth(DEPTH.floor + 0.4).setTint(tint);
+  }
+
   // Each section gets its own floor art, a darkness wash (deeper the further in you go)
   // and pools of coloured light, so the five read as different places.
   buildSections() {
@@ -599,8 +621,12 @@ export class StageView {
         const src = scene.textures.get(key).getSourceImage();
         const s = (H - top) / src.height;
         const b = Math.round(255 * (SETTINGS.ground.brightness ?? 1));
-        scene.add.tileSprite(sec.x0, top, width, H - top, key).setOrigin(0).setDepth(DEPTH.floor + 1.5)
-          .setTileScale(s, s).setTint(Phaser.Display.Color.GetColor(b, b, b));
+        const tint = Phaser.Display.Color.GetColor(b, b, b);
+        // `groundFade`: its own paving melts into the level's street at both ends instead of
+        // starting on a ruled line (the village's sections: Nick's level 1 review, 2026-11-03)
+        if (sec.groundFade) this.fadedGround(key, src, sec.x0, sec.x1, top, H - top, s, sec.groundFade, tint);
+        else scene.add.tileSprite(sec.x0, top, width, H - top, key).setOrigin(0).setDepth(DEPTH.floor + 1.5)
+          .setTileScale(s, s).setTint(tint);
       }
       // darkness over the back wall and floor (not the fighters)
       // (it stops short of the next section: the two moods are blended across the join below,

@@ -620,11 +620,13 @@ export class NpcView {
     const s = this.scene;
     // painted (assets/env/bodies.png: three fallen villagers, on magenta), when it's in
     const painted = cutPieces(s, 'bodies-src', ['body-0', 'body-1', 'body-2']);
+    // (and three more, so the same three don't lie all down the street: bodies2.png)
+    const kinds = painted && cutPieces(s, 'bodies2-src', ['body-3', 'body-4', 'body-5']) ? 6 : 3;
     for (const b of list) {
       const g = s.add.graphics().setDepth(DEPTH.decals + 1);
       g.fillStyle(0x4a0606, 0.6).fillEllipse(b.x + 6, b.z + 2, 60, 12); // dried blood
       if (painted) {
-        const img = s.add.image(b.x, b.z + 4, `body-${b.pose % 3}`).setOrigin(0.5, 1).setDepth(DEPTH.decals + 1.1);
+        const img = s.add.image(b.x, b.z + 4, `body-${b.pose % kinds}`).setOrigin(0.5, 1).setDepth(DEPTH.decals + 1.1);
         img.setScale(BODY_W / img.width).setFlipX(b.x % 2 === 1);
         continue;
       }
