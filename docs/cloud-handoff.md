@@ -7,7 +7,7 @@ example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
 - 3 November 2026 (cloud): LEVEL 1 PROP LAYOUT REDONE (Nick: "the clusters of stuff, it's
-  arranged stupidly"), branch `claude/project-thread-r7z8en`, NOT on main until Nick says push.
+  arranged stupidly"), ON MAIN (Nick: "push"), not on itch.
   `src/data/stageVillage.js` sections' props: every group now belongs to something you can see
   (a house door, Hale's table, the well, the mill floor, the stables, the hall) and stands
   against the house fronts at the back of the lane, or as a low line along the near edge
