@@ -10,7 +10,9 @@
 // Tuning: BLOOD below. Only heroes (fighters with a style meter) get a coat.
 
 // The bloodied repaints: texture key of the clean sheet -> its bloodied twin (same
-// layout, frame for frame; made by tools/line-up-bloodied.py).
+// layout, frame for frame; made by tools/line-up-bloodied.py). Each also has a 'soaked'
+// twin (the same file with -soaked for -blood; made by tools/soak-bloodied.py): the
+// repaint's blood pushed deeper, wetter and wider, faded in past fully bloodied.
 export const BLOODIED = {
   'ulric-walk2': 'assets/sprites/heroes-hd/rurik-ulric-walk2-blood.png', // (his old sword, before the birthright)
   'ulric-combo1': 'assets/sprites/heroes-hd/rurik-ulric-combo1-blood.png',
@@ -21,17 +23,22 @@ export const BLOODIED = {
 export const BLOOD = {
   reach: 260,        // kills further off than this (spells, thrown knives) leave no blood on him
   fullReach: 90,     // within this he gets the whole spray
-  perKill: 0.25,     // how much bloodier an ordinary close kill makes him (1 = fully bloodied)...
-  perGoryKill: 0.45, // ...and one where the man came apart (or was executed)
-  dryAfter: 1200,    // ticks after his last kill before he starts drying off (20 s)
-  dryFor: 3600,      // ticks to dry from fully bloodied to clean (60 s)
+  most: 2,           // 0 clean .. 1 bloodied (the repaint) .. 2 soaked
+  perKill: 0.45,     // how much bloodier an ordinary close kill makes him...
+  perGoryKill: 0.8,  // ...and one where the man came apart (or was executed)
+  dryAfter: 2400,    // ticks after his last kill before he starts drying off (40 s)
+  dryFor: 3600,      // ticks to dry off one level (soaked to bloodied, bloodied to clean: 60 s each)
   fadeIn: 0.06,      // how fast the blood comes up on him each tick (so a kill reads as a splash)
 };
 
 const bloodKey = (k) => `${k}-blood`;
+const soakKey = (k) => `${k}-soaked`;
 
 export function preloadBloodied(scene) {
-  for (const [k, file] of Object.entries(BLOODIED)) scene.load.image(bloodKey(k), file);
+  for (const [k, file] of Object.entries(BLOODIED)) {
+    scene.load.image(bloodKey(k), file);
+    scene.load.image(soakKey(k), file.replace(/-blood\.png$/, '-soaked.png'));
+  }
 }
 
 // How much bloodier a kill makes the attacker: 0 (none) .. perGoryKill (point blank).
@@ -50,9 +57,9 @@ export function sprayAmount(e) {
 
 // The bloodied twin of a clean frame, or null. (Its frames are added on first use, cut
 // exactly like the clean sheet's.)
-function twinFor(scene, key, frame) {
+function twinFor(scene, key, frame, soaked = false) {
   if (!BLOODIED[key]) return null;
-  const bk = bloodKey(key);
+  const bk = soaked ? soakKey(key) : bloodKey(key);
   if (!scene.textures.exists(bk)) return null;
   const tex = scene.textures.get(bk);
   if (!tex.has(frame)) {
@@ -69,7 +76,8 @@ class Coat {
     this.scene = scene;
     this.f = fighter;
     this.img = scene.add.image(0, 0, '__WHITE').setVisible(false);
-    this.target = 0;  // how bloodied he is (0 clean .. 1 fully)
+    this.soak = scene.add.image(0, 0, '__WHITE').setVisible(false);
+    this.target = 0;  // how bloodied he is (0 clean .. 1 bloodied .. 2 soaked)
     this.shown = 0;   // what's drawn (eases up to target)
     this.lastKill = -1e9;
     this.wasDown = false;
@@ -78,7 +86,7 @@ class Coat {
   get level() { return this.target; }
 
   spray(n, tick) {
-    this.target = Math.min(1, this.target + n);
+    this.target = Math.min(BLOOD.most, this.target + n);
     this.lastKill = tick;
   }
 
@@ -96,18 +104,23 @@ class Coat {
     if (this.target > 0 && tick - this.lastKill > BLOOD.dryAfter) this.target = Math.max(0, this.target - 1 / BLOOD.dryFor);
     this.shown += Math.sign(this.target - this.shown) * Math.min(Math.abs(this.target - this.shown), BLOOD.fadeIn);
 
-    const bk = this.shown > 0.01 && s.visible && s.alpha > 0 && !s.tintFill ? twinFor(this.scene, s.texture.key, s.frame.name) : null;
-    const img = this.img;
-    img.setVisible(!!bk);
-    if (!bk) return;
-    img.setTexture(bk, s.frame.name).setOrigin(s.originX, s.originY).setPosition(s.x, s.y)
+    const show = this.shown > 0.01 && s.visible && s.alpha > 0 && !s.tintFill;
+    this.draw(this.img, show && twinFor(this.scene, s.texture.key, s.frame.name), s, Math.min(1, this.shown), 0.001);
+    this.draw(this.soak, show && this.shown > 1 && twinFor(this.scene, s.texture.key, s.frame.name, true), s, this.shown - 1, 0.002);
+  }
+
+  // One layer over him: a twin texture, laid exactly on his sprite at alpha `a`.
+  draw(img, key, s, a, above) {
+    img.setVisible(!!key);
+    if (!key) return;
+    img.setTexture(key, s.frame.name).setOrigin(s.originX, s.originY).setPosition(s.x, s.y)
       .setScale(s.scaleX, s.scaleY).setAngle(s.angle).setFlip(s.flipX, s.flipY)
-      .setDepth(s.depth + 0.001).setAlpha(this.shown * s.alpha);
+      .setDepth(s.depth + above).setAlpha(a * s.alpha);
     if (s.isTinted) img.setTint(s.tintTopLeft, s.tintTopRight, s.tintBottomLeft, s.tintBottomRight);
     else img.clearTint();
   }
 
-  destroy() { this.img.destroy(); }
+  destroy() { this.img.destroy(); this.soak.destroy(); }
 }
 
 // All the heroes' coats, kept by the scene (scenes/ArenaScene.js).
