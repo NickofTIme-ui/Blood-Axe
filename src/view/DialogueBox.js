@@ -169,7 +169,7 @@ export class DialogueBox {
   // 2026-11-03)
   placeHint() {
     const B = BOX[this.mode ?? 'full'];
-    this.hint.setPosition(B.w - 28, B.h - 4);
+    this.hint.setPosition(B.w - 30, B.h - 9);
   }
 
   update(time) {

@@ -328,7 +328,7 @@ export class SpriteEnemyView {
     const m = f.move;
     s.clearTint();
     const winding = ATTACKS.includes(st) && m && isDanger(st, m) && fr <= m.startup;
-    dangerEdge(s, winding && !(f.flash > 0) && Math.floor(fr / 3) % 2 === 0);
+    dangerEdge(s, winding && !(f.flash > 0), 0.5 + 0.5 * Math.cos(fr * Math.PI / 3));
     if (f.flash > 0) {
       if (f.flash === 6 && this.prevFlash !== 6) this.flashAge = 0;
       this.flashAge = (this.flashAge ?? 0) + 1;
