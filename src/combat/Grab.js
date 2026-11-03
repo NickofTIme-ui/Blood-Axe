@@ -41,11 +41,19 @@ export const GRAB = {
   skid: 0.9,                      // friction per frame once he's down (a lying man: 0.8)
   plow: 0.86,                     // the thrown body keeps this much of its speed per man it hits
   missile: 0.75,                  // share of throws that fly head first (the rest tumble)
-  // the bouncer: frames to clamp on and turn him round; how far in front he's held and how
-  // high off the floor; how fast he's marched (x the walk) with the stick and without; how
-  // long until he's thrown anyway; the shove's wind-up
-  neck: { clamp: 8, off: 0.7, lift: 7, march: 0.85, push: 0.35, hold: 180, windup: 6 },
+  // the bouncer: frames to clamp on and turn him round; where the hero's gripping fist is in
+  // his painted clamp (fistX forward, fistH up: shares of the hero's height); where the held
+  // man's near shoulder is (shoulderX behind his middle, shoulderH up: shares of HIS height),
+  // so the fist lands on it (Nick, 2026-11-03: "his hand must go on their shoulder"); the
+  // least he's hoisted (a short man is lifted onto his toes to meet the hand); how fast he's
+  // marched (x the walk) with the stick and without; how long until he's thrown anyway; the
+  // shove's wind-up
+  // (shoulderX is negative: his painted scruff pose leans forward, so his near shoulder is
+  // behind his feet; a few hunch further, lined up by eye against their strips)
+  neck: { clamp: 8, fistX: 0.69, fistH: 0.84, shoulderX: -0.15, shoulderH: 0.78, lift: 2, march: 0.85, push: 0.35, hold: 180, windup: 6 },
 };
+
+const SHOULDER_X = { penitent: -0.24, ghoul: -0.19 };
 
 const NO_GRAB = new Set(['executed', 'execute', 'kneel', 'dead', 'knockdown', 'getup', 'grabbed', 'grab', 'bossEntrance', 'burning']);
 
@@ -88,10 +96,16 @@ export function carryPose(f) {
     // by the scruff: pulled in, hoisted onto his toes, a jolt with each of the hero's steps
     const N = GRAB.neck;
     const t = ease(Math.min(1, (fr - g.caughtAt) / N.clamp));
-    off = 30 + (N.off * H - 30) * t; // (his arm's length out: off is a share of the hero's height)
-    h = N.lift * t + (f.carrying ? Math.abs(Math.sin(fr * 0.32)) * 4 : 0);
+    // his near shoulder under the hero's fist: held out that far, hoisted to meet it
+    const vh = g.victim ? g.victim.stats.body.h * (g.victim.stats.size ?? 1) : H;
+    const look = g.victim?.stats.look ?? g.victim?.stats.strips ?? g.victim?.stats.id;
+    const grip = N.fistX * H + (SHOULDER_X[look] ?? N.shoulderX) * vh;
+    const rise = Math.max(N.lift, N.fistH * H - N.shoulderH * vh);
+    off = 30 + (grip - 30) * t;
+    h = rise * t + (f.carrying ? Math.abs(Math.sin(fr * 0.32)) * 4 : 0);
     if (g.throwAt != null) off -= 8 * ease(Math.min(1, (fr - g.throwAt) / N.windup));
-    return { x: f.x + dir * off, z: f.z + 0.5, h: (f.floor ?? 0) + h, rot: 0, dir, neck: true };
+    // (just behind the hero in the draw order, so the gripping hand is drawn over his shoulder)
+    return { x: f.x + dir * off, z: f.z - 0.5, h: (f.floor ?? 0) + h, rot: 0, dir, neck: true };
   }
   if (g?.caughtAt != null) {
     const t = Math.min(1, Math.max(0, (fr - g.caughtAt) / GRAB.lift));
