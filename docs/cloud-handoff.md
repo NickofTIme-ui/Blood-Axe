@@ -6,6 +6,10 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026: ITCH IS LIVE at main ccc6dd6, upload 20246803 (replaced 20041047). Zip 485.9 MB,
+  unpacked 496.9 MB at JPEG quality 72 (78 was 503.8 MB, over itch's 500 MB limit; the next art
+  growth needs a smarter shrink). A first try, 20246541, cached CDN 404s and was replaced.
+
 - 3 November 2026 (cloud, Nick: "push all and update itch"): main fb46c3f adds grab and throw
   round 3 (yoked enemies react: shocked when seized, kicking overhead; `*_held.png` strips for 7
   enemies). No other ready branch was left unmerged (32i4yn, 94qroq, zktpa8 are already on main).
