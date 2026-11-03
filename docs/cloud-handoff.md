@@ -6,8 +6,7 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 3 November 2026 (cloud, branch `claude/project-thread-98rwfm`, NOT on main until Nick says
-  push, not on itch): THE OVERHEAD LIFT IS CUT (Nick: "i dont like the overhead lift ... make it
+- 3 November 2026 (cloud, Nick: "push"): ON MAIN, not on itch: THE OVERHEAD LIFT IS CUT (Nick: "i dont like the overhead lift ... make it
   better or cut it out"). Every grab is now the neck grab (bouncer march), whichever way the
   stick points. The yoke's `*_held.png` strips were removed from the game (originals in project
   files grab-throw/enemy-held/). THROWS (Nick: "make the physics of throwing feel better"): a
