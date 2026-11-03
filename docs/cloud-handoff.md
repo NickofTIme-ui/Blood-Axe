@@ -6,6 +6,15 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026 (cloud, Nick: "push and merge everything, update itch"): every test branch
+  checked against main. The only change still missing was the juggle drift fix from
+  `claude/project-thread-8afo8z` (c5cc425): a juggled man's sideways speed bleeds off
+  (`JUGGLE.airDrag` 0.9, carry 24 -> 10) so he comes down where he was hit, and Sunder's draw-in
+  is a gentle capped nudge (`SUNDER.maxDrift`, `slack`). Now ON MAIN. Everything else on the old
+  branches (cinematic end frame, pledge cut, HUD on pause screen, pikes, signpost, Irvolino
+  waits) was already on main or replaced by later rounds. npm test passes. This main is the
+  build for this itch upload.
+
 - 3 November 2026 (cloud): LEVEL 1 PROP LAYOUT REDONE (Nick: "the clusters of stuff, it's
   arranged stupidly"), ON MAIN (Nick: "push"), not on itch.
   `src/data/stageVillage.js` sections' props: every group now belongs to something you can see
