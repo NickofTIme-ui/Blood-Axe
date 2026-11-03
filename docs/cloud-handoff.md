@@ -33,6 +33,11 @@ branch, or ChatGPT's work gets lost.
   shoved away on the next press. Rurik's bouncer poses: `rurik-{ulric,ulricOath}-neck.png`
   (bake with `... 6 240`: sized by the upright pose 6; touching figures are split by growing
   each body outward).
+  Round 3 (3 Nov, Nick: "when enemies get yoked up they must react ... a shocked look"): each
+  enemy's painted `<id>_held.png` (0 stance for scale, 1 seized: shocked and upright, 2-5 flat on
+  his back, head right, kicking and screaming; anims `seized` / `struggle`). SpriteEnemyView:
+  past half the lift (`GRAB_FLAT`) he's drawn with the struggle loop laid across the shoulders,
+  head the way the hero faces. Without the strip the old turned stance stays.
 - 2 November 2026, round 4 (cloud, same branch, NOT on main): clusters rebuilt (Nick: "a case of
   tomatoes hanging halfway off a barrel"). data/stage.js PROP_LOOKS: each painted look's height,
   width/height, `top` (where a thing stood on it rests), `open`/`round` (nothing stands on it).
