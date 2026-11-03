@@ -14,6 +14,10 @@ branch, or ChatGPT's work gets lost.
   branches (cinematic end frame, pledge cut, HUD on pause screen, pikes, signpost, Irvolino
   waits) was already on main or replaced by later rounds. npm test passes. This main is the
   build for this itch upload.
+  BUILD SIZE: at quality 72 this main was 500.5 MiB unpacked (over itch's limit). The
+  `tools/build-release.py` packager now also re-saves every PNG it keeps losslessly
+  (Pillow optimize, same pixels): 473.5 MiB unpacked, zip 464 MiB, at quality 72. Build with
+  `python tools/build-release.py --quality 72` (the .ps1 has no lossless pass).
 
 - 3 November 2026 (cloud): LEVEL 1 PROP LAYOUT REDONE (Nick: "the clusters of stuff, it's
   arranged stupidly"), ON MAIN (Nick: "push"), not on itch.

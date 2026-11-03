@@ -65,7 +65,7 @@ def jpeg(path, quality):
         f.write(out.getvalue())
     return True
 
-before = after = n = 0
+before = after = n = shrunk = 0
 for dirpath, _, files in os.walk(os.path.join(stage, 'assets')):
     for name in files:
         if not name.lower().endswith('.png'):
@@ -79,7 +79,24 @@ for dirpath, _, files in os.walk(os.path.join(stage, 'assets')):
                     n += 1
             except Exception as e:
                 print(f'  kept {name}: {e}')
+        # every PNG still a PNG (cut-outs with transparency, the exceptions above) gets a
+        # lossless re-save: same pixels, about 7% smaller, which keeps the build under
+        # itch's 500 MB unpacked limit (Nick, 2026-11-03)
+        try:
+            src = open(p, 'rb').read()
+            if src[:4] == b'\x89PNG' and len(src) >= 64 * 1024:
+                with Image.open(io.BytesIO(src)) as im:
+                    im.load()
+                    out = io.BytesIO()
+                    im.save(out, 'PNG', optimize=True)
+                if out.tell() < len(src):
+                    with open(p, 'wb') as f:
+                        f.write(out.getvalue())
+                    shrunk += 1
+        except Exception as e:
+            print(f'  kept {name} as is: {e}')
         after += os.path.getsize(p)
+print(f'{shrunk} PNGs losslessly shrunk')
 print(f'{n} PNGs re-encoded: {before / 2**20:.1f} MB -> {after / 2**20:.1f} MB')
 
 if os.path.exists(zip_path):
