@@ -117,6 +117,8 @@ import { Controller } from '../core/Controller.js';
 import { VillageOpening } from './VillageOpening.js';
 import { MillRescue } from './MillRescue.js';
 
+// the back of the lane on a stage that doesn't set its own `laneTop` (the foot of the back wall)
+const LANE_TOP = 250;
 const PAD = 30;           // keep everyone this far inside the section's ends
 const WAVE_GAP = 50;      // frames between one wave dying and the next arriving
 const REVIVE_AFTER = 360; // ticks a fallen hero lies there before he rises beside his partner (co-op)
@@ -218,12 +220,14 @@ export class Stage {
     this.pickups = [];
     this.hazards = [];
     this.secretsTotal = 0;
+    // how far back the lane goes: to the foot of the painted back wall, not the old floorTop
+    // 50 px short of it (an invisible wall in front of open floor; Nick, 2026-11-03: "more
+    // room to move"). A stage whose painting runs back further says so with `laneTop`.
+    world.bounds.minZ = data.laneTop ?? LANE_TOP;
     // ledges, pits, lifts and rotten planks (stage/Terrain.js): stages without them have none
+    // (built after the lane: a piece drawn to the lane's old back or front edge reaches the new one)
     this.terrain = data.terrain ? new Terrain(world, data.terrain) : null;
     world.terrain = this.terrain;
-    // how far back the lane goes, when a stage's painted street runs further back than the
-    // usual floorTop (else it reads as an invisible wall in front of the houses)
-    if (data.laneTop) world.bounds.minZ = data.laneTop;
     // dialogue and villagers (stage/Story.js): campaign levels only
     // (a stage with a boss has a story too: his sentence is spoken, stage/Sentence.js)
     this.story = data.story || data.npcs || data.sections.some((sec) => sec.boss) ? new Story(this, data) : null;
