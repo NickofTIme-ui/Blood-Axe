@@ -21,7 +21,7 @@ import { Heading, headingAnim } from './Heading.js';
 import { applyBurn } from '../effects/Burn.js';
 import { IMPALE } from '../combat/Finisher.js';
 // yoked: past this much of the lift he's drawn with his painted overhead struggle, laid flat
-const GRAB_FLAT = 0.5;
+const GRAB_FLAT = 0.7; // (the shock of being seized holds for most of the hoist)
 import { BodyFeel, easedSpread, swingBody } from './animFeel.js';
 import { DANGER, dangerGlint, isDanger } from './dangerCue.js';
 import { SENTENCE } from '../stage/Sentence.js';
@@ -167,7 +167,9 @@ export class SpriteEnemyView {
       // grabSpin (the hit and knocked-flying poses lean back: turned, they'd hang askew)
       // by the scruff of the neck (the bouncer): legs still going, feet scrabbling at the floor
       case 'grabbed':
-        if (f.byNeck) return loop({ ...A.walk, fps: 16 });
+        // by the neck: frog-marched on his toes, flailing (his own strip), else his shocked
+        // seized pose (feet off the ground), else his walk
+        if (f.byNeck) return A.marched ? loop(A.marched) : A.seized ? A.seized.frames[0] : loop({ ...A.walk, fps: 16 });
         // yoked: seized (the shock), then struggling overhead, when painted (grabSpin lays it flat)
         if (A.struggle) return (f.grabRot ?? 0) < GRAB_FLAT ? A.seized.frames[0] : loop(A.struggle);
         return A.idle.frames[0];
@@ -529,7 +531,7 @@ export class SpriteEnemyView {
   grabSpin(s, f, tick) {
     const held = f.state === 'grabbed' && f.grabbedBy && !f.byNeck;
     const flying = f.state === 'knockdown' && f.thrown && f.lyingSince === null;
-    if (f.state === 'grabbed' && f.byNeck) { s.angle = 8 * f.facing; return; } // (hauled forward, leaning into it)
+    if (f.state === 'grabbed' && f.byNeck) { s.angle = (8 + Math.sin(tick * 0.5) * 4) * f.facing; return; } // (hauled forward, squirming)
     if (!held && !flying) { this.thrownAt = null; return; }
     const half = f.stats.body.h * 0.5 * depthScale(f.z) * (f.stats.size ?? 1);
     let deg;
