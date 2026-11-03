@@ -1,5 +1,7 @@
 import { playSfx } from './Sfx.js';
 
+// Archer volleys 20% louder (Nick, 2026-11-03)
+const VOLLEY_GAIN = 1.2;
 const SWORD_USERS = new Set(['grunt', 'thrall', 'stalker', 'gladiator', 'warlord', 'king']);
 export function playSwordSheath(scene) {
   playSfx(scene, [['swordSheath1', 1], ['swordSheath2', 1]], { volume: 0.55, spread: 55, minGapMs: 350 });
@@ -74,7 +76,7 @@ export class BattlefieldAudio {
         // One clear release leads the volley; alternating quieter shots give it width
         // without burying every layer under the fire/music bed.
         const key = `bowShot${i % 2 ? 3 - first : first}`;
-        playSfx(s, key, { volume: i === 0 ? 0.95 : 0.52 / Math.sqrt(layers - 1), spread: 65, minGapMs: 0 });
+        playSfx(s, key, { volume: (i === 0 ? 0.95 : 0.52 / Math.sqrt(layers - 1)) * VOLLEY_GAIN, spread: 65, minGapMs: 0 });
       };
       if (!i) fire(); else s.time.delayedCall(i * 42 + Math.random() * 22, fire);
     }
