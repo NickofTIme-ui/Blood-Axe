@@ -73,6 +73,9 @@ const CELLS = {
   // calling, flinching from the sparks, reaching down to a hero, relieved, climbing down
   'boy-roof': { cling: 0, wave: [1, 2], call: 3, flinch: 4, reach: 5, relief: 6, climb: 7, stand: 6 },
   elder: { stand: 0, sit: 1, wave: 2, kneel: 3, cower: 1 },
+  // Hale the smith (stage/SmithLife.js): his walk is the run's four beats; grieving at the
+  // vigil (kneel/sit), his hand over his eyes
+  hale: { stand: 0, look: 1, wave: 2, run: RUN, point: 6, wipe: 7, cower: 1, kneel: 7, sit: 7 },
   // the wood's captives: bound on the rope, hanging, in the cage, at its bars, limping
   captive: { bound: 0, hang: 1, cower: 2, grip: 3, limp: [4, 5], stand: 4, run: [4, 5] },
   // Nicholas, the guide: the villager's order (wave: he points the way on; cower: braced),
@@ -94,6 +97,7 @@ const DEATH_SHIFT = 44; const DEATH_HEAD = 112;
 // run, so he hobbles on his standing pose (sinking on each step, like the run)
 const HOBBLE = [0, 0, 0, 0];
 const GUIDE_STEP = 24; // px of road a beat of the guide's walk covers (at depth scale 1)
+const SMITH_STEP = 15; // ...and a beat of Hale's walk (stage/SmithLife.js: an unhurried big man)
 const RUN_STEP = 26;  // px of ground a beat of a sprinter's run covers (stage/Story.js `sprint`)
 const STRANDED_RELIEF = 0.45; // the part of his time freed (stage/Story.js freeFor) he stands relieved, before he climbs down
 const STRANDED_REACH = 230; // a hero this near (x), the stranded child leans down to him
@@ -301,7 +305,7 @@ export class NpcView {
     g.setDepth(n.z);
     const tun = (i) => TUNIC[(v.seed + i) % TUNIC.length];
     // (n.act: a pose the stage plays for a moment, stage/MillRescue.js jumpDown)
-    const pose = n.act ?? (n.state === 'fleeing' || n.gatherMoving ? 'run' : n.mourning ? (n.pose==='family'||n.pose==='child'?'cower':'kneel') : n.state === 'threatened' || n.cower ? 'cower' : n.state === 'trapped' ? 'wave' : 'stand');
+    const pose = n.act ?? ((n.state === 'idle' && n.lifePose) || (n.state === 'fleeing' || n.gatherMoving ? 'run' : n.mourning ? (n.pose==='family'||n.pose==='child'?'cower':'kneel') : n.state === 'threatened' || n.cower ? 'cower' : n.state === 'trapped' ? 'wave' : 'stand'));
     if (n.state === 'dead' && SPRITES.nicholas && n.art === 'nicholas') { this.figure(g, n.x, y, k, 'lie', t, 0, 1, 'nicholas'); return; }
     if (n.pose === 'captive-kneel' && this.drawKneeling(n, v, g, y, k, t)) return;
     if (n.state === 'lost' || n.state === 'dead') { this.fallen(g, n.x, y, k, tun(0)); return; }
@@ -335,7 +339,8 @@ export class NpcView {
       return;
     }
     // (a sprinter's legs keep pace with the ground he covers, one beat per RUN_STEP px)
-    const tt = n.sprint && pose === 'run' ? ((n.stride ?? 0) / (RUN_STEP * k)) * 7 : t;
+    const tt = n.sprint && pose === 'run' ? ((n.stride ?? 0) / (RUN_STEP * k)) * 7
+      : n.life && pose === 'run' && n.moving ? ((n.stride ?? 0) / (SMITH_STEP * k)) * 7 : t;
     this.tilt = n.tilt; this.squash = n.squash;
     this.figure(g, n.x, y, k, pose, tt, tun(0), dir, n.actArt ?? n.art);
     this.tilt = this.squash = undefined;

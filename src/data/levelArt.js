@@ -158,6 +158,11 @@ export const SPRITE_SHEETS = {
   // above). Height: his standing pose as tall as the boy's (about 157 px)
   'boy-roof': { file: 'assets/sprites/npc/boy_roof.png', frames: 8, height: 181, grade: NPC_GRADE, centre: true },
   elder: { file: 'assets/sprites/npc/elder.png', frames: 4, height: 228, grade: NPC_GRADE },
+  // Hale the smith, on his feet at the start of level 1 (he stood on the villager sheet, the
+  // same man Varek kills: Nick, 2026-11-02, "he looks copy and pasted"). ChatGPT, from the
+  // villager sheet's style (docs/hale/hale-art-prompts.md): stand, look round, wave over,
+  // walk x3, point the way, wipe his brow. A big man: standing, a head over the villager
+  hale: { file: 'assets/sprites/npc/hale.png', frames: 8, height: 258, grade: NPC_GRADE, centre: true },
   // the villager Varek kills in the opening (view/NpcView.js drawKneeling): begging on his
   // knees, struck, pitching forward, face down (ChatGPT, 2026-10-24). Each pose sits with
   // its boots at the same spot in its cell; height: the begging pose as tall as the

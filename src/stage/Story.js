@@ -84,6 +84,7 @@
 import { NARRATION, MINOR, ALWAYS_BOXED } from '../data/speakers.js';
 import { grabTarget } from '../combat/Grab.js';
 import { updateStableMaster } from './StableMaster.js';
+import { updateSmith } from './SmithLife.js';
 
 // (wait: a line never moves on by itself — Nick: the text went by too fast. false: lines
 // time out by their length, as they used to)
@@ -423,6 +424,7 @@ export class Story {
       }
       if(n.insideChurch){n.state='gone';continue;}
       if(n.stableMaster){updateStableMaster(n,heroes,T);continue;}
+      if (n.life === 'smith' && n.state === 'idle') updateSmith(n, heroes, st); // (Hale's own life: stage/SmithLife.js)
       if (n.state === 'idle' || n.state === 'threatened' || n.state === 'trapped') {
         n.h = T ? Math.max(0, T.groundAt(n.x, n.z)) : 0;
       }
