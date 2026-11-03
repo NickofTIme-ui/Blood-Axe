@@ -6,6 +6,16 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026 (cloud, `claude/project-thread-rmac4e`, TEST BRANCH, not on main or itch):
+  LEVEL RANK S / A / B / C on the victory screen. Grade: src/progression/LevelRank.js (points out
+  of 100 for no deaths 25, health kept 25, best style rank 20, executions 10, villagers saved 10,
+  secrets 5, time vs par 5; parts a level lacks are left out). S = 85+ AND no deaths, A 70, B 50.
+  Stage.js now tracks `stats.damage` and adds peakStyle / bestCombo / maxHealth / par at the win.
+  The stamp: src/view/RankStamp.js (S: darken, glint, gold slam, white flash, rays, embers,
+  BLOOD AXE second blow; A red + flash + shockwave; B bronze + dust; C plain iron thud). It uses
+  painted textures `rank-S`..`rank-C` if they're ever loaded; for now it is MedievalSharp
+  lettering. tests/level-rank-test.js in npm test.
+
 - 3 November 2026 (cloud, Nick: "push and merge all"): FOUR TEST BRANCHES NOW ON MAIN, NOT on
   itch: executioner floating boots removed (y1ni7o f12d42d), Rurik's grab hand on the held man's
   shoulder (0i504c c151cda), bloody Rurik blood-only layers (3etkgt f30dda0, note below), and more

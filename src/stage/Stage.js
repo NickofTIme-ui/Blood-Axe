@@ -116,6 +116,7 @@ import { LOOT } from '../data/trophies.js';
 import { Controller } from '../core/Controller.js';
 import { VillageOpening } from './VillageOpening.js';
 import { MillRescue } from './MillRescue.js';
+import { parSeconds } from '../progression/LevelRank.js';
 
 // the back of the lane on a stage that doesn't set its own `laneTop` (the foot of the back wall)
 const LANE_TOP = 250;
@@ -236,7 +237,8 @@ export class Stage {
     // every captain beaten kneels, hears his crimes and is executed (stage/Sentence.js)
     this.sentence = new Sentence(this);
     if(data.id==='village')this.millRescue=new MillRescue(this);
-    this.stats = { kills: 0, finishers: 0, secrets: 0, deaths: 0, frames: 0 };
+    this.stats = { kills: 0, finishers: 0, secrets: 0, deaths: 0, frames: 0, damage: 0 };
+    this.par = parSeconds(data); // (the level's grade: progression/LevelRank.js)
     let id = 1;
     for (const [si, sec] of this.sections.entries()) {
       for (const p of sec.props ?? []) {
@@ -284,6 +286,8 @@ export class Stage {
       this.dropLoot(e.defender);
       this.twinFell(e.defender);
     });
+    // health the heroes lost, for the level's grade (progression/LevelRank.js)
+    world.events.on('hit', (e) => { if (e.defender?.team === 'player' && e.damage > 0) this.stats.damage += e.damage; });
     // a boss the story spares (beaten to his knees: stage/Sequence.js) still gives up his trophy
     world.events.on('hit', (e) => { if (e.defender?.spare && e.defender.health <= 1) this.dropLoot(e.defender); });
     // King Vaurath's duel (boss.duel): his composure, and his answer to a blow into his guard
@@ -410,7 +414,20 @@ export class Stage {
     if (this.wonOnce) return;
     this.wonOnce = true;
     this.phase = 'won';
-    this.world.events.emit('stageWon', { stats: { ...this.stats, secretsTotal: this.secretsTotal } });
+    this.world.events.emit('stageWon', { stats: { ...this.stats, secretsTotal: this.secretsTotal, ...this.gradeStats() } });
+  }
+
+  // What the level's grade reads besides the running stats (progression/LevelRank.js): the
+  // best style rank and combo any hero reached, a hero's full health (the damage is shared
+  // in co-op, so it's measured against both heroes' health), and the par time.
+  gradeStats() {
+    const ps = this.players ?? [];
+    return {
+      peakStyle: Math.max(0, ...ps.map((p) => p.style?.peak ?? 0)),
+      bestCombo: Math.max(0, ...ps.map((p) => p.style?.best ?? 0)),
+      maxHealth: ps.reduce((s, p) => s + (p.stats?.maxHealth ?? 100), 0) || 100,
+      par: this.par,
+    };
   }
 
   // Died: back to the last checkpoint, healed, with the section's fight reset.

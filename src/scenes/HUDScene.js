@@ -22,6 +22,8 @@ import { StyleMeter } from '../view/StyleMeter.js';
 import { DialogueBox } from '../view/DialogueBox.js';
 import { PauseMenu } from '../view/PauseMenu.js';
 import { AbilityNotice } from '../view/AbilityNotice.js';
+import { RankStamp } from '../view/RankStamp.js';
+import { levelRank } from '../progression/LevelRank.js';
 
 const SERIF = FONT.ui;
 
@@ -364,12 +366,17 @@ export class HUDScene extends Phaser.Scene {
       if (C.lost?.length) lines.push(`LOST:  ${C.lost.join(',  ')}`);
       if (C.next) lines.push('', C.next);
     }
-    const tally = this.add.text(W / 2, H * 0.44, lines.join('\n'), { fontFamily: FONT.ui, fontSize: C ? '16px' : '18px', color: '#f0e0c0', align: 'center', lineSpacing: C ? 6 : 10, wordWrap: { width: W - 160 } })
+    // the level's grade (progression/LevelRank.js), stamped on the right of the tally
+    const rank = levelRank({ ...stats, saved: C?.saved, lost: C?.lost });
+    const tally = this.add.text(W * 0.4, H * 0.44, lines.join('\n'), { fontFamily: FONT.ui, fontSize: C ? '16px' : '18px', color: '#f0e0c0', align: 'center', lineSpacing: C ? 6 : 10, wordWrap: { width: W * 0.6 } })
       .setOrigin(0.5, 0).setStroke('#000000', 4).setAlpha(0).setDepth(D + 3);
     this.tweens.add({ targets: tally, alpha: 1, delay: 1200, duration: 900 });
+    const stampAt = 2500;
+    this.rankStamp?.destroy();
+    this.rankStamp = new RankStamp(this, rank, { x: W * 0.82, y: H * 0.57, depth: D + 6, delay: stampAt, arena: this.arena, under: [tally, title] });
     const prompt = this.add.text(W / 2, H * (C ? 0.8 : 0.74), `${C?.onward ? `${C.onward}      ` : ''}ESC  —  CHOOSE ANOTHER`, { fontFamily: FONT.ui, fontSize: '15px', color: '#cdb391' })
-      .setOrigin(0.5).setStroke('#000000', 3).setAlpha(0).setDepth(D + 3);
-    this.tweens.add({ targets: prompt, alpha: 0.9, delay: 2400, duration: 900 });
+      .setOrigin(0.5).setStroke('#000000', 3).setAlpha(0).setDepth(D + 7);
+    this.tweens.add({ targets: prompt, alpha: 0.9, delay: stampAt + (rank.tier === 0 ? 2800 : 1400), duration: 900 });
     this.objective = '';
   }
 
