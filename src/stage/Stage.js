@@ -166,6 +166,9 @@ const BEAM = { period: 230, warn: 80, damage: 22, lethalH: 60 };
 // knocking him flat, so it only needs to keep clear of the very edge of a drop (`arrowClear`).
 const BOMBARD = { period: 200, warn: 75, shots: 2, radius: 64, depth: 46, damage: 20, spread: 110, pitClear: 170, arrowClear: 45 };
 const ARROW = { stun: 22 };
+// Archer posts shoot 40% slower than their data says (Nick, 2026-11-03): the time between
+// arrow volleys is stretched by this much; the landing warning stays the same.
+const ARROW_SLOW = 1.4;
 // Vincent's Gate Scorpion (hazard 'ballista'): frames between shots, the lane's warning, the
 // bolt's speed (px a frame) and reach, how near the lane a man must be to be skewered (and how
 // high he can be), the damage; the cart's roll across the yard (px a frame); the boss shot's
@@ -1634,8 +1637,8 @@ export class Stage {
       hz.t = 0;
     }
     if (!shots) { hz.shells = hz.shells.filter((s) => s.land > hz.t); }
-    const P = hz.period ?? B.period;
     const arrows = hz.look === 'arrows';
+    const P = Math.round((hz.period ?? B.period) * (arrows ? ARROW_SLOW : 1));
     if (shots && !held && hz.t % P === 0) {
       // (your own people's stones go for the Ashen, never for a boss: he's yours)
       const heroes = hz.friendly
