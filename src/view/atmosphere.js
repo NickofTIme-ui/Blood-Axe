@@ -83,9 +83,12 @@ export function softShadow(scene, x, y, w, h, alpha) {
   }
   // (a touch wider and deeper than the old ellipse: its edge is feathered away)
   const img = scene.add.image(0, 0, 'soft-shadow').setDisplaySize(w * 1.3, h * 1.7);
-  const ct = scene.add.container(x, y, [img]);
+  // ...and a tight dark core right under the feet: on the dark painted mud the soft pool alone
+  // didn't show, so men looked like they floated (Nick's second level 1 review, 2026-11-03)
+  const core = scene.add.image(0, 0, 'soft-shadow').setDisplaySize(w * 0.72, h * 0.8).setAlpha(0.8);
+  const ct = scene.add.container(x, y, [img, core]);
   // (its core is darker than the flat ellipse was, at the alpha the views already pass)
   const set = ct.setAlpha.bind(ct);
-  ct.setAlpha = (a) => set(Math.min(1, a * 1.5));
+  ct.setAlpha = (a) => set(Math.min(1, a * 2.2));
   return ct.setAlpha(alpha);
 }

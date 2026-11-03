@@ -23,6 +23,7 @@ import { SPRITES } from './levelArt.js';
 import { keyLayer, cutPieces } from './envArt.js';
 import { drawVincent, hideVincent } from './VincentView.js';
 import { StableMasterView } from './StableMasterView.js';
+import { ShoutPlate } from './ShoutPlate.js';
 
 const TUNIC = [0x5a6a5a, 0x6a5a48, 0x4a5468, 0x6a4a4a, 0x5a5048, 0x58586a];
 const SKIN = 0xc8a080;
@@ -135,7 +136,9 @@ export class NpcView {
     for (const n of this.story?.npcs ?? []) this.views.set(n.id, this.makeNpc(n));
     this.drawBodies(stage.data.bodies ?? []);
     this.makeCompanions();
-    this.fieldWords=scene.add.text(0,0,'',{fontFamily:FONT.ui,fontSize:'16px',color:'#fff0d8',align:'center',wordWrap:{width:260}}).setOrigin(.5,1).setStroke('#160f0b',4).setDepth(DEPTH.popups).setVisible(false);
+    this.fieldWords=scene.add.text(0,0,'',{fontFamily:FONT.ui,fontSize:'16px',color:'#fff0d8',align:'center',fontStyle:'bold',wordWrap:{width:260}}).setOrigin(.5,1).setDepth(DEPTH.popups).setVisible(false);
+    // (on parchment, kept on screen and clear of the HUD: view/ShoutPlate.js)
+    this.fieldShout=new ShoutPlate(scene,this.fieldWords);
   }
 
   // ------------------------------------------------------------ villagers
@@ -284,8 +287,11 @@ export class NpcView {
     // ...and someone with something to say: a warm one (with the bubble over him, drawPrompt)
     const needs = n.state === 'trapped' || n.state === 'threatened';
     const talks = !n.act && this.hasWord(n);
+    // (a talker's is small and faint: five of them stood together at the north gate made one
+    // big yellow block of light; Nick's second level 1 review, 2026-11-03)
     v.halo.setVisible(needs || talks).setPosition(n.x, n.z - n.h - 58).setDepth(n.z - 0.6).setTint(needs ? 0xdfe8ff : 0xffd890)
-      .setAlpha(needs || talks ? 0.25 + 0.2 * Math.sin(t * 0.12) : 0);
+      .setScale(needs ? 3 : 1.8, needs ? 4 : 2.4)
+      .setAlpha(needs ? 0.25 + 0.2 * Math.sin(t * 0.12) : talks ? 0.1 + 0.05 * Math.sin(t * 0.12) : 0);
     if (!show) return;
     const y = n.z - n.h;
     const k = depthScale(n.z);
@@ -748,8 +754,8 @@ export class NpcView {
     const field=this.story?.fieldLine;
     const n=field?.npc??help;
     // (a held scene: only a villager's own shout-out, no help cries)
-    this.fieldWords.setVisible(!!field||(!!n&&!this.story?.holding));
-    if(n)this.fieldWords.setText(field?.text??n.helpText).setPosition(n.x,n.z-(n.h??0)-125);
+    this.fieldShout.setVisible(!!n&&(!!field||!this.story?.holding));
+    if(n){this.fieldWords.setText(field?.text??n.helpText);this.fieldShout.place(n.x,n.z-(n.h??0)-125);}
   }
 }
 

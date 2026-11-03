@@ -405,6 +405,13 @@ export const STAGE_VILLAGE = {
   // houses behind them (view/TerrainView.js drawVeils)
   veils: [{ x0: 2800, x1: 4380, alpha: 0.45 }],
 
+  // the big fires painted on the backdrop, lighting the fighters near them (view/FireLight.js;
+  // the fire hazards and lanterns light them too): the burning stall by the well, the stables
+  firelight: [
+    { x: WELL.x - 110, z: 292, r: 320, k: 0.7 },
+    { x: 6380, z: 296, r: 420, k: 0.8 },
+  ],
+
   // torches marking the way (lanterns: view/TerrainView.js)
   // (none on the roofs' edges: one stood where the cart climb meets the first roof and one
   // in front of the boy's chimney steps; Nick, 2026-10-23. They flank the roofs from the

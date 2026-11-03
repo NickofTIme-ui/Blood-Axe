@@ -1,5 +1,6 @@
 import { depthScale } from './depths.js';
 import { stableMasterFrame } from '../stage/StableMaster.js';
+import { ShoutPlate } from './ShoutPlate.js';
 
 export class StableMasterView {
   constructor(scene,v) {
@@ -9,8 +10,9 @@ export class StableMasterView {
     this.run=Math.max(1,(scene.textures.get('stable-master')?.frameTotal??9)-1-4);
     this.shout=scene.add.text(0,0,'THE STABLES ON FIRE!\nFREE THE HORSES!!',{
       fontFamily:"'Segoe UI', Arial, sans-serif",fontSize:'17px',fontStyle:'bold',color:'#fff0ce',align:'center',lineSpacing:3,
-    }).setOrigin(.5,1).setStroke('#190b05',4).setVisible(false);
-    scene.events.once('shutdown',()=>{this.sprite?.destroy();this.shout.destroy();});
+    }).setOrigin(.5,1).setVisible(false);
+    this.plate=new ShoutPlate(scene,this.shout); // (on parchment, on screen: view/ShoutPlate.js)
+    scene.events.once('shutdown',()=>{this.sprite?.destroy();this.plate.destroy();});
   }
   draw(n) {
     const show=n.state!=='gone',k=depthScale(n.z);
@@ -22,6 +24,7 @@ export class StableMasterView {
     // first strides away, so it is still read in full)
     const card=this.scene.scene.get('HUD')?.card,carded=card?.visible&&card.alpha>0.05;
     const shouting=n.state==='alarm'||(n.state==='fleeing'&&n.t<100);
-    this.shout.setVisible(show&&shouting&&!carded).setPosition(n.x,n.z-n.h-142*k).setDepth(n.z+3);
+    this.plate.setVisible(show&&shouting&&!carded);
+    this.plate.place(n.x,n.z-n.h-142*k,{depth:n.z+3});
   }
 }

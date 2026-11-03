@@ -254,7 +254,7 @@ export class Gore {
     const mid = f.h + f.stats.body.h * 0.5;
     // a mine doesn't cut a man in two: there are no halves, only what's left of him
     if (type === 'explode' && e.move?.fx === 'mine') return this.blowApart(view, e, { pieces: 15, power: 1.15 });
-    if (type === 'explode' && e.move?.fx === 'trample') return this.blowApart(view,e,{pieces:14,power:1.15,push:dir*260});
+    if (type === 'explode' && e.move?.fx === 'trample') return this.blowApart(view,e,{pieces:10,power:1.15,push:dir*260,lean:true});
     // anything else that blows a man up (a lotus, a rupture, a crushing crit) tears him
     // into fewer, bigger pieces, thrown the way the blow was going
     if (type === 'explode') return this.blowApart(view, e, { pieces: 9, power: 0.95, push: dir * 140 });
@@ -323,7 +323,9 @@ export class Gore {
   // skull and an eye thrown out with them (effects/goreArt.js, the same pieces the doll
   // fatalities use), a heavy spray and a hanging red mist, a scorched ring of blood
   // below. push: extra sideways throw (the way the blow was travelling).
-  blowApart(view, e, { pieces = 12, power = 1, push = 0 } = {}) {
+  // lean: the stampede's (fewer, darker pieces from inside him: a herd tramples a whole wave,
+  // and their pink insides came out like confetti; Nick's second level 1 review, 2026-11-03)
+  blowApart(view, e, { pieces = 12, power = 1, push = 0, lean = false } = {}) {
     const f = view.f;
     const mid = f.h + f.stats.body.h * 0.5;
     const dir = e.dir || f.facing;
@@ -339,9 +341,10 @@ export class Gore {
     const skin = f.stats.look.skin;
     D.skin = typeof skin === 'number' ? `#${skin.toString(16).padStart(6, '0')}` : (skin ?? '#b06a48');
     const y = f.z - mid;
-    D.bits(f.x, y, f.z, ['meat1', 'meat2', 'meat3', 'organ', 'organ', 'gut'], 8, 1.25 * power, Math.sign(push));
-    D.bits(f.x, y - 6, f.z, ['bone', 'bone', 'sinew'], 4, 1.1 * power, Math.sign(push));
-    D.bits(f.x, f.z - f.h - f.stats.body.h * 0.85, f.z, ['skullBit', 'skullBit', 'eyeball'], 3, 1.3 * power, Math.sign(push));
+    const dark = lean ? 0x8a4a46 : 0xffffff;
+    D.bits(f.x, y, f.z, lean ? ['meat1', 'meat2', 'meat3', 'gut'] : ['meat1', 'meat2', 'meat3', 'organ', 'organ', 'gut'], lean ? 3 : 8, 1.25 * power, Math.sign(push), dark);
+    D.bits(f.x, y - 6, f.z, ['bone', 'bone', 'sinew'], lean ? 2 : 4, 1.1 * power, Math.sign(push), dark);
+    D.bits(f.x, f.z - f.h - f.stats.body.h * 0.85, f.z, ['skullBit', 'skullBit', 'eyeball'], lean ? 1 : 3, 1.3 * power, Math.sign(push), dark);
     // blood: one heavy spray all round, a fan of it up, and a fine mist that hangs
     for (let i = 0; i < Math.round(70 * this.amount); i++) {
       const a = rand(-Math.PI, 0) + rand(-0.4, 0.4);

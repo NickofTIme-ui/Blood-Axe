@@ -45,6 +45,7 @@ import { StageView } from '../view/StageView.js';
 import { TerrainView } from '../view/TerrainView.js';
 import { STAGES, nextLevel } from '../data/stages.js';
 import { NpcView } from '../view/NpcView.js';
+import { FireLight } from '../view/FireLight.js';
 import { SpeakerMarker } from '../view/SpeakerMarker.js';
 import { sharedProgress } from '../progression/Progress.js';
 import { CHARACTERS } from '../data/characters.js';
@@ -471,6 +472,8 @@ export class ArenaScene extends Phaser.Scene {
     this.terrainView = this.stage.terrain || this.stageData.theme ? new TerrainView(this, this.stage) : null;
     // a campaign level's villagers, its dead and the other Oath Keepers (view/NpcView.js)
     this.npcView = this.stage.story ? new NpcView(this, this.stage) : null;
+    // warm firelight on the fighters near the village's fires (view/FireLight.js)
+    this.fireLight = this.stage.data?.firelight ? new FireLight(this, this.stage) : null;
     this.speakerMarker = this.stage.story ? new SpeakerMarker(this) : null; // over whoever is talking
     this.cutawayOn = false;
     this.scene.stop('Cutaway');
@@ -1681,6 +1684,7 @@ export class ArenaScene extends Phaser.Scene {
     this.syncSentenceMusic();
     syncSanctuaryMusic(this);
     for (const v of this.views.values()) v.update();
+    this.fireLight?.update();
     this.bloodCoats.update();
     this.liftShadows();
     this.terrainView?.update();

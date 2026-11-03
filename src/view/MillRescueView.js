@@ -1,6 +1,7 @@
 import {drawMillHanging} from './MillHangingArt.js';
 import {DEPTH} from './depths.js';
 import {FONT} from './fonts.js';
+import {ShoutPlate,INK} from './ShoutPlate.js';
 export class MillRescueView{
   constructor(scene,stage){
     this.scene=scene;this.stage=stage;this.rig=stage.millRescue;
@@ -10,17 +11,19 @@ export class MillRescueView{
     this.image=scene.add.image(4590.5,20.3,'mill-rescue-live').setOrigin(0).setScale(.55).setDepth(295.9);
     this.images={};for(const [key,id]of Object.entries({gallows:'gallows',body:'irvolino-bound',mechanisms:'mechanisms',executioner:'executioner-actions',lever:'executioner-lever'}))this.images[key]=scene.textures.get(`mill-${id}`).getSourceImage();
     this.tick=-1;
-    // the hangman's shouts (stage/MillRescue.js say): over his head, angry red, no box
+    // the hangman's shouts (stage/MillRescue.js say): over his head, red ink on parchment, kept
+    // on screen and clear of the HUD (view/ShoutPlate.js; Nick's second level 1 review)
     this.shout=scene.add.text(0,0,'',{fontFamily:FONT.display,fontSize:'17px',color:'#ffb08a',align:'center',wordWrap:{width:240}})
-      .setOrigin(.5,1).setStroke('#1a0604',5).setDepth(DEPTH.popups).setVisible(false);
+      .setOrigin(.5,1).setDepth(DEPTH.popups).setVisible(false);
+    this.plate=new ShoutPlate(scene,this.shout,INK.red);
   }
   updateShout(){
     const r=this.rig,b=r.bark,f=r.executioner;
     const on=!!b&&!!f?.alive&&!this.stage.story.holding;
-    this.shout.setVisible(on);if(!on)return;
+    this.plate.setVisible(on);if(!on)return;
     // (it pops in, shakes a little while he's at the lever, and fades at the end)
     const pop=Math.min(1,b.age/8),fade=Math.min(1,(b.life-b.age)/20),shake=r.operating?Math.sin(b.age*1.3)*1.5:0;
-    this.shout.setText(b.text).setPosition(f.x+shake,f.z-f.h-92).setAlpha(fade).setScale(.8+.2*pop);
+    this.shout.setText(b.text).setScale(.8+.2*pop);this.plate.place(f.x+shake,f.z-f.h-92,{alpha:fade});
   }
   update(){
     const r=this.rig,f=r.executioner;

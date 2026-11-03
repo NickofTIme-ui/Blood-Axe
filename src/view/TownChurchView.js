@@ -10,6 +10,15 @@ export class TownChurchView {
     if(scene.textures.exists('town-church')){
       this.building=scene.add.image(church.x,church.z,'town-church').setOrigin(.5,1)
         .setDisplaySize(church.width,church.height).setDepth(DEPTH.floor+.2);
+      // the village burns round it: soot-dark low down, the fire's red on its upper walls and
+      // smoke drifting across it (it stood clean and daylit; Nick's second level 1 review)
+      this.building.setTint(0x96685e,0x96685e,0x5a4e58,0x5a4e58);
+      this.smoke=[0,1,2,3].map(i=>{
+        const m=scene.add.image(church.x-260+i*170,church.z-church.height*(.55+.12*(i%2)),'glow').setTint(0x1a1418)
+          .setScale(5.5,2.4).setAlpha(.5).setDepth(DEPTH.floor+.25);
+        scene.tweens.add({targets:m,x:m.x+90,alpha:{from:.5,to:.3},duration:7000+i*1300,yoyo:true,repeat:-1,ease:'Sine.inOut'});
+        return m;
+      });
       this.light=scene.add.image(church.door.x,church.z-58,'glow').setTint(0xe6aa60).setAlpha(.13).setScale(2,3).setDepth(DEPTH.floor+.3);
     }
     for(const key of ['church-bearers','church-bearers-elsbeth'])if(!scene.textures.exists(key)&&scene.textures.exists(`${key}-src`)){

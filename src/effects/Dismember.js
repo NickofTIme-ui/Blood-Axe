@@ -412,7 +412,8 @@ export class Dismember {
 
   // Loose bits: meat, organs, loops of gut, sinew, bone and skull shards, eyeballs
   // (painted in effects/goreArt.js, several variants of each).
-  bits(x, y, z, kinds, count, power = 1, dir = 0) {
+  // (tint: multiplied over each piece; the stampede's are darkened from pink to a dark red)
+  bits(x, y, z, kinds, count, power = 1, dir = 0, tint = 0xffffff) {
     count = Math.round(count * Math.max(0.35, this.gore.amount));
     // the guts come SETTINGS.gore.guts times over: each loop of gut or organ thrown out
     // brings the rest with it (meat, bone and the like stay as they were)
@@ -425,7 +426,7 @@ export class Dismember {
     }
     for (const kind of list) {
       const g = pieceTex(this.scene, PIECE_OF[kind] ?? 'meat', Math.floor(Math.random() * 120), this.skin);
-      const snap = { key: g.key, def: g, ox: g.ox, oy: g.oy, x: x + rand(-6, 6), y: y + rand(-6, 6), rot: rand(0, 6.28), sx: g.scale, sy: g.scale, tint: 0xffffff };
+      const snap = { key: g.key, def: g, ox: g.ox, oy: g.oy, x: x + rand(-6, 6), y: y + rand(-6, 6), rot: rand(0, 6.28), sx: g.scale, sy: g.scale, tint };
       const c = this.fly([{ snap }], z + rand(-6, 6), {
         vx: (dir * rand(40, 200) + rand(-160, 160)) * power,
         vh: rand(180, 520) * power,
