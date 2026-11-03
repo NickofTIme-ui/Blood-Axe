@@ -6,6 +6,18 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026 (cloud): LEVEL 1 PROP LAYOUT REDONE (Nick: "the clusters of stuff, it's
+  arranged stupidly"), branch `claude/project-thread-r7z8en`, NOT on main until Nick says push.
+  `src/data/stageVillage.js` sections' props: every group now belongs to something you can see
+  (a house door, Hale's table, the well, the mill floor, the stables, the hall) and stands
+  against the house fronts at the back of the lane, or as a low line along the near edge
+  (fence runs, a farmer's crates). The middle of the lane is left for fighting: the islands of
+  crates in the road and the mill yard, the same three-barrel triangle in every section, the
+  barrels on the mill signpost and the produce in front of the longhall doors are gone. Also:
+  the stable master's shout waits for the section title card (it landed on top of it), and his
+  barrel rack moved out from behind him. Before/after: project files
+  `level1-props-polish/before-after.jpg`. npm test passes.
+
 - 3 November 2026 (cloud, Nick: "push"): ON MAIN, not on itch: the
   SKILL TREE IS PAINTED (Nick: "make the skill tree look very high end", ChatGPT art). Candlelit
   shrine backdrop, a war banner per branch (the cloth is dyed in code, `banner-cloth.png` +

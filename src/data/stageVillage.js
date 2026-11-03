@@ -107,27 +107,34 @@ export const STAGE_VILLAGE = {
       fightAt: 1080, // (the looters are at the end of the road: talk to Hale first)
       waves: [['grunt', 'grunt', 'grunt', 'grunt', 'grunt', 'grunt'], ['grunt', 'stalker']],
       props: [
-        // a house's barrels by its door, and its crate with a box of apples up on it
+        // LEVEL 1's LAYOUT (Nick, 2026-11-03: "the clusters of stuff, it's arranged stupidly").
+        // Every group belongs to something you can see (a door, the smith, a stall, the well,
+        // the stables, the hall) and stands where its owner left it: against the house fronts
+        // at the back of the lane, or as a low line along the near edge. The middle of the lane
+        // is for fighting: nothing is dropped there at random (the old islands of crates in the
+        // road, the same three-barrel triangle in every section, crates on the signposts).
+        // The first house's two barrels side by side at its wall, and its crate with a box of
+        // apples up on it
         ...group([
-          ['barrel-v3', 236, 292], ['barrel-v0', 286, 296], ['barrel-v5', 260, 316],
-          ['crate-v6', 340, 294], ['crate-v1', 0, 0, { stack: true }],
+          ['barrel-v3', 232, 292], ['barrel-v0', 280, 294],
+          ['crate-v6', 338, 296], ['crate-v1', 0, 0, { stack: true }],
         ]),
-        // what the looters dropped in the road when the fight found them
-        ...group([
-          ['crate-v2', 700, 384], ['sack', -8, 0, { stack: true }],
-          ['crate-v4', 764, 396],
-        ]),
-        { kind: 'chest', x: 930, z: 366, drop: 'health' },
-        // a broken length of fence at the near edge of the road (smashed through, its rails fly)
-        { kind: 'fence', x: 540, z: 506, drop: null },
-        // the smith's stores at the end of the road, out from his wall: crates, one up on another
-        ...group([
-          ['crate-blue', 1236, 432, { drop: 'health' }], ['crate-v0', 2, 0, { stack: true }],
-          ['crate-long', 1300, 436], ['barrel-v4', 1180, 440],
-        ]),
+        // its strongbox: a looter cut down dragging it out to the road (the body, `bodies`)
+        { kind: 'chest', x: 456, z: 488, drop: 'health' },
+        // the road's fence along its near edge, burnt through where the timbers fell on it
+        // (smashed through, its rails fly)
+        { kind: 'fence', x: 594, z: 508, drop: null },
+        { kind: 'fence', x: 706, z: 506, drop: null },
         // Hale's trestle table by the road's end, a crate and a pot on it: knock them off
         { kind: 'trestle', x: 1010, z: 316, drop: null },
         ...group([['crate-v5', -22, 0, { stack: true }], ['urn', 30, 0, { stack: true }]]),
+        // the smith's quench barrel beside his table, and his stores along his wall past the
+        // lamp: a crate with another up on it, and a long one
+        ...group([['barrel-v4', 1088, 300], ['keg', 1132, 304]]),
+        ...group([
+          ['crate-blue', 1226, 300, { drop: 'health' }], ['crate-v0', 2, 0, { stack: true }],
+          ['crate-long', 1286, 302],
+        ]),
         // a street lamp by the road's end (it topples, its oil burns: stage/Stage.js LAMP)
         { kind: 'lamppost', x: 1180, z: 283, drop: null },
         // a secret: tucked behind the heap of burnt timbers at the back of the road
@@ -164,15 +171,15 @@ export const STAGE_VILLAGE = {
         // a grain merchant's hand cart, left in the middle of the square when the Ashen came
         { kind: 'handcart', x: 2110, z: 404, drop: null },
         ...group([['sack', -19, 0, { stack: true }], ['sack', 20, 0, { stack: true }]]),
-        // the well's water barrels, a crate in front of them
-        ...group([['barrel-v1', 2316, 300], ['barrel-v4', 2369, 304], ['crate-v5', 2342, 324]]),
-        // a stall's stock by the far corner of the square: a box of turnips up on a crate
-        ...group([
-          ['crate-v6', 2560, 464, { drop: 'mana' }], ['crate-v4', 0, 0, { stack: true }],
-          ['crate-v0', 2507, 470], ['sack', 2612, 470], ['barrel-v3', 2476, 494],
-        ]),
-        { kind: 'chest', x: 2450, z: 300, drop: 'mana' },
+        // the well's water barrels in a row against its far side (clear of Mira and her boy,
+        // held at its front)
+        ...group([['barrel-v1', 2428, 300], ['barrel-v4', 2478, 302, { drop: 'mana' }]]),
         { kind: 'lamppost', x: 2560, z: 283, drop: null },
+        // a farmer's crates along the near edge of the square, a box of turnips up on one
+        ...group([
+          ['crate-v0', 2410, 500], ['crate-v6', 2466, 498, { drop: 'mana' }], ['crate-v4', 0, 0, { stack: true }],
+          ['sack', 2522, 504],
+        ]),
       ],
       hazards: [
         { type: 'fire', look: 'cart', x: 1900, z: 470, w: 110, d: 60, phase: 0 },
@@ -192,7 +199,8 @@ export const STAGE_VILLAGE = {
       spawns: [[{ x: 3640, z: 380, inPlace: true }, { x: 3600, z: 460, inPlace: true }]],
       props: [
         // at the foot of the climb
-        ...group([['barrel-v5', 2856, 312], ['barrel-v0', 2908, 316], ['barrel-v2', 2882, 336]]),
+        // (two water barrels against the house wall, out of the climb)
+        ...group([['barrel-v5', 2850, 300], ['barrel-v0', 2900, 302]]),
         { kind: 'barrel', x: 4240, z: 470, drop: 'health' },
         // a secret: up on the chimney, the first step to the boy (Rurik's father's ring)
         { kind: 'urn', x: 3524, z: LANE_TOP + 16, drop: 'ring', secret: true },
@@ -219,14 +227,14 @@ export const STAGE_VILLAGE = {
         // where it floated: Nick, 2026-10-24; and it's solid till smashed, the block
         // 'barnBoards' below, so nobody walks through it)
         { kind: 'barricade', tag: 'barn', x: 5500, z: 264, y: 0, opens: 'barnBoards', drop: null },
-        ...group([['crate-v6', 5620, 312, { drop: 'health' }], ['sack', 5672, 316]]),
-        // the miller's barrels at the yard's mouth, and his crates out by the gallows' corner
-        ...group([['barrel-v4', 4384, 318], ['barrel-v6', 4431, 322], ['barrel-v1', 4408, 342]]),
-        ...group([['crate-v2', 5170, 396], ['crate-v6', 4, 0, { stack: true }], ['crate-long', 5244, 404]]),
-        ...group([['sack', 5110, 300], ['sack', 5156, 304]]),
-        { kind: 'fence', x: 4820, z: 506, drop: null },
-        // the miller's hand cart, sacks of grain on it, in the yard in front of the barn
-        { kind: 'handcart', x: 5390, z: 446, drop: null },
+        // the miller's grain at the end of his mill floor: a crate with a sack up on it, and
+        // another sack, between the mill and the archers' post
+        ...group([['crate-v6', 5118, 302, { drop: 'health' }], ['sack', 0, 0, { stack: true }], ['sack', 5168, 306]]),
+        // the yard's fence along its near side, and the miller's hand cart left at its end,
+        // sacks of grain on it (out of the yard, clear of the fight and of the way to the barn)
+        { kind: 'fence', x: 4764, z: 508, drop: null },
+        { kind: 'fence', x: 4876, z: 506, drop: null },
+        { kind: 'handcart', x: 5004, z: 496, drop: null },
         ...group([['sack', -19, 0, { stack: true }], ['sack', 20, 0, { stack: true }]]),
         // the archers shooting at you since the roofs: two posts either side of the mill (the
         // right one stands clear of the gallows, the barn past it: Nick, 2026-10-23)
@@ -255,16 +263,17 @@ export const STAGE_VILLAGE = {
         { kind: 'wreckage', tag: 'stables', x: 6380, z: 300, size: 1.7, drop: null }, // (sized up to the stable gate: Nick, 2026-10-17)
         // feed barrels and a hay cart by the stables (the crates at the far end stand in the
         // herd's lane: it goes straight through them, Stage.js updateStampede)
-        ...group([['barrel-v3', 5790, 330, { drop: 'health' }], ['barrel-v5', 5844, 334], ['barrel-tar', 5816, 354]]),
+        ...group([['barrel-v3', 5800, 300, { drop: 'health' }], ['barrel-tar', 5852, 302]]),
         { kind: 'lamppost', x: 5900, z: 283, drop: null },
         // a rack by the stable wall, two kegs up in it
-        { kind: 'rack', x: 6200, z: 296, drop: null },
+        { kind: 'rack', x: 6252, z: 296, drop: null }, // (clear of the stable master, who stood right in front of it)
         ...group([['keg', -21, 0, { stack: true }], ['keg2', 21, 0, { stack: true }]]),
         { kind: 'haycart', x: 6570, z: 298, drop: null, flip: true },
-        ...group([['crate-v5', 6900, 466, { drop: 'health' }], ['crate-v0', 0, 0, { stack: true }], ['crate-v2', 6966, 474]]),
-        // a stretch of paddock fence at the near side of the yard (in the herd's lane: they go through it)
-        { kind: 'fence', x: 6740, z: 506, drop: null },
-        { kind: 'fence', x: 6852, z: 500, drop: null },
+        // a stretch of paddock fence along the near side of the yard, the stable's feed crates
+        // stacked at its end (in the herd's lane: they go through the lot)
+        { kind: 'fence', x: 6700, z: 508, drop: null },
+        { kind: 'fence', x: 6812, z: 506, drop: null },
+        ...group([['crate-v5', 6912, 500, { drop: 'health' }], ['crate-v0', 0, 0, { stack: true }], ['crate-v2', 6978, 502]]),
       ],
       hazards: [
         { type: 'fire', look: 'cart', x: 6720, z: 330, w: 100, d: 50, phase: 30 },
@@ -292,9 +301,11 @@ export const STAGE_VILLAGE = {
         // the hall's stores: a trestle by its doors, a crate and a keg on it
         { kind: 'trestle', x: 7880, z: 300, drop: null },
         ...group([['crate-v0', -24, 0, { stack: true }], ['keg2', 25, 0, { stack: true }]]),
-        // produce brought to the hall: a box of apples up on a crate, turnips beside it
-        ...group([['crate-v6', 7460, 322], ['crate-v1', 0, 0, { stack: true }], ['crate-v4', 7514, 326]]),
-        ...group([['barrel-v2', 7660, 346, { drop: 'health' }], ['barrel-v4', 7711, 350], ['barrel-v6', 7684, 370]]),
+        // produce brought to the hall, against its wall under the shields: a box of apples up
+        // on a crate, turnips beside it; its ale barrels by the doors (the doors and the floor
+        // in front of them left clear: the captain's fight is there)
+        ...group([['crate-v6', 7420, 300], ['crate-v1', 0, 0, { stack: true }], ['crate-v4', 7476, 302]]),
+        ...group([['barrel-v2', 7600, 300, { drop: 'health' }], ['barrel-v4', 7650, 302]]),
         // his archers' post at the far end of the hall
         { kind: 'archers', tag: 'hallArchers', x: 8250, z: 300, drop: null },
       ],

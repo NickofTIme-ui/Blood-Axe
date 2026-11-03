@@ -17,6 +17,11 @@ export class StableMasterView {
     const frame=stableMasterFrame(n,this.run);
     this.sprite?.setVisible(show).setFrame(frame).setPosition(n.x,n.z-n.h).setScale(k).setDepth(n.z+.03);
     this.v.shadow.setVisible(show).setPosition(n.x,n.z).setDepth(n.z-.1);
-    this.shout.setVisible(show&&n.state==='alarm').setPosition(n.x,n.z-n.h-142*k).setDepth(n.z+3);
+    // (his shout waits for the section's title card to clear: it went up right over it, the
+    // two lines on top of each other, Nick's polish pass 2026-11-03; it carries on into his
+    // first strides away, so it is still read in full)
+    const card=this.scene.scene.get('HUD')?.card,carded=card?.visible&&card.alpha>0.05;
+    const shouting=n.state==='alarm'||(n.state==='fleeing'&&n.t<100);
+    this.shout.setVisible(show&&shouting&&!carded).setPosition(n.x,n.z-n.h-142*k).setDepth(n.z+3);
   }
 }
