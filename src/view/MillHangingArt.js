@@ -17,9 +17,12 @@ export function drawMillHanging(ctx, images, seconds, options={}) {
   ctx.clearRect(0,0,960,600);
   if(!options.transparent){ctx.fillStyle='#16110d';ctx.fillRect(0,0,960,600);
   const glow=ctx.createRadialGradient(480,300,20,480,300,450);glow.addColorStop(0,'#493123');glow.addColorStop(1,'#16110d');ctx.fillStyle=glow;ctx.fillRect(0,0,960,600);}
-  ctx.drawImage(gallows,130,20,700,500);
+  // (the scaffold in the night's light, not bright fresh orange timber: Nick's level 1
+  // review, 2026-11-03. The men on it keep their own colours)
+  const WOOD='brightness(0.74) saturate(0.72)';
+  ctx.filter=WOOD;ctx.drawImage(gallows,130,20,700,500);ctx.filter='none';
   // Closed hatch is its own painted component. The open aperture belongs to scaffold.
-  if(!p.dropped){ctx.save();ctx.transform(1,0,0,.22,440,375);ctx.drawImage(mechanisms,0,0,mechanisms.width/3,mechanisms.height/2,-50,-20,220,145);ctx.restore();}
+  if(!p.dropped){ctx.save();ctx.filter=WOOD;ctx.transform(1,0,0,.22,440,375);ctx.drawImage(mechanisms,0,0,mechanisms.width/3,mechanisms.height/2,-50,-20,220,145);ctx.restore();}
   const x=490+Math.sin(p.sway)*105,neck=210+p.drop;
   if(options.rescueAge==null && !options.hideCaptive){
   // Multi-strand rope, kept attached to neck through drop/catch/sway.
@@ -62,5 +65,5 @@ export function drawMillHanging(ctx, images, seconds, options={}) {
     ctx.drawImage(im,299,156,24,200,-15*s,-202*s,24*s,200*s);ctx.restore();
   }
   // Front deck occludes the legs after they go through the hatch.
-  ctx.drawImage(gallows,0,gallows.height*.80,gallows.width,gallows.height*.20,130,20+500*.80,700,500*.20);
+  ctx.filter=WOOD;ctx.drawImage(gallows,0,gallows.height*.80,gallows.width,gallows.height*.20,130,20+500*.80,700,500*.20);ctx.filter='none';
 }

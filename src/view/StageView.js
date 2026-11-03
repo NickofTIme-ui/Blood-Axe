@@ -705,6 +705,7 @@ export class StageView {
       const T = this.scene.textures.get('lampcart-0').getSourceImage();
       // (the frame's post foot at the lamp's foot, its cart standing on the cart's line)
       const img = this.scene.add.image(L.x + 5, C.z, 'lampcart-0').setOrigin(PAIR.postX, PAIR.groundY).setScale(PAIR.scale * 256 / T.width).setDepth(C.z);
+      if (cv.light) lightProp(img, cv.light); // (in the street's light, as the cart alone is)
       const pair = { img, lamp: L, cart: C, lv, cv, state: 'standing' };
       lv.pair = pair; cv.pair = pair;
       lv.img.setVisible(false); cv.img.setVisible(false);
@@ -735,6 +736,7 @@ export class StageView {
       const left = b?.left ?? 0;
       const f = t < 350 ? 3 : t < 800 ? 4 : left < 100 ? 6 : 4 + (Math.floor(t / 260) % 2);
       this.pairFrame(pair, f);
+      if (pair.img.isTinted && f !== 6) pair.img.clearTint(); // (its own fire lights it)
       if (Math.random() < 0.12) this.scene.gore.spawn({ x: pr.x + rand(-50, 50), z: pr.z, h: rand(40, 110), vx: rand(-15, 15), vz: 0, vh: rand(60, 140), tint: 0xffa040, scale: rand(0.3, 0.6), decal: false, life: rand(25, 45) });
     }
   }
@@ -788,6 +790,9 @@ export class StageView {
     if (pr.flip) img.setFlipX(true);
     const v = { img, s };
     v.ground = groundUnder(this.scene, pr.x, pr.z - y - 2, lamp ? drawW * 0.45 : drawW * 0.75, pr.z - 1, { seed: pr.id });
+    // (the hay cart in the level's light like the crates and barrels: untinted it stood out
+    // bright and clean against the night street; Nick's level 1 review, 2026-11-03)
+    if (!lamp) { v.light = propLight(this.stage.data?.id, this.stage.sections[pr.section]?.light); lightProp(img, v.light); }
     if (lamp) {
       // (its flame lights the street round it, flickering, as the street clutter's did)
       const L = this.shatter.lanternAt(v);

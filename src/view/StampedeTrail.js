@@ -58,9 +58,18 @@ export function drawStampedeTrail(g, stage, path, state, depth, time) {
     // Chipped horseshoe print, open at the heel. Uneven sizes avoid a stamped UI row.
     const scale = (1.1 + noise(i) * 0.35) * (1 + lit * 0.15);
     const hoofPts = hoof.map(([x, y]) => point(x * scale, y * scale));
-    g.fillStyle(0x21130d, alpha * 0.8).fillEllipse(at.x - uz * off, at.z + ux * off + 2, 36, 15);
-    if (lit > 0.05) g.fillStyle(0xff8a3a, lit * 0.35).fillEllipse(at.x - uz * off, at.z + ux * off, 30, 12);
-    g.fillStyle(lit > 0.5 ? 0xe0a060 : 0xb07a48, alpha).fillPoints(hoofPts, true);
-    g.lineStyle(1.5, 0x68452e, alpha).lineBetween(...[point(-9, -7), point(-17 - noise(i + 8) * 8, -5)].flatMap(p => [p.x, p.y]));
+    // Pressed INTO the mud, not laid on it (Nick's level 1 review, 2026-11-03: the flat tan
+    // shoes read as stickers): a scuffed dark smear, a lit lip thrown up on the far side, the
+    // print itself a dark hollow, and inside it embers that smoulder as the light passes.
+    const lift = (pts, dy) => pts.map(p => ({ x: p.x, y: p.y + dy }));
+    g.fillStyle(0x1a0e08, alpha * 0.55).fillEllipse(at.x - uz * off - ux * 4, at.z + ux * off + 2, 34, 12);
+    g.fillStyle(0x7a4a2a, alpha * (0.45 + lit * 0.4)).fillPoints(lift(hoofPts, -1.5), true);
+    g.fillStyle(0x0d0604, Math.min(1, alpha * 1.25)).fillPoints(hoofPts, true);
+    const glow = Math.max(lit, warn ? urgency * 0.25 : 0);
+    if (glow > 0.05) {
+      const inner = hoof.map(([x, y]) => point(x * scale * 0.6, y * scale * 0.6));
+      g.fillStyle(lit > 0.5 ? 0xff7a2a : 0xb8361a, glow * 0.7).fillPoints(inner, true);
+    }
+    g.lineStyle(2, 0x0d0604, alpha * 0.6).lineBetween(...[point(-9, -7), point(-17 - noise(i + 8) * 8, -5)].flatMap(p => [p.x, p.y]));
   }
 }

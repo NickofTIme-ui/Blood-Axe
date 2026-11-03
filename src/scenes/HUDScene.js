@@ -258,7 +258,7 @@ export class HUDScene extends Phaser.Scene {
       // (a fight on: the slim strip; held scenes and quiet ground: the full box)
       const fight = !hold && (this.arena.stage.livingFoes?.().length ?? 0) > 0;
       D.show(line.who, line.text, fight ? 'compact' : 'full',
-        line.hold ? 'CLICK / D-PAD ▶ / N  next     D-PAD ◀ / X  skip     (or SPACE / J)' : 'CLICK / D-PAD ▶ / N  next     D-PAD ◀ / X  skip');
+        line.hold ? '▶ / N / SPACE  next     ◀ / X  skip' : '▶ / N  next     ◀ / X  skip');
       // (hung under the speaker's feet when he's on screen: view/SpeakerMarker.js screenAt)
       D.place(this.arena.speakerMarker?.screenAt() ?? null);
       D.setAlpha(Math.min(1, D.alpha + 0.15));
@@ -498,6 +498,9 @@ export class HUDScene extends Phaser.Scene {
     const p = arena.player;
     const onScreen = arena.world.fighters
       .filter((f) => f.team === 'enemy' && f.alive && !f.cinematic && f.x > view.x - 20 && f.x < view.right + 20)
+      // only the man you're hitting, and the named ones (bosses, a section's champion):
+      // a bar for every grunt on screen was a row of clutter (Nick's level 1 review, 2026-11-03)
+      .filter((f) => f.id === this.focusId || f.stats.boss || f.stats.named)
       .sort((a, b) => (a.id === this.focusId ? -1 : b.id === this.focusId ? 1 : Math.abs(a.x - p.x) - Math.abs(b.x - p.x)))
       .slice(0, MAX_ENEMY_BARS);
     for (let i = 0; i < Math.max(onScreen.length, this.enemyBars.length); i++) {

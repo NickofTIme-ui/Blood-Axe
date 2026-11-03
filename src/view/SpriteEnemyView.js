@@ -23,7 +23,7 @@ import { IMPALE } from '../combat/Finisher.js';
 // yoked: past this much of the lift he's drawn with his painted overhead struggle, laid flat
 const GRAB_FLAT = 0.7; // (the shock of being seized holds for most of the hoist)
 import { BodyFeel, easedSpread, swingBody } from './animFeel.js';
-import { DANGER, dangerGlint, isDanger } from './dangerCue.js';
+import { dangerEdge, dangerGlint, isDanger } from './dangerCue.js';
 import { SENTENCE } from '../stage/Sentence.js';
 import { dyeImage } from './dye.js';
 
@@ -327,21 +327,23 @@ export class SpriteEnemyView {
     const s = this.sprite;
     const m = f.move;
     s.clearTint();
+    const winding = ATTACKS.includes(st) && m && isDanger(st, m) && fr <= m.startup;
+    dangerEdge(s, winding && !(f.flash > 0) && Math.floor(fr / 3) % 2 === 0);
     if (f.flash > 0) {
       if (f.flash === 6 && this.prevFlash !== 6) this.flashAge = 0;
       this.flashAge = (this.flashAge ?? 0) + 1;
       if (this.flashAge <= 4 || (f.hitstop === 0 && P.age % 4 < 2)) s.setTintFill(0xffffff);
       else s.setTint(0xff8a7a);
-    } else if (ATTACKS.includes(st) && m && isDanger(st, m) && fr <= m.startup && Math.floor(fr / 3) % 2 === 0) {
-      s.setTint(DANGER.tint);
+    } else if (winding) {
+      // (the red edge, set above)
     } else if ((st === 'stagger' || st === 'guardBreak') && Math.floor(fr / 4) % 2 === 0) {
       s.setTint(0xffe080);
     }
     // ...and the danger glint at its start (view/dangerCue.js): a shape, not only a colour;
     // a plain swing gets the small tell (each new swing, a combo's next cut too)
-    const winding = ATTACKS.includes(st) && m && fr <= m.startup && f.team !== 'player';
-    const swing = winding ? f.fsm.enterCount : null;
-    if (winding && swing !== this.wasWinding && f.alive) dangerGlint(this.scene, f, m.startup, !isDanger(st, m));
+    const swingUp = ATTACKS.includes(st) && m && fr <= m.startup && f.team !== 'player';
+    const swing = swingUp ? f.fsm.enterCount : null;
+    if (swingUp && swing !== this.wasWinding && f.alive) dangerGlint(this.scene, f, m.startup, !isDanger(st, m));
     this.wasWinding = swing;
     this.prevFlash = f.flash;
     // scorched / roasting / charred (effects/Burn.js): his own art, darkened in stages,

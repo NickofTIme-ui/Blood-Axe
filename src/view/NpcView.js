@@ -600,10 +600,14 @@ export class NpcView {
     // bubble bobbing over his head, so he's seen from across the street
     if (!n.act && this.hasWord(n)) {
       const by = y - 140 + 4 * Math.sin(this.scene.time.now * 0.004);
-      m.fillStyle(0x000000, 0.85).fillRoundedRect(n.x - 21, by - 15, 42, 26, 9).fillTriangle(n.x - 7, by + 9, n.x + 5, by + 9, n.x - 4, by + 19);
-      m.fillStyle(0xf6ead0, 1).fillRoundedRect(n.x - 18, by - 12, 36, 20, 7).fillTriangle(n.x - 5, by + 6, n.x + 3, by + 6, n.x - 3, by + 14);
-      m.fillStyle(0x2a2018, 1);
-      for (let i = -1; i <= 1; i++) m.fillCircle(n.x + i * 9, by - 2, 2.6);
+      // (a scrap of old parchment, not a white cartoon bubble: Nick's level 1 review,
+      // 2026-11-03) dark ink edge, aged paper with a shaded lower half, ink dots
+      m.fillStyle(0x1a0f08, 0.8).fillRoundedRect(n.x - 20, by - 14, 40, 24, 4).fillTriangle(n.x - 7, by + 8, n.x + 4, by + 8, n.x - 5, by + 17);
+      m.fillStyle(0xc9b083, 1).fillRoundedRect(n.x - 18, by - 12, 36, 20, 3).fillTriangle(n.x - 5, by + 6, n.x + 2, by + 6, n.x - 4, by + 13);
+      m.fillStyle(0xa88c60, 1).fillRect(n.x - 18, by + 2, 36, 5);
+      m.fillStyle(0xe2cfa3, 1).fillRect(n.x - 16, by - 11, 32, 2);
+      m.fillStyle(0x3a2414, 1);
+      for (let i = -1; i <= 1; i++) m.fillEllipse(n.x + i * 9, by - 2, 4.6, 3.6);
     }
     if (q?.kind === 'open' && n.pick > 0) bar(n.pick / (n.hold ?? NPC.pick), 0xd8b04a);
     else if (n.rescue === 'execution' && n.state === 'threatened' && n.clock > 0) bar(1 - n.clock / (n.time ?? 900), 0xd04030); // the rope

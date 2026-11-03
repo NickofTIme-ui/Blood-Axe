@@ -36,12 +36,14 @@ export const MOB = [
   // pace: how far he walks to and fro; rest: frames he stands at each end; turn: the
   // frame he squares up to the heroes; shift: frames between his weight shifts after that;
   // delay/speed: his charge; hold: frames he waits after the heroes are let go (rear rank)
-  { x:598, z:452, look:-1, pace:22, rest:20, turn:34, shift:70, delay:0,  speed:4.4 },
-  { x:631, z:371, look: 1, pace:0,  rest:0,  turn:52, shift:95, delay:6,  speed:3.7 },
-  { x:654, z:316, look: 1, pace:34, rest:14, turn:66, shift:83, delay:11, speed:4.0 },
-  { x:690, z:476, look:-1, pace:16, rest:30, turn:44, shift:110, hold:16 },
-  { x:716, z:401, look: 1, pace:0,  rest:0,  turn:72, shift:77, hold:29 },
-  { x:744, z:333, look:-1, pace:26, rest:24, turn:58, shift:101, hold:41 },
+  // (opened out, Nick's level 1 review 2026-11-03: the six stood in one pile with the two
+  // commanders; now a looser mob with room between men, the commanders clear behind it)
+  { x:548, z:470, look:-1, pace:22, rest:20, turn:34, shift:70, delay:0,  speed:4.4 },
+  { x:592, z:376, look: 1, pace:0,  rest:0,  turn:52, shift:95, delay:6,  speed:3.7 },
+  { x:626, z:300, look: 1, pace:34, rest:14, turn:66, shift:83, delay:11, speed:4.0 },
+  { x:668, z:498, look:-1, pace:16, rest:30, turn:44, shift:110, hold:16 },
+  { x:690, z:420, look: 1, pace:0,  rest:0,  turn:72, shift:77, hold:29 },
+  { x:716, z:342, look:-1, pace:26, rest:24, turn:58, shift:101, hold:41 },
 ];
 
 export class VillageOpening {
