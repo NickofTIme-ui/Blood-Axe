@@ -23,6 +23,9 @@ export const STEP = 10;          // px a man walks up without a jump
 export const PIT_FLOOR = -2000;  // "ground" in a pit
 export const PIT_LOST = -160;    // fallen this far below the floor: out of the fight
 const EDGE = 8;                  // how close a man gets to a wall (px)
+// the lane's old edges, which the stages' ledges and pits are laid against (stage/Stage.js LANE_TOP)
+const OLD_BACK = 282;
+const OLD_FRONT = 520;
 export const FOOT = 5;           // feet are this wide each side: a man a few px past a ledge's edge still stands on it
 
 export class Terrain {
@@ -31,7 +34,14 @@ export class Terrain {
     this.blocks = [];
     this.pits = [];
     let id = 1;
-    for (const d of defs) {
+    // a piece laid to the lane's old back (floorTop) or front (floorBottom) edge reaches the
+    // lane's real edges, so nobody walks round behind a ledge or past the end of a pit
+    const B = world.bounds;
+    const edge = (d) => (d.z0 === OLD_BACK || d.z1 === OLD_FRONT
+      ? { ...d, z0: d.z0 === OLD_BACK ? Math.min(d.z0, B.minZ) : d.z0, z1: d.z1 === OLD_FRONT ? Math.max(d.z1, B.maxZ) : d.z1 }
+      : d);
+    for (const raw of defs) {
+      const d = edge(raw);
       if (d.kind === 'pit') { this.pits.push({ id: id++, ...d }); continue; }
       const b = { id: id++, kind: d.kind ?? 'block', ...d, base: { x0: d.x0, x1: d.x1, top: d.top }, solid: true, dx: 0, dtop: 0 };
       if (b.kind === 'crumble') { b.fall = d.fall ?? 32; b.back = d.back ?? 240; b.shake = 0; b.down = 0; }
