@@ -41,14 +41,21 @@
 //                    10% more, 0 = all the same
 //     dyes           colours his clothes can be dyed (view/dye.js), null = as painted
 
+// WINDUP_EXTRA (Nick, 2026-11-03: "the hits come too fast", more time to block): every
+// enemy wind-up below is lengthened by this many frames when the file loads (150 ms), and
+// its combo windows move with it, so the numbers written here keep their rhythm (a cut
+// "held back a beat" is still held back) and the pass at the end of this file does the rest.
+export const WINDUP_EXTRA = 9;
+
 // TELEGRAPH (Nick, 2026-10-26: "every attack has a brief second you can roll or block"):
 // the shortest wind-up (startup frames, 60 a second) any enemy swing may have, so the
 // pose, and the small tell or the red danger glint (view/dangerCue.js), give you time to
-// answer. A swing he opens with: 21 (350 ms). A combo's next cut, already coming at you:
-// 18 (300 ms). One that breaks a guard or can't be blocked: 30 (500 ms). A combo's next
+// answer. A swing he opens with: 30 (500 ms). A combo's next cut, already coming at you:
+// 27 (450 ms). One that breaks a guard or can't be blocked: 39 (650 ms). (Raised by
+// WINDUP_EXTRA on 2026-11-03 from 21 / 18 / 30.) A combo's next
 // cut comes only after the last one has struck (its chain opens after the active frames),
 // never cut in over a wind-up. Enforced by tests/enemy-telegraph-test.js.
-export const TELEGRAPH = { open: 21, follow: 18, heavy: 30 };
+export const TELEGRAPH = { open: 30, follow: 27, heavy: 39 };
 
 // Shared physics for all humanoid enemies.
 const BASE = {
@@ -875,3 +882,17 @@ ENEMIES.executioner={...ENEMIES.butcher,id:'executioner',name:'The Hangman',titl
   ai:{...ENEMIES.butcher.ai,attackRange:80,maxCrowd:9,threatRange:140,attackCooldown:[20,46],
     heavyChance:0.3,comboChance:0.75,blockChance:0.3,specialEvery:24,
     specials:[{press:'special1',min:110,max:230,chance:0.5}]}};
+
+// The longer wind-ups (WINDUP_EXTRA, top of the file): each move once (the thrall and the
+// hangman share moves with the grunt and the butcher), its combo window moved by the same.
+{
+  const done = new Set();
+  for (const e of Object.values(ENEMIES)) {
+    for (const m of Object.values(e.moves ?? {})) {
+      if (done.has(m) || typeof m.startup !== 'number') continue;
+      done.add(m);
+      m.startup += WINDUP_EXTRA;
+      for (const c of m.chains ?? []) { c.from += WINDUP_EXTRA; c.to += WINDUP_EXTRA; }
+    }
+  }
+}
