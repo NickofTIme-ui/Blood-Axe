@@ -6,6 +6,12 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 3 November 2026 (cloud, Nick: "push and merge all"): ON MAIN now, not on itch: props rounds 1-4
+  (`claude/project-thread-b5hipz` ea6eb64), grab and throw rounds 1-2 (`claude/project-thread-98rwfm`
+  7a3e22f), Hale the smith (`claude/project-thread-iyr5y2` 20a34de), bloodied Ulric v3
+  (`claude/project-thread-m9afol` f53e514), on top of the boss-body fix and quieter sprint steps.
+  The notes below that say "NOT on main" for these branches are out of date. npm test passes.
+
 - 2 November 2026 (cloud, branch `claude/project-thread-98rwfm` on top of the props branch
   `claude/project-thread-b5hipz` + main, NOT on main, not on itch): GRAB AND THROW. D-pad right
   (F on the keys, NUM 9 for keyboard player 2) grabs the man in front (`combat/Grab.js`; no
