@@ -169,7 +169,7 @@ export class SpriteEnemyView {
       case 'grabbed':
         // by the neck: frog-marched on his toes, flailing (his own strip), else his shocked
         // seized pose (feet off the ground), else his walk
-        if (f.byNeck) return A.marched ? loop(A.marched) : A.seized ? A.seized.frames[0] : loop({ ...A.walk, fps: 16 });
+        if (f.byNeck) return A.marched ? (fr < 12 ? A.nabbed.frames[0] : loop(A.marched)) : A.seized ? A.seized.frames[0] : loop({ ...A.walk, fps: 16 });
         // yoked: seized (the shock), then struggling overhead, when painted (grabSpin lays it flat)
         if (A.struggle) return (f.grabRot ?? 0) < GRAB_FLAT ? A.seized.frames[0] : loop(A.struggle);
         return A.idle.frames[0];

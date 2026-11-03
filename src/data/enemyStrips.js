@@ -153,7 +153,7 @@ for (const id of ['grunt', 'stalker', 'butcher', 'ghoul', 'penitent', 'berserker
 }
 // by the scruff (the bouncer's grip): 0 stance, 1 seized from behind, 2-5 frog-marched on his
 // toes, flailing (a loop). Listed once painted; until then the neck grab shows his seized pose
-const SCRUFF_DRAWN = [];
+const SCRUFF_DRAWN = ['grunt', 'stalker', 'butcher', 'ghoul', 'penitent', 'berserker', 'gladiator']; // ChatGPT, 2026-11-03
 for (const id of SCRUFF_DRAWN) {
   ENEMY_STRIPS[id].scruff = { file: `${DIR}/${id}_scruff.png`, frames: 6, ref: 0, optional: true };
 }
@@ -191,6 +191,7 @@ const COMMON = {
   // yoked up, when painted: the shock of being seized, then the struggle overhead
   seized: { needs: ['held'], frames: seq('held', [1]) },
   struggle: { needs: ['held'], frames: seq('held', [2, 3, 4, 5]), fps: 9, loop: true },
+  nabbed: { needs: ['scruff'], frames: seq('scruff', [1]) },
   marched: { needs: ['scruff'], frames: seq('scruff', [2, 3, 4, 5]), fps: 10, loop: true },
 };
 

@@ -38,6 +38,12 @@ branch, or ChatGPT's work gets lost.
   his back, head right, kicking and screaming; anims `seized` / `struggle`). SpriteEnemyView:
   past half the lift (`GRAB_FLAT`) he's drawn with the struggle loop laid across the shoulders,
   head the way the hero faces. Without the strip the old turned stance stays.
+  Round 4 (Nick: "many enemies did not react"): the neck grab (stick toward him as you grab)
+  used his plain walk. Now `<id>_scruff.png` for all 7 (0 stance, 1 nabbed from behind, 2-5
+  frog-marched on his toes, flailing; anims `nabbed` / `marched`, listed in SCRUFF_DRAWN), and
+  the yoke's shock holds to 70% of the hoist (GRAB_FLAT). Hounds (paper doll, no painted
+  strips) still have no reaction. Cloud headless test: the full boot needs ~11 GB, block
+  unneeded assets with page.route.
 - 2 November 2026, round 4 (cloud, same branch, NOT on main): clusters rebuilt (Nick: "a case of
   tomatoes hanging halfway off a barrel"). data/stage.js PROP_LOOKS: each painted look's height,
   width/height, `top` (where a thing stood on it rests), `open`/`round` (nothing stands on it).
