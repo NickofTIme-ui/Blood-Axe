@@ -15,6 +15,9 @@ branch, or ChatGPT's work gets lost.
   roof_gap.png under the roofs' gaps (TerrainView burningCellar), chimney_cap.png for the boy's three
   chimney steps (drawChimney), smaller paving in ground_hall.jpg / ground_church.jpg (replaced),
   fg.png foreground strip along the bottom of the screen (VillageView drawForeground).
+- 3 November 2026 (cloud, Nick: "push"): archer posts shoot 40% slower (ARROW_SLOW 1.4 on the
+  gap between arrow volleys, src/stage/Stage.js) and their volley sound is 20% louder
+  (VOLLEY_GAIN, src/core/BattlefieldAudio.js). ON MAIN, not on itch yet.
 - 3 November 2026 (cloud, Nick: "push all"): rank screen (rmac4e 877a20e) and level 1 art review
   fixes (kfk79v 21f7db7) MERGED TO MAIN. NOT on itch yet.
 - 3 November 2026 (cloud, `claude/project-thread-rmac4e`, now ON MAIN, not on itch):
