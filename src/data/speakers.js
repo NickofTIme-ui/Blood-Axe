@@ -48,7 +48,10 @@ export const SPEAKERS = {
   MIRA: { name: 'Mira' },
   TAM: { name: 'Tam' },
   BRANN: { name: 'Brann' },
-  HAKON: { name: 'Hakon' },
+  // Rurik's father, the Oath King (not King Vaurath, the Ashen Crown): crowned and fighting
+  // in the square (KING, his battle portrait), dying at the church (HAKON, his dying face)
+  HAKON: { name: 'King Hakon' },
+  KING: { name: 'King Hakon', portrait: 'king' },
   JOREN: { name: 'Joren' },
   WENNA: { name: 'Wenna' },
   ANSEL: { name: 'Ansel' },

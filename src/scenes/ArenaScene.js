@@ -60,6 +60,7 @@ import { runTickJobs } from '../core/TickJobs.js';
 import { styleMult } from '../combat/Style.js';
 import { TROPHIES, RARITY, LOOT, pickTrophy } from '../data/trophies.js';
 import { TEST, toggleTestMode, applyTestMode, levelAfter, showTestTag } from '../config/testMode.js';
+import { KingView } from '../view/KingView.js';
 import { BirthrightArt } from '../view/BirthrightArt.js';
 import { TestNavigator, makePreviewProgress } from '../view/TestNavigator.js';
 
@@ -472,6 +473,7 @@ export class ArenaScene extends Phaser.Scene {
     this.terrainView = this.stage.terrain || this.stageData.theme ? new TerrainView(this, this.stage) : null;
     // a campaign level's villagers, its dead and the other Oath Keepers (view/NpcView.js)
     this.npcView = this.stage.story ? new NpcView(this, this.stage) : null;
+    if (this.stageData.king) this.setupKing(this.world.events); // (King Hakon in the square: stage/KingHakon.js)
     // warm firelight on the fighters near the village's fires (view/FireLight.js)
     this.fireLight = this.stage.data?.firelight ? new FireLight(this, this.stage) : null;
     this.speakerMarker = this.stage.story ? new SpeakerMarker(this) : null; // over whoever is talking
@@ -1050,6 +1052,25 @@ export class ArenaScene extends Phaser.Scene {
   // line he takes it the blade wakes: a column of fire round him, a white-gold flash, the
   // ground shaking, its name over the screen, and he stands there with Oathkeeper in his
   // hand (his look and his fire change on the spot: Progress.statsFor).
+  // KING HAKON, the Oath King, in the market square (stage/KingHakon.js, view/KingView.js):
+  // his name over the screen, the weight of every cut (the frame shakes, the fire roars),
+  // the last man taken in slow motion, and his roar over the dead
+  setupKing(ev) {
+    this.kingView = new KingView(this);
+    const cam = this.cameras.main;
+    ev.on('kingMet', () => { cam.zoomTo(this.baseZoom * 1.06, 1400, 'Sine.easeInOut', true); });
+    ev.on('kingCard', () => this.scene.get('HUD')?.kingCard?.());
+    ev.on('kingSwing', ({ move }) => playSfx(this, move === 'kick' ? 'kick' : 'heavySwing', { volume: 0.85, minGapMs: 0 }));
+    ev.on('kingStrike', ({ move, last }) => {
+      playSfx(this, move === 'kick' ? 'impaleKick' : 'fireImpact', { volume: 0.9, minGapMs: 0 });
+      playSfx(this, 'fireWhoosh', { volume: 0.6, minGapMs: 0 });
+      this.fx.shake(last ? 12 : 8, last ? 24 : 14);
+      if (last) { this.slowmo(0.25, 1400); cam.flash(160, 255, 200, 120); }
+    });
+    ev.on('kingRoar', () => { this.fx.shake(5, 40); playSfx(this, 'fireImpact', { volume: 0.7, pitch: -500, minGapMs: 0 }); });
+    ev.on('kingLeaves', () => cam.zoomTo(this.baseZoom, 1200, 'Sine.easeInOut', true));
+  }
+
   setupBirthright(ev) {
     this.birthrightArt = new BirthrightArt(this);
     this.events.once('shutdown',()=>this.birthrightArt.clear());
@@ -1693,6 +1714,7 @@ export class ArenaScene extends Phaser.Scene {
     this.liftShadows();
     this.terrainView?.update();
     this.npcView?.update();
+    this.kingView?.draw(this.stage.king);
     this.speakerMarker?.update();
     this.parallax.update(Math.min(delta, 100) / 1000 * (this.paused ? 0 : 1));
     this.mageFX.update();
@@ -1829,6 +1851,7 @@ export class ArenaScene extends Phaser.Scene {
     const S = this.stage.sentence;
     const pair = S?.running && S.boss && S.hero;
     if (pair) x = (S.boss.x + S.hero.x) / 2;
+    else if (this.stage.king?.cinema) x = this.stage.king.focusX(this.player.x); // (the king's fight: him and his son both in view)
     else if (this.mode === 'local' && up.length) x = up.reduce((s, p) => s + p.x, 0) / up.length;
     else x = (this.player.alive || !up.length ? this.player : up[0]).x;
     // a tall stage: the camera rises with the ground under you (not with every jump), with

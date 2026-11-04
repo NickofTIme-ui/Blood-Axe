@@ -256,7 +256,8 @@ export class HUDScene extends Phaser.Scene {
     const D = this.dialogue;
     const story = this.arena.stage?.story;
     const line = story?.line;
-    const hold = !!story?.holding;
+    const hold = !!story?.holding || !!this.arena.stage?.king?.cinema; // (King Hakon's fight: the letterbox too)
+    if (this.arena.stage?.king?.cinema) this.go?.setVisible(false); // (and no GO over it)
     for (const b of this.bars2) b.setAlpha(Phaser.Math.Linear(b.alpha, hold ? 1 : 0, 0.12));
     if (!line || !line.text.trim()) D.setAlpha(Math.max(0, D.alpha - 0.08));
     else {
@@ -286,6 +287,23 @@ export class HUDScene extends Phaser.Scene {
       t.setAlpha(0).setScale(1.08);
       this.tweens.add({ targets: t, alpha: 1, scale: 1, duration: 600, ease: 'Sine.easeOut' });
       this.tweens.add({ targets: t, alpha: 0, delay: 2400, duration: 700 });
+    }
+  }
+
+  // King Hakon's name over the screen as he fights (stage/KingHakon.js): gold, not the
+  // red of a section or a boss
+  kingCard() {
+    const W = SETTINGS.width, H = SETTINGS.height;
+    this.kingTitle ??= this.add.text(W / 2, H * 0.2, 'HAKON', { fontFamily: FONT.display, fontSize: '56px', align: 'center' }).setOrigin(0.5).setDepth(60);
+    this.kingSub ??= this.add.text(W / 2, H * 0.2 + 46, 'THE OATH KING  ·  RURIK\'S FATHER', { fontFamily: FONT.display, fontSize: '18px', color: '#f4dca0', align: 'center' }).setOrigin(0.5).setDepth(60);
+    this.kingTitle.setLetterSpacing?.(8); this.kingSub.setLetterSpacing?.(3);
+    epicFill(this.kingTitle, ['#fff4c8', '#ffc040', '#8a5208']);
+    for (const t of [this.kingTitle, this.kingSub]) {
+      t.setStroke('#1a0c00', 6).setShadow(0, 3, '#000', 8, true, true);
+      this.tweens.killTweensOf(t);
+      t.setAlpha(0).setScale(1.12);
+      this.tweens.add({ targets: t, alpha: 1, scale: 1, duration: 700, ease: 'Sine.easeOut' });
+      this.tweens.add({ targets: t, alpha: 0, delay: 3400, duration: 900 });
     }
   }
 

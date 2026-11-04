@@ -35,6 +35,12 @@ and execution sequence, the epilogue.
   a black greatsword, ash-and-ember sorcery. His Ashen Grunts burned the village. His power
   is shown in the first cutaway: ember-fire gathered in one hand, then a wave of ash that
   puts out every torch in the hall. Until his art exists he is a code-drawn stand-in.
+- **Rurik's father is King Hakon, the Oath King** (Nick, 2026-11-04): the king the Oath
+  Keepers are sworn to, a different king from the villain King Vaurath, the Ashen Crown.
+  In level 1 Rurik meets him holding the market square alone (a real fight he wins:
+  stage/KingHakon.js, view/KingView.js); they part, swearing to meet at the church, where
+  he dies giving Rurik Oathkeeper. In dialogue he is `KING` in the square (crowned battle
+  portrait) and `HAKON` at the church (his dying face); both print "King Hakon".
 - **Warlord Malgor is the king's champion**, not the king: he stands at the throne in the
   cutaways and is fought at the Iron Gates as **the Iron Marshal** (his art, walk-in and
   Earthbreaker slam are reused). The Oath Road's throne fight stays as it is.
@@ -85,7 +91,7 @@ big fight.
 | § | Section | Content |
 |---|---|---|
 | I | THE ASHEN ROAD | Arrival. The three see the smoke (opening lines); the other two split off to search. A fallen cart and a beam to hop. Dead villagers along the road. Hale the smith, wounded, tells what happened. Looters at the end. |
-| II | THE MARKET SQUARE | Ashen men are harassing a mother and child at the well (defend rescue). Burning carts erupt like fire grates. An oath shrine at the far side. |
+| II | THE MARKET SQUARE | **King Hakon**, Rurik's father, holds the way into the square against six Ashen men and cuts them all down; father and son part (Mira's cry from the well), swearing to meet at the church. Then: Ashen men are harassing a mother and child at the well (defend rescue). Burning carts erupt like fire grates. An oath shrine at the far side. |
 | III | THE BURNING ROOFS | Up a cart onto the roofs, along a fallen beam, over burning cellars on charred boards that give way, a beam crashing down (taught alone, on safe ground). Two men waiting on the second roof: a fight on a ledge over the fire. Optional: a high roof where a boy is trapped. |
 | IV | THE MILL YARD | A brawl round a raised mill floor; the barn door is pinned by a burning beam (break it: the villagers inside run free). Then the rear guard, Brother Cinder, walks in. |
 | V | THE BURNING STABLES | Three waves round the burning stables. Smash the bar off the stable gate and the horses bolt across the yard in three lanes, each warned by dust and hoofprints, trampling Ashen men and heroes alike. |

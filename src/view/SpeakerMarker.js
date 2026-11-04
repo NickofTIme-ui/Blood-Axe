@@ -15,6 +15,7 @@ import { speakerSide } from '../data/speakers.js';
 // who's speaking: each voice its own colour (the Oath Keepers as their kits; enemies hot; the king cold)
 export const SPEAKER = {
   RURIK: '#f0d0a0', ORYN: '#8ad8e8', VEXA: '#d49aff',
+  KING: '#ffd27a', HAKON: '#ffd27a', // (Rurik's father, the Oath King: gold)
   VAREK: '#ff8a6a', CINDER: '#ff8a6a', MALGOR: '#b8a0ff',
 };
 export const speakerColor = (who) => SPEAKER[who] ?? '#d8d0c0';
@@ -37,6 +38,9 @@ export class SpeakerMarker {
   // where the voice's head is now (null: nobody on screen owns it)
   find(who) {
     const s = this.scene;
+    // King Hakon in the square (stage/KingHakon.js): his head, over his crown
+    const K = s.stage?.king;
+    if (who === 'KING' && K && K.phase !== 'gone') return { x: K.x, y: K.z - K.h - HEAD * 1.3, feet: K.z };
     const fighters = [...s.players, ...s.world.fighters.filter((f) => f.team !== 'player' && f.alive)];
     const f = fighters.find((q) => owns(q.stats.name, who))
       ?? s.npcView?.companions?.find((c) => c.mode !== 'gone' && owns(c.f.stats.name, who))?.f;
