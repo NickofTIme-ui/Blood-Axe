@@ -6,6 +6,18 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 4 November 2026 (cloud): ITCH'S 1000-FILE LIMIT. itch refuses to unpack an HTML zip with more than
+  1000 files; with Vexa's art the build had 1097 (upload 20285996 broke the page). Fix: the release
+  now ships ONE code file, `dist/game.js` (esbuild bundle of src/, made by `npm run bundle` =
+  tools/bundle-game.mjs), instead of the ~186 files of src/: 912 files. `dist/game.js` carries a
+  hash of src/ on its first line; `npm test` (tests/bundle-fresh-test.js) fails until you re-run
+  `npm run bundle` after ANY change in src/, so commit the fresh bundle with every code change.
+  tools/build-release.py (python, the PC build) uses the bundle only when its hash matches src/
+  (line endings ignored), else warns and ships src/; it STOPS before zipping when the build has more
+  than 1000 files. The .ps1 build does not bundle: keep using the python one. If ChatGPT/Codex edits
+  src/ on the PC, the bundle goes stale there and the PC can't re-bundle (no npm): send src to the
+  cloud to bundle and push.
+
 - 4 November 2026 (PC, branch `claude/vexa-art`, bundled in three parts; cloud fetched them and
   fast-forwarded main to b89a4ae, Nick: "push all merge all update itch"; itch upload started from
   this main): VEXA'S SECOND SET PAINTED (docs/rogue-art-prompts.md jobs 11-20,

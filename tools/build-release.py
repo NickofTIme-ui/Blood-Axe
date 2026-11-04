@@ -10,8 +10,25 @@ parallax layers, the Warlord strips and the earth-wall strip.
 
 Needs Pillow (pip install pillow).  Usage: python3 tools/build-release.py [--quality 93]
 """
-import argparse, io, os, re, shutil, time, zipfile
+import argparse, hashlib, io, os, re, shutil, time, zipfile
 from PIL import Image
+
+ITCH_FILE_LIMIT = 1000  # itch.io refuses to unpack an HTML zip with more files
+
+def src_hash(root):
+    """Same fingerprint as tools/src-hash.mjs (line endings ignored)."""
+    src = os.path.join(root, 'src')
+    files = []
+    for dirpath, _, names in os.walk(src):
+        for n in names:
+            files.append(os.path.relpath(os.path.join(dirpath, n), src).replace(os.sep, '/'))
+    h = hashlib.sha256()
+    for rel in sorted(files):
+        h.update((rel + '\n').encode())
+        with open(os.path.join(src, rel), encoding='utf-8', newline='') as f:
+            h.update(f.read().replace('\r\n', '\n').encode())
+        h.update(b'\n\0\n')
+    return h.hexdigest()
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--quality', type=int, default=93)
@@ -32,10 +49,29 @@ with open(os.path.join(root, 'index.html'), encoding='utf-8') as f:
 stamp = int(time.time() * 1000)
 if 'window.BUILD_TIME = 0;' not in html:
     raise SystemExit('index.html has no "window.BUILD_TIME = 0;" to stamp')
-with open(os.path.join(stage, 'index.html'), 'w', encoding='utf-8', newline='') as f:
-    f.write(html.replace('window.BUILD_TIME = 0;', f'window.BUILD_TIME = {stamp};'))
+html = html.replace('window.BUILD_TIME = 0;', f'window.BUILD_TIME = {stamp};')
 
-for d in ('src', 'lib', 'assets'):
+# Ship the one-file bundle dist/game.js (tools/bundle-game.mjs) instead of the ~190 files
+# of src/, which keeps the build under itch's 1000-file limit. Only if it was bundled
+# from this exact src/; otherwise fall back to src/ and say so.
+bundle = os.path.join(root, 'dist', 'game.js')
+use_bundle = False
+if os.path.exists(bundle):
+    with open(bundle, encoding='utf-8') as f:
+        first = f.readline().strip()
+    use_bundle = first == f'// src-hash: {src_hash(root)}'
+    if not use_bundle:
+        print('WARNING: dist/game.js is older than src/ (re-run: npm run bundle). Shipping src/ instead.')
+if use_bundle:
+    if 'src="src/main.js"' not in html:
+        raise SystemExit('index.html has no src="src/main.js" to point at the bundle')
+    html = html.replace('src="src/main.js"', 'src="game.js"')
+    shutil.copy2(bundle, os.path.join(stage, 'game.js'))
+    print('code: dist/game.js (one file)')
+with open(os.path.join(stage, 'index.html'), 'w', encoding='utf-8', newline='') as f:
+    f.write(html)
+
+for d in (('lib', 'assets') if use_bundle else ('src', 'lib', 'assets')):
     shutil.copytree(os.path.join(root, d), os.path.join(stage, d),
                     ignore=shutil.ignore_patterns('incoming'))
 # BootScene reads this palette at runtime when it cuts the character strips.
@@ -98,6 +134,12 @@ for dirpath, _, files in os.walk(os.path.join(stage, 'assets')):
         after += os.path.getsize(p)
 print(f'{shrunk} PNGs losslessly shrunk')
 print(f'{n} PNGs re-encoded: {before / 2**20:.1f} MB -> {after / 2**20:.1f} MB')
+
+count = sum(len(files) for _, _, files in os.walk(stage))
+print(f'{count} files (itch limit {ITCH_FILE_LIMIT})')
+if count > ITCH_FILE_LIMIT:
+    raise SystemExit(f'STOP: {count} files is over itch\'s {ITCH_FILE_LIMIT}-file limit; itch would '
+                     'refuse to unpack this zip. Bundle the code (npm run bundle) or cut files.')
 
 if os.path.exists(zip_path):
     os.remove(zip_path)
