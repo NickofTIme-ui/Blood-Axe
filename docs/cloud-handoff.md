@@ -46,7 +46,7 @@ branch, or ChatGPT's work gets lost.
   when it falls; slower = grazed; bosses never pinned; style points (Style.js `spiked`). Spikes and
   blood are code-drawn in MageFX EarthWallView, and the new moves borrow poses: ChatGPT jobs listed
   in docs/mage-art-prompts.md section 10.
-- 4 November 2026 (cloud, `claude/project-thread-fxeojg`, Nick: "push all": ON MAIN, not on itch): KING HAKON,
+- 4 November 2026 (cloud, `claude/project-thread-fxeojg`, Nick: "push": ON MAIN with all his art, not on itch): KING HAKON,
   THE OATH KING (Rurik's father; not Vaurath). Level 1: he holds the way into the market square
   against six Ashen men (x ~1760, out of sight while you fight the road); a hero reaching x 1440
   after the road is won starts it: letterbox, his name in gold, six real kills each its own
