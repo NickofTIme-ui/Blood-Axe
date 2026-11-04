@@ -9,7 +9,7 @@ branch, or ChatGPT's work gets lost.
 - 4 November 2026 (cloud, `claude/project-thread-xlx2i8`, Nick: "push": ON MAIN, not on itch): LEVEL 2
   POLISH, TIER 1 (Nick: "go" on the plan https://claude.ai/artifact/9CQVtZ7BdfPyfCEcmQuQrj). Gallows
   Wood stops copying the village: JOREN is no longer on a rope (that was Irvolino's beat): he slipped
-  his noose and hangs from the hanging tree's bough with two hounds leaping under him (rescue
+  his noose and climbed the hangman's rope out of reach, two hounds leaping under him (rescue
   `treed`, stage/Story.js `updateTreed`, TREED; his grip goes while hounds are within reach; at 0
   he falls, lost). The hounds stay at the tree (`worry` on a spawn spot, entities/Enemy.js) until a
   hero comes within 150 px or hurts one: pull them off or kill them. Two dead hang from the tree

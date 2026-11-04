@@ -540,8 +540,8 @@ export class NpcView {
     this.figure(g, n.x, y, k, n.state === 'fleeing' ? 'run' : 'cower', t, tun(0), n.dir ?? -1);
   }
 
-  // A man hanging by his hands from the hanging tree's bough, hounds leaping at his feet
-  // (rescue 'treed', Gallows Wood's Joren: he slipped his noose and got up onto the bough).
+  // A man hanging by his hands up the hangman's rope, hounds leaping at his feet (rescue
+  // 'treed', Gallows Wood's Joren: he slipped his noose and climbed the rope out of reach).
   // The bough is the painted tree's (view/WoodView.js); he's the captive sheet's hanging pose,
   // legs kicking while the hounds are at him, his grip meter over his hands. Saved, he drops
   // down and runs; lost, he lies under the bough.
@@ -550,7 +550,8 @@ export class NpcView {
     const k = depthScale(n.home.z);
     const bx = n.home.x; const by = n.home.z - n.h;
     // (`hold`: how far under the rope line his hands are: on the painted bough's lower limb)
-    const bough = (this.stage.data.gallows ? this.stage.data.gallows.z - 214 : by - 200) + (n.hold ?? 0);
+    const ropeTop = this.stage.data.gallows ? this.stage.data.gallows.z - 214 : by - 200;
+    const bough = ropeTop + (n.hold ?? 0); // (where his hands are: up his own rope, the noose slipped)
     const hands = 92 * k; // (the hanging pose: his feet this far under his hands)
     const tun = TUNIC[v.seed % TUNIC.length];
     const who = SPRITES.captive ? 'captive' : undefined;
@@ -561,6 +562,7 @@ export class NpcView {
     if (n.state === 'lost') { this.fallen(g, bx, by, k, tun); return; }
     if (n.state === 'threatened') {
       const kick = n.cower ? Math.sin(t * 0.45) * 3 : Math.sin(t * 0.03) * 1.5;
+      g.lineStyle(2, 0x6a5a40, 1).lineBetween(bx, ropeTop, bx + kick * 0.6, bough + 4); // the rope he climbed
       this.figure(g, bx + kick, bough + hands, k, who ? 'hang' : 'cower', 0, tun, -1, who);
       const frac = Math.max(0, Math.min(1, n.nerve / (n.hp ?? NPC.nerve)));
       if (frac < 1) {
@@ -572,6 +574,7 @@ export class NpcView {
     }
     if (n.state === 'free') {
       // he lets go and drops, then gets up
+      g.lineStyle(2, 0x6a5a40, 1).lineBetween(bx, ropeTop, bx, bough);
       const d = Math.min(1, n.t / 14);
       const y = bough + hands + (by - bough - hands) * d * d;
       this.figure(g, bx, y, k, d < 1 && who ? 'hang' : 'cower', t, tun, -1, who);
