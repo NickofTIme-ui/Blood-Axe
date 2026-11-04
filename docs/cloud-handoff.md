@@ -6,7 +6,7 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 4 November 2026 (cloud, `claude/project-thread-l63s14`, NOT on main yet, waiting on Nick): THE MAGE
+- 4 November 2026 (cloud, `claude/project-thread-l63s14`, Nick: "push": ON MAIN, not on itch): THE MAGE
   REWORK (Nick: Y Y Y "feels like a cheat code", "even hitting with the staff is boring", spiked wall
   idea). Plan doc: https://claude.ai/artifact/LGbuXXYizuXUVMbWqeHMUh. Code (all in data/characters.js
   mage + combat/Mage.js unless said): STATIC marks from staff blows (`kit.static`, CombatSystem adds
