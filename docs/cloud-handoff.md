@@ -7,7 +7,7 @@ example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
 - 4 November 2026 (cloud, `claude/project-thread-m3u9qp`, Nick: "do all of this" on the Assassin
-  review: TEST BRANCH, not on main, not on itch): VEXA'S SECOND SET, one move for each of Rurik's
+  review; Nick: "push all": ON MAIN, not on itch): VEXA'S SECOND SET, one move for each of Rurik's
   slots (combat/RogueMoves.js): SHADOW RUSH (sprint + attack), BACKSTAB (hold attack), THOUSAND CUTS
   (4th hit now launches; heavy follows him up), FADE (jump + away out of any attack). Her mark now
   pays out solo (`markCash` moves, CombatSystem). Her SKILL TREE (data/skills.js SKILL_TREES.rogue):
