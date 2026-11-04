@@ -6,7 +6,7 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 4 November 2026 (cloud, `claude/project-thread-jtx8mf`, NOT on main yet, not on itch): Nick's
+- 4 November 2026 (cloud, `claude/project-thread-jtx8mf`, Nick: "PUSH": ON MAIN, not on itch): Nick's
   second level 1 art review ("YES to ALL"). Code: street shouts on parchment, kept on screen and
   clear of the HUD (view/ShoutPlate.js); darker contact shadows (atmosphere.js softShadow);
   firelight on fighters near fires (view/FireLight.js, stageVillage `firelight`); sooty church with
