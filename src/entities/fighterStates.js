@@ -16,6 +16,7 @@ import { rogueStates, rollMine,isRogueFinisher, rogueFinisherStart, runRogueFini
 import { skillStates, plungeReady } from '../combat/Skills.js';
 import { JUGGLE, SUNDER, juggleLand, airMoveFor } from '../combat/Juggle.js';
 import { GRAB, grabStates, grabTarget, thrownLand } from '../combat/Grab.js';
+import { rogueMoveStates, wantsFade, nightbladeState, skullStep } from '../combat/RogueMoves.js';
 
 const FEEL = SETTINGS.feel;
 
@@ -151,6 +152,11 @@ export function tryActions(f, allowed = null) {
     c.consume('grab');
     if (f.grounded && grabTarget(f)) { f.fsm.change('grab'); return true; }
   }
+  // Vexa's SMOKE BOMB / NIGHT FALLS (THE NIGHTBLADE, combat/RogueMoves.js): D-pad down / H
+  if (ok('spin') && s.skills?.smoke && c.peek('padDown')) {
+    const st = nightbladeState(f);
+    if (st) { c.consume('padDown'); f.fsm.change(st); return true; }
+  }
   // Rurik's WHIRLWIND CLEAVE (Executioner's Arc, combat/Skills.js): D-pad down / H
   if (ok('spin') && s.moves.spin && c.peek('padDown') && ready(f, s.moves.spin, 'spin')) {
     c.consume('padDown');
@@ -165,6 +171,12 @@ export function tryActions(f, allowed = null) {
       return true;
     }
   }
+  // SHADOW RUSH (Vexa): attack while sprinting (combat/RogueMoves.js)
+  if (ok('attack') && f.sprinting && f.state === 'walk' && s.moves.rush && c.peek('attack') && ready(f, s.moves.rush, 'rush')) {
+    c.consume('attack');
+    f.fsm.change('rush');
+    return true;
+  }
   // SHOULDER SMASH (Rurik): attack while sprinting on his feet
   if (ok('attack') && f.sprinting && f.state === 'walk' && usable(f, s.moves.shoulder) && c.peek('attack') && ready(f, s.moves.shoulder, 'shoulder')) {
     c.consume('attack');
@@ -177,6 +189,8 @@ export function tryActions(f, allowed = null) {
     return true;
   }
   if (ok('jump') && canJump(f) && c.consume('jump', FEEL.jumpBufferFrames)) {
+    // Vexa jumping out of an attack with the stick held away: FADE (combat/RogueMoves.js)
+    if (wantsFade(f)) { f.fsm.change('fade'); return true; }
     // the Rogue running at a teammate vaults off him instead (combat/Rogue.js)
     const ally = f.stats.kit?.vault ? vaultTarget(f) : null;
     if (ally) f.fsm.change('vault', { ally });
@@ -193,7 +207,7 @@ export function tryActions(f, allowed = null) {
 const CANCELLABLE = new Set([
   'light1', 'light2', 'light3', 'light4', 'launcher', 'heavy', 'kick', 'shoulder', 'spin',
   'charge', 'thrust', 'cast', 'bolt', 'force', 'ward', 'viper', 'rkick', 'sweep', 'knife',
-  'mine', 'kingcast', 'kingsfire',
+  'mine', 'kingcast', 'kingsfire', 'rush', 'smoke',
 ]);
 export function actionCancel(f) {
   if (f.team !== 'player' || !f.grounded || !CANCELLABLE.has(f.state)) return false;
@@ -228,7 +242,7 @@ function makeAttackState(moveKey) {
       if (ch && moveKey === 'light1' && f.team === 'player') {
         if (c.isDown('attack')) f.chargeHeld = (f.chargeHeld ?? 0) + 1;
         else f.chargeHeld = -999; // let go: this press was a tap
-        if (f.chargeHeld >= ch.holdFrames && phase === 'recovery') { f.fsm.change('charge'); return; }
+        if (f.chargeHeld >= ch.holdFrames && phase === 'recovery') { f.fsm.change(ch.state ?? 'charge'); return; } // (Vexa: the BACKSTAB)
       }
 
       // Step forward during the swing, then slide to a stop.
@@ -463,6 +477,7 @@ export const FIGHTER_STATES = {
       if (canJump(f) && c.consume('jump', FEEL.jumpBufferFrames)) return startJump(f); // coyote jump
       if (f.airJumpsLeft > 0 && c.consume('jump')) {                                   // double jump
         f.airJumpsLeft--;
+        if (s.skills?.skullStep) skullStep(f); // (Vexa: off a man's head)
         return startJump(f, true);
       }
       // the Mage blinks out of a jump (once per time in the air)
@@ -979,5 +994,6 @@ export const FIGHTER_STATES = {
 Object.assign(FIGHTER_STATES, mageStates({ tryActions, stopMoving, friction, faceInput, aimTurn }));
 // ...and the Rogue's (combat/Rogue.js)
 Object.assign(FIGHTER_STATES, rogueStates({ tryActions, stopMoving, friction, faceInput, makeAttackState }));
+Object.assign(FIGHTER_STATES, rogueMoveStates({ tryActions, stopMoving, friction, faceInput })); // (Vexa's second set: combat/RogueMoves.js)
 Object.assign(FIGHTER_STATES, grabStates({ stopMoving, friction })); // (grab and throw: combat/Grab.js)
 Object.assign(FIGHTER_STATES, skillStates({ tryActions, stopMoving, friction, movePhase, faceInput, aimTurn, inWindow })); // (the skill tree's moves: combat/Skills.js)

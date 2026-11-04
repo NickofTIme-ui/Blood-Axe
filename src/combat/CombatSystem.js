@@ -119,6 +119,7 @@ export class CombatSystem {
     def.exposedCrit = K.crit ?? 1;
     def.exposedConsumes = K.critConsumes !== false;
     def.exposeCoolFrames = K.cooldown ?? 0;
+    def.exposedExec = K.execute ?? 0;
     this.world.events.emit('exposed', { defender: def, by, fresh });
   }
 
@@ -193,7 +194,9 @@ export class CombatSystem {
     const mult = (melee ? attacker.stats.meleeMult : attacker.stats.magicMult) * armMult(attacker);
     // the Rogue's mark: her own hits +bonus; ANOTHER player's hit is a SUPER CRITICAL
     const marked = def.exposed > 0 && attacker?.team === 'player';
-    const superCrit = marked && attacker !== def.exposedBy && (def.exposedCrit ?? 1) > 1;
+    // (her own BACKSTAB, the heel of THOUSAND CUTS and NIGHT FALLS cash her mark in too:
+    // `markCash`, so a lone Vexa gets the super critical as well)
+    const superCrit = marked && (attacker !== def.exposedBy || !!move.markCash) && (def.exposedCrit ?? 1) > 1;
     const exposed = !marked ? 1 : superCrit ? def.exposedCrit : 1 + (def.exposedBonus ?? 0);
     if (superCrit && def.exposedConsumes) def.exposed = 0;
     // heroes' clean hits can land CRITICAL (rolled from the world's dice, so online stays in step)
@@ -209,6 +212,11 @@ export class CombatSystem {
       (crit ? FEEL.critMultiplier : 1) * juggleMult * (riposte ? RIPOSTE.mult : 1) *
       (def.ward ?? 1); // (ward: a boss taking only part of a blow: King Vaurath's guard, stage/Stage.js)
     if (sunder) damage = Math.max(damage, def.health + 1);
+    // EXECUTIONER'S MARK (Vexa's skill tree): a marked man brought this low dies to the blow
+    if (marked && def.exposedExec > 0 && !def.stats.boss && def.health - damage <= def.stats.maxHealth * def.exposedExec) {
+      damage = Math.max(damage, def.health + 1);
+      event.execMark = true;
+    }
     const healthBefore = def.health;
     def.health = Math.max(def.spare || def.immortal ? 1 : 0, def.health - damage); // (spare: a boss beaten to his knees, not killed: stage/Sequence.js; immortal: config/testMode.js)
     def.flash = 6;

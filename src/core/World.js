@@ -13,6 +13,7 @@ import { Quakes } from '../combat/Quake.js';
 import { Storms } from '../combat/Storm.js';
 import { Wraths } from '../combat/Wrath.js';
 import { installSkills } from '../combat/Skills.js';
+import { installRogue } from '../combat/RogueMoves.js';
 import { installStyle, tickStyle } from '../combat/Style.js';
 
 export class World {
@@ -36,6 +37,7 @@ export class World {
     // for `frames` ticks, all but the `keep` (the boss, his twin) walking in. See holdStill().
     this.hold = null;
     installSkills(this); // (skill-tree behaviours: combat/Skills.js; inert without skills)
+    installRogue(this);  // (Vexa's: combat/RogueMoves.js)
     installStyle(this);  // (the combo counter and style rank: combat/Style.js)
     // Dice. Every roll the simulation makes comes from roll(): a number fixed by the
     // seed, the tick, who's asking and what about — never Math.random — so two machines

@@ -6,6 +6,18 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 4 November 2026 (cloud, `claude/project-thread-m3u9qp`, Nick: "do all of this" on the Assassin
+  review: TEST BRANCH, not on main, not on itch): VEXA'S SECOND SET, one move for each of Rurik's
+  slots (combat/RogueMoves.js): SHADOW RUSH (sprint + attack), BACKSTAB (hold attack), THOUSAND CUTS
+  (4th hit now launches; heavy follows him up), FADE (jump + away out of any attack). Her mark now
+  pays out solo (`markCash` moves, CombatSystem). Her SKILL TREE (data/skills.js SKILL_TREES.rogue):
+  Widowmaker (Third Mine, Shrapnel, Chain Reaction: Mine.js), Deathmark (Long Mark, Spreading Mark,
+  Executioner's Mark), Skydancer (Fan of Steel, Skull Step, Falling Star), Nightblade (Killing
+  Rhythm, SMOKE BOMB on D-pad down, NIGHT FALLS ultimate). Her own sounds made in code
+  (tools/sfx-gen/rogue.js -> assets/audio/sfx/rogue-*.wav). The new moves use BORROWED POSES and
+  her twelve skills a plain stand-in medallion until ChatGPT paints them: prompts 11-20 in
+  docs/rogue-art-prompts.md (PC job). Blood coat ready for her (`VEXA_BLOODIED`, BloodCoat.js) and
+  her grab strip (`grab`, pending) once painted.
 - 4 November 2026 (cloud, `claude/project-thread-jtx8mf`, Nick: "PUSH": ON MAIN, not on itch): Nick's
   second level 1 art review ("YES to ALL"). Code: street shouts on parchment, kept on screen and
   clear of the HUD (view/ShoutPlate.js); darker contact shadows (atmosphere.js softShadow);

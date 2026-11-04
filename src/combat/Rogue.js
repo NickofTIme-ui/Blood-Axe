@@ -303,6 +303,16 @@ export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeA
               e.vx = (Math.sign(e.x - f.x) || 1) * 140;
             }
             f.world.events.emit('diveLand', { fighter: f, x: f.x, z: f.z });
+            // FALLING STAR (skill tree): the dive killed him: she springs back up for another
+            if (f.diveStar) {
+              f.diveStar = false;
+              f.h = Math.max(f.h, 0.01);
+              f.vh = K.starBounce ?? 780;
+              f.vx = f.facing * 120;
+              f.jumpedSinceGrounded = true;
+              f.world.events.emit('fallingStar', { fighter: f });
+              return f.fsm.change('jump');
+            }
           }
           return;
         }

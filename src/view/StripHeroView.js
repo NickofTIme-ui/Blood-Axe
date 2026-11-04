@@ -20,7 +20,7 @@ const FLIP_FRAMES = 40; // ticks the double-jump flip takes (about the time she'
 const clamp01 =(t) => Math.max(0, Math.min(1, t));
 // How hard each strip-drawn swing reads in the body (view only: anticipation coil, strike
 // drive, damped settle; see swingBody in view/animFeel.js)
-const SWING_K = { light1: 0.5, light2: 0.55, light3: 0.85, heavy: 1.15, airAttack: 0.5, kick: 0.7 };
+const SWING_K = { light1: 0.5, light2: 0.55, light3: 0.85, heavy: 1.15, airAttack: 0.5, kick: 0.7, rush: 0.9 };
 
 export class StripHeroView {
   constructor(scene, fighter, sheet) {
@@ -62,6 +62,9 @@ export class StripHeroView {
     const tick = f.world?.frame ?? 0;
     const loop = (a) => a.frames[Math.floor((tick * a.fps) / 60) % a.frames.length];
     const a = A[st];
+
+    // gone (Vexa in the smoke of a backstab, or between the cuts of Night Falls)
+    if (f.hidden) return null;
 
     // swings: wind-up / strike / follow-through from the move's own numbers
     if (a?.phases && f.move) {
@@ -163,6 +166,33 @@ export class StripHeroView {
         if (!f.diveLanded) return F[0];
         return fr - f.diveLanded < 5 ? F[1] : F[2];
       }
+      // ---- her second set (combat/RogueMoves.js)
+      case 'backstab': {
+        const F = A.backstab?.frames ?? A.idle.frames;
+        if (!f.stabAt) return null;
+        const m = f.move; const t = fr - f.stabAt;
+        return spread(F, t / Math.max(1, m.startup + m.active + m.recovery));
+      }
+      case 'cuts': {
+        const C = A.cuts;
+        if (!C) return A.idle.frames[0];
+        if (f.cutsLand) return C.land[0];
+        if (f.cutsDrop) return fr - f.cutsDrop < 6 && f.cutsN > K.cuts.hits ? C.spike[0] : C.drop[0];
+        if (fr < K.cuts.rise || !f.cutsN) return C.rise[0];
+        return C.slash[(f.cutsN - 1) % C.slash.length];
+      }
+      case 'fade': return spread((A.fade ?? A.dodge).frames, fr / 22);
+      case 'smoke': return spread((A.smoke ?? A.idle).frames, fr / 12);
+      case 'nightfall': {
+        const N = A.nightfall;
+        if (!N) return A.idle.frames[0];
+        if (fr < 18) return N.gather[0];
+        if (f.nightTargets?.length && fr < 18 + f.nightTargets.length * K.nightfall.every + 6) {
+          const i = Math.floor((fr - 18) / K.nightfall.every);
+          return N.cut[i % N.cut.length];
+        }
+        return N.sheathe[0];
+      }
       default: {
         // she drops a mine without breaking stride: a beat of the set-down pose over it
         if (A.mine && f.mineDropAt != null && tick - f.mineDropAt < 8) return A.mine.frames[0];
@@ -229,6 +259,8 @@ export class StripHeroView {
 
     let alpha = 1;
     if (st === 'dodge' && f.invincible) alpha = 0.8;
+    if (f.veil > 0) alpha = 0.35 + 0.1 * Math.sin(tick * 0.5); // (a shadow in her smoke)
+    if (st === 'fade' && f.invincible) alpha = 0.75;
     if (st === 'getup') alpha = fr % 4 < 2 ? 0.6 : 1;
     if (st === 'dead') alpha = Math.max(0, 1 - Math.max(0, fr - 90) / 60);
     alpha *= this.fade ?? 1; // (a companion fading into the dark: view/NpcView.js)

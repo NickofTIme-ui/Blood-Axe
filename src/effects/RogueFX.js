@@ -9,6 +9,7 @@
 // recordings (ROGUE_SOUNDS is the one place to swap them).
 
 import { DEPTH } from '../view/depths.js';
+import { SETTINGS } from '../config/settings.js';
 import { softTex } from './Gore.js';
 import { playSfx, fleshBite } from '../core/Sfx.js';
 
@@ -19,32 +20,45 @@ const VIOLET = 0xb050ff;
 const CRIMSON = 0xff3050;
 
 export const ROGUE_SOUNDS = {
-  swing1: [['whiff', { volume: 0.5, pitch: 350 }]],
-  swing2: [['swingAlt', { volume: 0.5, pitch: 300 }]],
-  swing3: [['second', { volume: 0.55, pitch: 250 }]],
-  swing4: [['finisher', { volume: 0.65, pitch: 200 }]],
-  hit: [['block', { volume: 0.3, pitch: 1100, minGapMs: 30 }]],
-  // about half her cuts: Nick's blade-in-flesh sound, the steel tick kept faint under it
-  hitFlesh: [['stationaryKill', { volume: 0.7, pitch: 150, minGapMs: 50 }], ['block', { volume: 0.12, pitch: 1100, minGapMs: 30 }]],
-  block: [['block', { volume: 0.7, pitch: 500 }]],
-  shadow: [['swingAlt', { volume: 0.6, pitch: 1300 }], ['block', { volume: 0.35, pitch: 1800 }]],
-  viper: [['heavySwing', { volume: 0.6, pitch: 500 }]],
+  // her own (tools/sfx-gen/rogue.js, 2026-11-04); the kick, the mine blast and the
+  // finishers still layer the game's samples
+  swing1: [['rogueSwish1', { volume: 0.6 }]],
+  swing2: [['rogueSwish2', { volume: 0.6 }]],
+  swing3: [['rogueSwish3', { volume: 0.65 }]],
+  swing4: [['rogueFlourish', { volume: 0.7 }]],
+  hit: [['rogueStab', { volume: 0.45, minGapMs: 30 }]],
+  // about half her cuts: Nick's blade-in-flesh sound, her own bite faint under it
+  hitFlesh: [['stationaryKill', { volume: 0.7, pitch: 150, minGapMs: 50 }], ['rogueStab', { volume: 0.2, minGapMs: 30 }]],
+  block: [['rogueGuard', { volume: 0.7 }]],
+  shadow: [['rogueVanish', { volume: 0.6, pitch: 300 }], ['rogueGuard', { volume: 0.35, pitch: 700 }]],
+  viper: [['rogueFlourish', { volume: 0.75, pitch: -200 }]],
   kick: [['swingAlt', { volume: 0.5, pitch: -100 }]],
-  knife: [['whiff', { volume: 0.5, pitch: 900 }]],
-  fan: [['whiff', { volume: 0.6, pitch: 1100 }], ['swingAlt', { volume: 0.4, pitch: 1000 }]],
-  starHit: [['block', { volume: 0.25, pitch: 1500, minGapMs: 25 }]],
+  knife: [['rogueStarThrow', { volume: 0.6 }]],
+  fan: [['rogueStarThrow', { volume: 0.75, pitch: 200 }], ['rogueSwish2', { volume: 0.4 }]],
+  starHit: [['rogueStarHit', { volume: 0.5, minGapMs: 25 }]],
   vaultContact: [['jump', { volume: 0.5, pitch: -200 }]],
-  vaultLaunch: [['swingAlt', { volume: 0.55, pitch: -300 }]],
-  dive: [['heavySwing', { volume: 0.5, pitch: 700 }]],
+  vaultLaunch: [['rogueSwish3', { volume: 0.6, pitch: -300 }]],
+  dive: [['rogueFlourish', { volume: 0.6, pitch: 300 }]],
   diveLand: [['kick', { volume: 0.7, pitch: 300 }]],
-  mineDrop: [['block', { volume: 0.4, pitch: -200 }]],
-  mineArm: [['block', { volume: 0.3, pitch: 1400 }]],
-  mineCue: [['block', { volume: 0.5, pitch: 2000, minGapMs: 0 }]],
+  mineDrop: [['rogueMineSet', { volume: 0.6 }]],
+  mineArm: [['rogueMineArm', { volume: 0.45 }]],
+  mineCue: [['rogueMineBeep', { volume: 0.7, minGapMs: 0 }]],
   mineBlast: [['kick', { volume: 1, pitch: -1100, minGapMs: 0 }], ['fireWhoosh', { volume: 0.8, pitch: -700, minGapMs: 0 }]],
-  exposed: [['block', { volume: 0.4, pitch: 2200 }]],
+  exposed: [['rogueGuard', { volume: 0.4, pitch: 900 }]],
   phantom: [['finisher', { volume: 0.8, pitch: 400, minGapMs: 20 }]],
   lotus: [['kick', { volume: 1, pitch: -1200, minGapMs: 0 }], ['fireWhoosh', { volume: 0.9, pitch: -800, minGapMs: 0 }]],
   scarlet: [['heavySwing', { volume: 0.8, pitch: 300 }], ['kick', { volume: 0.7, pitch: 0 }]],
+  // her second set (combat/RogueMoves.js)
+  rush: [['rogueFlourish', { volume: 0.8, pitch: -300 }], ['rogueVanish', { volume: 0.5, pitch: 500 }]],
+  vanish: [['rogueVanish', { volume: 0.75 }]],
+  stab: [['rogueStab', { volume: 0.95, minGapMs: 0 }]],
+  cutsSlash: [['rogueSwish1', { volume: 0.5, pitch: 200, minGapMs: 20 }]],
+  cutsSpike: [['kick', { volume: 0.8, pitch: 100 }], ['rogueFlourish', { volume: 0.4, pitch: -400 }]],
+  fade: [['rogueVanish', { volume: 0.45, pitch: 400 }]],
+  smoke: [['rogueSmoke', { volume: 0.85 }]],
+  night: [['rogueNight', { volume: 0.9 }]],
+  nightCut: [['rogueStab', { volume: 0.8, minGapMs: 0 }], ['rogueSwish2', { volume: 0.5, minGapMs: 0 }]],
+  skullStep: [['kick', { volume: 0.5, pitch: 400 }]],
 };
 
 export class RogueFX {
@@ -57,9 +71,10 @@ export class RogueFX {
 
     ev.on('attackStart', ({ fighter, state }) => {
       if (!isRogue(fighter)) return;
-      const k = { light1: 'swing1', light2: 'swing2', light3: 'swing3', light4: 'swing4', viper: 'viper', kick: 'kick', sweep: 'kick', knife: 'knife', fan: 'fan', dive: 'dive', airAttack: 'swing1' }[state];
+      const k = { light1: 'swing1', light2: 'swing2', light3: 'swing3', light4: 'swing4', viper: 'viper', kick: 'kick', sweep: 'kick', knife: 'knife', fan: 'fan', dive: 'dive', airAttack: 'swing1', rush: 'rush', backstab: 'swing4' }[state];
       if (k) this.sound(k, fighter);
       if (state === 'viper') this.afterimages(fighter, 5);
+      if (state === 'rush') this.afterimages(fighter, 9, VIOLET);
     });
     ev.on('hit', (e) => {
       if (isRogue(e.attacker) && e.kind === 'melee') {
@@ -97,6 +112,69 @@ export class RogueFX {
     ev.on('mineFizzle', ({ mine }) => { this.mines.get(mine)?.destroy(); this.mines.delete(mine); });
     ev.on('mineBlast', ({ mine }) => { this.mines.get(mine)?.destroy(); this.mines.delete(mine); this.blast(mine.x, mine.z, mine.cfg.outer, mine.owner); });
     ev.on('finisherBeat', (b) => this.finisher(b));
+
+    // ---- her second set (combat/RogueMoves.js)
+    ev.on('backstabVanish', ({ fighter: f, x, z, h }) => { this.sound('vanish', f); this.smokePuff(x, z, h, 9, 26); });
+    ev.on('backstabAppear', ({ fighter: f, x, z, h }) => { this.smokePuff(x, z, h, 6, 18); this.afterimages(f, 2, VIOLET); });
+    ev.on('hit', (e) => {
+      if (!isRogue(e.attacker)) return;
+      if (e.attacker.state === 'backstab') { this.sound('stab', e.attacker); scene.fx.shake(3, 6); }
+      if (e.execMark) scene.callout('EXECUTED', '#ff4060', 22);
+    });
+    ev.on('rushTurn', ({ fighter: f, hits }) => { this.dust(f.x, f.z, 10); if (hits) scene.fx.shake(2 + Math.min(hits, 4), 6); });
+    ev.on('cutsStart', ({ fighter: f }) => { this.afterimages(f, 3, VIOLET); this.dust(f.x, f.z, 6); });
+    ev.on('cutsSlash', ({ fighter: f }) => {
+      this.sound('cutsSlash', f);
+      const t = f.cutsTarget;
+      if (t) this.steelFlash(t.x, t.z - t.h - t.stats.body.h * 0.5, f.facing, t.z);
+    });
+    ev.on('cutsSpike', ({ fighter: f }) => { this.sound('cutsSpike', f); scene.fx.shake(5, 8); this.afterimages(f, 2, CRIMSON); });
+    ev.on('fade', ({ fighter: f }) => { this.sound('fade', f); this.afterimages(f, 3, VIOLET); });
+    ev.on('smokeBomb', ({ fighter: f, x, z, radius }) => { this.sound('smoke', f); this.smokePuff(x, z, 0, 22, radius * 0.6, 1400); scene.fx.shake(2, 6); });
+    ev.on('nightFalls', ({ fighter: f }) => { this.sound('night', f); this.dark(f, true); });
+    ev.on('nightCut', ({ fighter: f, victim: v }) => {
+      this.sound('nightCut', f);
+      this.afterimages(f, 2, CRIMSON);
+      this.steelFlash(v.x, v.z - v.h - v.stats.body.h * 0.55, f.facing, v.z);
+      scene.gore.spark(v.x, v.z, v.h + v.stats.body.h * 0.55, 0xe8eef8, 8);
+    });
+    ev.on('nightLifts', ({ fighter: f, cut }) => { this.dark(f, false); if (cut) scene.callout('NIGHT FALLS', '#b8a8ff', 22); });
+    ev.on('markSpread', ({ from, to }) => {
+      this.streak({ x: from.x, y: from.z - from.h - from.stats.body.h }, { x: to.x, y: to.z - to.h - to.stats.body.h }, Math.max(from.z, to.z));
+    });
+    ev.on('skullStep', ({ fighter: f, victim: v }) => { this.sound('skullStep', f); scene.gore.spark(v.x, v.z, v.h + v.stats.body.h, 0xd8d0c0, 5); });
+    ev.on('fallingStar', ({ fighter: f }) => { this.sound('vaultLaunch', f); this.afterimages(f, 4, CRIMSON); });
+  }
+
+  // a puff of dark smoke (backstab, smoke bomb): soft blots that swell and thin out
+  smokePuff(x, z, h, n, r, life = 700) {
+    const s = this.scene;
+    softTex(s);
+    for (let i = 0; i < n; i++) {
+      const a = rand(0, Math.PI * 2);
+      const d = rand(0, r);
+      const p = s.add.image(x + Math.cos(a) * d, z - h - 30 + Math.sin(a) * d * 0.5, 'soft')
+        .setTint(pick([0x1a1420, 0x2a2034, 0x3a2e48])).setScale(rand(0.5, 0.9)).setAlpha(0).setDepth(z + 2);
+      s.tweens.add({ targets: p, alpha: rand(0.45, 0.7), duration: 60 });
+      s.tweens.add({ targets: p, scale: rand(1.6, 2.6), y: p.y - rand(10, 36), x: p.x + Math.cos(a) * rand(6, 24), duration: life, ease: 'Sine.easeOut' });
+      s.tweens.add({ targets: p, alpha: 0, delay: life * 0.4, duration: life * 0.6, onComplete: () => p.destroy() });
+    }
+  }
+
+  // NIGHT FALLS: the light goes out of the world while she works, then comes back
+  dark(f, on) {
+    const s = this.scene;
+    if (on) {
+      this.night?.destroy();
+      // (under the fighters, over the world, like the King's Wrath: effects/WrathFX.js)
+      const cam = s.cameras.main;
+      this.night = s.add.rectangle(cam.midPoint.x, cam.midPoint.y, 8000, 4000, 0x06040c, 1).setAlpha(0).setDepth(SETTINGS.world.floorTop - 1);
+      s.tweens.add({ targets: this.night, alpha: 0.62, duration: 250 });
+    } else if (this.night) {
+      const n = this.night;
+      this.night = null;
+      s.tweens.add({ targets: n, alpha: 0, duration: 400, onComplete: () => n.destroy() });
+    }
   }
 
   sound(name, near) {
@@ -310,6 +388,7 @@ export class RogueFX {
     for (const v of this.mines.values()) v.destroy();
     for (const g of this.marks.values()) g.destroy();
     this.mines.clear(); this.marks.clear();
+    this.night?.destroy();
   }
 }
 

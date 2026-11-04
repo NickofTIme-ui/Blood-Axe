@@ -131,6 +131,7 @@ export class Fighter {
     if (!actionCancel(this)) this.fsm.update(); // (a roll / block press cuts a move short)
     if (sc?.planted) { this.vx = 0; this.vz = 0; } // (the killing blow: feet planted, no lunge)
     if (this.pitGuard > 0) { this.pitGuard--; this.invincible = true; } // (just climbed out of a fall)
+    if (this.veil > 0) { this.veil--; this.invincible = true; } // (Vexa in her smoke: combat/RogueMoves.js)
     this.justLanded = false;
     this.integrate();
     this.regen();

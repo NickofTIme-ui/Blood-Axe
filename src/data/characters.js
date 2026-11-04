@@ -397,8 +397,11 @@ export const CHARACTERS = {
   // The fastest hero: four-hit dagger combo, Viper Strike lunge, the best dodge (with a
   // perfect-dodge SHADOW WINDOW), EXPOSED (her precision hits open an enemy up to the
   // whole team), WIDOW MINES, ALLY VAULT off a teammate, and from the air the SHURIKEN
-  // FAN / DEATH FROM ABOVE and the FALLING VIPER dive. Logic: combat/Rogue.js and
-  // combat/Mine.js; tuning: `kit` below.
+  // FAN / DEATH FROM ABOVE and the FALLING VIPER dive. Her second set (2026-11-04, one for
+  // each of Rurik's slots): SHADOW RUSH (sprint + attack), BACKSTAB (hold attack), THOUSAND
+  // CUTS (heavy after the 4th hit launches), FADE (jump + away out of an attack), and from
+  // her skill tree SMOKE BOMB and NIGHT FALLS (D-pad down). Logic: combat/Rogue.js,
+  // combat/RogueMoves.js and combat/Mine.js; tuning: `kit` below.
   rogue: {
     id: 'rogue',
     name: 'Vexa',
@@ -460,9 +463,50 @@ export const CHARACTERS = {
         cut: 'slash', fx: 'dagger', expose: true,
         startup: 7, active: 3, recovery: 16,
         damage: 14, hitstun: 26, hitstop: 8, shake: 4,
-        knockback: { x: 180, y: 360 }, knockdown: true, guardDamage: 18, lunge: 120,
+        knockback: { x: 120, y: 470 }, knockdown: true, guardDamage: 18, lunge: 120, // (a true launcher: jump after him, or heavy for THOUSAND CUTS)
         hitbox: { x: 4, y: 20, w: 64, h: 74 },
+        chains: [{ button: 'heavy', next: 'cuts', onHit: true, from: 9, to: 26 }],
         cancels: [{ from: 11, to: 26, into: ['dodge', 'jump', 'magic'] }],
+      },
+      // THOUSAND CUTS (attack x4, then heavy once the 4th has launched him; the 'cuts'
+      // state, combat/Rogue.js): she springs up after him, a flurry of slashes keeps him in
+      // the air, and a heel spikes him into the dirt. Each slash is `cuts`, the heel `cutsSpike`.
+      cuts: {
+        cut: 'slash', fx: 'dagger',
+        startup: 0, active: 2, recovery: 0,
+        damage: 4, hitstun: 30, hitstop: 2, shake: 0,
+        knockback: { x: 10, y: 150 }, guardDamage: 6, staminaCost: 14,
+        hitbox: { x: -24, y: -30, w: 84, h: 110 },
+      },
+      cutsSpike: {
+        cut: 'blunt', fx: 'rkick', spike: true, markCash: true,
+        startup: 0, active: 3, recovery: 0,
+        damage: 14, hitstun: 30, hitstop: 8, shake: 5,
+        knockback: { x: 40, y: 0 }, guardDamage: 20,
+        hitbox: { x: -24, y: -40, w: 84, h: 120 },
+      },
+      // SHADOW RUSH (sprint + attack; the 'rush' state): she blurs low through the whole
+      // line, cuts every man once in passing, and skids to a stop behind them, turned back
+      // to face them. Untouchable while she's moving.
+      rush: {
+        cut: 'slash', fx: 'viper', pierce: true,
+        startup: 3, active: 14, recovery: 14,
+        damage: 12, hitstun: 30, hitstop: 4, shake: 2,
+        knockback: { x: 60, y: 0 }, guardDamage: 20, breaksGuard: true, staminaCost: 16,
+        lunge: 1300,                     // px/s through the active frames (~300 px)
+        hitbox: { x: -10, y: 20, w: 64, h: 60 },
+        cancels: [{ from: 22, to: 31, into: ['dodge', 'jump', 'attack', 'heavy', 'kick'] }],
+      },
+      // BACKSTAB (HOLD attack; the 'backstab' state): a puff of smoke, gone, and she's
+      // behind the nearest man with a dagger in his kidneys. Can't be blocked; it exposes him,
+      // and it cashes in a mark she left on him herself (a super critical).
+      backstab: {
+        cut: 'pierce', fx: 'dagger', expose: true, markCash: true, unblockable: true,
+        startup: 3, active: 3, recovery: 16,
+        damage: 26, hitstun: 40, hitstop: 9, shake: 4,
+        knockback: { x: 160, y: 0 }, guardDamage: 40,
+        hitbox: { x: 0, y: 26, w: 60, h: 54 },
+        cancels: [{ from: 10, to: 22, into: ['dodge', 'jump', 'attack', 'heavy', 'kick'] }],
       },
       // VIPER STRIKE (the 'viper' state): crouch, burst through, strike in passing
       heavy: {
@@ -510,6 +554,9 @@ export const CHARACTERS = {
 
     // magic gates the Widow Mine (the mine's own limits are kit.mine)
     spell: { name: 'Widow Mine', cost: 20, startup: 0, recovery: 0 }, // mana per mine (dropped, planted or out of a roll)
+    // HOLD attack: keep the button down through the first slash and she goes into the
+    // BACKSTAB instead of the next cut (fighterStates.js makeAttackState)
+    charge: { holdFrames: 12, state: 'backstab' },
 
     kit: {
       // EXPOSED: her precision hits open a weakness the whole team can exploit
@@ -587,6 +634,17 @@ export const CHARACTERS = {
       // FALLING VIPER
       dive: { minHeight: 22, range: 260, depth: 70, speed: 820, land: 14, stagger: 60, staggerFrames: 18 },
       finisher: { reach: 160, depth: 34 },
+      // BACKSTAB: how far she can reach a man, frames she's gone in the smoke, how far
+      // behind him she comes out; with nobody in reach she steps `step` px ahead out of it
+      backstab: { range: 300, depth: 90, vanish: 8, behind: 36, step: 120, cooldown: 30 },
+      // THOUSAND CUTS: frames to reach him, slashes, frames between them, landing frames
+      cuts: { rise: 7, hits: 6, every: 4, drop: 900, land: 14, offset: 30 },
+      // FADE: JUMP while holding AWAY out of any of her attacks: a low back-flip out of
+      // reach, untouchable for `iframes`, and an attack can come out of it as she lands
+      fade: { speed: 640, hop: 330, iframes: 12, cost: 8, from: 6 },
+      // SMOKE BOMB and NIGHT FALLS (skill tree, THE NIGHTBLADE; D-pad down / H)
+      smoke: { cost: 25, cooldown: 240, radius: 130, daze: 60, veil: 90 },
+      nightfall: { cost: 60, targets: 6, range: 520, depth: 160, every: 11, behind: 30, damage: 60, boss: 0.5, cooldown: 600 },
     },
   },
 };

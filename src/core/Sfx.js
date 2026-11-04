@@ -70,6 +70,21 @@ export const SFX = {
   // Nick's own picks (2026-10-17), trimmed: the shock leads Y (chain lightning), the strike is the big bolt
   mageShock: 'assets/audio/sfx/mage-shock.mp3',            // the Y press: the bolt leaving the staff
   lightningStrike: 'assets/audio/sfx/lightning-strike.mp3', // a full lightning bolt: overcharge, 3rd chain hit, Thunderhead, Storm Judgment
+  // Vexa's own (2026-11-04): made in code by tools/sfx-gen/rogue.js (ours outright, no licence)
+  rogueSwish1: 'assets/audio/sfx/rogue-swish-1.wav',     // dagger cuts through the air
+  rogueSwish2: 'assets/audio/sfx/rogue-swish-2.wav',
+  rogueSwish3: 'assets/audio/sfx/rogue-swish-3.wav',
+  rogueFlourish: 'assets/audio/sfx/rogue-flourish.wav',  // the big ones: 4th hit, Viper Strike, Shadow Rush
+  rogueStab: 'assets/audio/sfx/rogue-stab.wav',          // a dagger going in (backstab, Night Falls)
+  rogueGuard: 'assets/audio/sfx/rogue-guard.wav',        // steel catching steel on her guard
+  rogueStarThrow: 'assets/audio/sfx/rogue-star-throw.wav', // a shuriken leaving her hand
+  rogueStarHit: 'assets/audio/sfx/rogue-star-hit.wav',   // ...and biting in
+  rogueMineSet: 'assets/audio/sfx/rogue-mine-set.wav',   // the widow mine set down
+  rogueMineArm: 'assets/audio/sfx/rogue-mine-arm.wav',   // ...armed
+  rogueMineBeep: 'assets/audio/sfx/rogue-mine-beep.wav', // ...a man close enough: the warning
+  rogueVanish: 'assets/audio/sfx/rogue-vanish.wav',      // gone into smoke
+  rogueSmoke: 'assets/audio/sfx/rogue-smoke.wav',        // the smoke bomb
+  rogueNight: 'assets/audio/sfx/rogue-night.wav',        // Night Falls coming down
 };
 
 const lastPlayed = {};

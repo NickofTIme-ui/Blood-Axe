@@ -127,9 +127,25 @@ export class Mines {
       w.combat.resolve(m.owner, f, move, { kind: 'magic', fromX: m.x, dir, contact: { x: f.x - dir * 6, h: f.h + f.stats.body.h * 0.45 } });
       hits.push(f);
     }
-    // other mines caught in it are blown away with it (they don't stack a second blast)
+    // other mines caught in it are blown away with it (they don't stack a second blast)...
+    // ...unless she has CHAIN REACTION (skill tree): every mine of hers in the blast goes
+    // off a beat later, one after another
     for (const o of [...this.list]) {
-      if (Math.hypot(o.x - m.x, (o.z - m.z) * 1.4) <= K.inner) this.fizzle(o);
+      const d = Math.hypot(o.x - m.x, (o.z - m.z) * 1.4);
+      if (K.chain && o.owner === m.owner && !o.special && d <= K.outer * 1.5) {
+        if (o.stuck) o.t = Math.max(o.t, o.arm - 6);
+        else { o.armed = true; o.cue = Math.max(o.cue, (o.cfg.cue ?? 8) - 6); }
+        continue;
+      }
+      if (d <= K.inner) this.fizzle(o);
+    }
+    // SHRAPNEL (skill tree): the blast throws blades out all round
+    if (K.shrapnel?.count) {
+      const S = K.shrapnel;
+      for (let i = 0; i < S.count; i++) {
+        const a = (i / S.count) * Math.PI * 2 + w.roll(m.id, 500 + i) * 0.4;
+        w.spawnProjectile(m.owner, S.projectile, { x: m.x, z: m.z, h: 26, vx: Math.cos(a) * S.projectile.speed, vz: Math.sin(a) * S.projectile.speed * 0.6, vh: 0 });
+      }
     }
     w.events.emit('mineBlast', { mine: m, hits });
     return hits;
