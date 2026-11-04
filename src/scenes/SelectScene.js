@@ -351,7 +351,7 @@ export class SelectScene extends Phaser.Scene {
     epicFill(this.pName, ['#fff2c8', '#e0b060', '#7a4a10']);
     this.pDesc.setText(c.description);
     // (as he'll start this level: Rurik in level 1 has his old sword, no fire, until Brann gives him Oathkeeper)
-    if (this.mode !== 'net') { const P = sharedProgress(this.registry); P.play(this.stageId); this.shown = P.statsFor(h.id, c); }
+    if (this.mode !== 'net' && this.stageId !== 'practice') { const P = sharedProgress(this.registry); P.play(this.stageId); this.shown = P.statsFor(h.id, c); } else this.shown = c; // (the practice yard: the base kit)
     const k = this.mode !== 'net' ? this.shown : c;
     this.pSpell.setText(`SPELL: ${(k.spell?.name ?? '—').toUpperCase()}   ·   BLADE: ${(k.blade ?? (c.birthright ? 'his old sword' : '')).toUpperCase()}`.replace(/   ·   BLADE: $/, ''));
     const t = this.heroTexture(c, h.id);

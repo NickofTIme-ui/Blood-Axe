@@ -48,10 +48,12 @@ export function levelAfter(id, step = 1, stages = STAGES) {
 
 // Each tick, with test mode on: the heroes topped up (the damage clamps in
 // CombatSystem / Stage keep them from ever reaching 0 in between: f.immortal).
-export function applyTestMode(players) {
+// (always: the heroes can't die there either, e.g. THE PRACTICE YARD)
+export function applyTestMode(players, always = false) {
+  const on = TEST.on || always;
   for (const p of players) {
-    p.immortal = TEST.on;
-    if (!TEST.on || !p.alive) continue;
+    p.immortal = on;
+    if (!on || !p.alive) continue;
     p.health = p.stats.maxHealth;
     p.mana = p.stats.maxMana;
     p.stamina = p.stats.maxStamina;

@@ -6,6 +6,19 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 4 November 2026 (cloud, `claude/project-thread-skkc3r`, TEST BRANCH, not on main or itch):
+  THE PRACTICE YARD, a tutorial in its own space (Nick: "shows the player quickly, not too wordy, lets
+  them try all the mechanics for each player, hiding the higher cool stuff that's unlocked"). Title
+  menu: PRACTICE, then pick a hero. One small yard (data/stagePractice.js, kept OUT of STAGES: the
+  arena loads it through ARENAS in data/stages.js), a card top centre with one move and its buttons
+  (view/TutorialCard.js; pad labels once a pad is connected), ticked off when done, D-pad left / X
+  skips. Lessons per hero in data/tutorial.js (Rurik 12, Oryn 10, Vexa 13; base kit only, no
+  skill-tree moves): when the Mage or Assassin rework changes a kit, change their list there. Logic:
+  stage/Tutorial.js (two grunts stand at posts and never fight back, Enemy.js `dummy`; one who does
+  for BLOCK and after the end). Hero can't die, full mana/stamina, no skill picks or trophies, earns
+  no blood. tests/tutorial-test.js plays every lesson of every hero with its own buttons. No new art
+  (grunts as sparring men, the castle ground, the NEW ABILITY plaque style). The headless browser in
+  the cloud crashes starting ANY level (Oath Road too), so it was not seen running in a browser here.
 - 4 November 2026 (cloud, `claude/project-thread-jtx8mf`, Nick: "PUSH": ON MAIN, not on itch): Nick's
   second level 1 art review ("YES to ALL"). Code: street shouts on parchment, kept on screen and
   clear of the HUD (view/ShoutPlate.js); darker contact shadows (atmosphere.js softShadow);

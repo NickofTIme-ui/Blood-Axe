@@ -117,6 +117,24 @@ export class EnemyBrain extends Controller {
       f.unbounded = false;
     }
 
+    // A practice-yard dummy (stage/Tutorial.js): he never fights back. He walks back to his
+    // post when knocked off it and stands there facing the hero, to be hit.
+    if (f.dummy) {
+      this.facingHint = Math.sign(target.x - f.x) || f.facing;
+      const post = f.post;
+      if (post && (f.state === 'idle' || f.state === 'walk')) {
+        const px = post.x - f.x, pz = post.z - f.z;
+        if (Math.abs(px) > 14) this.moveX = Math.sign(px);
+        if (Math.abs(pz) > 10) this.moveZ = Math.sign(pz);
+        if (Math.abs(px) > 60) this.facingHint = Math.sign(px);
+        // someone in his road: he steps round him (two men shoving head on never get by)
+        const inRoad = Math.abs(px) > 14 && this.world.fighters.find((o) => o !== f && o.alive
+          && Math.abs(o.z - f.z) < 18 && Math.abs(o.x - f.x) < 60 && Math.sign(o.x - f.x) === Math.sign(px));
+        if (inRoad) this.moveZ = f.z <= inRoad.z ? -1 : 1;
+      }
+      return;
+    }
+
     // His captain knelt and lost his head in front of him (stage/Sentence.js): he throws
     // the fight and runs for the edge of the room (`routed`: -1 left, 1 right)
     if (this.routed) {
@@ -204,7 +222,7 @@ export class EnemyBrain extends Controller {
 
     // 4) Pick a spot: in attack range, or further back if others are crowding.
     const crowd = this.world.fighters.filter((o) =>
-      o !== f && o.team === f.team && o.alive && !o.controller?.scared && Math.abs(o.x - target.x) < ai.attackRange + 25).length;
+      o !== f && o.team === f.team && o.alive && !o.controller?.scared && !o.dummy && Math.abs(o.x - target.x) < ai.attackRange + 25).length;
     const range = crowd >= ai.maxCrowd ? ai.waitRange : ai.attackRange;
     const side = Math.sign(dx) || 1;
     const wantX = target.x - side * range * 0.85;

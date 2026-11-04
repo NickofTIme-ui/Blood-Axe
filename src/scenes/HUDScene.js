@@ -22,6 +22,7 @@ import { StyleMeter } from '../view/StyleMeter.js';
 import { DialogueBox } from '../view/DialogueBox.js';
 import { PauseMenu } from '../view/PauseMenu.js';
 import { AbilityNotice } from '../view/AbilityNotice.js';
+import { TutorialCard } from '../view/TutorialCard.js';
 import { RankStamp } from '../view/RankStamp.js';
 import { levelRank } from '../progression/LevelRank.js';
 
@@ -77,6 +78,8 @@ export class HUDScene extends Phaser.Scene {
     }).setOrigin(0.5).setStroke('#0a0000', 5).setAlpha(0);
     this.banner.setLetterSpacing?.(2);
     this.abilityNotice = new AbilityNotice(this); // NEW ABILITY plaque (arena.newAbility)
+    // THE PRACTICE YARD: the move to try and its buttons (view/TutorialCard.js)
+    this.tutorialCard = this.arena.stageData?.practice ? new TutorialCard(this, this.arena) : null;
     this.death = null; // the YOU DIED sequence (view/DeathScreen.js)
     this.pauseUi = null;
 
@@ -570,6 +573,7 @@ export class HUDScene extends Phaser.Scene {
     this.waitText.setText(!sess?.waiting ? '' : sess.stall > 240 ? 'Your partner is not responding  —  press R to carry on alone' : 'waiting for your partner…');
 
     this.styleMeter.update(p);
+    this.tutorialCard?.update();
     this.updateChrome();
     this.updateDialogue();
     this.updateEnemyStrip();

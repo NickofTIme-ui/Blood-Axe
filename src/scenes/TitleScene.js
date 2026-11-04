@@ -127,16 +127,19 @@ export class TitleScene extends Phaser.Scene {
       } else {
         entries.push([W / 2, y - 74, 'THE CAMPAIGN  ·  BEGIN', 600, () => this.go('solo', null, 'village'), { h: 64, size: 30 }]);
       }
-      // (the row under it: four buttons with a campaign started, three without)
-      const row = resume ? [-345, -115, 115, 345] : [-260, 0, 260];
-      const bw = resume ? 215 : 235;
-      if (resume) entries.push([W / 2 + row.shift(), y, 'NEW CAMPAIGN', bw, () => this.go('solo', null, 'village')]);
+      // (the row under it: five buttons with a campaign started, four without)
+      const row = resume ? [-384, -192, 0, 192, 384] : [-345, -115, 115, 345];
+      const bw = resume ? 180 : 215;
+      const small = resume ? { size: 18 } : undefined;
+      if (resume) entries.push([W / 2 + row.shift(), y, 'NEW CAMPAIGN', bw, () => this.go('solo', null, 'village'), small]);
+      // THE PRACTICE YARD: every move, one at a time (data/stagePractice.js)
+      entries.push([W / 2 + row.shift(), y, 'PRACTICE', bw, () => this.go('solo', null, 'practice'), small]);
       // (two players carry on from the same checkpoint)
       entries.push([W / 2 + row.shift(), y, '2 PLAYERS', bw,
-        () => this.go('local', null, resume?.level ?? 'village', resume?.section)]);
+        () => this.go('local', null, resume?.level ?? 'village', resume?.section), small]);
       // (online plays the campaign too, from the host's checkpoint: SelectScene.tryStartNet)
-      entries.push([W / 2 + row.shift(), y, 'ONLINE CO-OP', bw, () => this.openLobby()]);
-      entries.push([W / 2 + row.shift(), y, "DIRECTOR'S CUT", bw, () => this.openCut()]);
+      entries.push([W / 2 + row.shift(), y, 'ONLINE CO-OP', bw, () => this.openLobby(), small]);
+      entries.push([W / 2 + row.shift(), y, "DIRECTOR'S CUT", bw, () => this.openCut(), small]);
     } else {
       this.cutDim = this.add.rectangle(0, y - 196, W, SETTINGS.height, 0x050000, 0.72).setOrigin(0);
       this.cutTitle = this.add.text(W / 2, y - 164, "DIRECTOR'S CUT  ·  THE EARLIER BUILDS", { fontFamily: FONT.display, fontSize: '26px' })

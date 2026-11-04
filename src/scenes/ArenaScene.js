@@ -43,7 +43,7 @@ import { FireAmbience } from '../core/FireAmbience.js';
 import { Stage } from '../stage/Stage.js';
 import { StageView } from '../view/StageView.js';
 import { TerrainView } from '../view/TerrainView.js';
-import { STAGES, nextLevel } from '../data/stages.js';
+import { STAGES, ARENAS, nextLevel } from '../data/stages.js';
 import { NpcView } from '../view/NpcView.js';
 import { FireLight } from '../view/FireLight.js';
 import { SpeakerMarker } from '../view/SpeakerMarker.js';
@@ -96,8 +96,8 @@ export class ArenaScene extends Phaser.Scene {
     this.netInfo = this.mode === 'net' ? data.net : null;
     this.seed = data.seed;
     this.keepSession = !!data.keepSession; // a restart inside an online game: same session, ticks carry on
-    this.stageId = STAGES[data.stage] ? data.stage : 'oath';
-    this.stageData = STAGES[this.stageId];
+    this.stageId = ARENAS[data.stage] ? data.stage : 'oath'; // (ARENAS: the levels and THE PRACTICE YARD)
+    this.stageData = ARENAS[this.stageId];
     // the campaign: start at a saved checkpoint (CONTINUE), and the health the heroes
     // walked out of the last level with (shares of their max, in player order)
     this.startSection = data.section ?? 0;
@@ -479,6 +479,9 @@ export class ArenaScene extends Phaser.Scene {
     this.scene.stop('Cutaway');
     this.setupStageEvents(ev);
     this.setupProgressEvents(ev);
+    // THE PRACTICE YARD (stage/Tutorial.js): a bright ring for a move done, a duller one skipped
+    ev.on('lessonDone', ({ skipped }) => playSfx(this, 'block', { volume: skipped ? 0.25 : 0.55, pitch: skipped ? -200 : 900, minGapMs: 0 }));
+    ev.on('practiceDone', () => { this.callout('PRACTICE DONE', '#ffd24a', 30); playSfx(this, 'finisher', { volume: 0.5, pitch: 200, minGapMs: 0 }); });
     this.setupBirthright(ev);
     this.stage.start(this.players, { section: this.startSection });
     this.prepareTestMoment();
@@ -974,7 +977,8 @@ export class ArenaScene extends Phaser.Scene {
       const id = this.heroIds[p.seat] ?? this.characterId;
       const share = fresh ? 1 : p.health / p.stats.maxHealth;
       const was = p.stats.sprite;
-      p.stats = this.progress.statsFor(id, CHARACTERS[id]);
+      // (THE PRACTICE YARD teaches the base kit: no skill picks, no trophies, Oathkeeper in hand)
+      p.stats = this.stageData.practice ? CHARACTERS[id] : this.progress.statsFor(id, CHARACTERS[id]);
       // (another sheet: Rurik's old sword, or Oathkeeper once it's his)
       if (p.stats.sprite !== was && this.views?.has(p.id)) { this.views.get(p.id).destroy(); this.views.set(p.id, this.makeView(p)); }
       p.health = Math.max(1, p.stats.maxHealth * share);
@@ -984,7 +988,7 @@ export class ArenaScene extends Phaser.Scene {
 
   setupProgressEvents(ev) {
     const P = this.progress;
-    if (!P) return;
+    if (!P || this.stageData.practice) return; // (the practice yard earns nothing)
     const gain = (text) => this.callout(text, '#ffd24a', 24);
     ev.on('kill', (e) => {
       if (e.defender?.team !== 'enemy') return;
@@ -1667,7 +1671,7 @@ export class ArenaScene extends Phaser.Scene {
       if (this.systemKeys(recs)) return; // (the scene is changing)
       if (this.paused) continue;         // paused: ticks still pass (and buttons are read), the world holds still
       feedPlayers(this.players, recs);
-      if (!s.net) applyTestMode(this.players); // (test mode: can't die, mana never runs out)
+      if (!s.net) applyTestMode(this.players, !!this.stageData.practice); // (test mode: can't die, mana never runs out)
       this.world.tick();
       this.keepTogether();
       this.stage.update();

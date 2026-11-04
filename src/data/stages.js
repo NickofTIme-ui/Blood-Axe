@@ -18,3 +18,9 @@ export const STAGES = { oath: STAGE, gallows: STAGE_GALLOWS, village: STAGE_VILL
 export function nextLevel(data) {
   return data.next && STAGES[data.next.id] ? STAGES[data.next.id] : null;
 }
+
+// Every stage the arena can be: the levels above, and THE PRACTICE YARD (the tutorial's own
+// space: data/stagePractice.js), kept out of STAGES so it is never part of the campaign,
+// the test-mode level order or any check that walks the levels.
+import { STAGE_PRACTICE } from './stagePractice.js';
+export const ARENAS = { ...STAGES, practice: STAGE_PRACTICE };

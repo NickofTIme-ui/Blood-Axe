@@ -104,6 +104,7 @@
 // opts.flags (the campaign's one-time flags: a sequence's progress). start(players,
 // { section }) starts at a later section's checkpoint.
 
+import { Tutorial } from './Tutorial.js';
 import { STAGE, PICKUPS, PROPS, PROP_LOOKS, PROP_VARIANTS } from '../data/stage.js';
 import { ENEMIES, HORDE_SIZE } from '../data/enemies.js';
 import { createEnemy, offscreenX, inView } from '../entities/Enemy.js';
@@ -324,6 +325,8 @@ export class Stage {
     }
     this.enterSection(k, true);
     this.sequence?.resume();
+    // THE PRACTICE YARD (data/stagePractice.js): one move at a time (stage/Tutorial.js)
+    if (this.data.practice) this.tutorial = new Tutorial(this);
   }
 
   // ------------------------------------------------------------ sections
@@ -793,6 +796,7 @@ export class Stage {
     }
     this.opening?.tail(); // (the commanders still running off)
     this.stats.frames++;
+    this.tutorial?.update();
     const p = this.player;
     this.updateFalls();
     this.updateRests();
