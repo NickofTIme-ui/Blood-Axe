@@ -114,6 +114,17 @@ export const HERO_ANIMS = {
     flying: { frames: seq('react', [3]) },
     lying: { frames: seq('react', [4]) },
     getup: { frames: seq('react', [5, 6, 7]) },
+    // THE REWORK (2026-11-04): stand-in poses from his other strips until ChatGPT paints
+    // his own (docs/mage-art-prompts.md: jab, twirl, vault)
+    // the lantern jab: drawn back, the staff thrust out level (the bolt's thrust), recover
+    jab: swing(seq('combo1', [1]), seq('bolt', [3]), seq('bolt', [4]).concat(seq('combo1', [4]))),
+    // the staff twirl: the strike poses spun through fast
+    twirl: { frames: seq('combo1', [2]).concat(seq('combo2', [2]), seq('combo1', [3]), seq('combo2', [3])), fps: 18, loop: true },
+    twirlEnd: swing(seq('combo3', [2]), seq('combo3', [3]), seq('combo3', [3, 4])),
+    // the pole-vault kick: up on the staff, flying in, down
+    shoulder: { needs: ['levitate', 'dash'], ...swing(seq('levitate', [0, 1]), seq('dash', [2]), seq('levitate', [3])) },
+    // Y, Y, X: the thunder staff (the spinning slam, charged)
+    thunder: swing(seq('combo3', [1, 2]), seq('combo3', [3]), seq('combo3', [3, 3, 4])),
     // finishers borrow his casting poses (kind -> strip)
     finisher: { storm: seq('bolt', [0, 1, 2, 2, 3, 3, 4, 5]), rupture: seq('force', [0, 1, 2, 3, 3, 3, 3, 4]), embers: seq('ward', [0, 1, 2, 3, 4, 4, 4, 5]) },
   },

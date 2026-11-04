@@ -208,3 +208,36 @@ rock shapes.
 > stone, lit warm from the front, heavy and physical. All roughly the same height, about
 > three times taller than wide, bottoms flat and level on one baseline (they come out of
 > the ground). No dust, no motion lines, no text, nothing magenta in the art itself.
+
+---
+
+## 10. The rework (4 November 2026): new moves and the spiked wall
+
+These replace borrowed poses (data/heroStrips.js HERO_ANIMS.mage: jab, twirl, twirlEnd, shoulder,
+thunder). Same chat, same rules as above. Once a strip is saved, add it to HERO_STRIPS.mage.strips
+and point the anim at it.
+
+> Same character, same scale. **6 poses in one row**, facing right, black background, wide gaps.
+> The LANTERN JAB: (1) ready; (2) the staff drawn back along his side, the iron lantern cage at
+> the front, both hands on the shaft like a spear; (3) the staff driven straight forward at chest
+> height, fully extended, body leaning in; (4) holding it out; (5) pulling it back; (6) ready.
+
+Save as `mage_jab.png`.
+
+> Same, **6 poses**. The STAFF TWIRL: the staff spun in front of him like a wheel, held in the
+> middle in both hands, shown at six angles of one turn, the robe swirling. A faint blue-violet
+> glow at the lantern only.
+
+Save as `mage_twirl.png`.
+
+> Same, **6 poses**. The POLE-VAULT KICK: (1) running forward, staff held low; (2) the staff's
+> foot planted ahead, him rising on it; (3) swung up off the ground, body horizontal, both boots
+> forward; (4) both boots driven straight out (the kick); (5) dropping back down past the staff;
+> (6) landed, ready.
+
+Save as `mage_vault.png`.
+
+Wall art (assets/fx/): `earthwall-spiked-strip.png`, the same slabs as `earthwall-strip.png` but
+with jagged stone spikes jutting from BOTH faces, and no teal glow; a second copy with blood on
+the spikes and streaked down the stone. On magenta. Today the spikes are drawn in code
+(effects/MageFX.js EarthWallView).

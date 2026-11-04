@@ -19,6 +19,11 @@
 // Events (world.events):
 //   barrierUp { barrier }   barrierHit { barrier, x, z, h, damage }
 //   barrierDown { barrier, broken }   barrierGone { barrier }
+//   wallImpale { barrier, victim, side, x, z, h, by }   wallGraze { barrier, victim, side, damage }
+//
+// THE SPIKED WALL (stone only, cfg.spikes): a man slammed into a face hard enough is
+// impaled on its spikes. He dies pinned there (`f.wallPin`), hangs and slowly slides
+// down, and drops when the wall comes down.
 
 import { toWorldBox, overlaps } from './Boxes.js';
 
@@ -132,15 +137,24 @@ export class Barriers {
             continue;
           }
         }
+        if (f.wallPin) continue; // (hung on the spikes: pinned() holds him)
         if ((f.x - b.x) * side < hold) {
+          const speed = -f.vx * side; // how hard he's coming at the face
           f.x = b.x + side * hold;
+          if (b.cfg.spikes && f.team !== b.team && this.spiked(b, f, side, speed)) continue;
           if (f.vx * side < 0) f.vx = f.state === 'knockdown' ? -f.vx * 0.15 : 0; // slams into it and drops
           f.bowl = null;
         }
         if (b.kind === 'fire' && f.team !== b.team) this.scorch(b, f, side);
       }
       if (b.maxHp > 0) this.battered(b);
+      this.pinned(b);
       if (b.life <= 0 || (b.maxHp > 0 && b.hp <= 0)) this.takeDown(b, b.hp <= 0 && b.maxHp > 0);
+    }
+    // the bodies on a wall that's coming down fall off it
+    for (const f of w.fighters) {
+      const b = f.wallPin && this.list.find((x) => x.id === f.wallPin.barrier);
+      if (f.wallPin && (!b || b.state !== 'up')) this.unpin(f);
     }
     // a wall that has finished coming down is gone
     const gone = this.list.filter((b) => b.state === 'down' && b.t >= b.collapse);
@@ -148,6 +162,67 @@ export class Barriers {
       this.list = this.list.filter((b) => !gone.includes(b));
       for (const b of gone) w.events.emit('barrierGone', { barrier: b });
     }
+  }
+
+  // A man hitting a spiked face. Fast enough: impaled (true). Hard but not that hard: torn
+  // by the spikes and bounced off. Returns true when he's been pinned.
+  spiked(b, f, side, speed) {
+    const K = b.cfg.spikes;
+    if (!f.alive || f.invincible || speed < K.graze || f.state === 'executed' || f.state === 'grabbed') return false;
+    if (b.cool.has(f.id)) return false;
+    b.cool.set(f.id, 30);
+    const owner = b.owner;
+    const contact = { x: b.x + side * b.half, h: Math.max(f.h, 0) + f.stats.body.h * 0.55 };
+    const pin = speed >= K.speed && !f.stats.boss && !f.spare && !f.immortal;
+    if (!pin) {
+      const dmg = f.stats.boss && speed >= K.speed ? K.bossDamage : K.grazeDamage;
+      this.world.combat.resolve(owner, f, {
+        cut: 'pierce', fx: 'spikes', unblockable: true, fatality: 'none',
+        damage: dmg, hitstun: 24, hitstop: 6, shake: 4,
+        knockback: { x: 180, y: 160 }, knockdown: true,
+      }, { kind: 'magic', fromX: b.x, dir: side, contact });
+      this.world.events.emit('wallGraze', { barrier: b, victim: f, side, damage: dmg, x: contact.x, z: f.z, h: contact.h });
+      return false;
+    }
+    // IMPALED: run through on the stone, dead where he struck
+    const thrower = f.lastAttacker ?? null; // (who sent him: a teammate's throw or kick counts)
+    const h = Math.max(24, Math.min(90, f.h + 30));
+    this.world.combat.resolve(owner, f, {
+      cut: 'pierce', fx: 'spikes', unblockable: true, fatality: 'none',
+      damage: f.health + f.stats.maxHealth, hitstun: 30, hitstop: 12, shake: 9,
+      knockback: { x: 0, y: 0 },
+    }, { kind: 'magic', fromX: b.x, dir: side, contact });
+    if (f.alive && f.health > 0) return false; // (something kept him alive)
+    f.fsm.change('dead');
+    f.wallPin = { barrier: b.id, side, x: b.x + side * (b.half + 4), h, top: h, at: this.world.frame };
+    f.facing = side; // his back to the stone
+    f.vx = 0; f.vz = 0; f.vh = 0;
+    f.x = f.wallPin.x;
+    f.h = h;
+    this.world.events.emit('wallImpale', { barrier: b, victim: f, side, x: f.x, z: f.z, h: h + f.stats.body.h * 0.55, by: owner, thrownBy: thrower });
+    return true;
+  }
+
+  // The men hanging on a wall: held there, sliding slowly down the spike.
+  pinned(b) {
+    const K = b.cfg.spikes;
+    if (!K) return;
+    for (const f of this.world.fighters) {
+      const p = f.wallPin;
+      if (!p || p.barrier !== b.id) continue;
+      p.h = Math.max(p.top - K.maxSlide, p.h - K.slide / 60);
+      f.x = p.x; f.h = p.h; f.vx = 0; f.vz = 0; f.vh = 0;
+      f.facing = p.side;
+    }
+  }
+
+  // Let him fall (the wall came down).
+  unpin(f) {
+    if (!f.wallPin) return;
+    f.vx = f.wallPin.side * 60;
+    f.vh = 40;
+    f.wallPin = null;
+    f.diedLying = false;
   }
 
   // The fire wall burns whoever is pressed against it, and shoves him back.

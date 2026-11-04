@@ -240,17 +240,19 @@ export const CHARACTERS = {
     look: { color: 0x1c2550, accent: 0x6a4a2a, skin: 0xd8b494 },
     // the buttons his kit replaces: dodge = BLINK, heavy = CHAIN LIGHTNING,
     // kick = FORCE BLAST, magic = ARCANE BARRIER (tap fire, hold earth)
-    states: { dodge: 'blink', heavy: 'bolt', kick: 'force', cast: 'ward' },
+    states: { dodge: 'blink', heavy: 'bolt', kick: 'force', cast: 'ward', charge: 'twirl' },
 
     maxHealth: 100, maxStamina: 90, maxMana: 120,
-    staminaRegen: 30, staminaRegenDelay: 36, manaRegen: 5,
+    // (his mana is meant to come from fighting: a slow trickle on its own, a lot from the
+    // staff, so the lightning is the payoff for getting stuck in, not a button to hold back and spam)
+    staminaRegen: 30, staminaRegenDelay: 36, manaRegen: 3,
     walkSpeed: 172, depthSpeed: 122,
     // no jump: a levitation rise (a softer pull = slower up and down; about 130 px high, just under the Rogue's).
     // In the air he can blink once (dodge) and bring the staff down (attack).
     jumpStrength: 650, gravity: 1300, airControl: 0.2, airJumps: 0, // (rises ~162 px: just under Vexa)
     sprint: { speed: 1.7 },  // he flies: laid forward along the staff, robes streaming
     meleeMult: 0.85, magicMult: 1.25, // (spell damage below is before this x1.25)
-    manaOnMelee: 1, // his staff blows refill his mana: 1 mana per point of damage dealt
+    manaOnMelee: 1.5, // his staff blows refill his mana: 1.5 mana per point of damage dealt
     blockReduction: 0.72, guardEfficiency: 1.15,
     // the blink's timing (the dodge numbers the rest of the game reads): invulnerable for
     // `iframes`, gone for duration, then `recovery`
@@ -259,15 +261,21 @@ export const CHARACTERS = {
     knockdownFrames: 40, getupFrames: 26, staggerFrames: 50,
 
     hover: { height: 12, drift: 2.4, driftRate: 0.05 }, // view only: he floats above his feet
+    // HOLD X: past `holdFrames` the opening swing flows into the STAFF TWIRL (not a thrust)
+    charge: { holdFrames: 14, fullFrames: 30, minLevel: 0.4 },
 
     moves: {
       // the staff, as a real weapon: two-handed, long reach, blunt
+      // Every staff blow crackles: a blue-violet arc off the lantern (smear, palette
+      // 'arcane'), a shock through the man it lands on, and a STATIC mark (`static`:
+      // marks added; combat/Mage.js) that his chain lightning sets off.
       light1: { // fast horizontal strike
-        cut: 'blunt', fx: 'staff',
+        cut: 'blunt', fx: 'staff', static: 1,
         startup: 5, active: 3, recovery: 11,
-        damage: 8, hitstun: 22, hitstop: 5, shake: 1,
-        knockback: { x: 110, y: 0 }, guardDamage: 9, lunge: 60,
+        damage: 8, hitstun: 22, hitstop: 7, shake: 2,
+        knockback: { x: 150, y: 0 }, guardDamage: 9, lunge: 60,
         hitbox: { x: 6, y: 34, w: 84, h: 44 },
+        smear: { arc: [-60, 40], r: 84, cx: 0, cy: 70, w: 26, palette: 'arcane' },
         chains: [
           { button: 'attack', next: 'light2', from: 6, to: 19 },
           { button: 'heavy', next: 'heavy', from: 9, to: 19 },
@@ -275,23 +283,27 @@ export const CHARACTERS = {
         cancels: [{ from: 9, to: 19, into: ['dodge', 'block', 'kick', 'magic'] }],
       },
       light2: { // reverse sweep
-        cut: 'blunt', fx: 'staff',
+        cut: 'blunt', fx: 'staff', static: 1,
         startup: 5, active: 3, recovery: 12,
-        damage: 9, hitstun: 22, hitstop: 6, shake: 2,
-        knockback: { x: 130, y: 0 }, guardDamage: 10, lunge: 60,
+        damage: 9, hitstun: 22, hitstop: 8, shake: 3,
+        knockback: { x: 170, y: 0 }, guardDamage: 10, lunge: 60,
         hitbox: { x: 6, y: 26, w: 86, h: 52 },
+        smear: { arc: [70, -50], r: 84, cx: 0, cy: 66, w: 26, palette: 'arcane' },
         chains: [
           { button: 'attack', next: 'light3', from: 6, to: 20 },
           { button: 'heavy', next: 'heavy', from: 9, to: 20 },
         ],
         cancels: [{ from: 9, to: 20, into: ['dodge', 'block', 'kick', 'magic'] }],
       },
-      light3: { // spinning slam that lets out a small pressure pulse
-        cut: 'blunt', fx: 'pulse',
+      // spinning slam that lets out a pressure pulse: it sends men FLYING (bowling over
+      // whoever is behind, into walls and onto his spiked wall)
+      light3: {
+        cut: 'blunt', fx: 'pulse', static: 2, bowl: true,
         startup: 10, active: 4, recovery: 20,
-        damage: 15, hitstun: 26, hitstop: 9, shake: 5,
-        knockback: { x: 300, y: 300 }, knockdown: true, guardDamage: 20, lunge: 90,
+        damage: 15, hitstun: 26, hitstop: 12, shake: 7,
+        knockback: { x: 520, y: 320 }, knockdown: true, guardDamage: 20, lunge: 90,
         hitbox: { x: 0, y: 0, w: 100, h: 70, depth: 30 },
+        smear: { arc: [-150, 80], r: 92, cx: 4, cy: 74, w: 34, heavy: true, palette: 'arcane' },
         cancels: [{ from: 16, to: 34, into: ['dodge', 'kick', 'magic'] }],
       },
       // CHAIN LIGHTNING (the 'bolt' state). The frame data of the cast; the bolt itself
@@ -300,7 +312,7 @@ export const CHARACTERS = {
         cut: 'fire', fx: 'lightning', noBlood: true,
         startup: 13, active: 1, recovery: 22,
         damage: 0, hitstun: 30, hitstop: 8, shake: 4,
-        knockback: { x: 160, y: 0 }, guardDamage: 26, staminaCost: 0, manaCost: 16, lunge: 0,
+        knockback: { x: 160, y: 0 }, guardDamage: 26, staminaCost: 0, manaCost: 20, lunge: 0,
         hitbox: { x: 0, y: 0, w: 0, h: 0 },
         cancels: [{ from: 1, to: 8, into: ['dodge', 'block'] }, { from: 26, to: 36, into: ['dodge'] }],
       },
@@ -314,11 +326,65 @@ export const CHARACTERS = {
         cancels: [{ from: 18, to: 31, into: ['dodge', 'attack', 'block'] }],
       },
       air: { // a downward staff chop out of the levitation
-        cut: 'blunt', fx: 'staff',
+        cut: 'blunt', fx: 'staff', static: 1,
+        smear: { arc: [-120, 90], r: 80, cx: 4, cy: 64, w: 28, palette: 'arcane' },
         startup: 4, active: 12, recovery: 0,
         damage: 9, hitstun: 20, hitstop: 5, shake: 1,
         knockback: { x: 130, y: 0 }, guardDamage: 9,
         hitbox: { x: 0, y: -10, w: 70, h: 60 },
+      },
+      // TAP FORWARD + X: the LANTERN JAB. The spiked iron cage on the staff's head driven
+      // into him like a spear: long reach, it draws blood, and it pins him in place.
+      jab: {
+        cut: 'pierce', fx: 'jab', static: 1,
+        startup: 6, active: 3, recovery: 15,
+        damage: 12, hitstun: 30, hitstop: 9, shake: 3,
+        knockback: { x: 90, y: 0 }, guardDamage: 14, lunge: 150,
+        hitbox: { x: 24, y: 52, w: 104, h: 30 },
+        chains: [{ button: 'attack', next: 'light2', from: 8, to: 22 }, { button: 'heavy', next: 'heavy', from: 9, to: 22 }],
+        cancels: [{ from: 10, to: 22, into: ['dodge', 'block', 'kick', 'magic'] }],
+      },
+      // HOLD X: the STAFF TWIRL. He spins the staff in front of him: a hit every
+      // `every` frames while it's held (arrows off it), then a final crack on release
+      // (combat/Mage.js 'twirl'; numbers in kit.twirl).
+      twirl: {
+        cut: 'blunt', fx: 'twirl', static: 1,
+        startup: 0, active: 4, recovery: 0,
+        damage: 4, hitstun: 18, hitstop: 3, shake: 1,
+        knockback: { x: 70, y: 0 }, guardDamage: 6,
+        hitbox: { x: 0, y: 20, w: 86, h: 74, depth: 30 },
+      },
+      twirlEnd: {
+        cut: 'blunt', fx: 'pulse', static: 1, bowl: true,
+        startup: 2, active: 4, recovery: 18,
+        damage: 12, hitstun: 26, hitstop: 10, shake: 6,
+        knockback: { x: 460, y: 260 }, knockdown: true, guardDamage: 20, lunge: 60,
+        hitbox: { x: 0, y: 10, w: 96, h: 80, depth: 30 },
+        smear: { arc: [-160, 60], r: 90, cx: 2, cy: 72, w: 34, heavy: true, palette: 'arcane' },
+        cancels: [{ from: 12, to: 24, into: ['dodge', 'block'] }],
+      },
+      // SPRINT + X: the POLE-VAULT KICK. He plants the staff ahead, swings up on it and
+      // drives both boots into the first man's chest: a gap-closer that bowls a line over.
+      shoulder: {
+        cut: 'blunt', fx: 'vault', bowl: true, static: 1,
+        startup: 9, active: 8, recovery: 22,
+        damage: 14, hitstun: 30, hitstop: 11, shake: 7,
+        knockback: { x: 700, y: 300 }, knockdown: true, breaksGuard: true, guardDamage: 60,
+        staminaCost: 14, lunge: 520,
+        hitbox: { x: 12, y: 30, w: 62, h: 56 },
+        cancels: [{ from: 22, to: 38, into: ['attack', 'heavy', 'dodge', 'block'] }],
+      },
+      // Y, Y, then X: THUNDER STAFF. The lightning held in the staff and brought down on
+      // the man in front: a huge electrified smash (sets off his Static like a bolt does).
+      thunder: {
+        cut: 'shock', fx: 'thunderStaff', discharge: true,
+        startup: 8, active: 4, recovery: 22,
+        damage: 22, hitstun: 34, hitstop: 14, shake: 10,
+        knockback: { x: 480, y: 360 }, knockdown: true, breaksGuard: true, guardDamage: 40, lunge: 110,
+        manaCost: 10,
+        hitbox: { x: 0, y: 0, w: 104, h: 96, depth: 32 },
+        smear: { arc: [-130, 95], r: 96, cx: 6, cy: 74, w: 40, heavy: true, palette: 'storm' },
+        cancels: [{ from: 16, to: 34, into: ['dodge', 'block'] }],
       },
     },
 
@@ -328,7 +394,7 @@ export const CHARACTERS = {
     kit: {
       // CHAIN LIGHTNING — hold heavy for the overcharge
       bolt: {
-        range: 380, depth: 40,       // how far ahead the first strike reaches
+        range: 250, depth: 40,       // how far ahead the first strike reaches (380 before: too safe from afar)
         damage: 14, chainDamage: 10, // first target / each jump (x magicMult)
         falloff: 0.85,               // each generation of jumps x this
         radius: 150,                 // how far a jump can reach from the last body
@@ -345,7 +411,7 @@ export const CHARACTERS = {
           shake: [6, 8, 14],
           knockback: [1.2, 1.4, 2.6],
           knockdown: [false, false, true],
-          manaCost: [0, 8, 10],      // the 2nd and 3rd strikes cost this on top of the cast
+          manaCost: [0, 12, 16],     // the 2nd and 3rd strikes cost this on top of the cast
           startup: 6,                // a follow-up's wind-up (frames)
           window: [4, 22],           // frames after a bolt when the next press counts
         },
@@ -355,6 +421,20 @@ export const CHARACTERS = {
           damage: 1.6, jumps: 3, branches: 3, knockdown: true,
         },
       },
+      // STATIC — what his staff leaves on a man and his lightning sets off (combat/Mage.js).
+      // An UNMARKED man only gets a short zap that barely chains; a marked one takes the
+      // full strike (more per mark) and the bolt forks on from him at full strength.
+      static: {
+        max: 3, life: 360,           // marks held / frames they last after the last one
+        perMark: 0.3,                // x damage per mark on the man struck (on top of x1)
+        unmarked: { damage: 0.45, jumps: 1, branches: 1 }, // a bolt into a man with no marks
+      },
+      // OVERLOAD — spam the lightning and it bites back. Every strike adds `perStrike` heat,
+      // which bleeds off at `decay` a frame; a cast at `limit` or more backfires: he's
+      // shocked by his own storm (`damage`, stunned `stun` frames) and the heat clears.
+      overload: { perStrike: 14, decay: 0.1, limit: 100, warn: 72, damage: 8, stun: 50 },
+      // STAFF TWIRL (hold X): a hit every `every` frames, up to `maxFrames`; arrows glance off
+      twirl: { every: 8, maxFrames: 90, minFrames: 16, speed: 0.35 },
       // FORCE BLAST — the cone of invisible force
       force: {
         damage: 7, radius: 190, angle: 70,   // degrees, full cone width (damage x magicMult)
@@ -386,7 +466,15 @@ export const CHARACTERS = {
         standoff: 12,    // everyone is held this far off the wall's face (no sinking into it)
         collapse: 30,    // frames the wall takes to come down (no collision while it does)
         fire: { duration: 300, thickness: 34, damage: 5, tickRate: 18, knockback: 220, heat: 0.3 }, // (damage x magicMult)
-        earth: { duration: 600, thickness: 46, hp: 300 }, // hp: every enemy can batter it down (0 = timed only)
+        earth: {
+          duration: 600, thickness: 46, hp: 300, // hp: every enemy can batter it down (0 = timed only)
+          spikes: { speed: 300, graze: 150, grazeDamage: 10, bossDamage: 30, slide: 6, maxSlide: 46, style: 120 },
+        },
+        // THE SPIKED WALL (Nick, 2026-11-04): stone spikes on both faces. A man who slams
+        // into a face at `speed` px/s or more (thrown, kicked, blasted, bowled) is IMPALED:
+        // he dies pinned to it and hangs there, sliding down `slide` px a second, until the
+        // wall comes down. Slower than that but over `graze`: he's torn by the spikes
+        // (`grazeDamage`) and bounces off. A boss is never pinned: `bossDamage` and off.
       },
       // FINISHERS on runners (combat/Mage.js MAGE_FINISHERS)
       finisher: { reach: 230, depth: 40 },

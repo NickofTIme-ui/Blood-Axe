@@ -183,6 +183,12 @@ export function tryActions(f, allowed = null) {
     f.fsm.change('shoulder');
     return true;
   }
+  // the Mage's LANTERN JAB: a flick forward with the press (forward tapped just before X)
+  if (ok('attack') && s.moves.jab && c.peek('attack') && c.peek(f.facing > 0 ? 'right' : 'left', 10) && ready(f, s.moves.jab, 'jab')) {
+    c.consume('attack');
+    f.fsm.change('jab');
+    return true;
+  }
   if (ok('attack') && c.consume('attack')) {
     // Lost the arm that throws the opener? Skip straight to the next hit.
     f.fsm.change(usable(f, s.moves.light1) || !s.moves.light2 ? 'light1' : 'light2');
@@ -206,7 +212,7 @@ export function tryActions(f, allowed = null) {
 // finishers or being hit). Fighter.update runs this before the state's own update.
 const CANCELLABLE = new Set([
   'light1', 'light2', 'light3', 'light4', 'launcher', 'heavy', 'kick', 'shoulder', 'spin',
-  'charge', 'thrust', 'cast', 'bolt', 'force', 'ward', 'viper', 'rkick', 'sweep', 'knife',
+  'charge', 'thrust', 'cast', 'bolt', 'force', 'ward', 'jab', 'twirl', 'twirlEnd', 'thunder', 'viper', 'rkick', 'sweep', 'knife',
   'mine', 'kingcast', 'kingsfire', 'rush', 'smoke',
 ]);
 export function actionCancel(f) {
@@ -242,7 +248,7 @@ function makeAttackState(moveKey) {
       if (ch && moveKey === 'light1' && f.team === 'player') {
         if (c.isDown('attack')) f.chargeHeld = (f.chargeHeld ?? 0) + 1;
         else f.chargeHeld = -999; // let go: this press was a tap
-        if (f.chargeHeld >= ch.holdFrames && phase === 'recovery') { f.fsm.change(ch.state ?? 'charge'); return; } // (Vexa: the BACKSTAB)
+        if (f.chargeHeld >= ch.holdFrames && phase === 'recovery') { f.fsm.change(ch.state ?? stateFor(f, 'charge')); return; } // (the Mage: his staff twirl; Vexa: the BACKSTAB)
       }
 
       // Step forward during the swing, then slide to a stop.
@@ -984,14 +990,14 @@ export const FIGHTER_STATES = {
       f.invincible = true;
       f.deadFor++;
       // a corpse that's alight stays until it has burnt out; a charred one lingers longer
-      if (!(f.burn && (f.burn.lit || f.burn.cool > 0))) f.deadAge++;
+      if (!(f.burn && (f.burn.lit || f.burn.cool > 0)) && !f.wallPin) f.deadAge++; // (one hung on the Mage's spiked wall stays while it stands)
       if (f.team === 'enemy' && f.deadAge > (f.burn?.heat > 0.3 ? 420 : 150)) f.removeMe = true; // corpse fades, then removed
     },
   },
 };
 
 // The Mage's own states (combat/Mage.js), handed the helpers they share with these.
-Object.assign(FIGHTER_STATES, mageStates({ tryActions, stopMoving, friction, faceInput, aimTurn }));
+Object.assign(FIGHTER_STATES, mageStates({ tryActions, stopMoving, friction, faceInput, aimTurn, makeAttackState }));
 // ...and the Rogue's (combat/Rogue.js)
 Object.assign(FIGHTER_STATES, rogueStates({ tryActions, stopMoving, friction, faceInput, makeAttackState }));
 Object.assign(FIGHTER_STATES, rogueMoveStates({ tryActions, stopMoving, friction, faceInput })); // (Vexa's second set: combat/RogueMoves.js)
