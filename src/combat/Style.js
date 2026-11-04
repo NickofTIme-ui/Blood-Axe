@@ -22,6 +22,7 @@ export const STYLE = {
     spike: 30,          // the last air swing, driving him into the floor
     crit: 10, counter: 14, superCrit: 40, multi: 6, // (multi: each extra body one swing cuts)
     kill: 22, parry: 45, guardBreak: 18, riposte: 35,
+    spiked: 60,         // a man sent onto the Mage's spiked wall (to whoever sent him, and the Mage)
   },
   // rank: the score it starts at, its letter, the word under it, the blood it pays
   ranks: [
@@ -98,6 +99,11 @@ export function installStyle(world) {
     gain(world, a, pts);
   });
   ev.on('kill', (e) => { if (hero(e.attacker) && e.defender.team !== 'player') gain(world, e.attacker, STYLE.points.kill); });
+  // impaled on the Mage's spiked wall (combat/Barrier.js): whoever threw or knocked him
+  // there, and the Mage for the wall
+  ev.on('wallImpale', (e) => {
+    for (const who of new Set([e.thrownBy, e.by])) if (hero(who)) { who.style.timer = STYLE.window; gain(world, who, STYLE.points.spiked); }
+  });
   ev.on('parry', (e) => { if (hero(e.defender)) { e.defender.style.timer = STYLE.window; gain(world, e.defender, STYLE.points.parry); } });
   ev.on('guardBreak', (e) => { if (hero(e.attacker) && e.defender.team !== 'player') gain(world, e.attacker, STYLE.points.guardBreak); });
 }

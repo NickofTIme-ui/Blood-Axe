@@ -1814,6 +1814,8 @@ export class Stage {
     const crushed=kind==='trample'&&f.team!=='player'&&!f.stats.boss;
     if (!f.alive || (f.invincible&&!crushed) || f.entering || f.cinematic || f.state === 'executed' || f.state === 'execute' || f.state === 'grabbed' || hz.cool.has(f.id)) return;
     if(crushed)dmg=f.health+f.stats.maxHealth;
+    // the Mage's staff twirl: arrows glance off the spinning staff (combat/Mage.js)
+    if (kind === 'arrow' && f.twirling) { hz.cool.set(f.id, 20); this.world.events.emit('arrowDeflect', { fighter: f, dir }); return; }
     if ((f.spare || f.immortal) && f.health - dmg < 1) dmg = Math.max(0, f.health - 1); // (beaten to his knees, never killed: Sequence.js; immortal: config/testMode.js)
     if (kind === 'fire' && f.state === 'knockdown' && f.lyingSince === null) return; // already thrown clear
     hz.cool.set(f.id, kind === 'fire' ? FIRE.tick * 3 : 50);

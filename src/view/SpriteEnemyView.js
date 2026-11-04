@@ -151,6 +151,9 @@ export class SpriteEnemyView {
       case 'getup': return easedSpread(A.getup.frames, fr / f.stats.getupFrames);
       // struck dead on his feet: the blow lands (hit), he goes over (knocked flying), down
       case 'dead': {
+        // hung on the Mage's spiked wall (combat/Barrier.js): limp on the spike, his painted
+        // impaled pose when he has one (its intact one), else the blow landing
+        if (f.wallPin) return this.scene.textures.exists(`${this.sheet.key}-impaled`) ? 'impaled:0' : A.hit.frames[0];
         // (not deadAge: that stops while he burns, and he'd burn standing; and one who
         // died where he lay doesn't get up to go down again)
         const age = f.diedLying ? DIE.fall : f.deadFor ?? fr;
@@ -422,7 +425,11 @@ export class SpriteEnemyView {
     // knocked flying: the whole painted body tips back on the way up, over on the way down
     if (st === 'knockdown' && f.lyingSince === null && f.hitstop === 0) angle = Math.max(-14, Math.min(8, -f.vh / 30));
     // struck dead on his feet: rocked back by the blow, then tipping over as he goes down
-    if (st === 'dead') {
+    if (st === 'dead' && f.wallPin) {
+      // on the spike: a last twitch or two, then hanging still, slumped forward off the stone
+      const t = (f.world?.frame ?? 0) - f.wallPin.at;
+      angle = 7 + (t < 50 ? Math.sin(t * 1.3) * 4 * (1 - t / 50) : 0);
+    } else if (st === 'dead') {
       const age = f.diedLying ? DIE.fall : f.deadFor ?? fr;
       if (age < DIE.hit) { angle = -4 * (age / DIE.hit); dx = -age * 0.8; }
       else if (age < DIE.fall) {

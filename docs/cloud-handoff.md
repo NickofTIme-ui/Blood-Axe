@@ -6,6 +6,21 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 4 November 2026 (cloud, `claude/project-thread-l63s14`, NOT on main yet, waiting on Nick): THE MAGE
+  REWORK (Nick: Y Y Y "feels like a cheat code", "even hitting with the staff is boring", spiked wall
+  idea). Plan doc: https://claude.ai/artifact/LGbuXXYizuXUVMbWqeHMUh. Code (all in data/characters.js
+  mage + combat/Mage.js unless said): STATIC marks from staff blows (`kit.static`, CombatSystem adds
+  them); a bolt into an unmarked man is a short zap, marked = full strike, spent by the 3rd strike;
+  bolt range 380 -> 250, mana costs up, regen 5 -> 3, staff refills 1.5 per damage; OVERLOAD
+  (`kit.overload`) backfires on spam; Y, Y, X = THUNDER STAFF (`moves.thunder`); tap forward + X =
+  LANTERN JAB (`moves.jab`, pierce); hold X = STAFF TWIRL (`twirl`/`twirlEnd`, arrows glance off:
+  Stage.hurt); sprint + X = POLE-VAULT KICK (his `moves.shoulder`); heavier staff hits, the 3rd
+  bowls. Staff arcs in blue-violet (Smear.js palettes 'arcane'/'storm', StripHeroView draws them).
+  SPIKED WALL (combat/Barrier.js `spiked`, `cfg.earth.spikes`): a man hitting a face at 300 px/s+
+  is impaled, hangs (`f.wallPin`, SpriteEnemyView uses his `_impaled` pose), slides down, drops
+  when it falls; slower = grazed; bosses never pinned; style points (Style.js `spiked`). Spikes and
+  blood are code-drawn in MageFX EarthWallView, and the new moves borrow poses: ChatGPT jobs listed
+  in docs/mage-art-prompts.md section 10.
 - 4 November 2026 (cloud, `claude/project-thread-jtx8mf`, Nick: "PUSH": ON MAIN, not on itch): Nick's
   second level 1 art review ("YES to ALL"). Code: street shouts on parchment, kept on screen and
   clear of the HUD (view/ShoutPlate.js); darker contact shadows (atmosphere.js softShadow);
