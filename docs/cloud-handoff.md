@@ -12,7 +12,7 @@ branch, or ChatGPT's work gets lost.
   menu: PRACTICE, then pick a hero. One small yard (data/stagePractice.js, kept OUT of STAGES: the
   arena loads it through ARENAS in data/stages.js), a card top centre with one move and its buttons
   (view/TutorialCard.js; pad labels once a pad is connected), ticked off when done, D-pad left / X
-  skips. Lessons per hero in data/tutorial.js (Rurik 12, Oryn 13 with the rework's Thunder Staff, twirl and pole-vault kick, Vexa 16 with Thousand Cuts, Shadow Rush, Backstab and Fade; base kit only, no
+  skips. Lessons per hero in data/tutorial.js (Rurik 13 incl. the X X Y Y juggle into the Sunder, Oryn 13 with the rework's Thunder Staff, twirl and pole-vault kick, Vexa 16 with Thousand Cuts, Shadow Rush, Backstab and Fade; base kit only, no
   skill-tree moves): when the Mage or Assassin rework changes a kit, change their list there. Logic:
   stage/Tutorial.js (two grunts stand at posts and never fight back, Enemy.js `dummy`; one who does
   for BLOCK and after the end). Hero can't die, full mana/stamina, no skill picks or trophies, earns

@@ -56,7 +56,9 @@ export const LESSONS = {
     { id: 'dodge', name: 'ROLL', keys: ['dodge'], done: { moves: ['dodge'] } },
     BLOCK,
     GRAB,
-    { id: 'launcher', name: 'RISING CLEAVE', keys: ['attack', 'attack', 'heavy'], hint: 'Then heavy again to SUNDER him', done: { moves: ['launcher'] } },
+    // THE JUGGLE: the rising cleave throws him up, the second heavy splits him in the air (combat/Juggle.js)
+    { id: 'launcher', name: 'RISING CLEAVE', keys: ['attack', 'attack', 'heavy'], hint: 'Throws him into the air', done: { moves: ['launcher'] } },
+    { id: 'sunder', name: 'JUGGLE: SUNDER', keys: ['attack', 'attack', 'heavy', 'heavy'], hint: 'Heavy again while he is up', done: { moves: ['sunder'] } },
     { id: 'thrust', name: 'POWER THRUST', keys: ['hold:attack'], done: { moves: ['thrust'] } },
     { id: 'shoulder', name: 'SHOULDER SMASH', keys: ['sprint', '>', 'attack'], hint: 'Sprint at them first', done: { moves: ['shoulder'] } },
     { id: 'jumpAttack', name: 'AIR SLASH', keys: ['jump', '>', 'attack'], done: { moves: ['airAttack'] } },

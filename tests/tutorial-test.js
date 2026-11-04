@@ -115,6 +115,10 @@ function teach(hero) {
     } else if (L.id === 'combo') {
       // mashed, the way a player does it (a heavier hit holds the next press back a little)
       for (let j = 0; j < 20 && !T.done; j++) press('attack', 5);
+    } else if (L.id === 'sunder') {
+      // X, X, Y throws him up; Y again once it has connected splits him in the air
+      press('attack', 8); press('attack', 8); press('heavy', 8);
+      for (let j = 0; j < 12 && !T.done; j++) press('heavy', 4);
     } else if (L.id === 'cuts') {
       // the 4th hit has thrown him up: heavy goes up after him
       for (let j = 0; j < 20 && p.state !== 'light4'; j++) press('attack', 5);
