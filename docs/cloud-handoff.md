@@ -6,8 +6,9 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 4 November 2026 (PC, local branch `claude/vexa-art`, bundled as `blood-axe-vexa-art.bundle`; NOT
-  on main until the cloud pulls it): VEXA'S SECOND SET PAINTED (docs/rogue-art-prompts.md jobs 11-20,
+- 4 November 2026 (PC, branch `claude/vexa-art`, bundled in three parts; cloud fetched them and
+  fast-forwarded main to b89a4ae, Nick: "push all merge all update itch"; itch upload started from
+  this main): VEXA'S SECOND SET PAINTED (docs/rogue-art-prompts.md jobs 11-20,
   ChatGPT, chat "BA · Rogue · Strips"; originals in art-incoming/vexa-second-set/ on the PC). Strips
   rogue_rush, backstab, cuts, night, grab, moves2, rollUp, rollDown, block baked by the new
   tools/bake-vexa-strip.py into HD sheets vexa-rogue-<name> (listed in src/data/vexaArt.js and
