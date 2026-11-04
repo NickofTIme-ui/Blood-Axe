@@ -67,14 +67,17 @@ export const LESSONS = {
   mage: [
     MOVE,
     { id: 'combo', name: 'STAFF COMBO', keys: ['attack', 'attack', 'attack'], done: { moves: ['light3'] } },
-    { id: 'bolt', name: 'CHAIN LIGHTNING', keys: ['heavy'], hint: 'Up to three times in a row', done: { moves: ['bolt'] } },
+    { id: 'bolt', name: 'CHAIN LIGHTNING', keys: ['heavy'], hint: 'Hit him with the staff first', done: { moves: ['bolt'] } },
+    { id: 'thunder', name: 'THUNDER STAFF', keys: ['heavy', 'heavy', 'attack'], done: { moves: ['thunder'] } },
+    { id: 'twirl', name: 'STAFF TWIRL', keys: ['hold:attack'], hint: 'Arrows glance off it', done: { moves: ['twirl'] } },
     { id: 'force', name: 'FORCE BLAST', keys: ['kick'], hint: 'Hold it for a stronger push', done: { moves: ['force'] } },
     { id: 'blink', name: 'BLINK', keys: ['dodge'], done: { moves: ['blink'] } },
     BLOCK,
     GRAB,
     SPRINT,
+    { id: 'shoulder', name: 'POLE-VAULT KICK', keys: ['sprint', '>', 'attack'], hint: 'Sprint at them first', done: { moves: ['shoulder'] } },
     { id: 'jumpAttack', name: 'AIR STRIKE', keys: ['jump', '>', 'attack'], done: { moves: ['airAttack'] } },
-    { id: 'ward', name: 'STONE WALL', keys: ['magic'], hint: 'Only enemies are stopped', done: { moves: ['ward'] } },
+    { id: 'ward', name: 'STONE WALL', keys: ['magic'], hint: 'Throw or blast men into its spikes', done: { moves: ['ward'] } },
   ],
 
   // VEXA (characters.js rogue)

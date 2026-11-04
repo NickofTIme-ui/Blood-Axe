@@ -50,7 +50,7 @@ export function inView(world, heroes, x) {
   return x > lo && x < hi;
 }
 
-const ATTACK_STATES = ['light1', 'light2', 'light3', 'light4', 'heavy', 'kick', 'viper', 'sweep', 'bolt', 'force'];
+const ATTACK_STATES = ['light1', 'light2', 'light3', 'light4', 'heavy', 'kick', 'viper', 'sweep', 'bolt', 'force', 'jab', 'twirlEnd', 'thunder', 'shoulder'];
 const COMBO_STATES = ['light1', 'light2'];
 
 export class EnemyBrain extends Controller {

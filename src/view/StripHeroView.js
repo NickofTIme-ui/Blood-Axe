@@ -14,13 +14,16 @@ import { MageHover } from '../effects/MageHover.js';
 import { HERO_STRIPS } from '../data/heroStrips.js';
 import { BodyFeel, easedSpread, swingBody } from './animFeel.js';
 import { softShadow } from './atmosphere.js';
+import { drawSmear, smearSparks } from './Smear.js';
 
 const spread = (list, t) => list[Math.min(list.length - 1, Math.max(0, Math.floor(t * list.length)))];
 const FLIP_FRAMES = 40; // ticks the double-jump flip takes (about the time she's rising and turning over)
 const clamp01 =(t) => Math.max(0, Math.min(1, t));
 // How hard each strip-drawn swing reads in the body (view only: anticipation coil, strike
 // drive, damped settle; see swingBody in view/animFeel.js)
-const SWING_K = { light1: 0.5, light2: 0.55, light3: 0.85, heavy: 1.15, airAttack: 0.5, kick: 0.7 };
+const SWING_K = { light1: 0.5, light2: 0.55, light3: 0.85, heavy: 1.15, airAttack: 0.5, kick: 0.7, jab: 0.6, twirlEnd: 0.8, thunder: 1.2, shoulder: 0.7 };
+// swings that draw their move's `smear` (the Mage's staff arcs: data/characters.js)
+const SMEARED = ['light1', 'light2', 'light3', 'airAttack', 'twirlEnd', 'thunder'];
 
 export class StripHeroView {
   constructor(scene, fighter, sheet) {
@@ -37,6 +40,28 @@ export class StripHeroView {
     this.feel = new BodyFeel(fighter); // squash, stretch, state blends (view/animFeel.js)
     // the Mage's hover: cloth ripple, the float, the floor circle and motes (effects/MageHover.js)
     this.hover = fighter.stats.hover ? new MageHover(scene, this) : null;
+    // the swoosh along a swing (only heroes whose moves have a `smear`)
+    this.smear = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
+  }
+
+  // The staff's arc through a swing, and while he twirls it a spinning disc of it.
+  drawSwing() {
+    const f = this.f;
+    const st = f.state;
+    const fr = f.fsm.frame;
+    const g = this.smear.clear().setDepth(f.z + 0.4);
+    let sm = null; let t = fr;
+    if (SMEARED.includes(st) && f.move?.smear) sm = f.move;
+    else if (st === 'twirl') {
+      // the staff spinning: a long arc that wheels round in front of him
+      const a = ((f.world?.frame ?? 0) * 38) % 360;
+      sm = { startup: 1, active: 3, smear: { arc: [a, a + 230], r: 64, cx: 26, cy: 70, w: 20, palette: 'arcane' } };
+      t = 4;
+    }
+    if (!sm) return;
+    drawSmear(g, f, sm, t);
+    const tick = f.world?.frame ?? 0;
+    if (tick !== this.sparkTick && f.hitstop === 0) { this.sparkTick = tick; smearSparks(this.scene.gore, f, sm, t); }
   }
 
   // Where the staff's tip is drawn right now (screen point), for poses whose strip marks
@@ -237,11 +262,13 @@ export class StripHeroView {
     const lift = f.h + (hover && !downed ? hover.height + (float?.lift ?? 0) : 0);
     this.shadow.setPosition(f.x, f.z).setScale(1 - Math.min(lift / 300, 0.5)).setAlpha(0.35 * alpha);
     this.hover?.update(s, ref, downed);
+    this.drawSwing();
   }
 
   // Off screen without updating (a companion gone ahead): the sprite, its shadow and, for
   // the Mage, the floor circle and motes with him.
   hide() {
+    this.smear.clear();
     this.sprite.setVisible(false);
     this.shadow.setVisible(false);
     this.hover?.hide();
@@ -249,6 +276,7 @@ export class StripHeroView {
 
   destroy() {
     this.hover?.destroy();
+    this.smear.destroy();
     this.sprite.destroy();
     this.shadow.destroy();
   }

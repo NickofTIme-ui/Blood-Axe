@@ -10,6 +10,7 @@ import { movePhase } from './MoveRunner.js';
 import { chooseFatality, chooseMaim } from './Fatality.js';
 import { furyArmor } from './Skills.js';
 import { juggles, juggleHit } from './Juggle.js';
+import { addStatic, staticOn } from './Mage.js';
 
 const FEEL = SETTINGS.feel;
 const ATTACK_STATES = ['light1', 'light2', 'light3', 'launcher', 'sunder', 'heavy', 'special1', 'special2', 'shoulder'];
@@ -209,6 +210,10 @@ export class CombatSystem {
       (crit ? FEEL.critMultiplier : 1) * juggleMult * (riposte ? RIPOSTE.mult : 1) *
       (def.ward ?? 1); // (ward: a boss taking only part of a blow: King Vaurath's guard, stage/Stage.js)
     if (sunder) damage = Math.max(damage, def.health + 1);
+    // the Mage's THUNDER STAFF sets off the Static his staff left (combat/Mage.js)
+    const S = attacker?.stats.kit?.static;
+    const discharged = move.discharge && S ? staticOn(def, this.world.frame) : 0;
+    if (discharged) damage *= 1 + discharged * S.perMark * 1.5;
     const healthBefore = def.health;
     def.health = Math.max(def.spare || def.immortal ? 1 : 0, def.health - damage); // (spare: a boss beaten to his knees, not killed: stage/Sequence.js; immortal: config/testMode.js)
     def.flash = 6;
@@ -217,6 +222,8 @@ export class CombatSystem {
     if (melee && attacker?.stats.manaOnMelee && attacker.alive) {
       attacker.mana = Math.min(attacker.stats.maxMana, attacker.mana + (healthBefore - def.health) * attacker.stats.manaOnMelee);
     }
+    if (discharged) { def.static = null; bus.emit('staticBurst', { by: attacker, target: def, n: discharged }); }
+    else if (move.static && S && def.health > 0) addStatic(attacker, def, move.static);
     const armored = hasSuperArmor(def);
     if (!armored) def.faceToward(ctx.fromX);
     event.damage = damage;

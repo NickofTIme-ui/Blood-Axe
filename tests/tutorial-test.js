@@ -110,6 +110,9 @@ function teach(hero) {
     if (L.id === 'block') {
       c.hold.block = true;
       run(w, st, 900, () => T.done);
+    } else if (L.id === 'combo') {
+      // mashed, the way a player does it (a heavier hit holds the next press back a little)
+      for (let j = 0; j < 20 && !T.done; j++) press('attack', 5);
     } else if (L.id === 'move') {
       c.mx = 1; run(w, st, 50); c.mx = -1; run(w, st, 60, () => T.done);
     } else {
@@ -118,7 +121,7 @@ function teach(hero) {
         if (k === 'down') { c.mz = 1; continue; }
         if (k.startsWith('hold:')) { const a = k.slice(5); c.queue.push(a); c.hold[a] = true; run(w, st, 45); c.hold[a] = false; run(w, st, 4); continue; }
         if (k === 'sprint') { c.mx = 1; press('sprint', 12); if (L.id === 'shoulder') run(w, st, 20); continue; }
-        press(k, k === 'jump' ? 12 : 8);
+        press(k, k === 'jump' ? 12 : L.id === 'thunder' ? 16 : 8); // (a bolt's next press counts once it has fired)
       }
       run(w, st, 30, () => T.done);
     }

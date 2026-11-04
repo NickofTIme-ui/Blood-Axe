@@ -12,13 +12,28 @@ branch, or ChatGPT's work gets lost.
   menu: PRACTICE, then pick a hero. One small yard (data/stagePractice.js, kept OUT of STAGES: the
   arena loads it through ARENAS in data/stages.js), a card top centre with one move and its buttons
   (view/TutorialCard.js; pad labels once a pad is connected), ticked off when done, D-pad left / X
-  skips. Lessons per hero in data/tutorial.js (Rurik 12, Oryn 10, Vexa 13; base kit only, no
+  skips. Lessons per hero in data/tutorial.js (Rurik 12, Oryn 13 with the rework's Thunder Staff, twirl and pole-vault kick, Vexa 13; base kit only, no
   skill-tree moves): when the Mage or Assassin rework changes a kit, change their list there. Logic:
   stage/Tutorial.js (two grunts stand at posts and never fight back, Enemy.js `dummy`; one who does
   for BLOCK and after the end). Hero can't die, full mana/stamina, no skill picks or trophies, earns
   no blood. tests/tutorial-test.js plays every lesson of every hero with its own buttons. No new art
   (grunts as sparring men, the castle ground, the NEW ABILITY plaque style). The headless browser in
   the cloud crashes starting ANY level (Oath Road too), so it was not seen running in a browser here.
+- 4 November 2026 (cloud, `claude/project-thread-l63s14`, NOT on main yet, waiting on Nick): THE MAGE
+  REWORK (Nick: Y Y Y "feels like a cheat code", "even hitting with the staff is boring", spiked wall
+  idea). Plan doc: https://claude.ai/artifact/LGbuXXYizuXUVMbWqeHMUh. Code (all in data/characters.js
+  mage + combat/Mage.js unless said): STATIC marks from staff blows (`kit.static`, CombatSystem adds
+  them); a bolt into an unmarked man is a short zap, marked = full strike, spent by the 3rd strike;
+  bolt range 380 -> 250, mana costs up, regen 5 -> 3, staff refills 1.5 per damage; OVERLOAD
+  (`kit.overload`) backfires on spam; Y, Y, X = THUNDER STAFF (`moves.thunder`); tap forward + X =
+  LANTERN JAB (`moves.jab`, pierce); hold X = STAFF TWIRL (`twirl`/`twirlEnd`, arrows glance off:
+  Stage.hurt); sprint + X = POLE-VAULT KICK (his `moves.shoulder`); heavier staff hits, the 3rd
+  bowls. Staff arcs in blue-violet (Smear.js palettes 'arcane'/'storm', StripHeroView draws them).
+  SPIKED WALL (combat/Barrier.js `spiked`, `cfg.earth.spikes`): a man hitting a face at 300 px/s+
+  is impaled, hangs (`f.wallPin`, SpriteEnemyView uses his `_impaled` pose), slides down, drops
+  when it falls; slower = grazed; bosses never pinned; style points (Style.js `spiked`). Spikes and
+  blood are code-drawn in MageFX EarthWallView, and the new moves borrow poses: ChatGPT jobs listed
+  in docs/mage-art-prompts.md section 10.
 - 4 November 2026 (cloud, `claude/project-thread-jtx8mf`, Nick: "PUSH": ON MAIN, not on itch): Nick's
   second level 1 art review ("YES to ALL"). Code: street shouts on parchment, kept on screen and
   clear of the HUD (view/ShoutPlate.js); darker contact shadows (atmosphere.js softShadow);

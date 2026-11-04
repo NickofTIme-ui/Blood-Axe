@@ -47,8 +47,28 @@ const OATH_LAYERS = [
   { color: 0xffffff, w: 0.16, a: 1.0 },   // white edge
 ];
 const OATH_EMBERS = [0xffffff, 0xfff0c0, 0xffd070, 0xe0b450];
-const layersFor = (f, sm) => (sm.enemy ? ENEMY_LAYERS : f.stats?.blade ? OATH_LAYERS : LAYERS);
-const embersFor = (f, sm) => (sm.enemy ? ENEMY_EMBERS : f.stats?.blade ? OATH_EMBERS : EMBERS);
+// THE MAGE'S STAFF (palette 'arcane'): a deep violet shadow, a blue-violet body, an
+// electric blue edge and a white rim, with sparks of lantern orange. 'storm' (his
+// Thunder Staff) is the same burned whiter and colder.
+const ARCANE_LAYERS = [
+  { color: 0x12082a, w: 1.3, a: 0.5 },
+  { color: 0x4a2aa8, w: 1.0, a: 0.6 },
+  { color: 0x7a6aff, w: 0.62, a: 0.7 },
+  { color: 0xb8d0ff, w: 0.34, a: 0.9 },
+  { color: 0xffffff, w: 0.14, a: 1.0 },
+];
+const ARCANE_EMBERS = [0xffffff, 0xb8d0ff, 0x8a7aff, 0xffb050];
+const STORM_LAYERS = [
+  { color: 0x0c1430, w: 1.45, a: 0.55 },
+  { color: 0x3a5ad8, w: 1.05, a: 0.65 },
+  { color: 0x8ab8ff, w: 0.7, a: 0.8 },
+  { color: 0xe0f0ff, w: 0.4, a: 0.95 },
+  { color: 0xffffff, w: 0.2, a: 1.0 },
+];
+const STORM_EMBERS = [0xffffff, 0xe0f0ff, 0x8ab8ff];
+const PALETTES = { arcane: [ARCANE_LAYERS, ARCANE_EMBERS], storm: [STORM_LAYERS, STORM_EMBERS] };
+const layersFor = (f, sm) => (PALETTES[sm.palette]?.[0] ?? (sm.enemy ? ENEMY_LAYERS : f.stats?.blade ? OATH_LAYERS : LAYERS));
+const embersFor = (f, sm) => (PALETTES[sm.palette]?.[1] ?? (sm.enemy ? ENEMY_EMBERS : f.stats?.blade ? OATH_EMBERS : EMBERS));
 
 // Where the smear is this frame (null = not showing).
 function smearState(f, move, frame) {
@@ -98,7 +118,7 @@ export function drawSmear(g, f, move, frame) {
   // speed streaks trailing off the tip
   if (s.fade < 0.5) {
     for (let k = 1; k <= 3; k++) {
-      const [c1, c2] = sm.enemy ? [0xd8d8e0, 0xb0202a] : [0xffe2b0, 0xff9a4a];
+      const [c1, c2] = sm.palette ? [0xe0f0ff, 0x8a7aff] : sm.enemy ? [0xd8d8e0, 0xb0202a] : [0xffe2b0, 0xff9a4a];
       g.lineStyle(k === 1 ? 2 : 1, k === 1 ? c1 : c2, 0.55 * alpha);
       const d = head - (head - tail) * 0.1 * k;
       const p0 = pt(d, r + 5 + k * 4);

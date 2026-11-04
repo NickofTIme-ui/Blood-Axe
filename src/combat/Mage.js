@@ -9,6 +9,12 @@
 //   magic  -> ward    ARCANE BARRIER: tap = Infernal Wall, hold = Earthen Bulwark
 //                     (combat/Barrier.js)
 //
+// His staff feeds his lightning (STATIC, kit.static): every staff blow marks the man it
+// lands on, and a bolt into a marked man hits hard and forks on at full strength; into an
+// unmarked man it's a short zap. Spam the lightning and it OVERLOADS (kit.overload): his
+// own storm shocks him. Y, Y, then X brings the charge down through the staff (THUNDER
+// STAFF); hold X twirls the staff; sprint + X is the pole-vault kick.
+//
 // Behind a runner, his finishers (MAGE_FINISHERS) take the place of Ulric's:
 //   attack STORM JUDGMENT   heavy ARCANE RUPTURE   kick GATE OF EMBERS
 // — each for one, two or three runners at once.
@@ -24,6 +30,54 @@ const clampZ = (w, z) => Math.max(w.bounds.minZ, Math.min(w.bounds.maxZ, z));
 function foes(f) {
   return f.world.fighters.filter((e) => e.team !== f.team && e.alive && !e.removeMe &&
     !['executed', 'dead'].includes(e.state));
+}
+
+// ---------------------------------------------------------------- static
+
+// The Static marks on a man right now (0 once they've worn off).
+export function staticOn(e, frame) {
+  const s = e.static;
+  return s && frame <= s.until ? s.n : 0;
+}
+
+// A staff blow (or anything with `static`) lands: marks added, up to the kit's max.
+export function addStatic(by, e, n) {
+  const S = by.stats.kit?.static;
+  if (!S || !e.alive || e.team === by.team) return;
+  const frame = by.world.frame;
+  const had = staticOn(e, frame);
+  e.static = { n: Math.min(S.max, had + n), until: frame + S.life, by };
+  by.world.events.emit('staticMark', { by, target: e, n: e.static.n, max: S.max });
+}
+
+// Struck by the lightning: the marks are spent.
+function spendStatic(e) { if (e.static) { e.static = null; } }
+
+// ---------------------------------------------------------------- overload
+
+// The heat in him now (it bleeds off a little every frame since it was last touched).
+export function heatOf(f) {
+  const O = kitOf(f).overload;
+  if (!O || !f.heat) return 0;
+  return Math.max(0, f.heat.v - (f.world.frame - f.heat.at) * O.decay);
+}
+function addHeat(f, n) {
+  const O = kitOf(f).overload;
+  if (!O) return;
+  const v = heatOf(f) + n;
+  f.heat = { v, at: f.world.frame };
+  if (v >= O.warn) f.world.events.emit('overheat', { fighter: f, heat: v, limit: O.limit });
+}
+// Cast while too hot: the storm turns on him.
+const overheated = (f) => { const O = kitOf(f).overload; return !!O && heatOf(f) >= O.limit; };
+function backfire(f) {
+  const O = kitOf(f).overload;
+  f.heat = null;
+  f.health = Math.max(1, f.health - O.damage);
+  f.flash = 6;
+  f.shock = 40;
+  f.world.events.emit('overload', { fighter: f });
+  f.fsm.change('stagger', { frames: O.stun });
 }
 
 // ---------------------------------------------------------------- chain lightning
@@ -44,11 +98,18 @@ export function planChainLightning(f, K, charged = false, level = 0) {
   if (!ahead.length) return { hits: [], end };
   const mult = charged ? C.damage : 1 + (C.damage - 1) * 0.5 * level;
   const first = ahead[0].e;
-  const hits = [{ t: first, from: null, gen: 0, damage: K.damage * mult }];
+  // STATIC: a marked man takes the full strike (more per mark) and the bolt forks on from
+  // him; an unmarked one only gets a short zap. (An overcharge still carries on its own.)
+  const S = kitOf(f).static;
+  const frame = f.world.frame;
+  const marks = (e) => (S ? staticOn(e, frame) : 1);
+  const boost = (e) => (!S ? 1 : marks(e) ? 1 + S.perMark * marks(e) : S.unmarked.damage);
+  const cold = S && !marks(first) && !charged;
+  const hits = [{ t: first, from: null, gen: 0, damage: K.damage * mult * boost(first), marks: marks(first) }];
   const used = new Set([first.id]);
   const queue = [hits[0]];
-  let left = K.maxJumps + (charged ? C.jumps : 0);
-  const forks = charged ? C.branches : K.branches;
+  let left = cold ? S.unmarked.jumps : K.maxJumps + (charged ? C.jumps : 0);
+  const forks = cold ? S.unmarked.branches : charged ? C.branches : K.branches;
   while (queue.length && left > 0) {
     const cur = queue.shift();
     const src = cur.t;
@@ -66,7 +127,7 @@ export function planChainLightning(f, K, charged = false, level = 0) {
       .sort((a, b) => a.tier - b.tier || a.dist - b.dist || a.e.id - b.e.id);
     for (const o of cands.slice(0, Math.min(forks, left))) {
       const gen = cur.gen + 1;
-      const h = { t: o.e, from: src, gen, damage: K.chainDamage * K.falloff ** (gen - 1) * mult };
+      const h = { t: o.e, from: src, gen, damage: K.chainDamage * K.falloff ** (gen - 1) * mult * (S && !marks(o.e) ? 0.7 : boost(o.e)), marks: marks(o.e) };
       hits.push(h);
       queue.push(h);
       used.add(o.e.id);
@@ -102,6 +163,8 @@ function strikeWithLightning(f, hit, K, charged, stage = 1) {
     contact: { x: t.x, h: t.h + t.stats.body.h * 0.62 },
   });
   if (t.health < before || !t.alive) t.shock = (charged ? 34 : 24) + i * 10; // he seizes (view)
+  // the marks carry the whole combo; its last strike (or an overcharge) sets them off
+  if (hit.marks && (stage === 3 || charged)) { f.world.events.emit('staticBurst', { by: f, target: t, n: hit.marks }); spendStatic(t); }
   f.world.events.emit('lightningArc', {
     caster: f, from: src === f ? null : src, to: t, gen: hit.gen, charged, index: hit.gen, stage,
   });
@@ -155,7 +218,7 @@ function releaseForce(f, level = 0) {
 
 // api: helpers from entities/fighterStates.js (handed over, so neither file imports the
 // other). Returns the states to add to FIGHTER_STATES.
-export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTurn }) {
+export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTurn, makeAttackState }) {
   return {
     // BLINK: the body breaks into sparks, is gone, and re-forms the dodge distance away
     // in the input direction. Invulnerable for the dodge's i-frames.
@@ -240,6 +303,9 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
         // the cast pays the full cost; each follow-up strike pays its combo cost
         const cost = f.boltStage === 1 ? (m.manaCost ?? 0) : (K.combo.manaCost?.[f.boltStage - 1] ?? 0);
         f.mana = Math.max(0, f.mana - cost);
+        // OVERLOAD: too much lightning too fast and it bites back (on the first frame)
+        f.boltBackfire = overheated(f);
+        if (!f.boltBackfire) addHeat(f, kitOf(f).overload?.perStrike ?? 0);
         f.boltHeld = true;
         f.boltCharge = 0;
         f.boltFired = 0;
@@ -251,6 +317,7 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
         const K = kitOf(f).bolt;
         const c = f.controller;
         friction(f, 0.7);
+        if (f.boltBackfire) { f.boltBackfire = false; return backfire(f); }
         if (!f.boltFired) {
           aimTurn(f); // (turn to aim it until it goes off)
           if (!c.isDown('heavy')) f.boltHeld = false;
@@ -288,6 +355,9 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
         // the next strike of the three
         const W = K.combo.window;
         if (f.boltStage < 3 && since >= W[0] && since <= W[1] && f.mana >= (K.combo.manaCost?.[f.boltStage] ?? 0) && c.consume('heavy')) return f.fsm.change('bolt', { stage: f.boltStage + 1 });
+        // Y, Y, then X: THUNDER STAFF (the charge brought down through the staff)
+        const T = f.stats.moves.thunder;
+        if (T && f.boltStage === 2 && since >= W[0] && since <= W[1] && f.mana >= (T.manaCost ?? 0) && c.consume('attack')) return f.fsm.change('thunder');
         if (since >= m.recovery - 10 && tryActions(f, ['dodge'])) return;
         if (since >= m.recovery) f.fsm.change('idle');
       },
@@ -332,6 +402,57 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
       },
       exit(f) { f.propStrike = null; },
     },
+
+    // TAP FORWARD + X: the lantern jab (an ordinary swing: moves.jab)
+    jab: makeAttackState('jab'),
+    // SPRINT + X is the shared 'shoulder' state with his own move (the pole-vault kick)
+
+    // Y, Y, X: THUNDER STAFF. A swing like any other, with the lightning in it: every man
+    // it lands on has his Static set off as if a bolt had struck him.
+    thunder: (() => {
+      const base = makeAttackState('thunder');
+      return {
+        ...base,
+        enter(f) {
+          base.enter(f);
+          f.mana = Math.max(0, f.mana - (f.move.manaCost ?? 0));
+          addHeat(f, kitOf(f).overload?.perStrike ?? 0);
+        },
+      };
+    })(),
+
+    // HOLD X: the STAFF TWIRL. The staff spins in front of him: a fresh hit every few
+    // frames while it's held (he can creep along), arrows glance off it, and letting go
+    // (or running out of breath) cracks it out in one last blow that throws them.
+    twirl: {
+      enter(f) {
+        stopMoving(f);
+        faceInput(f);
+        f.twirlNext = 1;
+        f.move = null;
+        f.activeAttack = null;
+        f.twirling = true;
+        f.world.events.emit('twirlStart', { fighter: f });
+      },
+      update(f, frame) {
+        const W = kitOf(f).twirl;
+        const c = f.controller;
+        f.vx = c.moveX * f.stats.walkSpeed * W.speed;
+        f.vz = c.moveZ * f.stats.depthSpeed * W.speed;
+        // a fresh blow every `every` frames (each a new swing, so it can hit again)
+        if (frame >= f.twirlNext) {
+          f.startMove(f.stats.moves.twirl);
+          f.twirlNext = frame + W.every;
+          f.world.events.emit('twirlHit', { fighter: f, n: Math.floor(frame / W.every) });
+        }
+        const since = frame - (f.twirlNext - W.every);
+        f.activeAttack = since < (f.stats.moves.twirl.active ?? 4) ? f.attackInfo : null;
+        if (tryActions(f, ['dodge', 'block'])) return;
+        if ((!c.isDown('attack') && frame >= W.minFrames) || frame >= W.maxFrames) f.fsm.change('twirlEnd');
+      },
+      exit(f) { f.twirling = false; f.activeAttack = null; },
+    },
+    twirlEnd: makeAttackState('twirlEnd'),
 
     // ARCANE BARRIER: tap magic = the Infernal Wall, hold it = the Earthen Bulwark. The
     // staff comes up while he chooses, then slams down and the wall erupts.

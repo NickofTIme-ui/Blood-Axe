@@ -39,7 +39,20 @@ export const MAGE_SOUNDS = {
   storm: [['lightningStrike', { volume: 0.9, spread: 60, minGapMs: 400 }], ['kick', { volume: 0.8, pitch: -1400 }]],
   rupture: [['kick', { volume: 1, pitch: -600 }], ['finisher', { volume: 0.6, pitch: -800 }]],
   embers: [['fireWhoosh', { volume: 1, pitch: -500 }], ['kick', { volume: 0.7, pitch: -1100 }]],
+  // the rework (2026-11-04): the staff crackles, the lightning bites back, the wall has spikes
+  staffShock: [['elecZap', { volume: 0.35, minGapMs: 50 }]],
+  jab: [['bladeOut', { volume: 0.6, pitch: 300 }], ['kick', { volume: 0.5, pitch: 100 }]],
+  twirlHit: [['swingAlt', { volume: 0.3, pitch: 500, minGapMs: 60 }]],
+  vault: [['heavySwing', { volume: 0.6, pitch: 200 }]],
+  thunderStaff: [['lightningStrike', { volume: 0.8, minGapMs: 200 }], ['kick', { volume: 0.9, pitch: -1200 }]],
+  staticBurst: [['elecShock', { volume: 0.7, minGapMs: 40 }]],
+  overheat: [['elecCharge', { volume: 0.4, pitch: 600, minGapMs: 700 }]],
+  overload: [['elecThunder', { volume: 0.9 }], ['elecShock', { volume: 0.8 }]],
+  deflect: [['clash', { volume: 0.5, pitch: 700, minGapMs: 60 }]],
+  impale: [['impaleKick', { volume: 0.9 }], ['bloodSplatter', { volume: 0.8 }], ['kick', { volume: 0.6, pitch: -1300 }]],
+  graze: [['bloodSplatter', { volume: 0.5, pitch: 300 }], ['block', { volume: 0.4, pitch: -900 }]],
 };
+const STAFF_FX = ['staff', 'pulse', 'jab', 'twirl', 'vault', 'thunderStaff'];
 
 export class MageFX {
   constructor(scene) {
@@ -49,16 +62,24 @@ export class MageFX {
     const isMage = (f) => f?.stats?.archetype === 'mage';
 
     ev.on('attackStart', ({ fighter, state }) => {
-      if (isMage(fighter) && ['light1', 'light2', 'light3', 'airAttack'].includes(state)) this.sound('staffSwing', fighter);
+      if (!isMage(fighter)) return;
+      if (['light1', 'light2', 'light3', 'airAttack', 'twirlEnd'].includes(state)) this.sound('staffSwing', fighter);
+      if (state === 'shoulder') this.sound('vault', fighter);
+      if (state === 'thunder') { this.sound('elecFull', fighter); this.flashAt(this.staffTip(fighter), 0xe0f0ff, 20); }
     });
+    ev.on('twirlHit', ({ fighter }) => this.sound('twirlHit', fighter));
     ev.on('jump', ({ fighter }) => { if (isMage(fighter)) this.pulse(fighter.x, fighter.z, 4, 0xffa040, 26); });
     ev.on('hit', (e) => {
       if (!isMage(e.attacker)) return;
       const fx = e.move.fx;
-      if (fx === 'staff' || fx === 'pulse') {
-        this.sound('staffImpact', e.attacker);
-        this.scene.gore.spark(e.x, e.z, e.h, 0xffb050, 6);
-        if (fx === 'pulse') this.pulse(e.attacker.x + e.attacker.facing * 60, e.attacker.z, 2, 0xffd890, 70);
+      if (STAFF_FX.includes(fx)) {
+        // every staff blow lands with a crackle: the man jolts, sparks of the lantern's fire
+        // and the staff's blue light burst off him, little arcs lick over him
+        this.sound(fx === 'jab' ? 'jab' : 'staffImpact', e.attacker);
+        this.sound('staffShock', e.attacker);
+        this.staffShock(e, fx === 'pulse' || fx === 'vault' || fx === 'thunderStaff' ? 1.6 : 1);
+        if (fx === 'pulse') this.pulse(e.attacker.x + e.attacker.facing * 60, e.attacker.z, 2, 0xb8a8ff, 80);
+        if (fx === 'thunderStaff') this.thunderStaff(e);
       }
     });
     ev.on('block', (e) => { if (isMage(e.defender)) this.ward(e.defender, false); });
@@ -95,6 +116,89 @@ export class MageFX {
     });
 
     ev.on('finisherBeat', (b) => this.finisher(b));
+
+    // STATIC (combat/Mage.js): crackling on the men his staff has marked; set off by a bolt
+    ev.on('staticMark', ({ target, n }) => this.scene.gore.spark(target.x, target.z, target.h + target.stats.body.h * 0.6, 0x9ab8ff, 3 + n * 2));
+    ev.on('staticBurst', ({ by, target, n }) => this.staticBurst(by, target, n));
+    // OVERLOAD: sparks spitting off him as it builds; then his own storm turns on him
+    ev.on('overheat', ({ fighter, heat, limit }) => {
+      this.sound('overheat', fighter);
+      this.scene.gore.spark(fighter.x, fighter.z, fighter.h + 90, 0xe0f0ff, Math.round(4 + 10 * heat / limit));
+    });
+    ev.on('overload', ({ fighter }) => this.overload(fighter));
+    ev.on('arrowDeflect', ({ fighter }) => {
+      this.sound('deflect', fighter);
+      this.scene.gore.spark(fighter.x + fighter.facing * 30, fighter.z, fighter.h + 70, 0xe0f0ff, 10);
+    });
+    // THE SPIKED WALL (combat/Barrier.js)
+    ev.on('wallImpale', (e) => this.impaled(e));
+    ev.on('wallGraze', (e) => {
+      this.sound('graze', e.barrier.owner);
+      this.scene.gore.burst(e.x, e.z, e.h, e.side, 10, 0.7);
+      this.walls.get(e.barrier)?.bloody?.(e.z, e.h, 0.4, e.side);
+    });
+  }
+
+  // ------------------------------------------------------------ the rework (2026-11-04)
+
+  // A staff blow's crackle on the man it lands on.
+  staffShock(e, power = 1) {
+    const d = e.defender;
+    const g = this.scene.gore;
+    g.spark(e.x, e.z, e.h, 0xffb050, Math.round(5 * power));
+    g.spark(e.x, e.z, e.h, 0x9ab8ff, Math.round(7 * power));
+    const top = d.z - d.h - d.stats.body.h;
+    for (let i = 0; i < Math.round(2 * power); i++) {
+      const y0 = top + rand(10, d.stats.body.h * 0.8);
+      const x0 = d.x + rand(-d.stats.body.w * 0.5, d.stats.body.w * 0.5);
+      this.bolt({ x: x0, y: y0 }, { x: x0 + rand(-26, 26), y: y0 + rand(-22, 22) }, d.z, false, 0.3);
+    }
+    const fl = this.scene.add.image(e.x, e.z - e.h, 'soft').setTint(0x9ab8ff).setBlendMode(ADD()).setScale(0.4 * power).setDepth(e.z + 2);
+    this.scene.tweens.add({ targets: fl, scale: 0.9 * power, alpha: 0, duration: 130, onComplete: () => fl.destroy() });
+  }
+
+  // Y, Y, X: the lightning comes down through the staff onto him.
+  thunderStaff(e) {
+    const d = e.defender;
+    this.sound('thunderStaff', e.attacker);
+    this.bolt({ x: d.x + rand(-10, 10), y: d.z - d.h - 420 }, { x: d.x, y: d.z - d.h - 10 }, d.z, true, 1);
+    this.pulse(d.x, d.z, 2, 0xe0f0ff, 90);
+    this.scene.fx.shake(8, 14);
+  }
+
+  // His marks set off: the man lights up from within.
+  staticBurst(by, t, n) {
+    this.sound('staticBurst', by);
+    const c = { x: t.x, y: t.z - t.h - t.stats.body.h * 0.55 };
+    this.flashAt(c, 0xe0f0ff, 14 + n * 6);
+    this.scene.gore.spark(t.x, t.z, t.h + t.stats.body.h * 0.55, 0xffffff, 8 + n * 4);
+    for (let i = 0; i < n + 1; i++) {
+      const a = rand(0, Math.PI * 2);
+      this.bolt(c, { x: c.x + Math.cos(a) * rand(30, 60), y: c.y + Math.sin(a) * rand(20, 46) }, t.z, false, 0.45);
+    }
+  }
+
+  // The storm turns on him: bolts down into his own staff, and he's thrown back.
+  overload(f) {
+    this.sound('overload', f);
+    const tip = this.staffTip(f);
+    for (let i = 0; i < 3; i++) this.bolt({ x: tip.x + rand(-40, 40), y: tip.y - 360 }, { x: tip.x, y: tip.y }, f.z, i === 0, 0.9);
+    this.flashAt({ x: f.x, y: f.z - f.h - 60 }, 0xffffff, 40);
+    this.scene.gore.spark(f.x, f.z, f.h + 60, 0xe0f0ff, 24);
+    this.scene.fx.shake(7, 16);
+    if (f.team === 'player') this.scene.callout?.('OVERLOAD!', '#9ab8ff', 26);
+  }
+
+  // A man run through on the spikes of his wall.
+  impaled(e) {
+    const s = this.scene;
+    this.sound('impale', e.by);
+    s.gore.burst(e.x, e.z, e.h, e.side, 34, 1.2);
+    s.gore.burst(e.x, e.z, e.h, -e.side, 10, 0.5); // (out of his back too, onto the stone)
+    s.fx.shake(9, 18);
+    s.hitstopAll?.(8);
+    this.walls.get(e.barrier)?.bloody?.(e.z, e.h, 1, e.side);
+    s.callout?.(e.thrownBy && e.thrownBy !== e.by && e.thrownBy.team === 'player' ? 'SPIKED! TEAMWORK' : 'SPIKED!', '#ff2a1a', 34);
   }
 
   // ------------------------------------------------------------ helpers
@@ -566,6 +670,12 @@ class EarthWallView {
       const slab = {
         z, h, w, pts, off: rand(-4, 4), tone: Math.floor(rand(0, 3)), delay, crack: rand(0.2, 0.8), lean: rand(-0.06, 0.06),
         burst: false, chip: 0, flash: 0, topple: 0,
+        // THE SPIKED WALL: stone spikes jutting from both faces (drawn; a painted spiked
+        // slab can replace them later), and the blood that runs down where men hang
+        spikes: b.cfg.spikes ? [-1, 1].flatMap((side) => [0, 1].map((j) => ({
+          side, y: rand(0.25, 0.42) + j * rand(0.28, 0.36), len: rand(13, 24), w: rand(5, 8), blood: 0,
+        }))) : [],
+        blood: [],
       };
       if (this.art) {
         slab.img = scene.add.image(0, 0, this.art.key, `f${k++ % this.art.count}`).setOrigin(0.5, 1).setVisible(false);
@@ -593,6 +703,17 @@ class EarthWallView {
     this.broken = false;
     this.jolt = { t: 99, dir: 1, power: 0, z: 0 };
     this.shown = 1;
+  }
+
+  // Blood on the stone where a man struck (amount 0..1): the spikes nearest go red and a
+  // streak runs down the face.
+  bloody(z, h, amount, side = 0) {
+    for (const s of this.slabs) {
+      const near = 1 - Math.abs(s.z - z) / 26;
+      if (near <= 0) continue;
+      for (const p of s.spikes) p.blood = Math.min(1, p.blood + amount * near);
+      if (near > 0.5) s.blood.push({ h, t: 0, w: rand(2, 4) * amount + 1, side });
+    }
   }
 
   // a cloud of dust or grit that swells, drifts and thins out
@@ -740,6 +861,39 @@ class EarthWallView {
         // cracks, as it is battered
         if (dmg >= 0.25) { g.lineStyle(1.2, 0x0e1214, 1); g.lineBetween(x - s.w * 0.3, y - s.h * s.crack * k, x + s.w * 0.2, y - s.h * (s.crack - 0.2) * k); }
         if (dmg >= 0.5) { g.lineStyle(1.6, 0x0e1214, 1); g.lineBetween(x + s.w * 0.25, y - s.h * 0.9 * k, x - s.w * 0.1, y - s.h * 0.2 * k); }
+      }
+    });
+
+    // the spikes on both faces (and the blood on them and running down the stone)
+    this.slabs.forEach((s, i) => {
+      if (!s.spikes.length) return;
+      const g = this.parts[i];
+      const since = this.t - s.delay;
+      const u = Math.min(1, Math.max(0, (since - 4) / 6)); // (they punch out just after the slab)
+      const down = this.fall >= 0 ? Math.min(1, Math.max(0, (this.fall - s.delay * 0.4) / (b.collapse * 0.7))) : 0;
+      const k = u * (1 - down) * (1 - s.chip);
+      if (k <= 0) return;
+      const x = b.x + s.off + shove * 0.6;
+      const y = s.z + down * 6;
+      for (const p of s.spikes) {
+        const bx = x + p.side * s.w * 0.42;
+        const by = y - s.h * p.y;
+        const tip = { x: bx + p.side * p.len * k, y: by - p.len * 0.12 * k };
+        g.fillStyle(0x0a0c0e, 1).fillTriangle(bx, by - p.w - 1, bx, by + p.w + 1, tip.x + p.side, tip.y);
+        g.fillStyle(0x5a6266, 1).fillTriangle(bx, by - p.w, bx, by + p.w, tip.x, tip.y);
+        g.fillStyle(0x8a9296, 1).fillTriangle(bx, by - p.w, bx, by - p.w * 0.1, tip.x, tip.y);
+        if (p.blood > 0.02) {
+          g.fillStyle(0x6a0a08, 0.9 * p.blood).fillTriangle(bx + p.side * p.len * 0.35 * k, by - p.w * 0.7, bx + p.side * p.len * 0.35 * k, by + p.w * 0.7, tip.x, tip.y);
+        }
+      }
+      // blood run down the stone under a body
+      for (const r of s.blood) {
+        r.t = Math.min(90, r.t + 1);
+        const top = y - Math.min(s.h * k, r.h + 10);
+        const len = Math.max(0, (y - 2) - top) * (r.t / 90);
+        const fx = x + r.side * s.w * 0.4;
+        g.fillStyle(0x5a0806, 0.85).fillRect(fx - r.w / 2, top, r.w, len);
+        g.fillStyle(0x8a1410, 0.6).fillRect(fx - r.w / 4, top, r.w / 2, len * 0.8);
       }
     });
 
