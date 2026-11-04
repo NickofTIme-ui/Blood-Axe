@@ -6,7 +6,7 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 4 November 2026 (cloud, `claude/project-thread-skkc3r`, Nick: "push all": ON MAIN, not on itch):
+- 4 November 2026 (cloud, `claude/project-thread-skkc3r`, Nick: "push all", juggle lesson "push": ON MAIN, not on itch):
   THE PRACTICE YARD, a tutorial in its own space (Nick: "shows the player quickly, not too wordy, lets
   them try all the mechanics for each player, hiding the higher cool stuff that's unlocked"). Title
   menu: PRACTICE, then pick a hero. One small yard (data/stagePractice.js, kept OUT of STAGES: the
@@ -20,7 +20,7 @@ branch, or ChatGPT's work gets lost.
   (grunts as sparring men, the castle ground, the NEW ABILITY plaque style). The headless browser in
   the cloud crashes starting ANY level (Oath Road too), so it was not seen running in a browser here.
 - 4 November 2026 (cloud, `claude/project-thread-m3u9qp`, Nick: "do all of this" on the Assassin
-  review; Nick: "push all": ON MAIN, not on itch): VEXA'S SECOND SET, one move for each of Rurik's
+  review; Nick: "push all", juggle lesson "push": ON MAIN, not on itch): VEXA'S SECOND SET, one move for each of Rurik's
   slots (combat/RogueMoves.js): SHADOW RUSH (sprint + attack), BACKSTAB (hold attack), THOUSAND CUTS
   (4th hit now launches; heavy follows him up), FADE (jump + away out of any attack). Her mark now
   pays out solo (`markCash` moves, CombatSystem). Her SKILL TREE (data/skills.js SKILL_TREES.rogue):
@@ -46,7 +46,7 @@ branch, or ChatGPT's work gets lost.
   when it falls; slower = grazed; bosses never pinned; style points (Style.js `spiked`). Spikes and
   blood are code-drawn in MageFX EarthWallView, and the new moves borrow poses: ChatGPT jobs listed
   in docs/mage-art-prompts.md section 10.
-- 4 November 2026 (cloud, `claude/project-thread-fxeojg`, Nick: "push all": ON MAIN, not on itch): KING HAKON,
+- 4 November 2026 (cloud, `claude/project-thread-fxeojg`, Nick: "push all", juggle lesson "push": ON MAIN, not on itch): KING HAKON,
   THE OATH KING (Rurik's father; not Vaurath). Level 1: he holds the way into the market square
   against six Ashen men (x ~1760, out of sight while you fight the road); a hero reaching x 1440
   after the road is won starts it: letterbox, his name in gold, six real kills each its own
