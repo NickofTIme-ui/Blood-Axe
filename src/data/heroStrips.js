@@ -136,19 +136,27 @@ export const HERO_ANIMS = {
     // few seconds. (Not a cycle through her six poses: each is painted afresh, so flicking
     // between them makes her hair, cloak and armour crawl like static.)
     idleStrip: { needs: ['idle'], frames: [...seq('idle', Array(22).fill(0)), ...seq('idle', [3, 3, 3])], fps: 6, loop: true, breathe: true },
-    block: { frames: seq('moves', [3]) },
+    // (block, her block-and-hurt sheet: 0 guard, 1 a blow on the guard, 2 recovering, 3 the
+    // guard whipped round, 4 hit in the body, 5 hit in the head, 6 falling, 7 dead)
+    block: { needs: ['block'], frames: seq('block', [0, 1]) }, // the guard; a blow landing on it
+    death: { needs: ['block'], frames: seq('block', [6, 7]) },
     light1: swing(seq('combo1', [0, 1]), seq('combo1', [2]), seq('combo1', [3])),
     light2: swing(seq('combo2', [0, 1]), seq('combo2', [2]), seq('combo2', [3])),
     light3: swing(seq('combo3', [0, 1]), seq('combo3', [2]), seq('combo3', [3])),
     light4: swing(seq('combo4', [0, 1]), seq('combo4', [2]), seq('combo4', [2, 3])),
     viper: swing(seq('viper', [0]), seq('viper', [1, 2]), seq('viper', [3, 4, 5])),
     kick: swing(seq('moves', [0]), seq('moves', [1]), seq('moves', [2])),
-    sweep: swing(seq('combo4', [0]), seq('combo4', [1]), seq('combo4', [0])),
+    // (moves2, her second moves sheet: 0-2 the leg sweep, 3 the sidearm throw, 4 setting a
+    // mine, 5 springing away, 6 the fan thrown in the air, 7 the boot planted to vault)
+    sweep: { needs: ['moves2'], ...swing(seq('moves2', [0]), seq('moves2', [1]), seq('moves2', [2])) },
     airAttack: swing(seq('air', [1]), seq('air', [6]), seq('air', [6])),
-    knife: { frames: seq('moves', [4, 5, 5]) },
-    mine: { frames: seq('moves', [6]) },
+    knife: { needs: ['moves2'], frames: [...seq('moves', [4]), ...seq('moves2', [3, 3])] }, // the knife drawn, the sidearm throw
+    mine: { needs: ['moves2'], frames: seq('moves2', [4, 5]) },
     dodge: { frames: seq('dodge', [0, 1, 2, 3]) },
     dodgeBack: { frames: seq('dodge', [4, 5, 6, 7]) },
+    // rolling up / down the lane: the shoulder roll seen from behind and from the front
+    dodgeUp: { needs: ['rollUp'], frames: seq('rollUp', [0, 1, 2, 3, 4, 5]) },
+    dodgeDown: { needs: ['rollDown'], frames: seq('rollDown', [0, 1, 2, 3, 4, 5]) },
     jump: { frames: seq('air', [0, 1]) },   // rising, falling
     sprint: { needs: ['sprint'], frames: seq('sprint', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 18, loop: true },
     walkD: { needs: ['runD'], frames: seq('runD', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 15, loop: true },
@@ -156,24 +164,23 @@ export const HERO_ANIMS = {
     fin_lotus: { needs: ['finLotus'], frames: seq('finLotus', [0, 1, 2, 3, 4, 5, 6, 7]) },
     fin_scarlet: { needs: ['finScarlet'], frames: seq('finScarlet', [0, 1, 2, 3, 4, 5, 6, 7]) },
     flip: { needs: ['flip'], frames: seq('flip', [0, 1, 2, 3, 4, 5, 6, 7]) }, // her second jump
-    // her second set (combat/RogueMoves.js), on borrowed poses until their own strips are
-    // painted (docs/rogue-art-prompts.md, 2026-11-04 jobs):
-    rush: swing(seq('viper', [0]), seq('viper', [1, 2, 3]), seq('viper', [3, 4, 5])),   // SHADOW RUSH: low burst, the crossing cut, the slide; the turn back
-    backstab: { frames: [...seq('combo1', [1]), ...seq('viper', [2, 2, 4]), ...seq('viper', [5])] }, // out of the smoke: cocked, the stab, held, pull out
-    cuts: { rise: seq('air', [1]), slash: [...seq('combo1', [2]), ...seq('combo2', [2]), ...seq('combo3', [2])], spike: seq('moves', [1]), drop: seq('air', [5]), land: seq('air', [7]) }, // THOUSAND CUTS
+    // her second set (combat/RogueMoves.js), her own strips (ChatGPT, 4 Nov 2026:
+    // docs/rogue-art-prompts.md jobs 11-18; the HD sheets are listed in data/vexaArt.js)
+    rush: { needs: ['rush'], ...swing(seq('rush', [0]), seq('rush', [1, 2, 3]), seq('rush', [4, 5])) },   // SHADOW RUSH: sprint, the dive forward, the two cuts; the skid and the turn back
+    backstab: { needs: ['backstab'], frames: seq('backstab', [0, 1, 2, 3, 4, 5]) }, // out of the smoke: arrived, cocked, the stab, held, pull out, guard
+    cuts: { needs: ['cuts'], rise: seq('cuts', [0]), slash: seq('cuts', [1, 2, 3, 4]), spike: seq('cuts', [5, 6]), drop: seq('cuts', [6]), land: seq('cuts', [7]) }, // THOUSAND CUTS
     fade: { frames: seq('dodge', [4, 5, 6, 7]) },       // FADE: the handspring away
-    // GRAB AND THROW (combat/Grab.js): her own strip once it's painted and compiled into the
-    // HD sheets as 'grab' (8 poses as Rurik's neck grip: ready, clamp, four march steps,
-    // the shove wound up, the shove); until then the view borrows her guard and knife throw
-    grab: { needs: ['grab'], pending: true, poses: seq('grab', [0, 1, 2, 3, 4, 5, 6, 7]) }, // (pending: tests/hero-hd-test.js lets it be missing)
-    smoke: { frames: [...seq('moves', [6]), ...seq('combo1', [0])] }, // SMOKE BOMB: the throw down at her feet
-    nightfall: { gather: seq('moves', [6]), cut: [...seq('combo3', [2]), ...seq('viper', [2]), ...seq('combo2', [2])], sheathe: seq('idle', [3]) }, // NIGHT FALLS
-    vault: { frames: seq('air', [2]) },
+    // GRAB AND THROW (combat/Grab.js): her own strip (8 poses as Rurik's neck grip: ready,
+    // clamp, four march steps, the shove wound up, the shove)
+    grab: { needs: ['grab'], poses: seq('grab', [0, 1, 2, 3, 4, 5, 6, 7]) },
+    smoke: { needs: ['night'], frames: seq('night', [0, 1]) }, // SMOKE BOMB: the pellet flicked down, the arm over her face
+    nightfall: { needs: ['night'], gather: seq('night', [1]), cut: seq('night', [2, 3, 4, 5, 6]), sheathe: seq('night', [7]) }, // NIGHT FALLS: five cuts, five men; the daggers sheathed
+    vault: { needs: ['moves2'], frames: seq('moves2', [7]) }, // a boot planted on his shoulder, coiled
     launched: { frames: seq('air', [3]) },  // the long rise off a teammate's shoulder
-    fan: { frames: seq('air', [4]) },
+    fan: { needs: ['moves2'], frames: seq('moves2', [6]) },  // both arms whipping the fan down
     dive: { frames: seq('air', [5, 6, 7]) }, // diving, the strike, the landing crouch
-    hitstun: { frames: seq('react', [0]) },
-    stagger: { frames: seq('react', [1]) },
+    hitstun: { needs: ['block'], frames: seq('block', [4]) }, // a hard hit to the body
+    stagger: { needs: ['block'], frames: seq('block', [5]) }, // a hit to the head, snapped back
     flying: { frames: seq('react', [2]) },
     lying: { frames: seq('react', [3]) },
     getup: { frames: seq('react', [4, 5, 6, 7]) },

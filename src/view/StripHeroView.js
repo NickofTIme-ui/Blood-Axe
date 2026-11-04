@@ -111,7 +111,7 @@ export class StripHeroView {
         return loop(f.sprinting ? { ...w, fps: w.fps * 1.5 } : w);
       }
       case 'block':
-      case 'parry': return A.block.frames[0];
+      case 'parry': return f.blockstun > 0 && A.block.frames[1] ? A.block.frames[1] : A.block.frames[0]; // (a blow landing on the guard)
       case 'jump': {
         if (A.launched && f.vaultApexAt && tick < f.vaultApexAt) return A.launched.frames[0];
         // the second jump: a flip with a twist, played once through as she soars
@@ -122,6 +122,9 @@ export class StripHeroView {
       }
       case 'dodge': {
         const d = f.stats.dodge;
+        // rolling up or down the lane: her rolls seen from behind / the front, when drawn
+        const lane = (f.dodgeDir === 'up' && A.dodgeUp) || (f.dodgeDir === 'down' && A.dodgeDown);
+        if (lane) return easedSpread(lane.frames, fr / (d.duration + d.recovery));
         const back = A.dodgeBack && Math.sign(f.vx || f.facing) !== f.facing;
         return easedSpread((back ? A.dodgeBack : A.dodge ?? A.idle).frames, fr / (d.duration + d.recovery));
       }
@@ -129,7 +132,8 @@ export class StripHeroView {
       case 'stagger':
       case 'guardBreak': return A.stagger.frames[0];
       case 'knockdown': return (f.lyingSince === null ? A.flying : A.lying).frames[0];
-      case 'dead':
+      // dying: falling, then dead on the ground (her own two poses when drawn)
+      case 'dead': return A.death ? A.death.frames[fr < 14 ? 0 : 1] : A.lying.frames[0];
       case 'burning': return A.lying.frames[0];
       case 'getup': return easedSpread(A.getup.frames, fr / Math.max(1, f.stats.getupFrames));
       // GRAB AND THROW (combat/Grab.js): her / his own painted strip when it's in (anims.grab
@@ -143,7 +147,8 @@ export class StripHeroView {
         if (g.released != null) return P[7];
         if (g.throwAt != null) return P[6];
         if (g.caughtAt == null) return P[1];
-        if (g.mode === 'neck') return own ? P[1] : out[out.length - 1]; // (the bouncer's grip: arm out on his neck)
+        // (the bouncer's grip: arm out on his neck; her own strip frog-marches him: poses 2-5)
+        if (g.mode === 'neck') return own ? (f.carrying ? P[2 + (Math.floor(tick / 9) % 4)] : P[1]) : out[out.length - 1];
         return fr - g.caughtAt < 10 ? P[2] : f.carrying && own ? (Math.floor(tick / 14) % 2 ? P[5] : P[4]) : P[4];
       }
       case 'execute': {

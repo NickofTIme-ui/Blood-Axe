@@ -11,6 +11,7 @@
 // Tuning: BLOOD below. Only heroes (fighters with a style meter) get a coat.
 import { HERO_HD } from '../data/heroHdAssets.js';
 import { GRAB_SHEETS } from '../data/grabArt.js';
+import { VEXA_SHEETS } from '../data/vexaArt.js';
 
 // Texture key of a clean sheet -> its blood layer (half size: drawn doubled).
 const layerFile = (file) => `assets/sprites/heroes-hd/blood/${file.split('/').pop().replace(/\.png$/, '')}-blood.png`;
@@ -22,10 +23,16 @@ for (const s of [...HERO_HD.sheets, ...GRAB_SHEETS]) {
   if (s.hero === 'rurik' && s.baseFirst == null && (s.key === 'ulric' || s.key === 'ulricOath')) BLOODIED[`${s.key}-${s.name}`] = layerFile(s.file);
 }
 // Vexa (2026-11-04): her sheets that have a blood layer baked (same tool, same folder:
-// assets/sprites/heroes-hd/blood/vexa-rogue-<name>-blood.png). Empty until ChatGPT has
-// painted her bloodied; add each sheet's name here as its layer lands.
-export const VEXA_BLOODIED = [];
-for (const s of HERO_HD.sheets) {
+// assets/sprites/heroes-hd/blood/vexa-rogue-<name>-blood.png; tools/bake-blood-layers.py
+// --vexa, learned from ChatGPT's bloodied repaints of her run, idle and combo1). Add each
+// sheet's name here as its layer lands.
+export const VEXA_BLOODIED = [
+  'run', 'runU', 'runD', 'sprint', 'idle', 'combo1', 'combo2', 'combo3', 'combo4', 'viper', 'moves', 'dodge', 'air', 'flip',
+  'finPhantom', 'finLotus', 'finScarlet', 'react',
+  // her second set (data/vexaArt.js)
+  'rush', 'backstab', 'cuts', 'night', 'grab', 'moves2', 'rollUp', 'rollDown', 'block',
+];
+for (const s of [...HERO_HD.sheets, ...VEXA_SHEETS]) {
   if (s.hero === 'vexa' && VEXA_BLOODIED.includes(s.name)) BLOODIED[`hero-rogue-${s.name}`] = layerFile(s.file);
 }
 const LAYER_RES = 0.5; // the layers are baked at half his HD size

@@ -6,6 +6,22 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 4 November 2026 (PC, local branch `claude/vexa-art`, bundled as `blood-axe-vexa-art.bundle`; NOT
+  on main until the cloud pulls it): VEXA'S SECOND SET PAINTED (docs/rogue-art-prompts.md jobs 11-20,
+  ChatGPT, chat "BA · Rogue · Strips"; originals in art-incoming/vexa-second-set/ on the PC). Strips
+  rogue_rush, backstab, cuts, night, grab, moves2, rollUp, rollDown, block baked by the new
+  tools/bake-vexa-strip.py into HD sheets vexa-rogue-<name> (listed in src/data/vexaArt.js and
+  added by view/heroHd.js, like grabArt.js, because the compile-hero-hd.mjs catalog is not on the
+  PC). HERO_ANIMS.rogue now uses them: rush, backstab, cuts, smoke, nightfall, grab (no longer
+  `pending`), sweep/knife/mine/fan/vault (moves2), block (+ a blow on the guard while blockstun),
+  hitstun, stagger, a new `death` (falling, dead) and dodgeUp/dodgeDown (StripHeroView now plays
+  them when she rolls up or down the lane, and frog-marches her neck grip through grab poses 2-5).
+  Her blood: ChatGPT repainted run, idle and combo1 bloodied (tools/blood-grid.py lays the clean
+  poses out; line-up + soak as Rurik's; sources in tools/blood-source/vexa-*), and
+  `tools/bake-blood-layers.py --vexa` baked a layer for all 27 of her sheets (VEXA_BLOODIED lists
+  them). Her 12 skill medallions were painted in the skill-icon chat ("Create skill icon sheet")
+  and cut by tools/cut-skilltree-art.py (now cuts any sheet whose original is given). All tests pass.
+
 - 4 November 2026 (cloud, `claude/project-thread-xlx2i8`, Nick: "push": ON MAIN, not on itch): LEVEL 2
   POLISH, TIER 1 (Nick: "go" on the plan https://claude.ai/artifact/9CQVtZ7BdfPyfCEcmQuQrj). Gallows
   Wood stops copying the village: JOREN is no longer on a rope (that was Irvolino's beat): he slipped

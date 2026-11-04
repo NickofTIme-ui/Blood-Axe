@@ -166,6 +166,13 @@ Check each strip with `tools/strip-check.html` like Ulric's. Then a session wire
 
 # 2026-11-04: her second set, her grab, her blood and her skill icons
 
+**Done 4 Nov 2026** (PC): all ten jobs painted and wired in. Each prompt was sent with
+`rogue_combo1.png` attached (the rolls with `rogue_runU` / `rogue_runD`), opening with her
+full description, or ChatGPT draws the wrong woman. The strips were baked with
+`tools/bake-vexa-strip.py` (not compile-hero-hd.mjs: its catalog isn't on the PC) into the
+sheets listed in `src/data/vexaArt.js`. The blood repaints were done on grids of her clean HD
+poses (`tools/blood-grid.py`), and the icons in the "Create skill icon sheet" chat.
+
 Nick: "the same amount of moves as Rurik but unique to their own build... Assassin =
 quick, in and out, fast." The moves are in the game already (combat/RogueMoves.js) on
 borrowed poses; these strips replace them. Same chat (**BA · Rogue · Strips**), same rules

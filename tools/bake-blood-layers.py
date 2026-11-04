@@ -31,8 +31,25 @@ K = 2           # neighbours averaged per pixel (more = smoother, fewer = splatt
 TRAIN = 400000  # painted pixels kept for the lookup
 BLOOD_FROM, BLOOD_RAMP = 4, 18  # how much redder (Lab a*) than his own paint starts / is full blood
 
+# --vexa: Vexa's sheets instead, learned from her repaints (run, idle, combo1: lined up by
+# tools/line-up-bloodied.py from the grids tools/blood-grid.py makes, then soaked)
+VEXA = '--vexa' in sys.argv
+if VEXA:
+    sys.argv.remove('--vexa')
+    PAINTED = ['rogue-run', 'rogue-idle', 'rogue-combo1']
+
+def vexa_sheets():
+    """every Vexa sheet the game draws: (file, fw, fh, cols, frames)"""
+    src = open('src/data/heroHdAssets.js').read()
+    hd = json.loads(src[src.index('{'):src.rindex('}') + 1])
+    out = {s['file']: (s['fw'], s['fh'], s['cols'], s['frames']) for s in hd['sheets'] if s['hero'] == 'vexa'}
+    for m in re.finditer(r"sheet\('(\w+)', (\d+)\)", open('src/data/vexaArt.js').read()):
+        out[HD + f'vexa-rogue-{m.group(1)}.png'] = (416, 480, int(m.group(2)), int(m.group(2)))
+    return out
+
 def sheets():
     """every Rurik sheet the game draws: (file, fw, fh, cols, frames)"""
+    if VEXA: return vexa_sheets()
     src = open('src/data/heroHdAssets.js').read()
     hd = json.loads(src[src.index('{'):src.rindex('}') + 1])
     out = {hd['base']['file']: (hd['base']['fw'], hd['base']['fh'], hd['base']['cols'], hd['base']['frames'])}
@@ -94,8 +111,9 @@ def main():
     S = sheets()
     X, Y, painted = [], [], {}
     for key in PAINTED:
-        f = HD + f'rurik-{key}.png'; fw, fh, cols, n = S[f]
-        c, b = load(f), load(SRC + f'rurik-{key}-soaked.png')
+        who = 'vexa' if VEXA else 'rurik'
+        f = HD + f'{who}-{key}.png'; fw, fh, cols, n = S[f]
+        c, b = load(f), load(SRC + f'{who}-{key}-soaked.png')
         lay = np.zeros(c.shape, np.uint8)
         for x, y in cells(c, fw, fh, cols, n):
             cc, bb = c[y:y + fh, x:x + fw], b[y:y + fh, x:x + fw]
