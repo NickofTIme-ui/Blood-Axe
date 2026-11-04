@@ -6,7 +6,7 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 4 November 2026 (cloud, `claude/project-thread-skkc3r`, TEST BRANCH, not on main or itch):
+- 4 November 2026 (cloud, `claude/project-thread-skkc3r`, Nick: "push all": ON MAIN, not on itch):
   THE PRACTICE YARD, a tutorial in its own space (Nick: "shows the player quickly, not too wordy, lets
   them try all the mechanics for each player, hiding the higher cool stuff that's unlocked"). Title
   menu: PRACTICE, then pick a hero. One small yard (data/stagePractice.js, kept OUT of STAGES: the
