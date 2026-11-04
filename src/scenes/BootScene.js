@@ -50,6 +50,8 @@ export class BootScene extends Phaser.Scene {
     this.load.image('hakon-dying','assets/cinematics/hakon-dying.png');
     this.load.image('hakon-mourned','assets/cinematics/church-hakon-mourned-somber.png');
     this.load.image('hakon-dead','assets/cinematics/hakon-dead.png');
+    this.load.image('king-crown','assets/cinematics/king-crown.png'); // (his crown fallen on the church steps: view/NpcView.js)
+    this.load.image('king-parting','assets/cinematics/king-parting.png'); // (King Hakon and his son swear to meet at the church: stage/KingHakon.js)
     this.load.image('town-church','assets/env/village/town-church.png');
     this.load.image('church-bearers-src','assets/npcs/church-bearers.png');
     this.load.image('church-bearers-elsbeth-src','assets/npcs/mill-rescue/church-bearers-elsbeth.png');

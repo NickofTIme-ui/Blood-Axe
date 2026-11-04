@@ -26,7 +26,7 @@ const LOOKS_BACK = new Set(['look']);
 // the arc each cut burns through the air: [from, to] angles (deg, 0 = ahead, -90 = up),
 // its radius and height above his feet
 const ARCS = {
-  chop: [[-120, 40], 92, 70], sweep: [[-150, 30], 96, 62], spin: [[-200, 160], 88, 60],
+  chop: [[-120, 40], 92, 70], sweep: [[-150, 30], 96, 62], spin: [[-170, 50], 88, 60],
   thrust: [[-8, 8], 120, 66], kick: [[-20, 20], 50, 30],
 };
 

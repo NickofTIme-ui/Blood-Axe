@@ -517,7 +517,7 @@ export const STAGE_VILLAGE = {
         ['KING', 'Mira and her son. Go to them.', { moment: 'kingPoint', minFrames: 150 }],
         ['KING', 'The children are hiding in the cellars. I will get them to the church.', { minFrames: 180 }],
         ['RURIK', 'Then I go with you. We fight together.', { minFrames: 150 }],
-        ['KING', 'Not tonight. Meet me at the church, Rurik. Swear it.', { moment: 'kingLook', minFrames: 180 }],
+        ['KING', 'Not tonight. Meet me at the church, Rurik. Swear it.', { moment: 'kingSwear', minFrames: 180 }],
         ['RURIK', 'I swear it.', { minFrames: 120 }],
         ['KING', 'Then go!', { moment: 'kingGo', minFrames: 90 }],
       ],

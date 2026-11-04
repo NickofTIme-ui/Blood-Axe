@@ -179,9 +179,9 @@ export const SPRITE_SHEETS = {
   // docs/king-hakon/relay.py. Heights: crown to boots 310 in every sheet (drawn at half: a
   // head over his son, Nick wants him bigger than life), the sheet's tallest pose (a raised blade) above that
   'king-stand': { file: 'assets/sprites/npc/king_stand.png', frames: 4, height: 325, grade: KING_GRADE, centre: true },
-  'king-run': { file: 'assets/sprites/npc/king_run.png', frames: 4, height: 322, grade: KING_GRADE, centre: true },
-  'king-strike-a': { file: 'assets/sprites/npc/king_strike_a.png', frames: 4, height: 360, grade: KING_GRADE, centre: true },
-  'king-strike-b': { file: 'assets/sprites/npc/king_strike_b.png', frames: 4, height: 360, grade: KING_GRADE, centre: true },
+  'king-run': { file: 'assets/sprites/npc/king_run.png', frames: 4, height: 296, grade: KING_GRADE, centre: true },
+  'king-strike-a': { file: 'assets/sprites/npc/king_strike_a.png', frames: 4, height: 321, grade: KING_GRADE, centre: true },
+  'king-strike-b': { file: 'assets/sprites/npc/king_strike_b.png', frames: 4, height: 480, grade: KING_GRADE, centre: true },
   // the villager Varek kills in the opening (view/NpcView.js drawKneeling): begging on his
   // knees, struck, pitching forward, face down (ChatGPT, 2026-10-24). Each pose sits with
   // its boots at the same spot in its cell; height: the begging pose as tall as the
