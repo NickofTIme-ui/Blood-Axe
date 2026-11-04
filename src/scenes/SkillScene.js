@@ -53,6 +53,23 @@ export class SkillScene extends Phaser.Scene {
   // the pages O / RB steps through
   get modes() { return this.heroId === 'warrior' ? ['tree', 'trophies', 'blade'] : ['tree', 'trophies']; }
 
+  // A skill's painted medallion; until its ChatGPT icon is in (Vexa's, 2026-11-04), a
+  // plain dark medallion with a dagger on it, tinted like the rest.
+  iconKey(id) {
+    const key = `st-icon-${id}`;
+    if (this.textures.exists(key)) return key;
+    if (!this.textures.exists('st-icon-blank')) {
+      const g = this.make.graphics({ x: 0, y: 0, add: false });
+      g.fillStyle(0x1a1418, 1).fillCircle(64, 64, 62);
+      g.lineStyle(6, 0xd8c8a8, 1).strokeCircle(64, 64, 56);
+      g.fillStyle(0xe8e0d0, 1).fillTriangle(64, 22, 56, 78, 72, 78);
+      g.fillRect(46, 78, 36, 6).fillRect(60, 84, 8, 22);
+      g.generateTexture('st-icon-blank', 128, 128);
+      g.destroy();
+    }
+    return 'st-icon-blank';
+  }
+
   create() {
     const W = SETTINGS.width;
     const H = SETTINGS.height;
@@ -81,7 +98,7 @@ export class SkillScene extends Phaser.Scene {
     this.buildTrophies();
     if (this.heroId === 'warrior') this.buildBlade();
     if (!this.tree) {
-      this.treeless = this.add.text(W / 2, H / 2, `${name}'s tree is not built yet (Stage 4 of the campaign).\nRurik's and Oryn's are: play one of them to try it.\n(Planned trees: docs/progression.md)`,
+      this.treeless = this.add.text(W / 2, H / 2, `${name}'s tree is not built yet.\n(Planned trees: docs/progression.md)`,
         { fontFamily: FONT.ui, fontSize: '18px', color: '#e8d4b0', align: 'center' }).setOrigin(0.5);
       this.treeObjs = [this.treeless];
       this.refreshHeader();
@@ -181,7 +198,7 @@ export class SkillScene extends Phaser.Scene {
         const cursor = this.add.image(cx, cy, major ? 'st-plate-major' : 'st-plate-awake').setScale(k).setOrigin(0.5, major ? PLATE.majorBodyY : 0.5)
           .setBlendMode(Phaser.BlendModes.ADD).setTint(0xffc860).setAlpha(0);
         const left = cx - pw / 2;
-        const icon = this.add.image(left + PLATE.socket.x * pw, cy + (PLATE.socket.y - 0.5) * ph, `st-icon-${node.id}`);
+        const icon = this.add.image(left + PLATE.socket.x * pw, cy + (PLATE.socket.y - 0.5) * ph, this.iconKey(node.id));
         icon.setDisplaySize(PLATE.socket.r * pw * 2.08, PLATE.socket.r * pw * 2.08);
         const tx = left + ((PLATE.text.x0 + PLATE.text.x1) / 2) * pw;
         const tw = (PLATE.text.x1 - PLATE.text.x0) * pw;
@@ -197,7 +214,7 @@ export class SkillScene extends Phaser.Scene {
     const ix = 30 + 58;
     const iy = L.deskY + L.deskH / 2;
     this.deskHalo = this.add.circle(ix, iy, 37, 0xffd27a, 0.18).setBlendMode(Phaser.BlendModes.ADD);
-    this.deskIcon = this.add.image(ix, iy, `st-icon-${this.tree.branches[0].nodes[0].id}`).setDisplaySize(66, 66);
+    this.deskIcon = this.add.image(ix, iy, this.iconKey(this.tree.branches[0].nodes[0].id)).setDisplaySize(66, 66);
     this.deskName = this.add.text(ix + 52, L.deskY + 14, '', { fontFamily: FONT.display, fontSize: '19px', color: '#ffffff' }).setStroke('#000000', 4);
     this.deskKind = this.add.text(W - 84, L.deskY + 18, '', { fontFamily: FONT.ui, fontSize: '11px', color: '#d8b04a' }).setOrigin(1, 0).setStroke('#000000', 3);
     this.desc = this.add.text(ix + 52, L.deskY + 40, '', { fontFamily: FONT.ui, fontSize: '13px', color: '#f0e0c0', wordWrap: { width: W - 30 - (ix + 52) - 26 }, lineSpacing: 1 }).setStroke('#000000', 2);
@@ -418,7 +435,7 @@ export class SkillScene extends Phaser.Scene {
     }
     const k = this.card(this.col, this.row);
     const why = P.blocker(this.heroId, k.n.id);
-    this.deskIcon.setTexture(`st-icon-${k.n.id}`).setDisplaySize(66, 66).setTint(k.icon.tintTopLeft);
+    this.deskIcon.setTexture(this.iconKey(k.n.id)).setDisplaySize(66, 66).setTint(k.icon.tintTopLeft);
     this.deskHalo.setFillStyle(why === 'owned' ? tint(k.br.color, 20) : 0xffd27a, why === 'owned' ? 0.3 : 0.12);
     this.deskName.setText(k.n.name.toUpperCase()).setColor(css(tint(k.br.color, 25)));
     this.deskKind.setText(`${k.br.name}  ·  TIER ${TIER[k.r]}  ·  ${KIND_LABEL[k.n.kind] ?? ''}  ·  ${k.n.cost} POINTS`);

@@ -21,6 +21,13 @@ export const BLOODIED = {
 for (const s of [...HERO_HD.sheets, ...GRAB_SHEETS]) {
   if (s.hero === 'rurik' && s.baseFirst == null && (s.key === 'ulric' || s.key === 'ulricOath')) BLOODIED[`${s.key}-${s.name}`] = layerFile(s.file);
 }
+// Vexa (2026-11-04): her sheets that have a blood layer baked (same tool, same folder:
+// assets/sprites/heroes-hd/blood/vexa-rogue-<name>-blood.png). Empty until ChatGPT has
+// painted her bloodied; add each sheet's name here as its layer lands.
+export const VEXA_BLOODIED = [];
+for (const s of HERO_HD.sheets) {
+  if (s.hero === 'vexa' && VEXA_BLOODIED.includes(s.name)) BLOODIED[`hero-rogue-${s.name}`] = layerFile(s.file);
+}
 const LAYER_RES = 0.5; // the layers are baked at half his HD size
 
 export const BLOOD = {

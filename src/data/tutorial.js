@@ -83,7 +83,8 @@ export const LESSONS = {
   // VEXA (characters.js rogue)
   rogue: [
     MOVE,
-    { id: 'combo', name: 'DAGGER COMBO', keys: ['attack', 'attack', 'attack', 'attack'], done: { moves: ['light4'] } },
+    { id: 'combo', name: 'DAGGER COMBO', keys: ['attack', 'attack', 'attack', 'attack'], hint: 'The 4th hit throws him up', done: { moves: ['light4'] } },
+    { id: 'cuts', name: 'THOUSAND CUTS', keys: ['attack', 'attack', 'attack', 'attack', '>', 'heavy'], done: { moves: ['cuts'] } },
     { id: 'viper', name: 'VIPER STRIKE', keys: ['heavy'], done: { moves: ['viper'] } },
     { id: 'kick', name: 'CRESCENT KICK', keys: ['kick'], hint: 'Up close', done: { moves: ['kick'] } },
     { id: 'knife', name: 'SHURIKEN', keys: ['kick'], hint: 'From further away', done: { moves: ['knife'] } },
@@ -91,7 +92,9 @@ export const LESSONS = {
     { id: 'dodge', name: 'ROLL', keys: ['dodge'], done: { moves: ['dodge'] } },
     BLOCK,
     GRAB,
-    SPRINT,
+    { id: 'rush', name: 'SHADOW RUSH', keys: ['sprint', '>', 'attack'], hint: 'Sprint at them first', done: { moves: ['rush'] } },
+    { id: 'backstab', name: 'BACKSTAB', keys: ['hold:attack'], done: { moves: ['backstab'] } },
+    { id: 'fade', name: 'FADE', keys: ['attack', '>', 'jump', '+', 'stick'], hint: 'Jump away out of a swing', done: { moves: ['fade'] } },
     { id: 'fan', name: 'SHURIKEN FAN', keys: ['jump', '>', 'kick'], done: { moves: ['fan'] } },
     { id: 'dive', name: 'FALLING VIPER', keys: ['jump', '>', 'heavy'], done: { moves: ['dive'] } },
     { id: 'mine', name: 'WIDOW MINE', keys: ['magic'], done: { moves: ['mine'] } },

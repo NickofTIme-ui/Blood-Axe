@@ -40,7 +40,7 @@ for(const key of ['ulric','ulricOath']){
 }
 for(const key of ['mage','rogue']){
  assert.equal(heroes[key].res,2);refs(heroes[key].anims,key,'installed animations');
- for(const name of Object.keys(HERO_ANIMS[key]))if(name!=='idleStrip')assert.ok(heroes[key].anims[name],`${key}/${name}: animation missing`);
+ for(const name of Object.keys(HERO_ANIMS[key]))if(name!=='idleStrip'&&!HERO_ANIMS[key][name].pending)assert.ok(heroes[key].anims[name],`${key}/${name}: animation missing`);
 }
 console.log(`HD heroes: ${runtime.length} runtime strips; all atlas crops, animation references, sword landmarks and foot anchors valid.`);
 

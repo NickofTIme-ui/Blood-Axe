@@ -44,7 +44,7 @@ assert.ok(STAGE_PRACTICE.practice);
 // ------------------------------------------------------------ the lessons
 const SPECIAL = ['stick', 'down', '+', '>'];
 for (const [hero, list] of Object.entries({ ...LESSONS, basics: BASICS })) {
-  assert.ok(list.length >= 8 && list.length <= 14, `${hero}: short (${list.length} lessons)`);
+  assert.ok(list.length >= 8 && list.length <= 16, `${hero}: short (${list.length} lessons)`);
   assert.equal(list[0].id, 'move', `${hero}: starts with moving`);
   assert.equal(new Set(list.map((l) => l.id)).size, list.length, `${hero}: lesson ids unique`);
   for (const l of list) {
@@ -93,7 +93,9 @@ function teach(hero) {
   run(w, st, TUTORIAL.firstMen + TUTORIAL.respawn * 2 + 300); // (the men are at their posts)
   const c = p.controller;
   const near = (gap = 46) => {
-    const e = w.fighters.find((f) => f.team === 'enemy' && f.alive && f.dummy);
+    const ready = () => w.fighters.find((f) => f.team === 'enemy' && f.alive && f.dummy && ['idle', 'walk'].includes(f.state));
+    run(w, st, 300, ready); // (one on his feet, not still getting up from the last lesson)
+    const e = ready() ?? w.fighters.find((f) => f.team === 'enemy' && f.alive && f.dummy);
     p.x = e.x - gap; p.z = e.z; p.facing = 1; p.vx = p.vz = 0;
     return e;
   };
@@ -104,7 +106,7 @@ function teach(hero) {
     run(w, st, 20);
     run(w, st, 240, () => ['idle', 'walk'].includes(p.state)); // (back on his feet: the sparring man may have floored him)
     c.mx = c.mz = 0; c.hold = {};
-    const gap = L.id === 'knife' ? 250 : L.id === 'shoulder' ? 260 : 46;
+    const gap = L.id === 'knife' ? 250 : ['shoulder', 'rush'].includes(L.id) ? 260 : 46;
     if (!['move', 'sprint', 'block'].includes(L.id)) near(gap);
     const keys = L.keys.filter((k) => k !== '+' && k !== '>');
     if (L.id === 'block') {
@@ -113,6 +115,13 @@ function teach(hero) {
     } else if (L.id === 'combo') {
       // mashed, the way a player does it (a heavier hit holds the next press back a little)
       for (let j = 0; j < 20 && !T.done; j++) press('attack', 5);
+    } else if (L.id === 'cuts') {
+      // the 4th hit has thrown him up: heavy goes up after him
+      for (let j = 0; j < 20 && p.state !== 'light4'; j++) press('attack', 5);
+      run(w, st, 40, () => p.state === 'light4' && p.fsm.frame >= 10);
+      press('heavy', 30);
+    } else if (L.id === 'fade') {
+      press('attack', 4); c.mx = -1; press('jump', 20); // (away from the man she's cutting)
     } else if (L.id === 'move') {
       c.mx = 1; run(w, st, 50); c.mx = -1; run(w, st, 60, () => T.done);
     } else {
@@ -120,7 +129,7 @@ function teach(hero) {
         if (k === 'stick') { c.mx = 1; run(w, st, 12); continue; }
         if (k === 'down') { c.mz = 1; continue; }
         if (k.startsWith('hold:')) { const a = k.slice(5); c.queue.push(a); c.hold[a] = true; run(w, st, 45); c.hold[a] = false; run(w, st, 4); continue; }
-        if (k === 'sprint') { c.mx = 1; press('sprint', 12); if (L.id === 'shoulder') run(w, st, 20); continue; }
+        if (k === 'sprint') { c.mx = 1; press('sprint', 12); if (['shoulder', 'rush'].includes(L.id)) run(w, st, 20); continue; }
         press(k, k === 'jump' ? 12 : L.id === 'thunder' ? 16 : 8); // (a bolt's next press counts once it has fired)
       }
       run(w, st, 30, () => T.done);

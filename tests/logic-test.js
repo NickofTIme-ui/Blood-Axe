@@ -4731,6 +4731,122 @@ test('village: nobody walks through the market well or anything painted with it,
   if (fam) assert(!new Terrain(new World(), STAGE_VILLAGE.terrain).wallAt(fam.x, fam.z, 0), 'the family at the well must stand clear of its footprint');
 });
 
+// ------------------------------------------------------------ Vexa's second set and her tree (2026-11-04)
+
+function vexaWith(...ids) {
+  const P = new Progress(memStore());
+  P.data.bonus = 99;
+  for (const id of ids) assert(P.buy('rogue', id), `bought ${id}`);
+  return P.statsFor('rogue', CHARACTERS.rogue);
+}
+function vexa({ script = {}, hold = {}, foes = [], stats = CHARACTERS.rogue, tough = true } = {}) {
+  const t = rogueSetup({ script, hold, foes });
+  t.p.stats = stats;
+  t.p.mana = stats.maxMana;
+  if (tough) for (const e of t.es) { e.health = 1e4; e.stats = { ...e.stats, maxHealth: 1e4 }; }
+  for (const n of ['rushTurn', 'backstabAppear', 'cutsSpike', 'fade', 'smokeBomb', 'nightCut', 'markSpread', 'juggle']) t.world.events.on(n, (e) => t.ev.push({ n, e }));
+  return t;
+}
+const statesSeen = (t, n) => { const s = new Set(); for (let i = 0; i < n; i++) { t.world.tick(); s.add(t.p.state); } return s; };
+
+test('vexa: SHADOW RUSH (sprint + attack) cuts the whole line once and ends behind them, turned back', () => {
+  const t = vexa({ script: { 1: ['sprint'], 10: ['attack'] }, hold: (n) => (n < 12 ? { right: true } : {}), foes: [[700], [740], [780], [820]] });
+  const st = statesSeen(t, 60);
+  assert(st.has('rush'), `states ${[...st]}`);
+  assert(t.es.every((e) => e.health < 1e4), 'every man in the line is cut');
+  assert(t.p.x > 820, `she ends past them (${t.p.x.toFixed(0)})`);
+  assert(t.seen('rushTurn').length === 1 && t.p.facing === -1, 'turned back to face them');
+});
+
+test('vexa: BACKSTAB (hold attack) comes out of the smoke behind the man and cannot be blocked', () => {
+  const t = vexa({ script: { 1: ['attack'] }, hold: (n) => (n < 20 ? { attack: true } : {}), foes: [[760]] });
+  const e = t.es[0];
+  e.facing = -1; // looking at her
+  e.controller.hold = { block: true };
+  const st = statesSeen(t, 60);
+  assert(st.has('backstab'), `states ${[...st]}`);
+  assert(t.seen('backstabAppear').length === 1 && t.p.x > e.x, `she came out on his far side (${t.p.x.toFixed(0)} vs ${e.x.toFixed(0)})`);
+  assert(e.health < 1e4 && e.exposed > 0, 'stabbed and exposed');
+  const tap = vexa({ script: { 1: ['attack'] }, foes: [[650]] });
+  assert(!statesSeen(tap, 40).has('backstab'), 'a tap is still the first slash');
+});
+
+test("vexa: her own BACKSTAB cashes in her own mark (a super critical with nobody else there)", () => {
+  const hit = (mark) => {
+    const t = vexa({ script: { 1: ['attack'] }, hold: (n) => (n < 20 ? { attack: true } : {}), foes: [[760]] });
+    if (mark) t.world.combat.expose(t.p, t.es[0]);
+    t.run(60);
+    return 1e4 - t.es[0].health;
+  };
+  const plain = hit(false); const marked = hit(true);
+  assert(marked > plain * 2, `marked ${marked.toFixed(0)} vs ${plain.toFixed(0)}`);
+});
+
+test('vexa: the 4th hit launches; heavy then is THOUSAND CUTS: a flurry up there and a heel that spikes him', () => {
+  const t = vexa({ script: { 1: ['attack'], 9: ['attack'], 17: ['attack'], 27: ['attack'], 40: ['heavy'] }, foes: [[650]] });
+  const st = statesSeen(t, 200);
+  assert(st.has('cuts'), `states ${[...st]}`);
+  assert(t.seen('juggle').length >= CHARACTERS.rogue.kit.cuts.hits, `kept up there (${t.seen('juggle').length} juggle hits)`);
+  assert(t.seen('cutsSpike').length === 1 && t.es[0].spiked !== undefined, 'the heel spikes him');
+  assert(t.p.state === 'idle' && t.p.grounded, 'she lands and is free again');
+});
+
+test('vexa: FADE (jump + away out of an attack) flips her back out of reach', () => {
+  const t = vexa({ script: { 1: ['attack'], 8: ['jump'] }, hold: (n) => (n >= 7 && n < 30 ? { left: true } : {}), foes: [[650]] });
+  const st = statesSeen(t, 50);
+  assert(st.has('fade') && t.seen('fade').length === 1, `states ${[...st]}`);
+  assert(t.p.x < 520 && t.p.facing === 1, `back out of reach and still facing him (${t.p.x.toFixed(0)})`);
+  const j = vexa({ script: { 1: ['attack'], 8: ['jump'] }, foes: [[650]] });
+  assert(!statesSeen(j, 30).has('fade'), 'jump without holding away is still a jump');
+});
+
+test("vexa's tree: four branches, 48 points; mines, the mark, the air and the Nightblade", () => {
+  assert(SKILL_TREES.rogue.branches.length === 4 && !SKILL_TREES.rogue.branches.some((b) => b.planned), 'whole');
+  const cost = SKILL_TREES.rogue.branches.flatMap((b) => b.nodes).reduce((a, n) => a + n.cost, 0);
+  assert(cost === 48, `cost ${cost}`);
+  const s = vexaWith('thirdMine', 'shrapnel', 'chainReaction', 'longMark', 'spreadingMark', 'executionersMark', 'fanOfSteel', 'skullStep', 'fallingStar', 'killingRhythm', 'smokeBomb', 'nightFalls');
+  assert(s.kit.mine.maxActive === 3 && s.kit.mine.shrapnel.count === 8 && s.kit.mine.chain, 'widowmaker');
+  assert(s.kit.expose.duration > CHARACTERS.rogue.kit.expose.duration && s.kit.expose.execute > 0 && s.skills.spreadMark, 'deathmark');
+  assert(s.kit.fan.count === CHARACTERS.rogue.kit.fan.count + 3 && s.airJumps === 2 && s.skills.fallingStar, 'skydancer');
+  assert(s.skills.rhythm && s.skills.smoke && s.skills.nightfall && s.maxMana >= 80, 'nightblade');
+  assert(CHARACTERS.rogue.kit.mine.maxActive === 2 && !CHARACTERS.rogue.skills, 'the shared data is untouched');
+});
+
+test('vexa: SMOKE BOMB (D-pad down) dazes the men round her and veils her; NIGHT FALLS cuts six men and brings her back', () => {
+  const sm = vexa({ script: { 2: ['padDown'] }, foes: [[640], [690]], stats: vexaWith('killingRhythm', 'smokeBomb') });
+  sm.run(4);
+  assert(sm.seen('smokeBomb').length === 1 && sm.es.every((e) => e.state === 'stagger'), 'dazed');
+  assert(sm.p.veil > 0 && sm.p.invincible, 'veiled: blows pass through her');
+  const t = vexa({ script: { 2: ['padDown'] }, foes: [[640], [700], [760], [520], [450], [820], [880]], stats: vexaWith('killingRhythm', 'smokeBomb', 'nightFalls') });
+  const x0 = t.p.x;
+  t.run(220);
+  assert(t.seen('nightCut').length === 6, `cut ${t.seen('nightCut').length}`);
+  assert(t.es.filter((e) => e.health < 1e4).length === 6, 'six men cut, the seventh spared');
+  assert(Math.abs(t.p.x - x0) < 40 && t.p.state === 'idle', `back where she stood (${t.p.x.toFixed(0)})`);
+  assert(t.p.mana < t.p.stats.maxMana - 50, 'it costs the mana');
+});
+
+test("vexa: CHAIN REACTION sets her other mines off; SPREADING MARK jumps; EXECUTIONER'S MARK finishes a low man", () => {
+  const s = vexaWith('thirdMine', 'shrapnel', 'chainReaction', 'longMark', 'spreadingMark', 'executionersMark');
+  const t = vexa({ foes: [[900], [960]], stats: s, tough: false });
+  const K = s.kit.mine;
+  const a = t.world.mines.drop(t.p, 700, 420, K); const b = t.world.mines.drop(t.p, 760, 420, K);
+  t.run(K.arm + 2);
+  t.world.mines.blast(a);
+  t.run(12);
+  assert(t.seen('mineBlast').length === 2 && !t.world.mines.list.includes(b), 'the second went off after the first');
+  const u = vexa({ foes: [[660], [720]], stats: s, tough: false });
+  const [m1, m2] = u.es;
+  u.world.combat.expose(u.p, m1);
+  m1.health = 1;
+  u.world.combat.resolve(u.p, m1, { cut: 'slash', damage: 5, hitstun: 10, knockback: { x: 0, y: 0 } }, { kind: 'melee', fromX: u.p.x, dir: 1, contact: { x: m1.x, h: 40 } });
+  assert(!(m1.health > 0) && m2.exposed > 0 && u.seen('markSpread').length === 1, 'the mark jumped to the next man');
+  const hp = m2.stats.maxHealth;
+  m2.health = hp * 0.4;
+  u.world.combat.resolve(u.p, m2, { cut: 'slash', damage: hp * 0.1, hitstun: 10, knockback: { x: 0, y: 0 } }, { kind: 'melee', fromX: u.p.x, dir: 1, contact: { x: m2.x, h: 40 } });
+  assert(!(m2.health > 0), 'brought under a third: executed');
+});
+
 for (const [name, fn] of later) {
   try { await fn(); console.log(`  ok   ${name}`); } catch (e) { failed++; console.log(`  FAIL ${name}\n       ${e.message}`); }
 }

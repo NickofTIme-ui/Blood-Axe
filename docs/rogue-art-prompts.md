@@ -161,3 +161,130 @@ Save as `rogue_finScarlet.png`.
 
 Check each strip with `tools/strip-check.html` like Ulric's. Then a session wires it into
 `CHARACTER_STRIPS` in `src/data/spriteStrips.js`.
+
+---
+
+# 2026-11-04: her second set, her grab, her blood and her skill icons
+
+Nick: "the same amount of moves as Rurik but unique to their own build... Assassin =
+quick, in and out, fast." The moves are in the game already (combat/RogueMoves.js) on
+borrowed poses; these strips replace them. Same chat (**BA · Rogue · Strips**), same rules
+as above. Save each as `assets/sprites/strips/rogue_<name>.png`, then compile them into
+the HD sheets like the others (`tools/compile-hero-hd.mjs`, sheet `vexa-rogue-<name>`).
+Where each plugs in: `HERO_ANIMS.rogue` in `src/data/heroStrips.js` (the entry of the same
+name: swap its borrowed poses for the new strip).
+
+## 11. Shadow Rush (sprint + attack)
+
+> Same character, same scale. **6 poses in one row**, facing right, black background,
+> wide gaps. A blur of a dash through a crowd: (1) sprinting low, daggers trailing behind;
+> (2) dropping even lower, almost horizontal, both daggers swept forward; (3) mid-dash,
+> the lead dagger cutting across; (4) the rear dagger cutting across the other way;
+> (5) skidding to a stop, one hand and one boot scraping the floor, body twisting round;
+> (6) turned back the other way (facing LEFT, the only pose that does), low guard.
+
+Save as `rogue_rush.png`. (Entry: `rush`.)
+
+## 12. Backstab (hold attack)
+
+> Same character, same scale. **6 poses in one row**, facing right, black background,
+> wide gaps. She steps out of nowhere behind a man: (1) crouched low as if just arrived,
+> rear dagger in a reverse grip; (2) rising, the reverse-grip dagger cocked back at her
+> hip; (3) the stab driven forward at kidney height, her whole body behind it; (4) held
+> there, leaning in; (5) pulling the dagger back out; (6) springing back into guard.
+
+Save as `rogue_backstab.png`. (Entry: `backstab`.)
+
+## 13. Thousand Cuts (after the launcher)
+
+> Same character, same scale. **8 poses in one row**, facing right, black background,
+> wide gaps. All in the air: (1) springing straight up, knees driving; (2–5) four fast
+> slashes at different angles (high, low, reversed, crossed), hair and cloak whipping
+> around her; (6) raising one leg high over her head; (7) the heel driven straight down;
+> (8) landing in a low crouch.
+
+Save as `rogue_cuts.png`. (Entry: `cuts`: rise = 0, slash = 1–4, spike = 5–6, drop = 6, land = 7.)
+
+## 14. Smoke Bomb and Night Falls (skill tree)
+
+> Same character, same scale. **8 poses in one row**, facing right, black background,
+> wide gaps. (1) flicking a small pellet down at her feet; (2) crouched, one arm over her
+> face; (3–7) five killing cuts from five different angles, each as if behind a different
+> man, both daggers, a different body shape in each; (8) standing tall, sheathing both
+> daggers at her hips.
+
+Save as `rogue_night.png`. (Entries: `smoke` = 0–1, `nightfall` gather = 1, cut = 2–6, sheathe = 7.)
+
+## 15. Grab and throw (D-pad right)
+
+> Same character, same scale. **8 poses in one row**, facing right, black background,
+> wide gaps. Grabbing a man by the scruff of the neck (draw only her, the man left out, her
+> hand clamped on the air where his neck would be, a dagger still in the other hand):
+> (1) ready; (2) the hand shooting out and clamping; (3–6) four steps frog-marching him
+> ahead of her, her arm out straight; (7) winding up to shove him away; (8) the shove,
+> arm fully out.
+
+Save as `rogue_grab.png`. (Entry: `grab`; take off its `pending` flag.)
+
+## 16. Second moves sheet (the thin moves)
+
+> Same character, same scale. **8 poses in one row**, facing right, black background,
+> wide gaps. (1–3) a low spinning leg sweep: dropping into a crouch, the sweeping leg
+> fully out along the floor, rising; (4) a sidearm shuriken throw, arm whipped across;
+> (5) setting a mine, one knee down, hand flat on the floor; (6) springing up and away
+> from it; (7) in the air, both arms whipping a fan of shuriken down and forward;
+> (8) one boot planted on an empty space at shoulder height, coiled to spring up.
+
+Save as `rogue_moves2.png`. (Entries: `sweep`, `knife`, `mine`, `fan`, `vault`.)
+
+## 17. Rolls up and down the lane
+
+> Same character, same scale. **6 poses in one row**, black background, wide gaps. The
+> same low shoulder roll seen from BEHIND, rolling away up the screen.
+
+Save as `rogue_rollUp.png`. Then:
+
+> Now the same 6-pose roll seen from the FRONT, rolling toward the viewer.
+
+Save as `rogue_rollDown.png`.
+
+## 18. Block and hurt
+
+> Same character, same scale. **8 poses in one row**, facing right, black background,
+> wide gaps. (1) guard up, daggers crossed; (2) a blow landing on the crossed daggers,
+> sparks of nothing, pushed back on one foot; (3) recovering the guard; (4) whipping the
+> guard round the other way; (5) a hard hit to the body, doubled over; (6) a hit to the
+> head, snapped back; (7) falling, dying; (8) dead on the ground, daggers fallen beside her.
+
+Save as `rogue_block.png`. (Entries: `block`, `hitstun`, `stagger`, and a death pose.)
+
+## 19. Bloodied Vexa
+
+Ask, in the same chat, for `rogue_run`, `rogue_idle` and `rogue_combo1` again **soaked in
+blood** (splashed across her face, arms, daggers and chest; the same poses, the same
+framing). Bake the blood layers exactly as Rurik's (`tools/soak-bloodied.py`,
+`tools/line-up-bloodied.py`, `tools/bake-blood-layers.py`; out to
+`assets/sprites/heroes-hd/blood/vexa-rogue-<name>-blood.png`) and add each name to
+`VEXA_BLOODIED` in `src/view/BloodCoat.js`.
+
+## 20. Skill-tree icons
+
+In the skill-tree chat (the one that painted Rurik's and Oryn's medallions), one medallion
+each, in the same style, for Vexa's twelve skills:
+
+| id | what it shows |
+| --- | --- |
+| thirdMine | three small round steel mines in a row |
+| shrapnel | a mine bursting, blades flying out |
+| chainReaction | three mines going off one after another |
+| longMark | her violet-and-crimson mark with a long trailing tail |
+| spreadingMark | the mark jumping from one skull to another |
+| executionersMark | the mark over a skull split by a dagger |
+| fanOfSteel | a wide fan of shuriken |
+| skullStep | a boot planted on a helmeted head |
+| fallingStar | a dagger diving down like a falling star |
+| killingRhythm | two crossed daggers with a heartbeat line |
+| smokeBomb | a cracked pellet and a burst of black smoke |
+| nightFalls | a crescent moon and six dagger cuts |
+
+Cut them with `tools/cut-skilltree-art.py` to `assets/ui/skilltree/icons/<id>.png`.

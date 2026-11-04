@@ -12,13 +12,25 @@ branch, or ChatGPT's work gets lost.
   menu: PRACTICE, then pick a hero. One small yard (data/stagePractice.js, kept OUT of STAGES: the
   arena loads it through ARENAS in data/stages.js), a card top centre with one move and its buttons
   (view/TutorialCard.js; pad labels once a pad is connected), ticked off when done, D-pad left / X
-  skips. Lessons per hero in data/tutorial.js (Rurik 12, Oryn 13 with the rework's Thunder Staff, twirl and pole-vault kick, Vexa 13; base kit only, no
+  skips. Lessons per hero in data/tutorial.js (Rurik 12, Oryn 13 with the rework's Thunder Staff, twirl and pole-vault kick, Vexa 16 with Thousand Cuts, Shadow Rush, Backstab and Fade; base kit only, no
   skill-tree moves): when the Mage or Assassin rework changes a kit, change their list there. Logic:
   stage/Tutorial.js (two grunts stand at posts and never fight back, Enemy.js `dummy`; one who does
   for BLOCK and after the end). Hero can't die, full mana/stamina, no skill picks or trophies, earns
   no blood. tests/tutorial-test.js plays every lesson of every hero with its own buttons. No new art
   (grunts as sparring men, the castle ground, the NEW ABILITY plaque style). The headless browser in
   the cloud crashes starting ANY level (Oath Road too), so it was not seen running in a browser here.
+- 4 November 2026 (cloud, `claude/project-thread-m3u9qp`, Nick: "do all of this" on the Assassin
+  review; Nick: "push all": ON MAIN, not on itch): VEXA'S SECOND SET, one move for each of Rurik's
+  slots (combat/RogueMoves.js): SHADOW RUSH (sprint + attack), BACKSTAB (hold attack), THOUSAND CUTS
+  (4th hit now launches; heavy follows him up), FADE (jump + away out of any attack). Her mark now
+  pays out solo (`markCash` moves, CombatSystem). Her SKILL TREE (data/skills.js SKILL_TREES.rogue):
+  Widowmaker (Third Mine, Shrapnel, Chain Reaction: Mine.js), Deathmark (Long Mark, Spreading Mark,
+  Executioner's Mark), Skydancer (Fan of Steel, Skull Step, Falling Star), Nightblade (Killing
+  Rhythm, SMOKE BOMB on D-pad down, NIGHT FALLS ultimate). Her own sounds made in code
+  (tools/sfx-gen/rogue.js -> assets/audio/sfx/rogue-*.wav). The new moves use BORROWED POSES and
+  her twelve skills a plain stand-in medallion until ChatGPT paints them: prompts 11-20 in
+  docs/rogue-art-prompts.md (PC job). Blood coat ready for her (`VEXA_BLOODIED`, BloodCoat.js) and
+  her grab strip (`grab`, pending) once painted.
 - 4 November 2026 (cloud, `claude/project-thread-l63s14`, Nick: "push": ON MAIN, not on itch): THE MAGE
   REWORK (Nick: Y Y Y "feels like a cheat code", "even hitting with the staff is boring", spiked wall
   idea). Plan doc: https://claude.ai/artifact/LGbuXXYizuXUVMbWqeHMUh. Code (all in data/characters.js

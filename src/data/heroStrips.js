@@ -156,6 +156,18 @@ export const HERO_ANIMS = {
     fin_lotus: { needs: ['finLotus'], frames: seq('finLotus', [0, 1, 2, 3, 4, 5, 6, 7]) },
     fin_scarlet: { needs: ['finScarlet'], frames: seq('finScarlet', [0, 1, 2, 3, 4, 5, 6, 7]) },
     flip: { needs: ['flip'], frames: seq('flip', [0, 1, 2, 3, 4, 5, 6, 7]) }, // her second jump
+    // her second set (combat/RogueMoves.js), on borrowed poses until their own strips are
+    // painted (docs/rogue-art-prompts.md, 2026-11-04 jobs):
+    rush: swing(seq('viper', [0]), seq('viper', [1, 2, 3]), seq('viper', [3, 4, 5])),   // SHADOW RUSH: low burst, the crossing cut, the slide; the turn back
+    backstab: { frames: [...seq('combo1', [1]), ...seq('viper', [2, 2, 4]), ...seq('viper', [5])] }, // out of the smoke: cocked, the stab, held, pull out
+    cuts: { rise: seq('air', [1]), slash: [...seq('combo1', [2]), ...seq('combo2', [2]), ...seq('combo3', [2])], spike: seq('moves', [1]), drop: seq('air', [5]), land: seq('air', [7]) }, // THOUSAND CUTS
+    fade: { frames: seq('dodge', [4, 5, 6, 7]) },       // FADE: the handspring away
+    // GRAB AND THROW (combat/Grab.js): her own strip once it's painted and compiled into the
+    // HD sheets as 'grab' (8 poses as Rurik's neck grip: ready, clamp, four march steps,
+    // the shove wound up, the shove); until then the view borrows her guard and knife throw
+    grab: { needs: ['grab'], pending: true, poses: seq('grab', [0, 1, 2, 3, 4, 5, 6, 7]) }, // (pending: tests/hero-hd-test.js lets it be missing)
+    smoke: { frames: [...seq('moves', [6]), ...seq('combo1', [0])] }, // SMOKE BOMB: the throw down at her feet
+    nightfall: { gather: seq('moves', [6]), cut: [...seq('combo3', [2]), ...seq('viper', [2]), ...seq('combo2', [2])], sheathe: seq('idle', [3]) }, // NIGHT FALLS
     vault: { frames: seq('air', [2]) },
     launched: { frames: seq('air', [3]) },  // the long rise off a teammate's shoulder
     fan: { frames: seq('air', [4]) },

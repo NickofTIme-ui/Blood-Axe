@@ -1,7 +1,8 @@
 // skills.js — The skill trees. One per hero: RURIK's is whole (four branches: his fire,
 // THE KING'S WRATH, is the fourth); ORYN's has its first
 // branch (THE STORMCALLER), the other two are shown as planned (Stage 4 of the campaign
-// plan); VEXA's is still to come (all three are sketched in docs/progression.md).
+// plan); VEXA's is whole (four branches, 2026-11-04: the fourth, THE NIGHTBLADE, ends in
+// her ultimate).
 //
 // A branch with `planned: true` is a placeholder: its nodes are listed (so the tree reads
 // whole) but can't be taken (Progress.blocker says 'planned') and do nothing.
@@ -180,6 +181,110 @@ SKILL_TREES.mage = {
         { id: 'blinkStrike', name: 'Blink Strike', cost: 2, tier: 1, req: [], kind: 'behaviour', text: 'PLANNED: blinking through a man hits him.' },
         { id: 'longStep', name: 'Long Step', cost: 4, tier: 2, req: ['blinkStrike'], kind: 'mobility', text: 'PLANNED: the blink goes 30% further.' },
         { id: 'phaseWalk', name: 'Phase Walk', cost: 6, tier: 3, req: ['longStep'], kind: 'major', text: 'PLANNED: two blinks before you land.' },
+      ],
+    },
+  ],
+};
+
+// VEXA (Nick, 2026-11-04: the Assassin is quick, in and out, fast). Four branches like
+// Rurik's: her mines, her mark, the air, and THE NIGHTBLADE, whose top is her ultimate.
+// The behaviours live in combat/Mine.js, combat/CombatSystem.js (the mark),
+// combat/RogueMoves.js and combat/Rogue.js (Falling Star).
+SKILL_TREES.rogue = {
+  hero: 'Vexa',
+  branches: [
+    {
+      id: 'widowmaker', name: 'THE WIDOWMAKER', color: 0x9a48ff, blurb: 'Mine the field',
+      nodes: [
+        {
+          id: 'thirdMine', name: 'Third Mine', cost: 2, tier: 1, req: [], kind: 'upgrade',
+          text: 'Three Widow Mines out at once instead of two, and they cost less mana (16).',
+          apply(s) { s.kit.mine.maxActive = 3; s.spell.cost = 16; },
+        },
+        {
+          id: 'shrapnel', name: 'Shrapnel', cost: 4, tier: 2, req: ['thirdMine'], kind: 'behaviour',
+          text: 'Every mine that goes off throws eight blades out all round it.',
+          apply(s) {
+            s.kit.mine.shrapnel = {
+              count: 8,
+              projectile: {
+                cut: 'pierce', look: 'shuriken', fx: 'shuriken', count: 1, speed: 620, lifetime: 22, y: 0, w: 14, h: 14,
+                damage: 7, hitstun: 20, hitstop: 2, shake: 0, knockback: { x: 70, y: 0 }, guardDamage: 8, pierce: false, color: 0xbfc6d0,
+              },
+            };
+          },
+        },
+        {
+          id: 'chainReaction', name: 'Chain Reaction', cost: 6, tier: 3, req: ['shrapnel'], kind: 'major',
+          text: 'A mine going off sets off every other mine of yours near it, one after another. Mines hit 20% harder.',
+          apply(s) { s.kit.mine.chain = true; s.kit.mine.damage *= 1.2; },
+        },
+      ],
+    },
+    {
+      id: 'deathmark', name: 'THE DEATHMARK', color: 0xd8203c, blurb: 'Mark them, end them',
+      nodes: [
+        {
+          id: 'longMark', name: 'Long Mark', cost: 2, tier: 1, req: [], kind: 'upgrade',
+          text: 'Exposed lasts half again as long, and your own hits on a marked man do +40% instead of +25%.',
+          apply(s) { s.kit.expose.duration = Math.round(s.kit.expose.duration * 1.5); s.kit.expose.bonus = 0.4; },
+        },
+        {
+          id: 'spreadingMark', name: 'Spreading Mark', cost: 4, tier: 2, req: ['longMark'], kind: 'behaviour',
+          text: 'When a man you marked dies, the mark jumps to the nearest man to him.',
+          apply(s) { s.skills.spreadMark = { range: 260 }; },
+        },
+        {
+          id: 'executionersMark', name: "Executioner's Mark", cost: 6, tier: 3, req: ['spreadingMark'], kind: 'major',
+          text: 'A marked man brought under a third of his health dies to the blow. (Not bosses.)',
+          apply(s) { s.kit.expose.execute = 0.33; },
+        },
+      ],
+    },
+    {
+      id: 'skydancer', name: 'THE SKYDANCER', color: 0x72c4ff, blurb: 'Never touch the ground',
+      nodes: [
+        {
+          id: 'fanOfSteel', name: 'Fan of Steel', cost: 2, tier: 1, req: [], kind: 'upgrade',
+          text: 'The Shuriken Fan throws three more stars, and Death From Above six more.',
+          apply(s) { s.kit.fan.count += 3; s.kit.fan.dfaCount += 6; },
+        },
+        {
+          id: 'skullStep', name: 'Skull Step', cost: 4, tier: 2, req: ['fanOfSteel'], kind: 'mobility',
+          text: 'A third jump in the air. Taken over a man\'s head, you spring off it and he staggers.',
+          apply(s) { s.airJumps = 2; s.skills.skullStep = { stagger: 40 }; },
+        },
+        {
+          id: 'fallingStar', name: 'Falling Star', cost: 6, tier: 3, req: ['skullStep'], kind: 'major',
+          text: 'A Falling Viper that kills throws you straight back up into the air, ready to dive again. It dives from lower too.',
+          apply(s) { s.skills.fallingStar = true; s.kit.dive.minHeight = 8; s.kit.dive.starBounce = 780; },
+        },
+      ],
+    },
+    {
+      id: 'nightblade', name: 'THE NIGHTBLADE', color: 0x7a6ae0, blurb: 'Be the dark',
+      nodes: [
+        {
+          id: 'killingRhythm', name: 'Killing Rhythm', cost: 2, tier: 1, req: [], kind: 'passive',
+          text: 'Every kill gives back 15 stamina and 8 mana. More mana (80).',
+          apply(s) { s.skills.rhythm = { stamina: 15, mana: 8 }; s.maxMana = Math.max(s.maxMana, 80); },
+        },
+        {
+          id: 'smokeBomb', name: 'Smoke Bomb', cost: 4, tier: 2, req: ['killingRhythm'], kind: 'active',
+          text: 'NEW MOVE: D-pad DOWN (H). Smoke cracks at your feet: every man in it reels blind, blows pass through you for a moment, and your first cut out of it EXPOSES him. 25 mana. Also out of your combo.',
+          apply(s) {
+            s.skills.smoke = true;
+            for (const k of ['light1', 'light2', 'light3', 'light4', 'viper', 'kick']) {
+              const m = k === 'viper' ? s.moves.heavy : s.moves[k];
+              for (const win of m?.cancels ?? []) if (!win.into.includes('spin')) win.into.push('spin');
+            }
+          },
+        },
+        {
+          id: 'nightFalls', name: 'Night Falls', cost: 6, tier: 3, req: ['smokeBomb'], kind: 'major',
+          text: 'With 60 mana, D-pad DOWN is NIGHT FALLS: the light goes out and you are behind six men in turn, one killing cut each, then back where you stood. Nothing touches you while it lasts. It cashes in your mark.',
+          apply(s) { s.skills.nightfall = true; s.maxMana = Math.max(s.maxMana, 80); },
+        },
       ],
     },
   ],
