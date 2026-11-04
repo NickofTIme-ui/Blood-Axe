@@ -14,7 +14,7 @@ import { groundUnder } from './propGround.js';
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { drawCastle } from './castle.js';
-import { PaintedLevel } from './levelArt.js';
+import { artKey, PaintedLevel } from './levelArt.js';
 import { PaintedFire } from './PaintedFire.js';
 import { torchFlame } from './TorchFlame.js';
 import { TownChurchView } from './TownChurchView.js';
@@ -57,6 +57,21 @@ export class VillageBackdrop {
     this.church=new TownChurchView(scene,stage);
     this.drawStreet();
     this.makeEmbers();
+    this.drawForeground();
+  }
+
+  // The dark foreground strip (fg.png: a broken fence, beam ends, a cart wheel in silhouette,
+  // lit at the top by the fires) along the bottom of the screen, passing faster than the
+  // fighters, so the street has a near side (Nick's second level 1 review, 2026-11-03).
+  // Kept low and short so it never hides a man's body, only the ground in front of him.
+  drawForeground() {
+    if (!this.art.has('fg')) return;
+    const key = artKey('village', 'fg');
+    const img = this.scene.textures.get(key).getSourceImage();
+    const H = 150, scroll = 1.3, s = H / img.height;
+    const w = SETTINGS.width + this.pad * 2 + this.width * scroll;
+    this.scene.add.tileSprite(-this.pad, SETTINGS.height - H + 8, w, H, key).setOrigin(0).setTileScale(s, s)
+      .setScrollFactor(scroll, 1).setTint(0x8a7a74).setDepth(DEPTH.popups - 40);
   }
 
   get pad() { return SETTINGS.width * 2; }

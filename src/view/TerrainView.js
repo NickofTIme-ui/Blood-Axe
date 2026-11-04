@@ -318,8 +318,21 @@ export class TerrainView {
       const shade = gradient(s, 'cellar-back', [[0, 0x000000, 0.55], [0.18, 0x000000, 0.2], [0.5, 0x000000, 0.45], [1, 0x000000, 0.7]]);
       s.add.image(p.x0, top, shade).setOrigin(0).setDisplaySize(w, H).setDepth(d + 0.02);
     }
-    const heat = gradient(s, 'cellar-heat', [[0, 0x000000, 0], [0.42, 0x1e0603, 0.6], [0.78, 0x6a1606, 0.85], [1, 0xa8320c, 0.95]]);
-    s.add.image(p.x0, top, heat).setOrigin(0).setDisplaySize(w, H).setDepth(d + 0.05);
+    // painted (roof_gap.png: looking down the burning alley between two houses, Nick's second
+    // level 1 review): cover the drop with it, its foot on the fire, cut to the gap's shape
+    const gapKey = artKey('village', 'roof_gap');
+    if (s.textures.exists(gapKey)) {
+      const src = s.textures.get(gapKey).getSourceImage();
+      const k = Math.max(w / src.width, H / src.height);
+      const cw = w / k, ch = H / k;
+      s.add.image(p.x0, top, gapKey).setOrigin(0).setCrop((src.width - cw) / 2, src.height - ch, cw, ch)
+        .setScale(k).setPosition(p.x0 - (src.width - cw) / 2 * k, top - (src.height - ch) * k).setTint(0xc8b0a0).setDepth(d + 0.04);
+      const soft = gradient(s, 'cellar-heat-soft', [[0, 0x000000, 0.55], [0.35, 0x000000, 0.15], [1, 0x000000, 0]]);
+      s.add.image(p.x0, top, soft).setOrigin(0).setDisplaySize(w, H).setDepth(d + 0.05);
+    } else {
+      const heat = gradient(s, 'cellar-heat', [[0, 0x000000, 0], [0.42, 0x1e0603, 0.6], [0.78, 0x6a1606, 0.85], [1, 0xa8320c, 0.95]]);
+      s.add.image(p.x0, top, heat).setOrigin(0).setDisplaySize(w, H).setDepth(d + 0.05);
+    }
     const wall = gradient(s, 'cellar-wall', [[0, 0x000000, 0.85], [1, 0x000000, 0]], true);
     const ww = Math.min(26, w * 0.2);
     s.add.image(p.x0, top, wall).setOrigin(0).setDisplaySize(ww, H).setDepth(d + 0.1);
@@ -695,11 +708,14 @@ export class TerrainView {
     // CAP px of the picture. The cap covers the top you stand on (back edge to front lip, so
     // wherever you stand on it you're on stone), the brick runs on down to the roof; the
     // picture a little wider than the block for the cap's overhang (the brick is ~80% of it)
-    const tex = b.art && `village-chimney-${b.art}`;
+    // (the dark capstone stack, chimney_cap.png, stands in for all three when it's in: their
+    // own caps read pale, like snow, stretched over the top; Nick's second level 1 review)
+    const capped = b.art && this.scene.textures.exists('village-chimney-cap');
+    const tex = capped ? 'village-chimney-cap' : b.art && `village-chimney-${b.art}`;
     if (tex && this.scene.textures.exists(tex)) {
-      const CAP = 32;
       const t = this.scene.textures.get(tex);
       const src = t.getSourceImage();
+      const CAP = capped ? Math.round(src.height * 0.58) : 32;
       if (!t.has('cap')) { t.add('cap', 0, 0, 0, src.width, CAP); t.add('body', 0, 0, CAP, src.width, src.height - CAP); }
       const wide = w / 0.8; const cx = (x0 + x1) / 2;
       const capBot = yTop1 + 3;
@@ -707,6 +723,7 @@ export class TerrainView {
       v.art.setPosition(cx, capBot - 2).setDisplaySize(wide, yTop1 + down + 3 - capBot + 2).setDepth(b.z1 + 0.5).setVisible(true);
       v.arts ??= [this.scene.add.image(0, 0, tex, 'cap').setOrigin(0.5, 0)];
       v.arts[0].setPosition(cx, yTop0 - 2).setDisplaySize(wide, capBot - yTop0 + 2).setDepth(b.z1 + 0.55).setVisible(true);
+      if (capped) { v.art.setTint(0x9a8c86); v.arts[0].setTint(0x8a7e7a); } // (sooty, in the roof's shadow)
       top.fillStyle(0x000000, 0.35).fillEllipse(cx, yTop1 + down + 2, wide + 10, 10);
       top.setDepth(b.z0 - 0.5);
       return;

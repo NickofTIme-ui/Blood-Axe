@@ -6,6 +6,15 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 4 November 2026 (cloud, `claude/project-thread-jtx8mf`, NOT on main yet, not on itch): Nick's
+  second level 1 art review ("YES to ALL"). Code: street shouts on parchment, kept on screen and
+  clear of the HUD (view/ShoutPlate.js); darker contact shadows (atmosphere.js softShadow);
+  firelight on fighters near fires (view/FireLight.js, stageVillage `firelight`); sooty church with
+  smoke (TownChurchView); fainter talk halos; leaner, darker stampede gore (Gore blowApart `lean`).
+  ChatGPT art (PC, chat "BA · Level 1 · Review art 2", originals in art-incoming\level1-review-2\):
+  roof_gap.png under the roofs' gaps (TerrainView burningCellar), chimney_cap.png for the boy's three
+  chimney steps (drawChimney), smaller paving in ground_hall.jpg / ground_church.jpg (replaced),
+  fg.png foreground strip along the bottom of the screen (VillageView drawForeground).
 - 3 November 2026 (cloud, Nick: "push all"): rank screen (rmac4e 877a20e) and level 1 art review
   fixes (kfk79v 21f7db7) MERGED TO MAIN. NOT on itch yet.
 - 3 November 2026 (cloud, `claude/project-thread-rmac4e`, now ON MAIN, not on itch):

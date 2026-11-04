@@ -73,6 +73,8 @@ export class BootScene extends Phaser.Scene {
     this.load.image('gates-brazier-src', 'assets/env/gates/brazier.png');
     // the Burning Roofs' three chimney stacks up to the boy, painted and cut out (view/TerrainView.js drawChimney)
     for (const i of [1, 2, 3]) this.load.image(`village-chimney-${i}`, `assets/env/village/chimney_${i}.png`);
+    // (and one painted dark capstone stack for all three: the old caps read pale, like snow; Nick's second level 1 review)
+    this.load.image('village-chimney-cap', 'assets/env/village/chimney_cap.png');
     this.load.image('keep-hall', 'assets/env/keep_hall.png'); // the Black Keep's throne room (scenes/CutawayScene.js)
     this.load.image('bridge-log-src', 'assets/env/bridge_log.png'); // the painted log bridge (view/TerrainView.js drawBlock)
     this.load.image('bodies-src', 'assets/env/bodies.png'); // the painted fallen villagers (view/NpcView.js drawBodies)

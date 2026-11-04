@@ -39,7 +39,11 @@ export const LEVEL_ART = {
       // street clutter (data/stageVillage.js `decor`: view/VillageView.js drawDecor)
       'decor_signpost', 'decor_lantern', 'decor_debris', 'decor_debris2',
       // a roof's end (view/TerrainView.js drawVillageBlock): painted as the right end, mirrored for the left
-      'roof_gable'],
+      'roof_gable',
+      // the burning alley seen down between two houses, under the roofs' gaps (view/TerrainView.js
+      // burningCellar), and the dark foreground strip along the bottom of the screen
+      // (view/VillageView.js drawForeground): Nick's second level 1 review, 2026-11-03
+      'roof_gap', 'fg'],
     props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' },
       archers: { file: 'prop_archers.png', pair: true }, barricade: { file: 'prop_barricade.png', pair: true } },
     surfaces: { roof_top: { fit: true }, roof_front: { px: 180 }, beam: { px: 40 }, board: { fit: true },
