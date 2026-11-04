@@ -116,6 +116,7 @@ import { LOOT } from '../data/trophies.js';
 import { Controller } from '../core/Controller.js';
 import { VillageOpening } from './VillageOpening.js';
 import { MillRescue } from './MillRescue.js';
+import { KingHakon } from './KingHakon.js';
 import { parSeconds } from '../progression/LevelRank.js';
 
 // the back of the lane on a stage that doesn't set its own `laneTop` (the foot of the back wall)
@@ -354,6 +355,17 @@ export class Stage {
     }
     // its first wave already waiting out there (placeWaiting): that wave is in
     if (this.waiting === i) this.waveIndex = 1;
+    // (come in past the road some other way, a test start or a checkpoint: the king has
+    // already been met, or never will be; his section's fight doesn't wait for him)
+    if (this.data.king && (!this.king || this.king.waiting) && i >= this.sections.findIndex((s) => s.id === this.data.king.section) && this.story) {
+      this.king?.cancel(); this.king = null;
+      const b = this.story.beats.find((x) => x.id === 'kingParting');
+      if (b && !this.story.done.has(b.id)) { b.fired = true; this.story.done.add(b.id); if (sec.fightAfter === b.id) this.fightOn = true; }
+    }
+    // KING HAKON (stage/KingHakon.js): already holding the square ahead, out of sight, from
+    // the start of the stretch before it
+    const KD = this.data.king;
+    if (KD && !this.king && this.sections[i + 1]?.id === KD.section && !this.story?.done.has('kingParting')) this.king = new KingHakon(this, KD);
     if (this.fightOn) this.wakeWaiting();
     this.world.events.emit('sectionStart', { index: i, section: sec });
     if(i===0 && teleport && this.data.openingFormation) this.opening = new VillageOpening(this);
@@ -792,6 +804,15 @@ export class Stage {
       return;
     }
     this.opening?.tail(); // (the commanders still running off)
+    // KING HAKON in the market square (stage/KingHakon.js): met on the way in from the road;
+    // while he fights and the two of them talk, the stage is his
+    if (this.king?.waiting) this.king.update(); // (holding the square till a hero comes up the road)
+    if (this.king?.active && this.king.holding) {
+      this.story?.update();
+      this.king.update();
+      return;
+    }
+    this.king?.tail(); // (running off up the lane)
     this.stats.frames++;
     const p = this.player;
     this.updateFalls();

@@ -154,6 +154,8 @@ export const LEVEL_ART = {
 // The poses in each sheet are listed in docs/campaign/art-levels-1-2.md (items 8, 16,
 // 17, 25).
 const NPC_GRADE = { contrast: 1.12, saturation: 1.18, outline: 2, rim: 0.45 };
+// (the king: sharper and brighter still, a warmer rim: he is the brightest thing in the square)
+const KING_GRADE = { contrast: 1.15, saturation: 1.12, outline: 2, rim: 0.6 };
 export const SPRITE_SHEETS = {
   // (the village's people are cut at the heroes' height, a standing man about 110 px, and
   // graded like Nicholas so they stand out from the painted street: Nick, 2026-10-16,
@@ -171,6 +173,15 @@ export const SPRITE_SHEETS = {
   // villager sheet's style (docs/hale/hale-art-prompts.md): stand, look round, wave over,
   // walk x3, point the way, wipe his brow. A big man: standing, a head over the villager
   hale: { file: 'assets/sprites/npc/hale.png', frames: 8, height: 258, grade: NPC_GRADE, centre: true },
+  // KING HAKON, the Oath King, Rurik's father (stage/KingHakon.js, view/KingView.js): his own
+  // high-end sheets, not a villager's (Nick, 2026-11-04). ChatGPT, from his dying painting
+  // and Rurik's sheet (docs/king-hakon/king-hakon-art-prompts.md); 4 poses each, re-laid with
+  // docs/king-hakon/relay.py. Heights: crown to boots 310 in every sheet (drawn at half: a
+  // head over his son, Nick wants him bigger than life), the sheet's tallest pose (a raised blade) above that
+  'king-stand': { file: 'assets/sprites/npc/king_stand.png', frames: 4, height: 325, grade: KING_GRADE, centre: true },
+  'king-run': { file: 'assets/sprites/npc/king_run.png', frames: 4, height: 322, grade: KING_GRADE, centre: true },
+  'king-strike-a': { file: 'assets/sprites/npc/king_strike_a.png', frames: 4, height: 360, grade: KING_GRADE, centre: true },
+  'king-strike-b': { file: 'assets/sprites/npc/king_strike_b.png', frames: 4, height: 360, grade: KING_GRADE, centre: true },
   // the villager Varek kills in the opening (view/NpcView.js drawKneeling): begging on his
   // knees, struck, pitching forward, face down (ChatGPT, 2026-10-24). Each pose sits with
   // its boots at the same spot in its cell; height: the begging pose as tall as the

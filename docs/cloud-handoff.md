@@ -33,6 +33,21 @@ branch, or ChatGPT's work gets lost.
   when it falls; slower = grazed; bosses never pinned; style points (Style.js `spiked`). Spikes and
   blood are code-drawn in MageFX EarthWallView, and the new moves borrow poses: ChatGPT jobs listed
   in docs/mage-art-prompts.md section 10.
+- 4 November 2026 (cloud, `claude/project-thread-fxeojg`, Nick: "push all": ON MAIN, not on itch): KING HAKON,
+  THE OATH KING (Rurik's father; not Vaurath). Level 1: he holds the way into the market square
+  against six Ashen men (x ~1760, out of sight while you fight the road); a hero reaching x 1440
+  after the road is won starts it: letterbox, his name in gold, six real kills each its own
+  fatality, slow motion on the last, his roar, the held parting 'kingParting' (Mira's cry; they
+  swear to meet at the church), then he runs off up the lane and the square's fight starts
+  (square.fightAfter). The church farewell now opens on that promise. Code: stage/KingHakon.js,
+  view/KingView.js, HUDScene.kingCard, ArenaScene.setupKing, tests/king-hakon-test.js.
+  ART (ChatGPT, prompts docs/king-hakon/king-hakon-art-prompts.md, PC Downloads\king-hakon\,
+  chat "Create Hakon Sprite Sheet" in the Bloody axe project): king_stand.png is in; STILL TO
+  MAKE: king_run, king_strike_a, king_strike_b (until then KingView stands in his nearest
+  stand pose), king-portrait (assets/ui/portraits/king.png is cropped from the stand sheet
+  for now), king-parting cinematic, king-crown-fallen. Re-lay each sheet with
+  `python3 docs/king-hakon/relay.py in.png assets/sprites/npc/king_<name>.png 4`, then set its
+  `height` in data/levelArt.js so crown-to-boots is 260.
 - 4 November 2026 (cloud, `claude/project-thread-jtx8mf`, Nick: "PUSH": ON MAIN, not on itch): Nick's
   second level 1 art review ("YES to ALL"). Code: street shouts on parchment, kept on screen and
   clear of the HUD (view/ShoutPlate.js); darker contact shadows (atmosphere.js softShadow);
