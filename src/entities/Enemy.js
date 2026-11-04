@@ -25,6 +25,7 @@ export const ENTER = {
   stagger: 45,   // each next man in a wave a step further back
   onScreen: 400, // he's arrived once he's this close to a hero (and inside the bounds)
   wake: 180,     // a man waiting at his post (Stage placeWaiting) stirs when a hero is this close
+  worry: 150,    // a hound worrying at a tree (`worry`) turns on a hero this close (or once hurt)
 };
 
 // Where to put the k-th man of a wave coming from this side (+1 right, -1 left).
@@ -133,6 +134,24 @@ export class EnemyBrain extends Controller {
         if (inRoad) this.moveZ = f.z <= inRoad.z ? -1 : 1;
       }
       return;
+    }
+
+    // A hound at the foot of a tree with a man up it (stage data spawn `worry`, Gallows
+    // Wood's Joren: stage/Story.js 'treed'): he paces round the trunk, leaping at it, until a
+    // hero comes close or hurts him. Then he's on the hero for good.
+    if (f.worry) {
+      const close = this.world.fighters.some((o) => o.team === 'player' && o.alive && Math.abs(o.x - f.x) < ENTER.worry && Math.abs(o.z - f.z) < 120);
+      if (close || f.health < f.stats.maxHealth) f.worry = null;
+      else {
+        const side = ((this.world.frame + f.id * 37) % 120) < 60 ? -1 : 1;
+        const tx = f.worry.x + side * 46; const tz = f.worry.z + 24;
+        if (f.state === 'idle' || f.state === 'walk') {
+          this.moveX = Math.abs(tx - f.x) > 10 ? Math.sign(tx - f.x) : 0;
+          this.moveZ = Math.abs(tz - f.z) > 8 ? Math.sign(tz - f.z) : 0;
+        }
+        this.facingHint = Math.sign(f.worry.x - f.x) || f.facing;
+        return;
+      }
     }
 
     // His captain knelt and lost his head in front of him (stage/Sentence.js): he throws

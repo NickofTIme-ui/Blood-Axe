@@ -276,6 +276,8 @@ export class NpcView {
     const t = this.scene.time.now / 16.7;
     this.drawPrompt(n, v);
     if (n.pose === 'noose' || n.pose === 'cage') { this.drawCaptive(n, v, t); return; }
+    if (n.pose === 'treed') { this.drawTreed(n, v, t); return; }
+    if (n.pose === 'hanged') { this.drawHanged(n, v, t); return; }
     if (n.pose === 'gatewright') { this.drawGatewright(n, v, t); return; }
     // (the horses are drawn in their stable, view/VillageView.js; the group is inside the barn)
     const show = !['safe', 'gone'].includes(n.state) && !(n.pose === 'group' && n.state === 'trapped') && n.pose !== 'horses'
@@ -536,6 +538,63 @@ export class NpcView {
     if (n.state === 'safe' || n.state === 'gone') { g.setVisible(false); return; }
     if (n.state === 'gathered') { this.figure(g, n.x, y, k, 'stand', t, tun(0), -1); return; }
     this.figure(g, n.x, y, k, n.state === 'fleeing' ? 'run' : 'cower', t, tun(0), n.dir ?? -1);
+  }
+
+  // A man hanging by his hands from the hanging tree's bough, hounds leaping at his feet
+  // (rescue 'treed', Gallows Wood's Joren: he slipped his noose and got up onto the bough).
+  // The bough is the painted tree's (view/WoodView.js); he's the captive sheet's hanging pose,
+  // legs kicking while the hounds are at him, his grip meter over his hands. Saved, he drops
+  // down and runs; lost, he lies under the bough.
+  drawTreed(n, v, t) {
+    const g = v.g;
+    const k = depthScale(n.home.z);
+    const bx = n.home.x; const by = n.home.z - n.h;
+    // (`hold`: how far under the rope line his hands are: on the painted bough's lower limb)
+    const bough = (this.stage.data.gallows ? this.stage.data.gallows.z - 214 : by - 200) + (n.hold ?? 0);
+    const hands = 92 * k; // (the hanging pose: his feet this far under his hands)
+    const tun = TUNIC[v.seed % TUNIC.length];
+    const who = SPRITES.captive ? 'captive' : undefined;
+    const needs = n.state === 'threatened';
+    v.halo.setVisible(needs).setPosition(bx, bough + hands * 0.5).setDepth(n.home.z - 0.6).setAlpha(needs ? 0.25 + 0.2 * Math.sin(t * 0.12) : 0);
+    v.shadow.setVisible(false);
+    g.setVisible(true).setAlpha(1).setDepth(n.home.z);
+    if (n.state === 'lost') { this.fallen(g, bx, by, k, tun); return; }
+    if (n.state === 'threatened') {
+      const kick = n.cower ? Math.sin(t * 0.45) * 3 : Math.sin(t * 0.03) * 1.5;
+      this.figure(g, bx + kick, bough + hands, k, who ? 'hang' : 'cower', 0, tun, -1, who);
+      const frac = Math.max(0, Math.min(1, n.nerve / (n.hp ?? NPC.nerve)));
+      if (frac < 1) {
+        const my = bough - 22;
+        v.meter.fillStyle(0x000000, 0.7).fillRect(bx - 31, my, 62, 7);
+        v.meter.fillStyle(n.cower ? 0xff7050 : 0xd8b04a, 1).fillRect(bx - 30, my + 1, 60 * frac, 5);
+      }
+      return;
+    }
+    if (n.state === 'free') {
+      // he lets go and drops, then gets up
+      const d = Math.min(1, n.t / 14);
+      const y = bough + hands + (by - bough - hands) * d * d;
+      this.figure(g, bx, y, k, d < 1 && who ? 'hang' : 'cower', t, tun, -1, who);
+      return;
+    }
+    if (n.state === 'safe' || n.state === 'gone') { g.setVisible(false); return; }
+    g.setDepth(n.z);
+    this.figure(g, n.x, n.z - n.h, depthScale(n.z), n.state === 'fleeing' ? 'run' : 'stand', t, tun, n.dir ?? -1, n.state === 'fleeing' ? who : undefined);
+  }
+
+  // The dead on the hanging tree (Gallows Wood): left there by the hangmen, turning slowly.
+  // View only (no rescue). CODE ART: rope and the captive sheet's hanging pose.
+  drawHanged(n, v, t) {
+    const g = v.g;
+    const k = depthScale(n.z);
+    const y = n.z - n.h;
+    const bough = this.stage.data.gallows ? this.stage.data.gallows.z - 214 : y - 200;
+    v.halo.setVisible(false); v.shadow.setVisible(false);
+    g.setVisible(true).setAlpha(1).setDepth(n.z - 1);
+    const sway = Math.sin(t * 0.03 + v.seed) * 2.5;
+    const drop = n.drop ?? 70;
+    g.lineStyle(2, 0x6a5a40, 1).lineBetween(n.x, bough, n.x + sway * 0.5, bough + drop);
+    this.figure(g, n.x + sway, bough + drop + 92 * k, k * 0.95, SPRITES.captive ? 'hang' : 'stand', 0, 0x3a3630, 1, SPRITES.captive ? 'captive' : undefined);
   }
 
   // Vincent, the Gatewright (the Iron Gates): in his cage on the guardroom landing, gripping

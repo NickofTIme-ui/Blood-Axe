@@ -48,6 +48,11 @@
 //                       `by: 'boss'` its boss) must die before `time` frames run out, counted
 //                       from the fight starting. Too slow: he's LOST (state 'lost';
 //                       beats `on: 'lost:<id>'`). Rising at the checkpoint resets it.
+//           'treed'     up a tree with hounds at its foot (Gallows Wood's Joren): every hound
+//                       within TREED.reach of him wears his grip down (`hp`, default
+//                       NPC.nerve); at 0 he falls and is LOST. Saved once his section's first
+//                       `wave` line-ups are dead (as 'defend'). Draw the hounds off him (a hero
+//                       near them pulls them away: entities/Enemy.js `worry`) or kill them.
 //           'escort'    a hero walks up to him and he follows (state 'escort') until he
 //                       reaches `to.x`. Enemies close to him wear his nerve down (`hp`,
 //                       default NPC.nerve): he cowers and won't move; at 0 he's lost
@@ -112,6 +117,9 @@ export const GUIDE = {
   accel: 10,               // px/s his pace changes by a frame (he eases in and out of a walk)
   lane: 60, laneSlack: 45, // his lane: this far up the road from the lead's; moved once the lead strays this far
 };
+// A man up a tree (rescue 'treed'): how near a hound must be to the foot of it to tear at
+// it, and how much grip each one costs him a frame (two hounds: about 17 s from full)
+export const TREED = { reach: 110, depth: 70, drain: 0.05 };
 export const INTERACT = 'padUp';
 
 export class Story {
@@ -121,7 +129,7 @@ export class Story {
     this.beats = (data.story ?? []).map((b) => ({ ...b, fired: false }));
     this.npcs = (data.npcs ?? []).map((n) => ({
       ...n,
-      state: n.stableMaster ? 'waiting' : n.guide ? 'guide' : n.rescue === 'defend' || n.rescue === 'execution' ? 'threatened' : n.rescue ? 'trapped' : 'idle',
+      state: n.stableMaster ? 'waiting' : n.guide ? 'guide' : n.rescue === 'defend' || n.rescue === 'execution' || n.rescue === 'treed' ? 'threatened' : n.rescue ? 'trapped' : 'idle',
       x: n.x, z: n.z, h: 0, t: 0, home: { x: n.x, z: n.z }, clock: 0, pick: 0, nerve: n.hp ?? NPC.nerve,
     }));
     this.prompts = [];
@@ -177,6 +185,7 @@ export class Story {
     ev.on('boltHit', ({ bolt, fighter }) => this.trigger(fighter.stats.boss ? 'bolt:boss' : bolt.hit.size >= 2 ? 'bolt:many' : 'bolt:one'));
     // (the Black Keep: a fight starting, the King's answer to a blow into his guard, the colossus's heart laid open)
     ev.on('fightStart', ({ section }) => this.trigger(`fight:${section.id}`));
+    ev.on('waveStart', ({ section, wave }) => this.trigger(`wave:${section.id}:${wave}`));
     ev.on('emberCounter', () => this.trigger('counter'));
     ev.on('heartOpen', () => this.trigger('heart'));
   }
@@ -420,7 +429,7 @@ export class Story {
       if(n.helpAge>0)n.helpAge--;
       if(!n.helpCalled&&!n.stableMaster&&['threatened','trapped'].includes(n.state)&&heroes.some(p=>Math.abs(p.x-n.x)<300&&Math.abs(p.z-n.z)<200)){
         n.helpCalled=true;n.helpAge=180;
-        n.helpText=n.rescue==='wreckage'?'HELP! I’M TRAPPED!':n.rescue==='cage'?'GET US OUT OF HERE!':n.rescue==='execution'?'HELP! CUT ME DOWN!':'HELP! OVER HERE!';
+        n.helpText=n.rescue==='wreckage'?'HELP! I’M TRAPPED!':n.rescue==='cage'?'GET US OUT OF HERE!':n.rescue==='execution'?'HELP! CUT ME DOWN!':n.rescue==='treed'?'GET THEM OFF ME!':'HELP! OVER HERE!';
       }
       if(n.insideChurch){n.state='gone';continue;}
       if(n.stableMaster){updateStableMaster(n,heroes,T);continue;}
@@ -431,6 +440,7 @@ export class Story {
       if (this.talkBeat(n)) this.updateTalk(n, heroes);
       if (n.state === 'threatened') {
         if (n.rescue === 'execution') this.updateExecution(n);
+        else if (n.rescue === 'treed') this.updateTreed(n);
         else if (this.defended(n)) this.free(n);
       } else if (n.state === 'trapped') {
         if (n.rescue === 'wreckage' && st.props.some((pr) => pr.tag === n.tag && pr.broken)) this.free(n);
@@ -580,6 +590,21 @@ export class Story {
     if (!st.fightOn || st.index !== si) return;
     n.clock++;
     if (n.clock >= (n.time ?? 900)) this.lose(n);
+  }
+
+  // Up a tree: safe once his section's first line-ups are dead; until then each hound at
+  // the foot of the tree wears his grip down, and at nothing he falls.
+  updateTreed(n) {
+    const st = this.stage;
+    const si = this.sectionOf(n);
+    if (si < 0 || st.index < si) return;
+    if (this.defended(n)) { n.cower = false; this.free(n); return; }
+    if (!st.fightOn || st.index !== si) return;
+    const near = st.livingFoes().filter((f) => f.stats.id === 'hound' && Math.abs(f.x - n.x) <= TREED.reach && Math.abs(f.z - n.z) <= TREED.depth).length;
+    n.cower = near > 0;
+    if (!near) return;
+    n.nerve -= TREED.drain * near;
+    if (n.nerve <= 0) { n.nerve = 0; this.lose(n); }
   }
 
   // A cage: a hero at its lock holds INTERACT (once nobody is left fighting) until it opens.
@@ -804,9 +829,9 @@ export class Story {
         continue;
       }
       if (this.sectionOf(n) !== k || this.rescued.has(n.id)) continue;
-      if (!['execution', 'escort', 'convoy'].includes(n.rescue)) continue;
+      if (!['execution', 'escort', 'convoy', 'treed'].includes(n.rescue)) continue;
       this.lost.delete(n.id);
-      n.state = n.rescue === 'execution' ? 'threatened' : 'trapped';
+      n.state = n.rescue === 'execution' || n.rescue === 'treed' ? 'threatened' : 'trapped';
       n.x = n.home.x; n.z = n.home.z; n.clock = 0; n.nerve = n.hp ?? NPC.nerve; n.cower = false; n.t = 0;
       for (const b of this.beats) if (b.on === `lost:${n.id}` || b.on === `follow:${n.id}`) { b.fired = false; b.fire = false; this.done.delete(b.id); }
     }

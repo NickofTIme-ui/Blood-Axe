@@ -117,6 +117,7 @@ export const PICKUPS = {
   relic: { score: 1, label: 'THE OATH CHALICE', color: 0xffd060 },
   ring: { score: 1, label: 'HAKON\'S SIGNET', color: 0xffd060 },
   rune: { score: 1, label: 'A RUNESTONE OF THE FIRST FIRE', color: 0x7ad8ff },
+  charm: { score: 1, label: 'A POACHER\'S BONE CHARM', color: 0xe8dcc0 }, // (Gallows Wood; drawn as the relic until painted)
   shrine: { heal: 1, mana: 1, score: 1, label: 'BLOOD SHRINE', color: 0xff3a2a },
   trophy: { trophy: true, label: 'TROPHY', color: 0xffb030 }, // boss loot (data/trophies.js): dropped by bosses and elites
 };

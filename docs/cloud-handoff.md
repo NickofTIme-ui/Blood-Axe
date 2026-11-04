@@ -6,6 +6,21 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 4 November 2026 (cloud, `claude/project-thread-xlx2i8`, Nick: "push": ON MAIN, not on itch): LEVEL 2
+  POLISH, TIER 1 (Nick: "go" on the plan https://claude.ai/artifact/9CQVtZ7BdfPyfCEcmQuQrj). Gallows
+  Wood stops copying the village: JOREN is no longer on a rope (that was Irvolino's beat): he slipped
+  his noose and hangs from the hanging tree's bough with two hounds leaping under him (rescue
+  `treed`, stage/Story.js `updateTreed`, TREED; his grip goes while hounds are within reach; at 0
+  he falls, lost). The hounds stay at the tree (`worry` on a spawn spot, entities/Enemy.js) until a
+  hero comes within 150 px or hurts one: pull them off or kill them. Two dead hang from the tree
+  (npc pose `hanged`, view only). THE CONVOY's last wave is the kennel wagon's hounds, not a thrall
+  horde (`waveStart` event -> beat `on: 'wave:<section>:<n>'`). Shrines solid at the back of the
+  road; props grouped by owner (camp, hangmen's kit, spilled loads, washed-up barrels, kennel feed);
+  two secrets (a poacher's charm behind the start, pickup `charm`; a relic on a high rock shelf in the
+  cage carts, 150 over its boulder: double jump / Oryn's rise / Wind Step); a word from each of the
+  saved at the blocked road. Joren, the hanged and the shelf are code art: ChatGPT jobs are in the
+  plan doc's checklist (Joren hanging and dropping, dead on the tree, a stump and a shelf).
+- 4 November 2026 (cloud, `claude/project-thread-skkc3r`, Nick: "push all": ON MAIN, not on itch):
 - 4 November 2026 (cloud, `claude/project-thread-skkc3r`, Nick: "push all", juggle lesson "push": ON MAIN, not on itch):
   THE PRACTICE YARD, a tutorial in its own space (Nick: "shows the player quickly, not too wordy, lets
   them try all the mechanics for each player, hiding the higher cool stuff that's unlocked"). Title

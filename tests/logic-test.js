@@ -23,7 +23,7 @@ import { STAGE_ASCENT } from '../src/data/stageAscent.js';
 import { STAGE_GATES } from '../src/data/stageGates.js';
 import { STAGE_KEEP } from '../src/data/stageKeep.js';
 import { STAGES } from '../src/data/stages.js';
-import { LINE, NPC, GUIDE } from '../src/stage/Story.js';
+import { LINE, NPC, GUIDE, TREED } from '../src/stage/Story.js';
 import { SPEAKERS, NARRATION, PORTRAIT_IDS, speakerInfo } from '../src/data/speakers.js';
 import { Progress, PROGRESS } from '../src/progression/Progress.js';
 import { SKILL_TREES } from '../src/data/skills.js';
@@ -3135,21 +3135,59 @@ test('wood: the story runs in order; Joren and Ansel are saved by fighting, the 
   assert(!r.beats.includes('pilgrim'), 'the pilgrim only talks when asked');
 });
 
-test('wood: the execution: too slow and Joren is lost; rising at the checkpoint puts him back on the rope', () => {
-  const { world, p, st, run } = woodSetup(1, { x: 1900, z: 440 });
-  const j = st.story.npc('joren');
-  const lost = []; world.events.on('npcLost', (e) => lost.push(e.npc.id));
-  for (const b of st.story.beats) if (b.id === 'joren-lost') b.fired = false;
-  run(30);
-  assert(st.fightOn && j.state === 'threatened', `the hangmen are at work (${j.state})`);
-  run(j.time + 20, () => { p.health = p.stats.maxHealth; p.invincible = true; });
-  assert(j.state === 'lost' && lost.join() === 'joren' && st.story.lost.has('joren'), `lost (${j.state})`);
-  for (let i = 0; i < 400 && !st.story.done.has('joren-lost'); i++) { killFoes(world); world.tick(); st.update(); }
-  assert(st.story.done.has('joren-lost'), 'his loss is said (once the fight is over)');
-  st.respawn();
-  assert(j.state === 'threatened' && j.clock === 0 && !st.story.lost.has('joren'), `back on the rope (${j.state})`);
-  run(30); killFoes(world); run(60, () => killFoes(world));
-  assert(st.story.isRescued('joren'), 'and saved this time, in time');
+test('wood: Joren on the bough: the hounds under him wear his grip down; he falls if left; a hero near pulls them off; rising puts him back up', () => {
+  // left alone with them: the hounds stay at the tree, and he falls
+  {
+    const { world, p, st, run } = woodSetup(1, { x: 1800, z: 440 });
+    const j = st.story.npc('joren');
+    const lost = []; world.events.on('npcLost', (e) => lost.push(e.npc.id));
+    run(30);
+    const hounds = world.fighters.filter((f) => f.team === 'enemy' && f.stats.id === 'hound');
+    assert(st.fightOn && j.state === 'threatened' && hounds.length === 2 && hounds.every((h) => h.worry), `the hounds are at the tree (${j.state}, ${hounds.length})`);
+    for (const f of world.fighters) if (f.team === 'enemy' && f.stats.id !== 'hound') { f.health = 0; f.removeMe = true; } // (the hangmen: out of the way)
+    p.x = 1700; // (far from the tree: they don't come for him)
+    run(120, () => { p.x = 1700; p.invincible = true; });
+    assert(hounds.every((h) => h.alive && h.worry && Math.abs(h.x - j.x) <= TREED.reach) && j.nerve < NPC.nerve && j.cower, `they keep at the tree and his grip goes (${Math.round(j.nerve)})`);
+    run(Math.ceil(NPC.nerve / (TREED.drain * 2)) + 10, () => { p.x = 1700; p.invincible = true; });
+    assert(j.state === 'lost' && lost.join() === 'joren' && st.story.lost.has('joren'), `he falls (${j.state}, grip ${j.nerve})`);
+    st.respawn();
+    assert(j.state === 'threatened' && j.nerve === NPC.nerve && !st.story.lost.has('joren'), `back on the bough (${j.state})`);
+    p.x = 1800; run(30); killFoes(world); run(120, () => killFoes(world));
+    assert(st.story.isRescued('joren'), 'and saved this time');
+  }
+  // a hero goes in close: the hounds turn on him, and the grip stops going
+  {
+    const { world, p, st, run } = woodSetup(1, { x: 1800, z: 440 });
+    const j = st.story.npc('joren');
+    run(30);
+    const hounds = world.fighters.filter((f) => f.team === 'enemy' && f.stats.id === 'hound');
+    p.x = j.x + 60; p.z = 360; p.invincible = true;
+    run(10, () => { p.invincible = true; });
+    assert(hounds.every((h) => !h.worry), 'pulled off the tree');
+    p.x = 1700; p.z = 440;
+    run(150, () => { p.x = Math.max(1600, p.x); p.invincible = true; });
+    const g = j.nerve;
+    run(60, () => { p.invincible = true; });
+    assert(hounds.every((h) => Math.abs(h.x - j.x) > TREED.reach) && j.nerve === g, `they run after him, not back to the tree (grip ${Math.round(g)} -> ${Math.round(j.nerve)})`);
+  }
+});
+
+test('wood: two secrets (one up the high shelf, out of Rurik\'s plain jump), solid shrines, a word from each of the saved at the blocked road', () => {
+  const secrets = STAGE_WOOD.sections.flatMap((sec) => sec.props.filter((pr) => pr.secret));
+  assert(secrets.length === 2, `two secrets (${secrets.length})`);
+  const world = new World({ seed: 2 });
+  const st = new Stage(world, STAGE_WOOD);
+  const T = st.terrain;
+  const bough = secrets.find((pr) => T.groundAt(pr.x, pr.z) > 0);
+  const under = T.groundAt(3950, 300);
+  assert(bough && T.groundAt(bough.x, bough.z) - under >= 140, `the shelf is a roost: ${bough && T.groundAt(bough.x, bough.z)} over ${under}`);
+  for (const sec of STAGE_WOOD.sections.filter((q) => q.rest)) {
+    assert(sec.rest.solid && T.wallAt(sec.rest.x, sec.rest.z, 0), `${sec.id}: the shrine is solid`);
+  }
+  for (const id of ['tanners', 'wenna', 'ansel', 'convoy']) {
+    const b = STAGE_WOOD.story.find((q) => q.npcTalkFor === id);
+    assert(b && b.if === `rescued:${id}`, `${id} has a word at the road, if saved`);
+  }
 });
 
 test('wood: a cage opens when a hero holds INTERACT at its lock, only with no enemy standing', () => {
@@ -4343,10 +4381,13 @@ test('style: the same move over and over scores less than mixing it up', () => {
 });
 
 test('horde: each campaign level has a HORDE wave of thralls, and it is announced', () => {
-  for (const data of [STAGE_VILLAGE, STAGE_WOOD, STAGE_MINE]) {
+  for (const data of [STAGE_VILLAGE, STAGE_MINE]) {
     const big = data.sections.flatMap((sec) => sec.waves ?? []).filter((w) => w.length >= 7);
     assert(big.length >= 1 && big.every((w) => w.filter((x) => x === 'thrall').length >= 8), `${data.name}: a horde of thralls`);
   }
+  // (Gallows Wood has none: its pack is its own, the convoy's kennel wagon let loose; 2026-11-04)
+  const wood = STAGE_WOOD.sections.flatMap((sec) => sec.waves ?? []);
+  assert(!wood.flat().includes('thrall') && wood.some((w) => w.filter((x) => x === 'hound').length >= 4), 'the wood: hounds, not thralls');
   assert(ENEMIES.thrall.moves.light1 && ENEMIES.thrall.maxHealth < ENEMIES.grunt.maxHealth / 2, 'a thrall swings a grunt\'s sword and dies easier');
   const world = new World({ seed: 3 });
   const stage = new Stage(world, STAGE_VILLAGE);

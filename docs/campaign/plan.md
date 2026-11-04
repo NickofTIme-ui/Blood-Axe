@@ -106,10 +106,10 @@ Keepers survived (confidence).
 | § | Section | Content |
 |---|---|---|
 | I | THE WOOD ROAD | The others scout ahead. A fallen pine, a stream crossed on a log. The convoy's rear guard. |
-| II | THE HANGING TREE | Joren (Mira's husband) on the rope: kill the hangmen before it runs out (execution; too slow and he's lost). A shrine. |
+| II | THE HANGING TREE | The hangmen's tree with its dead. Joren (Mira's husband) slipped his noose and hangs from the bough, two hounds leaping under him: pull them off or kill them before his grip goes (treed; too slow and he falls). A shrine. |
 | III | THE CAGE CARTS | Stepping stones over a ravine stream. The broken carts: two cages to open once the guards are dead (cage). |
 | IV | THE OLD FORD | Ansel the wheelwright, lame, follows you across; an ambush on the road (escort). |
-| V | THE CONVOY | The convoy's last prisoner wagon rolls up the road once the fight starts. Wreck it through three waves of guards and the prisoners run free (they wait at the pass); too slow and it gets away with them (rescue 'convoy'). |
+| V | THE CONVOY | The convoy's last prisoner wagon rolls up the road once the fight starts. Wreck it through three waves of guards and the kennel wagon's hounds, and the prisoners run free (they wait at the pass); too slow and it gets away with them (rescue 'convoy'). |
 | VI | THE KENNELS | A shrine; **the Houndmaster** comes in with two war hounds; three more at two thirds, his frenzy (and two more) at one third (boss phases). |
 | VII | THE BLOCKED ROAD | The pass buried by their own men; a pilgrim (ask him); the tracks turn into the old mine. |
 

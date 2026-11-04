@@ -417,6 +417,7 @@ export class Stage {
       const at = sp[k % sp.length];
       const e = createEnemy(this.world, type, at.x + (k >= sp.length ? 40 : 0), at.z);
       e.lurking = i;
+      if (at.worry) e.worry = { x: at.worry.x, z: at.worry.z }; // (a hound at a tree: entities/Enemy.js)
       e.facing = Math.sign((heroes[0]?.x ?? at.x) - e.x) || -1;
       if (this.terrain) { e.floor = this.terrain.groundAt(e.x, e.z); e.h = e.floor; }
     });
@@ -674,6 +675,7 @@ export class Stage {
         }
         if (!inView(this.world, heroes, x)) {
           const e = createEnemy(this.world, type, x, at.z, { entering: !at.inPlace });
+          if (at.worry) e.worry = { x: at.worry.x, z: at.worry.z };
           if (this.terrain) { e.floor = this.terrain.groundAt(e.x, e.z); e.h = e.floor; }
           return;
         }
@@ -681,6 +683,7 @@ export class Stage {
         let side = Math.sign(x - (heroes[0]?.x ?? x)) || 1;
         if (this.sealedSide(side, heroes)) side = -side;
         const e = createEnemy(this.world, type, offscreenX(this.world, heroes, side, late[side > 0 ? 1 : 0]++), at.z, { entering: true });
+        if (at.worry) e.worry = { x: at.worry.x, z: at.worry.z }; // (he runs on to the tree)
         this.setOnGround(e);
       });
       return;
@@ -856,6 +859,7 @@ export class Stage {
         const roster = sec.waves[this.waveIndex++];
         this.spawnWave(roster);
         if (roster.length >= HORDE_SIZE) this.world.events.emit('horde', { section: sec, count: roster.length });
+        this.world.events.emit('waveStart', { section: sec, wave: this.waveIndex }); // (1 = the first)
         this.waveDelay = WAVE_GAP;
         return;
       }
