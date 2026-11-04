@@ -90,6 +90,10 @@ export const STAGE_VILLAGE = {
   castle: { x: 830, scale: 0.42, detail: 0.3 },
   well: WELL, // the market square's well (drawn by view/VillageView.js; solid: terrain below)
   church: CHURCH,
+  // KING HAKON, the Oath King (Rurik's father): met holding the way into the market square
+  // against a pack of Ashen men (stage/KingHakon.js, view/KingView.js); the two part there
+  // and meet again at the church, where he is dying (the beat 'elder' below)
+  king: { section: 'square', at: 1440, x: 1760, z: 400 },
   gateTalk: {
     elsbeth:{who:'ELSBETH',before:'Irvolino is gone. Your father got us into the church. Let me help him now.',after:'Hale and I will carry him. He won’t be left alone.'},
     hale:{who:'HALE',before:"He held the church door while we brought the children in. He's been asking for you.",after:"We'll lay him by the altar. No one will leave him alone."},
@@ -146,6 +150,7 @@ export const STAGE_VILLAGE = {
       id: 'square', ground: 'v-square', groundFade: 160, name: 'THE MARKET SQUARE', x0: 1400, x1: 2700,
       spawn: { x: 1460, z: 440 },
       objective: 'Save the family at the well',
+      fightAfter: 'kingParting', // (the men at the well wait while the king and his son part)
       hint: 'The burning carts flare up: watch for the glow',
       // they're at the well with the mother and her boy when you come into the square
       // ...and then the HORDE: a pack of thralls from both ends of the square (one against many)
@@ -498,7 +503,25 @@ export const STAGE_VILLAGE = {
         ['HALE', 'Some are still in the square. Go.'],
       ],
     },
-    { id: 'cry', at: 1560, lines: [['MIRA', 'Not the boy! He\'s a child!']] },
+    // THE KING (Nick, 2026-11-04): his father holding the square alone; the two are torn,
+    // the boy at the well and the children for the church, and swear to meet there
+    // (stage/KingHakon.js plays the fight before it and runs him off after it)
+    {
+      id: 'kingParting', on: 'kingParting', hold: true,
+      lines: [
+        ['RURIK', 'Father!', { minFrames: 90 }],
+        ['KING', 'Rurik. They told me the ford took you.', { moment: 'kingLook', minFrames: 150 }],
+        ['RURIK', 'It nearly did. Who did this?', { minFrames: 120 }],
+        ['KING', 'Ashen men. They came at dusk and put the whole village to the torch.', { minFrames: 180 }],
+        ['VOICE', '(from the well) Not the boy! He\'s a child!', { minFrames: 150 }],
+        ['KING', 'Mira and her son. Go to them.', { moment: 'kingPoint', minFrames: 150 }],
+        ['KING', 'The children are hiding in the cellars. I will get them to the church.', { minFrames: 180 }],
+        ['RURIK', 'Then I go with you. We fight together.', { minFrames: 150 }],
+        ['KING', 'Not tonight. Meet me at the church, Rurik. Swear it.', { moment: 'kingLook', minFrames: 180 }],
+        ['RURIK', 'I swear it.', { minFrames: 120 }],
+        ['KING', 'Then go!', { moment: 'kingGo', minFrames: 90 }],
+      ],
+    },
     {
       id: 'mira', on: 'rescued:mira', calm: true,
       lines: [
@@ -535,8 +558,10 @@ export const STAGE_VILLAGE = {
       id: 'elder', at: 8720, calm: true, hold: true,
       lines: [
         // (Nick's pass, 2026-10-23)
-        ['RURIK', "Father, I'm here. The children in the church... they are safe.", {moment:'fatherFound',minFrames:150}],
-        ['HAKON', "Good. Take the sword. I can't hold it.", {flag:'oathkeeper',moment:'swordOffered',minFrames:150}],
+        // (he swore to meet his father here: King Hakon, met in the square, stage/KingHakon.js)
+        ['RURIK', "Father! I'm here. I came, like I swore.", {moment:'fatherFound',minFrames:150}],
+        ['HAKON', 'I knew you would. The children are inside. Every one of them.', {minFrames:180}],
+        ['HAKON', "Take the sword. I can't hold it.", {flag:'oathkeeper',moment:'swordOffered',minFrames:150}],
         ['RURIK', "Then I'll hold it for both of us.", {minFrames:150}],
         ['HAKON', 'It was forged in the first fire. Any other hand, it is only steel.', {minFrames:180}],
         ['HAKON', 'In ours, it burns. Our blood wakes it. Call, and the fire will answer.', {minFrames:180}],
