@@ -11,7 +11,7 @@ export class BirthrightScene extends Phaser.Scene {
   show(kind){
     this.children.removeAll(true);
     const W=SETTINGS.width,H=SETTINGS.height;
-    const key=kind==='aftermath'?'hakon-mourned':kind==='raise'?'rurik-oathkeeper-raised':kind==='grief'?'hakon-last-breath':'hakon-farewell';
+    const key=kind==='parting'?'king-parting':kind==='aftermath'?'hakon-mourned':kind==='raise'?'rurik-oathkeeper-raised':kind==='grief'?'hakon-last-breath':'hakon-farewell';
     this.add.rectangle(0,0,W,H,0x080606,1).setOrigin(0);
     if(!this.textures.exists(key))return;
     // Keep the whole picture above the dialogue instead of covering/cropping it.

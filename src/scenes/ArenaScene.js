@@ -1068,7 +1068,14 @@ export class ArenaScene extends Phaser.Scene {
       if (last) { this.slowmo(0.25, 1400); cam.flash(160, 255, 200, 120); }
     });
     ev.on('kingRoar', () => { this.fx.shake(5, 40); playSfx(this, 'fireImpact', { volume: 0.7, pitch: -500, minGapMs: 0 }); });
-    ev.on('kingLeaves', () => cam.zoomTo(this.baseZoom, 1200, 'Sine.easeInOut', true));
+    ev.on('kingLeaves', () => { cam.zoomTo(this.baseZoom, 1200, 'Sine.easeInOut', true); this.kingArt?.clear(); });
+    // the oath: father and son, the painted still over the screen (scenes/BirthrightScene.js)
+    ev.on('storyCue', ({ beat, cue }) => {
+      if (beat.id !== 'kingParting' || !this.textures.exists('king-parting')) return;
+      if (cue.moment === 'kingSwear') (this.kingArt ??= new BirthrightArt(this)).show('parting');
+      if (cue.moment === 'kingGo') this.kingArt?.clear();
+    });
+    this.events.once('shutdown', () => this.kingArt?.clear());
   }
 
   setupBirthright(ev) {

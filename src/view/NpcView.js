@@ -304,6 +304,12 @@ export class NpcView {
       const size=deadArt?180*k/v.father.frame.width:95*k/v.father.frame.height;
       v.father.setPosition(n.x,y).setScale(size,size*(1+breath))
         .setDepth(n.z+0.01).setTint(0xffffff).setAlpha(n.carried?(n.carrierBlend??0):1).setVisible(!n.insideChurch);
+      // the Oath King's crown, fallen on the church steps by his hand (ChatGPT, docs/king-hakon/):
+      // it stays there when they carry him in
+      if(this.scene.textures.exists('king-crown')){
+        v.crown ??= this.scene.add.image(0,0,'king-crown').setOrigin(0.5,0.9);
+        v.crown.setPosition(n.x-(n.crownAt??62)*k,y-2).setScale(30*k/v.crown.frame.width).setDepth(n.z+0.02).setVisible(true);
+      }
       return;
     }
     const dir = n.dir ?? -1;

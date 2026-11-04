@@ -54,13 +54,8 @@ branch, or ChatGPT's work gets lost.
   swear to meet at the church), then he runs off up the lane and the square's fight starts
   (square.fightAfter). The church farewell now opens on that promise. Code: stage/KingHakon.js,
   view/KingView.js, HUDScene.kingCard, ArenaScene.setupKing, tests/king-hakon-test.js.
-  ART (ChatGPT, prompts docs/king-hakon/king-hakon-art-prompts.md, PC Downloads\king-hakon\,
-  chat "Create Hakon Sprite Sheet" in the Bloody axe project): king_stand.png is in; STILL TO
-  MAKE: king_run, king_strike_a, king_strike_b (until then KingView stands in his nearest
-  stand pose), king-portrait (assets/ui/portraits/king.png is cropped from the stand sheet
-  for now), king-parting cinematic, king-crown-fallen. Re-lay each sheet with
-  `python3 docs/king-hakon/relay.py in.png assets/sprites/npc/king_<name>.png 4`, then set its
-  `height` in data/levelArt.js so crown-to-boots is 260.
+  ART (ChatGPT, prompts docs/king-hakon/king-hakon-art-prompts.md, PC Downloads\\king-hakon\\, chat "Create Hakon Sprite Sheet"): ALL IN (stand, run, strike a/b sheets; portrait assets/ui/portraits/king.png; assets/cinematics/king-parting.png shown on "Swear it"; king-crown.png on the church steps by his hand).
+  Re-lay a new sheet with `python3 docs/king-hakon/relay.py in.png assets/sprites/npc/king_<name>.png 4` and set its `height` in data/levelArt.js (crown to boots about 310).
 - 4 November 2026 (cloud, `claude/project-thread-jtx8mf`, Nick: "PUSH": ON MAIN, not on itch): Nick's
   second level 1 art review ("YES to ALL"). Code: street shouts on parchment, kept on screen and
   clear of the HUD (view/ShoutPlate.js); darker contact shadows (atmosphere.js softShadow);
