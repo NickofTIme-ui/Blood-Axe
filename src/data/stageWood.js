@@ -214,8 +214,8 @@ export const STAGE_WOOD = {
   exit: { x: 8940, after: 'turn' },
 
   terrain: [
-    // ---- I THE WOOD ROAD: a fallen pine to hop, a stream with a log across it
-    { kind: 'block', x0: 520, x1: 555, ...FULL, top: 40, mat: 'log' },
+    // ---- I THE WOOD ROAD: a stream with a log across it (the fallen pine that walled off
+    // the road's start was taken out at Nick's ask, 2026-11-05)
     { kind: 'pit', x0: 820, x1: 900, ...FULL },
     { kind: 'block', x0: 800, x1: 920, z0: 400, z1: 452, top: 10, mat: 'log' },
 
