@@ -124,6 +124,16 @@ const PRISONERS = {
     { art: 'prisoner-c', who: 'miner', tint: 0xe2d2bc, s: 0.92, poses: ['kneel', 'cower'], dz: -4 },
   ],
 };
+// The wood's rescued (data/stageWood.js), each one their own person, not seven copies of the
+// villager (Nick's review, 2026-11-05): a painted sheet each, a tint and a size; a group takes
+// one look per head. Until each has a sheet of their own (ChatGPT art list, A7).
+const WOOD_LOOKS = {
+  joren: [{ who: 'captive', s: 1 }],
+  tanners: [{ who: 'boy', tint: 0xdccab4, s: 1.05 }, { who: 'boy', tint: 0xc4ccd6, s: 0.94 }, { who: 'villager', tint: 0xd8c4ae, s: 0.92 }],
+  wenna: [{ who: 'mother', tint: 0xbab6b4, s: 0.9 }],
+  ansel: [{ who: 'elder', tint: 0xe0d2bc, s: 1 }],
+  convoy: [{ who: 'prisoner-a', s: 1 }, { who: 'prisoner-b', tint: 0xd6ccc4, s: 0.97 }, { who: 'mother', tint: 0xcabcb0, s: 0.95 }],
+};
 const IRON = 0x5e5e66;
 const IRON_LIT = 0x9a9aa4;
 
@@ -186,6 +196,18 @@ export class NpcView {
   // (who: the painted sheet to use when there is one: villager, mother, boy, elder; a
   // level's NPC can name its own with `art`)
   figure(g, x, y, k, pose, t, tunic, dir = 1, who) {
+    // (the wood's rescued: whoever this head is, his own look; WOOD_LOOKS)
+    if (!who && this.looks) {
+      const L = this.looks[this.curN % this.looks.length];
+      if (SPRITES[L.who] && CELLS[L.who]) {
+        who = L.who; k *= L.s ?? 1;
+        const tint = this.tint; this.tint = L.tint;
+        const ok = this.sprite(g, x, y, k, pose, t, dir, who);
+        this.tint = tint;
+        if (ok) return true;
+      }
+      who = undefined;
+    }
     who ??= 'villager';
     if ((who === 'nicholas' || who === 'irvolino') && !SPRITES[who]) who = 'villager'; // (until his sheet is painted)
     if (this.sprite(g, x, y, k, pose, t, dir, who)) return true;
@@ -265,6 +287,7 @@ export class NpcView {
   drawNpc(n, v) {
     const g = v.g.clear();
     this.cur = v; this.curN = 0;
+    this.looks = this.stage.data.theme === 'wood' ? WOOD_LOOKS[n.id] ?? null : null;
     for (const img of v.imgs) img.setVisible(false);
     if(n.millCaptive){v.g.setVisible(false);v.halo.setVisible(false);v.shadow.setVisible(false);v.tip.setVisible(false);v.meter.clear();return;}
     v.father?.setVisible(false);
@@ -500,6 +523,16 @@ export class NpcView {
         const p = n.state === 'fleeing' ? 'run' : 'stand';
         const dir = n.state === 'fleeing' ? n.dir ?? -1 : -1;
         for (let i = 0; i < many; i++) this.figure(g, n.x - (many - 1) * 20 + i * 40, y + (i % 2) * 6, k * (many > 1 && i === 1 ? 0.85 : 1), p, t + i * 5, tun(i), dir);
+      }
+      if (this.scene.textures.exists('cagecart')) {
+        // the wood's painted cage cart (assets/env/wood/cage_cart.png): its cage locked, or
+        // its door hanging open; the prisoners crouch inside, behind its bars
+        const cw = (n.group ? 250 : 220) * ck;
+        v.cage ??= this.scene.add.image(0, 0, 'cagecart').setOrigin(0.5, 0.97);
+        v.cage.setTexture(open ? 'cagecart-broken' : 'cagecart').setPosition(cx, cz + 8).setDepth(cz + 0.5).setVisible(true);
+        v.cage.setScale(cw / v.cage.frame.width);
+        v.cageH = v.cage.displayHeight * 0.3 - 34; // (the prisoners crouch on its floor, over the wheels)
+        return;
       }
       if (paintedCage(this.scene)) {
         // the painted cage (its bars in front; the shut one, or broken open)

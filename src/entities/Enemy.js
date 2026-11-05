@@ -91,6 +91,9 @@ export class EnemyBrain extends Controller {
     const target = this.pickTarget();
     if (!target) { this.facingHint = null; return; }
 
+    // A hound behind the bars of its pen (stage/WoodTraps.js): it watches, till the gate drops
+    if (f.penned != null) { this.facingHint = Math.sign(target.x - f.x) || f.facing; return; }
+
     // Waiting at his post for his fight to start (stage/Stage.js placeWaiting): he
     // stands and watches; struck, or a hero right on him, and the waiting is over.
     if (f.lurking != null) {
@@ -117,6 +120,12 @@ export class EnemyBrain extends Controller {
       f.entering = false;
       f.unbounded = false;
     }
+
+    // Waiting up in the branches for the crows to go up (stage/WoodTraps.js holdHanging)
+    if (f.hang > 0) return;
+    // A man with a job of his own (stage/WoodTraps.js: the hornblower, the woodsman's net):
+    // his script steers him, or hands him back to the fight (false)
+    if (f.script && f.script(this, target)) return;
 
     // A practice-yard dummy (stage/Tutorial.js): he never fights back. He walks back to his
     // post when knocked off it and stands there facing the hero, to be hit.
@@ -457,6 +466,10 @@ function retune(f) {
 
 // opts.entering: he starts off-screen (offscreenX) and walks on before he fights.
 export function createEnemy(world, typeId, x, z, opts = {}) {
+  // ('type:role': one of a kind with a job of his own, stage/WoodTraps.js: 'grunt:horn' the
+  // hornblower, 'stalker:net' the woodsman with a net)
+  const [kind, role] = String(typeId).split(':');
+  typeId = kind;
   const stats = ENEMIES[typeId];
   const brain = new EnemyBrain(stats.ai);
   const f = new Fighter({ stats, team: 'enemy', x, z, controller: brain });
@@ -468,6 +481,7 @@ export function createEnemy(world, typeId, x, z, opts = {}) {
     f.unbounded = true; // (the bounds would snap him on-screen)
     f.facing = Math.sign(world.bounds.minX + world.bounds.maxX - 2 * x) || -1;
   }
+  if (role) f.role = role;
   world.addFighter(f);
   vary(world, f);
   brain.cooldown = brain.randInt(stats.ai.attackCooldown, 15);

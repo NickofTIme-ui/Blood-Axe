@@ -85,6 +85,19 @@ export const SFX = {
   rogueVanish: 'assets/audio/sfx/rogue-vanish.wav',      // gone into smoke
   rogueSmoke: 'assets/audio/sfx/rogue-smoke.wav',        // the smoke bomb
   rogueNight: 'assets/audio/sfx/rogue-night.wav',        // Night Falls coming down
+  // Gallows Wood's (2026-11-05): made in code by tools/sfx-gen/wood.js (ours outright, no licence)
+  woodHowl: 'assets/audio/sfx/wood-howl.wav',       // hounds baying out of the trees
+  woodHorn: 'assets/audio/sfx/wood-horn.wav',       // the hornblower's call; the Houndmaster's pack
+  woodWhistle: 'assets/audio/sfx/wood-whistle.wav', // the Houndmaster's whistle: his hounds lunge
+  woodCrows: 'assets/audio/sfx/wood-crows.wav',     // crows bursting up out of the branches
+  woodCreak: 'assets/audio/sfx/wood-creak.wav',     // a bough creaking under men about to drop
+  woodChop: 'assets/audio/sfx/wood-chop.wav',       // a blade biting into the notched pine
+  woodFall: 'assets/audio/sfx/wood-fall.wav',       // the pine going over and crashing down
+  woodLogs: 'assets/audio/sfx/wood-logs.wav',       // the log pile thundering down the bank
+  woodSnare: 'assets/audio/sfx/wood-snare.wav',     // a snare springing
+  woodNet: 'assets/audio/sfx/wood-net.wav',         // a weighted net thrown
+  woodWhip: 'assets/audio/sfx/wood-whip.wav',       // the Wagonmaster's whip
+  woodRain: 'assets/audio/sfx/wood-rain.wav',       // the wood's bed of rain and wind (looped)
 };
 
 const lastPlayed = {};

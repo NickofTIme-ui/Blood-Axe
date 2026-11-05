@@ -46,7 +46,9 @@ export class WoodBackdrop {
     if (art.has('far')) art.layer('far', DEPTH.far - 1); else this.drawCastle();
     if (art.has('mid')) art.layer('mid', DEPTH.far + 2); else this.drawPines();
     if (art.has('wall')) art.wall(); else this.drawTrunks();
-    if (art.has('ground')) art.ground(); else this.drawRoad();
+    // (the painted mud darkened and its puddles' glare taken down: fighters read against it,
+    // and it sits back behind them the way the village's paving does; Nick's review 2026-11-05)
+    if (art.has('ground')) art.ground().setTint(0x8c9294); else this.drawRoad();
     this.drawSetPieces();
   }
 
@@ -169,7 +171,8 @@ export class WoodBackdrop {
       g.fillStyle(0x2a2218, 1).fillRect(x - 100, z - 214, 150, 3);
       g.fillStyle(0x0e0a08, 1).fillTriangle(x - 120, z, x - 160, z, x - 120, z - 30).fillTriangle(x - 86, z, x - 50, z, x - 86, z - 24);
     }
-    for (const c of D.carts ?? []) {
+    // (the painted cage carts carry their own wheels: view/NpcView.js draws them with the cages)
+    for (const c of s.textures.exists('cagecart') ? [] : D.carts ?? []) {
       // a broken cart: a tipped bed, a wheel off; the cage on it is drawn with its prisoner
       const g = s.add.graphics().setDepth(c.z - 3);
       g.fillStyle(0x2a2016, 1).fillRect(c.x - 70, c.z - 26, 140, 14);

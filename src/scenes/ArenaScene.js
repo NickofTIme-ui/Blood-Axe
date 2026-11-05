@@ -53,9 +53,12 @@ import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
 import { playMusic, playCue, stopMusic, toggleMute } from '../core/Music.js';
 import { syncSanctuaryMusic } from '../core/SanctuaryMusic.js';
+import { syncWoodMusic } from '../core/WoodMusic.js';
 import { playSfx, fleshBite, FLESH_CUT } from '../core/Sfx.js';
 import { BattlefieldAudio } from '../core/BattlefieldAudio.js';
 import {MillRescueView} from '../view/MillRescueView.js';
+import {WoodTrapsView} from '../view/WoodTrapsView.js';
+import { WoodWeather } from '../view/WoodWeather.js';
 import { runTickJobs } from '../core/TickJobs.js';
 import { styleMult } from '../combat/Style.js';
 import { TROPHIES, RARITY, LOOT, pickTrophy } from '../data/trophies.js';
@@ -469,6 +472,7 @@ export class ArenaScene extends Phaser.Scene {
     this.gore.dismemberer.minZ = this.world.bounds.minZ; // (a stage's own lane: `laneTop`)
     this.stageView = new StageView(this, this.stage);
     this.millRescueView=this.stage.millRescue?new MillRescueView(this,this.stage):null;
+    this.woodTrapsView=this.stage.woodTraps?new WoodTrapsView(this,this.stage):null;
     // (after the StageView: it makes the 'glow' texture the terrain's lanterns use)
     this.terrainView = this.stage.terrain || this.stageData.theme ? new TerrainView(this, this.stage) : null;
     // a campaign level's villagers, its dead and the other Oath Keepers (view/NpcView.js)
@@ -476,6 +480,8 @@ export class ArenaScene extends Phaser.Scene {
     if (this.stageData.king) this.setupKing(this.world.events); // (King Hakon in the square: stage/KingHakon.js)
     // warm firelight on the fighters near the village's fires (view/FireLight.js)
     this.fireLight = this.stage.data?.firelight ? new FireLight(this, this.stage) : null;
+    // the wood's drizzle, ground fog, lantern pools and foreground ferns (view/WoodWeather.js)
+    this.woodWeather = this.stageData.weather === 'drizzle' ? new WoodWeather(this, this.stage) : null;
     this.speakerMarker = this.stage.story ? new SpeakerMarker(this) : null; // over whoever is talking
     this.cutawayOn = false;
     this.scene.stop('Cutaway');
@@ -542,7 +548,7 @@ export class ArenaScene extends Phaser.Scene {
       if (this.paused) { this.sound.resumeAll(); this.paused = false; } // never leave the sound frozen
     });
 
-    playMusic(this, this.stageData.music ?? 'battle');
+    if (!this.stageData.quietMusic) playMusic(this, this.stageData.music ?? 'battle'); // (the wood starts in the quiet: core/WoodMusic.js)
     this.fireAmbience = new FireAmbience(this); // the crackle of whatever is burning
   }
 
@@ -1771,6 +1777,7 @@ export class ArenaScene extends Phaser.Scene {
 
     this.syncSentenceMusic();
     syncSanctuaryMusic(this);
+    syncWoodMusic(this);
     for (const v of this.views.values()) v.update();
     this.fireLight?.update();
     this.bloodCoats.update();
@@ -1789,6 +1796,8 @@ export class ArenaScene extends Phaser.Scene {
     this.updateFinisherMarker();
     this.stageView.update();
     this.millRescueView?.update();
+    this.woodTrapsView?.update();
+    this.woodWeather?.update();
     this.updateStageCamera();
     this.syncProjectileViews();
     this.debugDraw.draw(this.world);

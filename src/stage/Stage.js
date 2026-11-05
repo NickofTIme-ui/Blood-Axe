@@ -117,6 +117,7 @@ import { LOOT } from '../data/trophies.js';
 import { Controller } from '../core/Controller.js';
 import { VillageOpening } from './VillageOpening.js';
 import { MillRescue } from './MillRescue.js';
+import { WoodTraps } from './WoodTraps.js';
 import { KingHakon } from './KingHakon.js';
 import { parSeconds } from '../progression/LevelRank.js';
 
@@ -267,6 +268,9 @@ export class Stage {
       for (const h of sec.hazards ?? []) this.hazards.push({ id: id++, section: si, ...h, t: h.phase ?? 0, cool: new Map() });
     }
     this.fitLooks();
+    // Gallows Wood's own traps and men (stage/WoodTraps.js): pines, log piles, snares, stakes,
+    // the ford's current, the hornblower and the woodsman's net
+    if (data.traps || this.props.some((pr) => pr.kind === 'pine' || pr.kind === 'logpile')) this.woodTraps = new WoodTraps(this);
     // Things in the street you can't walk through (Nick, 2026-10-25: "you can walk through
     // most of them"): the small breakables while they stand, and the painted clutter
     // (data `decor`, `pikes`). Fighters slide round them like the terrain's walls and jump
@@ -461,6 +465,7 @@ export class Stage {
     const won = this.cleared === this.checkpoint; // died (a trap) after the fight here was already won
     this.story?.resetSection(this.checkpoint);
     if(this.checkpoint===3)this.millRescue?.reset();
+    this.woodTraps?.reset(this.checkpoint);
     for (const hz of this.hazards) if (hz.type === 'collapse' && hz.section <= this.checkpoint) hz.front = null; // (the rock starts again behind you)
     for (const hz of this.hazards) if (hz.type === 'bombard') hz.shells = []; // (nothing left in the air)
     this.chain = []; this.blazes = this.blazes.filter((b) => b.cart); // (spilt oil out; a cart alight burns on)
@@ -671,6 +676,9 @@ export class Stage {
           const e = createEnemy(this.world, type, x, at.z, { entering: false });
           e.floor = this.terrain ? this.terrain.groundAt(e.x, e.z) : 0;
           e.h = e.floor + at.drop; e.vh = 0; e.dropIn = true;
+          // (an ambush in the wood: he waits up in the branches while the crows go up and the
+          // boughs creak, then drops: stage/WoodTraps.js, view/WoodTrapsView.js)
+          if (at.tell) { e.hang = at.tell; e.hangH = e.h; this.world.events.emit('ambushTell', { fighter: e, x: e.x, z: e.z, tell: at.tell }); }
           return;
         }
         if (!inView(this.world, heroes, x)) {
@@ -829,6 +837,7 @@ export class Stage {
     if (!this.world.hold) this.updateCarry();
     this.updateProps();
     this.millRescue?.update();
+    if (!this.world.hold) this.woodTraps?.update();
     this.updatePickups();
     this.updateDowned();
     if (!this.world.hold) this.updateLatecomers(); // (standing still while a boss walks in is not being stuck)
@@ -1279,7 +1288,7 @@ export class Stage {
       const R = pr.roll;
       if (!R || pr.broken || pr.escaped) continue;
       R.from ??= pr.x;
-      if (pr.section !== this.index || !this.fightOn) continue;
+      if (pr.section !== this.index || !this.fightOn || pr.halted) continue; // (halted: stage/WoodTraps.js; on the prop, not its shared `roll` data)
       pr.x = Math.min(R.to, pr.x + R.speed / 60);
       if (pr.x >= R.to) {
         pr.escaped = true;
