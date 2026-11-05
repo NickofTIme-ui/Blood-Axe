@@ -3159,7 +3159,7 @@ test('wood: every hero walks Gallows Wood (no upgrades), without a fall, out by 
 test('wood: the story runs in order; Joren and Ansel are saved by fighting, the cages need their locks opened', () => {
   const r = campaignRun(STAGE_WOOD, 'warrior');
   const at = (id) => r.beats.indexOf(id);
-  for (const id of ['opening', 'rope', 'joren', 'ansel', 'ansel-safe', 'houndmaster', 'gathered', 'turn']) assert(at(id) >= 0, `${id} played (${r.beats.join(',')})`);
+  for (const id of ['opening', 'rope', 'joren', 'ansel', 'ansel-safe', 'houndmaster', 'turn']) assert(at(id) >= 0, `${id} played (${r.beats.join(',')})`);
   assert(at('opening') === 0 && at('rope') < at('joren') && at('joren') < at('ansel') && at('ansel') < at('turn'), r.beats.join(','));
   assert(r.rescued.includes('joren') && r.rescued.includes('ansel'), `saved: ${r.rescued.join(',')}`);
   assert(!r.rescued.includes('tanners') && !r.rescued.includes('wenna'), 'the cages stay shut unless someone opens them');
@@ -3203,7 +3203,7 @@ test('wood: Joren on the bough: the hounds under him wear his grip down; he fall
   }
 });
 
-test('wood: two secrets (one up the high shelf, out of Rurik\'s plain jump), solid shrines, a word from each of the saved at the blocked road', () => {
+test('wood: two secrets (one up the high shelf, out of Rurik\'s plain jump), solid shrines, only Nicholas talks at the blocked road', () => {
   const secrets = STAGE_WOOD.sections.flatMap((sec) => sec.props.filter((pr) => pr.secret));
   assert(secrets.length === 2, `two secrets (${secrets.length})`);
   const world = new World({ seed: 2 });
@@ -3215,10 +3215,8 @@ test('wood: two secrets (one up the high shelf, out of Rurik\'s plain jump), sol
   for (const sec of STAGE_WOOD.sections.filter((q) => q.rest)) {
     assert(sec.rest.solid && T.wallAt(sec.rest.x, sec.rest.z, 0), `${sec.id}: the shrine is solid`);
   }
-  for (const id of ['tanners', 'wenna', 'ansel', 'convoy']) {
-    const b = STAGE_WOOD.story.find((q) => q.npcTalkFor === id);
-    assert(b && b.if === `rescued:${id}`, `${id} has a word at the road, if saved`);
-  }
+  const roadTalk = STAGE_WOOD.story.filter((q) => q.at >= 8400 && q.id !== 'turn').map((q) => q.id);
+  assert(roadTalk.length === 0, `at the blocked road only Nicholas talks (${roadTalk})`);
 });
 
 test('wood: a cage opens when a hero holds INTERACT at its lock, only with no enemy standing', () => {

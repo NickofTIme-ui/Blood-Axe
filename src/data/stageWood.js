@@ -307,12 +307,7 @@ export const STAGE_WOOD = {
     { id: 'houndmaster', on: 'boss:kennels', lines: [['HOUNDMASTER', 'Oath Keepers. Good. My dogs haven\'t eaten in days.']] },
     { id: 'pack', on: 'phase:kennels:pack', lines: [['HOUNDMASTER', 'Up, my beauties! Pull them down!']] },
     { id: 'frenzy', on: 'phase:kennels:frenzy', lines: [['HOUNDMASTER', 'Then I\'ll feed you to them by hand!']] },
-    { id: 'gathered', at: 8580, calm: true, if: 'rescued:joren', lines: [['JOREN', 'We followed you. Where you walk, the road is safe.']] },
-    // at the blocked road, each of the saved has a word, if you go and hear it
-    { id: 'gate-tanners', at: 8580, calm: true, if: 'rescued:tanners', npcTalkFor: 'tanners', lines: [["TANNER'S BOY", 'Our father never came out of the tannery. We\'ll walk home and tell our mother.']] },
-    { id: 'gate-wenna', at: 8580, calm: true, if: 'rescued:wenna', npcTalkFor: 'wenna', lines: [['WENNA', 'Seventy winters, and I never saw a mountain shut its door. Mind yourselves under it.']] },
-    { id: 'gate-ansel', at: 8580, calm: true, if: 'rescued:ansel', npcTalkFor: 'ansel', lines: [['ANSEL', 'Give me a week and a good axle, and I\'ll build the village a cart that outruns their dogs.']] },
-    { id: 'gate-convoy', at: 8580, calm: true, if: 'rescued:convoy', npcTalkFor: 'convoy', lines: [['PRISONER', 'They said the Keep was where the chained ones go in and the bones come out. Not us. Not now.']] },
+    // at the blocked road only Nicholas talks (Nick, 2026-11-05: the saved wait there quietly)
     {
       id: 'pilgrim', calm: true,
       lines: [

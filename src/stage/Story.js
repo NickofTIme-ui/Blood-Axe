@@ -163,7 +163,7 @@ export class Story {
       'village:hale': 'Ashen troops burned the village. Survivors are trapped in the square. Help them.',
       'village:mira': 'They took my husband north, toward the castle. We’ll wait at the north gate.',
       'wood:joren': 'Mira’s alive? Thank the gods. They drove the other prisoners farther north.',
-      'wood:pilgrim': 'Nicholas. Take the mountain road. I’ll meet you on the far side.',
+      'wood:pilgrim': 'Nicholas. I’ll see the ones you freed home. Take the mine road. I’ll meet you on the far side.',
       'gates:vincent': 'Vincent. I built these gates. Break both winch chains to open them. I’ll take the tower.',
       'keep:ilse': 'Rurik! My father’s alive? Thank the gods. I’ll find him.',
     };
