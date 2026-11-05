@@ -30,7 +30,7 @@ export const VEXA_BLOODIED = [
   'run', 'runU', 'runD', 'sprint', 'idle', 'combo1', 'combo2', 'combo3', 'combo4', 'viper', 'moves', 'dodge', 'air', 'flip',
   'finPhantom', 'finLotus', 'finScarlet', 'react',
   // her second set (data/vexaArt.js)
-  'rush', 'backstab', 'cuts', 'night', 'grab', 'moves2', 'rollUp', 'rollDown', 'block',
+  'rush', 'backstab', 'cuts', 'night', 'grab', 'moves2', 'rollUp', 'rollDown', 'block', 'breath',
 ];
 for (const s of [...HERO_HD.sheets, ...VEXA_SHEETS]) {
   if (s.hero === 'vexa' && VEXA_BLOODIED.includes(s.name)) BLOODIED[`hero-rogue-${s.name}`] = layerFile(s.file);

@@ -14,5 +14,6 @@ export const VEXA_SHEETS = [
   sheet('moves2', 8),    // sweep x3, sidearm throw, mine set, spring away, the fan, the vault plant
   sheet('rollUp', 6),    // the shoulder roll seen from behind (rolling up the lane)
   sheet('rollDown', 6),  // ...and from the front (rolling down it)
-  sheet('block', 8),     // guard, a blow on it, recover, guard round, body hit, head hit, falling, dead
+  sheet('breath', 6),    // her idle (5 Nov): one guard pose breathing, edited from a single image, steadied on pose 0
+  sheet('block', 8),    // guard, a blow on it, recover, guard round, body hit, head hit, falling, dead
 ];

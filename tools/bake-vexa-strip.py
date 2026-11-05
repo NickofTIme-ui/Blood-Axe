@@ -131,7 +131,30 @@ def legs_centre(fig):
     return sum(xs) / len(xs) if xs else w / 2
 
 
-def bake(src, out, n, ref=0, tall=180, drawn=False, flip=()):
+def steady_up(sheet, n, reach=10):
+    """--steady (an idle): shift every pose so its body sits exactly on pose 0's (the best
+    match of their pixels within `reach` px), or ChatGPT's few-px drift makes her shimmer."""
+    import numpy as np
+    cells = [sheet.crop((i * FW, 0, (i + 1) * FW, FH)) for i in range(n)]
+    grey = lambda c: np.asarray(c.convert('LA')).astype(np.float32)
+    g0 = grey(cells[0])
+    out = Image.new('RGBA', sheet.size, (0, 0, 0, 0))
+    out.alpha_composite(cells[0], (0, 0))
+    for i in range(1, n):
+        gi = grey(cells[i])
+        best = None
+        for dy in range(-reach, reach + 1):
+            for dx in range(-reach, reach + 1):
+                s = np.roll(np.roll(gi, dy, 0), dx, 1)
+                d = np.abs(s[..., 0] * s[..., 1] - g0[..., 0] * g0[..., 1]).mean()
+                if best is None or d < best[0]: best = (d, dx, dy)
+        _, dx, dy = best
+        out.paste(Image.fromarray(np.roll(np.roll(np.asarray(cells[i]), dy, 0), dx, 1)), (i * FW, 0))
+        print(f'  pose {i} steadied by {dx},{dy}')
+    return out
+
+
+def bake(src, out, n, ref=0, tall=180, drawn=False, flip=(), steady=False):
     figs = cut(src, n)
     figs = [(f.transpose(Image.FLIP_LEFT_RIGHT) if i in flip else f, l, t) for i, (f, l, t) in enumerate(figs)]
     assert len(figs) == n, f'{len(figs)} figures, wanted {n}'
@@ -150,6 +173,7 @@ def bake(src, out, n, ref=0, tall=180, drawn=False, flip=()):
         lift = round((floor - (top + h)) * scale) if drawn else 0
         y = max(0, FEET + 1 - f.size[1] - lift)
         sheet.alpha_composite(f, (i * FW + x, y))
+    if steady: sheet = steady_up(sheet, n)
     sheet.save(out, optimize=True)
     print('baked', out, sheet.size, 'scale', round(scale, 3))
 
@@ -158,4 +182,4 @@ if __name__ == '__main__':
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     DROP =next((float(a[7:]) for a in sys.argv if a.startswith('--drop=')), 0.0)
     flip = [int(v) for a in sys.argv if a.startswith('--flip=') for v in a[7:].split(',')]
-    bake(args[0], args[1], int(args[2]), *(int(a) for a in args[3:5]), drawn='--drawn' in sys.argv, flip=flip)
+    bake(args[0], args[1], int(args[2]), *(int(a) for a in args[3:5]), drawn='--drawn' in sys.argv, flip=flip, steady='--steady' in sys.argv)
