@@ -18,8 +18,17 @@ export const THROAT_SHEETS = [
 // shove on he's himself again (his _throat strip: stagger, knees, over). Rurik's feet are
 // the origin; `release` = how far in front of Rurik's feet (world px) the man stands in
 // pose 3, where his own sprite takes over.
+// neck: where his throat is in the hold, world px in front of Rurik's feet (the cut's
+// blood comes out of the picture there, not out of his hidden sprite).
 export const PAIR_DRAWN = {
-  // <enemy art id>: { ulric: originX, ulricOath: originX, release }
+  // <enemy art id>: which of Rurik's two swords are painted, release, neck
+  grunt: { ulric: 0.5, ulricOath: 0.5, release: 51, neck: 22 },
+  stalker: { ulric: 0.5, ulricOath: 0.5, release: 51, neck: 22 },
+  butcher: { ulric: 0.5, ulricOath: 0.5, release: 43, neck: 22 },
+  ghoul: { ulric: 0.5, ulricOath: 0.5, release: 53, neck: 22 },
+  penitent: { ulric: 0.5, ulricOath: 0.5, release: 61, neck: 26 },
+  berserker: { ulric: 0.5, ulricOath: 0.5, release: 46, neck: 22 },
+  gladiator: { ulric: 0.5, ulricOath: 0.5, release: 47, neck: 22 },
 };
 const pair = (key, id, originX) => ({ id: `rurik-${key}-pair-${id}`, hero: 'rurik', key, name: `pair_${id}`, file: `assets/sprites/heroes-hd/rurik-${key}-pair-${id}.png`, frames: 4, fw: 696, fh: 480, cols: 4, originX, originY: 460 / 480, swords: [] });
 for (const [id, m] of Object.entries(PAIR_DRAWN)) for (const key of ['ulric', 'ulricOath']) if (m[key] != null) THROAT_SHEETS.push(pair(key, id, m[key]));

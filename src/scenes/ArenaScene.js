@@ -66,6 +66,7 @@ import { TEST, toggleTestMode, applyTestMode, levelAfter, showTestTag } from '..
 import { KingView } from '../view/KingView.js';
 import { BirthrightArt } from '../view/BirthrightArt.js';
 import { TestNavigator, makePreviewProgress } from '../view/TestNavigator.js';
+import { PAIR_DRAWN } from '../data/throatArt.js';
 
 // Number keys spawn a specific enemy next to you (for testing the roster).
 const SPAWN_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'];
@@ -1426,7 +1427,7 @@ export class ArenaScene extends Phaser.Scene {
         playSfx(this, 'stationaryKill', { volume: 1, spread: 40, minGapMs: 0 });
         playSfx(this, 'finisher', { volume: 0.8, pitch: -350, spread: 60 });
         playSfx(this, 'bloodSplatter', { volume: 0.8, spread: 60, minGapMs: 0 });
-        this.slashStreak(v.x + dir * v.stats.body.w * 0.2, v.z - nh, v.stats.body.w * 0.8, dir, v.z, -0.1 * dir);
+        this.slashStreak((PAIR_DRAWN[v.stats.art] && this.views.get(p.id)?.pairActive ? p.x + dir * (PAIR_DRAWN[v.stats.art].neck - 8) : v.x + dir * v.stats.body.w * 0.2), v.z - nh, v.stats.body.w * 0.8, dir, v.z, -0.1 * dir);
         g.spark(v.x + dir * v.stats.body.w * 0.3, v.z, nh, 0xffffff, 10);
         this.popup(v.x, v.z - v.h - H - 34, 'THROAT CUT!', '#ff2a1a', 24);
         if (!bloody) break;
@@ -1434,7 +1435,10 @@ export class ArenaScene extends Phaser.Scene {
         // screen): fast, low and narrow, falling in an arc a body length or two away, then
         // it keeps pumping in beats — while he's held, as he staggers, on his knees —
         // weaker with every beat, until he's face down
-        const nx = () => v.x + dir * v.stats.body.w * 0.32;
+        // (held in the painted hold, data/throatArt.js PAIR_DRAWN: his throat is where the
+        // picture has it, not where his hidden sprite stands)
+        const pairNeck = PAIR_DRAWN[v.stats.art]?.neck;
+        const nx = () => (pairNeck != null && this.views.get(p.id)?.pairActive) ? p.x + dir * pairNeck : v.x + dir * v.stats.body.w * 0.32;
         const jet = (n, power, hgt) => {
           for (let i = 0; i < n; i++) g.spawn({
             x: nx(), z: v.z + rnd(-2, 2), h: hgt,

@@ -44,7 +44,7 @@ export const THROAT = {
   yank: 5,          // px he's hauled back off his feet onto Rurik at the seize
   stagger: 34,      // px the shove sends him forward before his legs go
   seizestop: 3,     // frames frozen on the grab (~50 ms)
-  pairFrom: 5, set: 17, pairUntil: 50, // the painted hold (data/throatArt.js PAIR_DRAWN): from the reach to just after the shove
+  pairFrom: 5, set: 17, pairUntil: 46, // the painted hold (data/throatArt.js PAIR_DRAWN): from the reach to just after the shove
   slitstop: 9,      // ...and on the cut (~150 ms)
 };
 // How far forward the shove has carried him by this frame (0 before it).
