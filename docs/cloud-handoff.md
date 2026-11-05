@@ -18,6 +18,13 @@ branch, or ChatGPT's work gets lost.
   (bqq5g3: wall removed, Nicholas-only ending, traps/convoy/kennels/weather). dist/game.js rebundled.
   NOT on itch (upload on hold until Nick says "update itch").
 
+- 5 November 2026 evening (cloud, branch `claude/project-thread-lnkhrt`, commits d1757ed + 9492593, NOT on main until Nick
+  says push): THROAT FINISHER ROUND 2 after Nick said "looks rough in all aspects". The hold (frames 5-45) now shows ONE
+  ChatGPT picture of Rurik and the victim together (seize, blade at neck, cut, shove): 14 strips
+  assets/sprites/heroes-hd/rurik-{ulric,ulricOath}-pair-{grunt,stalker,butcher,ghoul,penitent,berserker,gladiator}.png,
+  registered in src/data/throatArt.js (PAIR_DRAWN = release distance + neck offset per enemy). Victim sprite hidden while
+  pairActive (SpriteEnemyView). Tight neck blood jet, dirt puffs at the knees. Re-bake new pair art with
+  tools/bake-throat-pair.py; originals in /mnt/project-files/throat-finisher/pair-refs/.
 - 5 November 2026 (cloud, branch `claude/project-thread-lnkhrt`, ON MAIN since 5 Nov push all): RURIK'S
   TAP-X FINISHER (THE THROAT) REBUILT (Nick: "the bad guys just shake and Rurik's animation is not that good").
   1. New timeline (THROAT in combat/Finisher.js): SEIZE at 9 (head wrenched back, short hit-stop), the blade
