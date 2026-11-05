@@ -23,6 +23,8 @@ import { BladeTrail } from './BladeTrail.js';
 import { MarchCycle } from './MarchCycle.js';
 import { SUNDER } from '../combat/Juggle.js';
 import { GRAB } from '../combat/Grab.js';
+import { dyeImage } from './dye.js';
+import { DYED } from '../data/throatArt.js';
 
 const ATTACKS = ['light1', 'light2', 'light3', 'launcher', 'heavy', 'airAttack', 'kick', 'thrust', 'spin', 'shoulder'];
 
@@ -82,6 +84,8 @@ export class SpriteFighterView {
     this.smear = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
     this.ghost = scene.add.image(fighter.x, fighter.z, spriteKey, 'f0')
       .setOrigin(m.anchorX / m.frameWidth, m.anchorY / m.frameHeight).setVisible(false);
+    // the man's rags over the painted throat hold, in his dye (data/throatArt.js DYED)
+    this.dyeOver = scene.add.image(fighter.x, fighter.z, spriteKey, 'f0').setVisible(false);
     this.lastFrameRef = null;
     this.bladeTrail=new BladeTrail();
     this.heading = new Heading();
@@ -394,6 +398,22 @@ export class SpriteFighterView {
     }
   }
 
+  // A dyed man held in the painted throat hold: his rags (the strip's second row) drawn
+  // over the picture through the dye shader, so his colour holds from walk to hold to knees.
+  syncDyeOver(alpha) {
+    const o = this.dyeOver;
+    const ex = this.f.exec;
+    const man = ex?.kind === 'throat' ? ex.targets[0] : null;
+    const [strip, i] = String(this.lastFrameRef).split(':');
+    const art = strip.startsWith('pair_') ? strip.slice(5) : null;
+    const key = `${this.key}-${strip}`;
+    if (!this.pairActive || !man?.dye || !DYED.includes(art) || !this.scene.textures.get(key).has(`f${+i + 4}`)) { o.setVisible(false); return; }
+    const s = this.sprite;
+    if (o.dye !== man.dye) dyeImage(this.scene, o, man.dye);
+    o.setTexture(key, `f${+i + 4}`).setOrigin(s.originX, s.originY).setPosition(s.x, s.y)
+      .setScale(s.scaleX, s.scaleY).setAngle(s.angle).setFlipX(s.flipX).setDepth(s.depth + 0.001).setAlpha(alpha).setVisible(true);
+  }
+
   update() {
     const f = this.f;
     const st = f.state;
@@ -676,6 +696,7 @@ export class SpriteFighterView {
     if (st === 'getup') alpha = fr % 4 < 2 ? 0.6 : 1;
     if (st === 'dead') alpha = Math.max(0, 1 - Math.max(0, fr - 90) / 60);
     s.setAlpha(alpha);
+    this.syncDyeOver(alpha);
 
     // Sword smear
     this.smear.clear().setDepth(f.z + 0.5);
@@ -729,6 +750,7 @@ export class SpriteFighterView {
 
   destroy() {
     this.sprite.destroy();
+    this.dyeOver.destroy();
     this.ghost.destroy();
     this.smear.destroy();
     this.shadow.destroy();
