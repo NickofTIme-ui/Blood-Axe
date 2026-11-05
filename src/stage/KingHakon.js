@@ -18,12 +18,12 @@ export const KING = {
   section: 'square',  // the section whose fight waits for him (its fightAfter)
   at: 1440,           // a hero this far along the road starts it
   x: 1760, z: 400,    // where he stands his ground
-  reach: 82,          // how far from him a man stands when the blade takes him
+  reach: 70,          // how far from him a man stands when the blade takes him
   walkIn: 26,         // frames a man takes stepping into his blade (at most)
   gap: 8,             // frames between one kill and the next man stepping in
   intro: 40,          // frames he holds them off before the first cut
   roar: 110,          // his roar over the last of them (and the heroes walking up to him)
-  meet: 165,          // ...where the heroes stop, this far short of him
+  meet: 140,          // ...where the heroes stop, this far short of him
   leaveSpeed: 6,      // px a frame running off up the lane
   leaveFade: 70,      // frames until he's gone into the smoke
   card: 70,           // his name over the screen from this frame of the fight

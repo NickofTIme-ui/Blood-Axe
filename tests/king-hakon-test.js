@@ -67,8 +67,20 @@ function setup(section = 0) {
   assert.ok(st.story.done.has('kingParting') && st.fightOn);
 }
 {
+  // his death at the church can be clicked / pressed through (Nick, 2026-11-05: a minute of waiting)
+  const { p, st, tick } = setup(STAGE_VILLAGE.sections.length - 1);
+  for (let i = 0; i < 60; i++) tick();
+  p.x = 8830; p.z = 330;
+  for (let i = 0; i < 600 && st.story.current?.beat.id !== 'elder'; i++) { if (i % 10 === 0) p.controller.registerPress('padUp'); tick(); }
+  assert.equal(st.story.current?.beat.id, 'elder');
+  let n = 0;
+  for (; n < 5000 && !st.story.done.has('elder'); n++) { if (n % 20 === 19) p.controller.registerPress('padRight'); tick(); }
+  assert.ok(n < 600, `Pressing on, his death scene takes ${n} frames, not a minute`);
+  assert.equal(st.story.npc('hakon').state, 'dead', 'and still ends the same way');
+}
+{
   // the church remembers the promise
   const elder = STAGE_VILLAGE.story.find((b) => b.id === 'elder');
   assert.match(elder.lines[0][1], /swore/);
 }
-console.log('King Hakon checks passed: holds the square out of sight, his pack never counts for the road, six kills each their own way, his name once, his son walks up, the held parting, the square waits for it, then he runs off; started past him, no wait.');
+console.log('King Hakon checks passed: holds the square out of sight, his pack never counts for the road, six kills each their own way, his name once, his son walks up, the held parting, the square waits for it, then he runs off; started past him, no wait; his death at the church can be pressed through.');
