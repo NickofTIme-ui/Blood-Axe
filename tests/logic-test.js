@@ -531,8 +531,8 @@ test('finisher: tap attack behind a runner = throat, he dies', () => {
   t.run(3);
   assert(t.p.state === 'execute' && r.state === 'executed', `states ${t.p.state} / ${r.state}`);
   const x0 = r.x;
-  t.run(60);
-  assert(t.p.exec?.fired.has('slit') && r.health <= 0 && r.state === 'executed', 'throat cut, still held');
+  t.run(40);
+  assert(t.p.exec?.fired.has('slit') && !t.p.exec?.fired.has('shove') && r.health <= 0 && r.state === 'executed', 'throat cut, still held');
   assert(kills.length === 0, 'not counted dead until he hits the floor');
   t.run(30);
   assert(t.p.exec?.fired.has('knees') && (r.x - x0) * r.facing > 20, `shoved forward onto his knees (moved ${r.x - x0})`);

@@ -127,12 +127,12 @@ export const ANIM_OVERRIDES = {
     fin_impale: { needs: ['finImpale'], keys: [[0, 'finImpale:0'], [13, 'finImpale:1'], [18, 'finImpale:2'], [24, 'finImpale:8'], [32, 'finImpale:3'], [70, 'finImpale:9'], [78, 'finImpale:10'], [96, 'finImpale:7']] },
     // throat (THROAT in combat/Finisher.js): reach, SEIZE at 9 (his fist in the man's hair),
     // the blade set, ripped across at 28, held, SHOVED off at 54, standing over him
-    fin_throat: { needs: ['finThroat'], keys: [[0, 'finThroat:0'], [4, 'finThroat:1'], [16, 'finThroat:2'], [28, 'finThroat:3'], [32, 'finThroat:4'], [54, 'finThroat:5'], [62, 'finThroat:6'], [86, 'finThroat:7']] },
+    fin_throat: { needs: ['finThroat'], keys: [[0, 'finThroat:0'], [4, 'finThroat:1'], [16, 'finThroat:2'], [26, 'finThroat:3'], [30, 'finThroat:4'], [44, 'finThroat:5'], [52, 'finThroat:6'], [74, 'finThroat:7']] },
     // ...his own painted throat cut when it's in (data/throatArt.js): 0 the lunge, 1 the
     // seize (fist in his hair, yanking back, sword cocked), 2 the edge set under the chin,
     // 3 RIPPED across (full twist), 4 holding him as he bucks, 5 the shove, 6 the blood
     // flicked off the blade, 7 standing over him
-    fin_throatCut: { needs: ['finCut'], keys: [[0, 'finCut:0'], [9, 'finCut:1'], [18, 'finCut:2'], [28, 'finCut:3'], [33, 'finCut:4'], [54, 'finCut:5'], [64, 'finCut:6'], [86, 'finCut:7']] },
+    fin_throatCut: { needs: ['finCut'], keys: [[0, 'finCut:0'], [9, 'finCut:4'], [17, 'finCut:2'], [26, 'finCut:4'], [44, 'finCut:5'], [52, 'finCut:6'], [74, 'finCut:7']] },
     launcher: { needs: ['launcher'], phases: { startup: seq('launcher', [0, 1]), active: seq('launcher', [2, 3]), recovery: seq('launcher', [4]) } },
     // Kingsfire (SpriteFighterView): the startup poses spread over the gathering, the
     // drive and the buried blade on the release, wrenched free at the end

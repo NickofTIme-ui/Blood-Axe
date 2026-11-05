@@ -9,3 +9,17 @@ export const THROAT_SHEETS = [
   sheet('ulric', 'rurik-ulric-finCut.png'),
   sheet('ulricOath', 'rurik-ulricOath-finCut.png'),
 ];
+
+// THE HOLD, PAINTED AS ONE PICTURE (Nick, 2026-11-05 "looks rough in all aspects": two
+// separate figures never touched — Rurik's fist punched the air beside the man's head).
+// One ChatGPT strip per enemy and sword, Rurik and the man together: 0 seized from behind,
+// head hauled back, 1 the flat of the blade across his neck, 2 drawn through, 3 shoved
+// off. While it plays the man's own sprite is hidden (view/SpriteEnemyView.js); from the
+// shove on he's himself again (his _throat strip: stagger, knees, over). Rurik's feet are
+// the origin; `release` = how far in front of Rurik's feet (world px) the man stands in
+// pose 3, where his own sprite takes over.
+export const PAIR_DRAWN = {
+  // <enemy art id>: { ulric: originX, ulricOath: originX, release }
+};
+const pair = (key, id, originX) => ({ id: `rurik-${key}-pair-${id}`, hero: 'rurik', key, name: `pair_${id}`, file: `assets/sprites/heroes-hd/rurik-${key}-pair-${id}.png`, frames: 4, fw: 696, fh: 480, cols: 4, originX, originY: 460 / 480, swords: [] });
+for (const [id, m] of Object.entries(PAIR_DRAWN)) for (const key of ['ulric', 'ulricOath']) if (m[key] != null) THROAT_SHEETS.push(pair(key, id, m[key]));

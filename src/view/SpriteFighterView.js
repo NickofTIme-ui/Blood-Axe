@@ -335,6 +335,15 @@ export class SpriteFighterView {
       return fr > total - 15 ? 'combo1:0' : follow; // settles into a low ready guard
     }
     const kind = ex.kind === 'pending' ? 'throat' : ex.kind;
+    this.pairActive = false;
+    if (ex.kind === 'throat') {
+      // the hold painted as one picture with the man in it (data/throatArt.js PAIR_DRAWN)
+      const art = ex.targets[0]?.stats?.art;
+      if (art && fr >= THROAT.pairFrom && fr < THROAT.pairUntil && this.scene.textures.exists(`${this.key}-pair_${art}`)) {
+        this.pairActive = true;
+        return `pair_${art}:${fr < THROAT.set ? 0 : fr < THROAT.slit ? 1 : fr < THROAT.shove ? 2 : 3}`;
+      }
+    }
     const own = a[`fin_${kind}Cut`] ?? a[`fin_${kind}`]; // (a newer painted one first: the throat's finCut)
     return keyAt(own?.keys ?? FIN_KEYS[kind], fr);
   }
@@ -609,7 +618,7 @@ export class SpriteFighterView {
 
     // the throat (THROAT): rocked back hauling him in, the whole body thrown into the
     // cut, a step into the shove
-    if (ex?.kind === 'throat') {
+    if (ex?.kind === 'throat' && !this.pairActive) {
       const ease = (a, b) => Math.max(0, Math.min(1, (fr - a) / (b - a)));
       const pulse = (a, b) => Math.sin(ease(a, b) * Math.PI);
       lean -= pulse(THROAT.seize, THROAT.seize + 10) * 3;
@@ -619,8 +628,10 @@ export class SpriteFighterView {
       lean += pulse(THROAT.shove, THROAT.shove + 12) * 2;
     }
 
-    // holding a man from behind (throat): he's drawn in front of Ulric
-    const behind = ex && (ex.kind === 'throat' || ex.kind === 'pending') ? -0.3 : 0;
+    // holding a man from behind (throat): Ulric is drawn over him — his fist in the man's
+    // hair and his blade arm come round in front of the man's neck (drawn the other way
+    // round they were two cut-outs, the man pasted over Ulric's chest)
+    const behind = ex && (ex.kind === 'throat' || ex.kind === 'pending') ? 0.3 : 0;
     // eased across state changes; squashed on landings and hits, stretched on take-off
     ({ lean, push, bob } = this.feel.blend({ lean, push, bob }, st));
     const shape = this.feel.step();

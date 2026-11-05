@@ -1430,25 +1430,32 @@ export class ArenaScene extends Phaser.Scene {
         g.spark(v.x + dir * v.stats.body.w * 0.3, v.z, nh, 0xffffff, 10);
         this.popup(v.x, v.z - v.h - H - 34, 'THROAT CUT!', '#ff2a1a', 24);
         if (!bloody) break;
-        // a hard fan out of the front of his neck, a mist, then it keeps pumping — out of
-        // him while he's held, as he staggers, on his knees — weaker with every beat, until
-        // he's face down
+        // a tight arterial jet out of the front of his neck (not a spray across the whole
+        // screen): fast, low and narrow, falling in an arc a body length or two away, then
+        // it keeps pumping in beats — while he's held, as he staggers, on his knees —
+        // weaker with every beat, until he's face down
         const nx = () => v.x + dir * v.stats.body.w * 0.32;
-        g.burst(nx(), v.z, nh, dir, Math.round(60 * amt), 1.8);
-        g.burst(nx(), v.z, nh, -dir, Math.round(12 * amt), 0.8);
-        g.mist(nx(), v.z, nh, 4);
-        this.everyTick(80, (t) => {
-          if (t % 2) return;
+        const jet = (n, power, hgt) => {
+          for (let i = 0; i < n; i++) g.spawn({
+            x: nx(), z: v.z + rnd(-2, 2), h: hgt,
+            vx: dir * rnd(120, 230) * power, vz: rnd(-10, 10), vh: rnd(30, 110) * power,
+            tint: 0x8a0303, scale: rnd(0.5, 1),
+          });
+        };
+        jet(Math.round(14 + 6 * Math.min(amt, 1.5)), 1, nh);
+        g.mist(nx(), v.z, nh, 2);
+        g.splat(nx() + dir * 20, v.z, 1.6);
+        this.everyTick(70, (t) => {
           const ex = p.exec;
           if (!ex || ex.kind !== 'throat' || ex.fired.has('down')) return false;
           const kneel = ex.fired.has('knees');
-          const fade = Math.max(0.25, 1 - t / 90);
-          const beat = (0.45 + 0.55 * Math.max(0, Math.sin(t * 0.45))) * fade;
-          g.spawn({
-            x: nx(), z: v.z + rnd(-2, 2), h: v.h + H * (kneel ? 0.5 : 0.8),
-            vx: dir * rnd(70, 220) * beat, vz: rnd(-15, 15), vh: rnd(10, 90) * beat, tint: 0x8a0303, scale: rnd(0.35, 0.7),
-          });
-          if (t % 10 === 0) g.splat(v.x + dir * rnd(14, 60) * fade, v.z + rnd(-4, 4), rnd(0.9, 1.8));
+          const fade = Math.max(0.3, 1 - t / 80);
+          if (t % 9 === 0) { // a pulse
+            jet(Math.round(4 + 4 * fade), 0.45 + 0.55 * fade, v.h + H * (kneel ? 0.5 : 0.8));
+            g.splat(v.x + dir * rnd(10, 40) * fade, v.z + rnd(-3, 3), rnd(0.9, 1.6));
+          } else if (t % 3 === 0) { // the run down his front between pulses
+            g.spawn({ x: nx(), z: v.z, h: v.h + H * (kneel ? 0.45 : 0.75), vx: dir * rnd(5, 25), vz: 0, vh: rnd(-10, 10), tint: 0x6e0202, scale: rnd(0.35, 0.55) });
+          }
         });
         break;
       }
@@ -1460,7 +1467,8 @@ export class ArenaScene extends Phaser.Scene {
         // his knees hit the ground
         playSfx(this, 'kick', { volume: 0.7, pitch: -1700, spread: 30, minGapMs: 0 });
         this.fx.shake(2, 6);
-        for (const s of [-1, 1]) g.spark(v.x + s * 10, v.z, 2, 0x8a7a60, 6);
+        // (a puff of dirt, not sparks: knees, not steel)
+        for (const s of [-1, 1]) g.fx('fx-dust', v.x + s * 10, v.z - 6, v.z + 1, { size: 46, tint: 0x6a5a48, alpha: 0.7, dur: 320, grow: 1.6, drift: -6 });
         if (bloody) g.splat(v.x + dir * 12, v.z, rnd(1.6, 2.4));
         break;
       case 'drop':

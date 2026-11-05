@@ -30,7 +30,7 @@ export const FINISHERS = {
   // back by the hair, thrown off his feet against Rurik's chest — the blade ripped across
   // — held while he bucks — SHOVED away, staggers, drops to his knees clutching his neck,
   // then pitches forward onto his face (THROAT below)
-  throat: { total: 116, approach: 8, gap: 20, beats: [{ at: 9, type: 'seize' }, { at: 28, type: 'slit' }, { at: 54, type: 'shove' }, { at: 70, type: 'knees' }, { at: 94, type: 'topple' }, { at: 104, type: 'down' }] },
+  throat: { total: 102, approach: 8, gap: 50, beats: [{ at: 9, type: 'seize' }, { at: 26, type: 'slit' }, { at: 44, type: 'shove' }, { at: 58, type: 'knees' }, { at: 80, type: 'topple' }, { at: 90, type: 'down' }] },
   // three beats (Nick, 2026-10-25): he's FLEEING — BOOM, run through the back — lifted on
   // the blade, feet dangling — BOOM, booted off it. coil → THRUST (18) → hit-stop → lift
   // (24) → HEAVE (32) → hang there kicking, then limp → knee up (70) → KICK (78)
@@ -39,10 +39,12 @@ export const FINISHERS = {
 };
 // Throat: the beats' frames (see FINISHERS.throat) and how the man moves between them.
 export const THROAT = {
-  seize: 9, slit: 28, shove: 54, knees: 70, topple: 94, down: 104,
-  yank: 7,          // px he's hauled back off his feet onto Rurik at the seize
+  seize: 9, slit: 26, shove: 44, knees: 58, topple: 80, down: 90,
+  // (Nick, 2026-11-05 "looks rough": the dead pause between the cut and the shove cut short)
+  yank: 5,          // px he's hauled back off his feet onto Rurik at the seize
   stagger: 34,      // px the shove sends him forward before his legs go
   seizestop: 3,     // frames frozen on the grab (~50 ms)
+  pairFrom: 5, set: 17, pairUntil: 50, // the painted hold (data/throatArt.js PAIR_DRAWN): from the reach to just after the shove
   slitstop: 9,      // ...and on the cut (~150 ms)
 };
 // How far forward the shove has carried him by this frame (0 before it).

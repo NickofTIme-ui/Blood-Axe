@@ -580,6 +580,9 @@ export class SpriteEnemyView {
     s.setScale(k * face * (1 - breathe * 0.006) * wide, k * (1 + breathe * 0.014) * tall);
     s.angle = angle * face;
     this.grabSpin(s, f, tick);
+    // held in the painted hold (Rurik's pair_<art> strip has him in it): his own sprite waits
+    const holder = f.execBy;
+    if (holder?.state === 'execute' && holder.exec?.kind === 'throat' && this.scene.views?.get(holder.id)?.pairActive) alpha = 0;
     s.setAlpha(alpha);
 
     this.drawHook();
