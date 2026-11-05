@@ -176,8 +176,8 @@ export const SPRITE_SHEETS = {
   // KING HAKON, the Oath King, Rurik's father (stage/KingHakon.js, view/KingView.js): his own
   // high-end sheets, not a villager's (Nick, 2026-11-04). ChatGPT, from his dying painting
   // and Rurik's sheet (docs/king-hakon/king-hakon-art-prompts.md); 4 poses each, re-laid with
-  // docs/king-hakon/relay.py. Heights: crown to boots 310 in every sheet (drawn at half: a
-  // head over his son, Nick wants him bigger than life), the sheet's tallest pose (a raised blade) above that
+  // docs/king-hakon/relay.py. Heights: crown to boots 310 in every sheet (drawn at 0.4 in view/KingView.js: about
+  // 124 px, a little over his son: Nick, 2026-11-05), the sheet's tallest pose (a raised blade) above that
   'king-stand': { file: 'assets/sprites/npc/king_stand.png', frames: 4, height: 325, grade: KING_GRADE, centre: true },
   'king-run': { file: 'assets/sprites/npc/king_run.png', frames: 4, height: 296, grade: KING_GRADE, centre: true },
   'king-strike-a': { file: 'assets/sprites/npc/king_strike_a.png', frames: 4, height: 321, grade: KING_GRADE, centre: true },

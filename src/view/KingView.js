@@ -5,6 +5,8 @@
 // same treatment as the other npcs"): his own high-end painted sheets (ChatGPT, prompts in
 // docs/king-hakon/), a little bigger than his son, a slow gold glow behind him, Oathkeeper's
 // fire on every cut (a burning arc where the blade went), embers over his roar.
+// His size: only a little bigger than his son (Nick, 2026-11-05: "way too big"): Rurik stands
+// ~112 px, the king crown to boots ~124 (his sheets are 310 crown to boots, drawn at SIZE).
 import { DEPTH, depthScale } from './depths.js';
 import { SPRITES } from './levelArt.js';
 
@@ -22,18 +24,20 @@ const STAND_IN = {
 };
 // (painted turned back over his shoulder, to the left: only flipped when he faces right)
 const LOOKS_BACK = new Set(['look']);
+const SIZE = 0.4; // (was 0.5: a head over Rurik)
+const R = SIZE / 0.5; // everything drawn about him (glow, arcs, embers) shrinks with him
 
 // the arc each cut burns through the air: [from, to] angles (deg, 0 = ahead, -90 = up),
 // its radius and height above his feet
 const ARCS = {
-  chop: [[-120, 40], 92, 70], sweep: [[-150, 30], 96, 62], spin: [[-170, 50], 88, 60],
-  thrust: [[-8, 8], 120, 66], kick: [[-20, 20], 50, 30],
+  chop: [[-120, 40], 92 * R, 70 * R], sweep: [[-150, 30], 96 * R, 62 * R], spin: [[-170, 50], 88 * R, 60 * R],
+  thrust: [[-8, 8], 120 * R, 66 * R], kick: [[-20, 20], 50 * R, 30 * R],
 };
 
 export class KingView {
   constructor(scene) {
     this.scene = scene;
-    this.shadow = scene.add.ellipse(0, 0, 70, 14, 0x000000, 0.38).setVisible(false);
+    this.shadow = scene.add.ellipse(0, 0, 70 * R, 14, 0x000000, 0.38).setVisible(false);
     this.glow = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.img = scene.add.image(0, 0, '__WHITE').setOrigin(0.5, 1).setVisible(false);
     this.fx = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.popups - 2);
@@ -57,11 +61,11 @@ export class KingView {
   arc(king, move) {
     const A = ARCS[move];
     if (A) this.arcs.push({ x: king.x, z: king.z, dir: king.facing, A, t: 0 });
-    for (let i = 0; i < 14; i++) this.embers.push({ x: king.x + king.facing * (60 + i * 3), y: king.z - 60 - (i % 5) * 8, vx: king.facing * (1 + (i % 4)), vy: -1.5 - (i % 3), t: 0, life: 30 + (i % 6) * 4 });
+    for (let i = 0; i < 14; i++) this.embers.push({ x: king.x + king.facing * (60 + i * 3) * R, y: king.z - (60 + (i % 5) * 8) * R, vx: king.facing * (1 + (i % 4)), vy: -1.5 - (i % 3), t: 0, life: 30 + (i % 6) * 4 });
   }
 
   roar(king) {
-    for (let i = 0; i < 40; i++) this.embers.push({ x: king.x - 30 + (i * 37) % 60, y: king.z - 150 + (i * 13) % 40, vx: ((i * 7) % 9 - 4) * 0.35, vy: -1 - (i % 5) * 0.5, t: -(i % 20), life: 50 + (i % 7) * 6 });
+    for (let i = 0; i < 40; i++) this.embers.push({ x: king.x + (-30 + (i * 37) % 60) * R, y: king.z + (-150 + (i * 13) % 40) * R, vx: ((i * 7) % 9 - 4) * 0.35, vy: -1 - (i % 5) * 0.5, t: -(i % 20), life: 50 + (i % 7) * 6 });
   }
 
   draw(king) {
@@ -77,7 +81,7 @@ export class KingView {
         const breath = /^run/.test(F.pose) ? 0 : Math.sin(t * 0.003);
         const bob = /^run/.test(F.pose) || (/^run/.test(king.pose) && F.pose !== king.pose) ? Math.abs(Math.sin(king.stride / 34 * Math.PI)) * 4 : 0;
         this.img.setTexture(F.S.key, `f${Math.min(F.cell, F.S.count - 1)}`)
-          .setPosition(king.x, king.z - king.h - bob).setScale(k * 0.5 * (1 - 0.006 * breath), k * 0.5 * (1 + 0.012 * breath))
+          .setPosition(king.x, king.z - king.h - bob).setScale(k * SIZE * (1 - 0.006 * breath), k * SIZE * (1 + 0.012 * breath))
           .setFlipX(flip).setDepth(king.z + 0.05).setAlpha(king.alpha).setVisible(true);
       }
       // the gold about him: a slow pulse, brighter while he fights
@@ -86,7 +90,7 @@ export class KingView {
       // (soft: rings of falling brightness, no hard edge)
       for (let i = 0; i < 6; i++) {
         const r = 1 - i / 6;
-        this.glow.fillStyle(i < 3 ? 0xffb040 : 0xffe0a0, (0.012 + 0.012 * p) * hot).fillEllipse(king.x, king.z - 76 * k, 170 * k * r, 200 * k * r);
+        this.glow.fillStyle(i < 3 ? 0xffb040 : 0xffe0a0, (0.012 + 0.012 * p) * hot).fillEllipse(king.x, king.z - 76 * R * k, 170 * R * k * r, 200 * R * k * r);
       }
       this.shadow.setPosition(king.x, king.z).setDepth(DEPTH.shadows).setAlpha(king.alpha);
     }
@@ -94,7 +98,7 @@ export class KingView {
     this.arcs = this.arcs.filter((a) => ++a.t < 16);
     for (const a of this.arcs) {
       const [[from, to], r, hy] = a.A, f = 1 - a.t / 16;
-      const cx = a.x + a.dir * 16, cy = a.z - hy;
+      const cx = a.x + a.dir * 16 * R, cy = a.z - hy;
       for (const [w, col, al] of [[16, 0xff7a1a, 0.35], [9, 0xffc040, 0.6], [4, 0xfff4d0, 0.9]]) {
         g.lineStyle(w * f, col, al * f).beginPath();
         for (let i = 0; i <= 14; i++) {

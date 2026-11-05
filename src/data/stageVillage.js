@@ -555,7 +555,7 @@ export const STAGE_VILLAGE = {
     // HIS BIRTHRIGHT: Hakon gives his son the sword before dying. Grief, then a promise.
     // The legacy beat id stays for campaign save compatibility.
     {
-      id: 'elder', at: 8720, calm: true, hold: true,
+      id: 'elder', at: 8720, calm: true, hold: true, quick: true, // (click / press on through it: Nick, 2026-11-05)
       lines: [
         // (Nick's pass, 2026-10-23)
         // (he swore to meet his father here: King Hakon, met in the square, stage/KingHakon.js)
@@ -582,7 +582,7 @@ export const STAGE_VILLAGE = {
       ],
     },
     {
-      id: 'vow', at: 8900, after: 'elder', calm: true, hold: true,
+      id: 'vow', at: 8900, after: 'elder', calm: true, hold: true, quick: true,
       lines: [
         ['HALE', "We'll carry him into the church. We'll look after him.", {minFrames:150}],
         ['RURIK', 'Thank you.', {minFrames:120}],

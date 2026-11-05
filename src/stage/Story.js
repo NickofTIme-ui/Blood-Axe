@@ -361,12 +361,15 @@ export class Story {
     let next = (ready && c.beat.lines[c.index][2]?.autoAdvance)
       || (c.skip && (ready || c.skipAll))
       || (ready && (this.passing(c.beat) || this.bark(c) ? c.age >= this.passFrames(text) : !LINE.wait && c.age >= this.lineFrames(c.beat, c.index)));
-    if (c.beat.hold && c.age >= Math.max(LINE.minSkip, minFrames)) {
+    // (a 'quick' beat takes a press as soon as a line is up, whatever its minFrames: the
+    // father's death at the church was a minute of waiting; Nick, 2026-11-05)
+    const pressAt = c.beat.quick ? LINE.minSkip : Math.max(LINE.minSkip, minFrames);
+    if (c.beat.hold && c.age >= pressAt) {
       for (const p of heroes) if (p.controller.consume('jump', 4) || p.controller.consume('attack', 4)) next = true;
     }
     // any line, in a fight too: D-pad right (N) on to the next, D-pad left (X) skips the
     // whole conversation (the fight buttons stay the fight's)
-    if (c.age >= Math.max(LINE.minSkip, minFrames)) {
+    if (c.age >= pressAt) {
       for (const p of heroes) {
         // (not when that press grabbed a man: combat/Grab.js)
         const grabbing = p.state === 'grab' && p.fsm.frame <= 1 || (p.controller.peek('grab') && grabTarget(p));

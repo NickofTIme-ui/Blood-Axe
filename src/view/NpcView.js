@@ -303,14 +303,15 @@ export class NpcView {
       const deadArt=dead&&this.scene.textures.exists('hakon-dead');
       v.father.setTexture(deadArt?'hakon-dead':'hakon-dying');
       const breath=dead?0:Math.sin(this.scene.time.now*0.002)*0.004;
-      const size=deadArt?180*k/v.father.frame.width:95*k/v.father.frame.height;
+      // (a little bigger than his son, no more: Nick, 2026-11-05; was 180 / 95, a giant on the steps)
+      const size=deadArt?135*k/v.father.frame.width:70*k/v.father.frame.height;
       v.father.setPosition(n.x,y).setScale(size,size*(1+breath))
         .setDepth(n.z+0.01).setTint(0xffffff).setAlpha(n.carried?(n.carrierBlend??0):1).setVisible(!n.insideChurch);
       // the Oath King's crown, fallen on the church steps by his hand (ChatGPT, docs/king-hakon/):
       // it stays there when they carry him in
       if(this.scene.textures.exists('king-crown')){
         v.crown ??= this.scene.add.image(0,0,'king-crown').setOrigin(0.5,0.9);
-        v.crown.setPosition(n.x-(n.crownAt??62)*k,y-2).setScale(30*k/v.crown.frame.width).setDepth(n.z+0.02).setVisible(true);
+        v.crown.setPosition(n.x-(n.crownAt??46)*k,y-2).setScale(24*k/v.crown.frame.width).setDepth(n.z+0.02).setVisible(true);
       }
       return;
     }
