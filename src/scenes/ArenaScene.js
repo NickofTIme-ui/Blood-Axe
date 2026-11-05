@@ -893,17 +893,23 @@ export class ArenaScene extends Phaser.Scene {
       st.fightOn=true;st.waveIndex=99;st.waveDelay=0;
       this.player.x=(st.section.fightAt??st.section.x0+200)+50;
     }
-    if(kind==='impale'){
+    if(kind==='impale'||kind==='throat'){
       // the impale, on demand (Nick, 2026-10-25): on the quiet end of the roofs, clear of
-      // their fight, a one-armed grunt runs from you; another each time one is finished
+      // their fight, a one-armed grunt runs from you; another each time one is finished.
+      // The throat (TAP attack, 2026-11-05): every kind of man in turn, each arm lost
+      const throat=kind==='throat';
+      const kinds=['grunt','stalker','butcher','ghoul','penitent','berserker','gladiator'],arms=[{armB:true},{armF:true},{armB:true,armF:true}];
+      let n=0;
       for(const e of this.world.fighters)if(e.team==='enemy'&&e.x>=st.section.x0&&e.x<st.section.x1)e.removeMe=true;
       this.player.x=st.section.x0+420;this.player.facing=-1;
       const runner=()=>{
         const p=this.player,w=this.world;
         if(this.paused||w.fighters.some(e=>e.testRunner&&e.state!=='dead'))return;
-        const e=createEnemy(w,'grunt',p.x+p.facing*80,p.z,{entering:false});
-        e.maimed={armB:true};e.testRunner=true;e.facing=p.facing;st.setOnGround(e);
-        this.callout('GET BEHIND HIM AND HOLD ATTACK','#ffd27a',22);
+        const e=createEnemy(w,throat?kinds[n%kinds.length]:'grunt',p.x+p.facing*80,p.z,{entering:false});
+        e.maimed=throat?{...arms[n%arms.length]}:{armB:true};n++;
+        e.testRunner=true;e.facing=p.facing;st.setOnGround(e);
+        if(e.controller)e.controller.scared=true; // (running already: no wait for his first look round)
+        this.callout(throat?'GET BEHIND HIM AND TAP ATTACK':'GET BEHIND HIM AND HOLD ATTACK','#ffd27a',22);
       };
       this.time.delayedCall(600,runner);
       this.time.addEvent({delay:1800,loop:true,callback:runner});
@@ -1389,31 +1395,79 @@ export class ArenaScene extends Phaser.Scene {
     const amt = g.amount ?? 1;
     const rnd = (a, b) => a + Math.random() * (b - a);
     switch (type) {
+      case 'seize': {
+        // a fist in his hair, his head snapped back: a hard little jolt, the rattle of him
+        // hitting Rurik's chest
+        this.fx.shake(3, 6);
+        this.rumble(0.5, 0.3, 90);
+        playSfx(this, 'kick', { volume: 0.55, pitch: -900, spread: 40, minGapMs: 0 });
+        playSfx(this, 'block', { volume: 0.25, pitch: -700, spread: 40 });
+        break;
+      }
       case 'slit': {
-        this.slowmo(0.28, 420);
-        this.fx.shake(4, 10);
-        playSfx(this, 'finisher', { volume: 0.9, pitch: -350, spread: 60 });
-        playSfx(this, 'swingAlt', { volume: 0.5, pitch: 300, spread: 60 });
+        // the blade ripped across: a freeze on contact (hit-stop), then slow motion through
+        // the spray, a streak along the cut, the camera punched in
+        const nh = v.h + H * 0.82;
+        this.slowmo(0.3, 520);
+        this.fx.shake(8, 12);
+        this.rumble(1, 0.8, 200);
+        const cam = this.cameras.main;
+        cam.zoomTo(this.baseZoom * 1.2, 90, 'Quad.easeOut', true);
+        this.time.delayedCall(600, () => { if (this.sys.isActive() && this.execCam) cam.zoomTo(this.baseZoom * 1.1, 500, 'Quad.easeInOut', true); });
+        playSfx(this, 'heavySwing', { volume: 0.9, pitch: 200, spread: 40, minGapMs: 0 });
+        playSfx(this, 'stationaryKill', { volume: 1, spread: 40, minGapMs: 0 });
+        playSfx(this, 'finisher', { volume: 0.8, pitch: -350, spread: 60 });
+        playSfx(this, 'bloodSplatter', { volume: 0.8, spread: 60, minGapMs: 0 });
+        this.slashStreak(v.x + dir * v.stats.body.w * 0.2, v.z - nh, v.stats.body.w * 0.8, dir, v.z, -0.1 * dir);
+        g.spark(v.x + dir * v.stats.body.w * 0.3, v.z, nh, 0xffffff, 10);
         this.popup(v.x, v.z - v.h - H - 34, 'THROAT CUT!', '#ff2a1a', 24);
         if (!bloody) break;
-        // a hard spray out of the front of his neck, then it keeps pumping while he's held
-        const nx = v.x + dir * v.stats.body.w * 0.32;
-        const nh = v.h + H * 0.82;
-        g.burst(nx, v.z, nh, dir, Math.round(45 * amt), 1.5);
-        this.everyTick(46, (t) => {
+        // a hard fan out of the front of his neck, a mist, then it keeps pumping — out of
+        // him while he's held, as he staggers, on his knees — weaker with every beat, until
+        // he's face down
+        const nx = () => v.x + dir * v.stats.body.w * 0.32;
+        g.burst(nx(), v.z, nh, dir, Math.round(60 * amt), 1.8);
+        g.burst(nx(), v.z, nh, -dir, Math.round(12 * amt), 0.8);
+        g.mist(nx(), v.z, nh, 4);
+        this.everyTick(80, (t) => {
           if (t % 2) return;
-          const beat = 0.5 + 0.5 * Math.max(0, Math.sin(t * 0.45));
+          const ex = p.exec;
+          if (!ex || ex.kind !== 'throat' || ex.fired.has('down')) return false;
+          const kneel = ex.fired.has('knees');
+          const fade = Math.max(0.25, 1 - t / 90);
+          const beat = (0.45 + 0.55 * Math.max(0, Math.sin(t * 0.45))) * fade;
           g.spawn({
-            x: v.x + dir * v.stats.body.w * 0.32, z: v.z + rnd(-2, 2), h: v.h + H * 0.8,
-            vx: dir * rnd(90, 220) * beat, vz: rnd(-15, 15), vh: rnd(10, 90) * beat, tint: 0x8a0303, scale: rnd(0.35, 0.7),
+            x: nx(), z: v.z + rnd(-2, 2), h: v.h + H * (kneel ? 0.5 : 0.8),
+            vx: dir * rnd(70, 220) * beat, vz: rnd(-15, 15), vh: rnd(10, 90) * beat, tint: 0x8a0303, scale: rnd(0.35, 0.7),
           });
-          if (t % 10 === 0) g.splat(v.x + dir * rnd(20, 70), v.z + rnd(-4, 4), rnd(0.9, 1.8));
+          if (t % 10 === 0) g.splat(v.x + dir * rnd(14, 60) * fade, v.z + rnd(-4, 4), rnd(0.9, 1.8));
         });
         break;
       }
+      case 'shove':
+        playSfx(this, 'swingAlt', { volume: 0.45, pitch: -400, spread: 40 });
+        this.fx.shake(2, 4);
+        break;
+      case 'knees':
+        // his knees hit the ground
+        playSfx(this, 'kick', { volume: 0.7, pitch: -1700, spread: 30, minGapMs: 0 });
+        this.fx.shake(2, 6);
+        for (const s of [-1, 1]) g.spark(v.x + s * 10, v.z, 2, 0x8a7a60, 6);
+        if (bloody) g.splat(v.x + dir * 12, v.z, rnd(1.6, 2.4));
+        break;
       case 'drop':
         this.fx.shake(2, 6);
         if (bloody) this.time.delayedCall(500, () => { for (let i = 0; i < 6; i++) g.splat(v.x + rnd(-30, 30), v.z + rnd(-5, 5), rnd(2.5, 4.5), 0.6); });
+        break;
+      case 'down':
+        // face down in the dirt; the pool spreads out from his neck
+        playSfx(this, 'goreLand', { volume: 0.8, pitch: -500, spread: 30, minGapMs: 0 });
+        playSfx(this, 'roll', { volume: 0.7, pitch: -400, spread: 30, minGapMs: 0 });
+        this.fx.shake(3, 7);
+        if (bloody) {
+          const hx = v.x + dir * H * 0.7; // (his head, where he lies)
+          for (let i = 0; i < 5; i++) this.time.delayedCall(i * 160, () => g.splat(hx + rnd(-14, 14), v.z + rnd(-4, 4), rnd(2.2, 4), 0.6));
+        }
         break;
       case 'stab': {
         // the blade goes through: no slow motion — a hard freeze (hit-stop, in the game

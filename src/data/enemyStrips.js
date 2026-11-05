@@ -153,6 +153,15 @@ for (const id of SCRUFF_DRAWN) {
   ENEMY_STRIPS[id].scruff = { file: `${DIR}/${id}_scruff.png`, frames: 6, ref: 0, optional: true };
 }
 
+// the THROAT finisher (combat/Finisher.js THROAT, view/SpriteEnemyView.js): 0-2 seized by
+// the hair, head wrenched back (0 back arm gone, 1 front arm gone, 2 both gone), 3-5 down
+// on his knees clutching his neck (same order). ChatGPT, 2026-11-05; originals in project
+// files throat-finisher/. Sized from pose 0 (up on his toes: about a standing man).
+const THROAT_DRAWN = ['grunt', 'stalker', 'butcher', 'ghoul', 'penitent', 'berserker', 'gladiator'];
+for (const id of THROAT_DRAWN) {
+  ENEMY_STRIPS[id].throat = { file: `${DIR}/${id}_throat.png`, frames: 6, refFrac: [0, 1.0], ground: 'drawn', optional: true };
+}
+
 const seq = (strip, ids) => ids.map((i) => `${strip}:${i}`);
 // the standard phase layouts
 const quick = (s) => ({ needs: [s], phases: { startup: seq(s, [0, 1]), active: seq(s, [2]), recovery: seq(s, [3, 4]) } });

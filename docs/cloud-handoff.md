@@ -6,6 +6,19 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 5 November 2026 (cloud, branch `claude/project-thread-lnkhrt`, NOT on main until Nick says push): RURIK'S
+  TAP-X FINISHER (THE THROAT) REBUILT (Nick: "the bad guys just shake and Rurik's animation is not that good").
+  1. New timeline (THROAT in combat/Finisher.js): SEIZE at 9 (head wrenched back, short hit-stop), the blade
+     ripped across at 28 (long hit-stop, slow motion, camera punch, streak, spray), held while he bucks, SHOVED
+     at 54, staggers forward, drops to his knees at 70 (still pumping), pitches onto his face at 94, dead and
+     counted at 104. The victim's motion is SpriteEnemyView.throatPhase (no more random shaking).
+  2. Art, ChatGPT desktop on the PC (Bloody axe project): Rurik's 8 poses with Oathkeeper and with the old
+     sword, baked by tools/bake-grab-strip.py (pose 7, 242 px) into heroes-hd/rurik-{ulric,ulricOath}-finCut.png,
+     listed in data/throatArt.js (kept out of heroHdAssets.js), anim fin_throatCut. Every fodder enemy got
+     assets/enemies/strips/<id>_throat.png (0-2 seized, 3-5 kneeling; back arm / front arm / both gone),
+     THROAT_DRAWN in data/enemyStrips.js. Originals in project files throat-finisher/originals/.
+  3. Test scene: F8 > "Throat finisher (tap attack behind a runner)" sends every enemy kind and arm state in turn.
+
 - 5 November 2026 (cloud, branch `claude/project-thread-4ru27l`, NOT on main until Nick says push): MAGE
   FIXES (Nick: he shocks himself, the hold-Y finisher stopped blowing them up, give X a great new
   finisher, his wall art must be much better).

@@ -19,7 +19,7 @@ import { Ragdoll } from './Ragdoll.js';
 import { depthScale } from './depths.js';
 import { Heading, headingAnim } from './Heading.js';
 import { applyBurn } from '../effects/Burn.js';
-import { IMPALE } from '../combat/Finisher.js';
+import { IMPALE, THROAT } from '../combat/Finisher.js';
 // yoked: past this much of the lift he's drawn with his painted overhead struggle, laid flat
 const GRAB_FLAT = 0.7; // (the shock of being seized holds for most of the hoist)
 import { BodyFeel, easedSpread, swingBody } from './animFeel.js';
@@ -183,9 +183,28 @@ export class SpriteEnemyView {
         if (f.spirePin && f.health <= 0) return this.scene.textures.exists(`${this.sheet.key}-impaled`) ? 'impaled:0' : A.hit.frames[0];
         // caught, but still running: a few more stumbling strides before he's stopped
         if (f.execRun && f.health > 0) return A.walk.frames[Math.floor((fr * (A.walk.fps ?? 12)) / 60) % A.walk.frames.length];
+        // the throat (combat/Finisher.js THROAT): seized with his head wrenched back, then on
+        // his knees clutching his neck — his painted <id>_throat poses for the arm he has
+        // left when they're in, else his hit pose and his cowering crouch
+        { const tp = this.throatPhase(f);
+          if (tp) {
+            const painted = this.scene.textures.exists(`${this.sheet.key}-throat`);
+            const m = f.maimed ?? {};
+            const arm = m.armB && m.armF ? 2 : m.armF ? 1 : 0; // 0 back arm gone, 1 front arm gone, 2 both
+            if (tp.knees) return painted ? `throat:${3 + arm}` : (A.block ?? A.hit).frames[0];
+            return painted ? `throat:${arm}` : A.hit.frames[0];
+          } }
         return f.execBy?.exec?.kind === 'chain' && f.health > 0 ? A.idle.frames[0] : A.hit.frames[0];
       default: return loop(A.idle);
     }
+  }
+
+  // Where a throat cut on him has got to (null: not being cut, or not yet seized).
+  throatPhase(f) {
+    const ex = f.execBy?.state === 'execute' ? f.execBy.exec : null;
+    if (!ex || ex.kind !== 'throat' || !ex.fired.has('seize')) return null;
+    const has = (b) => ex.fired.has(b);
+    return { t: f.execBy.fsm.frame, slit: has('slit'), shove: has('shove'), knees: has('knees'), topple: has('topple') };
   }
 
   // Jumping and hopping down off ledges (entities/Enemy.js terrainSteer sets f.jumpPrep
@@ -425,6 +444,43 @@ export class SpriteEnemyView {
           dx = (hit.style === 'down' ? -2 : 3) * a * same;
           dy = hit.style === 'down' ? 2 * a : hit.style === 'up' ? -2 * a : 0;
         } else this.struckAge = 0;
+      } else if (this.throatPhase(f)) {
+        // the throat, as a body would take it (no more shaking in place):
+        const tp = this.throatPhase(f);
+        const t = tp.t;
+        const sink = !this.scene.textures.exists(`${this.sheet.key}-throat`); // (no painted kneel: his crouch sunk lower)
+        if (!tp.slit) {
+          // a fist in his hair: hauled back off his stride onto Rurik's chest, up on his
+          // toes, head wrenched back, his feet scrabbling at the ground
+          const k = Math.min(1, (t - THROAT.seize) / 4);
+          dx = -THROAT.yank * k + Math.sin(t * 0.9) * 1.2 * k;
+          dy = -2 * k;
+          angle = -9 * k + Math.sin(t * 0.7) * 2 * k;
+        } else if (!tp.shove) {
+          // throat open: he bucks in the grip, hard at first, weaker with every pump
+          const a = t - THROAT.slit;
+          const w = Math.max(0, 1 - a / 24);
+          dx = -THROAT.yank + Math.sin(a * 1.3) * 2.6 * w;
+          dy = -2 * w - Math.abs(Math.sin(a * 0.9)) * 2 * w;
+          angle = -13 * w - 3 + Math.sin(a * 1.1) * 5 * w;
+        } else if (!tp.knees) {
+          // thrown off forward: two stumbling steps, folding over as his legs go
+          const a = (t - THROAT.shove) / (THROAT.knees - THROAT.shove);
+          dx = -THROAT.yank * (1 - a);
+          dy = -Math.abs(Math.sin(a * Math.PI * 2)) * 3;
+          angle = -3 + 16 * a;
+        } else if (!tp.topple) {
+          // down on his knees, swaying, all the strength going out of him
+          const a = t - THROAT.knees;
+          const land = Math.max(0, 1 - a / 6);
+          dy = land * -3 + (sink ? f.stats.body.h * 0.12 * depthScale(f.z) : 0);
+          angle = (sink ? 8 : 2) + Math.sin(a * 0.3) * 3 * Math.max(0.2, 1 - a / 24) + a * 0.15;
+        } else {
+          // ...and over, onto his face
+          const a = Math.min(1, (t - THROAT.topple) / (THROAT.down - THROAT.topple));
+          dy = sink ? f.stats.body.h * 0.12 * depthScale(f.z) : 0;
+          angle = 6 + 80 * a * a;
+        }
       } else if (f.health <= 0 && kind === 'throat') angle = -9 - Math.sin(fr * 0.9) * 2.5;
       else if (f.health <= 0 && kind === 'impale') angle = -5 - Math.sin(fr * 0.7) * 2;
     }

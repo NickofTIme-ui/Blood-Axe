@@ -529,9 +529,16 @@ test('finisher: tap attack behind a runner = throat, he dies', () => {
   const kills = killLog(t);
   t.run(3);
   assert(t.p.state === 'execute' && r.state === 'executed', `states ${t.p.state} / ${r.state}`);
-  t.run(120);
+  const x0 = r.x;
+  t.run(60);
+  assert(t.p.exec?.fired.has('slit') && r.health <= 0 && r.state === 'executed', 'throat cut, still held');
+  assert(kills.length === 0, 'not counted dead until he hits the floor');
+  t.run(30);
+  assert(t.p.exec?.fired.has('knees') && (r.x - x0) * r.facing > 20, `shoved forward onto his knees (moved ${r.x - x0})`);
+  t.run(60);
   assert(kills.length === 1 && kills[0].finisher === 'throat', `kills ${kills.map((k) => k.finisher)}`);
   assert(!r.alive, 'runner should be dead');
+  assert(r.diedLying, 'he went over on his face: he stays down');
   assert(t.p.state === 'idle', `player back to idle, is ${t.p.state}`);
 });
 

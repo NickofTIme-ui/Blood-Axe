@@ -15,6 +15,7 @@ export const TEST_SCENES=[
   ['Hakon & Oathkeeper',6,'handoff'],['Raised-sword reveal',6,'raise'],
   ['Severed pieces: bounce & settle',1,'gore'],
   ['Impale finisher (hold attack behind a runner)',2,'impale'],
+  ['Throat finisher (tap attack behind a runner)',2,'throat'],
 ];
 
 export class TestNavigator {

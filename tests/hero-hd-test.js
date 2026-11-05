@@ -6,12 +6,13 @@ import {HERO_ANIMS} from '../src/data/heroStrips.js';
 import {preloadHeroHd,installHeroHd} from '../src/view/heroHd.js';
 import {GRAB_SHEETS} from '../src/data/grabArt.js';
 import {VEXA_SHEETS} from '../src/data/vexaArt.js';
+import {THROAT_SHEETS} from '../src/data/throatArt.js';
 
 // Validate the actual shipping PNGs and loader registrations, rather than source proofs.
-const runtime=[...HERO_HD.sheets,...GRAB_SHEETS,...VEXA_SHEETS].filter(s=>s.baseFirst==null); // (the grab and throw: data/grabArt.js)
+const runtime=[...HERO_HD.sheets,...GRAB_SHEETS,...VEXA_SHEETS,...THROAT_SHEETS].filter(s=>s.baseFirst==null); // (the grab and throw: data/grabArt.js)
 const textures=new Map(),loaded=new Map();
 function size(file){const b=fs.readFileSync(file);assert.equal(b.toString('hex',0,8),'89504e470d0a1a0a',file);return [b.readUInt32BE(16),b.readUInt32BE(20)];}
-for(const s of [...HERO_HD.sheets,...GRAB_SHEETS,...VEXA_SHEETS,HERO_HD.base]){
+for(const s of [...HERO_HD.sheets,...GRAB_SHEETS,...VEXA_SHEETS,...THROAT_SHEETS,HERO_HD.base]){
  const [w,h]=size(s.file);
  assert.equal(w,s.fw*s.cols,`${s.file}: atlas width`);
  assert.equal(h,s.fh*Math.ceil(s.frames/s.cols),`${s.file}: atlas height`);

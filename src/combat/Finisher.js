@@ -25,13 +25,32 @@ export const FINISH = {
 // Timelines in game frames (60/s). `gap` = where Ulric stands behind him (px).
 // Beats are the moments things happen; the views and effects hang off them.
 export const FINISHERS = {
-  throat: { total: 74, approach: 8, gap: 20, beats: [{ at: 24, type: 'slit' }, { at: 52, type: 'drop' }] },
+  // THROAT (Nick, 2026-11-05: "the bad guys just shake"): he's SEIZED — head wrenched
+  // back by the hair, thrown off his feet against Rurik's chest — the blade ripped across
+  // — held while he bucks — SHOVED away, staggers, drops to his knees clutching his neck,
+  // then pitches forward onto his face (THROAT below)
+  throat: { total: 116, approach: 8, gap: 20, beats: [{ at: 9, type: 'seize' }, { at: 28, type: 'slit' }, { at: 54, type: 'shove' }, { at: 70, type: 'knees' }, { at: 94, type: 'topple' }, { at: 104, type: 'down' }] },
   // three beats (Nick, 2026-10-25): he's FLEEING — BOOM, run through the back — lifted on
   // the blade, feet dangling — BOOM, booted off it. coil → THRUST (18) → hit-stop → lift
   // (24) → HEAVE (32) → hang there kicking, then limp → knee up (70) → KICK (78)
   impale: { total: 112, approach: 10, gap: 76, beats: [{ at: 18, type: 'stab' }, { at: 32, type: 'raised' }, { at: 78, type: 'kick' }] },
   halve: { total: 98, approach: 8, gap: 46, beats: [{ at: 14, type: 'sever' }, { at: 56, type: 'boot' }] },
 };
+// Throat: the beats' frames (see FINISHERS.throat) and how the man moves between them.
+export const THROAT = {
+  seize: 9, slit: 28, shove: 54, knees: 70, topple: 94, down: 104,
+  yank: 7,          // px he's hauled back off his feet onto Rurik at the seize
+  stagger: 34,      // px the shove sends him forward before his legs go
+  seizestop: 3,     // frames frozen on the grab (~50 ms)
+  slitstop: 9,      // ...and on the cut (~150 ms)
+};
+// How far forward the shove has carried him by this frame (0 before it).
+export function throatStagger(frame) {
+  if (frame <= THROAT.shove) return 0;
+  const t = Math.min(1, (frame - THROAT.shove) / (THROAT.knees - THROAT.shove));
+  return THROAT.stagger * (1 - (1 - t) ** 2);
+}
+
 // Impale: once the blade is in, the victim is LOCKED to it — his body goes wherever this
 // point on the sword goes. [frame, px ahead of Ulric, px above the ground], matched to the
 // drawn poses (finImpale): level thrust (pose 2), the lift (8), the heave (3, where he's

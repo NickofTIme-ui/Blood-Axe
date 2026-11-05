@@ -3,7 +3,8 @@ import {ANIM_OVERRIDES} from '../data/spriteStrips.js';
 import {HERO_ANIMS} from '../data/heroStrips.js';
 import {GRAB_SHEETS} from '../data/grabArt.js';
 import {VEXA_SHEETS} from '../data/vexaArt.js';
-const SHEETS=[...HERO_HD.sheets,...GRAB_SHEETS,...VEXA_SHEETS]; // (the grab and throw: data/grabArt.js; Vexa's second set: data/vexaArt.js)
+import {THROAT_SHEETS} from '../data/throatArt.js';
+const SHEETS=[...HERO_HD.sheets,...GRAB_SHEETS,...VEXA_SHEETS,...THROAT_SHEETS]; // (the grab and throw: data/grabArt.js; Vexa's second set: data/vexaArt.js)
 
 const textureKey=s=>['ulric','ulricOath'].includes(s.key)?`${s.key}-${s.name}`:`hero-${s.key}-${s.name}`;
 export function preloadHeroHd(scene){for(const s of SHEETS)if(s.baseFirst==null)scene.load.image(textureKey(s),s.file);}

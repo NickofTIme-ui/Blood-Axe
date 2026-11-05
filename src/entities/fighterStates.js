@@ -10,7 +10,7 @@
 
 import { SETTINGS } from '../config/settings.js';
 import { movePhase, totalFrames, inWindow } from '../combat/MoveRunner.js';
-import { FINISH, FINISHERS, CHAIN, IMPALE, impalePin, impalePierce, planFinisher, chainTimes } from '../combat/Finisher.js';
+import { FINISH, FINISHERS, CHAIN, IMPALE, THROAT, impalePin, impalePierce, planFinisher, chainTimes, throatStagger } from '../combat/Finisher.js';
 import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher } from '../combat/Mage.js';
 import { rogueStates, rollMine,isRogueFinisher, rogueFinisherStart, runRogueFinisher, vaultTarget } from '../combat/Rogue.js';
 import { skillStates, plungeReady } from '../combat/Skills.js';
@@ -325,9 +325,23 @@ function finisherBeat(f, ex, type, v) {
   const dir = f.facing;
   const ev = { attacker: f, victim: v, kind: ex.kind, type, dir };
   switch (type) {
-    case 'slit':  // the blade opens his throat — he's dead on his feet, held a moment longer
+    case 'seize': // a fist in his hair: head wrenched back, hauled off his stride
+      v.execRun = false;
+      f.hitstop = v.hitstop = THROAT.seizestop;
+      break;
+    case 'slit':  // the blade ripped across his throat — dead on his feet, held while he bucks
       v.health = 0;
-      f.hitstop = v.hitstop = 8;
+      f.hitstop = v.hitstop = THROAT.slitstop;
+      break;
+    case 'shove': // thrown off, forward: he staggers on alone (execute's update walks him)
+      ex.shoveX = v.x;
+      break;
+    case 'knees': // his legs go: down on his knees, clutching at it
+    case 'topple': // ...and over onto his face
+      break;
+    case 'down':
+      v.execRelease = { dead: true, lying: true };
+      executionKill(f, v, ex.kind, dir);
       break;
     case 'stab':  // run through from behind: a short, hard freeze at the deepest point
       v.health = 0;
@@ -724,7 +738,7 @@ export const FIGHTER_STATES = {
       // impale: sword arm drawn back a pace behind him, then the whole body drives in
       const want = ex.kind === 'pending' ? 60 : impale ? (frame < IMPALE.stab - 4 ? 104 : F.gap) : F.gap;
       ex.gap += (want - ex.gap) * (impale && frame >= IMPALE.stab - 4 ? 0.6 : 0.35);
-      const held = !ex.fired.has('drop') && !ex.fired.has('kick') && !ex.fired.has('boot');
+      const held = !ex.fired.has('drop') && !ex.fired.has('kick') && !ex.fired.has('boot') && !ex.fired.has('shove');
       if (held && !stabbed) {
         const t = Math.min(1, frame / F.approach);
         const e = 1 - (1 - t) ** 3;
@@ -738,6 +752,11 @@ export const FIGHTER_STATES = {
         v.x = f.x + dir * pin.x;
         v.z = f.z;
         v.liftH = Math.max(0, pin.y - impalePierce(v));
+      }
+      // throat: shoved off, he staggers forward on his own until his knees give
+      if (ex.kind === 'throat' && ex.shoveX != null) {
+        const b = f.world.bounds;
+        v.x = Math.max(b.minX, Math.min(b.maxX, ex.shoveX + dir * throatStagger(frame)));
       }
       if (ex.kind !== 'pending') {
         for (const b of F.beats) {
@@ -784,7 +803,7 @@ export const FIGHTER_STATES = {
       const r = f.execRelease;
       if (r) {
         f.execRelease = null;
-        if (r.dead) return f.fsm.change('dead');
+        if (r.dead) { f.fsm.change('dead'); if (r.lying) f.diedLying = true; return; } // (lying: already face down)
         if (r.free) return f.fsm.change('idle');
         if (r.burn) return f.fsm.change('burning', { dir: r.dir ?? f.facing }); // (the Mage's Gate of Embers)
         f.fsm.change('knockdown', { vx: r.vx, vh: r.vh });

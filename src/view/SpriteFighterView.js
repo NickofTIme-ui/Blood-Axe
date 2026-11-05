@@ -14,7 +14,7 @@
 import { DEPTH, depthScale } from './depths.js';
 import { movePhase } from '../combat/MoveRunner.js';
 import { drawSmear, smearSparks } from './Smear.js';
-import { IMPALE, CHAIN } from '../combat/Finisher.js';
+import { IMPALE, CHAIN, THROAT } from '../combat/Finisher.js';
 import { Heading, headingAnim } from './Heading.js';
 import { BodyFeel, easedSpread } from './animFeel.js';
 import { PLUNGE_LAND, kingsfireOf } from '../combat/Skills.js';
@@ -54,7 +54,7 @@ const CHARGE_STRIDE = 70;
 // borrow his existing strips; a finisher's own strip (anims.fin_<kind>, when drawn)
 // takes over automatically.
 const FIN_KEYS = {
-  throat: [[0, 'combo1:0'], [5, 'combo1:1'], [24, 'combo1:2'], [27, 'combo1:3'], [50, 'combo1:4'], [62, 'combo1:0']],
+  throat: [[0, 'combo1:0'], [5, 'combo1:1'], [20, 'combo1:2'], [28, 'combo1:3'], [54, 'combo1:4'], [70, 'combo1:0']],
   impale: [[0, 'charge:1'], [8, 'charge:3'], [19, 'thrust:2'], [21, 'thrust:3'], [94, 'kick:1'], [104, 'kick:2'], [109, 'kick:3'], [118, 'kick:4'], [128, 'kick:5']],
   // one flat cut through the waist, a beat to admire it, then the boot
   halve: [[0, 'combo2:0'], [5, 'combo2:1'], [14, 'combo2:2'], [17, 'combo2:3'], [26, 'combo2:4'], [36, 'combo1:0'], [44, 'kick:1'], [56, 'kick:2'], [61, 'kick:3'], [72, 'kick:4'], [84, 'kick:5']],
@@ -335,7 +335,7 @@ export class SpriteFighterView {
       return fr > total - 15 ? 'combo1:0' : follow; // settles into a low ready guard
     }
     const kind = ex.kind === 'pending' ? 'throat' : ex.kind;
-    const own = a[`fin_${kind}`];
+    const own = a[`fin_${kind}Cut`] ?? a[`fin_${kind}`]; // (a newer painted one first: the throat's finCut)
     return keyAt(own?.keys ?? FIN_KEYS[kind], fr);
   }
 
@@ -605,6 +605,18 @@ export class SpriteFighterView {
         lean += s * 2.5;
         if (fr >= IMPALE.liftFrom) push += (Math.random() - 0.5) * 0.9; // the strain
       }
+    }
+
+    // the throat (THROAT): rocked back hauling him in, the whole body thrown into the
+    // cut, a step into the shove
+    if (ex?.kind === 'throat') {
+      const ease = (a, b) => Math.max(0, Math.min(1, (fr - a) / (b - a)));
+      const pulse = (a, b) => Math.sin(ease(a, b) * Math.PI);
+      lean -= pulse(THROAT.seize, THROAT.seize + 10) * 3;
+      push += pulse(THROAT.slit - 2, THROAT.slit + 8) * 5;
+      lean += pulse(THROAT.slit - 2, THROAT.slit + 8) * 3;
+      push += pulse(THROAT.shove, THROAT.shove + 12) * 7;
+      lean += pulse(THROAT.shove, THROAT.shove + 12) * 2;
     }
 
     // holding a man from behind (throat): he's drawn in front of Ulric
