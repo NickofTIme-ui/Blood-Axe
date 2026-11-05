@@ -192,5 +192,15 @@ export const FX_STRIPS = {
   // (ChatGPT, 2026-11-05: art/mage-wall/, repacked one slab to a cell)
   spikedwall: { file: 'assets/fx/spikedwall-strip.png', frames: 6, height: 300, bg: 'magenta' },
   spikedwallRed: { file: 'assets/fx/spikedwall-red-strip.png', frames: 6, height: 300, bg: 'magenta' },
+  // Vexa's kit (effects/RogueFX.js, view/ProjectileView.js), painted on magenta; until each
+  // file exists the old code drawing stands in. Widow mine, seen from the front and a little
+  // above: folded shut | claws half out | armed, violet light | set off, red light.
+  widowmine: { file: 'assets/fx/widow-mine-strip.png', frames: 4, height: 64, bg: 'magenta' },
+  // one flat four-pointed throwing star, face-on
+  shuriken: { file: 'assets/fx/rogue-shuriken.png', frames: 1, height: 64, bg: 'magenta' },
+  // one throwing knife, side-on, point to the right
+  throwknife: { file: 'assets/fx/rogue-knife.png', frames: 1, height: 32, bg: 'magenta' },
+  // the Mark of Death sigil that hangs over an EXPOSED man
+  deathmark: { file: 'assets/fx/death-mark.png', frames: 1, height: 64, bg: 'magenta' },
 };
 

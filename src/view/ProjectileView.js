@@ -44,6 +44,15 @@ export class ProjectileView {
       // thrown steel (the Rogue): a spinning blade or star, no glow — just a glint
       this.steel = d.look;
       this.glow = scene.add.graphics();
+      const art = d.look === 'shuriken' ? FX.shuriken : FX.throwknife;
+      if (art) {
+        // painted (FX_STRIPS.shuriken / throwknife): sized like the drawn one
+        this.core = scene.add.image(0, 0, art.key, 'f0');
+        const w = d.look === 'shuriken' ? 17 : 20;
+        this.core.setDisplaySize(w, w * art.fh / art.fw);
+        this.baseScale = { x: this.core.scaleX, y: this.core.scaleY };
+        return;
+      }
       this.core = scene.add.graphics();
       const g = this.core;
       if (d.look === 'shuriken') {
@@ -97,7 +106,8 @@ export class ProjectileView {
       // spinning end over end (knife) / flat spin (star), turned along its flight
       const spin = this.steel === 'shuriken' ? 0.9 : 0.55;
       this.core.setPosition(p.x, y - p.data.h / 2).setDepth(p.z + 0.2).setRotation(this.age * spin * p.dir);
-      this.core.setScale(p.dir, this.steel === 'shuriken' ? 0.6 + 0.4 * Math.abs(Math.cos(this.age * 0.4)) : 1);
+      const b = this.baseScale ?? { x: 1, y: 1 };
+      this.core.setScale(b.x * p.dir, b.y * (this.steel === 'shuriken' ? 0.6 + 0.4 * Math.abs(Math.cos(this.age * 0.4)) : 1));
       this.shadow.setScale(0.5);
       return;
     }

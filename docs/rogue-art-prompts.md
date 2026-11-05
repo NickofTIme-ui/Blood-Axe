@@ -295,3 +295,27 @@ each, in the same style, for Vexa's twelve skills:
 | nightFalls | a crescent moon and six dagger cuts |
 
 Cut them with `tools/cut-skilltree-art.py` to `assets/ui/skilltree/icons/<id>.png`.
+
+## 21-24. Her steel: widow mine, throwing star, throwing knife, Mark of Death (2026-11-05)
+
+The last code drawings in her kit. Each file is picked up by name (`FX_STRIPS` in
+`src/data/spriteStrips.js`); until it's in, the old drawing stands in. All on flat
+magenta `#FF00FF`, no shadow, no ground, same painted dark-fantasy style as her strips. Use
+her own chat so the steel matches her daggers.
+
+21. `assets/fx/widow-mine-strip.png`: "A sprite strip of 4 equal frames in one row on flat
+    magenta: a small round assassin's landmine, dark blackened steel disc with a riveted
+    rim and four curved hooked claws, seen from the front and a little above. Frame 1:
+    claws folded flat under it, a dull violet bead on top. Frame 2: claws half unfolded.
+    Frame 3: claws fully out gripping the ground, the bead glowing violet. Frame 4: same as
+    3 but the bead blazing red. Same size and position in every frame." (Shown about 26 px
+    wide; keep the silhouette bold.)
+22. `assets/fx/rogue-shuriken.png`: "One four-pointed throwing star, face-on, dark steel
+    with bright honed edges and a small hole in the centre, on flat magenta."
+23. `assets/fx/rogue-knife.png`: "One slim throwing knife, side-on, point to the right,
+    no guard, a leather-wrapped grip with a ring pommel, on flat magenta."
+24. `assets/fx/death-mark.png`: "A small glowing sigil, a diamond shape split top crimson
+    and bottom violet with a thin white-hot dagger line down the middle, like a brand of
+    death, on flat magenta." (Drawn additive over an EXPOSED man's head.)
+
+Crop each to its contents with a little magenta margin; the importer trims and scales.

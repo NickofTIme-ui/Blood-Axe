@@ -12,6 +12,7 @@ import { DEPTH } from '../view/depths.js';
 import { SETTINGS } from '../config/settings.js';
 import { softTex } from './Gore.js';
 import { playSfx, fleshBite } from '../core/Sfx.js';
+import { FX } from '../view/stripImporter.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -221,6 +222,16 @@ export class RogueFX {
 
   // a star/knife that hit the floor stays stuck there a moment
   stuck(p) {
+    const art = p.data.look === 'knife' ? FX.throwknife : FX.shuriken;
+    if (art) {
+      // painted: the blade (or a star's point) buried at a slant, the rest showing
+      const img = this.scene.add.image(p.x, p.z, art.key, 'f0').setDepth(p.z - 0.1);
+      const w = p.data.look === 'knife' ? 20 : 17;
+      img.setDisplaySize(w, w * art.fh / art.fw).setOrigin(p.data.look === 'knife' ? 0.85 : 0.5, 0.5).setRotation((p.dir ?? 1) > 0 ? 1.15 : Math.PI - 1.15);
+      if (p.data.look !== 'knife') img.scaleY *= 0.45; // a star stands edge-on in the dirt
+      this.scene.tweens.add({ targets: img, alpha: 0, delay: 1500, duration: 400, onComplete: () => img.destroy() });
+      return;
+    }
     const g = this.scene.add.graphics().setDepth(p.z - 0.1);
     g.fillStyle(0x2a2a30, 1).fillRect(p.x - 1, p.z - 7, 2, 7);
     g.fillStyle(0xd8dde4, 1).fillRect(p.x - 0.5, p.z - 6, 1, 3);
@@ -298,6 +309,13 @@ export class RogueFX {
       const x = e.x;
       const y = e.z - e.h - e.stats.body.h - 10 + Math.sin(this.scene.time.now * 0.01) * 1.5;
       const k = Math.min(1, e.exposed / 30);
+      if (FX.deathmark) {
+        // painted sigil (FX_STRIPS.deathmark), breathing slowly over him
+        if (!g.img) { g.clear(); g.img = this.scene.add.image(0, 0, FX.deathmark.key, 'f0').setBlendMode(ADD()); g.img.setDisplaySize(16, 16 * FX.deathmark.fh / FX.deathmark.fw); g.base = g.img.scaleX; g.once('destroy', () => g.img?.destroy()); }
+        const pulse = 1 + 0.08 * Math.sin(this.scene.time.now * 0.008);
+        g.img.setPosition(x, y).setDepth(e.z + 1).setAlpha(k).setScale(g.base * pulse);
+        continue;
+      }
       g.clear().setDepth(e.z + 1);
       g.fillStyle(CRIMSON, 0.85 * k).fillTriangle(x - 5, y, x + 5, y, x, y - 8);
       g.fillStyle(VIOLET, 0.9 * k).fillTriangle(x - 5, y, x + 5, y, x, y + 8);
@@ -393,13 +411,18 @@ export class RogueFX {
 }
 
 // A widow mine on the floor: a squat steel disc, claws that fold out as it arms, a light
-// that pulses slowly while it waits and fast once something sets it off. Code-drawn
-// until its art arrives.
+// that pulses slowly while it waits and fast once something sets it off. Painted
+// (FX_STRIPS.widowmine: shut | opening | armed | set off) when the strip is in; the
+// code drawing below stands in until then. The light's glow is drawn over either.
 class MineView {
   constructor(scene, m) {
     this.scene = scene;
     this.m = m;
     this.g = scene.add.graphics();
+    if (FX.widowmine) {
+      this.img = scene.add.image(m.x, m.z, FX.widowmine.key, 'f0').setOrigin(0.5, 0.78);
+      this.img.setDisplaySize(26, 26 * FX.widowmine.fh / FX.widowmine.fw);
+    }
     this.claw = 0;
     this.t = 0;
   }
@@ -415,6 +438,14 @@ class MineView {
     const on = src.stuck;
     const m = on ? { x: src.x, z: src.z - on.h - on.stats.body.h * 0.5, cue: 0 } : src;
     g.clear().setDepth(on ? src.z + 1 : src.z - 0.5);
+    const fast = m.cue >= 0;
+    if (this.img) {
+      const fr = !this.armed ? 0 : this.claw < 1 ? 1 : fast ? 3 : 2;
+      this.img.setFrame(`f${Math.min(fr, FX.widowmine.count - 1)}`).setPosition(m.x, m.z).setDepth(on ? src.z + 0.9 : src.z - 0.55);
+      const pulse = this.armed ? 0.5 + 0.5 * Math.sin(this.t * (fast ? 1.6 : 0.12)) : 0;
+      g.fillStyle(fast ? CRIMSON : VIOLET, 0.22 * pulse).fillCircle(m.x, m.z - 4, 7).setBlendMode(ADD());
+      return;
+    }
     // claws
     for (let i = 0; i < 4; i++) {
       const a = i * Math.PI / 2 + Math.PI / 4;
@@ -427,11 +458,10 @@ class MineView {
     g.fillStyle(0x3a3a44, 1).fillEllipse(m.x, m.z - 1.5, 13, 6);
     g.fillStyle(0x6a6a76, 1).fillEllipse(m.x - 1.5, m.z - 2.5, 6, 2.4);
     // the light
-    const fast = m.cue >= 0;
     const pulse = this.armed ? 0.5 + 0.5 * Math.sin(this.t * (fast ? 1.6 : 0.12)) : 0.2;
     g.fillStyle(fast ? CRIMSON : VIOLET, 0.6 + 0.4 * pulse).fillCircle(m.x, m.z - 2.5, 1.6);
     g.fillStyle(fast ? CRIMSON : VIOLET, 0.18 * pulse).fillCircle(m.x, m.z - 2.5, 6);
   }
 
-  destroy() { this.g.destroy(); }
+  destroy() { this.g.destroy(); this.img?.destroy(); }
 }
