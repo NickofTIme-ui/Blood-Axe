@@ -42,6 +42,8 @@ const shrineFootprint = (r) => ({ kind: 'block', x0: r.x - 52, x1: r.x + 52, z0:
 // Joren on the hanging tree's bough, out at its tip past the dead: the hounds worry under him
 const JOREN_BOUGH = { x: 2280, z: 300 };
 
+const WOOD_LANTERNS = [{ x: 780, z: 290 }, { x: 2050, z: 290 }, { x: 3080, z: 290 }, { x: 5140, z: 290 }, { x: 7400, z: 290 }, { x: 8600, z: 290 }];
+
 export const STAGE_WOOD = {
   id: 'gallowsWood',
   name: 'GALLOWS WOOD',
@@ -51,6 +53,7 @@ export const STAGE_WOOD = {
   width: 9200,
   theme: 'wood',
   music: 'wilderness', // (core/Music.js)
+  quietMusic: true, // the track only while a fight is on; rain in the pines between (core/WoodMusic.js)
   tall: true,
   castle: { x: 760, scale: 0.6, detail: 0.5 }, // nearer now: a silhouette over the wood
   // the other two Oath Keepers (view/NpcView.js): with you at the start, then scouting
@@ -62,10 +65,22 @@ export const STAGE_WOOD = {
       id: 'road', name: 'THE WOOD ROAD', x0: 0, x1: 1500,
       spawn: { x: 150, z: 440 },
       objective: 'Follow the convoy',
-      hint: 'Walk the fallen log over the stream',
+      hint: 'Chop the notched pine: it falls across the stream',
       fightAt: 1000,
-      waves: [['stalker', 'grunt', 'grunt'], ['grunt', 'butcher', 'grunt']],
+      // the convoy's rear guard: men up in the branches over the road, and their hounds out of
+      // the trees (the crows go up first: a spawn's `tell`); then the rest of them, with a
+      // HORNBLOWER who runs for the back of the road: stop him, or his horn calls more (`horn`)
+      howl: true,
+      waves: [['grunt', 'stalker', 'hound', 'hound'], ['grunt:horn', 'butcher', 'grunt']],
+      spawns: [
+        [{ x: 1180, z: 330, drop: 430, tell: 80 }, { x: 1290, z: 470, drop: 430, tell: 96 }, { x: 1440, z: 300 }, { x: 1460, z: 480 }],
+        [{ x: 1460, z: 300 }, { x: 1470, z: 460 }, { x: 700, z: 380 }],
+      ],
+      horn: ['grunt', 'stalker', 'grunt'],
       props: [
+        // THE NOTCHED PINE on the near bank (stage/WoodTraps.js): chop it and it falls across
+        // the stream, the log bridge (terrain tag 'felled'); whoever's under it is crushed
+        { kind: 'pine', x: 700, z: 426, fellDir: 1, len: 300, bridge: 'felled', drop: null },
         { kind: 'crate', x: 1320, z: 470, drop: 'health' },
         { kind: 'barrel', x: 420, z: 300, drop: null },
         // a sack cart's load tipped in the ditch where a wheel went (the near edge)
@@ -89,7 +104,7 @@ export const STAGE_WOOD = {
       fightAt: 1760,
       // the hangmen between you and the tree; their two hounds under Joren on the bough,
       // leaping at him (`worry`), till a hero comes near or hurts one (entities/Enemy.js)
-      waves: [['grunt', 'hound', 'butcher', 'hound', 'grunt'], ['stalker', 'grunt']],
+      waves: [['grunt', 'hound', 'butcher', 'hound', 'grunt'], ['butcher', 'grunt', 'grunt']],
       spawns: [
         [
           { x: 2060, z: 360, inPlace: true },
@@ -114,7 +129,10 @@ export const STAGE_WOOD = {
       objective: 'Open the cages',
       hint: 'Clear the guards, then hold E (D-pad up) at a lock',
       fightAt: 3560,
-      waves: [['grunt', 'stalker', 'grunt'], ['berserker', 'grunt']],
+      // (the first drops out of the branches over the carts: the crows go up first)
+      spawns: [[{ x: 3660, z: 360, drop: 430, tell: 84 }, { x: 3820, z: 470, drop: 430, tell: 100 }, { x: 3560, z: 300, drop: 430, tell: 116 }], []],
+      // (the second: hangmen and a hound off the carts; berserkers are the Ascent's, Orsk's men)
+      waves: [['grunt', 'stalker', 'grunt'], ['butcher', 'grunt', 'hound']],
       props: [
         { kind: 'crate', x: 4300, z: 300, drop: 'mana' },
         // the broken carts' loads spilled along the near edge of the road
@@ -133,13 +151,20 @@ export const STAGE_WOOD = {
       objective: 'Get Ansel across the ford',
       hint: 'Keep them away from him: he freezes when they come close',
       fightAt: 4860,
-      waves: [['stalker', 'grunt'], ['grunt', 'stalker', 'grunt']],
+      // (the second, on the far bank: a WOODSMAN with a net, and the men he pins you for)
+      waves: [['stalker', 'grunt'], ['stalker:net', 'grunt', 'grunt', 'stalker']],
+      spawns: [[], [{ x: 5560, z: 300 }, { x: 5560, z: 470 }, { x: 5580, z: 380 }, { x: 4420, z: 420 }]],
       props: [
+        // THE LOG PILE up the far bank: cut its stay rope and the trunks come down across the
+        // road below (stage/WoodTraps.js), on whoever is coming for Ansel
+        { kind: 'logpile', x: 5390, z: 292, roll: { x0: 5290, x1: 5530, z0: 300, z1: 545 }, drop: null },
         { kind: 'barrel', x: 5520, z: 300, drop: 'health' },
         // barrels off the convoy, washed up on the near bank
         ...group([['barrel-grey', 4700, 500], ['barrel-v1', 4746, 504, { drop: 'mana' }]]),
       ],
-      hazards: [],
+      // a log hung on two ropes over the near bank, swinging across the road: strike it back
+      // into them (Stage.js blade, drawn as a log)
+      hazards: [{ type: 'blade', look: 'log', x: 5040, z: 330, swing: 90, phase: 0 }],
     },
     {
       // the convoy's last wagon, still rolling: armoured, its prisoners inside, guards round
@@ -147,13 +172,16 @@ export const STAGE_WOOD = {
       id: 'convoy', name: 'THE CONVOY', x0: 5600, x1: 7200,
       spawn: { x: 5660, z: 440 },
       objective: 'Stop the prisoner wagon',
-      hint: 'Smash the wagon before it gets away up the road',
+      hint: 'Stop the wagon: smash it, knock the Wagonmaster off, or fell the pine ahead of it',
       fightAt: 5860,
       // (the last: the kennel wagon's hounds let loose, with their handler. It was a horde of
       // thralls: the market square's, again; the wood's pack is its own)
-      waves: [['grunt', 'butcher', 'grunt'], ['stalker', 'grunt', 'berserker'], ['grunt', 'butcher', 'stalker'], ['hound', 'hound', 'hound', 'hound', 'grunt']],
+      waves: [['grunt', 'butcher', 'grunt'], ['stalker', 'grunt', 'butcher'], ['grunt', 'butcher', 'stalker'], ['hound', 'hound', 'hound', 'hound', 'grunt']],
       props: [
-        { kind: 'wagon', tag: 'convoy', x: 6080, z: 320, roll: { to: 7110, speed: 22 } },
+        // its roof is a floor that rolls with it; the Wagonmaster drives it and whips at anyone
+        // near; a notched pine up ahead can be dropped across the road to block it
+        { kind: 'wagon', tag: 'convoy', x: 6080, z: 320, roll: { to: 7110, speed: 22, driver: 'butcher:driver' }, roof: { top: 92, d: 26 } },
+        { kind: 'pine', x: 6980, z: 318, fellDir: -1, len: 300, bridge: 'convoyPine', drop: null },
         { kind: 'barrel', x: 5700, z: 480, drop: 'health' },
         // the convoy's supplies, dumped at the roadside to lighten the wagons
         ...group([['crate-v5', 5780, 300], ['crate-v1', 0, 0, { stack: true }], ['barrel-tar', 5840, 302]]),
@@ -164,7 +192,9 @@ export const STAGE_WOOD = {
       id: 'kennels', name: 'THE KENNELS', x0: 7200, x1: 8400,
       spawn: { x: 7260, z: 440 },
       objective: 'Kill the Houndmaster',
-      hint: 'Kill the hounds fast: he calls more when he is hurt',
+      hint: 'Kill the hounds fast: hurt him and he lets more out of the pens. When he whistles, move!',
+      // the pens at the back of the clearing, under the painted kennels: hounds behind bars
+      pens: [{ x: 7640, z: 270, count: 2 }, { x: 7820, z: 270, count: 1 }, { x: 8030, z: 270, count: 2 }],
       fightAt: 7560,
       waves: [],
       props: [
@@ -193,9 +223,13 @@ export const STAGE_WOOD = {
           ],
           last: 'My dogs will howl for me tonight. Let them find you.',
         },
+        // (his pack comes out of the kennels' pens, `pens` below: the gates drop; between, his
+        // whistle sends every loose hound in, and from the net phase he throws a weighted net:
+        // stage/WoodTraps.js)
         phases: [
-          { id: 'pack', at: 0.66, adds: ['hound', 'hound', 'hound'], ai: { attackCooldown: [24, 56] } },
-          { id: 'frenzy', at: 0.33, rage: true, adds: ['hound', 'hound', 'stalker'], damage: 1.25, speed: 1.2, ai: { attackCooldown: [16, 40], comboChance: 0.8 } },
+          { id: 'pack', at: 0.66, pens: [0, 1], ai: { attackCooldown: [24, 56] } },
+          { id: 'net', at: 0.5 },
+          { id: 'frenzy', at: 0.33, rage: true, pens: [2], adds: ['stalker'], damage: 1.25, speed: 1.2, ai: { attackCooldown: [16, 40], comboChance: 0.8 } },
         ],
       },
     },
@@ -216,14 +250,19 @@ export const STAGE_WOOD = {
   terrain: [
     // ---- I THE WOOD ROAD: a stream with a log across it (the fallen pine that walled off
     // the road's start was taken out at Nick's ask, 2026-11-05)
-    { kind: 'pit', x0: 820, x1: 900, ...FULL },
-    { kind: 'block', x0: 800, x1: 920, z0: 400, z1: 452, top: 10, mat: 'log' },
+    // (too wide to jump: the notched pine, felled across it, is the way over; Vexa's double
+    // jump can still clear it)
+    { kind: 'pit', x0: 790, x1: 980, ...FULL },
+    { kind: 'block', x0: 774, x1: 998, z0: 400, z1: 452, top: 10, mat: 'log', tag: 'felled', hideArt: true }, // (the notched pine, once it's down)
+    { kind: 'block', x0: 6690, x1: 6980, z0: 294, z1: 342, top: 10, mat: 'log', tag: 'convoyPine', hideArt: true }, // (the convoy's pine, once it's down across the road)
 
     // ---- III THE CAGE CARTS: a ravine stream crossed on stepping stones
     { kind: 'pit', x0: 3080, x1: 3380, ...FULL },
     { kind: 'block', x0: 3130, x1: 3200, z0: 360, z1: 480, top: 30 },
     { kind: 'block', x0: 3260, x1: 3330, z0: 360, z1: 480, top: 30 },
-    { kind: 'block', x0: 3700, x1: 3800, z0: 282, z1: 330, top: 50 }, // a broken cart against the trees
+    // the two cage carts (painted, view/NpcView.js): solid, and a man can be stood on one
+    { kind: 'block', x0: 3660, x1: 3840, z0: 300, z1: 334, top: 50, hideArt: true },
+    { kind: 'block', x0: 4060, x1: 4220, z0: 420, z1: 448, top: 50, hideArt: true },
     // THE HIGH SHELF (optional): a mossy boulder at the back of the road (+70: a held jump),
     // and over it a rock shelf 150 higher, like the Gallows Ascent's roost: Vexa's double
     // jump, Oryn's rise, Rurik with WIND STEP. (Rock: the wood's painted rock tiles)
@@ -242,7 +281,21 @@ export const STAGE_WOOD = {
     { kind: 'block', x0: 9040, x1: 9200, ...FULL, top: 320 },
   ],
 
-  lanterns: [{ x: 780, z: 290 }, { x: 2050, z: 290 }, { x: 3080, z: 290 }, { x: 5140, z: 290 }, { x: 7400, z: 290 }, { x: 8600, z: 290 }],
+  // the wood's traps (stage/WoodTraps.js): snares in the leaves, a stake pit under a mat of them,
+  // the ford's shallows. Taught where they can't hurt much first (the hanging tree's clearing)
+  traps: [
+    { type: 'snare', section: 1, x: 1880, z: 470 },
+    { type: 'snare', section: 1, x: 2470, z: 330 },
+    { type: 'stakes', section: 2, x: 3470, z: 470, w: 76, d: 44 },
+    { type: 'snare', section: 2, x: 3960, z: 455 },
+    { type: 'current', section: 3, x0: 4640, x1: 4900 },
+  ],
+
+  lanterns: WOOD_LANTERNS,
+  // the lanterns' warm light falls on the men who pass them (view/FireLight.js); drizzle, fog
+  // along the front, pools of light on the mud, ferns at the edge (view/WoodWeather.js)
+  firelight: WOOD_LANTERNS.map((l) => ({ x: l.x, z: l.z + 140, r: 250, k: 0.32 })),
+  weather: 'drizzle',
 
   // the dead (view only): prisoners who fell on the road and were left there
   bodies: [{ x: 300, z: 480, pose: 1 }, { x: 1250, z: 330, pose: 0 }, { x: 3500, z: 500, pose: 2 }, { x: 7900, z: 480, pose: 1 }],

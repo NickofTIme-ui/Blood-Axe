@@ -6,6 +6,31 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 5 November 2026 (cloud, branch `claude/project-thread-bqq5g3`, NOT on main until Nick says push):
+  LEVEL 2 "DO ALL OF THIS" (Nick's ranked level 2 review, doc BEGFzgpVxJrRYFxTDwpBQv). Also carries
+  the two waiting level 2 changes (wall at x520 removed; only Nicholas talks at the blocked road).
+  1. Streams: ribbons that start where the painted mud starts (no more upright water pillars),
+     darker water, worn banks, log rafts / rough stepping stones over them (view/TerrainView.js).
+  2. Traps and set pieces, all sim in stage/WoodTraps.js (view: view/WoodTrapsView.js), tested:
+     notched PINE (chop it: it falls across the stream as the bridge; crushes men under it), LOG PILE
+     at the ford (cut it: logs roll down the road), SNARES (mash to cut free), STAKE PIT (impales men,
+     a fifth of a hero's health), the ford's CURRENT (pushes you downstream; a man knocked down at
+     the edge is swept away), SWINGING LOG hazard (blade look 'log'), readable AMBUSHES (men hang
+     in the branches for a tell, crows go up), HORNBLOWER ('grunt:horn': runs to the back and blows;
+     a hit breaks it off; unstopped, more men come), WOODSMAN with a net ('stalker:net').
+  3. CONVOY: the wagon's roof is a moving floor (Terrain kind 'cart'); the Wagonmaster
+     ('butcher:driver') whips from the bench; stop the wagon by wrecking it, knocking him off, or
+     felling the second pine across the road ahead (prop.halted, not roll data: it is shared).
+  4. KENNELS: hounds wait behind pen gates (penned: not foes, untouchable) and come out at the
+     Houndmaster's phases (pack 0.66 = pens 0+1, net 0.5, frenzy 0.33 = pen 2 + a stalker); his
+     whistle sends every loose hound in, two pounces each; from the net phase he throws nets.
+  5. Weather and light (view/WoodWeather.js): drizzle, splash rings, front ground fog, lantern
+     pools, foreground ferns; FireLight lights fighters near the lanterns. Music only while fighting,
+     rain loop between (core/WoodMusic.js). New synthesized sfx: tools/sfx-gen/wood.js.
+  6. Villager looks per NPC (NpcView WOOD_LOOKS), cage carts use the cagecart art, ground darker.
+  ChatGPT art still wanted (code-drawn stand-ins now): notched pine, log pile, rolling logs, snare,
+  stake pit, pen gates, Wagonmaster, Houndmaster strips, ferns, wall.png without the baked shrine.
+
 - 5 November 2026 (cloud, branch `claude/project-thread-4ru27l`, NOT on main until Nick says push): MAGE
   FIXES (Nick: he shocks himself, the hold-Y finisher stopped blowing them up, give X a great new
   finisher, his wall art must be much better).

@@ -146,7 +146,7 @@ export class Terrain {
     for (const f of this.world.fighters) {
       const b = f.floorBlock;
       if (!b || !f.grounded) continue;
-      if (b.kind === 'lift' && (b.dx || b.dtop)) {
+      if ((b.kind === 'lift' || b.kind === 'cart') && (b.dx || b.dtop)) { // (a cart: the convoy's wagon roof, moved by stage/WoodTraps.js)
         f.x += b.dx;
         f.h = f.floor = b.top; // (up or down, his feet stay on it: no tiny falls every frame)
       }

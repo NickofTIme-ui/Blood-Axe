@@ -99,6 +99,20 @@ function raggedRect(x, y, w, h, seed, straight, amp = 5) {
   return pts;
 }
 
+// A wood stream's outline (a pit across the whole lane): narrow where it comes out of the
+// trees at the back, exact to the pit through the lane, then widening toward the camera; its
+// banks worn, not ruled
+function streamRibbon(p, top, bottom, flare) {
+  const z0 = p.z0; const z1 = p.z1;
+  const inset = (p.x1 - p.x0) * 0.4; // (a wedge out of the dark under the trees: no flat top)
+  const side = (y) => (y < z0 ? inset * ((z0 - y) / (z0 - top)) : y > z1 ? -flare * ((y - z1) / (bottom - z1)) : 0);
+  const pts = [];
+  const n = Math.ceil((bottom - top) / 10);
+  for (let i = 0; i <= n; i++) { const y = top + (bottom - top) * (i / n); pts.push({ x: p.x1 - side(y) - wob(i, p.x0 + 1) * 4, y }); }
+  for (let i = n; i >= 0; i--) { const y = top + (bottom - top) * (i / n); pts.push({ x: p.x0 + side(y) + wob(i, p.x0 + 2) * 4, y }); }
+  return pts;
+}
+
 const COL = {
   skyTop: 0x05070d, skyLow: 0x1c2733, mist: 0x8aa4b8,
   cliffFar: 0x0b1018, cliffMid: 0x121a24,
@@ -247,13 +261,23 @@ export class TerrainView {
       if (paintedWater) {
         g.clear(); // (the painted water alone, its banks worn: no dark box or ruled edges round it)
         // the painted stream (assets/env/water.png, a seamless tile): it runs toward the camera
-        const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0);
-        const ws = s.add.tileSprite(p.x0, top, p.x1 - p.x0, p.z1 + 40 - top, 'water-src').setOrigin(0).setTileScale(0.32).setDepth(DEPTH.floor + 4.1);
-        const wm = s.make.graphics({ add: false }).fillStyle(0xffffff, 1).fillPoints(raggedRect(p.x0, top, p.x1 - p.x0, p.z1 + 40 - top, p.x0, 'none'), true);
+        let top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0);
+        // (the wood's streams run the full depth of the road: out from under the trees at the
+        // back, narrow in the distance, and on off the bottom of the screen, wider as they come
+        // toward the camera, so they read as water lying in the road, not a standing slab.
+        // Exact to the pit inside the lane, so you fall in where the water is)
+        const ribbon = this.wood && p.z0 <= SETTINGS.world.floorTop;
+        if (ribbon) top = p.z0 - 56; // (from where the painted mud begins at the foot of the trees: no higher, or it stands up the backdrop like a pillar)
+        const bottom = ribbon ? SETTINGS.height + 120 : p.z1 + 40;
+        const flare = ribbon ? (p.x1 - p.x0) * 0.22 : 0;
+        const ws = s.add.tileSprite(p.x0 - flare, top, p.x1 - p.x0 + flare * 2, bottom - top, 'water-src').setOrigin(0).setTileScale(0.32).setDepth(DEPTH.floor + 4.1);
+        if (ribbon) ws.setTint(0x6c8490); // (black water under the pines, not a bright rapid)
+        const wm = s.make.graphics({ add: false }).fillStyle(0xffffff, 1).fillPoints(ribbon ? streamRibbon(p, top, bottom, flare) : raggedRect(p.x0, top, p.x1 - p.x0, p.z1 + 40 - top, p.x0, 'none'), true);
+        if (ribbon) this.streamBanks(p, top, bottom, flare);
         ws.setMask(wm.createGeometryMask()); // (its banks worn, not ruled)
         s.tweens.add({ targets: ws, tilePositionY: -1024, duration: 9000, repeat: -1 });
         s.tweens.add({ targets: ws, tilePositionX: { from: 0, to: 18 }, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
-        this.waterDepth(p, top, wm.createGeometryMask());
+        this.waterDepth(p, top, wm.createGeometryMask(), ribbon ? bottom : null, flare);
       } else if (this.water) {
         // (it runs down out of the trees at the back and on toward the camera)
         g.lineStyle(1, 0x3a5a70, 0.5);
@@ -271,14 +295,46 @@ export class TerrainView {
     }
   }
 
+  // A wood stream's banks: wet black mud just outside the water, a scatter of wet stones and
+  // a few reeds along each side, and the stones' foam where the water parts round them.
+  streamBanks(p, top, bottom, flare) {
+    const s = this.scene;
+    const g = s.add.graphics().setDepth(DEPTH.floor + 3.8);
+    const z0 = p.z0; const inset = (p.x1 - p.x0) * 0.4;
+    const sideAt = (y) => (y < z0 ? inset * ((z0 - y) / (z0 - top)) : y > p.z1 ? -flare * ((y - p.z1) / (bottom - p.z1)) : 0);
+    let k = Math.round(p.x0) % 997 + 11;
+    const r = () => { k = (k * 9301 + 49297) % 233280; return k / 233280; };
+    for (let y = top + 6; y < bottom; y += 7) {
+      const t = (y - top) / (bottom - top); const sc = 0.6 + t * 0.7;
+      for (const [edge, dir] of [[p.x0 + sideAt(y), -1], [p.x1 - sideAt(y), 1]]) {
+        g.fillStyle(0x07090a, 0.5).fillEllipse(edge + dir * 6 * sc, y, 18 * sc, 9 * sc); // (wet mud)
+        if (r() < 0.22) {
+          const sx = edge + dir * (2 + r() * 8) * sc; const rr = (3 + r() * 6) * sc;
+          g.fillStyle(0x22282a, 1).fillEllipse(sx, y, rr * 2.2, rr * 1.3);
+          g.fillStyle(0x4a5654, 0.9).fillEllipse(sx - rr * 0.2, y - rr * 0.35, rr * 1.4, rr * 0.6); // (its wet top)
+        }
+        if (r() < 0.08) {
+          g.lineStyle(1.5, 0x3a4a30, 0.9);
+          const rx = edge + dir * (8 + r() * 10) * sc;
+          for (let q = 0; q < 3; q++) g.lineBetween(rx + q * 2, y, rx + q * 2 + (r() - 0.5) * 6, y - (10 + r() * 12) * sc);
+        }
+      }
+    }
+  }
+
   // The stream's body over the painted tile (it runs toward the camera): deep and dark down
   // the middle, shallower toward the banks, wet dark mud just outside them, and a broken line
   // of foam along each bank running with the water. Masked to the same worn banks; no shimmer.
-  waterDepth(p, top, mask) {
+  waterDepth(p, top, mask, bottom = null, flare = 0) {
     const s = this.scene;
-    const w = p.x1 - p.x0; const H = p.z1 + 40 - top; const d = DEPTH.floor + 4.1;
+    const w = p.x1 - p.x0; const H = (bottom ?? p.z1 + 40) - top; const d = DEPTH.floor + 4.1;
     const deep = gradient(s, 'water-deep', [[0, 0x2a3a30, 0.25], [0.22, 0x0a1620, 0.1], [0.5, 0x040a12, 0.45], [0.78, 0x0a1620, 0.1], [1, 0x2a3a30, 0.25]], true);
-    s.add.image(p.x0, top, deep).setOrigin(0).setDisplaySize(w, H).setDepth(d + 0.02).setMask(mask);
+    s.add.image(p.x0 - flare, top, deep).setOrigin(0).setDisplaySize(w + flare * 2, H).setDepth(d + 0.02).setMask(mask);
+    if (bottom !== null) {
+      // (where it comes out from under the trees: dark, as if out of a culvert in the roots)
+      const shade = gradient(s, 'water-shade', [[0, 0x020406, 1], [1, 0x020406, 0]], false);
+      s.add.image(p.x0 - flare, top - 4, shade).setOrigin(0).setDisplaySize(w + flare * 2, 70).setDepth(d + 0.05).setMask(mask);
+    }
     // (wet mud: the ground darkens toward the water, outside the stream)
     const wet = gradient(s, 'water-wet', [[0, 0x000000, 0], [1, 0x05080a, 0.55]], true);
     s.add.image(p.x0 - 16, top, wet).setOrigin(0).setDisplaySize(18, H).setDepth(DEPTH.floor + 3.9);
@@ -404,6 +460,12 @@ export class TerrainView {
       const lw = (x1 - x0) * LOG_FIT.wide;
       v.art.setPosition((x0 + x1) / 2, yTop1 - 4).setScale(lw / v.art.frame.width).setDepth(b.z1 + 0.6).setVisible(true);
     }
+    // the wood's crossings over a stream: stepping stones as wet boulders, a log bridge as
+    // trunks lashed side by side (not a box of bark or a flat slab of road)
+    if (this.wood && this.terrain.inPit((x0 + x1) / 2, b.z1 - 1)) {
+      if (b.mat === 'log' && v.art) { this.drawLogRaft(v, x0, x1, yTop0, yTop1); return; }
+      if (b.mat !== 'log') { this.drawStones(v, x0, x1, yTop0, yTop1); return; }
+    }
     if (b.mat === 'iron' && b.kind === 'block') { this.drawPortcullis(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
     if (this.village || (this.water && b.mat === 'log')) { this.drawVillageBlock(v, x0, x1, w, yTop0, yTop1); return; } // (the wood's fallen trees: as the village's beams)
@@ -457,6 +519,66 @@ export class TerrainView {
     }
     top.setDepth(b.z0 - 0.5);
     front.setDepth(b.z1 + 0.5);
+  }
+
+  // Stepping stones in a wood stream: two or three wet boulders filling the block's footing,
+  // mossy and lit on top where you land, dark and wet down into the water, foam round them.
+  drawStones(v, x0, x1, yTop0, yTop1) {
+    const { top, front, b } = v;
+    const w = x1 - x0; const depth = yTop1 - yTop0;
+    const rows = Math.max(2, Math.round(depth / 45));
+    const drop = Math.max(0, b.top) + 18; // (down into the water)
+    // a stone's outline: a rough, flattish lump, never a clean ellipse
+    const lump = (cx, cy, rx, ry, seed) => {
+      const pts = [];
+      for (let a = 0; a < 14; a++) {
+        const t = (a / 14) * Math.PI * 2;
+        const r = 0.82 + wob(a, seed) * 0.3;
+        pts.push({ x: cx + Math.cos(t) * rx * r, y: cy + Math.sin(t) * ry * r * (Math.sin(t) > 0 ? 1.05 : 0.9) });
+      }
+      return pts;
+    };
+    for (let i = 0; i < rows; i++) {
+      const seed = b.x0 * 0.37 + i * 5.1;
+      const cy = yTop0 + depth * ((i + 0.5) / rows);
+      const ry = (depth / rows) * (0.36 + wob(i + 9, b.x0) * 0.08);
+      const cx = (x0 + x1) / 2 + (wob(i, b.x0) - 0.5) * w * 0.28;
+      const rx = w * (0.4 + wob(i + 3, b.x0) * 0.14);
+      const g = i === rows - 1 ? front : top;
+      // the foam where the water parts round it, then its wet flank down into the stream
+      g.fillStyle(0xd8e4e8, 0.22).fillEllipse(cx, cy + drop * 0.9, rx * 2.5, ry * 1.4);
+      g.fillStyle(0x0c0f10, 1).fillPoints(lump(cx, cy + drop * 0.55, rx * 1.02, ry + drop * 0.5, seed), true);
+      // its top, where you land: dark wet stone, a little moss, a cold glint on the lip
+      g.fillStyle(0x2a302f, 1).fillPoints(lump(cx, cy, rx, ry, seed + 1), true);
+      g.fillStyle(0x36403a, 1).fillPoints(lump(cx - rx * 0.12, cy - ry * 0.22, rx * 0.7, ry * 0.55, seed + 2), true);
+      g.fillStyle(0x2f3d22, 0.7).fillPoints(lump(cx - rx * 0.3, cy - ry * 0.35, rx * 0.35, ry * 0.3, seed + 3), true);
+      g.lineStyle(1.5, 0x9aa8ac, 0.35);
+      g.beginPath(); g.arc(cx, cy - ry * 0.1, rx * 0.88, 0.35, 1.25); g.strokePath();
+    }
+    top.setDepth(b.z0 - 0.5);
+    front.setDepth(b.z1 + 0.5);
+  }
+
+  // A log bridge in the wood: the painted fallen trunk laid several times from the back of
+  // the walk to the front, each further one darker, so the walk is trunks lashed together
+  drawLogRaft(v, x0, x1, yTop0, yTop1) {
+    const { top, front, b } = v;
+    const depth = yTop1 - yTop0;
+    const n = Math.max(2, Math.round(depth / 24));
+    const lw = (x1 - x0) * LOG_FIT.wide;
+    v.arts ??= [];
+    for (let i = 0; i < n - 1; i++) {
+      const img = v.arts[i] ??= this.scene.add.image(0, 0, 'bridge-log').setOrigin(0.5, LOG_FIT.walk);
+      const y = yTop0 + depth * ((i + 0.6) / n);
+      const k = 0.55 + 0.45 * (i / (n - 1));
+      img.setPosition((x0 + x1) / 2 + (i % 2 ? 6 : -6), y).setScale((lw * (0.92 + 0.08 * k)) / img.frame.width)
+        .setTint(Phaser.Display.Color.GetColor(Math.round(200 * k), Math.round(200 * k), Math.round(200 * k))).setDepth(b.z0 + i * 0.01).setVisible(true);
+    }
+    // (the front trunk is the one drawBlock placed; the lashings across all of them)
+    top.lineStyle(2, 0x6a5a3a, 0.8);
+    for (const lx of [x0 + 10, x1 - 10]) top.lineBetween(lx, yTop0 + 4, lx, yTop1 - 2);
+    top.setDepth(b.z0 + 0.2).setVisible(true);
+    front.setVisible(false);
   }
 
   // A painted surface tile (data/levelArt.js `surfaces`) over one face of a block, lined up

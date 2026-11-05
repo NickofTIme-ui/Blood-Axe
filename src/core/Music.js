@@ -164,6 +164,9 @@ export function playMusic(scene, key) {
   else start();
 }
 
+// The key of the track playing now (null: silence).
+export function currentMusic() { return current?.key ?? null; }
+
 // The looped track fades out (a silence, before a cue).
 export function stopMusic(scene, ms = 500) {
   if (!current) return;

@@ -12,6 +12,7 @@ import { CHARACTERS } from '../src/data/characters.js';
 import { ENEMIES, WAVES } from '../src/data/enemies.js';
 import { chooseFatality, chooseMaim, FATALITIES } from '../src/combat/Fatality.js';
 import { Stage } from '../src/stage/Stage.js';
+import { TRAPS } from '../src/stage/WoodTraps.js';
 import { SENTENCE, Sentence, HEADS, BODIES, sentenceLines, ASK, SILENCE, NOTHING } from '../src/stage/Sentence.js';
 import { STAGE, PROPS } from '../src/data/stage.js';
 import { Terrain, STEP, PIT_LOST } from '../src/stage/Terrain.js';
@@ -2754,6 +2755,8 @@ function campaignRun(data, hero, { kill = true, frames = 60 * 300, onTick = null
     // Route fixtures auto-resolve interactions; actual bond hitboxes and failure are
     // exercised independently in mill-rescue-test.js.
     if(kill&&stage.millRescue?.started&&!stage.millRescue.executioner.alive)stage.millRescue.save();
+    // (the wood's notched pine: a player chops it down to bridge the stream)
+    for (const pr of stage.props) if (pr.bridge && !pr.broken && Math.abs(pr.x - p.x) < 140) stage.breakProp(pr, 1);
     acceptNpcInvitations(stage);
   }
   return { won, secs: f / 60, falls, beats, rescued, stage, world, p, x: p.x };
@@ -3241,7 +3244,8 @@ test('wood: an escort follows the hero, freezes and loses his nerve with enemies
     const a = st.story.npc('ansel');
     run(5);
     assert(a.state === 'escort', `he follows (${a.state})`);
-    run(60 * 40, () => { killFoes(world); if (p.x > 5560) p.x = 5560; });
+    // (wading the shallows the current leans him downstream: he steers back up for the bridge, as a player does)
+    run(60 * 40, () => { killFoes(world); if (p.x > 5560) p.x = 5560; if (p.z > 430) p.z -= 2; });
     assert(st.story.isRescued('ansel'), `across the ford (${a.state} at ${Math.round(a.x)}, ${Math.round(a.z)})`);
   }
   {
@@ -3269,6 +3273,102 @@ test('wood: the pilgrim talks only when a hero near him presses INTERACT', () =>
   assert(st.story.done.has('pilgrim'), 'asked, he tells them');
 });
 
+// ---- the wood's traps (WoodTraps): all sim, so online stays in step
+const woodFoe = (world, st, type, x, z) => { const e = createEnemy(world, type, x, z); e.entering = false; st.setOnGround?.(e); return e; };
+
+test('wood traps: the notched pine is no bridge till it is chopped down; it crushes a man under it', () => {
+  const { world, st, run } = woodSetup(0, { x: 300, z: 470 });
+  const pine = st.props.find((q) => q.kind === 'pine');
+  const bridge = st.terrain.blocks.find((b) => b.tag === pine.bridge);
+  assert(bridge && !bridge.solid, 'standing: the stream has no way over');
+  const e = woodFoe(world, st, 'grunt', pine.x + 60, pine.z);
+  st.breakProp(pine, 1);
+  run(TRAPS.pine.fall + 4, () => { if (e.alive && e.state !== 'knockdown') { e.x = pine.x + 60; e.z = pine.z; } });
+  assert(bridge.solid, 'down: it lies across the stream');
+  assert(!e.alive || e.health <= 0, 'the man under it is crushed');
+});
+
+test('wood traps: a snare holds a hero till he mashes free, and springs only once', () => {
+  const t = STAGE_WOOD.traps.find((q) => q.type === 'snare');
+  const { p, st, c, run } = woodSetup(1, { x: t.x, z: t.z });
+  run(3);
+  assert(p.snare?.kind === 'snare' && p.state === 'hitstun', 'caught');
+  const x = p.x;
+  c.script = Object.fromEntries([2, 6, 10, 14, 18].map((k) => [c.t + k, ['attack']]));
+  run(24);
+  assert(!p.snare && p.state !== 'hitstun' && p.x === x, `cut free by mashing (${p.state}, left ${p.snare?.left})`);
+  assert(st.woodTraps.traps.find((q) => q.x === t.x).sprung, 'a snare springs once');
+});
+
+test('wood traps: the stake pit impales a man outright; a hero only loses a fifth of his health', () => {
+  const t = STAGE_WOOD.traps.find((q) => q.type === 'stakes');
+  const { world, p, st, run } = woodSetup(2, { x: t.x - 200, z: t.z });
+  const e = woodFoe(world, st, 'grunt', t.x, t.z);
+  run(2);
+  assert(e.health <= 0 && st.woodTraps.traps.find((q) => q.type === 'stakes').open, 'he goes down on the stakes');
+  const t2 = woodSetup(2, { x: t.x, z: t.z });
+  const h = t2.p.health;
+  t2.run(2);
+  const lost = h - t2.p.health;
+  assert(Math.abs(lost - t2.p.stats.maxHealth * TRAPS.stakes.heroShare) < 1, `hero loses a fifth (${lost})`);
+});
+
+test('wood traps: the hornblower runs to the back and blows; struck, he breaks off; unstopped, more men come', () => {
+  const { world, p, st, run } = woodSetup(1, { x: 2000, z: 440 });
+  killFoes(world); run(2);
+  const h = woodFoe(world, st, 'grunt:horn', 2300, 440);
+  const keep = () => { p.health = p.stats.maxHealth; p.x = 2000; p.z = 440; };
+  run(5, keep);
+  assert(h.horn && h.stats.name === 'Hornblower', 'he knows his job');
+  let raised = 0; let sounded = 0;
+  world.events.on('hornRaised', () => raised++); world.events.on('hornSounded', () => sounded++);
+  for (let i = 0; i < 400 && !raised; i++) run(1, keep);
+  assert(raised === 1 && h.horn.state === 'blow', 'at his post, the horn up');
+  run(60, keep);
+  h.health -= 5; run(2, keep);
+  assert(h.horn.state === 'fight' && !sounded, 'a blow breaks off the call');
+  const before = st.livingFoes().length;
+  for (let i = 0; i < 900 && !sounded; i++) run(1, () => { keep(); h.health = Math.max(h.health, h.horn.hp); });
+  assert(sounded === 1 && st.livingFoes().length > before, `left alone he sounds it, and men come (${before} -> ${st.livingFoes().length})`);
+});
+
+test('wood traps: the woodsman swings his net and throws it; a hero in its path is caught', () => {
+  const { world, p, st, run } = woodSetup(3, { x: 5000, z: 380 });
+  killFoes(world); run(2);
+  const n = woodFoe(world, st, 'stalker:net', 5240, 380);
+  let thrown = 0; world.events.on('netThrown', () => thrown++);
+  for (let i = 0; i < 700 && !p.snare; i++) run(1, () => { p.health = p.stats.maxHealth; p.x = 5000; p.z = 380; p.invincible = false; });
+  assert(thrown >= 1 && p.snare?.kind === 'net', `netted (${thrown} thrown)`);
+  assert(n.stats.name === 'Woodsman', 'his job');
+});
+
+test("wood traps: the ford's current leans a hero downstream; a man knocked down at its edge is swept away", () => {
+  const t = STAGE_WOOD.traps.find((q) => q.type === 'current');
+  const { world, p, st, run } = woodSetup(3, { x: (t.x0 + t.x1) / 2, z: 360 });
+  killFoes(world);
+  run(30);
+  assert(p.z > 370, `pushed toward us (${p.z.toFixed(0)})`);
+  const e = woodFoe(world, st, 'grunt', t.x0 + 40, world.bounds.maxZ);
+  let swept = 0; world.events.on('swept', () => swept++);
+  e.fsm.change('knockdown', { dir: 1 });
+  run(3, () => { p.x = t.x0 - 200; });
+  assert(swept === 1, 'the river has him');
+});
+
+test('wood: ambushers hang in the branches for their tell, then drop', () => {
+  const { world, st, run } = woodSetup(0, { x: 300, z: 470 });
+  killFoes(world);
+  const drops = []; const tells = [];
+  world.events.on('ambushTell', (e) => tells.push(e.fighter));
+  world.events.on('ambushDrop', (e) => drops.push(e.fighter));
+  const sec = STAGE_WOOD.sections[0];
+  for (let i = 0; i < 600 && !tells.length; i++) run(1, () => { st.players.forEach((q) => { q.x = sec.fightAt ?? q.x; q.health = q.stats.maxHealth; }); });
+  const hung = world.fighters.filter((f) => f.hang > 0);
+  assert(tells.length >= 2 && hung.length && hung.every((f) => f.h > 0), `up in the trees (${tells.length} tells)`);
+  run(140);
+  assert(drops.length === tells.length && world.fighters.every((f) => !(f.hang > 0)), 'down they come');
+});
+
 test('boss phases: the Houndmaster calls his pack, then rages; each phase once, in order, even past two at a blow', () => {
   const { world, p, st, run } = woodSetup(WOOD_SEC('kennels'), { x: 7700, z: 440 });
   const phases = []; let rages = 0;
@@ -3288,17 +3388,37 @@ test('boss phases: the Houndmaster calls his pack, then rages; each phase once, 
   const walk = b.stats.walkSpeed;
   b.health = b.stats.maxHealth * 0.2;
   run(2, () => { p.health = p.stats.maxHealth; });
-  assert(phases.join() === 'pack,frenzy' && rages === 1 && b.raged && b.stats.walkSpeed > walk, `frenzy (${phases}, rages ${rages})`);
+  assert(phases.join() === 'pack,net,frenzy' && rages === 1 && b.raged && b.stats.walkSpeed > walk, `frenzy (${phases}, rages ${rages})`);
   run(30);
-  assert(phases.length === 2, 'each once');
+  assert(phases.length === 3, 'each once');
   // two thresholds at one blow: both phases, in order
   const t2 = woodSetup(WOOD_SEC('kennels'), { x: 7700, z: 440 });
   const ph2 = []; t2.world.events.on('bossPhase', (e) => ph2.push(e.phase.id));
   t2.run(700, () => { t2.p.health = t2.p.stats.maxHealth; t2.p.awe = 0; });
   t2.st.boss.health = 5;
   t2.run(2);
-  assert(ph2.join() === 'pack,frenzy', `both (${ph2})`);
+  assert(ph2.join() === 'pack,net,frenzy', `both (${ph2})`);
   assert(t2.st.story.beats.find((x) => x.id === 'pack').fired && t2.st.story.beats.find((x) => x.id === 'frenzy').fired, 'their lines');
+});
+
+test('kennels: hounds wait behind their pen gates (not foes, untouchable) till his phases drop them; his whistle sends the pack in, two pounces each', () => {
+  const { world, p, st, run } = woodSetup(WOOD_SEC('kennels'), { x: 7700, z: 440 });
+  run(700, () => { p.health = p.stats.maxHealth; p.awe = 0; });
+  const penned = world.fighters.filter((f) => f.penned != null);
+  assert(penned.length === 5 && penned.every((f) => f.invincible && f.alive), `five hounds in the pens (${penned.length})`);
+  assert(!st.livingFoes().some((f) => f.penned != null), 'not counted as foes behind bars');
+  const b = st.boss;
+  b.health = b.stats.maxHealth * 0.6;
+  let opened = 0; world.events.on('penOpen', () => opened++);
+  run(2, () => { p.health = p.stats.maxHealth; });
+  assert(opened === 2 && world.fighters.filter((f) => f.penned != null).length === 2, 'the pack phase drops two gates');
+  let whistles = 0; let pounces = 0;
+  world.events.on('whistle', () => whistles++);
+  run(900, () => { p.health = p.stats.maxHealth; p.awe = 0; b.health = Math.max(b.health, b.stats.maxHealth * 0.55); for (const h of world.fighters) if (h.order && h.state === 'heavy') pounces++; });
+  assert(whistles >= 1 && pounces > 0, `he whistles (${whistles}) and they pounce`);
+  b.health = b.stats.maxHealth * 0.2;
+  run(2, () => { p.health = p.stats.maxHealth; });
+  assert(opened === 3 && !world.fighters.some((f) => f.penned != null), 'the frenzy lets out the last of them');
 });
 
 test('boss phases: a boss without phases still rages at half health and calls his dogs (the village captain)', () => {
@@ -3526,6 +3646,8 @@ test('village: two of them wait up on the second roof (standing on it, not insid
   assert(foes.length === 2 && foes.every((f) => f.floor === 120 && f.h >= 119), foes.map((f) => `${f.stats.name} ${Math.round(f.x)} h${f.h}/${f.floor}`).join(', '));
 });
 
+// (the convoy's guards, not its Wagonmaster: him down, the wagon stands)
+const killGuards = (world) => { for (const e of world.fighters) if (e.team === 'enemy' && e.role !== 'driver') { e.health = 0; e.removeMe = true; } };
 test('wood: the convoy: the wagon rolls once the fight is on; wrecked, its prisoners run free and wait at the pass; left alone, it gets away with them', () => {
   const k = WOOD_SEC('convoy');
   // smashed in time
@@ -3535,13 +3657,13 @@ test('wood: the convoy: the wagon rolls once the fight is on; wrecked, its priso
     const wagon = st.props.find((pr) => pr.tag === 'convoy');
     const n = st.story.npc('convoy');
     const x0 = wagon.x;
-    run(240, () => killFoes(world));
+    run(240, () => killGuards(world));
     assert(wagon.x > x0 + 50 && n.x === wagon.x && n.state === 'trapped', `it rolls, with them inside (${Math.round(x0)} -> ${Math.round(wagon.x)})`);
     st.breakProp(wagon, 1);
     run(3);
     assert(st.story.rescued.has('convoy'), 'freed when it is wrecked');
     const at = wagon.x;
-    run(300, () => killFoes(world));
+    run(300, () => killGuards(world));
     assert(wagon.x === at, 'a wreck rolls no further');
   }
   // too slow
@@ -3553,13 +3675,49 @@ test('wood: the convoy: the wagon rolls once the fight is on; wrecked, its priso
     const wagon = st.props.find((pr) => pr.tag === 'convoy');
     const secs = (wagon.roll.to - wagon.x) / wagon.roll.speed;
     assert(secs > 35 && secs < 60, `time enough to fight through, not to dawdle (${secs.toFixed(0)} s)`);
-    run(60 * 70, () => killFoes(world));
+    run(60 * 70, () => killGuards(world));
     assert(wagon.escaped && lost.includes('convoy') && st.story.npc('convoy').state === 'lost', 'it gets away, and them with it');
     // dying here puts it back where it started, them still inside
     st.respawn();
     run(2);
     assert(!wagon.escaped && wagon.x === wagon.roll.from && st.story.npc('convoy').state === 'trapped', `the checkpoint resets it (${st.story.npc('convoy').state})`);
   }
+});
+
+test('wood: the convoy set piece: its roof carries whoever stands on it; the Wagonmaster whips from the bench, and knocked off it the wagon stands', () => {
+  const k = WOOD_SEC('convoy');
+  const { world, p, st, run } = woodSetup(k, { x: 5900, z: 440 });
+  const wagon = st.props.find((pr) => pr.tag === 'convoy');
+  run(30, () => killGuards(world));
+  const d = world.fighters.find((f) => f.role === 'driver');
+  assert(d?.alive && d.stats.name === 'The Wagonmaster' && d.h > 80, 'he is up on the bench');
+  // up on the roof: it carries him along
+  d.drive.next = 1e9; // (his whip held a moment)
+  p.x = wagon.x - 40; p.z = wagon.z; p.h = p.floor = wagon.roof.top;
+  run(2);
+  const px = p.x; const wx = wagon.x;
+  run(120, () => killGuards(world));
+  assert(p.h >= wagon.roof.top - 1 && Math.abs((p.x - px) - (wagon.x - wx)) < 4 && wagon.x > wx + 30, `riding (${(p.x - px).toFixed(0)} vs ${(wagon.x - wx).toFixed(0)})`);
+  // his whip, near the wagon
+  d.drive.next = 0; p.x = d.x - 120; p.z = d.z; p.h = p.floor = 0; st.placeOnGround(p);
+  let cracks = 0; world.events.on('whipCrack', () => cracks++);
+  run(260, () => { killGuards(world); p.x = d.x - 120; p.z = d.z; p.health = p.stats.maxHealth; });
+  assert(cracks >= 1, 'he lashes at a hero near the wagon');
+  // struck: off the bench, and the wagon stands
+  d.health -= 20; run(40, () => killGuards(world));
+  const at = wagon.x; run(120, () => killGuards(world));
+  assert(wagon.halted === 'driver' && wagon.x === at && !st.story.rescued.has('convoy'), 'no one driving: it stands (still locked)');
+});
+
+test('wood: the convoy set piece: the pine felled across the road ahead stops the wagon short of it', () => {
+  const k = WOOD_SEC('convoy');
+  const { world, p, st, run } = woodSetup(k, { x: 5900, z: 440 });
+  p.invincible = true;
+  const wagon = st.props.find((pr) => pr.tag === 'convoy');
+  const pine = st.props.find((q) => q.kind === 'pine' && q.section === k);
+  st.breakProp(pine, -1);
+  run(60 * 40, () => killGuards(world));
+  assert(wagon.halted === 'pine' && !wagon.escaped && wagon.x + wagon.w / 2 <= pine.x - (pine.len ?? 250), `blocked (${Math.round(wagon.x)})`);
 });
 
 test('wood: the wagon is no pushover: a few heavy blows will not wreck it', () => {

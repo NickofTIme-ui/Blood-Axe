@@ -669,6 +669,8 @@ export class StageView {
   // ------------------------------------------------------------ props
 
   makeProp(pr) {
+    // (the wood's notched pine and log pile: drawn by view/WoodTrapsView.js)
+    if (pr.kind === 'pine' || pr.kind === 'logpile') return { img: this.scene.add.image(pr.x, pr.z, '__DEFAULT').setVisible(false), s: 1, own: true };
     if (pr.kind === 'lamppost' || pr.kind === 'haycart') return this.makeStreetProp(pr);
     const key = this.propKey(pr);
     // (a level's painted prop, data/levelArt.js: sized to the prop, whatever size it was painted)
@@ -830,6 +832,7 @@ export class StageView {
 
   propHit(pr, dir) {
     const v = this.propSprites.get(pr.id);
+    if (v?.own) return;
     // worn down a blow at a time: the painted cracked stage, where there is one (view/propArt.js stages)
     if (v?.key && !pr.tipped && this.art2.has(`${v.key}-cracked`) && v.img.texture.key !== `${v.key}-cracked`) v.img.setTexture(`${v.key}-cracked`);
     if (v?.pair && pr.kind === 'lamppost') this.scene.tweens.add({ targets: v.pair.img, angle: dir * 1.5, duration: 70, yoyo: true });
@@ -854,6 +857,7 @@ export class StageView {
 
   propBreak(pr, dir, blast = false, power = 1) {
     const v = this.propSprites.get(pr.id);
+    if (v?.own) return;
     if (pr.kind === 'lamppost') {
       this.chips(pr, 10, dir);
       v.ground?.forEach((g) => g.setAlpha(g.alpha * 0.5));
@@ -1007,7 +1011,10 @@ export class StageView {
       }
       if (hz.type === 'fire') this.drawFire(hz);
       else if (hz.type === 'beam') this.drawBeam(hz);
-      else {
+      else if (hz.look === 'log') {
+        hz.g = hz.g ?? this.scene.add.graphics();
+        this.drawSwingLog(hz.g.clear().setVisible(true), hz);
+      } else {
         hz.g = hz.g ?? this.scene.add.graphics();
         this.drawBlade(hz.g.clear().setVisible(true), hz);
       }
@@ -1638,6 +1645,40 @@ export class StageView {
     g.lineStyle(2 * k, hi, 1).lineBetween(X(-30), by - 4 * k, X(30), by - 2 * k);
   }
 
+  // The wood's swinging log (a blade hazard with `look: 'log'`, data/stageWood.js): a trunk
+  // slung level on two ropes from a bough out of sight, swinging across the road. The painted
+  // fallen trunk (bridge_log.png) where it's loaded, end-on to its swing.
+  drawSwingLog(g, hz) {
+    const s = this.stage.bladeState(hz);
+    const len = 320;
+    const pivotY = hz.z - 80 - len + 60;
+    const tx = s.tipX; const ty = pivotY + Math.cos(s.a) * len;
+    g.fillStyle(0x000000, 0.25).fillRect(hz.x - 110, hz.z - 2, 220, 4);
+    g.fillStyle(0x000000, 0.35 + 0.25 * Math.abs(s.speed)).fillEllipse(tx, hz.z, 140, 12);
+    // the two ropes, a little apart in depth so they read as two
+    g.lineStyle(3, 0x6a5a40, 1);
+    g.lineBetween(hz.x - 46, pivotY, tx - 46, ty - 10).lineBetween(hz.x + 46, pivotY, tx + 46, ty - 10);
+    g.lineStyle(1, 0xa89870, 0.6);
+    g.lineBetween(hz.x - 45, pivotY, tx - 45, ty - 10).lineBetween(hz.x + 47, pivotY, tx + 47, ty - 10);
+    const T = this.scene.textures;
+    if (T.exists('bridge-log')) {
+      hz.log ??= this.scene.add.image(0, 0, 'bridge-log').setOrigin(0.5, 0.4);
+      hz.log.setVisible(true).setPosition(tx, ty).setScale(160 / hz.log.frame.width).setRotation(-s.a * 0.35).setDepth(hz.z + 1.1);
+    } else {
+      g.fillStyle(0x3a2a1a, 1).fillRoundedRect(tx - 80, ty - 16, 160, 32, 14);
+      g.fillStyle(0x5a4028, 1).fillRoundedRect(tx - 78, ty - 14, 156, 10, 6);
+      g.fillStyle(0x8a6a48, 1).fillEllipse(tx + 78, ty, 14, 30);
+    }
+    // the rope lashings round it
+    g.fillStyle(0x7a6a48, 1).fillRect(tx - 50, ty - 18, 7, 34).fillRect(tx + 43, ty - 18, 7, 34);
+    const near = Math.abs(this.scene.player.x - hz.x) < 500;
+    if (near && Math.abs(s.speed) > 0.98 && hz.t - (hz.lastWhoosh ?? -99) > 30) {
+      hz.lastWhoosh = hz.t;
+      playSfx(this.scene, 'heavySwing', { volume: 0.3, pitch: -900, minGapMs: 0 });
+    }
+    g.setDepth(hz.z + 1);
+  }
+
   drawBlade(g, hz) {
     const s = this.stage.bladeState(hz);
     const len = 320;
@@ -2062,15 +2103,30 @@ export class StageView {
       const v = this.propSprites.get(pr.id);
       if (!v?.img?.active) continue;
       if (pr.escaped) {
-        if (!v.gone) { v.gone = true; this.scene.tweens.add({ targets: [v.img, v.shadow, ...(v.ground ?? []), v.rim].filter(Boolean), alpha: 0, duration: 900 }); }
+        if (!v.gone) { v.gone = true; this.scene.tweens.add({ targets: [v.img, v.shadow, v.under, ...(v.ground ?? []), v.rim].filter(Boolean), alpha: 0, duration: 900 }); }
         continue;
       }
-      if (v.gone) { v.gone = false; v.img.setAlpha(1); v.shadow?.setAlpha(0.35); v.ground?.forEach((g, i) => g.setAlpha(i ? 1 : 0.85)); v.rim?.setAlpha(0.4); } // (back where it started: the checkpoint)
-      const moving = pr.x > (pr.roll.from ?? pr.x);
+      if (v.gone) { v.gone = false; v.under?.setAlpha(0.55); v.img.setAlpha(1); v.shadow?.setAlpha(0.35); v.ground?.forEach((g, i) => g.setAlpha(i ? 1 : 0.85)); v.rim?.setAlpha(0.4); } // (back where it started: the checkpoint)
+      const moving = pr.x > (pr.roll.from ?? pr.x) && !pr.halted; // (halted: stage/WoodTraps.js)
       const t = this.scene.time.now / 16.7;
       v.img.setPosition(pr.x, pr.z - (pr.y ?? 0) - (moving ? Math.abs(Math.sin(t * 0.25)) * 2 : 0)).setAngle(moving ? Math.sin(t * 0.13) * 0.8 : 0);
       v.shadow?.setPosition(pr.x, pr.z - (pr.y ?? 0));
       moveGround(v.ground, pr.x, pr.z - (pr.y ?? 0));
+      // its weight in the mud: a dark pool of shadow under the bed, and the two ruts its wheels
+      // cut behind it, back to where it started rolling
+      v.under ??= this.scene.add.ellipse(0, 0, pr.w * 1.05, 26, 0x000000, 0.55).setDepth(DEPTH.floor + 2);
+      v.under.setPosition(pr.x, pr.z - 2);
+      v.ruts ??= this.scene.add.graphics().setDepth(DEPTH.floor + 1.5);
+      v.rutFrom ??= pr.x;
+      if (Math.abs((v.rutTo ?? -1) - pr.x) > 2) {
+        v.rutTo = pr.x;
+        const from = Math.min(v.rutFrom, pr.x) - pr.w * 0.35;
+        v.ruts.clear();
+        for (const [dz, a] of [[-10, 0.45], [4, 0.6]]) {
+          v.ruts.fillStyle(0x0a0806, a).fillRect(from, pr.z + dz - 3, pr.x - pr.w * 0.3 - from, 6);
+          v.ruts.fillStyle(0x6a7a84, 0.12).fillRect(from, pr.z + dz - 3, pr.x - pr.w * 0.3 - from, 1.5); // (water in them)
+        }
+      }
       if (moving && Math.floor(t) % 6 === 0) {
         this.scene.gore.spawn({ x: pr.x - pr.w / 2 + 10, z: pr.z + 4, h: 4, vx: -rand(20, 70), vz: 0, vh: rand(20, 60), tint: 0x3a2e22, scale: rand(0.4, 0.8), decal: false, life: 30 });
       }

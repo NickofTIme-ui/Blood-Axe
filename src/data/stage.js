@@ -188,4 +188,10 @@ export const PROPS = {
   pin: { hp: 4, w: 52, h: 96 }, // the Ash Mill's drive pins: break all three and the stone stops (`tag` + section.needs)
   conduit: { hp: 6, w: 54, h: 180 }, // an ember conduit: forge fire fed up to the King; while one stands he's warded (boss phase `ward`)
   spire: { hp: 5, w: 64, h: 150 }, // a spire of the colossus's crown: break all three and its heart opens (boss phase `hold`)
+  // (Gallows Wood, stage/WoodTraps.js) a notched pine on the bank: three good blows and it goes
+  // over, crushing whoever is under it, and lies where it fell as a bridge (`bridge`: its tag)
+  pine: { hp: 3, w: 56, h: 280, reach: 30 },
+  // ...and the stay rope holding a stacked woodpile up the bank: cut it and the logs come down
+  // across the lane below (`roll`: { x0, x1, z0, z1 })
+  logpile: { hp: 1, w: 46, h: 80, reach: 40 },
 };
