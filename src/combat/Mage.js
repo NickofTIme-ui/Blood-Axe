@@ -63,7 +63,9 @@ function spendStatic(e) { if (e.static) { e.static = null; } }
 // into more than one jump, so a packed crowd lights up as a web. Every jump starts from
 // the body before it (`from`). Returns { hits: [{ t, from, gen, damage }], end }.
 export function planChainLightning(f, K, charged = false, level = 0) {
-  const all = foes(f);
+  // a man whose arm the last strike just blew off is left to run (and be finished), not
+  // killed by the rest of the same combo: the next bolts pass him by for a moment
+  const all = foes(f).filter((e) => !(e.maimedAt != null && f.world.frame - e.maimedAt < 60));
   const C = K.charge;
   const ahead = all
     .map((e) => ({ e, dx: (e.x - f.x) * f.facing, dz: Math.abs(e.z - f.z) }))
@@ -123,7 +125,9 @@ function strikeWithLightning(f, hit, K, charged, stage = 1) {
   const down = (charged && K.charge.knockdown) || C.knockdown[i];
   const move = {
     cut: 'shock', fx: 'lightning', noBlood: true, stage,
-    maims: stage >= 2 && hit.gen === 0, // (the heavier strikes can blow an arm off: a runner to finish)
+    // the strike he aims can blow an arm off: a runner to finish (and his finishers need
+    // one). A cold first zap can't; a marked one, the heavier strikes and the overcharge can.
+    maims: hit.gen !== 0 ? false : charged ? 0.75 : stage === 1 ? (hit.marks ? 0.3 : false) : stage === 2 ? 0.55 : 0.75,
     damage: hit.damage * C.damage[i],
     hitstun: K.hitstun + i * 6,
     hitstop: Math.round((hit.gen === 0 ? C.hitstop[i] : C.hitstop[i] * 0.5) + (charged ? 3 : 0)),

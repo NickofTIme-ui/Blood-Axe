@@ -6,6 +6,13 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 5 November 2026 ~18:00 (cloud, branch `claude/project-thread-sx56s1`, NOT on main yet): MAGE MAKES MEN RUN
+  (Nick: "the mage never gets enemies to run"). Men only flee once they lose an arm, and the Mage's lightning
+  almost always killed them first (stage 1 could not maim at all), so no runners and his finishers never came up.
+  Now: lightning strikes carry a maim chance (marked first zap 30%, 2nd strike 55%, 3rd / overcharge 75%),
+  Thunder Staff 60%; a maiming spell that would kill a man above 30% health can instead blow his arm off and
+  leave him alive (CombatSystem `blasted`); the rest of that combo's bolts skip him for 1 s (`maimedAt`).
+
 - 5 November 2026 ~13:40 (cloud): Nick said "push all". MAIN now carries the throat finisher (lnkhrt),
   King Hakon smaller + click-through death scene (fxeojg 8b5185e) and the whole level 2 review build
   (bqq5g3: wall removed, Nicholas-only ending, traps/convoy/kennels/weather). dist/game.js rebundled.

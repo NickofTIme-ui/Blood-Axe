@@ -1251,6 +1251,22 @@ test('mage: his heavier lightning can take an arm, so his finishers are reachabl
   assert(maims > 0, 'the second strike took an arm in some fights');
 });
 
+test('mage: his spells make men run: a strike that would kill a man still standing strong can blow his arm off instead', () => {
+  assert(chooseMaim({ cut: 'shock', damage: 10, maxHealth: 70, maimed: {}, maims: 0.6 }, () => 0.5) !== null, 'a 60% spell takes an arm at a 0.5 roll, from 12% of his health');
+  assert(chooseMaim({ cut: 'shock', damage: 10, maxHealth: 70, maimed: {}, maims: 0.6 }, () => 0.7) === null, 'but not at 0.7');
+  let runners = 0, fights = 0;
+  for (let seed = 1; seed <= 30; seed++) {
+    // ordinary men, marked by the staff, then the Y, Y lightning: it used to just kill them
+    const t = mageSetup({ script: { 1: ['heavy'], 24: ['heavy'] }, foes: [[720, 420, 'grunt']], marked: true });
+    t.world.seed = seed;
+    t.run(70);
+    fights++;
+    const e = t.es[0];
+    if (e.alive && (e.maimed?.armF || e.maimed?.armB)) runners++;
+  }
+  assert(runners >= 4, `the lightning leaves runners in a good share of fights (${runners}/${fights})`);
+});
+
 test('mage: staff blows leave Static; a bolt into an unmarked man is a short zap, into a marked one the full strike', () => {
   const t = mageSetup({ script: { 1: ['attack'] }, foes: [[680]] });
   t.run(14);

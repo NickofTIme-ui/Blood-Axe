@@ -105,11 +105,13 @@ export function chooseFatality({ cut = 'slash', damage = 10, overkill = 0, count
 // Non-lethal: a big blade hit can take an arm off a living enemy.
 // Returns 'armB' (off hand), 'armF' (weapon hand) or null.
 // (`maims`: a move that isn't a blade but can still take an arm — the Mage's heavier
-//  lightning — otherwise no hero without a blade could ever make a man flee)
+//  lightning — otherwise no hero without a blade could ever make a man flee. A number is
+//  the move's own chance, and such a strike only has to land 12% of his health, not 18%)
 export function chooseMaim({ cut, damage, counter = false, maxHealth, maimed = {}, maims = false, overhead = false }, rng = Math.random) {
   if (!BLADES.includes(cut) && !maims) return null;
-  if (!(damage >= maxHealth * 0.18 || counter)) return null;
-  if (rng() > (overhead ? 0.55 : counter ? 0.55 : 0.35)) return null;
+  const own = typeof maims === 'number' && !BLADES.includes(cut) ? maims : null;
+  if (!(damage >= maxHealth * (own != null ? 0.12 : 0.18) || counter)) return null;
+  if (rng() > (own ?? (overhead ? 0.55 : counter ? 0.55 : 0.35))) return null;
   const options = ['armB', 'armF'].filter((l) => !maimed[l]);
   if (!options.length) return null;
   if (options.length === 1) return options[0];

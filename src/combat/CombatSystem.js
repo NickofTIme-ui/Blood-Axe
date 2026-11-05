@@ -8,6 +8,8 @@ import { SETTINGS } from '../config/settings.js';
 import { toWorldBox, overlaps, contactPoint } from './Boxes.js';
 import { movePhase } from './MoveRunner.js';
 import { chooseFatality, chooseMaim } from './Fatality.js';
+
+const BLADES_CUT = new Set(['slash', 'chop', 'cleave']); // (as in Fatality.js: a blade's kill stays a kill)
 import { furyArmor } from './Skills.js';
 import { juggles, juggleHit } from './Juggle.js';
 import { addStatic, staticOn } from './Mage.js';
@@ -223,7 +225,14 @@ export class CombatSystem {
       event.execMark = true;
     }
     const healthBefore = def.health;
-    def.health = Math.max(def.spare || def.immortal ? 1 : 0, def.health - damage); // (spare: a boss beaten to his knees, not killed: stage/Sequence.js; immortal: config/testMode.js)
+    // BLASTED, NOT KILLED (Nick, 2026-11-05: 'the mage never gets enemies to run'): his
+    // spells killed men outright before they could ever take an arm, so nobody fled and
+    // his finishers (which need a runner) never came up. A maiming spell that would kill a
+    // man still standing strong can instead blow his arm off and leave him alive to run.
+    const blasted = !!move.maims && !BLADES_CUT.has(move.cut) && def.stats.art && !def.stats.boss && !def.spare &&
+      !(def.maimed?.armF && def.maimed?.armB) && def.health - damage <= 0 && healthBefore >= def.stats.maxHealth * 0.3 &&
+      this.world.rngFor(def.id, 24)() < (typeof move.maims === 'number' ? move.maims : 0.35);
+    def.health = Math.max(def.spare || def.immortal || blasted ? 1 : 0, def.health - damage); // (spare: a boss beaten to his knees, not killed: stage/Sequence.js; immortal: config/testMode.js)
     def.flash = 6;
     if (attacker) def.lastAttacker = attacker; // (a kick off a ledge into a pit is his kill)
     // the Mage's staff refills him: mana equal to the health his melee blow took (data/characters.js manaOnMelee)
@@ -292,10 +301,11 @@ export class CombatSystem {
     // he's fought to the end)
     if (def.stats.art && !def.stats.boss) {
       const limb = chooseMaim({
-        cut: move.cut, damage, counter, maxHealth: def.stats.maxHealth, maimed: def.maimed, maims: !!move.maims, overhead: !!move.overhead,
-      }, this.world.rngFor(def.id, 22));
+        cut: move.cut, damage, counter, maxHealth: def.stats.maxHealth, maimed: def.maimed, maims: move.maims ?? false, overhead: !!move.overhead,
+      }, blasted ? () => 0 : this.world.rngFor(def.id, 22));
       if (limb) {
         def.maimed = { ...def.maimed, [limb]: true };
+        def.maimedAt = this.world.frame; // (the Mage's next bolts pass him by: combat/Mage.js)
         event.limb = limb;
         bus.emit('maim', event);
       }

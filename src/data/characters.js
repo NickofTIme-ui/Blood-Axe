@@ -377,7 +377,7 @@ export const CHARACTERS = {
       // Y, Y, then X: THUNDER STAFF. The lightning held in the staff and brought down on
       // the man in front: a huge electrified smash (sets off his Static like a bolt does).
       thunder: {
-        cut: 'shock', fx: 'thunderStaff', discharge: true,
+        cut: 'shock', fx: 'thunderStaff', discharge: true, maims: 0.6, // (can blow an arm off: a runner)
         startup: 8, active: 4, recovery: 22,
         damage: 22, hitstun: 34, hitstop: 14, shake: 10,
         knockback: { x: 480, y: 360 }, knockdown: true, breaksGuard: true, guardDamage: 40, lunge: 110,
