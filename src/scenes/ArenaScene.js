@@ -909,6 +909,8 @@ export class ArenaScene extends Phaser.Scene {
         e.maimed=throat?{...arms[n%arms.length]}:{armB:true};n++;
         e.testRunner=true;e.facing=p.facing;st.setOnGround(e);
         if(e.controller)e.controller.scared=true; // (running already: no wait for his first look round)
+        // (the throat: he lands wherever there's ground, so the hero is put right behind him, on it)
+        if(throat){e.facing=-1;p.facing=-1;p.x=e.x+70;p.z=e.z;p.h=p.floor=e.floor;p.vx=p.vh=0;}
         this.callout(throat?'GET BEHIND HIM AND TAP ATTACK':'GET BEHIND HIM AND HOLD ATTACK','#ffd27a',22);
       };
       this.time.delayedCall(600,runner);

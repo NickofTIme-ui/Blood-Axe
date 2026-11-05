@@ -20,6 +20,7 @@ export const FINISH = {
   chainDepth: 80,
   chainMax: 3,
   holdFrames: 12,  // attack still held this long into the grab = impale instead
+  height: 60,      // px of height between you and him (a ledge, a roof) the grab still reaches
 };
 
 // Timelines in game frames (60/s). `gap` = where Ulric stands behind him (px).
@@ -125,6 +126,7 @@ export function finisherTargets(p, fighters) {
   return fighters
     .filter((e) => isFinishable(e) &&
       Math.abs(e.x - p.x) <= reach && Math.abs(e.z - p.z) <= depth &&
+      Math.abs((e.h ?? 0) - (p.h ?? 0)) <= FINISH.height && // (not a man up on a roof while you're in the street)
       (Math.sign(e.x - p.x) || e.facing) === e.facing)
     .sort((a, b) => Math.abs(a.x - p.x) - Math.abs(b.x - p.x));
 }
@@ -139,7 +141,8 @@ export function planFinisher(p, fighters, button) {
   // chain: the nearest other runners within dashing reach, in the order you'd meet them
   const others = fighters
     .filter((e) => e !== first && isFinishable(e) &&
-      Math.abs(e.x - first.x) <= FINISH.chainReach && Math.abs(e.z - first.z) <= FINISH.chainDepth)
+      Math.abs(e.x - first.x) <= FINISH.chainReach && Math.abs(e.z - first.z) <= FINISH.chainDepth &&
+      Math.abs((e.h ?? 0) - (p.h ?? 0)) <= FINISH.height)
     .sort((a, b) => Math.hypot(a.x - first.x, a.z - first.z) - Math.hypot(b.x - first.x, b.z - first.z))
     .slice(0, FINISH.chainMax - 1);
   // the Mage: his own three, each for one to three runners (combat/Mage.js)
