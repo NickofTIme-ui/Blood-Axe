@@ -180,5 +180,10 @@ export const FX_STRIPS = {
   // the Mage's stone wall: 6 jagged slab variants on magenta (effects/MageFX.js); until
   // the file exists the slabs are drawn as rock shapes
   earthwall: { file: 'assets/fx/earthwall-strip.png', frames: 6, height: 260, bg: 'magenta' },
+  // his SPIKED wall (and the stone of his Impaling Spires): 6 slabs bristling with stone
+  // spikes on both faces, and the same 6 soaked red once men have been run through on them
+  // (ChatGPT, 2026-11-05: art/mage-wall/, repacked one slab to a cell)
+  spikedwall: { file: 'assets/fx/spikedwall-strip.png', frames: 6, height: 300, bg: 'magenta' },
+  spikedwallRed: { file: 'assets/fx/spikedwall-red-strip.png', frames: 6, height: 300, bg: 'magenta' },
 };
 

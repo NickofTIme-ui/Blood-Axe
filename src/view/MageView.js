@@ -303,6 +303,16 @@ export class MageView {
       if (fr < F.burst + 3) return { ...reach, open: 0, ox: 32, oy: -62, sigil: 1.5 }; // the fist snaps shut
       return blend({ ...reach, open: 0, ox: 32 }, POSES.idle, smooth((fr - F.burst - 3) / 26));
     }
+    if (ex.kind === 'spires') {
+      // the staff raised, driven down into the floor, held there; the fist at the shatter
+      const up = P({ lean: -0.04, gx: 10, gy: -78, ang: -1.57, two: 20, glow: 1.3 });
+      const slam = P({ lean: 0.12, gx: 22, gy: -46, ang: -1.57, two: 20, crouch: 5, glow: 1.8, lift: 0.3 });
+      if (fr < F.slam - 2) return blend(POSES.idle, up, easeOut(fr / (F.slam - 2)));
+      if (fr < F.slam + 1) return blend(up, slam, easeIn((fr - F.slam + 2) / 3));
+      if (fr < F.shatter) return slam;
+      if (fr < F.shatter + 4) return { ...slam, open: 0, sigil: 1.4, glow: 2.2 };
+      return blend(slam, { ...POSES.idle, lean: -0.05, head: -0.1 }, smooth((fr - F.shatter - 4) / 26));
+    }
     // embers: gone, back in the runner's path, the staff slammed down, the gate burns
     const slam = P({ lean: 0.12, gx: 22, gy: -46, ang: -1.57, two: 20, crouch: 5, glow: 1.8, lift: 0.3 });
     const up = P({ lean: -0.04, gx: 10, gy: -78, ang: -1.57, two: 20, glow: 1.3 });

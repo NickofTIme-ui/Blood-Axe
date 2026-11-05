@@ -6,6 +6,29 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 5 November 2026 (cloud, branch `claude/project-thread-4ru27l`, NOT on main until Nick says push): MAGE
+  FIXES (Nick: he shocks himself, the hold-Y finisher stopped blowing them up, give X a great new
+  finisher, his wall art must be much better).
+  1. The OVERLOAD backfire from the Nov 4 rework (spam the lightning and his own storm shocked and
+     stunned him) is gone entirely (kit.overload, backfire, its FX and sounds). Test: spamming Y never
+     costs him health or a stagger.
+  2. HOLD Y: the rework had cut a full overcharge into an unmarked man to a 0.45x zap, so it stopped
+     killing. A held bolt now hits at full weight marked or not, and a man it would kill is thrown up
+     on the current, held crackling, and blows apart in the air 20 frames later (Storms.burst in
+     combat/Storm.js, kit.bolt.charge.burst; FX overchargeHold/overchargeBurst in MageFX). The
+     runner finisher ARCANE RUPTURE (Y behind a runner) was checked in the browser: it still lifts and
+     explodes them.
+  3. X behind runners is now IMPALING SPIRES (MAGE_FINISHERS.spires): staff slammed down, the floor
+     splits to each runner, a spire of the spiked-wall stone bursts up through him and hoists him
+     (his painted <enemy>_impaled pose, twitching, blood running down the spire), then the fist and
+     the spires shatter and drop the bodies. Storm Judgment's code is kept but no button starts it.
+     Hero pose: finEmbers frames (fin_spires in heroStrips.js); a dedicated ChatGPT strip would be better.
+  4. SPIKED WALL ART: ChatGPT (Chrome, chat "Create Stone Wall Sprite") painted 6 spiked slabs and a
+     blood-soaked copy: originals in art/mage-wall/, repacked one slab per cell into
+     assets/fx/spikedwall-strip.png and spikedwall-red-strip.png (FX_STRIPS spikedwall/spikedwallRed).
+     The spiked wall uses them instead of the earthwall slabs + drawn triangle spikes; the red copy fades
+     in on slabs men are impaled on. The spires use the same art.
+
 - 4 November 2026 (cloud): ITCH'S 1000-FILE LIMIT. itch refuses to unpack an HTML zip with more than
   1000 files; with Vexa's art the build had 1097 (upload 20285996 broke the page). Fix: the release
   now ships ONE code file, `dist/game.js` (esbuild bundle of src/, made by `npm run bundle` =

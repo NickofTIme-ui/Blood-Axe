@@ -1102,6 +1102,27 @@ test('mage: with nobody ahead the bolt fizzles out harmlessly; overcharged it hi
   assert(dmg(full) > dmg(tap), 'more damage charged');
 });
 
+test('mage: hold Y on an unmarked man the overcharge would kill: thrown up, held crackling, then he blows apart in the air', () => {
+  const t = mageSetup({ script: { 1: ['heavy'] }, hold: (n) => ({ heavy: n < 50 }), foes: [[720]] });
+  const e = t.es[0];
+  e.health = 20;
+  let burst = null;
+  t.world.events.on('overchargeBurst', (b) => { burst = { h: b.target.h - b.target.floor }; });
+  const kills = [];
+  t.world.events.on('kill', (k) => kills.push(k));
+  for (let i = 0; i < 120 && !t.seen('boltCast').length; i++) t.world.tick();
+  t.run(6);
+  assert(e.alive && e.state === 'knockdown' && e.vh > 0, `thrown up, still alive (${e.state} ${e.alive})`);
+  t.run(40);
+  assert(burst && burst.h > 30, `blew apart up in the air (${burst && burst.h.toFixed(0)})`);
+  assert(!e.alive && kills.length === 1 && kills[0].fatality === 'explode', `exploded (${kills.map((k) => k.fatality)})`);
+  // a held bolt hits unmarked men at its full weight (it was cut to a zap by mistake)
+  const tough = mageSetup({ script: { 1: ['heavy'] }, hold: (n) => ({ heavy: n < 50 }), foes: [[720]] });
+  tough.es[0].health = 1e4; tough.es[0].stats = { ...tough.es[0].stats, maxHealth: 1e4 };
+  tough.run(90);
+  assert(1e4 - tough.es[0].health >= 20, `full weight (${(1e4 - tough.es[0].health).toFixed(1)})`);
+});
+
 test('mage: force blast hurls the cone in front, staggers a brute, misses what is behind or off to the side', () => {
   const t = mageSetup({ script: { 1: ['kick'] }, foes: [[680], [720, 440], [520], [650, 335], [700, 470, 'gladiator']] });
   const front = t.es[0];
@@ -1247,23 +1268,17 @@ test('mage: the marks carry his lightning combo and its third strike spends them
   assert(bursts.length === 1 && staticOnOf(t.es[0], t.world) === 0, `third strike sets them off (${bursts.length})`);
 });
 
-test('mage: spam the lightning and it overloads — his own storm shocks and stuns him', () => {
+test('mage: his own lightning never shocks or hurts him, however fast it is spammed', () => {
   const script = {};
-  for (let i = 0; i < 12; i++) script[1 + i * 40] = ['heavy'];
+  for (let i = 0; i < 16; i++) script[1 + i * 30] = ['heavy'];
   const t = mageSetup({ script, foes: [[720]], marked: true });
   t.es[0].health = 1e6; t.es[0].stats = { ...t.es[0].stats, maxHealth: 1e6 };
   t.p.stats = { ...t.p.stats, maxMana: 1e4 }; t.p.mana = 1e4;
-  let over = 0;
-  t.world.events.on('overload', () => over++);
   const h0 = t.p.health;
-  t.run(12 * 40);
-  assert(over >= 1, 'it backfired');
-  assert(t.p.health < h0, 'it hurt him');
-  // a measured pace never overloads
-  const calm = mageSetup({ script: { 1: ['heavy'], 200: ['heavy'], 400: ['heavy'] }, foes: [[720]] });
-  let o2 = 0; calm.world.events.on('overload', () => o2++);
-  calm.run(450);
-  assert(o2 === 0, 'paced casts are safe');
+  const states = new Set();
+  for (let i = 0; i < 16 * 30; i++) { t.world.tick(); states.add(t.p.state); }
+  assert(t.p.health === h0, `he took no damage (${h0} -> ${t.p.health})`);
+  assert(!states.has('stagger') && !states.has('hitstun'), `never staggered by his own storm (${[...states]})`);
 });
 
 test('mage: Y, Y, then X brings the lightning down through the staff (Thunder Staff), setting off the marks', () => {
@@ -1441,7 +1456,7 @@ test('mage: the earth wall can be battered down by a brute', () => {
   assert(brute.x >= wall.x + wall.half - 0.01 || wall.state !== 'up', 'still held while it stood');
 });
 
-for (const [button, kind] of [['attack', 'storm'], ['heavy', 'rupture'], ['kick', 'embers']]) {
+for (const [button, kind] of [['attack', 'spires'], ['heavy', 'rupture'], ['kick', 'embers']]) {
   test(`mage finisher: ${button} behind runners = ${kind}, for 1, 2 and 3 runners — all die, nothing left held`, () => {
     for (const n of [1, 2, 3]) {
       const t = mageSetup({ script: { 1: [button] } });
@@ -1460,9 +1475,25 @@ for (const [button, kind] of [['attack', 'storm'], ['heavy', 'rupture'], ['kick'
       assert(t.p.state === 'idle' && !t.p.blinkGone, `${n}: mage back (${t.p.state})`);
       if (kind === 'rupture') assert(rs.every((r) => r.fatality === 'explode'), 'ruptured');
       if (kind === 'embers') assert(t.seen('finisherBeat').some((b) => b.e.type === 'embersArrive'), 'blinked into the path');
+      if (kind === 'spires') assert(t.seen('finisherBeat').filter((b) => b.e.type === 'spiresErupt').length === n, 'a spire under every runner');
     }
   });
 }
+
+test('mage finisher: X = impaling spires hoists each runner high on the stone, then the shatter drops them', () => {
+  const t = mageSetup({ script: { 1: ['attack'] } });
+  const rs = [[740, 420], [820, 440]].map(([x, z]) => {
+    const r = t.world.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x, z, controller: new Scripted() }));
+    r.controller.scared = true; r.facing = 1;
+    return r;
+  });
+  t.run(3);
+  assert(t.p.exec?.kind === 'spires', `spires (${t.p.exec?.kind})`);
+  t.run(MAGE_FINISHERS.spires.erupt + 30);
+  for (const r of rs) assert(r.state === 'executed' && r.health <= 0 && r.h - r.floor > 50 && r.spirePin, `hoisted on the spire (${r.state} ${(r.h - r.floor).toFixed(0)})`);
+  t.run(MAGE_FINISHERS.spires.total);
+  for (const r of rs) assert(r.state === 'dead' && r.h - r.floor < 2 && !r.spirePin, `dropped (${r.state})`);
+});
 
 test('mage finisher: rupture holds each runner apart in the air before the burst', () => {
   const t = mageSetup({ script: { 1: ['heavy'] } });

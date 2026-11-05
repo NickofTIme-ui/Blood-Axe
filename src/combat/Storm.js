@@ -9,7 +9,10 @@
 //   thunder        a fully overcharged bolt also calls this down on its first man,
 //                  `delay` frames later: everyone of his enemies close by is hit hard and
 //                  knocked down
-// Events: stormField { field }, stormShock { field, target }, thunderStrike { strike, hits }
+//   burst          a full overcharge (Y held) that would have killed a man: he's thrown up
+//                  on the current and, `delay` frames later, blows apart in the air
+// Events: stormField { field }, stormShock { field, target }, thunderStrike { strike, hits },
+//         overchargeBurst { burst, target }
 
 export const STORM = {
   field: { life: 150, radius: 70, depth: 34, damage: 6, every: 30, hitstun: 18 },
@@ -39,12 +42,19 @@ export class Storms {
     return s;
   }
 
+  burst(by, target, opts = {}) {
+    const s = { kind: 'burst', by, target, t: 0, delay: opts.delay ?? 18 };
+    this.list.push(s);
+    this.world.events.emit('overchargeHold', { burst: s, target });
+    return s;
+  }
+
   update() {
     if (!this.list.length) return;
     for (const s of this.list) {
       s.t++;
       if (s.kind === 'static') this.shock(s);
-      else if (s.t === s.delay) this.strike(s);
+      else if (s.t === s.delay) (s.kind === 'burst' ? this.blowUp(s) : this.strike(s));
     }
     this.list = this.list.filter((s) => (s.kind === 'static' ? s.t < s.life : s.t < s.delay));
   }
@@ -59,6 +69,16 @@ export class Storms {
       e.shock = Math.max(e.shock ?? 0, 16);
       this.world.events.emit('stormShock', { field: s, target: e });
     }
+  }
+
+  // the charge held in him lets go: he comes apart wherever he is (mid-air, mostly)
+  blowUp(s) {
+    const e = s.target;
+    if (!e?.alive || e.removeMe || ['executed', 'dead'].includes(e.state)) return;
+    e.shock = 0;
+    const move = { cut: 'shock', fx: 'lightning', damage: e.health + 999, hitstun: 0, hitstop: 8, shake: 9, knockback: { x: 0, y: 0 }, unblockable: true, fatality: 'explode' };
+    this.world.combat.resolve(s.by, e, move, { kind: 'magic', fromX: e.x, dir: s.by.facing || 1, contact: { x: e.x, h: e.h + e.stats.body.h * 0.5 } });
+    this.world.events.emit('overchargeBurst', { burst: s, target: e });
   }
 
   strike(s) {

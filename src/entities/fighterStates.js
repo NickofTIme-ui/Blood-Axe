@@ -793,7 +793,7 @@ export const FIGHTER_STATES = {
       }
       if (f.execBy?.state !== 'execute') f.fsm.change(f.health > 0 ? 'idle' : 'dead');
     },
-    exit(f) { f.liftH = 0; f.shock = 0; },
+    exit(f) { f.liftH = 0; f.shock = 0; f.spirePin = null; },
   },
 
   // Beaten, on his knees, hearing his sentence (stage/Sentence.js). Nothing moves him and

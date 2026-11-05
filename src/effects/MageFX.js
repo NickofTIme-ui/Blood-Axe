@@ -39,6 +39,11 @@ export const MAGE_SOUNDS = {
   storm: [['lightningStrike', { volume: 0.9, spread: 60, minGapMs: 400 }], ['kick', { volume: 0.8, pitch: -1400 }]],
   rupture: [['kick', { volume: 1, pitch: -600 }], ['finisher', { volume: 0.6, pitch: -800 }]],
   embers: [['fireWhoosh', { volume: 1, pitch: -500 }], ['kick', { volume: 0.7, pitch: -1100 }]],
+  // IMPALING SPIRES (X finisher): the staff driven into the floor, the stone bursting up
+  // through a man, and the spires shattering
+  spiresSlam: [['kick', { volume: 1, pitch: -1400 }], ['heavySwing', { volume: 0.5, pitch: -700 }]],
+  spiresErupt: [['impaleKick', { volume: 1 }], ['kick', { volume: 0.9, pitch: -1300, minGapMs: 40 }], ['bloodSplatter', { volume: 0.8, minGapMs: 40 }]],
+  spiresShatter: [['kick', { volume: 1, pitch: -1600 }], ['block', { volume: 0.5, pitch: -1300 }], ['bloodSplatter', { volume: 0.6 }]],
   // the rework (2026-11-04): the staff crackles, the lightning bites back, the wall has spikes
   staffShock: [['elecZap', { volume: 0.35, minGapMs: 50 }]],
   jab: [['bladeOut', { volume: 0.6, pitch: 300 }], ['kick', { volume: 0.5, pitch: 100 }]],
@@ -46,8 +51,6 @@ export const MAGE_SOUNDS = {
   vault: [['heavySwing', { volume: 0.6, pitch: 200 }]],
   thunderStaff: [['lightningStrike', { volume: 0.8, minGapMs: 200 }], ['kick', { volume: 0.9, pitch: -1200 }]],
   staticBurst: [['elecShock', { volume: 0.7, minGapMs: 40 }]],
-  overheat: [['elecCharge', { volume: 0.4, pitch: 600, minGapMs: 700 }]],
-  overload: [['elecThunder', { volume: 0.9 }], ['elecShock', { volume: 0.8 }]],
   deflect: [['clash', { volume: 0.5, pitch: 700, minGapMs: 60 }]],
   impale: [['impaleKick', { volume: 0.9 }], ['bloodSplatter', { volume: 0.8 }], ['kick', { volume: 0.6, pitch: -1300 }]],
   graze: [['bloodSplatter', { volume: 0.5, pitch: 300 }], ['block', { volume: 0.4, pitch: -900 }]],
@@ -120,12 +123,9 @@ export class MageFX {
     // STATIC (combat/Mage.js): crackling on the men his staff has marked; set off by a bolt
     ev.on('staticMark', ({ target, n }) => this.scene.gore.spark(target.x, target.z, target.h + target.stats.body.h * 0.6, 0x9ab8ff, 3 + n * 2));
     ev.on('staticBurst', ({ by, target, n }) => this.staticBurst(by, target, n));
-    // OVERLOAD: sparks spitting off him as it builds; then his own storm turns on him
-    ev.on('overheat', ({ fighter, heat, limit }) => {
-      this.sound('overheat', fighter);
-      this.scene.gore.spark(fighter.x, fighter.z, fighter.h + 90, 0xe0f0ff, Math.round(4 + 10 * heat / limit));
-    });
-    ev.on('overload', ({ fighter }) => this.overload(fighter));
+    // THE OVERCHARGE BURST (Y held, combat/Storm.js burst): held up crackling, then he blows apart
+    ev.on('overchargeHold', ({ burst, target }) => this.overchargeHold(burst, target));
+    ev.on('overchargeBurst', ({ burst, target }) => this.overchargeBurst(burst.by, target));
     ev.on('arrowDeflect', ({ fighter }) => {
       this.sound('deflect', fighter);
       this.scene.gore.spark(fighter.x + fighter.facing * 30, fighter.z, fighter.h + 70, 0xe0f0ff, 10);
@@ -178,15 +178,35 @@ export class MageFX {
     }
   }
 
-  // The storm turns on him: bolts down into his own staff, and he's thrown back.
-  overload(f) {
-    this.sound('overload', f);
-    const tip = this.staffTip(f);
-    for (let i = 0; i < 3; i++) this.bolt({ x: tip.x + rand(-40, 40), y: tip.y - 360 }, { x: tip.x, y: tip.y }, f.z, i === 0, 0.9);
-    this.flashAt({ x: f.x, y: f.z - f.h - 60 }, 0xffffff, 40);
-    this.scene.gore.spark(f.x, f.z, f.h + 60, 0xe0f0ff, 24);
-    this.scene.fx.shake(7, 16);
-    if (f.team === 'player') this.scene.callout?.('OVERLOAD!', '#9ab8ff', 26);
+  // Thrown up on the current: lightning crawling all over him until the charge lets go.
+  overchargeHold(b, t) {
+    this.scene.everyTick(b.delay + 2, (k) => {
+      if (!t.alive || k > b.delay) return false;
+      const c = { x: t.x, y: t.z - t.h - t.stats.body.h * 0.55 };
+      if (k % 2 === 0) {
+        const a = rand(0, Math.PI * 2);
+        this.bolt({ x: c.x + Math.cos(a) * rand(8, 20), y: c.y + Math.sin(a) * rand(10, 34) }, { x: c.x + Math.cos(a + 2) * rand(20, 44), y: c.y + Math.sin(a + 2) * rand(20, 50) }, t.z, false, 0.5);
+      }
+      if (k % 4 === 0) this.scene.gore.spark(t.x, t.z, t.h + t.stats.body.h * 0.55, 0xe0f0ff, 5);
+      if (k === Math.floor(b.delay / 2)) this.sound('elecCharge', b.by);
+      return true;
+    });
+  }
+
+  // ...and it lets go: a blinding crack, and he comes apart in the air.
+  overchargeBurst(by, t) {
+    const s = this.scene;
+    const c = { x: t.x, y: t.z - t.h - t.stats.body.h * 0.5 };
+    this.sound('storm', by);
+    this.flashAt(c, 0xe8f2ff, 46);
+    for (let i = 0; i < 6; i++) {
+      const a = rand(0, Math.PI * 2);
+      this.bolt(c, { x: c.x + Math.cos(a) * rand(50, 110), y: c.y + Math.sin(a) * rand(40, 90) }, t.z, i < 2, 0.8);
+    }
+    s.gore.spark(t.x, t.z, t.h + t.stats.body.h * 0.5, 0xffffff, 26);
+    s.fx.shake(10, 18);
+    s.rumble?.(1, 0.9, 220);
+    s.slowmo?.(0.4, 260);
   }
 
   // A man run through on the spikes of his wall.
@@ -489,6 +509,31 @@ export class MageFX {
         this.sound('blinkIn', f);
         this.blinkPuff(b.x, b.z, f, false);
         break;
+      case 'spiresSlam':
+        this.sound('spiresSlam', f);
+        s.fx.shake(6, 12);
+        s.rumble?.(0.6, 0.5, 160);
+        for (const t of b.targets) this.spireFissure(f, t);
+        break;
+      case 'spiresErupt': {
+        this.sound('spiresErupt', f);
+        this.spire(v, f);
+        const c = chest(v);
+        s.gore.burst(v.x, v.z, v.h + v.stats.body.h * 0.6, f.facing, 46, 1.6);
+        s.gore.burst(v.x, v.z, v.h + v.stats.body.h * 0.75, 0, 18, 1.1); // (straight up, off the tip)
+        s.gore.mist?.(v.x, v.z, v.h + v.stats.body.h * 0.6, 8);
+        this.flashAt(c, 0xffb070, 18);
+        s.fx.shake(b.main ? 11 : 6, 18);
+        s.rumble?.(1, 0.9, 220);
+        if (b.main) { s.slowmo?.(0.3, 420); s.callout('IMPALING SPIRES', '#ff9a50', 26); }
+        break;
+      }
+      case 'spiresShatter':
+        this.sound('spiresShatter', f);
+        s.fx.shake(9, 18);
+        s.rumble?.(0.9, 0.8, 200);
+        for (const t of b.targets) this.spireShatter(t);
+        break;
       case 'embersSlam':
         this.sound('barrierCast', f);
         s.fx.shake(4, 8);
@@ -523,6 +568,111 @@ export class MageFX {
       }
       return true;
     });
+  }
+
+  // IMPALING SPIRES: the split running across the floor from the staff to a runner
+  spireFissure(f, v) {
+    const g = this.scene.add.graphics().setDepth(DEPTH.decals + 3);
+    const from = { x: f.x + f.facing * 20, z: f.z };
+    const pts = [];
+    const n = 10;
+    for (let i = 0; i <= n; i++) {
+      const k = i / n;
+      pts.push({ x: from.x + (v.x - from.x) * k + (i && i < n ? rand(-6, 6) : 0), z: from.z + (v.z - from.z) * k + (i && i < n ? rand(-4, 4) : 0), w: 5 - k * 2 });
+    }
+    this.scene.everyTick(150, (t) => {
+      if (!g.active) return false;
+      const reach = Math.min(n, Math.floor(t / 1.6));
+      const fade = t > 110 ? (150 - t) / 40 : 1;
+      g.clear();
+      for (let i = 1; i <= reach; i++) {
+        g.lineStyle(pts[i].w + 3, 0x2a0a02, 0.5 * fade).lineBetween(pts[i - 1].x, pts[i - 1].z, pts[i].x, pts[i].z);
+        g.lineStyle(pts[i].w, 0x050202, 0.95 * fade).lineBetween(pts[i - 1].x, pts[i - 1].z, pts[i].x, pts[i].z);
+        g.lineStyle(1, 0xff8a30, 0.55 * fade).lineBetween(pts[i - 1].x, pts[i - 1].z, pts[i].x, pts[i].z); // (lit from below)
+      }
+      if (t % 3 === 0 && reach < n) this.scene.gore.spark(pts[reach].x, pts[reach].z, 2, 0x8a7a60, 4);
+      if (t >= 149) g.destroy();
+      return true;
+    });
+  }
+
+  // A spire of the wall's own stone bursting up under a man and through him: the painted
+  // wall slab (FX_STRIPS.spikedwall when it's painted, else earthwall), drawn narrow and
+  // tall behind his body so its point stands out above his shoulders, blood running down
+  // it. It rises with him (combat/Mage.js spires: liftH) and stays until the shatter.
+  spire(v) {
+    const s = this.scene;
+    rockChipTex(s);
+    const art = FX.spikedwall ?? FX.earthwall ?? null;
+    const x = v.x; const z = v.z;
+    const H = v.stats.body.h;
+    const sp = { v, x, z, k: 0, gone: false, run: 0 };
+    if (art) {
+      const fi = Math.floor(Math.random() * art.count);
+      sp.img = s.add.image(x, z + 4, art.key, `f${fi}`).setOrigin(0.5, 1).setDepth(z - 0.4);
+      if (Math.random() < 0.5) sp.img.setFlipX(true);
+      if (art === FX.spikedwall && FX.spikedwallRed) sp.red = s.add.image(x, z + 4, FX.spikedwallRed.key, `f${fi % FX.spikedwallRed.count}`).setOrigin(0.5, 1).setDepth(z - 0.39).setFlipX(sp.img.flipX).setAlpha(0);
+    }
+    sp.g = s.add.graphics().setDepth(z - 0.35);
+    (this.spires ??= new Map()).set(v.id, sp);
+    // rock and grit bursting out of the floor round it
+    for (let i = 0; i < 14; i++) s.gore.spawn({ x: x + rand(-18, 18), z: z + rand(-4, 4), h: 4, vx: rand(-180, 180), vz: rand(-40, 40), vh: rand(200, 520), tint: pick(CHIPS), scale: rand(0.7, 1.5), decal: false, life: 40, texture: 'rockchip', spin: rand(-14, 14) });
+    for (let i = 0; i < 3; i++) this.dustAt(x + rand(-16, 16), z, rand(30, 44));
+    s.everyTick(400, (t) => {
+      if (sp.gone || !sp.g.active) return false;
+      // the point stands a little above where his chest is now (he rides up it)
+      const top = v.h + H * 1.5; // (its point bursts out well above his back)
+      sp.k = Math.min(1, sp.k + 0.22);
+      const h = Math.max(8, top * (1 - (1 - sp.k) ** 3));
+      const w = Math.max(22, H * 0.34);
+      const ww = art === FX.spikedwall ? w * 2.8 : w * 1.25; // (the spiked slabs are half spikes)
+      sp.img?.setPosition(x, z + 4).setDisplaySize(ww, h + 4);
+      sp.red?.setPosition(x, z + 4).setDisplaySize(ww, h + 4).setAlpha(Math.min(1, sp.run * 2.5));
+      const g = sp.g.clear();
+      if (!sp.img) {
+        // (no painted slab loaded: a jagged black-stone spike)
+        g.fillStyle(0x15171a, 1).fillTriangle(x - w / 2, z + 4, x + w / 2, z + 4, x + rand(-1, 1), z - h);
+        g.fillStyle(0x3a3f44, 1).fillTriangle(x - w / 2 + 3, z + 4, x, z + 4, x, z - h + 4);
+      }
+      // blood running down the stone from where he's run through
+      if (v.health <= 0) {
+        sp.run = Math.min(1, sp.run + 0.012);
+        const from = z - v.h - H * 0.5;
+        const len = (z - from) * sp.run;
+        for (const [dx, ww, a] of [[-w * 0.18, 3, 0.85], [w * 0.05, 4.5, 0.9], [w * 0.22, 2.5, 0.7]]) {
+          g.fillStyle(0x4a0604, a).fillRect(x + dx - ww / 2, from, ww, len);
+          g.fillStyle(0x8a1410, a * 0.6).fillRect(x + dx - ww / 4, from, ww / 2, len * 0.85);
+        }
+        if (t % 9 === 0) s.gore.spawn({ x: x + rand(-6, 6), z, h: v.h + H * 0.45, vx: rand(-20, 20), vz: 0, vh: rand(-20, 30), tint: 0x7a0806, scale: rand(0.2, 0.4), life: 50 });
+      }
+      return true;
+    });
+  }
+
+  // The fist closes: every spire bursts into rubble and drops what's on it.
+  spireShatter(v) {
+    const s = this.scene;
+    const sp = this.spires?.get(v.id);
+    if (!sp) return;
+    this.spires.delete(v.id);
+    sp.gone = true;
+    const top = v.h + v.stats.body.h;
+    for (let i = 0; i < 26; i++) {
+      const h = rand(4, top);
+      s.gore.spawn({ x: sp.x + rand(-14, 14), z: sp.z + rand(-4, 4), h, vx: rand(-260, 260), vz: rand(-50, 50), vh: rand(80, 360), tint: pick(CHIPS), scale: rand(0.8, 1.9), decal: false, life: 50, texture: 'rockchip', spin: rand(-16, 16) });
+    }
+    for (let i = 0; i < 4; i++) this.dustAt(sp.x + rand(-20, 20), sp.z, rand(36, 54), rand(10, top * 0.7));
+    s.gore.burst(v.x, v.z, v.h + v.stats.body.h * 0.5, 0, 30, 1.2);
+    s.gore.splat?.(v.x + rand(-10, 10), v.z + 2, 2.6, 0.8);
+    sp.img?.destroy();
+    sp.red?.destroy();
+    sp.g.destroy();
+  }
+
+  // a cloud of grey dust (the spires)
+  dustAt(x, z, size, h = 4) {
+    const img = this.scene.add.image(x, z - h, 'soft').setTint(DUST).setAlpha(0.55).setScale(size / 64).setDepth(z + 1.5);
+    this.scene.tweens.add({ targets: img, y: z - h - rand(10, 22), x: x + rand(-20, 20), scale: (size * 2.4) / 64, alpha: 0, duration: rand(600, 900), ease: 'Cubic.easeOut', onComplete: () => img.destroy() });
   }
 
   // the gate's circle on the floor under a runner
@@ -656,7 +806,11 @@ class EarthWallView {
     this.z0 = bd.minZ - 12;
     this.z1 = bd.maxZ + 8;
     this.zc = Math.max(this.z0, Math.min(this.z1, b.owner?.z ?? (this.z0 + this.z1) / 2)); // where the crack starts
-    this.art = FX.earthwall ?? null;
+    // the spiked wall has its own painted slabs (spikes and all), and a blood-soaked copy
+    // that shows through where men have been run through on it
+    this.spiked = !!(b.cfg.spikes && FX.spikedwall);
+    this.art = (this.spiked ? FX.spikedwall : FX.earthwall) ?? null;
+    this.redArt = this.spiked ? FX.spikedwallRed ?? null : null;
     this.slabs = [];
     let k = 0;
     for (let z = this.z0; z < this.z1; z += rand(9, 14)) {
@@ -672,7 +826,7 @@ class EarthWallView {
         burst: false, chip: 0, flash: 0, topple: 0,
         // THE SPIKED WALL: stone spikes jutting from both faces (drawn; a painted spiked
         // slab can replace them later), and the blood that runs down where men hang
-        spikes: b.cfg.spikes ? [-1, 1].flatMap((side) => [0, 1].map((j) => ({
+        spikes: b.cfg.spikes && !this.spiked ? [-1, 1].flatMap((side) => [0, 1].map((j) => ({
           side, y: rand(0.25, 0.42) + j * rand(0.28, 0.36), len: rand(13, 24), w: rand(5, 8), blood: 0,
         }))) : [],
         blood: [],
@@ -680,7 +834,9 @@ class EarthWallView {
       if (this.art) {
         slab.img = scene.add.image(0, 0, this.art.key, `f${k++ % this.art.count}`).setOrigin(0.5, 1).setVisible(false);
         if (Math.random() < 0.5) slab.img.setFlipX(true);
+        if (this.redArt) slab.red = scene.add.image(0, 0, this.redArt.key, `f${(k - 1) % this.redArt.count}`).setOrigin(0.5, 1).setVisible(false).setFlipX(slab.img.flipX);
       }
+      slab.soak = 0; // (0..1: how red its painted spikes are)
       this.slabs.push(slab);
     }
     this.parts = this.slabs.map(() => scene.add.graphics());
@@ -712,6 +868,7 @@ class EarthWallView {
       const near = 1 - Math.abs(s.z - z) / 26;
       if (near <= 0) continue;
       for (const p of s.spikes) p.blood = Math.min(1, p.blood + amount * near);
+      s.soak = Math.min(1, s.soak + amount * near * 1.2);
       if (near > 0.5) s.blood.push({ h, t: 0, w: rand(2, 4) * amount + 1, side });
     }
   }
@@ -826,6 +983,7 @@ class EarthWallView {
       g.clear().setDepth(s.z + 0.6);
       if (s.img) s.img.setVisible(false);
       if (s.fl) s.fl.setVisible(false);
+      if (s.red) s.red.setVisible(false);
       if (k <= 0) return;
       const near = Math.max(0.35, 1 - Math.abs(s.z - J.z) / 60);
       const x = b.x + s.off + shove * near + (since < 8 ? rand(-1.5, 1.5) : 0) + (this.fall >= 0 ? rand(-1, 1) * down * 3 : 0);
@@ -836,9 +994,17 @@ class EarthWallView {
         // drawing it shorter from the bottom up)
         const art = this.art;
         const sc = s.h / art.fh;
-        const sx = Math.max(sc * 0.6, (s.w * 1.2) / art.fw);
+        // (the spiked slabs are half spikes: the stone itself is the middle half of the frame)
+        const sx = this.spiked ? Math.max(sc * 0.8, (s.w * 2) / art.fw) : Math.max(sc * 0.6, (s.w * 1.2) / art.fw);
         s.img.setVisible(true).setPosition(x, y).setDepth(s.z + 0.6).setScale(sx, sc * k)
-          .setRotation(tilt).setTint(mix(tints[s.tone], WORN, dmg * 0.75)).setAlpha(1);
+          .setRotation(tilt).setTint(mix(this.spiked ? 0xffffff : tints[s.tone], WORN, dmg * 0.75)).setAlpha(1);
+        if (s.red && s.soak > 0.02) {
+          // the blood-soaked painting of the same slab, showing through as men are run through
+          const R = this.redArt;
+          s.red.setVisible(true).setPosition(x, y).setDepth(s.z + 0.61)
+            .setScale(sx * art.fw / R.fw, (sc * k) * art.fh / R.fh).setRotation(tilt)
+            .setTint(mix(0xffffff, WORN, dmg * 0.75)).setAlpha(Math.min(1, s.soak));
+        }
         if (s.flash > 0.03) {
           s.fl ??= this.scene.add.image(0, 0, art.key, s.img.frame.name).setOrigin(0.5, 1).setBlendMode(ADD()).setFlipX(s.img.flipX);
           s.fl.setVisible(true).setPosition(x, y).setDepth(s.z + 0.62).setScale(sx, sc * k).setRotation(tilt)
@@ -866,7 +1032,7 @@ class EarthWallView {
 
     // the spikes on both faces (and the blood on them and running down the stone)
     this.slabs.forEach((s, i) => {
-      if (!s.spikes.length) return;
+      if (!s.spikes.length && !s.blood.length) return;
       const g = this.parts[i];
       const since = this.t - s.delay;
       const u = Math.min(1, Math.max(0, (since - 4) / 6)); // (they punch out just after the slab)
@@ -910,7 +1076,7 @@ class EarthWallView {
 
   destroy() {
     for (const g of this.parts) g.destroy();
-    for (const s of this.slabs) { s.img?.destroy(); s.fl?.destroy(); }
+    for (const s of this.slabs) { s.img?.destroy(); s.fl?.destroy(); s.red?.destroy(); }
     this.crackG.destroy();
     this.bar.destroy();
   }

@@ -179,6 +179,8 @@ export class SpriteEnemyView {
       // thrown head first like a missile: his own flying pose when it's painted (anims.missile)
       // held by an executioner: struggling in his grip / run through / frozen in terror
       case 'executed':
+        // run through by the Mage's spire (IMPALING SPIRES): hanging limp on the stone
+        if (f.spirePin && f.health <= 0) return this.scene.textures.exists(`${this.sheet.key}-impaled`) ? 'impaled:0' : A.hit.frames[0];
         // caught, but still running: a few more stumbling strides before he's stopped
         if (f.execRun && f.health > 0) return A.walk.frames[Math.floor((fr * (A.walk.fps ?? 12)) / 60) % A.walk.frames.length];
         return f.execBy?.exec?.kind === 'chain' && f.health > 0 ? A.idle.frames[0] : A.hit.frames[0];
@@ -404,7 +406,12 @@ export class SpriteEnemyView {
       const kind = f.execBy?.exec?.kind;
       dx = (Math.random() - 0.5) * (f.health > 0 ? 1.6 : 2.6);
       dy = (Math.random() - 0.5) * 0.8;
-      if (kind === 'chain') {
+      if (f.spirePin && f.health <= 0) {
+        // on the spire: a few violent jerks, then hanging still
+        const t = (f.world?.frame ?? 0) - f.spirePin.at;
+        dx = 0; dy = 0;
+        angle = 4 + (t < 40 ? Math.sin(t * 1.5) * 6 * (1 - t / 40) : 0);
+      } else if (kind === 'chain') {
         dx = 0; dy = 0;
         const hit = f.execStruck;
         if (hit) {

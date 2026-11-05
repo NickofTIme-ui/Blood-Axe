@@ -124,9 +124,9 @@ export function planFinisher(p, fighters, button) {
     .sort((a, b) => Math.hypot(a.x - first.x, a.z - first.z) - Math.hypot(b.x - first.x, b.z - first.z))
     .slice(0, FINISH.chainMax - 1);
   // the Mage: his own three, each for one to three runners (combat/Mage.js)
-  //   attack = STORM JUDGMENT, heavy = ARCANE RUPTURE, kick = GATE OF EMBERS
+  //   attack = IMPALING SPIRES, heavy = ARCANE RUPTURE, kick = GATE OF EMBERS
   if (p.stats.archetype === 'mage') {
-    return { kind: { attack: 'storm', heavy: 'rupture', kick: 'embers' }[button] ?? 'storm', targets: [first, ...others] };
+    return { kind: { attack: 'spires', heavy: 'rupture', kick: 'embers' }[button] ?? 'spires', targets: [first, ...others] };
   }
   // the Rogue (combat/Rogue.js): attack = PHANTOM REQUIEM, heavy = BLACK LOTUS, kick = SCARLET SKY
   if (p.stats.archetype === 'rogue') {

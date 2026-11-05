@@ -11,12 +11,14 @@
 //
 // His staff feeds his lightning (STATIC, kit.static): every staff blow marks the man it
 // lands on, and a bolt into a marked man hits hard and forks on at full strength; into an
-// unmarked man it's a short zap. Spam the lightning and it OVERLOADS (kit.overload): his
-// own storm shocks him. Y, Y, then X brings the charge down through the staff (THUNDER
+// unmarked man it's a short zap. His own lightning never touches him (Nick, 2026-11-05:
+// the old overload backfire that shocked him is gone). Y, Y, then X brings the charge down through the staff (THUNDER
 // STAFF); hold X twirls the staff; sprint + X is the pole-vault kick.
 //
 // Behind a runner, his finishers (MAGE_FINISHERS) take the place of Ulric's:
-//   attack STORM JUDGMENT   heavy ARCANE RUPTURE   kick GATE OF EMBERS
+//   attack IMPALING SPIRES   heavy ARCANE RUPTURE   kick GATE OF EMBERS
+// (STORM JUDGMENT, the old X finisher, is still here but no button starts it: Nick,
+// 2026-11-05, wanted X to be something different from his lightning)
 // — each for one, two or three runners at once.
 //
 // Everything that decides an outcome uses the world's dice (World.roll) or none at all,
@@ -53,33 +55,6 @@ export function addStatic(by, e, n) {
 // Struck by the lightning: the marks are spent.
 function spendStatic(e) { if (e.static) { e.static = null; } }
 
-// ---------------------------------------------------------------- overload
-
-// The heat in him now (it bleeds off a little every frame since it was last touched).
-export function heatOf(f) {
-  const O = kitOf(f).overload;
-  if (!O || !f.heat) return 0;
-  return Math.max(0, f.heat.v - (f.world.frame - f.heat.at) * O.decay);
-}
-function addHeat(f, n) {
-  const O = kitOf(f).overload;
-  if (!O) return;
-  const v = heatOf(f) + n;
-  f.heat = { v, at: f.world.frame };
-  if (v >= O.warn) f.world.events.emit('overheat', { fighter: f, heat: v, limit: O.limit });
-}
-// Cast while too hot: the storm turns on him.
-const overheated = (f) => { const O = kitOf(f).overload; return !!O && heatOf(f) >= O.limit; };
-function backfire(f) {
-  const O = kitOf(f).overload;
-  f.heat = null;
-  f.health = Math.max(1, f.health - O.damage);
-  f.flash = 6;
-  f.shock = 40;
-  f.world.events.emit('overload', { fighter: f });
-  f.fsm.change('stagger', { frames: O.stun });
-}
-
 // ---------------------------------------------------------------- chain lightning
 
 // Who the bolt strikes and how it travels. The first strike is the nearest man ahead of
@@ -99,11 +74,12 @@ export function planChainLightning(f, K, charged = false, level = 0) {
   const mult = charged ? C.damage : 1 + (C.damage - 1) * 0.5 * level;
   const first = ahead[0].e;
   // STATIC: a marked man takes the full strike (more per mark) and the bolt forks on from
-  // him; an unmarked one only gets a short zap. (An overcharge still carries on its own.)
+  // him; an unmarked one only gets a short zap. An overcharge (Y held) carries its full
+  // weight whether he's marked or not (Nick, 2026-11-05: the held bolt had gone weak).
   const S = kitOf(f).static;
   const frame = f.world.frame;
   const marks = (e) => (S ? staticOn(e, frame) : 1);
-  const boost = (e) => (!S ? 1 : marks(e) ? 1 + S.perMark * marks(e) : S.unmarked.damage);
+  const boost = (e) => (!S ? 1 : marks(e) ? 1 + S.perMark * marks(e) : charged ? 1 : S.unmarked.damage);
   const cold = S && !marks(first) && !charged;
   const hits = [{ t: first, from: null, gen: 0, damage: K.damage * mult * boost(first), marks: marks(first) }];
   const used = new Set([first.id]);
@@ -127,7 +103,7 @@ export function planChainLightning(f, K, charged = false, level = 0) {
       .sort((a, b) => a.tier - b.tier || a.dist - b.dist || a.e.id - b.e.id);
     for (const o of cands.slice(0, Math.min(forks, left))) {
       const gen = cur.gen + 1;
-      const h = { t: o.e, from: src, gen, damage: K.chainDamage * K.falloff ** (gen - 1) * mult * (S && !marks(o.e) ? 0.7 : boost(o.e)), marks: marks(o.e) };
+      const h = { t: o.e, from: src, gen, damage: K.chainDamage * K.falloff ** (gen - 1) * mult * (S && !marks(o.e) && !charged ? 0.7 : boost(o.e)), marks: marks(o.e) };
       hits.push(h);
       queue.push(h);
       used.add(o.e.id);
@@ -157,12 +133,27 @@ function strikeWithLightning(f, hit, K, charged, stage = 1) {
     breaksGuard: charged || stage === 3,
     guardDamage: 26 + i * 14,
   };
+  // THE OVERCHARGE BURST: a full overcharge that would kill a man doesn't just drop him.
+  // It hurls him up into the air on the current, holds him there a moment, and then
+  // the charge in him lets go and he blows apart (Storms.burst, combat/Storm.js).
+  const O = K.charge.burst;
+  const held = charged && O && !t.stats.boss && t.team !== f.team && !t.spare && !t.immortal;
+  if (held) t.spare = true; // (a blow that would kill him leaves him on 1: see below)
   const before = t.health;
   f.world.combat.resolve(f, t, move, {
     kind: 'magic', fromX: src.x, dir,
     contact: { x: t.x, h: t.h + t.stats.body.h * 0.62 },
   });
   if (t.health < before || !t.alive) t.shock = (charged ? 34 : 24) + i * 10; // he seizes (view)
+  if (held) {
+    t.spare = false;
+    if (t.alive && t.health <= 1 && before > 0) {
+      // it would have killed him: up he goes on the current, and the burst comes after
+      if (t.state === 'knockdown') t.vh = Math.max(t.vh, O.lift);
+      t.shock = 999;
+      f.world.storms.burst(f, t, O);
+    }
+  }
   // the marks carry the whole combo; its last strike (or an overcharge) sets them off
   if (hit.marks && (stage === 3 || charged)) { f.world.events.emit('staticBurst', { by: f, target: t, n: hit.marks }); spendStatic(t); }
   f.world.events.emit('lightningArc', {
@@ -303,9 +294,6 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
         // the cast pays the full cost; each follow-up strike pays its combo cost
         const cost = f.boltStage === 1 ? (m.manaCost ?? 0) : (K.combo.manaCost?.[f.boltStage - 1] ?? 0);
         f.mana = Math.max(0, f.mana - cost);
-        // OVERLOAD: too much lightning too fast and it bites back (on the first frame)
-        f.boltBackfire = overheated(f);
-        if (!f.boltBackfire) addHeat(f, kitOf(f).overload?.perStrike ?? 0);
         f.boltHeld = true;
         f.boltCharge = 0;
         f.boltFired = 0;
@@ -317,7 +305,6 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
         const K = kitOf(f).bolt;
         const c = f.controller;
         friction(f, 0.7);
-        if (f.boltBackfire) { f.boltBackfire = false; return backfire(f); }
         if (!f.boltFired) {
           aimTurn(f); // (turn to aim it until it goes off)
           if (!c.isDown('heavy')) f.boltHeld = false;
@@ -416,7 +403,6 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
         enter(f) {
           base.enter(f);
           f.mana = Math.max(0, f.mana - (f.move.manaCost ?? 0));
-          addHeat(f, kitOf(f).overload?.perStrike ?? 0);
         },
       };
     })(),
@@ -499,6 +485,11 @@ export const MAGE_FINISHERS = {
   storm: { total: 108, lock: 5, gather: 20, strike: 52, step: 4, release: 82 },
   // pulled back through the air, held in a cage of runes, crushed, and burst
   rupture: { total: 132, pull: 6, pullFrames: 16, cage: 30, crush: 54, burst: 92, step: 6 },
+  // IMPALING SPIRES (X): he drives the staff into the floor, the ground splits towards
+  // them, and a spire of black stone bursts up under each runner, through him, and hoists
+  // him high; he hangs there, twitching, bleeding down the stone; then the Mage closes his
+  // fist and the spires burst into rubble, dropping what's left of them
+  spires: { total: 150, slam: 14, erupt: 30, step: 7, rise: 7, height: 78, shatter: 108, drop: 10 },
   // he blinks into their path, slams the staff, sigils open under them, and the gate burns
   embers: { total: 116, vanish: 3, arrive: 10, slam: 22, erupt: 42, step: 4, release: 80 },
 };
@@ -507,7 +498,7 @@ export const isMageFinisher = (kind) => !!MAGE_FINISHERS[kind];
 function mageKill(f, v, kind, dir, fatality = 'none') {
   const e = {
     attacker: f, defender: v, dir, kind: 'magic', finisher: kind,
-    move: { cut: kind === 'storm' ? 'shock' : kind === 'embers' ? 'fire' : 'crush', damage: v.stats.maxHealth, hitstop: 10 },
+    move: { cut: kind === 'storm' ? 'shock' : kind === 'embers' ? 'fire' : kind === 'spires' ? 'pierce' : 'crush', damage: v.stats.maxHealth, hitstop: 10 },
     x: v.x, z: v.z, h: v.h + v.stats.body.h * 0.6, damage: v.stats.maxHealth, fatality,
   };
   v.fatality = fatality;
@@ -605,6 +596,34 @@ export function runMageFinisher(f, ex, frame) {
       mageKill(f, v, 'rupture', Math.sign(v.x - f.x) || f.facing, 'explode');
       v.execRelease = { dead: true };
     }));
+  } else if (ex.kind === 'spires') {
+    runOn(f, ex, frame, F.slam);
+    once(ex, 'slam', frame, F.slam, () => {
+      for (const v of T) { v.execRun = false; v.execFlinch = true; }
+      beat(f, ex, 'spiresSlam', T[0]);
+    });
+    T.forEach((v, i) => {
+      const at = F.erupt + i * F.step;
+      once(ex, `erupt${i}`, frame, at, () => {
+        v.health = 0;
+        v.execFlinch = false;
+        v.spirePin = { at: w.frame, x: v.x, z: v.z };
+        f.hitstop = i === 0 ? 6 : 2;
+        beat(f, ex, 'spiresErupt', v, { main: i === 0 });
+        mageKill(f, v, 'spires', Math.sign(v.x - f.x) || f.facing);
+      });
+      if (!v.spirePin || v.state !== 'executed') return;
+      // shot up the spire, then a slow sag down it under his own weight; after the
+      // shatter he drops with the rubble
+      const up = Math.min(1, (frame - at) / F.rise);
+      const sag = Math.max(0, Math.min(frame, F.shatter) - at - F.rise) * 0.06;
+      const fall = frame >= F.shatter ? Math.min(1, (frame - F.shatter) / F.drop) : 0;
+      v.liftH = Math.max(0, (F.height * (1 - (1 - up) ** 3) - sag) * (1 - fall * fall));
+    });
+    once(ex, 'shatter', frame, F.shatter, () => beat(f, ex, 'spiresShatter', T[0]));
+    once(ex, 'release', frame, F.shatter + F.drop, () => {
+      for (const v of T) { v.liftH = 0; v.execRelease = { dead: true }; }
+    });
   } else if (ex.kind === 'embers') {
     runOn(f, ex, frame, F.slam);
     once(ex, 'vanish', frame, F.vanish, () => {

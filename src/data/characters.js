@@ -419,6 +419,9 @@ export const CHARACTERS = {
           maxFrames: 36,             // longest it can be held
           fullFrames: 28,            // held this long = fully charged
           damage: 1.6, jumps: 3, branches: 3, knockdown: true,
+          // a man the full overcharge would kill is thrown up (`lift`) and blows apart
+          // `delay` frames later, in the air (combat/Storm.js burst)
+          burst: { lift: 430, delay: 20 },
         },
       },
       // STATIC — what his staff leaves on a man and his lightning sets off (combat/Mage.js).
@@ -429,10 +432,6 @@ export const CHARACTERS = {
         perMark: 0.3,                // x damage per mark on the man struck (on top of x1)
         unmarked: { damage: 0.45, jumps: 1, branches: 1 }, // a bolt into a man with no marks
       },
-      // OVERLOAD — spam the lightning and it bites back. Every strike adds `perStrike` heat,
-      // which bleeds off at `decay` a frame; a cast at `limit` or more backfires: he's
-      // shocked by his own storm (`damage`, stunned `stun` frames) and the heat clears.
-      overload: { perStrike: 14, decay: 0.1, limit: 100, warn: 72, damage: 8, stun: 50 },
       // STAFF TWIRL (hold X): a hit every `every` frames, up to `maxFrames`; arrows glance off
       twirl: { every: 8, maxFrames: 90, minFrames: 16, speed: 0.35 },
       // FORCE BLAST — the cone of invisible force
