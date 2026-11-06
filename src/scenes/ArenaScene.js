@@ -1414,6 +1414,8 @@ export class ArenaScene extends Phaser.Scene {
         // the blade ripped across: a freeze on contact (hit-stop), then slow motion through
         // the spray, a streak along the cut, the camera punched in
         const nh = v.h + H * 0.82;
+        // (Nick, 6 Nov: the blood a little lower, about 3 inches: out of the cut, not his chin)
+        const bh = v.h + H * 0.67;
         this.slowmo(0.3, 520);
         this.fx.shake(8, 12);
         this.rumble(1, 0.8, 200);
@@ -1454,16 +1456,16 @@ export class ArenaScene extends Phaser.Scene {
             tint: Math.random() < 0.5 ? 0x8a0303 : 0x6e0202, scale: rnd(0.7, 1.25),
           });
         };
-        jet(Math.round(18 + 8 * Math.min(amt, 1.5)), 1, nh);
-        pour(Math.round(30 + 10 * Math.min(amt, 1.5)), nh, 1.6);
-        g.mist(nx(), v.z, nh, 3);
+        jet(Math.round(18 + 8 * Math.min(amt, 1.5)), 1, bh);
+        pour(Math.round(30 + 10 * Math.min(amt, 1.5)), bh, 1.6);
+        g.mist(nx(), v.z, bh, 3);
         g.splat(nx() + dir * 10, v.z, 2.2);
         this.everyTick(90, (t) => {
           const ex = p.exec;
           if (!ex || ex.kind !== 'throat' || ex.fired.has('down')) return false;
           const kneel = ex.fired.has('knees');
           const fade = Math.max(0.45, 1 - t / 110);
-          const hgt = v.h + H * (kneel ? 0.5 : 0.8);
+          const hgt = v.h + H * (kneel ? 0.38 : 0.65);
           pour(Math.max(1, Math.round((2 + 2 * Math.min(amt, 1.5)) * fade)), hgt, kneel ? 0.4 : 1);
           if (t % 8 === 0) jet(Math.round(4 + 4 * fade), 0.5 + 0.4 * fade, hgt); // a pump of the heart
           if (t % 5 === 0) g.splat(nx() + dir * rnd(0, 26), v.z + rnd(-3, 3), rnd(1.4, 2.6) * (0.6 + fade * 0.6));
