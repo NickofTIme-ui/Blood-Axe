@@ -6,6 +6,12 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 6 November 2026 ~00:45 (cloud): Nick said "push all". MAIN now carries throat finisher round 3
+  (lnkhrt 7b7276b: waterfall neck blood, blade_hit_07 for the cut, dyed grunts keep their colour in the
+  painted hold) and the REMOVAL of Rurik's blood buildup (Nick scrapped it: view/BloodCoat.js, its test,
+  assets/sprites/heroes-hd/blood/, the blood bake tools and tools/blood-source are gone; enemy gore, floor
+  blood and hit sprays stay). Vexa art NOT included. dist/game.js rebundled. NOT on itch (on hold).
+
 - 5 November 2026 ~18:00 (cloud, branch `claude/project-thread-sx56s1`, NOT on main yet): MAGE MAKES MEN RUN
   (Nick: "the mage never gets enemies to run"). Men only flee once they lose an arm, and the Mage's lightning
   almost always killed them first (stage 1 could not maim at all), so no runners and his finishers never came up.
