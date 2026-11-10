@@ -6,6 +6,9 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 10 November 2026 (cloud, Nick: "push"): MAIN 363ffe2 replaces the thin code-drawn red ring where
+  arrow volleys and catapult stones land with a painted ChatGPT marker (assets/fx/volley-mark.png,
+  StageView drawLandingMark; the old ring is only a fallback). NOT on itch.
 - 6 November 2026 ~00:45 (cloud): Nick said "push all". MAIN now carries throat finisher round 3
   (lnkhrt 7b7276b: waterfall neck blood, blade_hit_07 for the cut, dyed grunts keep their colour in the
   painted hold) and the REMOVAL of Rurik's blood buildup (Nick scrapped it: view/BloodCoat.js, its test,
