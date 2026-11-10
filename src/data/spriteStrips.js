@@ -98,7 +98,7 @@ export const ANIM_OVERRIDES = {
     // stride: world px per full cycle; keys: where each pose sits in the cycle, measured
     // from how far the planted foot has slid back (tools/bake-walk-strip.py prints the feet),
     // so the foot on the ground stays put while he moves over it (view/MarchCycle.js).
-    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), fps: 11, loop: true, march: true, stride: 140, sink: 2.8, keys: [0, 0.063, 0.088, 0.139, 0.252, 0.298, 0.366, 0.5, 0.537, 0.668, 0.757, 0.813, 0.874] },
+    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), fps: 11, loop: true, march: true, stride: 125, sink: 2.8, keys: [0, 0.063, 0.088, 0.139, 0.252, 0.298, 0.366, 0.5, 0.537, 0.668, 0.757, 0.813, 0.874] },
     walkU: { needs: ['walkU'], frames: seq('walkU', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
     walkD: { needs: ['walkD'], frames: seq('walkD', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
     walkUD: { needs: ['walkUD'], frames: seq('walkUD', [0, 1, 2, 3, 4, 5, 6, 7, 8]), fps: 11, loop: true, march: true },
