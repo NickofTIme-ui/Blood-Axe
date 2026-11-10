@@ -134,10 +134,11 @@ export const HERO_ANIMS = {
     idle: { frames: seq('combo1', [0]), fps: 1, loop: true, breathe: true },
     walk: { frames: seq('run', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 15, loop: true },
     walkU: { needs: ['runU'], frames: seq('runU', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 15, loop: true },
-    // her idle: the coiled guard held and breathing, with the dagger flourish (pose 3) every
-    // few seconds. (Not a cycle through her six poses: each is painted afresh, so flicking
-    // between them makes her hair, cloak and armour crawl like static.)
-    idleStrip: { needs: ['idle'], frames: [...seq('idle', Array(22).fill(0)), ...seq('idle', [3, 3, 3])], fps: 6, loop: true, breathe: true },
+    // her idle (5 Nov 2026): her own breathing strip, six copies of ONE guard pose that differ
+    // only in her chest, hair and cloak tips (ChatGPT edited them from a single image, and
+    // tools/bake-vexa-strip.py --steady lined each up on pose 0), so she breathes without the
+    // static crawl the old six freshly-painted poses had. Played there and back, slowly.
+    idleStrip: { needs: ['breath'], frames: seq('breath', [0, 1, 2, 3, 4, 5, 4, 3, 2, 1]), fps: 5, loop: true },
     // (block, her block-and-hurt sheet: 0 guard, 1 a blow on the guard, 2 recovering, 3 the
     // guard whipped round, 4 hit in the body, 5 hit in the head, 6 falling, 7 dead)
     block: { needs: ['block'], frames: seq('block', [0, 1]) }, // the guard; a blow landing on it

@@ -1628,3 +1628,8 @@ stale files ship.
 The two reach poses (sheet poses 5 and 11) popped because they came from a separate painting, so the walk
 now plays 10 poses: frames [0,1,2,3,4,6,7,8,9,10]. Merged with main 0febc4f and pushed to main.
 Rurik's ground walk is 20% slower (walkPace 0.8). Up/down/diagonal walks are still the old art.
+
+## Cloud, 2026-11-10: Vexa's last code drawings painted (ChatGPT)
+- Nick: "continue finnishing vexa", then "push". Her widow mine (`assets/fx/widow-mine-strip.png`: shut | opening | armed | set off), throwing star (`rogue-shuriken.png`), throwing knife (`rogue-knife.png`, also stuck in the floor) and the Mark of Death over an EXPOSED man (`death-mark.png`) are painted (`FX_STRIPS` in `src/data/spriteStrips.js`; `MineView`, `mark`, `stuck` in `src/effects/RogueFX.js`, `ProjectileView`). The old drawings stay only as a fallback if a file is missing.
+- Her idle is a new breathing strip (`rogue_breath.png`, HD sheet `vexa-rogue-breath`, steadied with `tools/bake-vexa-strip.py --steady`). Its blood layer was dropped: main removed the blood buildup (BloodCoat.js) before this landed.
+- Checked on the PC, muted: idle, mine drop, knife hit, mark all show, no page errors. The shuriken fan wasn't watched. Prompts: `docs/rogue-art-prompts.md` 21-24.
