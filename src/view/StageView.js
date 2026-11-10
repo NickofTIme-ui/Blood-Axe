@@ -26,6 +26,9 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const shade = (c, k) => (Math.min(255, ((c >> 16) & 255) * k) << 16) | (Math.min(255, ((c >> 8) & 255) * k) << 8) | Math.min(255, (c & 255) * k);
 // A catapult's stone in the air (drawStone): its radius on screen
 const SIEGE_STONE = { radius: 21 };
+// The painted landing marker (drawLandingMark): its width against the danger circle's (the
+// painting's soft edge runs a little past the ring), and how flat it lies on the ground
+const VOLLEY_MARK = { reach: 1.1, flat: 0.375 };
 // An arrow volley (Stage bombard `look: 'arrows'`): arrows a volley; how far through the
 // warning they're loosed (they fly the rest); the arrow texture's size (drawn at 2x) and its
 // scale on screen, its length there; how long (ms) the spent ones stay standing in the ground
@@ -1225,7 +1228,7 @@ export class StageView {
       const gy = s.z - s.gy;
       const R = hz.radius ?? 64;
       g.fillStyle(0x000000, 0.15 + 0.5 * k).fillEllipse(s.x, gy, R * (0.5 + 1.1 * k), R * 0.38 * (0.5 + 1.1 * k));
-      g.lineStyle(2, hz.friendly ? 0xd8e8ff : 0xff5a3a, 0.25 + 0.55 * k).strokeEllipse(s.x, gy, R * 2, R * 0.75);
+      if (!this.drawLandingMark(hz, s, gy, R, k)) g.lineStyle(2, hz.friendly ? 0xd8e8ff : 0xff5a3a, 0.25 + 0.55 * k).strokeEllipse(s.x, gy, R * 2, R * 0.75);
       if (hz.look === 'arrows') { if (k >= ARROWS.loose) this.drawArrows(st, s, gy, (k - ARROWS.loose) / (1 - ARROWS.loose), hz); continue; }
       if (k < 0.45) continue;
       if (hz.friendly) {
@@ -1250,7 +1253,28 @@ export class StageView {
       st.fillStyle(0xff8a30, 1).fillCircle(sx - 5, sy - 5, 5);
     }
     for (const im of hz.stoneImgs ?? []) if (!im.used) im.setVisible(false);
+    for (const im of hz.markImgs ?? []) if (!im.used) im.setVisible(false);
     hz.fire?.setVisible(shells.length > 0);
+  }
+
+  // Where a volley or a stone will land (Nick, 2026-11-10: the drawn red ring looked cheap
+  // next to the painting): the painted marker (assets/fx/volley-mark.png) laid flat on the
+  // ground, fading in and tightening onto the spot as the warning runs out, throbbing in the
+  // last third. Your own people's stones get it cooled to pale blue. False when the painting
+  // isn't in (the drawn ring stands in).
+  drawLandingMark(hz, s, gy, R, k) {
+    if (!this.scene.textures.exists('volley-mark')) return false;
+    hz.markImgs ??= [];
+    const i = hz.shells.indexOf(s);
+    const im = hz.markImgs[i] ??= this.scene.add.image(0, 0, 'volley-mark');
+    im.used = true;
+    const late = Math.max(0, (k - 0.66) / 0.34);
+    const throb = 1 + 0.06 * late * Math.sin(hz.t * 0.9);
+    const size = R * 2 * VOLLEY_MARK.reach * (1.25 - 0.25 * k) * throb;
+    im.setPosition(s.x, gy).setDisplaySize(size, size * VOLLEY_MARK.flat)
+      .setAlpha(Math.min(1, 0.3 + 0.9 * k)).setDepth(s.z - 0.5).setVisible(true);
+    if (hz.friendly) im.setTint(0xb8d0ff); else im.clearTint();
+    return true;
   }
 
   // A catapult's stone in the air: the painted stone out of the catapult's sling (cut from
