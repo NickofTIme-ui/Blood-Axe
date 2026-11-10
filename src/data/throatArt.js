@@ -30,5 +30,17 @@ export const PAIR_DRAWN = {
   berserker: { ulric: 0.5, ulricOath: 0.5, release: 46, neck: 22 },
   gladiator: { ulric: 0.5, ulricOath: 0.5, release: 47, neck: 22 },
 };
-const pair = (key, id, originX) => ({ id: `rurik-${key}-pair-${id}`, hero: 'rurik', key, name: `pair_${id}`, file: `assets/sprites/heroes-hd/rurik-${key}-pair-${id}.png`, frames: 4, fw: 696, fh: 480, cols: 4, originX, originY: 460 / 480, swords: [] });
+// THE THROAT in the hold: where Rurik's blade crosses the front of the man's neck, in the
+// picture's own pixels (one 696x480 cell; the same spot with either sword). The cut's
+// blood comes out of exactly there (view/throatPoint.js).
+export const PAIR_THROAT = {
+  grunt: [409, 270], stalker: [407, 272], butcher: [395, 272], ghoul: [395, 267],
+  penitent: [403, 257], berserker: [395, 267], gladiator: [392, 268],
+};
+
+// Grunts come in dyes (view/dye.js) and the picture has him undyed: their strips carry a
+// second row (frames 4-7, tools/bake-pair-dye-mask.py), just his rags, which the game lays
+// over the picture through the dye shader in his dye (view/SpriteFighterView.js).
+export const DYED = ['grunt'];
+const pair = (key, id, originX) => ({ id: `rurik-${key}-pair-${id}`, hero: 'rurik', key, name: `pair_${id}`, file: `assets/sprites/heroes-hd/rurik-${key}-pair-${id}.png`, frames: DYED.includes(id) ? 8 : 4, fw: 696, fh: 480, cols: 4, originX, originY: 460 / 480, swords: [] });
 for (const [id, m] of Object.entries(PAIR_DRAWN)) for (const key of ['ulric', 'ulricOath']) if (m[key] != null) THROAT_SHEETS.push(pair(key, id, m[key]));

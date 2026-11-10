@@ -463,7 +463,9 @@ export const FIGHTER_STATES = {
         if (f.sprinting) f.world.events.emit('sprintStart', { fighter: f });
       }
       f.sprintArmed = false; // (moving: an armed sprint has been used)
-      const k = sprintMult(f);
+      // (walkPace: a hero who STRUTS on foot, slower than his walkSpeed; his sprint, his
+      // jumps and his air speed still use the full walkSpeed, so no gap gets harder)
+      const k = f.sprinting ? sprintMult(f) : sprintMult(f) * (f.stats.walkPace ?? 1);
       f.vx = c.moveX * f.stats.walkSpeed * k;
       f.vz = c.moveZ * f.stats.depthSpeed * k;
       faceInput(f);

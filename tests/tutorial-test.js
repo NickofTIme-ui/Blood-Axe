@@ -127,7 +127,7 @@ function teach(hero) {
     } else if (L.id === 'fade') {
       press('attack', 4); c.mx = -1; press('jump', 20); // (away from the man she's cutting)
     } else if (L.id === 'move') {
-      c.mx = 1; run(w, st, 50); c.mx = -1; run(w, st, 60, () => T.done);
+      c.mx = 1; run(w, st, 50); c.mx = -1; run(w, st, 90, () => T.done); // (Rurik struts on foot: walkPace)
     } else {
       for (const k of keys) {
         if (k === 'stick') { c.mx = 1; run(w, st, 12); continue; }

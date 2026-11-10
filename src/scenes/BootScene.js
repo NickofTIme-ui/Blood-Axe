@@ -23,7 +23,6 @@ import { warmGore } from '../effects/goreArt.js';
 import { introFinished } from '../core/StartupIntro.js';
 import {HERO_HD} from '../data/heroHdAssets.js';
 import {preloadHeroHd,installHeroHd} from '../view/heroHd.js';
-import { preloadBloodied } from '../view/BloodCoat.js';
 import { preloadSkillTreeArt } from '../data/skillTreeArt.js';
 
 // Textures read only by Boot itself, to cut the game's sheets from (released once it has).
@@ -36,7 +35,6 @@ export class BootScene extends Phaser.Scene {
 
   preload() {
     preloadHeroHd(this);
-    preloadBloodied(this); // his bloodied repaints (view/BloodCoat.js)
     for(const name of ['gallows','mechanisms','irvolino-bound','executioner-actions','executioner-lever'])this.load.image(`mill-${name}`,`assets/npcs/mill-rescue/${name}.png`);
     this.load.image('pause-frame','assets/ui/pause-frame.png');
     for(const side of ['foe','ally'])for(const mode of ['full','compact'])this.load.image(`dialogue-${side}-${mode}`,`assets/ui/dialogue/${side}-${mode}.png`); // the story's red / blue boxes (view/DialogueBox.js)

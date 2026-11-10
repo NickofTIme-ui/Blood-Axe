@@ -6,6 +6,12 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 6 November 2026 ~00:45 (cloud): Nick said "push all". MAIN now carries throat finisher round 3
+  (lnkhrt 7b7276b: waterfall neck blood, blade_hit_07 for the cut, dyed grunts keep their colour in the
+  painted hold) and the REMOVAL of Rurik's blood buildup (Nick scrapped it: view/BloodCoat.js, its test,
+  assets/sprites/heroes-hd/blood/, the blood bake tools and tools/blood-source are gone; enemy gore, floor
+  blood and hit sprays stay). Vexa art NOT included. dist/game.js rebundled. NOT on itch (on hold).
+
 - 5 November 2026 ~18:00 (cloud, branch `claude/project-thread-sx56s1`, NOT on main yet): MAGE MAKES MEN RUN
   (Nick: "the mage never gets enemies to run"). Men only flee once they lose an arm, and the Mage's lightning
   almost always killed them first (stage 1 could not maim at all), so no runners and his finishers never came up.
@@ -1608,3 +1614,17 @@ stale files ship.
 
 ## Cloud, 2026-10-26: clearer stampede warning (not on itch)
 - Nick asked for a better quality, slightly more visible warning of where the horses will run. `view/StampedeTrail.js` now lays a soft ember-red glow of churned earth under the whole danger width, edges it with two wandering ruts of torn earth (firelit inner lip) instead of dashes, draws bigger hoof prints, and sweeps a warm light along the prints out of the door the way the herd will run (faster as the run nears). Still no UI arrows or white. Code only, no art needed.
+
+## Cloud, 2026-11-10: Rurik's hero strut (ON MAIN since 2026-11-10, not on itch)
+- Why the old walk read as "one leg going back and forth": in all 8 poses the front foot sat in the same place and only the rear leg lifted and went back; both legs were painted alike.
+- Round 1 (8 poses, torso identical in each) fixed the feet but Nick found it stiff. Round 2 (12 poses, "swagger") came out as a jog: knees too high, and no pose with the leg reaching forward, so the feet looked faster than him. Round 3 is in: ChatGPT on Nick's PC painted a true walk (feet low, cape and hair streaming, 12 poses in 2 rows of 6) plus two "reach" poses, for the old sword and Oathkeeper (the reach poses are shared). Originals on the PC in `Downloads\rurik-strut` (`strut-v3.png`, `strut-v3-oath.png`, `strut-v3-reach.png`) and in project files `rurik-strut/`.
+- ChatGPT never paints one clean cycle, so the poses are picked and ordered by hand: `docs/rurik-strut/bake-old-sword.json` / `bake-oathkeeper.json` list them, and `python tools/bake-walk-strip.py <spec.json>` cuts the sheets, lines every pose up on his chest and writes the HD sheet (6 columns, 12 poses) plus the one-row fallback strip.
+- `src/data/heroHdAssets.js` was edited by hand for the two walk2 sheets (12 frames, 6 columns): `tools/compile-hero-hd.mjs` on the PC would put 8 back, so update its catalog before re-running it.
+- `view/MarchCycle.js`: a march anim may give `stride` (world px per cycle) and `keys` (where each pose sits in the cycle) so the planted foot stays put. The side walk uses stride 120 (the art's own is about 117) and `sink` (a small eased weight drop on each footfall, `SpriteFighterView`).
+- Rurik has `walkPace: 0.8` in `data/characters.js`: on foot he walks at 132 px/s, because 165 is jogging speed for his size and no walk can keep its feet planted at it without stepping very fast. Sprint, jumps and air speed still use walkSpeed 165. Nick has not confirmed he wants to keep this.
+- Still the old art: walkU / walkD / walkUD / walkDD (up, down and diagonal walks).
+
+### Strut, final (2026-11-10 02:00, Nick: "you cooked", "push")
+The two reach poses (sheet poses 5 and 11) popped because they came from a separate painting, so the walk
+now plays 10 poses: frames [0,1,2,3,4,6,7,8,9,10]. Merged with main 0febc4f and pushed to main.
+Rurik's ground walk is 20% slower (walkPace 0.8). Up/down/diagonal walks are still the old art.

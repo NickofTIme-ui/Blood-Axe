@@ -79,6 +79,9 @@ export const CHARACTERS = {
     maxHealth: 170, maxStamina: 100, maxMana: 40,
     staminaRegen: 30, staminaRegenDelay: 40, manaRegen: 1.5,
     walkSpeed: 165, depthSpeed: 115,
+    // on foot he struts at 0.8 of that (132 px/s), so his painted walk (data/spriteStrips.js,
+    // stride 125) can step slow and heavy without his feet outrunning him; sprint and jumps are full speed
+    walkPace: 0.8,
     // (higher for platforming: rises ~122 px, a little heavier pull so it stays snappy)
     jumpStrength: 680, gravity: 1900, airControl: 0.14, airJumps: 0,
     sprint: { speed: 1.55 }, // the hero's charge: head down, blade back, cape streaming
