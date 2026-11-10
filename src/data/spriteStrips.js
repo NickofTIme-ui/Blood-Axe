@@ -101,7 +101,7 @@ export const ANIM_OVERRIDES = {
     // keys: where each pose sits in the cycle, from how far the planted foot has slid back, so
     // the foot on the ground stays put while he moves over it (view/MarchCycle.js);
     // sink: an eased weight drop on each footfall (view/SpriteFighterView.js).
-    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]), fps: 11, loop: true, march: true, stride: 120, sink: 2.2, keys: [0, 0.092, 0.189, 0.282, 0.34, 0.458, 0.5, 0.561, 0.614, 0.768, 0.855, 0.965] },
+    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 2, 3, 4, 6, 7, 8, 9, 10]), fps: 11, loop: true, march: true, stride: 120, sink: 2.2, keys: [0, 0.092, 0.189, 0.282, 0.38, 0.5, 0.561, 0.614, 0.768, 0.88] },
     walkU: { needs: ['walkU'], frames: seq('walkU', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
     walkD: { needs: ['walkD'], frames: seq('walkD', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
     walkUD: { needs: ['walkUD'], frames: seq('walkUD', [0, 1, 2, 3, 4, 5, 6, 7, 8]), fps: 11, loop: true, march: true },
