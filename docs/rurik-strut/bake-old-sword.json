@@ -1,0 +1,1 @@
+{"sources": [{"file": "v3/strut-v3.png", "rows": 2, "cols": 6}, {"file": "v3/strut-v3-reach.png", "rows": 1, "cols": 2, "size": 0.95}], "order": [[0, 0], [0, 5], [0, 1], [0, 2], [0, 3], [1, 0], [0, 10], [0, 6], [0, 4], [0, 8], [0, 7], [1, 1]], "outCols": 6, "out": "v3/hd-old.png", "legacy": "v3/legacy-old.png"}

@@ -17,7 +17,7 @@ export const CHARACTER_STRIPS = {
   ulric: {
     // walk2 sets the size; the others were drawn "same scale" so they borrow its scale
     // (crouched or tucked poses would otherwise be blown up to full standing height)
-    walk2:   { file: 'assets/sprites/strips/ulric_walk2.png', frames: 13, align: 'median', ground: 'drawn' },
+    walk2:   { file: 'assets/sprites/strips/ulric_walk2.png', frames: 12, align: 'median', ground: 'drawn' },
     // the same walk seen from other sides (view/Heading.js): U = from behind (walking
     // away, up the screen), D = from the front, UD / DD = three-quarter back / front
     walkU:   { file: 'assets/sprites/strips/ulric_walkU.png', frames: 8, align: 'median', ground: 'drawn' },
@@ -92,13 +92,16 @@ export const ANIM_OVERRIDES = {
     // going in or out of a swing) with smooth eased breathing on top (SpriteFighterView)
     idle: { needs: ['combo1'], frames: seq('combo1', [0]), fps: 1, loop: true, breathe: true },
     // Continuous, distance-driven march; use every drawing without duplicate holds.
-    // THE HERO STRUT (ChatGPT 2026-11-10, painted against docs/rurik-strut/pose-guide.png, then
-    // put in order by hand): heel strike, weight down, the back foot peeling, lifted, passing,
-    // knee up, reaching; then the other leg. 13 poses; the cape and hair stream with each step.
-    // stride: world px per full cycle; keys: where each pose sits in the cycle, measured
-    // from how far the planted foot has slid back (tools/bake-walk-strip.py prints the feet),
-    // so the foot on the ground stays put while he moves over it (view/MarchCycle.js).
-    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), fps: 11, loop: true, march: true, stride: 125, sink: 2.8, keys: [0, 0.063, 0.088, 0.139, 0.252, 0.298, 0.366, 0.5, 0.537, 0.668, 0.757, 0.813, 0.874] },
+    // THE HERO STRUT (ChatGPT 2026-11-10, round 3: a true walk, feet low; docs/rurik-strut/).
+    // Two steps of six poses: heel strike, weight down, the back foot lifting, passing, knee
+    // forward, the reach (leg swung out ahead, about to land); then the other leg. The poses
+    // were picked and ordered by hand from a 12-pose sheet plus two painted reach poses
+    // (docs/rurik-strut/bake-*.json, tools/bake-walk-strip.py).
+    // stride: world px per full cycle (the art's own is about 117; a touch more reads heavier);
+    // keys: where each pose sits in the cycle, from how far the planted foot has slid back, so
+    // the foot on the ground stays put while he moves over it (view/MarchCycle.js);
+    // sink: an eased weight drop on each footfall (view/SpriteFighterView.js).
+    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]), fps: 11, loop: true, march: true, stride: 120, sink: 2.2, keys: [0, 0.092, 0.189, 0.282, 0.34, 0.458, 0.5, 0.561, 0.614, 0.768, 0.855, 0.965] },
     walkU: { needs: ['walkU'], frames: seq('walkU', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
     walkD: { needs: ['walkD'], frames: seq('walkD', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
     walkUD: { needs: ['walkUD'], frames: seq('walkUD', [0, 1, 2, 3, 4, 5, 6, 7, 8]), fps: 11, loop: true, march: true },

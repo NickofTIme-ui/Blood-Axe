@@ -1,11 +1,11 @@
 # Hero swagger pose guide v2: loose, weighty, 12 poses (2 rows of 6). Side view, facing right.
 import math, sys
 from PIL import Image, ImageDraw
-OUT = sys.argv[1]; N = 12; COLS = 6
+OUT = sys.argv[1]; N = 8; COLS = 8
 W, H = 340, 470
 GROUND = 430
 L1, L2 = 96, 96
-S = 170                    # step length
+S = 184
 NEAR=(215,40,40); FAR=(60,70,150); BODY=(165,165,165); BODYD=(120,120,120); ARMN=(235,125,60); ARMF=(85,105,170); SW=(110,110,110)
 
 def ease(u): return 0.5-0.5*math.cos(math.pi*u)
@@ -20,7 +20,7 @@ def foot(t):
         return x, 0.0, pitch
     u = (t-0.5)/0.5
     x = -S/2 + S*ease(u**1.15)
-    lift = 30*math.sin(math.pi*u)**1.2
+    lift = 20*math.sin(math.pi*u)**1.2
     pitch = -38*(1-u)**2 + 22*u**3
     return x, lift, pitch
 def ik(hip, ank):
@@ -81,9 +81,9 @@ for i in range(N):
     draw(dd, i/N, W/2, str(i+1))
     dd.rectangle([0,0,W-1,H-1], outline=(205,205,205))
     sheet.paste(cell, (x0, y0))
-sheet.save(OUT+'/pose-guide-v2.png')
+sheet.save(OUT+'/pose-guide-v3.png')
 frames=[]
 for j in range(N*2):
     im = Image.new('RGB', (W, H), 'white'); dd = ImageDraw.Draw(im)
     dd.line([(0,GROUND),(W,GROUND)], fill=(0,0,0), width=2); draw(dd, (j%N)/N, W/2); frames.append(im)
-frames[0].save(OUT+'/pose-guide-v2.gif', save_all=True, append_images=frames[1:], duration=70, loop=0)
+frames[0].save(OUT+'/pose-guide-v3.gif', save_all=True, append_images=frames[1:], duration=70, loop=0)
