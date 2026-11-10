@@ -17,7 +17,7 @@ export const CHARACTER_STRIPS = {
   ulric: {
     // walk2 sets the size; the others were drawn "same scale" so they borrow its scale
     // (crouched or tucked poses would otherwise be blown up to full standing height)
-    walk2:   { file: 'assets/sprites/strips/ulric_walk2.png', frames: 8, align: 'median', ground: 'drawn' },
+    walk2:   { file: 'assets/sprites/strips/ulric_walk2.png', frames: 13, align: 'median', ground: 'drawn' },
     // the same walk seen from other sides (view/Heading.js): U = from behind (walking
     // away, up the screen), D = from the front, UD / DD = three-quarter back / front
     walkU:   { file: 'assets/sprites/strips/ulric_walkU.png', frames: 8, align: 'median', ground: 'drawn' },
@@ -92,13 +92,13 @@ export const ANIM_OVERRIDES = {
     // going in or out of a swing) with smooth eased breathing on top (SpriteFighterView)
     idle: { needs: ['combo1'], frames: seq('combo1', [0]), fps: 1, loop: true, breathe: true },
     // Continuous, distance-driven march; use every drawing without duplicate holds.
-    // THE HERO STRUT (ChatGPT 2026-11-10, painted against docs/rurik-strut/pose-guide.png):
-    // contact, down, passing, up, then the same with the other leg; the planted foot slides
-    // front to back under him and the far leg is shaded darker so the legs read apart.
+    // THE HERO STRUT (ChatGPT 2026-11-10, painted against docs/rurik-strut/pose-guide.png, then
+    // put in order by hand): heel strike, weight down, the back foot peeling, lifted, passing,
+    // knee up, reaching; then the other leg. 13 poses; the cape and hair stream with each step.
     // stride: world px per full cycle; keys: where each pose sits in the cycle, measured
-    // from how far the planted foot travels between poses (tools/bake-walk-strip.py), so
-    // the foot on the ground stays put while he moves over it (view/MarchCycle.js).
-    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true, stride: 103, keys: [0, 0.175, 0.286, 0.383, 0.529, 0.699, 0.816, 0.917] },
+    // from how far the planted foot has slid back (tools/bake-walk-strip.py prints the feet),
+    // so the foot on the ground stays put while he moves over it (view/MarchCycle.js).
+    walk: { needs: ['walk2'], frames: seq('walk2', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), fps: 11, loop: true, march: true, stride: 113, sink: 1.6, keys: [0, 0.063, 0.088, 0.139, 0.252, 0.298, 0.366, 0.5, 0.537, 0.668, 0.757, 0.813, 0.874] },
     walkU: { needs: ['walkU'], frames: seq('walkU', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
     walkD: { needs: ['walkD'], frames: seq('walkD', [0, 1, 2, 3, 4, 5, 6, 7]), fps: 11, loop: true, march: true },
     walkUD: { needs: ['walkUD'], frames: seq('walkUD', [0, 1, 2, 3, 4, 5, 6, 7, 8]), fps: 11, loop: true, march: true },

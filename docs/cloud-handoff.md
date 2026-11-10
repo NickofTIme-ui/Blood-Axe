@@ -1614,3 +1614,11 @@ stale files ship.
 
 ## Cloud, 2026-10-26: clearer stampede warning (not on itch)
 - Nick asked for a better quality, slightly more visible warning of where the horses will run. `view/StampedeTrail.js` now lays a soft ember-red glow of churned earth under the whole danger width, edges it with two wandering ruts of torn earth (firelit inner lip) instead of dashes, draws bigger hoof prints, and sweeps a warm light along the prints out of the door the way the herd will run (faster as the run nears). Still no UI arrows or white. Code only, no art needed.
+
+## Cloud, 2026-11-10: Rurik's hero strut (branch claude/project-thread-shbvkq, NOT on main, not on itch)
+- Why the old walk read as "one leg going back and forth": in all 8 poses the front foot sat in the same place and only the rear leg lifted and went back; both legs were painted alike.
+- Round 1 (8 poses, torso identical in each) fixed the feet but Nick found it stiff. Round 2 is in: a looser pose guide (`docs/rurik-strut/pose-guide.png`, made by `pose-guide.py`: lean, shoulder roll, loose arms, heel-to-toe), 12 poses painted by ChatGPT on Nick's PC with the cape and hair streaming, for the old sword and Oathkeeper. Originals on the PC in `Downloads\rurik-strut` (`strut-v2.png`, `strut-v2-oath.png`) and in project files `rurik-strut/`.
+- ChatGPT's 12 poses were not one clean cycle, so they are re-ordered by hand into 13 (one pose used twice): sheet poses `[0,11,4,5,3,2,9,10,6,1,7,8,9]`. `tools/bake-walk-strip.py in.png out.png 2 6 224 "<order>" 7 legacy.png` cuts the sheet, lines every pose up on his chest and writes the HD sheet (7 columns) plus the one-row fallback strip.
+- `src/data/heroHdAssets.js` was edited by hand for the two walk2 sheets (13 frames, 7 columns): `tools/compile-hero-hd.mjs` on the PC would put 8 back, so update its catalog before re-running it.
+- `view/MarchCycle.js`: a march anim may give `stride` (world px per cycle) and `keys` (where each pose sits in the cycle) so the planted foot stays put. The side walk uses stride 113 and `sink` (a small eased weight drop on each footfall, `SpriteFighterView`).
+- Still the old art: walkU / walkD / walkUD / walkDD (up, down and diagonal walks).

@@ -447,6 +447,11 @@ export class SpriteFighterView {
       const cyc = ((fr * fps) / 60) % n / n; // 0..1 through the cycle, two steps per cycle
       bob = Math.abs(Math.sin(cyc * Math.PI * 2)) * -2.5 + 1.5;
       lean = Math.sin(cyc * Math.PI * 2) * 1.2;
+    } else if (st === 'walk' && this.meta.anims.walk?.march && this.meta.anims.walk?.sink && this.heading.dir === 'side') {
+      // the painted strut: his weight sinks a touch as each foot lands and comes back up as
+      // the other leg passes, eased every frame so the steps flow between the painted poses
+      const p = this.march.phase;
+      bob = this.meta.anims.walk.sink * (0.5 + 0.5 * Math.cos((p - 0.07) * Math.PI * 4));
     }
 
     // Guard swap: whip round to the other side — squash through edge-on, small hop, glint.
