@@ -65,7 +65,7 @@ import { TEST, toggleTestMode, applyTestMode, levelAfter, showTestTag } from '..
 import { KingView } from '../view/KingView.js';
 import { BirthrightArt } from '../view/BirthrightArt.js';
 import { TestNavigator, makePreviewProgress } from '../view/TestNavigator.js';
-import { PAIR_DRAWN } from '../data/throatArt.js';
+import { throatPoint } from '../view/throatPoint.js';
 
 // Number keys spawn a specific enemy next to you (for testing the roster).
 const SPAWN_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'];
@@ -1413,9 +1413,11 @@ export class ArenaScene extends Phaser.Scene {
       case 'slit': {
         // the blade ripped across: a freeze on contact (hit-stop), then slow motion through
         // the spray, a streak along the cut, the camera punched in
-        const nh = v.h + H * 0.82;
-        // (Nick, 6 Nov: the blood a little lower, about 3 inches: out of the cut, not his chin)
-        const bh = v.h + H * 0.67;
+        // (Nick, 6 Nov: "blood comes where blade goes": out of his throat where the blade
+        // crossed it, found in the picture or his pose each time, view/throatPoint.js)
+        const tp = () => throatPoint(this, p, v) ?? { x: v.x + dir * v.stats.body.w * 0.32, h: v.h + H * 0.72 };
+        const cut = tp();
+        const nh = cut.h;
         this.slowmo(0.3, 520);
         this.fx.shake(8, 12);
         this.rumble(1, 0.8, 200);
@@ -1426,21 +1428,19 @@ export class ArenaScene extends Phaser.Scene {
         // splatter under it for the pour
         playSfx(this, 'bladeHit7', { volume: 1, spread: 0, minGapMs: 0 });
         playSfx(this, 'bloodSplatter', { volume: 0.55, spread: 40, minGapMs: 0 });
-        this.slashStreak((PAIR_DRAWN[v.stats.art] && this.views.get(p.id)?.pairActive ? p.x + dir * (PAIR_DRAWN[v.stats.art].neck - 8) : v.x + dir * v.stats.body.w * 0.2), v.z - nh, v.stats.body.w * 0.8, dir, v.z, -0.1 * dir);
-        g.spark(v.x + dir * v.stats.body.w * 0.3, v.z, nh, 0xffffff, 10);
+        this.slashStreak(cut.x - dir * 8, v.z - nh, v.stats.body.w * 0.8, dir, v.z, -0.1 * dir);
+        g.spark(cut.x, v.z, nh, 0xffffff, 10);
         this.popup(v.x, v.z - v.h - H - 34, 'THROAT CUT!', '#ff2a1a', 24);
         if (!bloody) break;
         // a tight arterial jet out of the front of his neck (not a spray across the whole
         // screen): fast, low and narrow, falling in an arc a body length or two away, then
         // it keeps pumping in beats — while he's held, as he staggers, on his knees —
         // weaker with every beat, until he's face down
-        // (held in the painted hold, data/throatArt.js PAIR_DRAWN: his throat is where the
+        // (held in the painted hold, data/throatArt.js PAIR_THROAT: his throat is where the
         // picture has it, not where his hidden sprite stands)
-        const pairNeck = PAIR_DRAWN[v.stats.art]?.neck;
-        const nx = () => (pairNeck != null && this.views.get(p.id)?.pairActive) ? p.x + dir * pairNeck : v.x + dir * v.stats.body.w * 0.32;
-        const jet = (n, power, hgt) => {
+        const jet = (n, power, at) => {
           for (let i = 0; i < n; i++) g.spawn({
-            x: nx(), z: v.z + rnd(-2, 2), h: hgt,
+            x: at.x, z: v.z + rnd(-2, 2), h: at.h,
             vx: dir * rnd(120, 230) * power, vz: rnd(-10, 10), vh: rnd(30, 110) * power,
             tint: 0x8a0303, scale: rnd(0.5, 1),
           });
@@ -1449,26 +1449,26 @@ export class ArenaScene extends Phaser.Scene {
         // out of the cut, then a thick sheet pouring down his front and off his chest to
         // the dirt, a pool spreading under him, still pouring while he's held, staggers
         // and kneels, thinning only as he goes face down
-        const pour = (n, hgt, fwd) => {
+        const pour = (n, at, fwd) => {
           for (let i = 0; i < n; i++) g.spawn({
-            x: nx() + dir * rnd(-3, 5), z: v.z + rnd(-2, 2), h: hgt + rnd(-4, 4),
+            x: at.x + dir * rnd(-3, 5), z: v.z + rnd(-2, 2), h: at.h + rnd(-3, 3),
             vx: dir * rnd(10, 70) * fwd, vz: rnd(-6, 6), vh: rnd(-30, 25),
             tint: Math.random() < 0.5 ? 0x8a0303 : 0x6e0202, scale: rnd(0.7, 1.25),
           });
         };
-        jet(Math.round(18 + 8 * Math.min(amt, 1.5)), 1, bh);
-        pour(Math.round(30 + 10 * Math.min(amt, 1.5)), bh, 1.6);
-        g.mist(nx(), v.z, bh, 3);
-        g.splat(nx() + dir * 10, v.z, 2.2);
+        jet(Math.round(18 + 8 * Math.min(amt, 1.5)), 1, cut);
+        pour(Math.round(30 + 10 * Math.min(amt, 1.5)), cut, 1.6);
+        g.mist(cut.x, v.z, cut.h, 3);
+        g.splat(cut.x + dir * 10, v.z, 2.2);
         this.everyTick(90, (t) => {
           const ex = p.exec;
           if (!ex || ex.kind !== 'throat' || ex.fired.has('down')) return false;
           const kneel = ex.fired.has('knees');
           const fade = Math.max(0.45, 1 - t / 110);
-          const hgt = v.h + H * (kneel ? 0.38 : 0.65);
-          pour(Math.max(1, Math.round((2 + 2 * Math.min(amt, 1.5)) * fade)), hgt, kneel ? 0.4 : 1);
-          if (t % 8 === 0) jet(Math.round(4 + 4 * fade), 0.5 + 0.4 * fade, hgt); // a pump of the heart
-          if (t % 5 === 0) g.splat(nx() + dir * rnd(0, 26), v.z + rnd(-3, 3), rnd(1.4, 2.6) * (0.6 + fade * 0.6));
+          const at = tp();
+          pour(Math.max(1, Math.round((2 + 2 * Math.min(amt, 1.5)) * fade)), at, kneel ? 0.4 : 1);
+          if (t % 8 === 0) jet(Math.round(4 + 4 * fade), 0.5 + 0.4 * fade, at); // a pump of the heart
+          if (t % 5 === 0) g.splat(at.x + dir * rnd(0, 26), v.z + rnd(-3, 3), rnd(1.4, 2.6) * (0.6 + fade * 0.6));
         });
         break;
       }
