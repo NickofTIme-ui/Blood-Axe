@@ -24,6 +24,14 @@ branch, or ChatGPT's work gets lost.
 - 14 November 2026 ~21:10 (cloud, Nick: picked recorded sounds): WIDOW MINE SOUNDS are now recorded Kenney CC0
   samples (assets/audio/sfx/mine-set/arm/tick/blast.wav, licence kenney-LICENSE.txt) instead of the code-made
   rogue-mine-*.wav (deleted). tests/shuriken-view-test.js guards the small star (fix itself landed in 7699b27).
+- 10 November 2026 ~02:20: ITCH IS LIVE at main 09beb4a, upload 20408658. 871 files, one-file
+  dist/game.js bundle; the page works again (it replaces the broken 1097-file upload). The page's
+  Credits line for @danielsoundsgood is kept. EVERYTHING BELOW IS NOW ON ITCH, including the entries
+  that still say "NOT on itch" (arrow landing mark, Rurik's walk, throat blood, Vexa's new art).
+  A stray build copy sits on Nick's PC at C:\Users\nickr\Documents\ba-release-09beb4a: harmless,
+  do not upload it. Run only ONE upload thread at a time: Nick's "update itch" can land in the
+  wrong thread (two ran at once on 10 November).
+
 - 10 November 2026 (cloud, Nick: "push"): MAIN 363ffe2 replaces the thin code-drawn red ring where
   arrow volleys and catapult stones land with a painted ChatGPT marker (assets/fx/volley-mark.png,
   StageView drawLandingMark; the old ring is only a fallback). NOT on itch.
