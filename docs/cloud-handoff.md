@@ -6,6 +6,14 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 14 November 2026 (cloud, Nick: "push all"): MAIN 7699b27 = snared men hang upside down by the ankle
+  (view/SnareHang.js, all fighter views; WoodTrapsView.drawSprung), Vexa's shuriken fixed (it went down the
+  spell path once its painting landed and drew fireball-sized; damage 4 -> 9), new mechanical widow mine
+  sounds + rogue-mine-blast.wav (tools/sfx-gen/rogue.js). NOT on itch.
+  Gallows Wood trap art round 1 is painted (ChatGPT, PC) but NOT in the repo yet: raws in
+  Documents\blood-axe\assets\incoming\level2 and Downloads\level2-art.zip on the PC (pine, logpile, log_roll,
+  snare, stakes, pen_gate, ferns, wall 2172x724 with a slightly off seam). Cut with tools/cut-wood-art.py,
+  then wire into WoodTrapsView / WoodWeather (code-drawn stand-ins until then).
 - 10 November 2026 (cloud, Nick: "push"): MAIN 363ffe2 replaces the thin code-drawn red ring where
   arrow volleys and catapult stones land with a painted ChatGPT marker (assets/fx/volley-mark.png,
   StageView drawLandingMark; the old ring is only a fallback). NOT on itch.
