@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { Progress } from '../src/progression/Progress.js';
-import { makePreviewProgress, TEST_SCENES } from '../src/view/TestNavigator.js';
+import { makePreviewProgress, TEST_SCENES, levelChoices } from '../src/view/TestNavigator.js';
 import { STAGE_VILLAGE } from '../src/data/stageVillage.js';
 const original=new Progress();original.data.campaign.flags.oathkeeper=true;
 const before=JSON.stringify(original.data);
@@ -10,4 +10,6 @@ assert.equal(JSON.stringify(original.data),before,'Testing must not change campa
 assert.equal(preview.storage,null);
 assert.equal(preview.data.campaign.flags.oathkeeper,undefined);
 for(const [,section] of TEST_SCENES)assert.ok(STAGE_VILLAGE.sections[section]);
+const levels=levelChoices();
+assert.deepEqual(levels.map(l=>l.label),['Level 1: THE BURNING VILLAGE','Level 2: GALLOWS WOOD','Level 3: HOLLOW MOUNTAIN','Level 4: THE SHATTERED ASCENT','Level 5: THE IRON GATES','Level 6: THE BLACK KEEP']);
 console.log('Test navigator: isolated save, replayable handoff, valid shortcuts.');

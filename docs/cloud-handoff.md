@@ -6,6 +6,10 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 14 November 2026 (cloud, F8 fix): F8 test menu lists only the six campaign levels as "Level N: NAME"
+  (view/TestNavigator.js levelChoices), groups the quick jumps (Level 1 moments, Combat tests) and adds a
+  Practice yard button; the Director's Cut's Oath Road and Gallows Ascent are gone from F8 and from
+  PAGE UP/DOWN (config/testMode.js campaignLevels). NOT on itch.
 - 14 November 2026 (cloud, Nick: "push all"): MAIN 7699b27 = snared men hang upside down by the ankle
   (view/SnareHang.js, all fighter views; WoodTrapsView.drawSprung), Vexa's shuriken fixed (it went down the
   spell path once its painting landed and drew fireball-sized; damage 4 -> 9), new mechanical widow mine

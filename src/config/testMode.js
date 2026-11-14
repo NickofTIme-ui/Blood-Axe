@@ -9,7 +9,7 @@
 // In a fight, with test mode on:
 //   END        next checkpoint (the level's next section; from the last, the next level)
 //   PAGE UP    previous level      PAGE DOWN  next level
-// (levels in campaign order, then the Oath Road and the Gallows Ascent: levelOrder())
+// (the campaign's levels in order: levelOrder())
 // (these keys are bound in scenes/ArenaScene.js: setupTestKeys)
 
 import { STAGES } from '../data/stages.js';
@@ -30,13 +30,17 @@ export function toggleTestMode() {
   return TEST.on;
 }
 
-// Every stage, in the order PAGE UP / PAGE DOWN walk them: the campaign from its first level (each
-// names the next), then whatever else is built.
-export function levelOrder(stages = STAGES) {
+// The campaign's built levels in play order: from its first level, each naming the next.
+export function campaignLevels(stages = STAGES) {
   const order = [];
   for (let id = 'village'; stages[id] && !order.includes(id); id = stages[id].next?.id) order.push(id);
-  for (const id of Object.keys(stages)) if (!order.includes(id)) order.push(id);
   return order;
+}
+
+// The order PAGE UP / PAGE DOWN walk: the campaign's levels only (the Director's Cut's old
+// stages, THE OATH ROAD and THE GALLOWS ASCENT, are played from the title's menu instead).
+export function levelOrder(stages = STAGES) {
+  return campaignLevels(stages);
 }
 
 // The level `step` places along levelOrder() from `id` (wraps round).

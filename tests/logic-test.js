@@ -153,8 +153,8 @@ test('test mode: off by default; on, a hero is never killed and never runs dry; 
   applyTestMode([t.p]);
   assert(!t.p.immortal, 'off again: mortal');
   const order = levelOrder();
-  assert(order.slice(0, 5).join() === 'village,gallowsWood,hollowMountain,shatteredAscent,ironGates', order.join());
-  assert(order.length === Object.keys(STAGES).length, 'every stage once');
+  assert(order.join() === 'village,gallowsWood,hollowMountain,shatteredAscent,ironGates,blackKeep', order.join());
+  assert(!order.includes('oath') && !order.includes('gallows'), 'the old Director\'s Cut stages are left out');
   assert(levelAfter('village', 1) === 'gallowsWood' && levelAfter('village', -1) === order.at(-1), 'steps and wraps');
 });
 
