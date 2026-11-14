@@ -674,7 +674,7 @@ export const CHARACTERS = {
         projectile: {
           cut: 'pierce', look: 'shuriken', fx: 'shuriken',
           count: 1, speed: 940, lifetime: 40, y: 58, w: 14, h: 14,
-          damage: 4, hitstun: 16, hitstop: 2, shake: 0,
+          damage: 9, hitstun: 18, hitstop: 3, shake: 0, // (was 4: Nick, 2026-11-14, "does no damage")
           knockback: { x: 60, y: 0 }, guardDamage: 6, pierce: false, color: 0xd8dde4,
         },
       },

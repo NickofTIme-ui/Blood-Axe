@@ -164,27 +164,59 @@ const SOUNDS = {
     thump(x, { f0: 240, f1: 110, len: 0.07, gain: 0.5 });
     return finish(x, { peak: 0.7 });
   },
-  // the mine set down: two clicks of its mechanism
+  // The widow mine (Nick, 2026-11-14: didn't like the old sine-blip ones; they sounded like a
+  // modern gadget). Now iron and black powder: a heavy casing thunked into the mud, a
+  // spring ratchet wound and its jaws locking, a spitting fuse when a man comes near,
+  // and a real blast with shrapnel and dirt raining down.
+  // set down: iron into mud, a dull clank of the casing, a rattle
   'rogue-mine-set.wav': () => {
-    const r = rng(9), x = buf(0.16);
-    click(x, { r, gain: 0.8 });
-    click(x, { r, at: 0.06, gain: 0.6 });
-    thump(x, { f0: 300, f1: 160, len: 0.05, gain: 0.3 });
+    const r = rng(9), x = buf(0.32);
+    thump(x, { f0: 120, f1: 55, len: 0.14, gain: 0.9 });
+    bandNoise(x, { r, q: 0.8, f: () => 650, amp: (t) => 0.7 * env(t, 0.002, 0.035) });
+    ring(x, { r, at: 0.008, base: 820, ratios: [1, 1.62, 2.31, 3.17], decay: 0.09, gain: 0.32 });
+    click(x, { r, at: 0.09, gain: 0.35 });
+    ring(x, { r, at: 0.09, base: 1900, ratios: [1, 1.41, 2.2], decay: 0.03, gain: 0.12 });
+    return finish(x, { peak: 0.75 });
+  },
+  // armed: a spring ratchet wound four clicks, then the jaws snap locked
+  'rogue-mine-arm.wav': () => {
+    const r = rng(10), x = buf(0.42);
+    for (let i = 0; i < 4; i++) {
+      const at = i * 0.035;
+      click(x, { r, at, gain: 0.45 + i * 0.05 });
+      ring(x, { r, at, base: 2500 + i * 60, ratios: [1, 1.33, 1.9], decay: 0.012, gain: 0.14 });
+    }
+    const at = 0.17;
+    click(x, { r, at, gain: 0.9 });
+    thump(x, { at, f0: 260, f1: 120, len: 0.05, gain: 0.45 });
+    ring(x, { r, at, base: 1550, ratios: [1, 1.47, 2.09, 2.76], decay: 0.13, gain: 0.42 });
     return finish(x, { peak: 0.65 });
   },
-  // armed: a tick and a tiny rising tone
-  'rogue-mine-arm.wav': () => {
-    const r = rng(10), x = buf(0.2);
-    click(x, { r, gain: 0.5 });
-    blip(x, { at: 0.03, f0: 1400, f1: 2100, len: 0.12, gain: 0.4 });
-    return finish(x, { peak: 0.55 });
-  },
-  // a man close enough: the warning, two quick high beeps
+  // a man close enough: the fuse catches, hissing and spitting sparks
   'rogue-mine-beep.wav': () => {
-    const x = buf(0.22);
-    blip(x, { f0: 2300, len: 0.06, gain: 0.6 });
-    blip(x, { at: 0.1, f0: 2300, len: 0.06, gain: 0.6 });
-    return finish(x, { peak: 0.6 });
+    const r = rng(11), x = buf(0.55);
+    bandNoise(x, { r, q: 1.1, f: (t) => 4600 + 900 * Math.sin(t * 40), amp: (t) => 0.5 * env(t, 0.03, 0.35) * (0.7 + 0.3 * Math.sin(2 * Math.PI * 23 * t)) });
+    bandNoise(x, { r, q: 0.9, f: () => 1800, amp: (t) => 0.4 * env(t, 0.001, 0.02) }); // (the catch)
+    for (let i = 0; i < 9; i++) click(x, { r, at: 0.03 + r() * 0.42, gain: 0.25 + r() * 0.3 }); // (spits)
+    return finish(x, { peak: 0.6, fadeMs: 40 });
+  },
+  // the blast: a hard crack, a deep boom, a rolling rumble, steel singing out, and dirt
+  // and stones raining down after
+  'rogue-mine-blast.wav': () => {
+    const r = rng(15), x = buf(1.7);
+    click(x, { r, gain: 1 });
+    bandNoise(x, { r, q: 0.5, f: () => 2600, amp: (t) => 1.0 * env(t, 0.001, 0.025) });
+    thump(x, { f0: 95, f1: 28, len: 0.7, gain: 1.4 });
+    thump(x, { f0: 180, f1: 60, len: 0.18, gain: 0.7 });
+    bandNoise(x, { r, q: 0.6, f: (t) => 320 - 220 * Math.min(1, t / 1.2), amp: (t) => 1.1 * env(t, 0.004, 0.42) });
+    bandNoise(x, { r, q: 0.7, f: () => 1100, amp: (t) => 0.6 * env(t, 0.002, 0.09) });
+    for (let i = 0; i < 4; i++) ring(x, { r, at: 0.01 + r() * 0.12, base: 2800 + r() * 1800, decay: 0.05, gain: 0.12 });
+    for (let i = 0; i < 28; i++) {
+      const at = 0.22 + (r() ** 1.6) * 1.25; const fade = 1 - (at - 0.22) / 1.3;
+      click(x, { r, at, gain: (0.12 + r() * 0.22) * fade });
+      if (i % 3 === 0) thump(x, { at, f0: 320 + r() * 200, f1: 180, len: 0.03, gain: 0.12 * fade });
+    }
+    return finish(x, { peak: 0.9, fadeMs: 120 });
   },
   // gone: a soft inward rush (BACKSTAB vanishing, NIGHT FALLS between cuts)
   'rogue-vanish.wav': () => {

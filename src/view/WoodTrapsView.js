@@ -187,7 +187,7 @@ export class WoodTrapsView {
       const v = this.traps.get(t.id); const g = v.g.clear();
       if (t.type === 'snare') {
         g.setDepth(t.z - 1);
-        if (t.sprung) continue;
+        if (t.sprung) { this.drawSprung(g, t, t0); continue; }
         // a noose of cord in the leaves, its line running taut back to a bent sapling;
         // a glint on its wire where the light catches it (it can be seen: it's fair)
         g.fillStyle(0x1a1a10, 0.6).fillEllipse(t.x, t.z, 46, 10);
@@ -245,6 +245,34 @@ export class WoodTrapsView {
     }
   }
 
+  // Sprung: the sapling whipped upright, bowed over the man it caught, the cord running from
+  // its tip down to his ankle (or, once he's loose, hanging empty with the noose at its end).
+  drawSprung(g, t, t0) {
+    const f = t.caught != null ? this.scene.world.fighters.find((o) => o.id === t.caught) : null;
+    const A = f ? this.scene.views?.get(f.id)?.hangAnkle : null;
+    const k = A?.k ?? 0;
+    const baseX = t.x + 34; const baseY = t.z;
+    // its tip: bent over above him by his weight; springing back up straight when he's gone
+    const tipX = baseX - 26 - 6 * k + Math.sin(t0 / 260 + t.id) * (k ? 3 : 1.2);
+    const tipY = A ? Math.min(A.y - 60, baseY - 230) : baseY - 290;
+    const midX = baseX + 6; const midY = (baseY + tipY) / 2;
+    g.lineStyle(9, 0x2a2216, 1).beginPath().moveTo(baseX, baseY);
+    for (let i = 1; i <= 10; i++) {
+      const u = i / 10; const a = (1 - u) * (1 - u); const b = 2 * (1 - u) * u; const c = u * u;
+      g.lineTo(a * baseX + b * midX + c * tipX, a * baseY + b * midY + c * tipY);
+      if (i === 5) g.strokePath().lineStyle(6, 0x2a2216, 1).beginPath().moveTo(a * baseX + b * midX + c * tipX, a * baseY + b * midY + c * tipY);
+    }
+    g.strokePath();
+    g.fillStyle(0x16200e, 0.9).fillEllipse(tipX - 8, tipY - 6, 34, 14).fillEllipse(midX + 14, midY - 20, 28, 10);
+    if (A) g.lineStyle(1.5, 0xa89870, 1).lineBetween(tipX, tipY + 2, A.x, A.y + 2);
+    else {
+      // empty: the cord hangs down off the tip, the noose open at its end, swaying
+      const sw = Math.sin(t0 / 420 + t.id) * 6;
+      g.lineStyle(1.5, 0xa89870, 0.9).lineBetween(tipX, tipY + 2, tipX + sw, tipY + 120);
+      g.strokeEllipse(tipX + sw, tipY + 128, 12, 16);
+    }
+  }
+
   // ------------------------------------------------------------ the kennels
 
   drawGates() {
@@ -292,8 +320,12 @@ export class WoodTrapsView {
           for (let i = -3; i <= 3; i++) g.lineBetween(f.x + i * 12, f.z - f.h - 120, f.x + i * 16, f.z - f.h);
           for (let j = 0; j < 5; j++) g.lineBetween(f.x - 50, f.z - f.h - 120 + j * 28, f.x + 50, f.z - f.h - 116 + j * 28);
         } else {
-          g.lineStyle(2, 0xa89870, 1).lineBetween(f.x + 4, f.z - f.h - 6, f.x + 30, f.z - 200);
-          g.strokeEllipse(f.x + 2, f.z - f.h - 4, 22, 6);
+          // strung up by the ankle (view/SnareHang.js): the noose round it, the cord to the sapling
+          const A = this.scene.views?.get(f.id)?.hangAnkle;
+          if (A) {
+            g.lineStyle(2, 0x2a2216, 1).strokeEllipse(A.x, A.y + 4, 16, 7);
+            g.lineStyle(1, 0xc8b890, 0.8).strokeEllipse(A.x, A.y + 3, 14, 5);
+          }
         }
         const shake = Math.sin(now / 40) * 2;
         m.text.setText(f.team === 'player' ? `MASH TO CUT FREE  ${'|'.repeat(Math.max(0, f.snare.left))}` : '').setX(f.x + shake).setColor('#ffe0a0');

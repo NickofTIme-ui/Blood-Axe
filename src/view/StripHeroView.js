@@ -6,6 +6,7 @@
 // sparks and afterimages are not drawn here (effects/MageFX.js, effects/RogueFX.js).
 
 import { DEPTH, depthScale } from './depths.js';
+import { hangSprite } from './SnareHang.js';
 import { movePhase } from '../combat/MoveRunner.js';
 import { MAGE_FINISHERS } from '../combat/Mage.js';
 import { ROGUE_FINISHERS } from '../combat/Rogue.js';
@@ -280,6 +281,7 @@ export class StripHeroView {
 
     s.setPosition(f.x + push * f.facing, f.z - f.h + bob).setDepth(f.z).setScale(sx * f.facing, sy);
     s.angle = lean * f.facing;
+    hangSprite(this, s, f); // (snared: upside down by the ankle)
 
     s.clearTint();
     if (f.flash > 0) s.setTintFill(0xffffff);

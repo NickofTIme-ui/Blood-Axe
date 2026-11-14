@@ -12,6 +12,7 @@ import { movePhase } from '../combat/MoveRunner.js';
 import { SPRITES, haveSprites } from './levelArt.js';
 import { phaseCell } from './animFeel.js';
 import { softShadow } from './atmosphere.js';
+import { hangSprite } from './SnareHang.js';
 
 // the painted attack strip's cells by phase: 1 crouch (held through the wind-up),
 // 2 the leaping lunge and 3 the bite while the hitbox is out, 4 landing
@@ -49,6 +50,8 @@ export class HoundView {
     i = name === 'hound-walk' ? i % S.count : Math.min(S.count - 1, Math.max(0, i));
     this.img.setTexture(S.key, `f${i}`).setPosition(f.x, f.z - f.h).setFlipX(f.facing < 0).setDepth(f.z).setAlpha(alpha);
     if (f.flash > 0) this.img.setTintFill(0xffffff); else this.img.clearTint();
+    this.img.setAngle(0); this.img.scaleX = Math.abs(this.img.scaleX); // (hangSprite turns it over)
+    hangSprite(this, this.img, f, this.img.displayHeight * 0.8); // (snared: strung up by a hind leg)
   }
 
   update() {

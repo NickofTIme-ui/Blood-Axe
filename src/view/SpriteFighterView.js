@@ -12,6 +12,7 @@
 // turns while blocking, and a heavy, planted bob to the walk.
 
 import { DEPTH, depthScale } from './depths.js';
+import { hangSprite } from './SnareHang.js';
 import { movePhase } from '../combat/MoveRunner.js';
 import { drawSmear, smearSparks } from './Smear.js';
 import { IMPALE, CHAIN, THROAT } from '../combat/Finisher.js';
@@ -665,6 +666,7 @@ export class SpriteFighterView {
     const visualRes=this.meta.visualRes??1;
     s.setScale(sx/visualRes,sy/visualRes);
     s.angle = lean * f.facing;
+    hangSprite(this, s, f); // (snared: upside down by the ankle)
 
     // afterimage: when a swing changes pose through the strike, the last pose lingers a
     // few frames behind him (fills the gap between hand-drawn poses, sells the speed)

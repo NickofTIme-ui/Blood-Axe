@@ -17,6 +17,7 @@ import { drawSmear, smearSparks } from './Smear.js';
 import { ImpaledRig } from './ImpaledRig.js';
 import { Ragdoll } from './Ragdoll.js';
 import { depthScale } from './depths.js';
+import { hangSprite } from './SnareHang.js';
 import { Heading, headingAnim } from './Heading.js';
 import { applyBurn } from '../effects/Burn.js';
 import { IMPALE, THROAT } from '../combat/Finisher.js';
@@ -580,6 +581,7 @@ export class SpriteEnemyView {
     s.setScale(k * face * (1 - breathe * 0.006) * wide, k * (1 + breathe * 0.014) * tall);
     s.angle = angle * face;
     this.grabSpin(s, f, tick);
+    hangSprite(this, s, f); // (caught in a snare: upside down by the ankle, view/SnareHang.js)
     // held in the painted hold (Rurik's pair_<art> strip has him in it): his own sprite waits
     const holder = f.execBy;
     if (holder?.state === 'execute' && holder.exec?.kind === 'throat' && this.scene.views?.get(holder.id)?.pairActive) alpha = 0;

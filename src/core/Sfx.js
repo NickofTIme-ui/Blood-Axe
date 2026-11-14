@@ -81,7 +81,8 @@ export const SFX = {
   rogueStarHit: 'assets/audio/sfx/rogue-star-hit.wav',   // ...and biting in
   rogueMineSet: 'assets/audio/sfx/rogue-mine-set.wav',   // the widow mine set down
   rogueMineArm: 'assets/audio/sfx/rogue-mine-arm.wav',   // ...armed
-  rogueMineBeep: 'assets/audio/sfx/rogue-mine-beep.wav', // ...a man close enough: the warning
+  rogueMineBeep: 'assets/audio/sfx/rogue-mine-beep.wav', // ...a man close enough: the fuse catches
+  rogueMineBlast: 'assets/audio/sfx/rogue-mine-blast.wav', // ...and it goes off (tools/sfx-gen/rogue.js)
   rogueVanish: 'assets/audio/sfx/rogue-vanish.wav',      // gone into smoke
   rogueSmoke: 'assets/audio/sfx/rogue-smoke.wav',        // the smoke bomb
   rogueNight: 'assets/audio/sfx/rogue-night.wav',        // Night Falls coming down

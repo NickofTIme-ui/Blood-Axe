@@ -19,7 +19,10 @@ export class ProjectileView {
     this.hearth = d.look === 'hearthfire';
     // (the Hearthfire Bolt's own painted strip when it's in, else the Firebolt's grown)
     this.painted = this.hearth && !!FX.hearthfire;
-    this.fx = d.look ? FX[this.hearth ? (this.painted ? 'hearthfire' : 'firebolt') : d.look] : null;
+    // (thrown steel has painted art too, but it's drawn as steel below, small and spinning:
+    // through the spell path the star came out fireball-sized with a glow and embers)
+    const steel = d.look === 'knife' || d.look === 'shuriken';
+    this.fx = d.look && !steel ? FX[this.hearth ? (this.painted ? 'hearthfire' : 'firebolt') : d.look] : null;
     this.age = 0;
     this.shadow = scene.add.ellipse(0, 0, d.w, 8, 0x000000, 0.3).setDepth(DEPTH.shadows);
     if (this.fx) {
