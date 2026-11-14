@@ -169,6 +169,8 @@ const SOUNDS = {
   // spring ratchet wound and its jaws locking, a spitting fuse when a man comes near,
   // and a real blast with shrapnel and dirt raining down.
   // set down: iron into mud, a dull clank of the casing, a rattle
+  // (the rogue-mine-* sounds below are no longer played: the game uses Kenney's recorded
+  // mine-set / mine-arm / mine-tick / mine-blast.wav instead, Nick's pick 2026-11-14)
   'rogue-mine-set.wav': () => {
     const r = rng(9), x = buf(0.32);
     thump(x, { f0: 120, f1: 55, len: 0.14, gain: 0.9 });

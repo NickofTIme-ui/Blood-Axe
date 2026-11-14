@@ -1,0 +1,8 @@
+mine-set.wav, mine-arm.wav, mine-tick.wav, mine-blast.wav (the Rogue's widow mine)
+are mixed from Kenney's "Impact Sounds", "RPG Audio" and "Sci-Fi Sounds" packs
+(www.kenney.nl), released under CC0 1.0 Universal (public domain).
+No credit required; credit given anyway: sounds by Kenney (kenney.nl).
+
+Sources: impact_plate_light_001, impact_metal_light_002, impact_mining_003,
+impact_wood_heavy_002 (Impact Sounds); metal_latch, metal_click (RPG Audio);
+low_frequency_explosion_000, explosion_crunch_002 (Sci-Fi Sounds).

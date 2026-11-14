@@ -14,6 +14,9 @@ branch, or ChatGPT's work gets lost.
   Documents\blood-axe\assets\incoming\level2 and Downloads\level2-art.zip on the PC (pine, logpile, log_roll,
   snare, stakes, pen_gate, ferns, wall 2172x724 with a slightly off seam). Cut with tools/cut-wood-art.py,
   then wire into WoodTrapsView / WoodWeather (code-drawn stand-ins until then).
+- 14 November 2026 ~21:10 (cloud, Nick: picked recorded sounds): WIDOW MINE SOUNDS are now recorded Kenney CC0
+  samples (assets/audio/sfx/mine-set/arm/tick/blast.wav, licence kenney-LICENSE.txt) instead of the code-made
+  rogue-mine-*.wav (deleted). tests/shuriken-view-test.js guards the small star (fix itself landed in 7699b27).
 - 10 November 2026 (cloud, Nick: "push"): MAIN 363ffe2 replaces the thin code-drawn red ring where
   arrow volleys and catapult stones land with a painted ChatGPT marker (assets/fx/volley-mark.png,
   StageView drawLandingMark; the old ring is only a fallback). NOT on itch.
