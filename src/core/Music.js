@@ -137,7 +137,9 @@ function fade(game, snd, to, ms, done) {
   game.events.on('step', step);
 }
 
-export function playMusic(scene, key) {
+// opts.fadeIn: ms the track takes to come up (0: at once); opts.punch: it comes in this much
+// louder and settles to its level over opts.settle ms (the wood's ambush: core/WoodMusic.js)
+export function playMusic(scene, key, { fadeIn = 900, punch = 1, settle = 3000 } = {}) {
   if (current?.key === key) return;
   if (key === 'title' && early) {
     current = { key, sound: early }; // (it has what the crossfade and toggleMute need from a Phaser sound)
@@ -151,8 +153,10 @@ export function playMusic(scene, key) {
   const start = () => {
     if (current?.key !== key) return;
     const s = current.sound;
-    s.play({ loop: true, volume: 0 });
-    fade(scene.game, s, volume(), 900);
+    const v = volume();
+    if (fadeIn > 0) { s.play({ loop: true, volume: 0 }); fade(scene.game, s, v, fadeIn); return; }
+    s.play({ loop: true, volume: Math.min(1, v * punch) });
+    if (punch !== 1) fade(scene.game, s, v, settle);
   };
 
   if (current) {

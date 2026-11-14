@@ -105,13 +105,19 @@ const lastPlayed = {};
 // A looping sound tied to something (a projectile in flight). Returns a handle with
 // stop(fadeMs) — always call it, e.g. from the owner's destroy().
 export function startLoop(scene, key, { volume = 1, fadeInMs = 80 } = {}) {
-  if (!scene.cache.audio.exists(key) || scene.sound.locked) return { stop() {} };
+  if (!scene.cache.audio.exists(key) || scene.sound.locked) return { stop() {}, setVolume() {} };
   const target = (SETTINGS.audio.sfx ?? 0.8) * volume;
   const snd = scene.sound.add(key, { loop: true, volume: 0 });
   snd.play();
   scene.tweens.add({ targets: snd, volume: target, duration: fadeInMs });
   let stopped = false;
   return {
+    // (a new level, of the sfx volume like `volume`, reached over fadeMs)
+    setVolume(v, fadeMs = 1000) {
+      if (stopped) return;
+      scene.tweens.killTweensOf(snd);
+      scene.tweens.add({ targets: snd, volume: (SETTINGS.audio.sfx ?? 0.8) * v, duration: fadeMs });
+    },
     stop(fadeMs = 250) {
       if (stopped) return;
       stopped = true;

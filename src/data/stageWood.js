@@ -53,7 +53,7 @@ export const STAGE_WOOD = {
   width: 9200,
   theme: 'wood',
   music: 'wilderness', // (core/Music.js)
-  quietMusic: true, // the track only while a fight is on; rain in the pines between (core/WoodMusic.js)
+  quietMusic: true, // rain alone till the first ambush, then the track for good (core/WoodMusic.js)
   tall: true,
   castle: { x: 760, scale: 0.6, detail: 0.5 }, // nearer now: a silhouette over the wood
   // the other two Oath Keepers (view/NpcView.js): with you at the start, then scouting
@@ -71,9 +71,15 @@ export const STAGE_WOOD = {
       // the trees (the crows go up first: a spawn's `tell`); then the rest of them, with a
       // HORNBLOWER who runs for the back of the road: stop him, or his horn calls more (`horn`)
       howl: true,
-      waves: [['grunt', 'stalker', 'hound', 'hound'], ['grunt:horn', 'butcher', 'grunt']],
+      // (Nick, 2026-11-14: more of them come down out of the trees at once; the music kicks
+      // in with a boom as the first one drops: core/WoodMusic.js)
+      waves: [['grunt', 'stalker', 'grunt', 'stalker', 'hound', 'hound'], ['grunt:horn', 'butcher', 'grunt']],
       spawns: [
-        [{ x: 1180, z: 330, drop: 430, tell: 80 }, { x: 1290, z: 470, drop: 430, tell: 96 }, { x: 1440, z: 300 }, { x: 1460, z: 480 }],
+        [
+          { x: 1180, z: 330, drop: 430, tell: 80 }, { x: 1290, z: 470, drop: 430, tell: 84 },
+          { x: 1090, z: 450, drop: 430, tell: 88 }, { x: 1350, z: 380, drop: 430, tell: 92 },
+          { x: 1440, z: 300 }, { x: 1460, z: 480 },
+        ],
         [{ x: 1460, z: 300 }, { x: 1470, z: 460 }, { x: 700, z: 380 }],
       ],
       horn: ['grunt', 'stalker', 'grunt'],
