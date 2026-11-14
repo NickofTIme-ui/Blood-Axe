@@ -11,6 +11,9 @@
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 
+import { artKey } from './levelArt.js';
+const PAINTED_FERNS = ['fern_1', 'fern_2', 'fern_3'].map((n) => artKey('wood', n));
+
 export const WEATHER = {
   drops: 150,       // rain streaks on screen at once
   slant: 0.22,      // sideways per unit fallen (the wind off the hills)
@@ -57,8 +60,18 @@ export class WoodWeather {
     const f = rng(31);
     for (let x = 60; x < this.data.width * 1.35; x += WEATHER.fernEvery * (0.6 + f() * 0.9)) {
       const kind = f() < 0.6 ? 'wood-fern' : 'wood-grass';
+      const pick = f(); const size = 0.8 + f() * 0.7; const flip = f() < 0.5;
+      // painted clumps (assets/env/wood/fern_1..3.png) when they're in: kept dark, they're
+      // right in front of the camera, but not flat black, so the fronds still read
+      const painted = PAINTED_FERNS.filter((k) => scene.textures.exists(k));
+      if (painted.length) {
+        const key = painted[Math.floor(pick * painted.length)];
+        scene.add.image(x, H + 26, key).setOrigin(0.5, 1).setScrollFactor(1.35, 1).setDepth(DEPTH.popups - 50)
+          .setScale((100 / scene.textures.get(key).getSourceImage().height) * size).setFlipX(flip).setTint(0x30383e);
+        continue;
+      }
       scene.add.image(x, H + 18, kind).setOrigin(0.5, 1).setScrollFactor(1.35, 1).setDepth(DEPTH.popups - 50)
-        .setScale(0.8 + f() * 0.7).setFlipX(f() < 0.5).setTint(0x050708);
+        .setScale(size).setFlipX(flip).setTint(0x050708);
     }
   }
 

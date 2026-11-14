@@ -91,3 +91,20 @@ def main(src):
 
 if __name__ == '__main__':
     main(sys.argv[1] if len(sys.argv) > 1 else 'assets/incoming/level2')
+
+
+def unmix(img, floor=0.06):
+    """A wide backdrop on magenta with mist: the magenta mixed into soft edges and haze is
+    taken back out (colour = a * paint + (1 - a) * magenta), so mist stays grey, not purple."""
+    a = np.asarray(img.convert('RGB')).astype(np.float32) / 255
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    m = np.clip((np.minimum(r, b) - g - floor) / (1 - floor), 0, 1)
+    keep = np.maximum(1 - m, 1e-3)
+    out = np.empty((*m.shape, 4), np.float32)
+    out[..., 0] = (r - m) / keep
+    out[..., 1] = g / keep
+    out[..., 2] = (b - m) / keep
+    out[..., :3] = out[..., :3].clip(0, 1)
+    out[..., 3] = 1 - m
+    out[out[..., 3] < 0.04, 3] = 0
+    return Image.fromarray((out * 255).round().astype(np.uint8), 'RGBA')

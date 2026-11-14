@@ -10,10 +10,13 @@ branch, or ChatGPT's work gets lost.
   (view/SnareHang.js, all fighter views; WoodTrapsView.drawSprung), Vexa's shuriken fixed (it went down the
   spell path once its painting landed and drew fireball-sized; damage 4 -> 9), new mechanical widow mine
   sounds + rogue-mine-blast.wav (tools/sfx-gen/rogue.js). NOT on itch.
-  Gallows Wood trap art round 1 is painted (ChatGPT, PC) but NOT in the repo yet: raws in
-  Documents\blood-axe\assets\incoming\level2 and Downloads\level2-art.zip on the PC (pine, logpile, log_roll,
-  snare, stakes, pen_gate, ferns, wall 2172x724 with a slightly off seam). Cut with tools/cut-wood-art.py,
-  then wire into WoodTrapsView / WoodWeather (code-drawn stand-ins until then).
+  Gallows Wood trap art round 1 (ChatGPT, PC; raws in project files level2-art-nov14/raw and on the PC in
+  assets\incoming\level2) is ON MAIN too: notched pine, log pile (+ loose), rolling log, snare (set + sprung: its
+  painted noose is drawn round the hanging man's boots), stake pit (mat + open), kennel pen gates, three front
+  ferns, and a new wall.png without the repeating shrine (magenta unmixed so the mist stays grey). Cut with
+  `python tools/cut-wood-art.py <raw folder>` (wall: its `unmix`). Code drawings stay as the fallback.
+  Still code-drawn in the wood: Wagonmaster and Houndmaster (no own strips), upside-down poses (the hit pose
+  turned over). The stake pit at x3470 sits inside the ford's stream picture and is hard to see: check it.
 - 14 November 2026 ~21:10 (cloud, Nick: picked recorded sounds): WIDOW MINE SOUNDS are now recorded Kenney CC0
   samples (assets/audio/sfx/mine-set/arm/tick/blast.wav, licence kenney-LICENSE.txt) instead of the code-made
   rogue-mine-*.wav (deleted). tests/shuriken-view-test.js guards the small star (fix itself landed in 7699b27).

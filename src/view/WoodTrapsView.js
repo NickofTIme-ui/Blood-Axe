@@ -14,6 +14,12 @@ import { artKey } from './levelArt.js';
 import { TRAPS } from '../stage/WoodTraps.js';
 
 const BARK = artKey('wood', 'surf-log');
+// the painted traps (ChatGPT, 2026-11-14; tools/cut-wood-art.py): each falls back to code
+const ART = Object.fromEntries(['trap_pine', 'trap_logpile', 'trap_logpile_loose', 'trap_log', 'trap_snare',
+  'trap_snare_sprung', 'trap_stakes', 'trap_stakes_open', 'pen_gate'].map((n) => [n, artKey('wood', n)]));
+// where things are in the paintings (fractions of the cut-out): the sprung snare's noose,
+// the armed snare's ring of cord, the pine's foot
+const SPOT = { noose: { x: 0.718, y: 0.56 }, ground: 0.975, ring: { x: 0.45, y: 0.8 }, pine: { x: 0.47, y: 0.95 } };
 const rand = (a, b) => a + Math.random() * (b - a);
 
 export class WoodTrapsView {
@@ -33,10 +39,16 @@ export class WoodTrapsView {
       if (pr.kind === 'pine') this.pines.set(pr.id, this.makePine(pr));
       if (pr.kind === 'logpile') this.piles.set(pr.id, this.makePile(pr));
     }
-    for (const t of this.rig.traps) this.traps.set(t.id, { g: scene.add.graphics() });
+    for (const t of this.rig.traps) {
+      const v = { g: scene.add.graphics() };
+      const key = t.type === 'snare' ? ART.trap_snare : t.type === 'stakes' ? ART.trap_stakes : null;
+      if (key && scene.textures.exists(key)) v.img = scene.add.image(t.x, t.z, key);
+      this.traps.set(t.id, v);
+    }
     // the kennels' pen gates: iron-banded timber bars in front of the hounds (they drop into
     // the mud when a phase lets them out). Painted gates are on the ChatGPT list.
-    this.gates = this.rig.pens.map((pen) => ({ pen, g: scene.add.graphics().setDepth(pen.z + 8), drop: 0 }));
+    this.gates = this.rig.pens.map((pen) => ({ pen, g: scene.add.graphics().setDepth(pen.z + 8), drop: 0,
+      img: scene.textures.exists(ART.pen_gate) ? scene.add.image(pen.x, pen.z + 10, ART.pen_gate).setOrigin(0.5, 1).setDepth(pen.z + 8) : null }));
     this.drawGates();
     this.listen();
   }
@@ -47,6 +59,15 @@ export class WoodTrapsView {
     const s = this.scene; const H = 330; const W = 50;
     const c = s.add.container(pr.x, pr.z - (pr.y ?? 0)).setDepth(pr.z);
     const shadow = s.add.ellipse(pr.x, pr.z, 90, 14, 0x000000, 0.45).setDepth(DEPTH.floor + 2);
+    if (s.textures.exists(ART.trap_pine)) {
+      // painted: the notch is cut on its left, the side it falls to (so it's mirrored to fall right)
+      const img = s.add.image(0, 8, ART.trap_pine).setOrigin(SPOT.pine.x, SPOT.pine.y);
+      img.setScale(430 / img.height).setFlipX((pr.fellDir ?? 1) > 0);
+      c.add(img);
+      const v = { c, notch: s.add.graphics(), shadow, H, W, hits: 0, fallen: false, painted: true };
+      c.add(v.notch);
+      return v;
+    }
     const bark = s.textures.exists(BARK)
       ? s.add.tileSprite(0, 0, H, W, BARK).setOrigin(0, 0.5).setTileScale(0.18).setAngle(-90).setTint(0x9a9890)
       : s.add.rectangle(0, 0, H, W, 0x2a2018).setOrigin(0, 0.5).setAngle(-90);
@@ -70,6 +91,12 @@ export class WoodTrapsView {
   // to hit: fresh wood and chips, a mark painted on the bark)
   drawNotch(v, pr) {
     const g = v.notch.clear();
+    if (v.painted) {
+      // painted notch: fresh pale wood showing deeper with each blow
+      const dir = pr.fellDir ?? 1; const d = 1 - pr.hp / 3;
+      if (d > 0) g.fillStyle(0xf0d8a8, 0.35 + 0.4 * d).fillTriangle(dir * 22, -70, dir * 22, -44, dir * (22 - 18 * d), -56);
+      return;
+    }
     const d = (1 - pr.hp / 3) * 0.6 + 0.25; const W = v.W; const y = -46; const dir = pr.fellDir ?? 1;
     const x0 = dir * (W / 2); const deep = dir * W * d;
     g.fillStyle(0xe8c890, 1).fillTriangle(x0, y - 16, x0, y + 12, x0 - deep, y + 2);
@@ -124,7 +151,19 @@ export class WoodTrapsView {
         : s.add.rectangle(0, 0, w, 28, 0x3a2a1a);
       trunks.push(t.setOrigin(0, 1).setVisible(false));
     }
-    const v = { g, ends, rope, logs, trunks, rollG: s.add.graphics().setDepth(pr.z), loose: false };
+    if (s.textures.exists(ART.trap_log)) {
+      // painted log: the same log for each trunk, rolling (a little bob and a turn of the light)
+      for (const t of trunks) t.destroy();
+      trunks.length = 0;
+      for (let i = 0; i < 4; i++) {
+        const w = pr.roll.x1 - pr.roll.x0 - 20;
+        trunks.push(s.add.image(0, 0, ART.trap_log).setOrigin(0, 1).setDisplaySize(w, 34).setVisible(false).setFlipX(i % 2 === 1));
+      }
+    }
+    const painted = s.textures.exists(ART.trap_logpile);
+    const img = painted ? s.add.image(pr.x, pr.z + 6, ART.trap_logpile).setOrigin(0.5, 0.96).setDepth(pr.z - 1.8) : null;
+    if (img) img.setScale(240 / img.width);
+    const v = { g, ends, rope, logs, trunks, rollG: s.add.graphics().setDepth(pr.z), loose: false, img, painted };
     this.drawPile(v, pr);
     return v;
   }
@@ -132,6 +171,12 @@ export class WoodTrapsView {
   drawPile(v, pr) {
     const { g, ends, rope } = v;
     g.clear(); ends.clear(); rope.clear();
+    if (v.img) {
+      // painted: the stacked pile, or the empty posts and the cut rope once it's gone
+      if (v.loose && this.scene.textures.exists(ART.trap_logpile_loose)) v.img.setTexture(ART.trap_logpile_loose).setScale(240 / v.img.frame.width);
+      else if (v.loose) v.img.setVisible(false);
+      return;
+    }
     if (v.loose) return;
     g.fillStyle(0x000000, 0.4).fillEllipse(pr.x, pr.z + 2, 210, 18);
     g.fillStyle(0x1e1610, 1).fillRect(pr.x - 96, pr.z - 120, 9, 120).fillRect(pr.x + 88, pr.z - 120, 9, 120); // the posts
@@ -166,6 +211,11 @@ export class WoodTrapsView {
         // the bark turning as it rolls, round shading top and bottom, the cut ends pale
         T.setVisible(true).setPosition(x, z - 2).setDepth(front + 0.9 - i * 0.01);
         if (T.tilePositionY !== undefined) T.tilePositionY = -(R.t * 6 + i * 11);
+        if (T.type === 'Image') {
+          T.y -= Math.abs(Math.sin(R.t * 0.35 + i * 1.7)) * 3; // (bouncing over the ruts)
+          T.setTint(i % 2 ? 0xc8c0b0 : 0xffffff);
+          continue;
+        }
         g.fillStyle(0x000000, 0.4).fillRect(x, z - 10, w - 36, 8);
         g.fillStyle(0xffffff, 0.06).fillRect(x, z - 28, w - 36, 5);
         g.fillStyle(0x2a1e14, 1).fillEllipse(x + w - 36, z - 16, 16, 30);
@@ -187,6 +237,7 @@ export class WoodTrapsView {
       const v = this.traps.get(t.id); const g = v.g.clear();
       if (t.type === 'snare') {
         g.setDepth(t.z - 1);
+        if (v.img) { this.drawSnareArt(v, t); continue; }
         if (t.sprung) { this.drawSprung(g, t, t0); continue; }
         // a noose of cord in the leaves, its line running taut back to a bent sapling;
         // a glint on its wire where the light catches it (it can be seen: it's fair)
@@ -196,6 +247,11 @@ export class WoodTrapsView {
         g.fillStyle(0x2a2216, 1).fillTriangle(t.x + 22, t.z - 60, t.x + 38, t.z - 60, t.x + 30, t.z - 168); // (the sapling, bent)
         const glint = 0.35 + 0.35 * Math.max(0, Math.sin(t0 / 380 + t.id));
         g.fillStyle(0xe8f0ff, glint).fillCircle(t.x - 6, t.z - 3, 2);
+      } else if (t.type === 'stakes' && v.img) {
+        // painted: the mat of boughs, then the open pit and its stakes
+        const open = t.open && this.scene.textures.exists(ART.trap_stakes_open);
+        v.img.setTexture(open ? ART.trap_stakes_open : ART.trap_stakes).setDepth(DEPTH.floor + 2.5);
+        v.img.setScale((t.w + 34) / v.img.frame.width).setPosition(t.x, t.z + 2);
       } else if (t.type === 'stakes') {
         g.setDepth(DEPTH.floor + 2.5);
         if (!t.open) {
@@ -245,6 +301,35 @@ export class WoodTrapsView {
     }
   }
 
+  // The painted snare: set in the leaves; sprung, the sapling stands up with the cord off its
+  // tip, and the painted noose is drawn round the caught man's ankle (scaled to how high he
+  // hangs); once he's loose it hangs empty where it was.
+  drawSnareArt(v, t) {
+    const img = v.img;
+    if (!t.sprung) {
+      img.setTexture(ART.trap_snare).setDepth(t.z - 1);
+      const k = 170 / img.frame.width;
+      img.setScale(k).setPosition(t.x + (0.5 - SPOT.ring.x) * img.frame.width * k, t.z + (1 - SPOT.ring.y) * img.frame.height * k);
+      return;
+    }
+    if (!this.scene.textures.exists(ART.trap_snare_sprung)) { img.setVisible(false); this.drawSprung(v.g, t, this.scene.time.now); return; }
+    img.setTexture(ART.trap_snare_sprung).setOrigin(SPOT.noose.x, SPOT.noose.y);
+    const f = t.caught != null ? this.scene.world.fighters.find((o) => o.id === t.caught) : null;
+    const A = f ? this.scene.views?.get(f.id)?.hangAnkle : null;
+    if (A && A.k > 0.6) {
+      const ground = f.z - (f.floor ?? 0);
+      const lift = Math.max(60, ground - A.y);
+      const k = lift / ((SPOT.ground - SPOT.noose.y) * img.frame.height);
+      if (A.k >= 0.99) v.hung = { x: A.x, y: A.y + 12, k }; // (where it rests once he's gone: at full height)
+      // (the loop's foot round his boots: the frame's foot line sits a little past the painted soles)
+      img.setScale(k).setPosition(A.x, A.y + 12).setDepth(f.z + 0.3).setAngle(0);
+    } else {
+      // empty: where it was, swaying a little (or, never having held anyone, a default height)
+      const H = v.hung ?? { x: t.x, y: t.z - 150, k: 150 / ((SPOT.ground - SPOT.noose.y) * img.frame.height) };
+      img.setScale(H.k).setPosition(H.x, H.y).setDepth(t.z - 1).setAngle(Math.sin(this.scene.time.now / 500 + t.id) * 1.5);
+    }
+  }
+
   // Sprung: the sapling whipped upright, bowed over the man it caught, the cord running from
   // its tip down to his ankle (or, once he's loose, hanging empty with the noose at its end).
   drawSprung(g, t, t0) {
@@ -279,10 +364,18 @@ export class WoodTrapsView {
     for (const G of this.gates) {
       const g = G.g.clear(); const pen = G.pen;
       if (pen.open) G.drop = Math.min(1, G.drop + 0.08); else G.drop = 0;
-      if (G.drop >= 1) continue;
+      if (G.drop >= 1) { G.img?.setVisible(false); continue; }
       const w = 52 + (pen.count ?? 1) * 34; const h = 96; const x0 = pen.x - w / 2; const yb = pen.z + 10;
       const sink = G.drop * h; // (down into the mud)
       const top = yb - h + sink;
+      if (G.img) {
+        // painted: the whole gate slides down into the mud (cropped at the ground line)
+        const I = G.img; const fw = I.frame.realWidth ?? I.frame.width; const fh = I.frame.realHeight ?? I.frame.height;
+        const k = (w + 30) / fw; const gone = G.drop * fh;
+        I.setScale(k).setPosition(pen.x, yb + 4 + gone * k).setCrop(0, 0, fw, Math.max(0, fh - gone)).setVisible(G.drop < 1);
+        g.fillStyle(0x000000, 0.35).fillEllipse(pen.x, yb + 2, w + 20, 12);
+        continue;
+      }
       g.fillStyle(0x000000, 0.35).fillEllipse(pen.x, yb + 2, w + 20, 12);
       // the posts either side stay; the bars between them go down
       g.fillStyle(0x1a120c, 1).fillRect(x0 - 8, yb - h - 10, 9, h + 12).fillRect(x0 + w - 1, yb - h - 10, 9, h + 12);
@@ -322,7 +415,7 @@ export class WoodTrapsView {
         } else {
           // strung up by the ankle (view/SnareHang.js): the noose round it, the cord to the sapling
           const A = this.scene.views?.get(f.id)?.hangAnkle;
-          if (A) {
+          if (A && !this.scene.textures.exists(ART.trap_snare_sprung)) {
             g.lineStyle(2, 0x2a2216, 1).strokeEllipse(A.x, A.y + 4, 16, 7);
             g.lineStyle(1, 0xc8b890, 0.8).strokeEllipse(A.x, A.y + 3, 14, 5);
           }
