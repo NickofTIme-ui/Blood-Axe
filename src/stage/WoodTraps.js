@@ -43,6 +43,21 @@ export const TRAPS = {
   // the Houndmaster's kennels: his whistle sends every loose hound in, two pounces each
   kennel: { whistle: [360, 520], tell: 34, lunges: 2, lungeAt: 220, give: 300, net: [260, 380] },
   driver: { reach: 230, depth: 64, windup: 34, every: [80, 140], damage: 9, health: 1.7, seat: 0.32 },
+  // a hound knocked down in the mouth of an open pen: the gate slams on it (out of the fight,
+  // till the Houndmaster whistles that pen open again: once a pen)
+  slam: { reach: 44, depth: 70 },
+  // the Houndmaster's chain whip (from his pack phase): wound back (the tell), cracked out, and
+  // it drags the hero in to him and his dogs; a dodge (or any button, mashed) breaks it
+  chain: { every: [240, 360], windup: 38, reach: [90, 300], depth: 40, damage: 6, pull: 8, hold: 34, mash: 3 },
+  // his last hound dead: the fight goes out of him (slower, open, a different last word)
+  broken: { speed: 0.72, damage: 0.8, ai: { attackCooldown: [44, 84], comboChance: 0.25, blockChance: 0.05 } },
+  // a loose pack (two hounds or more on one hero): they circle him at a distance and go in one
+  // at a time, ears up first (the tell); a bite can lock on and drag him (mash to shake it off)
+  pack: { ring: 175, spin: 0.012, turn: 150, tell: 26 },
+  latch: { chance: 0.3, hold: 110, mash: 5, drag: 1.6, every: 30, damage: 2 },
+  // the mist bank over the cage carts: while their signal lantern burns, men keep coming out of
+  // it (one every `every`, `cap` in all); smash the lantern and no more come
+  mist: { every: 300, first: 150, cap: 3, foes: 4 },
 };
 
 export class WoodTraps {
@@ -76,7 +91,12 @@ export class WoodTraps {
     stage.sections.forEach((sec, i) => (sec.pens ?? []).forEach((pen, k) => this.pens.push({ id: k, section: i, ...pen, hounds: [], placed: false, open: false })));
     this.penFresh = true;
     this.world.events.on('bossPhase', ({ phase }) => { for (const k of phase.pens ?? []) this.openPen(this.pens.find((q) => q.id === k && q.section === this.stage.index)); });
+    // the mist banks and their signal lanterns (a section's `mist`)
+    this.mists = [];
+    stage.sections.forEach((sec, i) => { if (sec.mist) this.mists.push({ section: i, ...sec.mist, sent: 0, t: 0, out: false }); });
+    this.world.events.on('hit', (e) => this.onHit(e));
     this.world.events.on('propBreak', ({ prop, dir }) => {
+      if (prop.kind === 'signal') for (const M of this.mists) if (M.tag === prop.tag && !M.out) { M.out = true; this.world.events.emit('signalOut', { prop, mist: M }); }
       if (prop.kind === 'pine') this.fell(prop, dir);
       if (prop.kind === 'logpile') this.rolls.push({ pile: prop, t: 0, hz: { id: `logs${prop.id}`, cool: new Map() } });
     });
@@ -97,6 +117,8 @@ export class WoodTraps {
       else if (t.type === 'current') this.updateCurrent(t);
     }
     for (const f of this.world.fighters) {
+      if (f.chained) this.holdChained(f);
+      if (f.latch) this.holdLatched(f);
       if (f.snare) this.holdSnared(f);
       if (f.hang > 0) this.holdHanging(f);
       if (f.team === 'enemy' && f.alive && f.role && !f.roleSet) this.giveRole(f);
@@ -104,6 +126,8 @@ export class WoodTraps {
     this.updateNets();
     for (const C of this.carts) this.updateCart(C);
     this.updatePens();
+    this.updatePack();
+    for (const M of this.mists) this.updateMist(M);
   }
 
   // ------------------------------------------------------------ the notched pine
@@ -482,6 +506,7 @@ export class WoodTraps {
       }
     }
     this.penFresh = false;
+    this.updateSlams();
     const b = st.boss;
     if (b?.alive && st.section?.pens && !b.kennelSet) {
       b.kennelSet = true;
@@ -496,6 +521,7 @@ export class WoodTraps {
     // (a pen never filled, the level come up mid-fight: its hounds come out of it all the same)
     if (!pen.hounds.length) for (let k = 0; k < (pen.count ?? 1); k++) { const e = createEnemy(this.world, pen.type ?? 'hound', pen.x + k * 30, pen.z); this.stage.setOnGround(e); e.dropIn = true; pen.hounds.push(e); }
     for (const e of pen.hounds) { e.penned = null; e.lurking = null; e.invincible = false; e.facing = 1; }
+    pen.hounds = pen.hounds.filter((e) => e.alive);
     this.world.events.emit('penOpen', { pen });
   }
 
@@ -506,8 +532,19 @@ export class WoodTraps {
     const K = b.kennel; const T = TRAPS.kennel;
     if (!b.alive) return false;
     K.t++;
+    this.checkBroken(b);
+    if (this.chainScript(b, brain, target)) return true;
     if (K.t >= K.next && ['idle', 'walk'].includes(b.state)) {
       const pack = this.world.fighters.filter((f) => f.alive && f.stats.id === 'hound' && f.penned == null && !f.order);
+      // none loose, but some slammed in a pen: he whistles that pen open again (once a pen)
+      const shut = !pack.length && !K.broken && this.pens.find((pen) => pen.section === this.stage.index && !pen.open && pen.shut === 1 && pen.hounds.some((h) => h.alive));
+      if (shut) {
+        K.t = 0; K.next = T.whistle[0];
+        shut.shut = 2;
+        this.openPen(shut);
+        this.world.events.emit('whistle', { fighter: b, pack: shut.hounds });
+        return false;
+      }
       if (pack.length) {
         K.t = 0; K.next = T.whistle[0] + (this.world.frame * 7) % (T.whistle[1] - T.whistle[0]);
         for (const h of pack) { h.order = { t: 0, left: T.lunges, wait: T.tell, busy: false }; h.script = (hb, ht) => this.houndOrder(h, hb, ht); }
@@ -560,12 +597,214 @@ export class WoodTraps {
     return true;
   }
 
+  // ------------------------------------------------------------ the kennels: slamming a gate
+
+  // A hound knocked down (kicked, thrown, hit off its feet) in the mouth of an open pen: the
+  // gate slams on it. It's out of the fight till he whistles that pen open again.
+  updateSlams() {
+    const T = TRAPS.slam;
+    for (const pen of this.pens) {
+      if (!pen.open || pen.section !== this.stage.index) continue;
+      const w = (52 + (pen.count ?? 1) * 34) / 2 + T.reach;
+      const caught = this.world.fighters.filter((h) => h.alive && h.stats.id === 'hound' && h.penned == null && h.state === 'knockdown'
+        && Math.abs(h.x - pen.x) < w && h.z - pen.z < T.depth);
+      if (!caught.length) continue;
+      pen.open = false; pen.shut = (pen.shut ?? 0) + 1; pen.hounds = caught;
+      caught.forEach((h, k) => {
+        h.penned = pen.id; h.lurking = -1; h.invincible = true; h.order = null; h.script = null; h.latchOn = null;
+        h.x = pen.x + (k - (caught.length - 1) / 2) * 34; h.z = pen.z + k * 6; h.vx = 0; h.vz = 0;
+        h.fsm.change('idle');
+      });
+      this.world.events.emit('penSlam', { pen, hounds: caught });
+      this.stage.story?.trigger(`penSlam:${this.stage.section?.id}`);
+    }
+  }
+
+  // ------------------------------------------------------------ the Houndmaster's chain
+
+  // From his pack phase: the chain wound back over his head (the tell), then cracked out across
+  // the yard; the hero it catches is hauled in to him. A dodge, or a few presses, breaks it.
+  chainScript(b, brain, target) {
+    const K = b.kennel; const T = TRAPS.chain;
+    if (!this.stage.bossInPhase?.('pack')) return false;
+    if (K.chain > 0) {
+      if (!['idle', 'walk'].includes(b.state)) { K.chain = 0; b.chainT = 0; return false; } // (hit out of it)
+      K.chain++;
+      b.chainT = K.chain / T.windup;
+      brain.facingHint = K.dir;
+      if (K.chain >= T.windup) {
+        K.chain = 0; b.chainT = 0; K.chainAt = 0;
+        K.chainNext = T.every[0] + (this.world.frame * 13) % (T.every[1] - T.every[0]);
+        this.world.events.emit('chainCrack', { fighter: b, dir: K.dir });
+        for (const p of this.heroes) {
+          const dx = (p.x - b.x) * K.dir;
+          if (dx < 20 || dx > T.reach[1] + 30 || Math.abs(p.z - b.z) > T.depth || p.invincible || p.snare || p.chained || p.h - (p.floor ?? 0) > 60) continue;
+          this.chainHz ??= { id: 'chain', cool: new Map() };
+          this.stage.hurt(this.chainHz, p, T.damage, -K.dir, 'arrow');
+          if (!p.alive) continue;
+          p.chained = { by: b.id, t: 0, left: T.mash, dir: -K.dir };
+          p.fsm.change('hitstun', { frames: 9999 });
+          this.world.events.emit('chained', { fighter: p, by: b });
+          break;
+        }
+        for (const [id, c] of this.chainHz?.cool ?? []) { if (c <= 1) this.chainHz.cool.delete(id); else this.chainHz.cool.set(id, c - 1); }
+      }
+      return true;
+    }
+    K.chainAt = (K.chainAt ?? 0) + 1;
+    const dx = target.x - b.x; const adx = Math.abs(dx);
+    if (K.chainAt >= (K.chainNext ?? T.every[0]) && adx > T.reach[0] && adx < T.reach[1] && Math.abs(target.z - b.z) < T.depth && ['idle', 'walk'].includes(b.state) && !target.snare && !target.chained) {
+      K.chain = 1; K.dir = Math.sign(dx) || b.facing;
+      this.world.events.emit('chainWindup', { fighter: b });
+      return true;
+    }
+    return false;
+  }
+
+  holdChained(p) {
+    const C = p.chained; const T = TRAPS.chain;
+    const b = this.world.fighters.find((f) => f.id === C.by);
+    C.t++;
+    const free = () => { p.chained = null; if (p.alive && p.state === 'hitstun') p.fsm.change('idle'); this.world.events.emit('chainFree', { fighter: p }); };
+    if (!p.alive || p.state !== 'hitstun' || !b?.alive) { p.chained = null; return; }
+    for (const a of ['dodge', 'jump', 'attack', 'heavy', 'block', 'grab', 'magic']) {
+      if (!p.controller.consume?.(a, 1)) continue;
+      if (a === 'dodge') C.left = 0; else C.left--;
+      this.world.events.emit('snareTug', { fighter: p });
+    }
+    if (C.left <= 0 || C.t >= T.hold) { free(); return; }
+    // hauled in along the ground toward him (not through him)
+    const gap = b.x - p.x;
+    if (Math.abs(gap) > 70) p.x += Math.sign(gap) * T.pull;
+    p.z += Math.sign(b.z - p.z) * Math.min(3, Math.abs(b.z - p.z));
+    p.facing = Math.sign(gap) || p.facing;
+    p.vx = 0; p.vz = 0;
+  }
+
+  // His last hound dead: the fight goes out of him. Slower, open; and his last words change.
+  checkBroken(b) {
+    const K = b.kennel;
+    if (K.broken || !this.stage.bossInPhase?.('frenzy')) return;
+    if (this.world.fighters.some((f) => f.alive && f.stats.id === 'hound')) return;
+    if (this.pens.some((pen) => pen.section === this.stage.index && !pen.open && !pen.shut && !pen.placed)) return;
+    K.broken = true;
+    const B = TRAPS.broken;
+    b.stats = { ...b.stats, walkSpeed: b.stats.walkSpeed * B.speed, depthSpeed: b.stats.depthSpeed * B.speed, meleeMult: b.stats.meleeMult * B.damage };
+    b.controller.ai = { ...b.controller.ai, ...B.ai };
+    b.sentence = { last: 'My dogs... all of them. Do it, then. There is nothing left to howl for me.' };
+    this.world.events.emit('houndmasterBroken', { boss: b });
+    this.stage.story?.trigger(`broken:${this.stage.section?.id}`);
+  }
+
+  // ------------------------------------------------------------ the pack
+
+  // Two hounds or more loose on the road: they don't all pile in. They circle the hero at a
+  // distance and go in one at a time, ears up first (the tell); then the next one's turn.
+  updatePack() {
+    const T = TRAPS.pack;
+    const loose = this.world.fighters.filter((h) => h.alive && h.stats.id === 'hound' && h.penned == null && h.lurking == null
+      && !h.order && !h.worry && !h.entering && !(h.hang > 0) && h.latchOn == null);
+    for (const h of this.world.fighters) if (h.packing && !loose.includes(h)) { h.packing = false; if (h.script === h.packScript) h.script = null; h.packTell = 0; }
+    if (loose.length < 2) { for (const h of loose) if (h.packing) { h.packing = false; h.script = null; h.packTell = 0; } this.packTurn = null; return; }
+    const P = this.packTurn;
+    if (!P || !loose.some((h) => h.id === P.id) || this.world.frame - P.at > T.turn) {
+      const order = loose.map((h) => h.id).sort((a, b) => a - b);
+      const next = order.find((id) => id > (P?.id ?? -1)) ?? order[0];
+      this.packTurn = { id: next, at: this.world.frame, tell: T.tell };
+      this.world.events.emit('packTurn', { id: next });
+    }
+    for (const h of loose) {
+      if (h.script && !h.packing) continue; // (a job of his own)
+      h.packing = true;
+      h.packScript ??= (brain, target) => this.packScript(h, brain, target);
+      h.script = h.packScript;
+    }
+  }
+
+  packScript(h, brain, target) {
+    const T = TRAPS.pack; const P = this.packTurn; const B = this.world.bounds;
+    const dx = target.x - h.x; const dz = target.z - h.z;
+    if (P?.id === h.id) {
+      if (P.tell > 0) { P.tell--; h.packTell = P.tell; brain.facingHint = Math.sign(dx) || h.facing; return true; }
+      h.packTell = 0;
+      return false; // (his turn: in he goes, the hound's own fighting)
+    }
+    h.packTell = 0;
+    if (!['idle', 'walk'].includes(h.state)) return false;
+    // round him on a ring, each its own place on it
+    const a = h.id * 2.399 + this.world.frame * T.spin;
+    const tx = target.x + Math.cos(a) * T.ring;
+    const tz = Math.max(B.minZ + 10, Math.min(B.maxZ - 10, target.z + Math.sin(a) * T.ring * 0.4));
+    brain.moveX = Math.abs(tx - h.x) > 12 ? Math.sign(tx - h.x) : 0;
+    brain.moveZ = Math.abs(tz - h.z) > 8 ? Math.sign(tz - h.z) : 0;
+    brain.facingHint = Math.sign(dx) || h.facing;
+    return true;
+  }
+
+  // A hound's bite that lands can lock on: it hangs off the hero and drags him back, worrying
+  // at him, till he shakes it off (mash) or someone knocks it loose.
+  onHit(e) {
+    const h = e.attacker; const p = e.defender;
+    if (!h || !p || h.stats?.id !== 'hound' || p.team !== 'player' || e.move?.anim !== 'bite') return;
+    if (!h.alive || !p.alive || p.latch || p.snare || p.chained || p.state === 'knockdown' || h.latchOn != null) return;
+    if (this.world.rngFor(h.id, 61 + (this.world.frame % 97))() >= TRAPS.latch.chance) return;
+    const side = Math.sign(h.x - p.x) || -p.facing;
+    p.latch = { by: h.id, t: 0, left: TRAPS.latch.mash, side };
+    h.latchOn = p.id;
+    p.fsm.change('hitstun', { frames: 9999 });
+    this.world.events.emit('houndLatch', { fighter: p, hound: h });
+  }
+
+  holdLatched(p) {
+    const L = p.latch; const T = TRAPS.latch; const B = this.world.bounds;
+    const h = this.world.fighters.find((f) => f.id === L.by);
+    L.t++;
+    const shake = (thrown) => {
+      p.latch = null;
+      if (h) { h.latchOn = null; if (thrown && h.alive) h.fsm.change('knockdown', { vx: L.side * 260, vh: 200 }); }
+      if (p.alive && p.state === 'hitstun') p.fsm.change('idle');
+      this.world.events.emit('houndShaken', { fighter: p, hound: h });
+    };
+    if (!p.alive || p.state !== 'hitstun') { p.latch = null; if (h) h.latchOn = null; return; }
+    if (!h?.alive || ['knockdown', 'hitstun', 'grabbed', 'dead', 'executed'].includes(h.state)) { shake(false); return; }
+    for (const a of ['attack', 'heavy', 'jump', 'dodge', 'block', 'grab', 'magic']) if (p.controller.consume?.(a, 1)) { L.left--; this.world.events.emit('snareTug', { fighter: p }); }
+    if (L.left <= 0 || L.t >= T.hold) { shake(true); return; }
+    // dragged back the way the hound pulls, its jaws in him
+    p.x = Math.max(B.minX + 20, Math.min(B.maxX - 20, p.x + L.side * T.drag));
+    h.x = p.x + L.side * 44; h.z = p.z + 1; h.facing = -L.side; h.vx = 0; h.vz = 0;
+    p.vx = 0; p.vz = 0;
+    if (L.t % T.every === 0) {
+      p.health = Math.max(1, p.health - T.damage); p.flash = 6;
+      this.world.events.emit('houndWorry', { fighter: p, hound: h });
+    }
+  }
+
+  // ------------------------------------------------------------ the mist and its signal
+
+  // While the Ashen's signal lantern burns in the mist, men keep coming out of it to the
+  // fight (from out of sight, on the far side). Smash it and no more come.
+  updateMist(M) {
+    const st = this.stage; const T = TRAPS.mist;
+    if (M.out || st.index !== M.section || !st.fightOn || M.sent >= T.cap) return;
+    M.t++;
+    if (M.t < (M.sent ? T.every : T.first)) return;
+    if (st.livingFoes().length >= T.foes) return;
+    M.t = 0; M.sent++;
+    const type = (M.calls ?? ['grunt', 'stalker'])[(M.sent - 1) % (M.calls?.length ?? 2)];
+    const B = this.world.bounds;
+    const e = createEnemy(this.world, type, offscreenX(this.world, this.heroes, 1, M.sent), B.minZ + 30 + ((M.sent * 97) % Math.max(1, B.maxZ - B.minZ - 60)), { entering: true });
+    st.setOnGround(e);
+    this.world.events.emit('mistCall', { mist: M, fighter: e });
+  }
+
   // Died: back at the checkpoint, the traps in its stretch are set again (a pine stays down)
   reset(section) {
     for (const t of this.traps) if (t.section >= section) { t.sprung = false; t.open = false; t.cool.clear(); }
     this.nets = [];
-    for (const f of this.world.fighters) if (f.snare) f.snare = null;
-    for (const pen of this.pens) if (pen.section >= section) { pen.placed = false; pen.open = false; pen.hounds = []; }
+    for (const f of this.world.fighters) { f.snare = null; f.chained = null; f.latch = null; f.latchOn = null; }
+    for (const M of this.mists) if (M.section >= section) { M.sent = 0; M.t = 0; }
+    this.packTurn = null;
+    for (const pen of this.pens) if (pen.section >= section) { pen.placed = false; pen.open = false; pen.shut = 0; pen.hounds = []; }
     this.penFresh = true;
     for (const C of this.carts) if (C.pr.section >= section && !C.pr.broken) { C.pr.halted = false; C.driver = null; C.mounted = false; C.fresh = true; }
   }

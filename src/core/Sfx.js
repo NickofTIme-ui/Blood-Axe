@@ -92,7 +92,6 @@ export const SFX = {
   woodHowl: 'assets/audio/sfx/wood-howl.wav',       // hounds baying out of the trees
   woodHorn: 'assets/audio/sfx/wood-horn.wav',       // the hornblower's call; the Houndmaster's pack
   woodWhistle: 'assets/audio/sfx/wood-whistle.wav', // the Houndmaster's whistle: his hounds lunge
-  woodCrows: 'assets/audio/sfx/wood-crows.wav',     // crows bursting up out of the branches
   woodCreak: 'assets/audio/sfx/wood-creak.wav',     // a bough creaking under men about to drop
   woodChop: 'assets/audio/sfx/wood-chop.wav',       // a blade biting into the notched pine
   woodFall: 'assets/audio/sfx/wood-fall.wav',       // the pine going over and crashing down

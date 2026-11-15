@@ -194,4 +194,7 @@ export const PROPS = {
   // ...and the stay rope holding a stacked woodpile up the bank: cut it and the logs come down
   // across the lane below (`roll`: { x0, x1, z0, z1 })
   logpile: { hp: 1, w: 46, h: 80, reach: 40 },
+  // ...and the Ashen's signal lantern on its pole in the mist: while it burns, men keep coming
+  // out of the mist to the fight (a section's `mist`, by `tag`); smash it and no more come
+  signal: { hp: 2, w: 34, h: 150, reach: 30 },
 };

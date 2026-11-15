@@ -133,13 +133,17 @@ export const STAGE_WOOD = {
       id: 'carts', name: 'THE CAGE CARTS', x0: 2900, x1: 4400,
       spawn: { x: 2960, z: 440 },
       objective: 'Open the cages',
-      hint: 'Clear the guards, then hold E (D-pad up) at a lock',
+      hint: 'Smash their signal lantern or more come out of the mist. Then hold E (D-pad up) at a lock',
       fightAt: 3560,
       // (the first drops out of the branches over the carts: the crows go up first)
       spawns: [[{ x: 3660, z: 360, drop: 430, tell: 84 }, { x: 3820, z: 470, drop: 430, tell: 100 }, { x: 3560, z: 300, drop: 430, tell: 116 }], []],
       // (the second: hangmen and a hound off the carts; berserkers are the Ascent's, Orsk's men)
       waves: [['grunt', 'stalker', 'grunt'], ['butcher', 'grunt', 'hound']],
+      // THE MIST over the camp: men show only close to you; while the Ashen's signal lantern
+      // burns on its pole, more of them come out of it (stage/WoodTraps.js updateMist)
+      mist: { x0: 3420, x1: 4400, tag: 'signal', calls: ['grunt', 'stalker', 'grunt'] },
       props: [
+        { kind: 'signal', tag: 'signal', x: 3880, z: 492, drop: null },
         { kind: 'crate', x: 4300, z: 300, drop: 'mana' },
         // the broken carts' loads spilled along the near edge of the road
         ...group([['crate-v6', 3560, 500], ['crate-v0', 0, 0, { stack: true }], ['sack', 3616, 504]]),
@@ -198,7 +202,7 @@ export const STAGE_WOOD = {
       id: 'kennels', name: 'THE KENNELS', x0: 7200, x1: 8400,
       spawn: { x: 7260, z: 440 },
       objective: 'Kill the Houndmaster',
-      hint: 'Kill the hounds fast: hurt him and he lets more out of the pens. When he whistles, move!',
+      hint: 'Knock a hound into an open pen and the gate slams on it. When he whistles, move! Dodge out of his chain',
       // the pens at the back of the clearing, under the painted kennels: hounds behind bars
       pens: [{ x: 7640, z: 270, count: 2 }, { x: 7820, z: 270, count: 1 }, { x: 8030, z: 270, count: 2 }],
       fightAt: 7560,
@@ -279,6 +283,12 @@ export const STAGE_WOOD = {
     { kind: 'pit', x0: 5160, x1: 5240, ...FULL },
     { kind: 'block', x0: 5140, x1: 5260, z0: 380, z1: 470, top: 10, mat: 'log' },
 
+    // ---- IV the log pile up the far bank (and its posts once it's let go): solid, like the
+    // rest of the wood's things (Nick, 2026-11-15: "a lot of stuff you can walk right through")
+    { kind: 'block', x0: 5280, x1: 5500, z0: 270, z1: 300, top: 90, hideArt: true },
+    // the lantern posts along the road: a man can't walk through a post
+    ...WOOD_LANTERNS.map((l) => ({ kind: 'block', x0: l.x - 10, x1: l.x + 10, z0: l.z - 8, z1: l.z + 8, top: 170, hideArt: true })),
+
     // ---- II and VI: the shrines' footprints
     shrineFootprint(SHRINE_TREE),
     shrineFootprint(SHRINE_KENNELS),
@@ -292,7 +302,7 @@ export const STAGE_WOOD = {
   traps: [
     { type: 'snare', section: 1, x: 1880, z: 470 },
     { type: 'snare', section: 1, x: 2470, z: 330 },
-    { type: 'stakes', section: 2, x: 3470, z: 470, w: 76, d: 44 },
+    { type: 'stakes', section: 2, x: 3500, z: 486, w: 76, d: 44 }, // (out of the ravine stream's picture, where it hid: 2026-11-15)
     { type: 'snare', section: 2, x: 3960, z: 455 },
     { type: 'current', section: 3, x0: 4640, x1: 4900 },
   ],
@@ -302,9 +312,11 @@ export const STAGE_WOOD = {
   // along the front, pools of light on the mud, ferns at the edge (view/WoodWeather.js)
   firelight: WOOD_LANTERNS.map((l) => ({ x: l.x, z: l.z + 140, r: 250, k: 0.32 })),
   weather: 'drizzle',
+  // moonlight through the pines, at the hanging tree and over the kennels (view/WoodWeather.js)
+  moonlight: [{ x: 2250, z: 380, w: 260 }, { x: 7840, z: 380, w: 320 }],
 
   // the dead (view only): prisoners who fell on the road and were left there
-  bodies: [{ x: 300, z: 480, pose: 1 }, { x: 1250, z: 330, pose: 0 }, { x: 3500, z: 500, pose: 2 }, { x: 7900, z: 480, pose: 1 }],
+  bodies: [{ x: 300, z: 480, pose: 1 }, { x: 1250, z: 330, pose: 0 }, { x: 3420, z: 520, pose: 2 }, { x: 7900, z: 480, pose: 1 }],
 
   // the convoy's broken carts (view only)
   carts: [{ x: 3750, z: 300 }, { x: 4140, z: 450 }],
@@ -343,7 +355,11 @@ export const STAGE_WOOD = {
     {
       id: 'opening', on: 'start', hold: true, delay: 150,
       lines: [
+        // (the tree line: the ruts read, a howl far off in the wood, the crows going up ahead)
         ['VEXA', 'Cart ruts. Chain marks in the mud. They came this way.'],
+        ['ORYN', 'Listen.', { sfx: 'woodHowl', volume: 0.55, pitch: -200 }],
+        ['RURIK', 'Hounds. They\'ve got our scent already.', { crows: 640 }],
+        ['VEXA', 'Then we hunt them before they hunt us.'],
         ['ORYN', 'The wood crawls with them. Vexa and I take the trees.'],
         ['RURIK', 'I\'ll take the road. Find that convoy.'],
       ],
@@ -366,6 +382,9 @@ export const STAGE_WOOD = {
     { id: 'houndmaster', on: 'boss:kennels', lines: [['HOUNDMASTER', 'Oath Keepers. Good. My dogs haven\'t eaten in days.']] },
     { id: 'pack', on: 'phase:kennels:pack', lines: [['HOUNDMASTER', 'Up, my beauties! Pull them down!']] },
     { id: 'frenzy', on: 'phase:kennels:frenzy', lines: [['HOUNDMASTER', 'Then I\'ll feed you to them by hand!']] },
+    { id: 'broken', on: 'broken:kennels', lines: [['HOUNDMASTER', 'No... not the last of them. Not my dogs...']] },
+    { id: 'penned', on: 'penSlam:kennels', lines: [['RURIK', 'Back in your cage, cur.']] },
+    { id: 'mist', at: 3460, lines: [['RURIK', 'A lantern burning in the mist. While it\'s lit, they\'ll keep coming. Smash it.']] },
     // at the blocked road only Nicholas talks (Nick, 2026-11-05: the saved wait there quietly)
     {
       id: 'pilgrim', calm: true,

@@ -6,6 +6,26 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 15 November 2026 (cloud, branch `claude/project-thread-o88yqk`, Nick: "work on these points" on the level 2
+  to-do list; NOT on main until Nick says push, NOT on itch). GALLOWS WOOD, finishing pass:
+  1. SOUNDS (Nick: "random bird squawk, hitting the tree sounds horrible"): wood-fall/logs/creak/snare/net
+     are recorded Kenney CC0 now (the chop is the Deadly Kombat thread's, xbq83e) (tools/sfx-gen/wood-kenney.sh, sources tools/sfx-gen/kenney-wood/); wood.js no
+     longer writes them. The crows go up silent (wood-crows.wav and woodCrows removed). Still code-made: howl,
+     horn, whistle, whip, rain.
+  2. SOLID: standing pines and the signal lantern are SOLID_PROPS; blocks for the log pile and every lantern post.
+     The log pile shows "CUT THE ROPE!" while men are below it (Nick: "trees cut down and tied up for no reason").
+  3. KENNELS (stage/WoodTraps.js): a hound knocked down in an open pen's mouth gets the gate slammed on it
+     (penSlam; he whistles a slammed pen open once more); his CHAIN from the pack phase (tell 38 frames, drags
+     the hero in, a dodge or 3 presses break it); his last hound dead in the frenzy he BREAKS (slower, weaker,
+     b.sentence.last overrides his last words: Sentence.js merges b.sentence).
+  4. PACK: two hounds or more loose circle the hero and go in one at a time ('!' tell, packTurn); a bite can
+     LATCH (30%) and drag him, mash to shake it off (hound field latchOn, hero field latch).
+  5. MIST over the cage carts (section `mist`, prop kind 'signal'): while the lantern burns, up to 3 more men
+     come (from off screen); smash it and no more. Fog thins round each hero (WoodTrapsView.drawMist).
+  6. Opening: a howl far off and crows going up between the lines (line cues { sfx } / { crows }).
+  7. Moonlight shafts at the hanging tree and the kennels (stage `moonlight`, view/WoodWeather.js).
+  Tests: logic-test kennels / pack / latch / mist. Art still wanted from the PC (ChatGPT): Wagonmaster and
+  Houndmaster strips, hound grab/lunge, painted upside-down poses, convoy horses, Joren up the tree, villagers.
 - 14 November 2026 (cloud, F8 fix): F8 test menu lists only the six campaign levels as "Level N: NAME"
   (view/TestNavigator.js levelChoices), groups the quick jumps (Level 1 moments, Combat tests) and adds a
   Practice yard button; the Director's Cut's Oath Road and Gallows Ascent are gone from F8 and from

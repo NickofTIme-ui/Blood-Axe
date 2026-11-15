@@ -50,7 +50,104 @@ export class WoodTrapsView {
     this.gates = this.rig.pens.map((pen) => ({ pen, g: scene.add.graphics().setDepth(pen.z + 8), drop: 0,
       img: scene.textures.exists(ART.pen_gate) ? scene.add.image(pen.x, pen.z + 10, ART.pen_gate).setOrigin(0.5, 1).setDepth(pen.z + 8) : null }));
     this.drawGates();
+    // the mist banks and the Ashen's signal lanterns in them (stage/WoodTraps.js updateMist)
+    this.mistG = scene.add.graphics().setDepth(1500);
+    this.signals = stage.props.filter((pr) => pr.kind === 'signal').map((pr) => ({ pr, g: scene.add.graphics().setDepth(pr.z), glow: scene.add.graphics().setDepth(pr.z + 0.5).setBlendMode('ADD'),
+      label: scene.add.text(pr.x, pr.z - 190, '', { fontFamily: FONT.display, fontSize: '15px', color: '#ffb080', stroke: '#140c06', strokeThickness: 4 }).setOrigin(0.5, 1).setDepth(1600) }));
+    // the log pile's call to cut its rope (Nick, 2026-11-15: "trees cut down and tied up for no reason")
+    this.pileLabels = stage.props.filter((pr) => pr.kind === 'logpile').map((pr) => ({ pr,
+      label: scene.add.text(pr.x, pr.z - 150, '', { fontFamily: FONT.display, fontSize: '15px', color: '#ffd890', stroke: '#140c06', strokeThickness: 4 }).setOrigin(0.5, 1).setDepth(1600) }));
+    this.chainG = scene.add.graphics().setDepth(1400);
     this.listen();
+  }
+
+  // ------------------------------------------------------------ the mist and its lantern
+
+  drawMist() {
+    const g = this.mistG.clear(); const cam = this.scene.cameras.main; const B = this.scene.world.bounds;
+    const heroes = this.scene.players?.filter((p) => p.alive) ?? [];
+    const now = this.scene.time.now;
+    for (const M of this.rig.mists) {
+      if (M.x1 < cam.scrollX - 100 || M.x0 > cam.scrollX + cam.width / cam.zoom + 100) continue;
+      const base = M.out ? 0.32 : 0.62;
+      for (let x = M.x0; x <= M.x1; x += 60) {
+        for (let z = B.minZ - 60; z <= B.maxZ + 20; z += 36) {
+          const wob = Math.sin(now / 1700 + x * 0.013 + z * 0.05) * 22;
+          const cx = x + wob; const cy = z - 40;
+          // thin around each hero: he sees a little way into it; past that, men are shapes
+          let k = 1;
+          for (const p of heroes) { const d = Math.hypot((p.x - cx) * 0.8, (p.z - z) * 1.6); k = Math.min(k, Math.max(0, Math.min(1, (d - 110) / 170))); }
+          const edge = Math.min(1, (x - M.x0) / 160, (M.x1 - x) / 160);
+          const a = base * k * Math.max(0, edge) * (0.8 + 0.2 * Math.sin(now / 900 + x * 0.02));
+          if (a < 0.02) continue;
+          g.fillStyle(0x8a96a0, a * 0.55).fillEllipse(cx, cy, 150, 90);
+        }
+      }
+    }
+  }
+
+  drawSignals() {
+    const now = this.scene.time.now;
+    const fight = this.stage.fightOn;
+    for (const S of this.signals) {
+      const pr = S.pr; const g = S.g.clear(); const gl = S.glow.clear();
+      const M = this.rig.mists.find((m) => m.tag === pr.tag);
+      const x = pr.x; const z = pr.z;
+      g.fillStyle(0x000000, 0.4).fillEllipse(x, z + 2, 40, 10);
+      if (pr.broken) {
+        // knocked down: the pole in the mud, the lantern smashed and dark beside it
+        g.fillStyle(0x1e1610, 1).fillRect(x - 70, z - 6, 110, 7);
+        g.fillStyle(0x2a2a2e, 1).fillRect(x + 42, z - 14, 16, 14);
+        g.fillStyle(0x0c0c0c, 1).fillRect(x + 45, z - 11, 10, 8);
+        S.label.setVisible(false);
+        continue;
+      }
+      const ly = z - 150;
+      // the pole and its arm, the lantern hung off it, burning the Ashen red
+      g.fillStyle(0x1e1610, 1).fillRect(x - 4, z - 170, 8, 172).fillRect(x - 4, z - 170, 30, 6);
+      g.lineStyle(2, 0x2a2a2e, 1).lineBetween(x + 22, z - 164, x + 22, ly - 14);
+      g.fillStyle(0x2a2a2e, 1).fillRect(x + 12, ly - 14, 20, 28);
+      const fl = 0.75 + 0.25 * Math.sin(now / 70) * Math.sin(now / 113);
+      g.fillStyle(0xff5a2a, fl).fillRect(x + 15, ly - 10, 14, 20);
+      g.fillStyle(0xffd0a0, fl).fillRect(x + 19, ly - 5, 6, 9);
+      gl.fillStyle(0xff4020, 0.16 * fl).fillCircle(x + 22, ly, 70).fillStyle(0xff6030, 0.2 * fl).fillCircle(x + 22, ly, 34);
+      const show = fight && this.stage.index === M?.section;
+      S.label.setVisible(show).setText(show ? 'SMASH THE SIGNAL LANTERN' : '').setY(z - 200 - Math.abs(Math.sin(now / 300)) * 4);
+    }
+  }
+
+  drawPileLabels() {
+    const now = this.scene.time.now;
+    for (const P of this.pileLabels) {
+      const pr = P.pr; const sec = this.stage.sections.findIndex((q) => pr.x >= q.x0 && pr.x < q.x1);
+      const foes = this.stage.livingFoes?.() ?? [];
+      const below = foes.some((f) => f.x > pr.roll.x0 - 60 && f.x < pr.roll.x1 + 60);
+      const show = !pr.broken && this.stage.fightOn && this.stage.index === sec && below;
+      P.label.setVisible(show).setText(show ? 'CUT THE ROPE!' : '').setY(pr.z - 150 - Math.abs(Math.sin(now / 260)) * 5);
+    }
+  }
+
+  // The Houndmaster's chain: wound round over his head (the tell), then lashed out, and on a
+  // hero it caught, the chain from his fist to him
+  drawChains() {
+    const g = this.chainG.clear(); const now = this.scene.time.now;
+    for (const f of this.scene.world.fighters) {
+      if (!f.alive) continue;
+      const top = f.z - f.h - (f.stats.body?.h ?? 120);
+      if (f.chainT > 0) {
+        const r = 30 + 14 * f.chainT; const cx = f.x - f.facing * 6; const cy = top + 4;
+        g.lineStyle(3, 0x6a6a72, 1).strokeEllipse(cx, cy, r * 2.2, r * 0.6);
+        for (let i = 0; i < 10; i++) { const a = now / 55 + i * 0.63; g.fillStyle(0x9a9aa2, 1).fillCircle(cx + Math.cos(a) * r * 1.1, cy + Math.sin(a) * r * 0.3, 2.5); }
+      }
+      if (f.chained) {
+        const b = this.scene.world.fighters.find((o) => o.id === f.chained.by);
+        if (!b) continue;
+        const hx = b.x + b.facing * 20; const hy = b.z - b.h - (b.stats.body?.h ?? 120) * 0.6;
+        const px = f.x; const py = f.z - f.h - (f.stats.body?.h ?? 120) * 0.45;
+        g.lineStyle(3, 0x4a4a52, 1).lineBetween(hx, hy, px, py);
+        for (let i = 0; i <= 12; i++) { const k = i / 12; g.fillStyle(0x8a8a92, 1).fillCircle(hx + (px - hx) * k, hy + (py - hy) * k + Math.sin(k * Math.PI) * 10, 2.5); }
+      }
+    }
   }
 
   // ------------------------------------------------------------ the notched pine
@@ -363,8 +460,9 @@ export class WoodTrapsView {
   drawGates() {
     for (const G of this.gates) {
       const g = G.g.clear(); const pen = G.pen;
-      if (pen.open) G.drop = Math.min(1, G.drop + 0.08); else G.drop = 0;
+      if (pen.open) G.drop = Math.min(1, G.drop + 0.08); else G.drop = Math.max(0, G.drop - 0.3); // (slammed: it comes up fast)
       if (G.drop >= 1) { G.img?.setVisible(false); continue; }
+      G.img?.setVisible(true);
       const w = 52 + (pen.count ?? 1) * 34; const h = 96; const x0 = pen.x - w / 2; const yb = pen.z + 10;
       const sink = G.drop * h; // (down into the mud)
       const top = yb - h + sink;
@@ -398,7 +496,7 @@ export class WoodTrapsView {
     const g = this.netG.clear();
     for (const f of this.scene.world.fighters) {
       let m = this.marks.get(f.id);
-      const want = f.alive && (f.horn && !f.horn.done || f.snare || f.netSpin > 0 || f.drive?.on || f.order && f.order.t < f.order.wait);
+      const want = f.alive && (f.horn && !f.horn.done || f.snare || f.chained || f.latch || f.packTell > 0 || f.netSpin > 0 || f.drive?.on || f.order && f.order.t < f.order.wait);
       if (!want) { if (m) { m.text.setVisible(false); } continue; }
       if (!m) {
         m = { text: s.add.text(0, 0, '', { fontFamily: FONT.display, fontSize: '15px', color: '#ffd890', stroke: '#140c06', strokeThickness: 4 }).setOrigin(0.5, 1) };
@@ -422,6 +520,18 @@ export class WoodTrapsView {
         }
         const shake = Math.sin(now / 40) * 2;
         m.text.setText(f.team === 'player' ? `MASH TO CUT FREE  ${'|'.repeat(Math.max(0, f.snare.left))}` : '').setX(f.x + shake).setColor('#ffe0a0');
+        continue;
+      }
+      if (f.chained || f.latch) {
+        // hauled in on the chain, or a hound's jaws in him: the call to break free
+        const shake = Math.sin(now / 40) * 2;
+        const left = (f.chained ?? f.latch).left;
+        m.text.setText(f.team === 'player' ? (f.chained ? `DODGE TO BREAK THE CHAIN  ${'|'.repeat(Math.max(0, left))}` : `MASH TO SHAKE IT OFF  ${'|'.repeat(Math.max(0, left))}`) : '').setX(f.x + shake).setColor('#ffe0a0');
+        continue;
+      }
+      if (f.packTell > 0) {
+        // the hound whose turn it is: ears up, coming in
+        m.text.setText('!').setColor('#ff6a4a').setY(top + 6 - Math.abs(Math.sin(now / 80)) * 6);
         continue;
       }
       if (f.netSpin > 0) {
@@ -513,9 +623,9 @@ export class WoodTrapsView {
   }
 
   // Crows burst up out of the branches over (x): scattering up and away, wings beating
-  crowBurst(x, y, n = 9, sound = true) {
+  // (silent: Nick, 2026-11-15, the caw was a random squawk)
+  crowBurst(x, y, n = 9) {
     const s = this.scene;
-    if (sound) playSfx(s, 'woodCrows', { volume: 0.7, minGapMs: 400 });
     for (let i = 0; i < n; i++) {
       const img = s.add.image(x + rand(-70, 70), y + rand(-10, 30), 'wood-crow-0').setDepth(DEPTH.floor + 800).setScale(rand(0.7, 1.15));
       const dir = Math.random() < 0.5 ? -1 : 1;
@@ -581,6 +691,19 @@ export class WoodTrapsView {
     });
     ev.on('penOpen', ({ pen }) => { playSfx(s, 'doorClose2', { volume: 0.8, pitch: -400, minGapMs: 0 }); playSfx(s, 'woodHowl', { volume: 0.5, pitch: 200, minGapMs: 300 }); s.fx?.shake(3, 10); });
     ev.on('whistle', () => playSfx(s, 'woodWhistle', { volume: 1, minGapMs: 0 }));
+    ev.on('penSlam', () => { playSfx(s, 'gateClose', { volume: 1, minGapMs: 0 }); playSfx(s, 'woodHowl', { volume: 0.4, pitch: 500, minGapMs: 300 }); s.fx?.shake(5, 14); });
+    ev.on('chainWindup', () => playSfx(s, 'stoneStep', { volume: 0.6, minGapMs: 200 }));
+    ev.on('chainCrack', () => playSfx(s, 'woodWhip', { volume: 1, pitch: -300, minGapMs: 0 }));
+    ev.on('chained', () => { playSfx(s, 'stoneStep', { volume: 1, minGapMs: 0 }); s.fx?.shake(3, 8); });
+    ev.on('houndLatch', () => { playSfx(s, 'woodHowl', { volume: 0.35, pitch: 700, minGapMs: 300 }); s.fx?.shake(3, 8); });
+    ev.on('houndWorry', () => playSfx(s, 'kick', { volume: 0.35, pitch: -200, minGapMs: 100 }));
+    ev.on('houndShaken', () => playSfx(s, 'kick', { volume: 0.7, minGapMs: 0 }));
+    ev.on('houndmasterBroken', () => playSfx(s, 'woodHowl', { volume: 0.6, pitch: -400, minGapMs: 0 }));
+    ev.on('signalOut', () => { playSfx(s, 'doorClose2', { volume: 0.8, pitch: 300, minGapMs: 0 }); s.fx?.shake(3, 10); });
+    ev.on('storyCue', ({ cue }) => {
+      if (cue?.sfx) playSfx(s, cue.sfx, { volume: cue.volume ?? 0.8, pitch: cue.pitch ?? 0, minGapMs: 0 });
+      if (cue?.crows != null) this.crowBurst(cue.crows, top() + 30, 10);
+    });
     ev.on('bossPhase', ({ phase }) => { if (phase.pens?.length && phase.id === 'pack') playSfx(s, 'woodHorn', { volume: 0.9, minGapMs: 0 }); });
     ev.on('fightStart', ({ section }) => { if (section?.howl) playSfx(s, 'woodHowl', { volume: 0.9, minGapMs: 0 }); });
   }
@@ -592,6 +715,9 @@ export class WoodTrapsView {
     this.drawTraps();
     if (this.gates.length) this.drawGates();
     this.drawMarks();
+    this.drawChains();
+    if (this.rig.mists.length) { this.drawMist(); this.drawSignals(); }
+    if (this.pileLabels.length) this.drawPileLabels();
     this.syncCrows(dt);
     // as you come up to the hanging tree, its crows go up
     const tree = this.stage.data.gallows;

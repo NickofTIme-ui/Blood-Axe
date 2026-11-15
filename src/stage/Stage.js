@@ -188,7 +188,7 @@ const GRIEF = { damage: 1.3, speed: 1.2 };
 
 // Footprints of the solid things in the street (half width, half depth, height): the
 // breakables by kind, the painted clutter by kind (its half width a share of its drawn w).
-const SOLID_PROPS = { barrel: 0.42, crate: 0.46, urn: 0.42, chest: 0.46, bell: 0.3, lamppost: 0.3, haycart: 0.42, fence: 0.48, stall: 0.48, trestle: 0.48, rack: 0.46, handcart: 0.44 };
+const SOLID_PROPS = { barrel: 0.42, crate: 0.46, urn: 0.42, chest: 0.46, bell: 0.3, lamppost: 0.3, haycart: 0.42, fence: 0.48, stall: 0.48, trestle: 0.48, rack: 0.46, handcart: 0.44, pine: 0.4, signal: 0.35 }; // (pine, signal: Gallows Wood's, standing; Nick 2026-11-15: you walked through them)
 const SOLID_DEPTH = 9; // px each side of a prop's foot line
 const SOLID_DEEP = { haycart: 16, stall: 14, handcart: 14, trestle: 12 }; // (a cart is deeper than a barrel)
 // SMASHING THINGS (Nick, 2026-11-02: "if a guy gets knocked flying into barrels it all
@@ -270,7 +270,7 @@ export class Stage {
     this.fitLooks();
     // Gallows Wood's own traps and men (stage/WoodTraps.js): pines, log piles, snares, stakes,
     // the ford's current, the hornblower and the woodsman's net
-    if (data.traps || this.props.some((pr) => pr.kind === 'pine' || pr.kind === 'logpile')) this.woodTraps = new WoodTraps(this);
+    if (data.traps || this.props.some((pr) => pr.kind === 'pine' || pr.kind === 'logpile' || pr.kind === 'signal')) this.woodTraps = new WoodTraps(this);
     // Things in the street you can't walk through (Nick, 2026-10-25: "you can walk through
     // most of them"): the small breakables while they stand, and the painted clutter
     // (data `decor`, `pikes`). Fighters slide round them like the terrain's walls and jump

@@ -256,7 +256,7 @@ export class Sentence {
     h.scripted = { moveX: 0, moveZ: 0, mute: true };
     h.awe = 0; // (still in awe of his entrance: not any more)
     // the words: built now, played as a held story beat when he stands at his side
-    const def = this.stage.section?.boss?.sentence ?? {};
+    const def = { ...(this.stage.section?.boss?.sentence ?? {}), ...(b.sentence ?? {}) }; // (b.sentence: words changed in the fight, the Houndmaster broken)
     this.speaker = def.speaker ?? speakerOf(b.stats.name);
     this.beatId = `sentence:${this.stage.section?.id ?? 'boss'}:${this.count}`;
     const lines = sentenceLines(b, h, def, this.speaker);

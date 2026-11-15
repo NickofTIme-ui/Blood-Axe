@@ -3444,6 +3444,104 @@ test('kennels: hounds wait behind their pen gates (not foes, untouchable) till h
   assert(opened === 3 && !world.fighters.some((f) => f.penned != null), 'the frenzy lets out the last of them');
 });
 
+test('kennels: a hound knocked down in an open pen gets the gate slammed on it; he whistles that pen open once more', () => {
+  const { world, p, st, run } = woodSetup(WOOD_SEC('kennels'), { x: 7700, z: 440 });
+  run(700, () => { p.health = p.stats.maxHealth; p.awe = 0; });
+  const b = st.boss;
+  b.health = b.stats.maxHealth * 0.6;
+  run(2, () => { p.health = p.stats.maxHealth; });
+  const pen = st.woodTraps.pens.find((q) => q.open);
+  const h = world.fighters.find((f) => f.alive && f.stats.id === 'hound' && f.penned == null);
+  let slams = 0; world.events.on('penSlam', () => slams++);
+  h.x = pen.x; h.z = pen.z + 20; h.fsm.change('knockdown', { vx: 0, vh: 100 });
+  run(2, () => { p.health = p.stats.maxHealth; });
+  assert(slams === 1 && h.penned === pen.id && !pen.open && h.invincible, `slammed in (${slams}, ${h.penned})`);
+  assert(!st.livingFoes().includes(h), 'out of the fight');
+  // nothing loose left: he whistles it open again (only once a pen)
+  for (const f of world.fighters) if (f.stats.id === 'hound' && f.penned == null) f.health = 0;
+  for (const f of world.fighters) if (f.team === 'enemy' && f !== b && f.stats.id !== 'hound') f.health = 0;
+  let reopened = false;
+  run(900, () => { p.health = p.stats.maxHealth; p.awe = 0; b.health = Math.max(b.health, b.stats.maxHealth * 0.55); if (pen.open) reopened = true; });
+  assert(reopened && pen.shut === 2, `he lets it out again (${pen.shut})`);
+});
+
+test("kennels: the Houndmaster's chain drags a hero in; a dodge breaks it", () => {
+  const { world, p, st, c, run } = woodSetup(WOOD_SEC('kennels'), { x: 7700, z: 440 });
+  run(700, () => { p.health = p.stats.maxHealth; p.awe = 0; });
+  const b = st.boss;
+  b.health = b.stats.maxHealth * 0.6;
+  run(2);
+  for (const f of world.fighters) if (f.team === 'enemy' && f !== b) f.health = 0;
+  let cracks = 0; world.events.on('chainCrack', () => cracks++);
+  for (let i = 0; i < 900 && !p.chained; i++) run(1, () => { p.health = p.stats.maxHealth; p.awe = 0; p.invincible = false; b.health = Math.max(b.health, b.stats.maxHealth * 0.55); if (!p.chained && p.state !== 'hitstun') { p.x = b.x + 200; p.z = b.z; } });
+  assert(cracks >= 1 && p.chained, `caught on the chain (${cracks})`);
+  const gap = Math.abs(b.x - p.x);
+  run(8, () => { p.health = p.stats.maxHealth; });
+  assert(Math.abs(b.x - p.x) < gap, 'hauled in');
+  c.script = { [c.t + 1]: ['dodge'] };
+  run(4, () => { p.health = p.stats.maxHealth; });
+  assert(!p.chained, 'a dodge breaks it');
+});
+
+test('kennels: his last hound dead, the Houndmaster breaks: slower, and his last words change', () => {
+  const { world, p, st, run } = woodSetup(WOOD_SEC('kennels'), { x: 7700, z: 440 });
+  run(700, () => { p.health = p.stats.maxHealth; p.awe = 0; });
+  const b = st.boss;
+  b.health = b.stats.maxHealth * 0.2;
+  run(2, () => { p.health = p.stats.maxHealth; });
+  const walk = b.stats.walkSpeed;
+  let broke = 0; world.events.on('houndmasterBroken', () => broke++);
+  for (const f of world.fighters) if (f.stats.id === 'hound') f.health = 0;
+  run(4, () => { p.health = p.stats.maxHealth; });
+  assert(broke === 1 && b.kennel.broken && b.stats.walkSpeed < walk, `broken (${broke})`);
+  assert(b.sentence?.last && st.story.beats.find((x) => x.id === 'broken').fired, 'his words change, and he says so');
+});
+
+test('wood: a loose pack circles a hero and goes in one at a time, ears up first', () => {
+  const { world, p, st, run } = woodSetup(0, { x: 300, z: 440 });
+  killFoes(world); run(2);
+  const hs = [0, 1, 2].map((k) => woodFoe(world, st, 'hound', 520 + k * 40, 420 + k * 20));
+  let turns = 0; world.events.on('packTurn', () => turns++);
+  let attackers = 0; let maxAt = 0;
+  run(400, () => { p.health = p.stats.maxHealth; p.x = 300; p.z = 440; p.invincible = true;
+    const n = hs.filter((h) => ['light1', 'heavy'].includes(h.state)).length; maxAt = Math.max(maxAt, n); if (n) attackers++; });
+  assert(turns >= 2 && hs.every((h) => h.packing), `a pack, taking turns (${turns})`);
+  assert(maxAt <= 1, `never two in at once (${maxAt})`);
+});
+
+test("wood: a hound's bite can lock on and drag a hero; mashing shakes it off", () => {
+  const { world, p, st, c, run } = woodSetup(0, { x: 300, z: 440 });
+  killFoes(world); run(2);
+  const h = woodFoe(world, st, 'hound', 360, 440);
+  TRAPS.latch.chance = 1;
+  try {
+    for (let i = 0; i < 600 && !p.latch; i++) run(1, () => { p.health = p.stats.maxHealth; p.invincible = false; });
+    assert(p.latch && h.latchOn === p.id, 'locked on');
+    const x = p.x;
+    run(20, () => { p.health = Math.max(p.health, 20); });
+    assert(p.x !== x && p.latch, 'dragged');
+    c.script = Object.fromEntries([2, 5, 8, 11, 14, 17].map((k) => [c.t + k, ['attack']]));
+    run(22);
+    assert(!p.latch && h.latchOn == null, 'shaken off');
+  } finally { TRAPS.latch.chance = 0.3; }
+});
+
+test('wood: men keep coming out of the mist while the signal lantern burns; smash it and they stop', () => {
+  const sec = WOOD_SEC('carts');
+  const { world, p, st, run } = woodSetup(sec, { x: 3600, z: 440 });
+  const M = st.woodTraps.mists[0];
+  assert(M && st.props.some((q) => q.kind === 'signal'), 'a mist and its lantern');
+  st.fightOn = true;
+  let calls = 0; world.events.on('mistCall', () => calls++);
+  run(TRAPS.mist.first + TRAPS.mist.every + 20, () => { p.health = p.stats.maxHealth; p.x = 3600; killFoes(world); });
+  assert(calls >= 2, `more come (${calls})`);
+  const lamp = st.props.find((q) => q.kind === 'signal');
+  st.breakProp(lamp, 1);
+  const n = calls;
+  run(TRAPS.mist.every * 2, () => { p.health = p.stats.maxHealth; p.x = 3600; killFoes(world); st.fightOn = true; });
+  assert(M.out && calls === n, 'smashed: no more');
+});
+
 test('boss phases: a boss without phases still rages at half health and calls his dogs (the village captain)', () => {
   const world = new World({ seed: 7 });
   const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 7450, z: 440, controller: new Scripted() }));

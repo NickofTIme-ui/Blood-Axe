@@ -6,3 +6,8 @@ No credit required; credit given anyway: sounds by Kenney (kenney.nl).
 Sources: impact_plate_light_001, impact_metal_light_002, impact_mining_003,
 impact_wood_heavy_002 (Impact Sounds); metal_latch, metal_click (RPG Audio);
 low_frequency_explosion_000, explosion_crunch_002 (Sci-Fi Sounds).
+
+wood-fall.wav, wood-logs.wav, wood-creak.wav, wood-snare.wav, wood-net.wav
+(Gallows Wood, 2026-11-15) are mixed by tools/sfx-gen/wood-kenney.sh from Kenney's
+"RPG Audio" (creak1, creak2, cloth1, cloth4, beltHandle1) and "Impact Sounds"
+(impactWood_heavy/medium/light, impactPlank_medium, impactSoft_heavy), CC0 1.0.

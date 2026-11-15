@@ -673,7 +673,7 @@ export class StageView {
 
   makeProp(pr) {
     // (the wood's notched pine and log pile: drawn by view/WoodTrapsView.js)
-    if (pr.kind === 'pine' || pr.kind === 'logpile') return { img: this.scene.add.image(pr.x, pr.z, '__DEFAULT').setVisible(false), s: 1, own: true };
+    if (pr.kind === 'pine' || pr.kind === 'logpile' || pr.kind === 'signal') return { img: this.scene.add.image(pr.x, pr.z, '__DEFAULT').setVisible(false), s: 1, own: true };
     if (pr.kind === 'lamppost' || pr.kind === 'haycart') return this.makeStreetProp(pr);
     const key = this.propKey(pr);
     // (a level's painted prop, data/levelArt.js: sized to the prop, whatever size it was painted)

@@ -56,6 +56,19 @@ export class WoodWeather {
         .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.decals + 1);
       scene.tweens.add({ targets: pool, alpha: { from: 0.16, to: 0.26 }, duration: 300 + (l.x % 170), yoyo: true, repeat: -1 });
     }
+    // moonlight down through a gap in the pines, at the hanging tree and over the kennels
+    // (cold, slanting, a slow drift in it): a stage's `moonlight` [{ x, z, w }]
+    for (const m of this.data.moonlight ?? []) {
+      const g = scene.add.graphics().setDepth(DEPTH.popups - 60).setBlendMode(Phaser.BlendModes.ADD);
+      const top = m.z - 720; const w = m.w ?? 220;
+      for (let i = 0; i < 6; i++) {
+        const k = i / 5; const ww = w * (0.35 + k * 0.65);
+        g.fillStyle(0x9ab4d8, 0.022).fillTriangle(m.x - ww * 0.3 + 120, top, m.x + ww * 0.3 + 120, top, m.x + ww / 2, m.z + 40).fillTriangle(m.x - ww * 0.3 + 120, top, m.x - ww / 2, m.z + 40, m.x + ww / 2, m.z + 40);
+      }
+      const pool = scene.add.image(m.x, m.z + 60, 'glow').setScale(w / 60, 1.2).setTint(0x9ab4d8).setAlpha(0.18)
+        .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.decals + 1);
+      scene.tweens.add({ targets: [g, pool], alpha: { from: 0.75, to: 1 }, duration: 2600 + (m.x % 900), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
     // the ferns along the front edge
     const f = rng(31);
     for (let x = 60; x < this.data.width * 1.35; x += WEATHER.fernEvery * (0.6 + f() * 0.9)) {
