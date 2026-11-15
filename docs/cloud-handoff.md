@@ -6,6 +6,14 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 16 November 2026 (PC + cloud, branch `claude/project-thread-xbq83e` rebased onto 4e5fd2a, Nick: "push all"; ON MAIN, NOT on itch): DEADLY KOMBAT SOUNDS
+  (Nick: "use them for the game to better the game"). 24 more takes from @danielsoundsgood's free pack,
+  trimmed + mono in assets/audio/sfx (list in deadly-kombat-LICENSE.txt; keep the credit line), keys dk* and
+  lists `DK` in core/Sfx.js. Tree chop (WoodTrapsView) = wood bat hits pitched down (crow squawk left to the
+  Level 2 thread). Mage force blast / blink / wall slam / wall hit and Vexa's swings, kick, knife, fan, star hit,
+  dive landing = DK whooshes/impacts (MAGE_SOUNDS, ROGUE_SOUNDS). ArenaScene: a hero being hit now sounds
+  (body/face, heavy when crit or >=12% max health), a low body thud under Rurik's cuts, bone crack on crits,
+  body-hit under kicks, a finisher thud on every kill. Cloud rebundled dist/game.js and ran npm test before main.
 - 15 November 2026 (cloud, branch `claude/project-thread-o88yqk`, Nick: "work on these points" on the level 2
   to-do list; NOT on main until Nick says push, NOT on itch). GALLOWS WOOD, finishing pass:
   1. SOUNDS (Nick: "random bird squawk, hitting the tree sounds horrible"): wood-fall/logs/creak/snare/net

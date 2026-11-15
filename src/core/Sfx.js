@@ -61,6 +61,32 @@ export const SFX = {
   bladeHit8: 'assets/audio/sfx/blade-hit-08.wav',
   splitGore: 'assets/audio/sfx/guts-and-gore-59.wav', // same pack: wet gore under the splatter when a man splits top to bottom
   impaleKick: 'assets/audio/sfx/face-hit-finisher-19.wav', // same pack: the boot landing as Rurik kicks a man off his sword (impale finisher)
+  // the rest of Nick's Deadly Kombat picks (2026-11-15), same licence: trimmed and made mono.
+  // Played through the lists below (DK) so every take gets a turn.
+  dkWood1: 'assets/audio/sfx/wood-bat-finisher-01.wav',   // a blade biting the notched pine
+  dkWood2: 'assets/audio/sfx/wood-bat-finisher-05.wav',
+  dkBody1: 'assets/audio/sfx/body-hit-small-11.wav',      // a blow landing on a body
+  dkBody2: 'assets/audio/sfx/body-hit-small-20.wav',
+  dkBody3: 'assets/audio/sfx/body-hit-small-23.wav',
+  dkBody4: 'assets/audio/sfx/body-hit-small-79.wav',
+  dkBodyBig1: 'assets/audio/sfx/body-hit-large-32.wav',   // ...a heavy one
+  dkBodyBig2: 'assets/audio/sfx/body-hit-large-44.wav',
+  dkBodyBig3: 'assets/audio/sfx/body-hit-large-76.wav',
+  dkFace1: 'assets/audio/sfx/face-hit-large-20.wav',      // ...in the face
+  dkFace2: 'assets/audio/sfx/face-hit-large-29.wav',
+  dkFace3: 'assets/audio/sfx/face-hit-large-78.wav',
+  dkKill1: 'assets/audio/sfx/body-hit-finisher-27.wav',   // the killing blow
+  dkKill2: 'assets/audio/sfx/body-hit-finisher-52.wav',
+  dkBone: 'assets/audio/sfx/bone-breaking-53.wav',        // bones going: crits
+  dkWhoosh1: 'assets/audio/sfx/punch-short-whoosh-16.wav', // quick swishes (Vexa's cuts, blink, stars)
+  dkWhoosh2: 'assets/audio/sfx/punch-short-whoosh-30.wav',
+  dkWhoosh3: 'assets/audio/sfx/kick-short-whoosh-12.wav',
+  dkWhoosh4: 'assets/audio/sfx/kick-short-whoosh-23.wav',
+  dkWhooshLong1: 'assets/audio/sfx/punch-long-whoosh-21.wav', // big swings (Vexa's flourish, the Mage's wall)
+  dkWhooshLong2: 'assets/audio/sfx/punch-long-whoosh-30.wav',
+  dkBlast: 'assets/audio/sfx/kick-long-whoosh-19.wav',    // the Mage's force blast rushing out
+  dkSlam: 'assets/audio/sfx/block-large-71.wav',          // a heavy thud: the Mage's wall slamming down
+  dkPop: 'assets/audio/sfx/block-small-69.wav',           // a short knock: the Mage blinking back in
   // the Mage's lightning: made in code by tools/sfx-gen/electric.js (ours outright, no licence)
   elecCharge: 'assets/audio/sfx/elec-charge.wav',   // hum and sparks building in the lantern
   elecZap: 'assets/audio/sfx/elec-zap.wav',         // a bolt leaving the staff
@@ -163,6 +189,17 @@ export function fleshBite(chance = 0.5) {
 
 // The blade-in-flesh sound for a sword cut: one of these, picked at random.
 export const FLESH_CUT = [['stationaryKill', 1], ['bladeHit7', 1], ['bladeHit8', 1]];
+
+// Deadly Kombat takes, as lists for playSfx (one picked at random each time)
+export const DK = {
+  wood: [['dkWood1', 1], ['dkWood2', 1]],
+  body: [['dkBody1', 1], ['dkBody2', 1], ['dkBody3', 1], ['dkBody4', 1]],
+  bodyBig: [['dkBodyBig1', 1], ['dkBodyBig2', 1], ['dkBodyBig3', 1]],
+  face: [['dkFace1', 1], ['dkFace2', 1], ['dkFace3', 1]],
+  kill: [['dkKill1', 1], ['dkKill2', 1]],
+  whoosh: [['dkWhoosh1', 1], ['dkWhoosh2', 1], ['dkWhoosh3', 1], ['dkWhoosh4', 1]],
+  whooshLong: [['dkWhooshLong1', 1], ['dkWhooshLong2', 1]],
+};
 
 // key can be a list of [key, weight] pairs to pick one at random (variations).
 export function playSfx(scene, key, { volume = 1, pitch = 0, spread = 150, minGapMs = 45 } = {}) {

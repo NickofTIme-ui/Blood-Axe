@@ -9,7 +9,7 @@
 // one place to swap them.
 
 import { DEPTH } from '../view/depths.js';
-import { playSfx } from '../core/Sfx.js';
+import { playSfx, DK } from '../core/Sfx.js';
 import { FX } from '../view/stripImporter.js';
 import { cutPieces } from '../view/envArt.js';
 
@@ -28,13 +28,13 @@ export const MAGE_SOUNDS = {
   boltCast: [['mageShock', { volume: 0.9 }], ['kick', { volume: 0.4, pitch: -300 }]],
   boltImpact: [['elecShock', { volume: 0.9, minGapMs: 30 }], ['block', { volume: 0.25, pitch: 1700, minGapMs: 30 }]],
   boltJump: [['elecJump', { volume: 0.6, minGapMs: 25 }]],
-  force: [['kick', { volume: 1, pitch: -800 }], ['fireWhoosh', { volume: 0.6, pitch: -600 }]],
-  blinkOut: [['swingAlt', { volume: 0.4, pitch: 1000 }]],
-  blinkIn: [['block', { volume: 0.3, pitch: 1500 }]],
-  barrierCast: [['heavySwing', { volume: 0.5, pitch: -400 }]],
+  force: [[DK.whooshLong, { volume: 0.9, pitch: -500, spread: 80 }], ['dkBlast', { volume: 0.8, pitch: -200, spread: 80 }], [DK.bodyBig, { volume: 0.8, pitch: -400 }]], // (Deadly Kombat)
+  blinkOut: [[DK.whoosh, { volume: 0.7, pitch: 500 }]],
+  blinkIn: [[DK.whoosh, { volume: 0.5, pitch: -200 }], ['dkPop', { volume: 0.5, pitch: 300 }]],
+  barrierCast: [[DK.whooshLong, { volume: 0.6, pitch: -300 }], ['dkSlam', { volume: 0.9, pitch: -500, spread: 60 }]],
   earthUp: [['kick', { volume: 1, pitch: -1300 }], ['block', { volume: 0.5, pitch: -1100 }]],
   earthDown: [['kick', { volume: 0.7, pitch: -1500 }]],
-  earthHit: [['block', { volume: 0.45, pitch: -900, minGapMs: 60 }], ['kick', { volume: 0.7, pitch: -1100, minGapMs: 60 }]],
+  earthHit: [['dkSlam', { volume: 0.6, pitch: -700, minGapMs: 60 }], ['kick', { volume: 0.5, pitch: -1100, minGapMs: 60 }]],
   earthBreak: [['kick', { volume: 1, pitch: -1600 }], ['heavySwing', { volume: 0.5, pitch: -900 }], ['block', { volume: 0.4, pitch: -1300 }]],
   storm: [['lightningStrike', { volume: 0.9, spread: 60, minGapMs: 400 }], ['kick', { volume: 0.8, pitch: -1400 }]],
   rupture: [['kick', { volume: 1, pitch: -600 }], ['finisher', { volume: 0.6, pitch: -800 }]],

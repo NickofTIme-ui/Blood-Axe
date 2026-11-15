@@ -11,7 +11,7 @@
 import { DEPTH } from '../view/depths.js';
 import { SETTINGS } from '../config/settings.js';
 import { softTex } from './Gore.js';
-import { playSfx, fleshBite } from '../core/Sfx.js';
+import { playSfx, fleshBite, DK } from '../core/Sfx.js';
 import { FX } from '../view/stripImporter.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -23,24 +23,25 @@ const CRIMSON = 0xff3050;
 export const ROGUE_SOUNDS = {
   // her own (tools/sfx-gen/rogue.js, 2026-11-04); the kick, the mine blast and the
   // finishers still layer the game's samples
-  swing1: [['rogueSwish1', { volume: 0.6 }]],
-  swing2: [['rogueSwish2', { volume: 0.6 }]],
-  swing3: [['rogueSwish3', { volume: 0.65 }]],
-  swing4: [['rogueFlourish', { volume: 0.7 }]],
-  hit: [['rogueStab', { volume: 0.45, minGapMs: 30 }]],
+  // her cuts and stars (2026-11-15): Deadly Kombat whooshes, lifted to sound light and quick
+  swing1: [['dkWhoosh1', { volume: 0.75, pitch: 350 }]],
+  swing2: [['dkWhoosh2', { volume: 0.75, pitch: 300 }]],
+  swing3: [['dkWhoosh3', { volume: 0.75, pitch: 400 }]],
+  swing4: [[DK.whooshLong, { volume: 0.8, pitch: 250 }]],
+  hit: [[DK.body, { volume: 0.45, pitch: 300, minGapMs: 30 }], ['rogueStab', { volume: 0.25, minGapMs: 30 }]],
   // about half her cuts: Nick's blade-in-flesh sound, her own bite faint under it
   hitFlesh: [['stationaryKill', { volume: 0.7, pitch: 150, minGapMs: 50 }], ['rogueStab', { volume: 0.2, minGapMs: 30 }]],
   block: [['rogueGuard', { volume: 0.7 }]],
   shadow: [['rogueVanish', { volume: 0.6, pitch: 300 }], ['rogueGuard', { volume: 0.35, pitch: 700 }]],
-  viper: [['rogueFlourish', { volume: 0.75, pitch: -200 }]],
-  kick: [['swingAlt', { volume: 0.5, pitch: -100 }]],
-  knife: [['rogueStarThrow', { volume: 0.6 }]],
-  fan: [['rogueStarThrow', { volume: 0.75, pitch: 200 }], ['rogueSwish2', { volume: 0.4 }]],
-  starHit: [['rogueStarHit', { volume: 0.5, minGapMs: 25 }]],
+  viper: [[DK.whooshLong, { volume: 0.85, pitch: 100 }]],
+  kick: [['dkWhoosh4', { volume: 0.7, pitch: 200 }]],
+  knife: [[DK.whoosh, { volume: 0.6, pitch: 900 }]],
+  fan: [[DK.whoosh, { volume: 0.7, pitch: 800 }], [DK.whooshLong, { volume: 0.4, pitch: 600 }]],
+  starHit: [['bladeHit8', { volume: 0.5, pitch: 500, minGapMs: 25 }], [DK.body, { volume: 0.3, pitch: 400, minGapMs: 25 }]],
   vaultContact: [['jump', { volume: 0.5, pitch: -200 }]],
   vaultLaunch: [['rogueSwish3', { volume: 0.6, pitch: -300 }]],
   dive: [['rogueFlourish', { volume: 0.6, pitch: 300 }]],
-  diveLand: [['kick', { volume: 0.7, pitch: 300 }]],
+  diveLand: [[DK.bodyBig, { volume: 0.8, pitch: 200 }]],
   mineDrop: [['rogueMineSet', { volume: 0.6 }]],
   mineArm: [['rogueMineArm', { volume: 0.55 }]],
   mineCue: [['rogueMineBeep', { volume: 0.65, minGapMs: 300 }]],
@@ -53,7 +54,7 @@ export const ROGUE_SOUNDS = {
   rush: [['rogueFlourish', { volume: 0.8, pitch: -300 }], ['rogueVanish', { volume: 0.5, pitch: 500 }]],
   vanish: [['rogueVanish', { volume: 0.75 }]],
   stab: [['rogueStab', { volume: 0.95, minGapMs: 0 }]],
-  cutsSlash: [['rogueSwish1', { volume: 0.5, pitch: 200, minGapMs: 20 }]],
+  cutsSlash: [[DK.whoosh, { volume: 0.55, pitch: 500, minGapMs: 20 }]],
   cutsSpike: [['kick', { volume: 0.8, pitch: 100 }], ['rogueFlourish', { volume: 0.4, pitch: -400 }]],
   fade: [['rogueVanish', { volume: 0.45, pitch: 400 }]],
   smoke: [['rogueSmoke', { volume: 0.85 }]],

@@ -9,7 +9,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { FONT } from './fonts.js';
-import { playSfx } from '../core/Sfx.js';
+import { playSfx, DK } from '../core/Sfx.js';
 import { artKey } from './levelArt.js';
 import { TRAPS } from '../stage/WoodTraps.js';
 
@@ -655,12 +655,12 @@ export class WoodTrapsView {
     const top = () => (s.cameras.main.scrollY ?? 0) + 30;
     ev.on('propHit', ({ prop, dir }) => {
       if (prop.kind === 'pine') {
-        playSfx(s, 'woodChop', { volume: 0.9, minGapMs: 60 });
+        playSfx(s, DK.wood, { volume: 0.85, pitch: -450, spread: 120, minGapMs: 60 }); // (Deadly Kombat wood bat: Nick found the made-in-code chop horrible)
         const v = this.pines.get(prop.id); if (v) { this.drawNotch(v, prop); s.tweens.add({ targets: v.c, angle: dir * 1.5, duration: 70, yoyo: true }); }
         for (let i = 0; i < 6; i++) s.gore?.spawn({ x: prop.x + (prop.fellDir ?? 1) * 22, z: prop.z + 2, h: rand(30, 60), vx: rand(-90, 90), vz: 0, vh: rand(100, 200), tint: 0xe0c090, scale: rand(0.3, 0.6), decal: false, life: rand(25, 45) });
       }
     });
-    ev.on('pineFalling', ({ prop }) => { playSfx(s, 'woodChop', { volume: 1, minGapMs: 0 }); playSfx(s, 'woodFall', { volume: 1, minGapMs: 0 }); this.crowBurst(prop.x, top() + 40, 6, false); });
+    ev.on('pineFalling', ({ prop }) => { playSfx(s, DK.wood, { volume: 1, pitch: -650, spread: 60, minGapMs: 0 }); playSfx(s, 'woodFall', { volume: 1, minGapMs: 0 }); this.crowBurst(prop.x, top() + 40, 6, false); });
     ev.on('pineDown', ({ prop, dir, x0, x1 }) => this.pineDown(prop, dir, x0, x1));
     ev.on('propBreak', ({ prop }) => { if (prop.kind === 'logpile') playSfx(s, 'woodSnare', { volume: 0.8, minGapMs: 0 }); });
     ev.on('logsLoose', () => { playSfx(s, 'woodLogs', { volume: 1, minGapMs: 0 }); s.fx?.shake(5, 40); });

@@ -1,5 +1,9 @@
-blade-hit-07.wav, blade-hit-08.wav, guts-and-gore-59.wav and face-hit-finisher-19.wav
+﻿blade-hit-07.wav, blade-hit-08.wav, guts-and-gore-59.wav and face-hit-finisher-19.wav
 (renamed from blade_hit_07.wav, blade_hit_08.wav, guts_and_gore_59.wav, face_hit_finisher_19.wav)
+and (2026-11-15) wood-bat-finisher-01/05, body-hit-small-11/20/23/79, body-hit-large-32/44/76,
+face-hit-large-20/29/78, body-hit-finisher-27/52, bone-breaking-53, punch-short-whoosh-16/30,
+kick-short-whoosh-12/23, punch-long-whoosh-21/30, kick-long-whoosh-19, block-large-71, block-small-69
+(same names with dashes; trimmed and made mono)
 
 Source: "Free Deadly Kombat Sound Effects" by Daniel Barros (Daniel SoundsGood)
 https://danielsoundsgood.itch.io/free-deadly-kombat-sound-effects

@@ -53,7 +53,7 @@ import { FATALITY_LABELS } from '../combat/Fatality.js';
 import { playMusic, playCue, stopMusic, toggleMute } from '../core/Music.js';
 import { syncSanctuaryMusic } from '../core/SanctuaryMusic.js';
 import { syncWoodMusic } from '../core/WoodMusic.js';
-import { playSfx, fleshBite, FLESH_CUT } from '../core/Sfx.js';
+import { playSfx, fleshBite, FLESH_CUT, DK } from '../core/Sfx.js';
 import { BattlefieldAudio } from '../core/BattlefieldAudio.js';
 import {MillRescueView} from '../view/MillRescueView.js';
 import {WoodTrapsView} from '../view/WoodTrapsView.js';
@@ -198,6 +198,18 @@ export class ArenaScene extends Phaser.Scene {
         && e.move.fx !== 'kick' && !e.move.shoulder && e.move.cut !== 'fire' && fleshBite()) {
         playSfx(this, FLESH_CUT, { volume: 0.75, spread: 120, minGapMs: 60 });
       }
+      // Deadly Kombat body hits (2026-11-15): every cut lands with a low thud under the steel,
+      // crits crack bone, and a hero being hit (silent until now) takes it in the body or face
+      const D = e.defender;
+      if (!e.move.noBlood && D) {
+        if (D.team === 'player') {
+          const big = e.crit || e.superCrit || (e.damage ?? 0) >= (D.stats.maxHealth ?? 100) * 0.12;
+          playSfx(this, big ? DK.bodyBig : [...DK.body, ...DK.face.map(([k]) => [k, 0.6])], { volume: big ? 0.85 : 0.7, spread: 100, minGapMs: 70 });
+        } else if (e.kind === 'melee' && e.attacker?.team === 'player') {
+          if (e.move.fx !== 'kick' && !e.attacker.stats.archetype) playSfx(this, DK.body, { volume: 0.35, pitch: -150, spread: 120, minGapMs: 60 });
+          if (e.superCrit || e.crit) playSfx(this, 'dkBone', { volume: e.superCrit ? 0.8 : 0.55, spread: 120, minGapMs: 80 });
+        }
+      }
     });
     // the SHOULDER SMASH sets off: a grunt, the plant, dust off his back foot
     ev.on('attackStart', ({ fighter: f, state }) => {
@@ -258,6 +270,7 @@ export class ArenaScene extends Phaser.Scene {
     ev.on('kill', (e) => {
       this.kills++;
       if (e.finisher) return; // executions do their own gore (setupFinishers)
+      if (!e.move?.noBlood) playSfx(this, DK.kill, { volume: 0.55, spread: 100, minGapMs: 90 }); // the killing blow lands (Deadly Kombat)
       // killed by fire (a grate, or a fire spell that didn't blow him apart): no fountain
       // of blood — he burns (the 'burning' state, effects/Burn.js)
       const byFire = ['fire', 'shock'].includes(e.move?.cut) && (!e.fatality || e.fatality === 'none') && e.defender.team === 'enemy';
@@ -585,6 +598,7 @@ export class ArenaScene extends Phaser.Scene {
 
   kickImpact(x, z, h, dir) {
     playSfx(this, 'kick', { volume: 1, spread: 90, minGapMs: 60 });
+    playSfx(this, DK.bodyBig, { volume: 0.75, pitch: -200, spread: 90, minGapMs: 60 }); // (Deadly Kombat: the boot in the body)
     this.fx.shake(9, 16);
     const ring = this.add.circle(x, z - h, 10).setStrokeStyle(4, 0xfff0c0, 0.9).setDepth(DEPTH.popups - 2);
     this.tweens.add({ targets: ring, radius: 70, alpha: 0, duration: 260, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
