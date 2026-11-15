@@ -187,6 +187,33 @@ export class StripHeroView {
         return spread(F.slice(3), (fr - B.arriveAt) / Math.max(1, d.duration + d.recovery - B.arriveAt));
       }
 
+      // ---- his second set (2026-11-15)
+      case 'skyfall': {
+        const S = A.skyfall; const m = f.move;
+        if (!S || !m) return A.idle.frames[0];
+        if (!f.skyStruck) return spread(S.call, fr / Math.max(1, m.startup));
+        return spread(S.after, (fr - f.skyStruck) / Math.max(1, m.recovery));
+      }
+      case 'plunge': {
+        const P = A.plunge;
+        if (!P) return (A.jump ?? A.idle).frames[0];
+        if (f.landedAt) return spread(P.land, (fr - f.landedAt) / 22);
+        return fr <= (K.plunge?.hang ?? 0) ? P.hang[0] : P.fall[0];
+      }
+      case 'spikes': {
+        const F = (A.spikes ?? A.idle).frames; const S = K.spikes;
+        if (!f.spikesAt) return spread(F.slice(0, 3), fr / Math.max(1, S.startup));
+        const t = fr - f.spikesAt;
+        return t < 2 ? F[3] : t < 10 ? F[4] : F[5];
+      }
+      case 'tempest': {
+        const T = A.tempest; const S = K.tempest;
+        if (!T) return A.idle.frames[0];
+        const end = S.startup + (S.waves - 1) * S.waveGap + S.recovery;
+        if (fr > end - 14) return spread(T.end, (fr - end + 14) / 14);
+        return T.hold[Math.floor(tick / 6) % T.hold.length];
+      }
+
       // ---- the Rogue's kit (combat/Rogue.js)
       case 'knife': return spread(A.knife.frames, fr / (K.knife.startup + K.knife.recovery));
       case 'mine': return A.mine.frames[0];

@@ -127,6 +127,17 @@ export const HERO_ANIMS = {
     shoulder: { needs: ['levitate', 'dash'], ...swing(seq('levitate', [0, 1]), seq('dash', [2]), seq('levitate', [3])) },
     // Y, Y, X: the thunder staff (the spinning slam, charged)
     thunder: swing(seq('combo3', [1, 2]), seq('combo3', [3]), seq('combo3', [3, 3, 4])),
+    // THE SECOND SET (2026-11-15), on his other strips until ChatGPT paints their own
+    // (docs/mage-art-prompts.md section 13): the UPDRAFT (the staff swept up, ending raised)
+    updraft: swing(seq('combo2', [0, 1]), seq('ward', [2]), seq('ward', [2]).concat(seq('combo2', [4]))),
+    // the SKYFALL BOLT: the staff pointed up at the sky, then brought down as it strikes
+    skyfall: { call: seq('finStorm', [1, 2, 3]), after: seq('finStorm', [4, 5, 6, 7]) },
+    // METEOR DROP: the staff raised at the top, the slam on the way down, planted, rising
+    plunge: { hang: seq('levitate', [2]), fall: seq('ward', [3]), land: seq('ward', [4, 4, 5]) },
+    // STONE SPIKES: the barrier's slam
+    spikes: { frames: seq('ward', [0, 1, 2, 3, 4, 5]) },
+    // THE TEMPEST: staff up, sparking, held; lowered at the end
+    tempest: { hold: seq('finStorm', [2, 3]), end: seq('finStorm', [6, 7]) },
     // finishers borrow his casting poses (kind -> strip)
     finisher: { storm: seq('bolt', [0, 1, 2, 2, 3, 3, 4, 5]), rupture: seq('force', [0, 1, 2, 3, 3, 3, 3, 4]), embers: seq('ward', [0, 1, 2, 3, 4, 4, 4, 5]) },
   },

@@ -2238,6 +2238,17 @@ test('terrain: walking off a ledge drops him, and coyote time still lets him jum
   assert(c.p.vh > 300, `coyote jump (vh ${c.p.vh.toFixed(0)})`);
 });
 
+test('vexa: her Viper Strike stops at the edge of a roof instead of carrying her off it', () => {
+  const defs = [{ kind: 'block', x0: 0, x1: 420, z0: 282, z1: 520, top: 80 }];
+  const t = terrainSetup(defs, { hero: 'rogue', x: 330, script: { 2: ['heavy'] } });
+  t.run(40);
+  assert(t.p.h === 80 && t.p.x <= 425, `still on the roof (x ${t.p.x.toFixed(0)}, h ${t.p.h})`);
+  // on flat ground it still covers its full distance
+  const f = terrainSetup([], { hero: 'rogue', x: 330, script: { 2: ['heavy'] } });
+  f.run(40);
+  assert(f.p.x > 450, `full lunge on the flat (x ${f.p.x.toFixed(0)})`);
+});
+
 test('jump: let go early for a short hop, hold for the full height', () => {
   const peak = (holdFrames) => {
     const t = terrainSetup([], { script: { 1: ['jump'] }, hold: (n) => ({ jump: n <= holdFrames }) });
@@ -3104,16 +3115,125 @@ function orynWith(...ids) {
   return P.statsFor('mage', CHARACTERS.mage);
 }
 
-test("oryn's tree: the Stormcaller can be taken in order; the planned branches are shown but can't be", () => {
+test("oryn's tree: four whole branches, each taken in order (no placeholders left)", () => {
   const P = new Progress(memStore());
   P.data.bonus = 99;
   assert(P.blocker('mage', 'staticCharge') === 'locked' && P.buy('mage', 'forkedBolt') && P.buy('mage', 'staticCharge') && P.buy('mage', 'thunderhead'), 'in order');
-  assert(P.blocker('mage', 'secondWall') === 'planned' && !P.buy('mage', 'secondWall') && P.blocker('mage', 'phaseWalk') === 'planned', 'planned: not for sale');
-  assert(SKILL_TREES.mage.branches.length === 3 && SKILL_TREES.mage.branches.filter((b) => b.planned).length === 2, 'three columns, two placeholders');
+  assert(P.blocker('mage', 'shatter') === 'locked' && P.buy('mage', 'secondWall') && P.buy('mage', 'shatter') && P.buy('mage', 'livingRock'), 'the Earthshaper');
+  assert(P.buy('mage', 'blinkStrike') && P.buy('mage', 'longStep') && P.buy('mage', 'phaseWalk'), 'the Waywalker');
+  assert(P.blocker('mage', 'tempest') === 'locked' && P.buy('mage', 'liveWire') && P.buy('mage', 'stoneSpikes') && P.buy('mage', 'tempest'), 'the Cataclysm');
+  assert(SKILL_TREES.mage.branches.length === 4 && SKILL_TREES.mage.branches.every((b) => !b.planned), 'four columns, none planned');
   const s = P.statsFor('mage', CHARACTERS.mage);
   assert(s.kit.bolt.branches === CHARACTERS.mage.kit.bolt.branches + 1 && CHARACTERS.mage.kit.bolt.maxJumps === 4, 'his copy changes, the shared data does not');
   P.setFlag('oathkeeper'); // (before it, his stats are his old sword's: a copy)
   assert(P.statsFor('warrior', CHARACTERS.warrior) === CHARACTERS.warrior, "Rurik's picks are his own");
+});
+
+// ---------------------------------------------------------------- oryn's second set (2026-11-15)
+
+test('oryn: X, X, RT is the UPDRAFT (throws him high); Y on it is the SKYFALL BOLT (a man in the air never survives it)', () => {
+  const t = mageSetup({ script: { 1: ['attack'], 12: ['attack'], 22: ['kick'] }, foes: [[650]] });
+  const states = new Set(); let top = 0;
+  for (let i = 0; i < 90; i++) { t.run(1); states.add(t.p.state); top = Math.max(top, t.es[0].air); }
+  assert(states.has('updraft') && !states.has('force'), `the updraft, not the force blast (${[...states]})`);
+  assert(top > 90, `thrown high (${top.toFixed(0)} px)`);
+  // ...and the Skyfall Bolt out of it
+  const k = mageSetup({ script: { 1: ['attack'], 12: ['attack'], 22: ['kick'], 36: ['heavy'] }, foes: [[650]] });
+  const strikes = []; k.world.events.on('skyfallBolt', (e) => strikes.push(e));
+  const mana = k.p.mana;
+  const seen = new Set();
+  for (let i = 0; i < 90; i++) { k.run(1); seen.add(k.p.state); }
+  assert(seen.has('skyfall') && strikes.length === 1, `the bolt fell (${[...seen]}, ${strikes.length})`);
+  assert(!k.es[0].alive, `he died in the air (${k.es[0].state}, ${k.es[0].health})`);
+  assert(k.p.mana < mana, 'it cost mana');
+  // missed (nobody launched): Y is just his lightning
+  const miss = mageSetup({ script: { 1: ['attack'], 12: ['attack'], 22: ['kick'], 36: ['heavy'] }, foes: [[1000]] });
+  const ms = new Set(); for (let i = 0; i < 70; i++) { miss.run(1); ms.add(miss.p.state); }
+  assert(!ms.has('skyfall'), 'no Skyfall Bolt off a whiff');
+});
+
+test('oryn: heavy in the air is the METEOR DROP: down hard, men close are floored and marked with Static', () => {
+  const t = mageSetup({ script: { 1: ['jump'], 20: ['heavy'] }, hold: (n) => ({ jump: n < 16 }), foes: [[660]] });
+  const seen = new Set(); let smash = 0;
+  t.world.events.on('leapSmash', () => smash++);
+  for (let i = 0; i < 90; i++) { t.run(1); seen.add(t.p.state); }
+  assert(seen.has('plunge') && smash === 1, `he dropped (${[...seen]})`);
+  const e = t.es[0];
+  assert(e.health < e.stats.maxHealth && (['knockdown', 'getup', 'dead'].includes(e.state) || !e.alive), `floored (${e.state})`);
+  assert(!e.alive || staticOnOf(e, t.world) >= 1, 'marked');
+  assert(t.p.cool.plunge > 0, 'cools down');
+});
+
+test('oryn: STONE SPIKES (D-pad down, the Cataclysm) run along the floor and throw men up; the TEMPEST strikes every man in reach', () => {
+  const none = mageSetup({ script: { 1: ['padDown'] }, foes: [[720]] });
+  none.run(30);
+  assert(none.p.state !== 'spikes', 'nothing without the skill');
+  const st = orynWith('liveWire', 'stoneSpikes');
+  assert(st.kit.static.max === 4 && st.kit.static.life === CHARACTERS.mage.kit.static.life * 2, 'Live Wire');
+  const t = mageSetup({ script: { 2: ['padDown'] }, foes: [[700], [800], [1100]], stats: st });
+  const mana = t.p.mana;
+  const spikes = []; t.world.events.on('stoneSpike', (e) => spikes.push(e));
+  let top = 0;
+  for (let i = 0; i < 60; i++) { t.run(1); top = Math.max(top, t.es[0].air, t.es[1].air); }
+  assert(spikes.length === st.kit.spikes.count, `a line of spikes (${spikes.length})`);
+  assert(t.es[0].health < t.es[0].stats.maxHealth && t.es[1].health < t.es[1].stats.maxHealth && top > 60, `the men on the line thrown up (${top.toFixed(0)})`);
+  assert(t.es[2].health === t.es[2].stats.maxHealth, 'out of reach: untouched');
+  assert(t.p.mana <= mana - st.kit.spikes.cost + 6, 'it cost mana');
+  // the Tempest
+  const ts = orynWith('liveWire', 'stoneSpikes', 'tempest');
+  const w = mageSetup({ script: { 2: ['padDown'] }, foes: [[300], [900], [1200, 380]], stats: ts });
+  let inv = false;
+  for (let i = 0; i < 160; i++) { w.run(1); if (w.p.state === 'tempest') inv ||= w.p.invincible; }
+  assert(inv, 'untouchable while it lasts');
+  assert(w.es.every((e) => e.health < e.stats.maxHealth), 'lightning on every man in reach, behind him too');
+  assert(w.p.cool.tempest > 0 && w.p.state !== 'tempest', 'over, and cooling down');
+});
+
+test('waywalker: Blink Strike shocks the man blinked through; Long Step goes further; Phase Walk gives a second blink', () => {
+  const plain = mageSetup({ script: { 1: ['dodge'] }, foes: [[700]] });
+  plain.run(30);
+  assert(plain.es[0].health === plain.es[0].stats.maxHealth, 'a plain blink passes him by');
+  const t = mageSetup({ script: { 1: ['dodge'] }, foes: [[700]], stats: orynWith('blinkStrike') });
+  t.run(30);
+  assert(t.es[0].health < t.es[0].stats.maxHealth && staticOnOf(t.es[0], t.world) >= 1, 'shocked and marked');
+  const far = mageSetup({ script: { 1: ['dodge'] }, stats: orynWith('blinkStrike', 'longStep') });
+  far.run(30);
+  const near = mageSetup({ script: { 1: ['dodge'] } });
+  near.run(30);
+  assert(far.p.x - 600 > (near.p.x - 600) * 1.2, `further (${far.p.x - 600} vs ${near.p.x - 600})`);
+  const two = mageSetup({ script: { 1: ['dodge'], 10: ['dodge'] }, stats: orynWith('blinkStrike', 'longStep', 'phaseWalk') });
+  let outs = 0; two.world.events.on('blinkOut', () => outs++);
+  two.run(40);
+  assert(outs === 2, `two blinks back to back (${outs})`);
+  const one = mageSetup({ script: { 1: ['dodge'], 10: ['dodge'] } });
+  let o1 = 0; one.world.events.on('blinkOut', () => o1++);
+  one.run(40);
+  assert(o1 === 1, `without it, one (${o1})`);
+});
+
+test('earthshaper: Second Wall keeps two up; Shatter floors the men at a wall as it falls; Living Rock walks it on', () => {
+  const two = mageSetup({ script: { 1: ['magic'] }, stats: orynWith('secondWall') });
+  two.run(30);
+  two.p.cool.ward = 0; two.p.mana = two.p.stats.maxMana; two.p.x = 300;
+  two.p.controller.registerPress('magic');
+  two.run(30);
+  assert(two.world.barriers.up.length === 2, `two walls (${two.world.barriers.up.length})`);
+  const one = mageSetup({ script: { 1: ['magic'] } });
+  one.run(30); one.p.cool.ward = 0; one.p.mana = one.p.stats.maxMana; one.p.x = 300; one.p.controller.registerPress('magic'); one.run(30);
+  assert(one.world.barriers.up.length === 1, 'without it, one');
+  const sh = mageSetup({ script: { 1: ['magic'] }, foes: [[790]], stats: orynWith('secondWall', 'shatter') });
+  sh.run(30);
+  const b = sh.world.barriers.up[0];
+  let shattered = 0; sh.world.events.on('wallShatter', (e) => { shattered += e.hits.length; });
+  sh.es[0].x = b.x + b.half + 20;
+  sh.world.barriers.takeDown(b, true);
+  sh.run(3);
+  assert(shattered === 1 && sh.es[0].health < sh.es[0].stats.maxHealth, `the slabs thrown off it (${shattered})`);
+  const lr = mageSetup({ script: { 1: ['magic'] }, foes: [[900]], stats: orynWith('secondWall', 'shatter', 'livingRock') });
+  lr.run(20);
+  const w = lr.world.barriers.up[0]; const x0 = w.x;
+  lr.run(120);
+  assert(w.x > x0 + 40 && lr.es[0].x > w.x, `it walked away from him and shoved him on (${x0} -> ${w.x.toFixed(0)}, foe ${lr.es[0].x.toFixed(0)})`);
 });
 
 test('stormcaller: Forked Bolt makes the chain reach more of a crowd', () => {

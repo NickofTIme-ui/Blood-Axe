@@ -391,17 +391,15 @@ export class EnemyBrain extends Controller {
     }
   }
 
-  // Cut off by a barrier (combat/Barrier.js): stop a sensible way short of it — further
-  // from fire — and pace there along its face, eyes on the man behind it, spread out so
+  // Cut off by a barrier (combat/Barrier.js): stop a sensible way short of it and pace there along its face, eyes on the man behind it, spread out so
   // the crowd doesn't stack. Brutes batter at a stone wall. The moment it's down his
   // normal brain takes over again (between() finds no wall).
   atWall(wall, target) {
     const f = this.fighter;
     const ai = this.ai;
     const side = wall.sides.get(f.id) ?? (Math.sign(f.x - wall.x) || 1);
-    const fire = wall.kind === 'fire';
     const spread = (f.id % 4) * 16;
-    const stand = wall.half + (fire ? 62 : 34) + spread;
+    const stand = wall.half + 34 + spread;
     const t = this.world.frame;
     const pace = Math.sin(t * 0.025 + f.id * 1.7) * 12;
     const wantX = wall.x + side * (stand + pace);
@@ -411,7 +409,7 @@ export class EnemyBrain extends Controller {
     // a stone wall: everyone tries to smash it down (a few at a time, in turn — the rest
     // wait their go, spread along it)
     const reach = Math.abs(f.x - wall.x) - wall.half;
-    if (!fire && wall.maxHp > 0) {
+    if (wall.maxHp > 0) {
       const batterers = this.world.fighters.filter((o) => o.team === f.team && o.alive && o !== f &&
         Math.abs(o.x - wall.x) - wall.half <= ai.attackRange * 0.9 && (wall.sides.get(o.id) ?? 0) === side).length;
       const myTurn = batterers < 3 || reach <= ai.attackRange * 0.9;

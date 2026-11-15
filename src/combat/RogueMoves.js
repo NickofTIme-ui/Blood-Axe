@@ -67,7 +67,7 @@ export function rogueMoveStates({ tryActions, stopMoving, friction, faceInput })
         const ph = frame <= m.startup ? 'startup' : frame <= m.startup + m.active ? 'active' : 'recovery';
         f.vz = 0;
         if (ph === 'startup') f.vx = f.facing * 300;
-        else if (ph === 'active') { f.vx = f.facing * m.lunge; f.invincible = true; }
+        else if (ph === 'active') { f.vx = f.facing * m.lunge; f.holdBrink(); f.invincible = true; }
         else friction(f, 0.78);
         f.activeAttack = ph === 'active' ? f.attackInfo : null;
         if (frame === m.startup + 1) f.world.events.emit('swing', { fighter: f, move: m });

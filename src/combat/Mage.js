@@ -6,8 +6,13 @@
 //   heavy  -> bolt    CHAIN LIGHTNING: a bolt off the staff that leaps from body to body
 //                     (hold heavy to overcharge it)
 //   kick   -> force   FORCE BLAST: a cone of invisible force that hurls men backwards
-//   magic  -> ward    ARCANE BARRIER: tap = Infernal Wall, hold = Earthen Bulwark
-//                     (combat/Barrier.js)
+//   magic  -> ward    ARCANE BARRIER: the spiked Earthen Bulwark (combat/Barrier.js)
+//   air heavy -> plunge  METEOR DROP (the shared Leap Smash state, combat/Skills.js)
+//
+// X, X, RT is the UPDRAFT (his launcher) and Y after it the SKYFALL BOLT (his Sunder).
+// From the skill tree: THE WAYWALKER (Blink Strike, Long Step, Phase Walk), THE
+// EARTHSHAPER (Second Wall, Shatter, Living Rock: combat/Barrier.js) and THE CATACLYSM
+// (Live Wire; D-pad down = STONE SPIKES, and with the mana THE TEMPEST).
 //
 // His staff feeds his lightning (STATIC, kit.static): every staff blow marks the man it
 // lands on, and a bolt into a marked man hits hard and forks on at full strength; into an
@@ -209,6 +214,69 @@ function releaseForce(f, level = 0) {
   f.propStrike = { box: { left, right: left + K.radius, bottom: 0, top: 120, z: f.z }, depth: 60, smash: 2, id: w.frame };
 }
 
+// ---------------------------------------------------------------- skyfall bolt
+
+// X, X, RT, Y: the bolt out of the sky through the man the Updraft threw up. In the air he
+// never survives it (he blows apart up there); on the floor it's a heavy strike. Either
+// way a thunderclap where it lands throws down whoever is close under it (Storms.thunder).
+function skyfallStrike(f, m, targets) {
+  const w = f.world;
+  const hit = targets.filter((v) => v.alive && !v.removeMe && !['executed', 'dead'].includes(v.state));
+  const spot = hit[0] ?? { x: clampX(w, f.x + f.facing * 70), z: f.z, h: 0, alive: false };
+  w.events.emit('skyfallBolt', { caster: f, targets: hit, x: spot.x, z: spot.z, h: spot.h ?? 0 });
+  for (const v of hit) {
+    const air = !v.grounded && !v.stats.boss && !v.stats.machine && !v.spare && !v.immortal;
+    const move = air
+      ? { ...m, damage: v.health + 999, unblockable: true, fatality: 'explode', knockback: { x: 0, y: 0 } }
+      : { ...m };
+    w.combat.resolve(f, v, move, { kind: 'magic', fromX: v.x, dir: Math.sign(v.x - f.x) || f.facing, contact: { x: v.x, h: v.h + v.stats.body.h * 0.55 } });
+    v.shock = Math.max(v.shock ?? 0, 40);
+  }
+  // the thunderclap under it (the men already struck are dead or down: it finds the rest)
+  w.storms.thunder(f, spot, { delay: 1, damage: 14, radius: 80 });
+}
+
+// ---------------------------------------------------------------- blink strike
+
+// THE WAYWALKER's Blink Strike: every man on the line he blinked through takes a shock.
+function blinkStrike(f, from, to, S) {
+  const len = Math.hypot(to.x - from.x, to.z - from.z);
+  if (len < 1) return;
+  for (const e of foes(f)) {
+    // how far along the line he is, and how far off it
+    const t = ((e.x - from.x) * (to.x - from.x) + (e.z - from.z) * (to.z - from.z)) / (len * len);
+    if (t < 0 || t > 1.05) continue;
+    const px = from.x + (to.x - from.x) * t; const pz = from.z + (to.z - from.z) * t;
+    if (Math.abs(e.x - px) > 30 + e.stats.body.w / 2 || Math.abs(e.z - pz) > 26 || e.air > 90) continue;
+    const move = { cut: 'shock', fx: 'lightning', noBlood: true, static: 1, damage: S.damage, hitstun: 30, hitstop: 5, shake: 3, knockback: { x: 90, y: 0 }, guardDamage: 20, breaksGuard: true };
+    f.world.combat.resolve(f, e, move, { kind: 'magic', fromX: px, dir: Math.sign(to.x - from.x) || f.facing, contact: { x: e.x, h: e.h + e.stats.body.h * 0.55 } });
+    e.shock = Math.max(e.shock ?? 0, 20);
+    f.world.events.emit('blinkStrike', { fighter: f, target: e });
+  }
+}
+
+// How many blinks he has in the air before he lands (Phase Walk: two).
+export const airBlinks = (f) => (f.stats.skills?.phaseWalk ? 2 : 1);
+
+// ---------------------------------------------------------------- the cataclysm
+
+// D-pad down with THE CATACLYSM: the Tempest when he has it and the mana, else Stone Spikes.
+export function cataclysmState(f) {
+  const S = f.stats.skills;
+  const K = kitOf(f);
+  if (!S?.stoneSpikes || !f.grounded) return null;
+  if (S.tempest && f.mana >= K.tempest.cost && !(f.cool.tempest > 0)) return 'tempest';
+  if (f.mana >= K.spikes.cost && !(f.cool.spikes > 0)) return 'spikes';
+  return null;
+}
+
+// Everyone of his enemies the Tempest can reach, nearest first.
+function tempestTargets(f, K) {
+  return foes(f)
+    .filter((e) => Math.abs(e.x - f.x) <= K.range && !e.stats.machine)
+    .sort((a, b) => Math.abs(a.x - f.x) - Math.abs(b.x - f.x) || a.id - b.id);
+}
+
 // ---------------------------------------------------------------- the states
 
 // api: helpers from entities/fighterStates.js (handed over, so neither file imports the
@@ -223,6 +291,7 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
         const d = f.stats.dodge;
         const B = kitOf(f).blink;
         f.spendStamina(d.cost);
+        f.blinkChain = f.fsm.prevName === 'blink' ? (f.blinkChain ?? 0) + 1 : 0; // (Phase Walk's second)
         let dx = c.moveX;
         let dz = c.moveZ;
         if (!dx && !dz) dx = f.facing; // no direction held: forward
@@ -261,14 +330,23 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
           f.z = f.blinkTo.z;
           f.blinkGone = false;
           f.world.events.emit('blinkIn', { fighter: f, x: f.x, z: f.z, from: f.blinkFrom });
+          if (f.stats.skills?.blinkStrike) blinkStrike(f, f.blinkFrom, f.blinkTo, f.stats.skills.blinkStrike);
         }
         if (f.blinkAir && f.air > 0) {
           // in the air: re-formed, he drops again (an air chop is the only thing he can do up there)
           if (frame >= B.actFrom && f.controller.consume('attack') && f.stats.moves.air) { f.vh = 0; return f.fsm.change('airAttack'); }
-          if (frame >= d.duration + d.recovery) { f.vh = 0; f.airBlinked = true; f.fsm.change('jump'); }
+          // PHASE WALK: a second blink straight out of the first
+          if (frame >= B.actFrom && (f.airBlinks ?? 0) + 1 < airBlinks(f) && f.stamina >= d.cost && f.controller.consume('dodge')) {
+            f.airBlinks = (f.airBlinks ?? 0) + 1;
+            return f.fsm.change('blink');
+          }
+          if (frame >= d.duration + d.recovery) { f.vh = 0; f.airBlinks = (f.airBlinks ?? 0) + 1; f.airBlinked = f.airBlinks >= airBlinks(f); f.fsm.change('jump'); }
           return;
         }
-        if (frame >= B.actFrom && tryActions(f, ['attack', 'heavy', 'kick', 'magic', 'block', 'jump'])) return;
+        // (PHASE WALK: on the ground, a second blink can come straight out of the first)
+        const next = ['attack', 'heavy', 'kick', 'magic', 'block', 'jump'];
+        if (f.stats.skills?.phaseWalk && f.blinkChain < 1) next.unshift('dodge');
+        if (frame >= B.actFrom && tryActions(f, next)) return;
         if (frame >= d.duration + d.recovery) f.fsm.change('idle');
       },
       exit(f) {
@@ -411,6 +489,95 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
       };
     })(),
 
+    // X, X, RT: the UPDRAFT, an ordinary swing that costs mana (its Y follow-up: 'skyfall')
+    updraft: (() => {
+      const base = makeAttackState('updraft');
+      return { ...base, enter(f) { base.enter(f); f.mana = Math.max(0, f.mana - (f.move.manaCost ?? 0)); } };
+    })(),
+
+    // X, X, RT, Y: the SKYFALL BOLT. The men the Updraft threw (still that swing's hit
+    // list) are the ones the sky strikes, once the staff has pointed up at them.
+    skyfall: {
+      enter(f) {
+        const launched = f.attackInfo?.hitList ?? new Set(); // (still the updraft's swing)
+        f.skyTargets = f.world.fighters.filter((v) => launched.has(v.id) && v.alive);
+        stopMoving(f);
+        const v = f.skyTargets[0];
+        if (v) f.facing = Math.sign(v.x - f.x) || f.facing;
+        f.startMove(f.stats.moves.skyfall);
+        f.mana = Math.max(0, f.mana - (f.move.manaCost ?? 0));
+        f.skyStruck = 0;
+        f.world.events.emit('attackStart', { fighter: f, state: 'skyfall', move: f.move });
+        f.world.events.emit('skyfallCall', { fighter: f, targets: f.skyTargets });
+      },
+      update(f, frame) {
+        const m = f.move;
+        friction(f, 0.7);
+        // (the men he threw hang near the top while the sky gathers: they fall slower)
+        if (!f.skyStruck) for (const v of f.skyTargets) if (v.alive && !v.grounded && v.vh < 0) v.vh *= 0.8;
+        if (!f.skyStruck && frame >= m.startup) {
+          f.skyStruck = frame;
+          skyfallStrike(f, m, f.skyTargets);
+        }
+        for (const win of m.cancels ?? []) {
+          if (f.skyStruck && frame >= win.from && frame <= win.to && tryActions(f, win.into)) return;
+        }
+        if (frame >= m.startup + m.active + m.recovery) f.fsm.change('idle');
+      },
+      exit(f) { f.skyTargets = []; },
+    },
+
+    // STONE SPIKES (THE CATACLYSM, D-pad down): the staff driven into the floor, and the
+    // spikes burst out along the ground ahead (combat/Storm.js 'spikes' runs them).
+    spikes: {
+      enter(f) {
+        const K = kitOf(f).spikes;
+        stopMoving(f);
+        faceInput(f);
+        f.mana = Math.max(0, f.mana - K.cost);
+        f.cool.spikes = K.cooldown;
+        f.spikesAt = 0;
+        f.world.events.emit('spikesStart', { fighter: f });
+      },
+      update(f, frame) {
+        const K = kitOf(f).spikes;
+        friction(f, 0.7);
+        if (!f.spikesAt) aimTurn(f);
+        if (!f.spikesAt && frame >= K.startup) {
+          f.spikesAt = frame;
+          f.world.storms.spikes(f, K);
+        }
+        if (f.spikesAt && frame >= f.spikesAt + 8 && tryActions(f, ['dodge'])) return;
+        if (frame >= K.startup + K.recovery) f.fsm.change('idle');
+      },
+    },
+
+    // THE TEMPEST (THE CATACLYSM's last, D-pad down with the mana): he rises with the staff
+    // held up, nothing can touch him, the sky goes black, and the lightning comes down on
+    // every man in reach, wave after wave (each strike a Storms.thunder).
+    tempest: {
+      enter(f) {
+        const K = kitOf(f).tempest;
+        stopMoving(f);
+        f.mana = Math.max(0, f.mana - K.cost);
+        f.cool.tempest = K.cooldown;
+        f.invincible = true;
+        f.world.events.emit('tempestStart', { fighter: f, frames: K.startup + K.waves * K.waveGap + 20 });
+      },
+      update(f, frame) {
+        const K = kitOf(f).tempest;
+        f.vx = 0; f.vz = 0;
+        f.invincible = true;
+        for (let wv = 0; wv < K.waves; wv++) {
+          if (frame !== K.startup + wv * K.waveGap) continue;
+          tempestTargets(f, K).forEach((e, i) => f.world.storms.thunder(f, e, { delay: 2 + i * K.step, damage: K.damage, radius: K.radius }));
+          f.world.events.emit('tempestWave', { fighter: f, wave: wv });
+        }
+        if (frame >= K.startup + (K.waves - 1) * K.waveGap + K.recovery) f.fsm.change('idle');
+      },
+      exit(f) { f.invincible = false; f.world.events.emit('tempestEnd', { fighter: f }); },
+    },
+
     // HOLD X: the STAFF TWIRL. The staff spins in front of him: a fresh hit every few
     // frames while it's held (he can creep along), arrows glance off it, and letting go
     // (or running out of breath) cracks it out in one last blow that throws them.
@@ -444,8 +611,7 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
     },
     twirlEnd: makeAttackState('twirlEnd'),
 
-    // ARCANE BARRIER: tap magic = the Infernal Wall, hold it = the Earthen Bulwark. The
-    // staff comes up while he chooses, then slams down and the wall erupts.
+    // ARCANE BARRIER: the staff comes up, slams down, and the Earthen Bulwark erupts.
     ward: {
       enter(f) {
         stopMoving(f);

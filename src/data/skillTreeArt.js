@@ -20,7 +20,7 @@ export const PLATE = {
 
 export function skillIconIds() {
   const ids = [];
-  for (const tree of Object.values(SKILL_TREES)) for (const br of tree.branches) for (const n of br.nodes) ids.push(n.id);
+  for (const tree of Object.values(SKILL_TREES)) for (const br of tree.branches) for (const n of br.nodes) if (!n.noIcon) ids.push(n.id); // (noIcon: not painted yet)
   return ids;
 }
 

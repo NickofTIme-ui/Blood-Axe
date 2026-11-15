@@ -243,7 +243,8 @@ export const CHARACTERS = {
     look: { color: 0x1c2550, accent: 0x6a4a2a, skin: 0xd8b494 },
     // the buttons his kit replaces: dodge = BLINK, heavy = CHAIN LIGHTNING,
     // kick = FORCE BLAST, magic = ARCANE BARRIER (tap fire, hold earth)
-    states: { dodge: 'blink', heavy: 'bolt', kick: 'force', cast: 'ward', charge: 'twirl' },
+    // (in the air: heavy = METEOR DROP, the shared 'plunge' state with his kit.plunge)
+    states: { dodge: 'blink', heavy: 'bolt', kick: 'force', cast: 'ward', charge: 'twirl', airHeavy: 'plunge' },
 
     maxHealth: 100, maxStamina: 90, maxMana: 120,
     // (his mana is meant to come from fighting: a slow trickle on its own, a lot from the
@@ -295,8 +296,34 @@ export const CHARACTERS = {
         chains: [
           { button: 'attack', next: 'light3', from: 6, to: 20 },
           { button: 'heavy', next: 'heavy', from: 9, to: 20 },
+          { button: 'kick', next: 'updraft', from: 9, to: 20 }, // X, X, RT: the UPDRAFT
         ],
         cancels: [{ from: 9, to: 20, into: ['dodge', 'block', 'kick', 'magic'] }],
+      },
+      // X, X, RT: the UPDRAFT (his launcher, as Rurik's Rising Cleave). The staff sweeps up
+      // from the floor and a column of wind under the man throws him high; jump after him,
+      // or Y once it has connected for the SKYFALL BOLT.
+      updraft: {
+        cut: 'blunt', fx: 'updraft', static: 1, launch: true,
+        startup: 8, active: 4, recovery: 18,
+        damage: 11, hitstun: 30, hitstop: 9, shake: 4,
+        knockback: { x: 20, y: 700 }, knockdown: true, guardDamage: 22, manaCost: 8, lunge: 50,
+        hitbox: { x: 4, y: 0, w: 86, h: 112 },
+        smear: { arc: [120, -110], r: 84, cx: 4, cy: 70, w: 32, heavy: true, palette: 'arcane' },
+        chains: [{ button: 'heavy', next: 'skyfall', from: 10, to: 30, onHit: true }],
+        cancels: [{ from: 12, to: 30, into: ['jump', 'dodge'] }],
+      },
+      // X, X, RT, Y: the SKYFALL BOLT (his Sunder). He points the staff at the man he threw
+      // up, and the sky answers: a bolt out of the clouds through him. A man in the air
+      // never survives it (he comes apart up there); one already down takes a heavy strike,
+      // and anyone close under it is thrown down. The strike itself is combat/Mage.js.
+      skyfall: {
+        cut: 'shock', fx: 'skyfall', noBlood: true,
+        startup: 12, active: 1, recovery: 22,
+        damage: 30, hitstun: 40, hitstop: 12, shake: 12,
+        knockback: { x: 200, y: 300 }, knockdown: true, breaksGuard: true, guardDamage: 60, manaCost: 14,
+        hitbox: { x: 0, y: 0, w: 0, h: 0 },
+        cancels: [{ from: 24, to: 35, into: ['dodge'] }],
       },
       // spinning slam that lets out a pressure pulse: it sends men FLYING (bowling over
       // whoever is behind, into walls and onto his spiked wall)
@@ -455,10 +482,22 @@ export const CHARACTERS = {
         actFrom: 9,      // frame attacks may cut in
         cooldown: 0,     // optional extra lockout (frames) after a blink
       },
-      // ARCANE BARRIER — the EARTHEN BULWARK. (The Infernal Wall is still in
-      // combat/Barrier.js: set kind: 'fire' to use it.)
+      // METEOR DROP (heavy in the air; skill-free, his air heavy as Rurik's Leap Smash is
+      // his): a beat hung at the top with the staff raised, then he drives down like a
+      // falling star; where he lands the floor bursts, everyone close is thrown down and
+      // marked with Static (combat/Skills.js 'plunge'). Cools down so it can't be pogoed.
+      plunge: { speed: 1250, radius: 120, depth: 48, damage: 22, launch: 300, bounce: 0, minHeight: 30, hang: 9, cooldown: 120, static: 1, meteor: true },
+      // STONE SPIKES (skill tree, THE CATACLYSM; D-pad down / H): the staff into the floor
+      // and a line of stone spikes bursts out along it, one after another, throwing each man
+      // it reaches up into the air (combat/Storm.js 'spikes')
+      spikes: { cost: 30, cooldown: 180, startup: 12, recovery: 20, count: 7, step: 46, first: 50, every: 3, depth: 34, damage: 18, lift: 560, knockback: 120 },
+      // THE TEMPEST (skill tree, THE CATACLYSM's last; D-pad down with the mana): he rises,
+      // the sky goes black, and lightning falls on every one of his enemies in reach, in waves
+      tempest: { cost: 70, cooldown: 900, startup: 24, recovery: 40, range: 760, waves: 3, waveGap: 26, step: 4, damage: 26, radius: 64 },
+      // ARCANE BARRIER — the EARTHEN BULWARK (combat/Barrier.js)
       barrier: {
         kind: 'earth',
+        maxWalls: 1,     // walls of his standing at once (Second Wall: 2)
         castAt: 12,      // frames from the press until it erupts
         recovery: 16,
         cooldown: 540,   // frames (9 s) before another barrier
@@ -467,7 +506,6 @@ export const CHARACTERS = {
         clearance: 30,   // a man on the line is pushed this far to the nearer side
         standoff: 12,    // everyone is held this far off the wall's face (no sinking into it)
         collapse: 30,    // frames the wall takes to come down (no collision while it does)
-        fire: { duration: 300, thickness: 34, damage: 5, tickRate: 18, knockback: 220, heat: 0.3 }, // (damage x magicMult)
         earth: {
           duration: 600, thickness: 46, hp: 300, // hp: every enemy can batter it down (0 = timed only)
           spikes: { speed: 300, graze: 150, grazeDamage: 10, bossDamage: 30, slide: 6, maxSlide: 46, style: 120 },

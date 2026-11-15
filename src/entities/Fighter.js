@@ -73,6 +73,17 @@ export class Fighter {
   get air() { return this.h - this.floor; }
   get alive() { return this.health > 0; }
 
+  // A ground lunge (Vexa's Viper Strike and Shadow Rush) stops at the brink of a drop
+  // instead of carrying her off a roof: called after the state sets vx, before integrate.
+  holdBrink() {
+    const T = this.world.terrain;
+    if (!T || !this.grounded || !this.vx) return false;
+    const nx = this.x + this.vx / 60;
+    if (T.groundAt(nx, this.z, FOOT) >= this.h - STEP) return false;
+    this.vx = 0;
+    return true;
+  }
+
   // Hurtbox: the area that can be hit, relative to the feet (see combat/Boxes.js).
   get hurtbox() {
     const { w, h } = this.stats.body;
@@ -229,7 +240,7 @@ export class Fighter {
 
     if (this.grounded) {
       this.fanUsed = false; // (one shuriken fan per time in the air)
-      this.airBlinked = false; // (one air blink per time in the air)
+      this.airBlinked = false; this.airBlinks = 0; // (one air blink per time in the air; Phase Walk: two)
       if (this.state !== 'plunge') this.plungeBounced = false; // (Skyfall: one bounce per leap; the crater it lands in still counts)
       this.framesSinceGrounded = 0;
       this.jumpedSinceGrounded = false;

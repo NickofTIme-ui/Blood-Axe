@@ -1,8 +1,7 @@
-// skills.js — The skill trees. One per hero: RURIK's is whole (four branches: his fire,
-// THE KING'S WRATH, is the fourth); ORYN's has its first
-// branch (THE STORMCALLER), the other two are shown as planned (Stage 4 of the campaign
-// plan); VEXA's is whole (four branches, 2026-11-04: the fourth, THE NIGHTBLADE, ends in
-// her ultimate).
+// skills.js — The skill trees. One per hero, four branches each: RURIK's (his fire, THE
+// KING'S WRATH, is the fourth); ORYN's (2026-11-15: THE EARTHSHAPER and THE WAYWALKER built,
+// and THE CATACLYSM added, ending in his ultimate, THE TEMPEST); VEXA's (2026-11-04: the
+// fourth, THE NIGHTBLADE, ends in her ultimate).
 //
 // A branch with `planned: true` is a placeholder: its nodes are listed (so the tree reads
 // whole) but can't be taken (Progress.blocker says 'planned') and do nothing.
@@ -168,19 +167,69 @@ SKILL_TREES.mage = {
       ],
     },
     {
-      id: 'earthshaper', name: 'THE EARTHSHAPER', color: 0xb08a5a, blurb: 'Planned (Stage 4)', planned: true,
+      id: 'earthshaper', name: 'THE EARTHSHAPER', color: 0xb08a5a, blurb: 'The ground is his',
       nodes: [
-        { id: 'secondWall', name: 'Second Wall', cost: 2, tier: 1, req: [], kind: 'upgrade', text: 'PLANNED: two barriers at once.' },
-        { id: 'shatter', name: 'Shatter', cost: 4, tier: 2, req: ['secondWall'], kind: 'behaviour', text: 'PLANNED: a wall that falls throws its slabs outward.' },
-        { id: 'livingRock', name: 'Living Rock', cost: 6, tier: 3, req: ['shatter'], kind: 'major', text: 'PLANNED: the wall walks forward, shoving them back.' },
+        {
+          id: 'secondWall', name: 'Second Wall', cost: 2, tier: 1, req: [], kind: 'upgrade',
+          text: 'Two barriers of yours can stand at once, and the barrier is ready again in half the time.',
+          apply(s) { s.kit.barrier.maxWalls = 2; s.kit.barrier.cooldown = Math.round(s.kit.barrier.cooldown / 2); },
+        },
+        {
+          id: 'shatter', name: 'Shatter', cost: 4, tier: 2, req: ['secondWall'], kind: 'behaviour',
+          text: 'When your wall comes down its slabs are thrown outward off both faces: every man at it is hit and floored.',
+          apply(s) { s.kit.barrier.earth.shatter = { reach: 90, damage: 18, knockback: 420, lift: 240 }; },
+        },
+        {
+          id: 'livingRock', name: 'Living Rock', cost: 6, tier: 3, req: ['shatter'], kind: 'major',
+          text: 'Your wall walks: it marches away from you across the field, shoving every man on its far face along with it (and onto its spikes).',
+          apply(s) { s.kit.barrier.earth.walk = 46; },
+        },
       ],
     },
     {
-      id: 'waywalker', name: 'THE WAYWALKER', color: 0xb070ff, blurb: 'Planned (Stage 4)', planned: true,
+      id: 'waywalker', name: 'THE WAYWALKER', color: 0xb070ff, blurb: 'Never where they strike',
       nodes: [
-        { id: 'blinkStrike', name: 'Blink Strike', cost: 2, tier: 1, req: [], kind: 'behaviour', text: 'PLANNED: blinking through a man hits him.' },
-        { id: 'longStep', name: 'Long Step', cost: 4, tier: 2, req: ['blinkStrike'], kind: 'mobility', text: 'PLANNED: the blink goes 30% further.' },
-        { id: 'phaseWalk', name: 'Phase Walk', cost: 6, tier: 3, req: ['longStep'], kind: 'major', text: 'PLANNED: two blinks before you land.' },
+        {
+          id: 'blinkStrike', name: 'Blink Strike', cost: 2, tier: 1, req: [], kind: 'behaviour',
+          text: 'Blinking through a man shocks him as you pass: a jolt, his guard broken, and a Static mark for your lightning.',
+          apply(s) { s.skills.blinkStrike = { damage: 10 }; },
+        },
+        {
+          id: 'longStep', name: 'Long Step', cost: 4, tier: 2, req: ['blinkStrike'], kind: 'mobility',
+          text: 'The blink goes 30% further.',
+          apply(s) { s.kit.blink.distance = Math.round(s.kit.blink.distance * 1.3); },
+        },
+        {
+          id: 'phaseWalk', name: 'Phase Walk', cost: 6, tier: 3, req: ['longStep'], kind: 'major',
+          text: 'Two blinks back to back: press DODGE again as you re-form, on the ground or in the air (two blinks before you land).',
+          apply(s) { s.skills.phaseWalk = true; },
+        },
+      ],
+    },
+    {
+      // (no painted medallions yet: `noIcon` keeps the tree from asking for the files)
+      id: 'cataclysm', name: 'THE CATACLYSM', color: 0x5ad0c8, blurb: 'Break the earth, call the sky',
+      nodes: [
+        {
+          id: 'liveWire', name: 'Live Wire', cost: 2, tier: 1, req: [], kind: 'passive', noIcon: true,
+          text: 'Your Static marks last twice as long, and a man can carry four of them.',
+          apply(s) { s.kit.static.life *= 2; s.kit.static.max = 4; },
+        },
+        {
+          id: 'stoneSpikes', name: 'Stone Spikes', cost: 4, tier: 2, req: ['liveWire'], kind: 'active', noIcon: true,
+          text: 'NEW MOVE: D-pad DOWN (H). The staff into the floor, and a line of stone spikes bursts out along the ground ahead, throwing every man it reaches into the air. 30 mana. Also out of your combo.',
+          apply(s) {
+            s.skills.stoneSpikes = true;
+            for (const k of ['light1', 'light2', 'light3', 'jab', 'twirlEnd']) {
+              for (const win of s.moves[k]?.cancels ?? []) if (!win.into.includes('spin')) win.into.push('spin');
+            }
+          },
+        },
+        {
+          id: 'tempest', name: 'The Tempest', cost: 6, tier: 3, req: ['stoneSpikes'], kind: 'major', noIcon: true,
+          text: 'With 70 mana, D-pad DOWN is THE TEMPEST: you rise on the storm, nothing touches you, and lightning falls on every man in reach, three times over.',
+          apply(s) { s.skills.tempest = true; },
+        },
       ],
     },
   ],

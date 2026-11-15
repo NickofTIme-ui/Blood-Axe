@@ -176,6 +176,7 @@ function smash(f, K) {
   const move = {
     cut: 'blunt', fx: 'quake', damage: K.damage, hitstun: 30, hitstop: 7, shake: 8,
     knockback: { x: 220, y: K.launch || 260 }, knockdown: true, guardDamage: 80, breaksGuard: true,
+    static: K.static, // (Oryn's Meteor Drop marks them for his lightning)
   };
   for (const e of w.fighters) {
     if (e.team === f.team || !e.alive || e.invincible) continue;

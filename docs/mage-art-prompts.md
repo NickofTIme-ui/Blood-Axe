@@ -241,3 +241,55 @@ Wall art (assets/fx/): `earthwall-spiked-strip.png`, the same slabs as `earthwal
 with jagged stone spikes jutting from BOTH faces, and no teal glow; a second copy with blood on
 the spikes and streaked down the stone. On magenta. Today the spikes are drawn in code
 (effects/MageFX.js EarthWallView).
+
+## 13. The second set (15 November 2026): new moves, grab, block and death
+
+These replace borrowed poses (data/heroStrips.js HERO_ANIMS.mage: updraft, skyfall, plunge,
+spikes, tempest, grab, block, death, fin_spires). Same chat, same rules as above. Section 10
+(jab, twirl, vault) is still to paint too.
+
+> Same character, same scale. **6 poses in one row**, facing right, black background, wide gaps.
+> The UPDRAFT: (1) ready; (2) crouched low, the staff swept down behind him near the floor;
+> (3) the staff ripping up in front of him from the floor, both hands, body rising; (4) the staff
+> high over his head, arms up, robe blown upward; (5) holding it up; (6) lowering to ready.
+
+Save as `mage_updraft.png`.
+
+> Same, **6 poses**. The SKYFALL BOLT and THE TEMPEST: (1) the staff thrust straight up at the
+> sky in both hands, head tipped back; (2) the same, robe and beard whipped upward by wind;
+> (3) the same with the lantern blazing white; (4) the staff swung down to point ahead; (5) the
+> staff planted, head bowed; (6) ready.
+
+Save as `mage_skyfall.png`.
+
+> Same, **4 poses**. The METEOR DROP: (1) high in the air, staff raised over his head in both
+> hands, robe flaring; (2) diving straight down, staff point first under him; (3) landed in a
+> deep crouch, the staff driven into the floor; (4) rising out of the crouch.
+
+Save as `mage_meteor.png`.
+
+> Same, **8 poses**. GRAB AND THROW (as the knight's neck grip): (1) ready; (2) his free left
+> hand clamped forward on the air at shoulder height, staff in the right; (3)-(6) four steps
+> marching forward with the left arm held out, firm; (7) the left arm drawn back to shove;
+> (8) the shove, arm fully out.
+
+Save as `mage_grab.png`.
+
+> Same, **8 poses**. BLOCK, HURT and DEATH: (1) the staff braced across his body in both hands
+> (a guard); (2) the same, rocked back as a blow lands on it; (3) recovering; (4) hit in the
+> body, doubled over; (5) hit in the head, snapped back; (6) falling backward; (7) lying dead
+> on his back, staff beside him; (8) the same, the lantern's glow gone out.
+
+Save as `mage_block.png`.
+
+> Same, **8 poses**. IMPALING SPIRES (finisher, draw only him): (1) ready; (2) the staff raised
+> overhead; (3) the staff slammed point down into the floor; (4)-(5) holding it planted, leaning
+> on it, cold stare; (6) his free fist raised and clenched; (7) the fist pulled down; (8) turning
+> away.
+
+Save as `mage_finSpires.png`.
+
+Skill-tree medallions for THE CATACLYSM (like the other icons, `assets/ui/skilltree/icons/`):
+`liveWire.png` (a crackling blue-white spark wrapped round a staff), `stoneSpikes.png` (a row of
+jagged stone spikes bursting from cracked earth), `tempest.png` (a black storm cloud with three
+lightning bolts). Then take `noIcon: true` off those three nodes in `src/data/skills.js`.

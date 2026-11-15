@@ -11,7 +11,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { movePhase, totalFrames, inWindow } from '../combat/MoveRunner.js';
 import { FINISH, FINISHERS, CHAIN, IMPALE, THROAT, impalePin, impalePierce, planFinisher, chainTimes, throatStagger } from '../combat/Finisher.js';
-import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher } from '../combat/Mage.js';
+import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher, cataclysmState } from '../combat/Mage.js';
 import { rogueStates, rollMine,isRogueFinisher, rogueFinisherStart, runRogueFinisher, vaultTarget } from '../combat/Rogue.js';
 import { skillStates, plungeReady } from '../combat/Skills.js';
 import { JUGGLE, SUNDER, juggleLand, airMoveFor } from '../combat/Juggle.js';
@@ -155,6 +155,11 @@ export function tryActions(f, allowed = null) {
   // Vexa's SMOKE BOMB / NIGHT FALLS (THE NIGHTBLADE, combat/RogueMoves.js): D-pad down / H
   if (ok('spin') && s.skills?.smoke && c.peek('padDown')) {
     const st = nightbladeState(f);
+    if (st) { c.consume('padDown'); f.fsm.change(st); return true; }
+  }
+  // Oryn's STONE SPIKES / THE TEMPEST (THE CATACLYSM, combat/Mage.js): D-pad down / H
+  if (ok('spin') && s.skills?.stoneSpikes && c.peek('padDown')) {
+    const st = cataclysmState(f);
     if (st) { c.consume('padDown'); f.fsm.change(st); return true; }
   }
   // Rurik's WHIRLWIND CLEAVE (Executioner's Arc, combat/Skills.js): D-pad down / H

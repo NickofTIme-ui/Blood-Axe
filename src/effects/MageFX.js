@@ -11,6 +11,7 @@
 import { DEPTH } from '../view/depths.js';
 import { playSfx } from '../core/Sfx.js';
 import { FX } from '../view/stripImporter.js';
+import { cutPieces } from '../view/envArt.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const ADD = () => Phaser.BlendModes.ADD;
@@ -31,7 +32,6 @@ export const MAGE_SOUNDS = {
   blinkOut: [['swingAlt', { volume: 0.4, pitch: 1000 }]],
   blinkIn: [['block', { volume: 0.3, pitch: 1500 }]],
   barrierCast: [['heavySwing', { volume: 0.5, pitch: -400 }]],
-  fireWall: [['fireWhoosh', { volume: 0.9, pitch: -300 }], ['kick', { volume: 0.6, pitch: -900 }]],
   earthUp: [['kick', { volume: 1, pitch: -1300 }], ['block', { volume: 0.5, pitch: -1100 }]],
   earthDown: [['kick', { volume: 0.7, pitch: -1500 }]],
   earthHit: [['block', { volume: 0.45, pitch: -900, minGapMs: 60 }], ['kick', { volume: 0.7, pitch: -1100, minGapMs: 60 }]],
@@ -54,8 +54,14 @@ export const MAGE_SOUNDS = {
   deflect: [['clash', { volume: 0.5, pitch: 700, minGapMs: 60 }]],
   impale: [['impaleKick', { volume: 0.9 }], ['bloodSplatter', { volume: 0.8 }], ['kick', { volume: 0.6, pitch: -1300 }]],
   graze: [['bloodSplatter', { volume: 0.5, pitch: 300 }], ['block', { volume: 0.4, pitch: -900 }]],
+  // the second set (2026-11-15): Updraft, Skyfall Bolt, Meteor Drop, the skill tree's moves
+  updraft: [['heavySwing', { volume: 0.6, pitch: 600 }], ['fireWhoosh', { volume: 0.5, pitch: 700 }]],
+  meteorFall: [['fireWhoosh', { volume: 0.9, pitch: -200 }]],
+  meteorLand: [['elecShock', { volume: 0.7 }]],
+  stoneSpike: [['kick', { volume: 0.8, pitch: -1200, minGapMs: 30 }], ['block', { volume: 0.35, pitch: -1000, minGapMs: 30 }]],
+  spikeImpale: [['impaleKick', { volume: 0.8, minGapMs: 60 }], ['bloodSplatter', { volume: 0.6, minGapMs: 60 }]],
 };
-const STAFF_FX = ['staff', 'pulse', 'jab', 'twirl', 'vault', 'thunderStaff'];
+const STAFF_FX = ['staff', 'pulse', 'jab', 'twirl', 'vault', 'thunderStaff', 'updraft'];
 
 export class MageFX {
   constructor(scene) {
@@ -69,7 +75,24 @@ export class MageFX {
       if (['light1', 'light2', 'light3', 'airAttack', 'twirlEnd'].includes(state)) this.sound('staffSwing', fighter);
       if (state === 'shoulder') this.sound('vault', fighter);
       if (state === 'thunder') { this.sound('elecFull', fighter); this.flashAt(this.staffTip(fighter), 0xe0f0ff, 20); }
+      if (state === 'updraft') this.sound('updraft', fighter);
     });
+    // ---- the second set (2026-11-15)
+    ev.on('skyfallCall', ({ fighter }) => { this.sound('elecCharge', fighter); this.flashAt(this.staffTip(fighter), 0xe0f0ff, 22); this.darken(40, 0.25); });
+    ev.on('skyfallBolt', (e) => this.skyfall(e));
+    ev.on('plungeStart', ({ fighter }) => { if (isMage(fighter)) { this.sound('meteorFall', fighter); this.flashAt(this.staffTip(fighter), 0xffc070, 26); } });
+    ev.on('leapSmash', ({ fighter, x, z }) => { if (isMage(fighter)) this.meteor(fighter, x, z); });
+    ev.on('spikesStart', ({ fighter }) => this.sound('barrierCast', fighter));
+    ev.on('stoneSpike', (e) => this.stoneSpike(e));
+    ev.on('wallShatter', ({ barrier, hits }) => this.shatter(barrier, hits));
+    ev.on('blinkStrike', ({ fighter, target }) => {
+      const c = { x: target.x, y: target.z - target.h - target.stats.body.h * 0.6 };
+      this.bolt({ x: c.x - fighter.facing * 40, y: c.y - 10 }, { x: c.x + fighter.facing * 40, y: c.y + 6 }, target.z, false, 0.8);
+      this.flashAt(c, 0xc8b8ff, 18);
+      this.sound('boltImpact', fighter);
+    });
+    ev.on('tempestStart', ({ fighter, frames }) => { this.sound('elecFull', fighter); this.darken(frames, 0.5); this.tempestRise(fighter, frames); });
+    ev.on('tempestWave', ({ fighter }) => { this.sound('storm', fighter); this.scene.fx?.shake(6, 12); });
     ev.on('twirlHit', ({ fighter }) => this.sound('twirlHit', fighter));
     ev.on('jump', ({ fighter }) => { if (isMage(fighter)) this.pulse(fighter.x, fighter.z, 4, 0xffa040, 26); });
     ev.on('hit', (e) => {
@@ -219,6 +242,80 @@ export class MageFX {
     s.hitstopAll?.(8);
     this.walls.get(e.barrier)?.bloody?.(e.z, e.h, 1, e.side);
     s.callout?.(e.thrownBy && e.thrownBy !== e.by && e.thrownBy.team === 'player' ? 'SPIKED! TEAMWORK' : 'SPIKED!', '#ff2a1a', 34);
+  }
+
+  // ------------------------------------------------------------ the second set (2026-11-15)
+
+  // The sky goes dark over the field for a while (the Skyfall Bolt, the Tempest).
+  darken(frames, alpha) {
+    const s = this.scene; const cam = s.cameras.main;
+    const sh = s.add.rectangle(0, 0, cam.width * 3, cam.height * 3, 0x060818, 1).setScrollFactor(0).setDepth(DEPTH.popups - 20).setAlpha(0);
+    s.tweens.add({ targets: sh, alpha, duration: 140, yoyo: true, hold: Math.max(0, frames * 16.7 - 280), onComplete: () => sh.destroy() });
+  }
+
+  // X, X, RT, Y: the bolt from the sky through the man he threw up.
+  skyfall({ caster, targets, x, z, h }) {
+    const list = targets.length ? targets : [{ x, z, h, stats: { body: { h: 0 } } }];
+    for (const t of list) {
+      const p = { x: t.x, y: t.z - t.h - t.stats.body.h * 0.5 };
+      this.bolt({ x: p.x + rand(-20, 20), y: p.y - 520 }, p, t.z, true, 1.6);
+      this.bolt({ x: p.x + rand(-60, 60), y: p.y - 520 }, { x: p.x, y: t.z - 6 }, t.z, true, 1.2);
+      this.flashAt(p, 0xffffff, 40);
+    }
+    this.sound('storm', caster);
+    this.scene.fx?.shake(12, 18);
+    this.scene.slowmo?.(0.55, 220);
+  }
+
+  // Meteor Drop lands: the floor bursts in a ring of arcane fire and stone.
+  meteor(f, x, z) {
+    this.sound('meteorLand', f);
+    this.pulse(x, z, 0, 0xffa040, 120);
+    this.pulse(x, z, 0, 0x9ab8ff, 90);
+    this.flashAt({ x, y: z - 20 }, 0xffd8a0, 44);
+    this.scene.gore.spark(x, z, 10, 0xffa040, 18);
+    this.scene.gore.spark(x, z, 10, 0x9ab8ff, 12);
+  }
+
+  // One spike of Stone Spikes: one of the painted mine shards (assets/env/mine/
+  // collapse_spikes.png) turned point-up, punching out of the floor and sinking back.
+  stoneSpike({ line, i, x, z, hits }) {
+    const s = this.scene;
+    const names = [0, 1, 2, 3, 4, 5].map((n) => `collapse-spike-${n}`);
+    this.sound('stoneSpike', line.by);
+    if (hits.length) this.sound('spikeImpale', line.by);
+    s.quakeFX?.dust(x, z, 2, 0.6);
+    for (let k = 0; k < 4; k++) s.quakeFX?.rock(x + rand(-10, 10), z, rand(-80, 80), rand(120, 260), 0.45);
+    if (!cutPieces(s, 'collapse-spikes-src', names)) return;
+    for (let k = 0; k < 2; k++) {
+      const len = rand(70, 104) * (k ? 0.7 : 1);
+      const sp = s.add.image(x + (k ? rand(-16, 16) : 0), z + (k ? 4 : 0), names[(i * 2 + k) % 6]).setOrigin(0, 0.5)
+        .setRotation(-Math.PI / 2 + rand(-0.15, 0.15)).setDepth(z + 0.4 + k * 0.1).setScale(0.01);
+      const sc = len / sp.frame.width;
+      s.tweens.add({ targets: sp, scale: sc, duration: 70, ease: 'Back.easeOut' });
+      s.tweens.add({ targets: sp, scaleX: 0.01, alpha: 0.4, delay: 520 + k * 60, duration: 260, ease: 'Quad.easeIn', onComplete: () => sp.destroy() });
+    }
+  }
+
+  // Shatter: the slabs of a wall thrown outward as it comes down.
+  shatter(b, hits) {
+    const s = this.scene;
+    this.sound('earthBreak', b.owner);
+    s.fx?.shake(hits.length ? 8 : 5, 14);
+    const bd = s.world.bounds;
+    for (let z = bd.minZ; z < bd.maxZ; z += 24) {
+      for (const side of [-1, 1]) s.quakeFX?.rock(b.x + side * b.half, z, side * rand(120, 320), rand(160, 300), 0.7);
+    }
+  }
+
+  // The Tempest: he rises on the storm, sparks round him while it lasts.
+  tempestRise(f, frames) {
+    this.scene.everyTick(frames, (k) => {
+      if (!f.alive || f.state !== 'tempest') return false;
+      if (k % 3 === 0) this.scene.gore.spark(f.x + rand(-20, 20), f.z, f.h + rand(40, 120), k % 2 ? 0x9ab8ff : 0xe0f0ff, 3);
+      if (k % 9 === 0) this.bolt(this.staffTip(f), { x: this.staffTip(f).x + rand(-40, 40), y: this.staffTip(f).y - rand(60, 140) }, f.z, false, 0.5);
+      return true;
+    });
   }
 
   // ------------------------------------------------------------ helpers
@@ -410,14 +507,14 @@ export class MageFX {
   // ------------------------------------------------------------ barriers
 
   wallUp(b) {
-    this.sound(b.kind === 'fire' ? 'fireWall' : 'earthUp', b.owner);
-    this.scene.fx.shake(b.kind === 'fire' ? 4 : 7, 14);
-    const v = b.kind === 'fire' ? new FireWallView(this.scene, b) : new EarthWallView(this.scene, b);
+    this.sound('earthUp', b.owner);
+    this.scene.fx.shake(7, 14);
+    const v = new EarthWallView(this.scene, b);
     this.walls.set(b, v);
   }
 
   wallDown(b, broken) {
-    if (b.kind === 'earth') this.sound(broken ? 'earthBreak' : 'earthDown', b.owner);
+    this.sound(broken ? 'earthBreak' : 'earthDown', b.owner);
     this.walls.get(b)?.collapse(broken);
   }
 
@@ -714,88 +811,6 @@ export class MageFX {
 }
 
 // ---------------------------------------------------------------- the walls
-
-// The Infernal Wall: a ragged line of tall flames from the back of the lane to the front,
-// each tongue on its own rhythm and height (never one stretched sheet), with embers,
-// smoke and an orange glow on the floor along it.
-class FireWallView {
-  constructor(scene, b) {
-    this.scene = scene;
-    this.b = b;
-    const bd = scene.world.bounds;
-    this.z0 = bd.minZ - 14;
-    this.z1 = bd.maxZ + 10;
-    this.n = Math.round((this.z1 - this.z0) / 7);
-    this.flames = Array.from({ length: this.n * 2 }, () => scene.add.image(0, 0, 'burn-flame').setOrigin(0.5, 1).setBlendMode(ADD()));
-    this.seeds = this.flames.map(() => Math.random() * 100);
-    this.glow = scene.add.graphics().setDepth(DEPTH.decals + 2).setBlendMode(ADD());
-    this.t = 0;
-    this.rise = 0;
-    this.fall = -1;
-  }
-
-  collapse() { this.fall = 0; }
-
-  update() {
-    const b = this.b;
-    this.t++;
-    this.rise = Math.min(1, this.rise + 0.12);
-    if (this.fall >= 0) this.fall++;
-    const k = this.fall >= 0 ? Math.max(0, 1 - this.fall / Math.max(1, b.collapse)) : this.rise;
-    this.flames.forEach((img, i) => {
-      const row = i % this.n;
-      const z = this.z0 + (row + (i >= this.n ? 0.5 : 0)) * ((this.z1 - this.z0) / this.n);
-      const s = this.seeds[i];
-      const hgt = (70 + 50 * Math.abs(Math.sin(s)) + Math.sin(this.t * 0.35 + s) * 16 + Math.sin(this.t * 1.1 + s * 3) * 6) * k;
-      img.setPosition(b.x + Math.sin(s * 2) * b.half * 0.6 + Math.sin(this.t * 0.2 + s) * 2, z)
-        .setDisplaySize(16 + Math.sin(s * 5) * 5, Math.max(2, hgt)).setDepth(z + 0.8).setAlpha(0.95 * Math.min(1, k * 1.4));
-    });
-    this.glow.clear();
-    this.glow.fillStyle(0xff6a1a, 0.18 * k).fillRect(b.x - b.half * 2.2, this.z0 + 8, b.half * 4.4, this.z1 - this.z0 - 8);
-    this.glow.fillStyle(0xffb050, 0.16 * k).fillRect(b.x - b.half * 0.8, this.z0 + 8, b.half * 1.6, this.z1 - this.z0 - 8);
-    const gore = this.scene.gore;
-    if (k > 0.1 && this.t % 2 === 0) {
-      gore.spawn({ x: b.x + rand(-b.half, b.half), z: rand(this.z0, this.z1), h: rand(20, 110), vx: rand(-30, 30), vz: 0, vh: rand(120, 260), tint: Math.random() < 0.5 ? 0xffb040 : 0xff5a10, scale: rand(0.18, 0.32), decal: false, life: Math.floor(rand(18, 34)) });
-    }
-    if (this.t % 6 === 0) this.scene.burning?.puff?.(b.x + rand(-10, 10), rand(this.z0, this.z1), rand(80, 130) * k, 0.4 * k);
-  }
-
-  destroy() { for (const f of this.flames) f.destroy(); this.glow.destroy(); }
-}
-
-// The Earthen Bulwark. A crack tears across the floor from the Mage's staff, then the
-// stone punches up out of it in a wave — each slab overshooting its height and settling,
-// throwing rock and a skirt of dust as it breaks the surface — and locks into a wall. The
-// magic is in the painted stone itself (its glowing veins): nothing is drawn over it.
-// Struck, the wall jolts away from the blow, the stone round the impact flashes, chips of
-// rock and a puff of grit burst out of the struck face, and the slabs there are knocked
-// shorter; the weaker it gets the darker it goes (a health bar shows how much is left).
-// Broken, its slabs topple and sink in a cloud of dust and rubble; run out of time, it
-// sinks back into the floor.
-// Painted slabs (FX_STRIPS.earthwall: assets/fx/earthwall-strip.png) are used when they
-// exist; until then each slab is drawn as a jagged rock.
-
-const DUST = 0x4e463e;      // grit and dust clouds
-const CHIPS = [0xffffff, 0xe0dcd4, 0xc8ccce]; // tints over the grey 'rockchip'
-const WORN = 0x5e6264;      // what the stone darkens towards as it is battered
-
-const mix = (a, b, t) => {
-  const c = (s) => Math.round(((a >> s) & 255) + (((b >> s) & 255) - ((a >> s) & 255)) * t);
-  return (c(16) << 16) | (c(8) << 8) | c(0);
-};
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
-// a flake of grey stone (tinted per chip), drawn once
-function rockChipTex(scene) {
-  if (scene.textures.exists('rockchip')) return;
-  const g = scene.make.graphics({ add: false });
-  g.fillStyle(0x121416, 1).fillPoints([{ x: 0, y: 6 }, { x: 5, y: 0 }, { x: 13, y: 2 }, { x: 15, y: 7 }, { x: 9, y: 11 }, { x: 2, y: 10 }], true);
-  g.fillStyle(0x3e4448, 1).fillPoints([{ x: 1, y: 6 }, { x: 5, y: 1 }, { x: 12, y: 3 }, { x: 14, y: 7 }, { x: 9, y: 10 }, { x: 3, y: 9 }], true);
-  g.fillStyle(0x6a7276, 1).fillPoints([{ x: 2, y: 6 }, { x: 5, y: 2 }, { x: 11, y: 3 }, { x: 8, y: 6 }], true);
-  g.fillStyle(0x262a2c, 1).fillPoints([{ x: 8, y: 6 }, { x: 11, y: 3 }, { x: 14, y: 7 }, { x: 9, y: 10 }], true);
-  g.generateTexture('rockchip', 16, 12);
-  g.destroy();
-}
 
 class EarthWallView {
   constructor(scene, b) {

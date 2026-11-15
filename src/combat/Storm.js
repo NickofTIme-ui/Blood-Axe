@@ -11,8 +11,11 @@
 //                  knocked down
 //   burst          a full overcharge (Y held) that would have killed a man: he's thrown up
 //                  on the current and, `delay` frames later, blows apart in the air
+//   spikes         STONE SPIKES (THE CATACLYSM): a line of stone spikes bursting out of the
+//                  floor ahead of him one after another, `every` frames apart; each man a
+//                  spike comes up under is hit and thrown up into the air (once a line)
 // Events: stormField { field }, stormShock { field, target }, thunderStrike { strike, hits },
-//         overchargeBurst { burst, target }
+//         overchargeBurst { burst, target }, stoneSpike { line, i, x, z, hits }
 
 export const STORM = {
   field: { life: 150, radius: 70, depth: 34, damage: 6, every: 30, hitstun: 18 },
@@ -42,6 +45,12 @@ export class Storms {
     return s;
   }
 
+  spikes(by, K) {
+    const s = { kind: 'spikes', by, dir: by.facing || 1, x0: by.x, z: by.z, t: 0, i: 0, hit: new Set(), ...K };
+    this.list.push(s);
+    return s;
+  }
+
   burst(by, target, opts = {}) {
     const s = { kind: 'burst', by, target, t: 0, delay: opts.delay ?? 18 };
     this.list.push(s);
@@ -54,9 +63,10 @@ export class Storms {
     for (const s of this.list) {
       s.t++;
       if (s.kind === 'static') this.shock(s);
+      else if (s.kind === 'spikes') { if ((s.t - 1) % s.every === 0) this.spike(s); }
       else if (s.t === s.delay) (s.kind === 'burst' ? this.blowUp(s) : this.strike(s));
     }
-    this.list = this.list.filter((s) => (s.kind === 'static' ? s.t < s.life : s.t < s.delay));
+    this.list = this.list.filter((s) => (s.kind === 'static' ? s.t < s.life : s.kind === 'spikes' ? s.i < s.count : s.t < s.delay));
   }
 
   shock(s) {
@@ -79,6 +89,27 @@ export class Storms {
     const move = { cut: 'shock', fx: 'lightning', damage: e.health + 999, hitstun: 0, hitstop: 8, shake: 9, knockback: { x: 0, y: 0 }, unblockable: true, fatality: 'explode' };
     this.world.combat.resolve(s.by, e, move, { kind: 'magic', fromX: e.x, dir: s.by.facing || 1, contact: { x: e.x, h: e.h + e.stats.body.h * 0.5 } });
     this.world.events.emit('overchargeBurst', { burst: s, target: e });
+  }
+
+  // the next spike of a line comes up (stopped by the stage's end or a wall in its way)
+  spike(s) {
+    const w = this.world;
+    const x = s.x0 + s.dir * (s.first + s.i * s.step);
+    s.i++;
+    if (x < w.bounds.minX || x > w.bounds.maxX || w.terrain?.wallAt(x, s.z, 0)) { s.i = s.count; return; }
+    const hits = [];
+    for (const e of this.foes(s.by)) {
+      if (s.hit.has(e.id) || Math.abs(e.x - x) > s.step * 0.6 + e.stats.body.w / 2 || Math.abs(e.z - s.z) > s.depth || e.air > 50) continue;
+      s.hit.add(e.id);
+      const heavy = e.stats.boss || e.stats.machine;
+      const move = {
+        cut: 'pierce', fx: 'spikes', damage: s.damage, hitstun: 34, hitstop: 7, shake: 5,
+        knockback: { x: s.knockback, y: heavy ? 0 : s.lift }, knockdown: !heavy, breaksGuard: true, guardDamage: 50, unblockable: true,
+      };
+      w.combat.resolve(s.by, e, move, { kind: 'magic', fromX: x - s.dir * 20, dir: s.dir, contact: { x: e.x, h: e.h + 30 } });
+      hits.push(e);
+    }
+    w.events.emit('stoneSpike', { line: s, i: s.i - 1, x, z: s.z, hits });
   }
 
   strike(s) {

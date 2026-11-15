@@ -1790,7 +1790,7 @@ export class ArenaScene extends Phaser.Scene {
       this.gore.update();
       for (const v of this.views.values()) v.applyCut?.(); // (bodies come apart on the tick, not on a screen refresh)
       this.cuts.update();
-      this.burning.update([...this.stage.activeFires(), ...this.world.barriers.fireRegions()]);
+      this.burning.update(this.stage.activeFires());
       runTickJobs(this);
       this.updateWaves();
       s.afterTick?.(tick, () => snapshot(this.world));

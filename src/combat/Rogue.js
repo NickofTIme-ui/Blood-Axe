@@ -105,7 +105,7 @@ export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeA
         const m = f.move;
         const ph = frame <= m.startup ? 'startup' : frame <= m.startup + m.active ? 'active' : 'recovery';
         if (ph === 'startup') f.vx = 0;
-        else if (ph === 'active') f.vx = f.facing * m.lunge;
+        else if (ph === 'active') { f.vx = f.facing * m.lunge; f.holdBrink(); }
         else friction(f, 0.6);
         f.vz = 0;
         f.activeAttack = ph === 'active' ? f.attackInfo : null;

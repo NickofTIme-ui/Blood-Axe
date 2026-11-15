@@ -1,14 +1,17 @@
-// Barrier.js — The Mage's arcane barriers: a wall across the whole depth of the
-// battlefield (top of the floor lane to the bottom) that splits a fight in two.
+// Barrier.js — The Mage's arcane barrier, the EARTHEN BULWARK: a wall of stone across the
+// whole depth of the battlefield (top of the floor lane to the bottom) that splits a fight
+// in two. Strong enemies can batter it down. (The old Infernal Wall of fire is gone.)
 //
-//   INFERNAL WALL    fire. Shorter. Burns, shoves back and sets alight whoever touches it.
-//   EARTHEN BULWARK  rock. Longer. Pure blocking; strong enemies can batter it down.
+// From his skill tree, THE EARTHSHAPER (data/skills.js; numbers on kit.barrier):
+//   SECOND WALL   two walls of his up at once (cfg.maxWalls)
+//   SHATTER       a wall coming down throws its slabs outward off both faces (cfg.earth.shatter)
+//   LIVING ROCK   the wall walks away from him, shoving whoever is on its far face (cfg.earth.walk)
 //
 // Pure logic on the World (no drawing: view/BarrierView.js draws them from the events),
 // so the tests can drive it. It stops everyone, held a little way off its face so nobody
 // sinks into the stone — but the caster's own side can still get across by rolling,
 // blinking, vaulting or jumping, so a teammate is never trapped. Every enemy can batter
-// a stone wall (it has hit points); fire just burns.
+// a stone wall (it has hit points).
 //
 // Each enemy remembers which side of a wall he is on. When the wall goes up, anyone on
 // its line is moved cleanly to the nearer side (never left inside it), and from then on
@@ -18,7 +21,7 @@
 //
 // Events (world.events):
 //   barrierUp { barrier }   barrierHit { barrier, x, z, h, damage }
-//   barrierDown { barrier, broken }   barrierGone { barrier }
+//   barrierDown { barrier, broken }   barrierGone { barrier }   wallShatter { barrier, hits }
 //   wallImpale { barrier, victim, side, x, z, h, by }   wallGraze { barrier, victim, side, damage }
 //
 // THE SPIKED WALL (stone only, cfg.spikes): a man slammed into a face hard enough is
@@ -44,7 +47,7 @@ export class Barriers {
     this.list = [];
   }
 
-  // Raise a wall in front of `owner`. kind: 'fire' | 'earth'. cfg: kit.barrier.
+  // Raise a wall in front of `owner`. kind: 'earth'. cfg: kit.barrier.
   place(owner, kind, cfg) {
     const w = this.world;
     const bd = w.bounds;
@@ -56,8 +59,9 @@ export class Barriers {
     // clamped to the stage, never into its ends (a lane this narrow: its middle)
     x = lo <= hi ? Math.max(lo, Math.min(hi, x)) : (bd.minX + bd.maxX) / 2;
     x = Math.round(x);
-    // one wall per caster: a new one takes over from his old one
-    for (const old of this.list) if (old.owner === owner && old.state === 'up') this.takeDown(old, false);
+    // one wall per caster (Second Wall: two): a new one takes over from his oldest
+    const his = this.list.filter((o) => o.owner === owner && o.state === 'up');
+    for (const old of his.slice(0, Math.max(0, his.length - (cfg.maxWalls ?? 1) + 1))) this.takeDown(old, false);
     const b = {
       id: this.nextId++, kind, x, half, owner, team: owner.team,
       life: k.duration, duration: k.duration,
@@ -89,6 +93,27 @@ export class Barriers {
     b.state = 'down';
     b.t = 0;
     this.world.events.emit('barrierDown', { barrier: b, broken });
+    if (b.cfg.shatter) this.shatter(b);
+  }
+
+  // SHATTER: as it comes down the slabs are thrown out off both faces, into whoever is
+  // standing at it (a stand-off at the wall ends with them flat on their backs)
+  shatter(b) {
+    const K = b.cfg.shatter;
+    const hits = [];
+    for (const f of this.world.fighters) {
+      if (f.team === b.team || !f.alive || f.removeMe || f.wallPin || ['executed', 'dead', 'grabbed'].includes(f.state)) continue;
+      const off = f.x - b.x;
+      if (Math.abs(off) > b.half + K.reach || f.air > 80) continue;
+      const side = Math.sign(off) || b.sides.get(f.id) || 1;
+      const move = {
+        cut: 'blunt', fx: 'shatter', damage: K.damage, hitstun: 30, hitstop: 8, shake: 6,
+        knockback: { x: K.knockback, y: K.lift }, knockdown: true, breaksGuard: true, guardDamage: 60,
+      };
+      this.world.combat.resolve(b.owner, f, move, { kind: 'magic', fromX: b.x, dir: side, contact: { x: b.x + side * b.half, h: f.h + 50 } });
+      hits.push(f);
+    }
+    this.world.events.emit('wallShatter', { barrier: b, hits });
   }
 
   // A standing wall the given fighter cannot pass that lies between him and x.
@@ -104,13 +129,6 @@ export class Barriers {
   // Would a blow from `atk` to `def` go through a wall `atk` can't pass?
   blocks(atk, def) { return !!this.between(atk, def.x); }
 
-  // The fire walls standing, as fire regions for effects/Burn.js.
-  fireRegions() {
-    const bd = this.world.bounds;
-    return this.up.filter((b) => b.kind === 'fire')
-      .map((b) => ({ x: b.x, z: (bd.minZ + bd.maxZ) / 2, w: b.half * 2 + 14, d: bd.maxZ - bd.minZ + 24 }));
-  }
-
   // One tick (after movement, before hits are checked).
   update() {
     const w = this.world;
@@ -119,6 +137,7 @@ export class Barriers {
       b.t++;
       b.life--;
       for (const [id, c] of b.cool) { if (c <= 1) b.cool.delete(id); else b.cool.set(id, c - 1); }
+      if (b.cfg.walk) this.walk(b);
       const hold = b.half + b.standoff; // (a little way off its face)
       for (const f of w.fighters) {
         if (f.removeMe) continue;
@@ -145,7 +164,6 @@ export class Barriers {
           if (f.vx * side < 0) f.vx = f.state === 'knockdown' ? -f.vx * 0.15 : 0; // slams into it and drops
           f.bowl = null;
         }
-        if (b.kind === 'fire' && f.team !== b.team) this.scorch(b, f, side);
       }
       if (b.maxHp > 0) this.battered(b);
       this.pinned(b);
@@ -225,21 +243,17 @@ export class Barriers {
     f.diedLying = false;
   }
 
-  // The fire wall burns whoever is pressed against it, and shoves him back.
-  scorch(b, f, side) {
-    const k = b.cfg;
-    if (!f.alive || f.invincible || f.air > 70 || b.cool.has(f.id)) return;
-    if ((f.x - b.x) * side > b.half + 10) return;
-    b.cool.set(f.id, k.tickRate);
-    const move = {
-      cut: 'fire', fx: 'wallBurn', noBlood: true,
-      damage: k.damage, hitstun: 16, hitstop: 2, shake: 0,
-      knockback: { x: k.knockback, y: 0 }, guardDamage: 8,
-    };
-    this.world.combat.resolve(b.owner, f, move, {
-      kind: 'magic', fromX: b.x, dir: side,
-      contact: { x: b.x + side * b.half, h: f.h + f.stats.body.h * 0.45 },
-    });
+  // LIVING ROCK: the wall walks on, away from the man who raised it (the hold above then
+  // shoves whoever is on its far face along with it), until the stage's end stops it.
+  walk(b) {
+    const bd = this.world.bounds;
+    if (b.walkDir === undefined) b.walkDir = -(b.sides.get(b.owner.id) ?? -b.owner.facing) || 1; // (away from his side)
+    const lo = bd.minX + 40; const hi = bd.maxX - 40;
+    const nx = Math.max(lo, Math.min(hi, b.x + b.walkDir * b.cfg.walk / 60));
+    const dx = nx - b.x;
+    if (!dx) return;
+    b.x = nx;
+    for (const f of this.world.fighters) if (f.wallPin?.barrier === b.id) f.wallPin.x += dx; // (the men hanging on it go too)
   }
 
   // Earth: strong enemies' blows chip the stone away.

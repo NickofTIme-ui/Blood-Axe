@@ -59,7 +59,6 @@ export class FireAmbience {
     for (const [thing, b] of scene.burning?.recs ?? []) {
       if (b.lit && !b.done) sum += 0.25 * near(thing.x);
     }
-    for (const r of scene.world?.barriers?.fireRegions?.() ?? []) sum += 0.7 * near(r.x);
     return Math.min(1, sum);
   }
 
