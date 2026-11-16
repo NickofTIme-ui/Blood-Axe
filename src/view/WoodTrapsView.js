@@ -49,7 +49,7 @@ export class WoodTrapsView {
         // its own painting when it comes (ChatGPT: trap_deadfall); till then the painted log
         // with sharpened stakes lashed through it
         const k = scene.textures.exists(ART.trap_deadfall) ? ART.trap_deadfall : scene.textures.exists(ART.trap_log) ? ART.trap_log : null;
-        if (k) v.ram = scene.add.image(0, 0, k).setOrigin(0.5, 0.5);
+        if (k) v.ram = scene.add.image(0, 0, k).setOrigin(0.5, k === ART.trap_deadfall ? 0.54 : 0.5); // (the painting: its trunk's middle)
         v.own = k === ART.trap_deadfall;
         v.front = scene.add.graphics();
       }
@@ -441,7 +441,8 @@ export class WoodTrapsView {
     const rot = at.a * 0.35;
     const c = Math.cos(rot); const sn = Math.sin(rot);
     const P = (lx, ly) => ({ x: at.x + lx * c - ly * sn, y: y + lx * sn + ly * c });
-    const l = P(-44, -16); const r = P(44, -16); const fork = { x: at.x + (px - at.x) * 0.12, y: y + (py - y) * 0.12 };
+    // (the painting's own ropes run up out of its top edge: the fork meets them there)
+    const l = v.own ? P(-52, -46) : P(-44, -16); const r = v.own ? P(51, -46) : P(44, -16); const fork = { x: at.x + (px - at.x) * 0.12, y: y + (py - y) * 0.12 };
     g.lineStyle(4, 0x5a4a30, 1).lineBetween(px, py, fork.x, fork.y);
     g.lineStyle(3, 0x6a5a40, 1).lineBetween(fork.x, fork.y, l.x, l.y).lineBetween(fork.x, fork.y, r.x, r.y);
     if (v.ram) {
@@ -488,7 +489,7 @@ export class WoodTrapsView {
       const k = lift / ((SPOT.ground - SPOT.noose.y) * img.frame.height);
       if (A.k >= 0.99) v.hung = { x: A.x, y: A.y + 24, k }; // (where it rests once he's gone: at full height)
       // (the loop's foot round his boots: the frame's foot line sits a little past the painted soles)
-      img.setScale(k).setPosition(A.x, A.y + 24).setDepth(f.z + 0.3).setAngle(0); // (the loop round his ankle, a boot's height under the sole)
+      img.setScale(k).setPosition(A.x, A.y + (A.painted ? -4 : 24)).setDepth(f.z + (A.painted ? -0.3 : 0.3)).setAngle(0); // (the loop round his ankle, a boot's height under the sole; his painted pose has its own knot)
     } else {
       // empty: where it was, swaying a little (or, never having held anyone, a default height)
       const H = v.hung ?? { x: t.x, y: t.z - 150, k: 150 / ((SPOT.ground - SPOT.noose.y) * img.frame.height) };
@@ -567,7 +568,7 @@ export class WoodTrapsView {
       let m = this.marks.get(f.id);
       const want = f.alive && (f.horn && !f.horn.done || f.snare || f.chained || f.latch || f.packTell > 0 || f.netSpin > 0 || f.drive?.on || f.order && f.order.t < f.order.wait);
       if (m?.net && f.snare?.kind !== 'net') m.net.setVisible(false);
-      if (m?.coil && !(f.alive && f.snare?.kind === 'snare')) m.coil.setVisible(false);
+      if (m?.coil && !(f.alive && f.snare?.kind === 'snare' && !this.scene.views?.get(f.id)?.hangAnkle?.painted)) m.coil.setVisible(false);
       if (!want) { if (m) { m.text.setVisible(false); } continue; }
       if (!m) {
         m = { text: s.add.text(0, 0, '', { fontFamily: FONT.display, fontSize: '15px', color: '#ffd890', stroke: '#140c06', strokeThickness: 4 }).setOrigin(0.5, 1) };
@@ -588,7 +589,7 @@ export class WoodTrapsView {
         } else {
           // strung up by the ankle (view/SnareHang.js): the noose round it, the cord to the sapling
           const A = this.scene.views?.get(f.id)?.hangAnkle;
-          if (A) {
+          if (A && !A.painted) {
             // the cord bitten tight round his ankle (a boot's height under the sole): three turns, over the sprite (netG draws
             // in front of the men), and a taut stub up into the noose
             m.coil ??= s.add.graphics();

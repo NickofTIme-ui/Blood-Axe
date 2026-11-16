@@ -62,7 +62,11 @@ export const LEVEL_ART = {
       // the wood's traps (view/WoodTrapsView.js) and front ferns (view/WoodWeather.js), cut from
       // ChatGPT paintings by tools/cut-wood-art.py (2026-11-14); code-drawn without them
       'trap_pine', 'trap_logpile', 'trap_logpile_loose', 'trap_log', 'trap_snare', 'trap_snare_sprung',
-      'trap_stakes', 'trap_stakes_open', 'pen_gate', 'fern_1', 'fern_2', 'fern_3'],
+      'trap_stakes', 'trap_stakes_open', 'pen_gate', 'fern_1', 'fern_2', 'fern_3',
+      // round 2 (2026-11-16): the ford's deadfall, the Houndmaster's net (flying, fallen)
+      'trap_deadfall', 'net_fly', 'net_down',
+      // a grunt caught in a snare, upside down by one ankle (data/snaredArt.js)
+      'snared_grunt_1', 'snared_grunt_2', 'snared_grunt_3'],
     props: { wagon: { file: 'convoy_wagon.png', pair: true }, cagecart: { file: 'cage_cart.png', pair: true, texture: 'cagecart' } },
     surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, log: { px: 40 }, plank: { fit: true } },
   },

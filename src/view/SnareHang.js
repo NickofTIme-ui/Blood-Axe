@@ -11,6 +11,8 @@
 // The cord (view/WoodTrapsView.js) is drawn to view.hangAnkle.
 
 import { depthScale } from './depths.js';
+import { artKey } from './levelArt.js';
+import { SNARED_ART } from '../data/snaredArt.js';
 
 export const HANG = {
   yank: 10,   // frames from the noose biting to hanging (an ease with an overshoot)
@@ -18,6 +20,7 @@ export const HANG = {
   drop: 0.2,  // how fast he comes down again once loose (per frame, of the whole lift)
   sway: 7,    // degrees of swing, dying away to `still`
   still: 2.5,
+  paintedReach: 1.45, // (a painted pose, knot to fingertips, against his body's height)
 };
 
 const hanging = (f) => f.alive && f.snare?.kind === 'snare';
@@ -52,6 +55,28 @@ export function hangSprite(view, s, f, bodyH = null) {
   const ankleX = f.x;
   const ankleY = f.z - f.h - lift;
   // (falling free: he turns back over on the way down, so he lands on his feet, not his head)
+  // his own painted poses, where he has them: struggling, grabbing at his leg, gone limp
+  // (data/snaredArt.js); hung from the knot round his ankle, no turning over needed
+  const poses = up && k > 0.5 ? paintedPoses(s, f) : null;
+  if (poses) {
+    if (!view.hangArt) view.hangArt = { ox: s.originX, oy: s.originY };
+    const P = poses[poseAt(t, f)];
+    const face = Math.sign(s.scaleX) || 1;
+    s.setTexture(artKey('wood', P.key));
+    s.setOrigin(P.ax, P.ay);
+    // (his length from the knot to his fingertips: a man's painted height, a bit more with
+    // the leg stretched straight; hung high enough to clear the mud by HANG.clear)
+    const reach = h * HANG.paintedReach;
+    const sc = reach / P.len;
+    s.setScale(sc * face, sc);
+    s.angle = deg;
+    const ay = f.z - f.h - (reach + HANG.clear) * Math.min(1.15, k);
+    s.setPosition(f.x, ay);
+    view.lastRef = null; // (his own strip comes back the moment he's loose: view/SpriteEnemyView.js)
+    view.hangAnkle = { x: f.x, y: ay, k, painted: true };
+    return true;
+  }
+  if (view.hangArt) { s.setOrigin(view.hangArt.ox, view.hangArt.oy); view.hangArt = null; }
   const flip = up ? 180 * Math.min(1, k * 1.25) : 180 * k;
   s.scaleX = -s.scaleX; // (turned over he'd face the other way: keep him facing where he did)
   s.angle = flip + deg;
@@ -68,6 +93,21 @@ export function hangSprite(view, s, f, bodyH = null) {
   s.setPosition(ankleX + Math.sin((deg * Math.PI) / 180) * 2 - ox * k, ankleY - oy * k);
   view.hangAnkle = { x: ankleX, y: ankleY, k };
   return true;
+}
+
+// The painted poses for his kind, if they're loaded (null: hang his own sprite)
+function paintedPoses(s, f) {
+  const list = SNARED_ART[f.stats?.id];
+  const T = s.scene?.textures;
+  return list && T && list.every((P) => T.exists(artKey('wood', P.key))) ? list : null;
+}
+
+// Which pose: thrown about as the sapling snaps him up, then fighting it, grabbing at his
+// leg, and every so often hanging limp (and a hero mashing never goes limp)
+export function poseAt(t, f) {
+  if (t < 50) return 0;
+  const c = Math.floor((t - 50) / 46) % 4;
+  return f?.team === 'player' ? c % 2 : [1, 0, 1, 2][c];
 }
 
 // The lowest painted pixel of the frame's figure (its leading boot), in frame px (the frame

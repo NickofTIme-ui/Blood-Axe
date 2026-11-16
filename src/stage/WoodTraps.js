@@ -48,7 +48,7 @@ export const TRAPS = {
   // its reach along and across the lane, how low it must be to strike, what it does, and how
   // long before it's hauled back up and how long the haul takes (cool: once a man, each drop)
   deadfall: { len: 460, held: -1.45, pull: 0.0049, damp: 0.018, warn: 22, wire: 14, lane: 38,
-    reach: 58, low: 120, heroShare: 0.45, bossShare: 0.22, cool: 999, rest: 200, haul: 150 },
+    reach: 80, low: 120, heroShare: 0.45, bossShare: 0.22, cool: 999, rest: 200, haul: 150 },
   // the convoy's Wagonmaster on the driver's bench: his whip reaches this far, after a wind-up
   // the Houndmaster's kennels: his whistle sends every loose hound in, two pounces each
   kennel: { whistle: [360, 520], tell: 34, lunges: 2, lungeAt: 220, give: 300, net: [260, 380] },

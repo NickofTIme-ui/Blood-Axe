@@ -32,6 +32,13 @@ branch, or ChatGPT's work gets lost.
   6. Felled pines (painted): split into a stump that stays and a trunk hinged at the notch (PINE_HINGE); the fall
      shivers, leans, accelerates (exp curve), then drops off the stump, bounces twice; bigger shake, logs thud,
      splash only over water.
+  7. Snares: the man hangs by the boot (SnareHang footOf finds the lowest painted boot), higher (HANG.clear 44).
+  8. CHATGPT ART round 2 (made in Nick's Chrome, saved to Downloads, staged to the cloud): trap_deadfall,
+     net_fly/net_down (the Houndmaster's net, flying and fallen over a man), snared_grunt_1..3 (a grunt upside
+     down by one ankle: swinging, grabbing his leg, limp; data/snaredArt.js gives the knot spot; SnareHang swaps
+     the sprite's texture while he hangs). Resized by hand after tools/cut-wood-art.py (deadfall 920 wide, nets
+     440): rerunning the cut script would put them back to 720 tall. Other enemy types still hang as their own
+     sprite upside down (prompt for stalker/butcher/hound poses: /mnt/project-files/level2-art-nov16/prompts.md).
 - 16 November 2026 (PC + cloud, branch `claude/project-thread-xbq83e` rebased onto 4e5fd2a, Nick: "push all"; ON MAIN, NOT on itch): DEADLY KOMBAT SOUNDS
   (Nick: "use them for the game to better the game"). 24 more takes from @danielsoundsgood's free pack,
   trimmed + mono in assets/audio/sfx (list in deadly-kombat-LICENSE.txt; keep the credit line), keys dk* and
