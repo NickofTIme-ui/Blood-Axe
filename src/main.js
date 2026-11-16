@@ -70,4 +70,40 @@ Promise.all([loadFonts(), playStartupIntro()]).then(() => {
   window.game = new Phaser.Game(config); // exposed for poking around in the browser console
   // ?mute=1 starts the game silent (used when testing, so nothing blares)
   if (new URLSearchParams(location.search).has('mute')) window.game.sound.mute = true;
+  watchGraphics(window.game);
 });
+
+// A black screen should never be silent (Nick, 2026-11-16: picked Vexa, the screen went
+// black, nothing said why). Any crash is written on screen, so a screenshot shows it.
+function crashNotice(text) {
+  let el = document.getElementById('crash-notice');
+  if (el) return; // (the first one is the one that matters)
+  el = document.createElement('div');
+  el.id = 'crash-notice';
+  el.style.cssText = 'position:fixed;left:12px;top:12px;max-width:60%;padding:10px 14px;background:rgba(30,6,6,.92);color:#ffd8c0;font:13px/1.4 monospace;border:1px solid #a03020;border-radius:4px;z-index:200;white-space:pre-wrap;cursor:pointer';
+  el.title = 'Click to hide';
+  el.textContent = `Something broke. Send Claude a screenshot of this:\n${text}`.slice(0, 900);
+  el.addEventListener('click', () => el.remove());
+  document.body.appendChild(el);
+}
+window.addEventListener('error', (e) => crashNotice(`${e.message}\n${(e.error?.stack ?? `${e.filename}:${e.lineno}`).split('\n').slice(0, 6).join('\n')}`));
+window.addEventListener('unhandledrejection', (e) => crashNotice(`(promise) ${e.reason?.stack ?? e.reason}`.split('\n').slice(0, 7).join('\n')));
+
+// The graphics card can drop the game's picture (WebGL "context lost": the card ran short,
+// or its driver reset), which leaves the canvas black while the game plays on. Phaser
+// rebuilds everything when the browser hands the picture back; if that doesn't come
+// within a few seconds, reload (the campaign is saved, so Continue picks it up).
+function watchGraphics(game) {
+  const canvas = game.canvas;
+  if (!canvas) return;
+  let timer = 0;
+  canvas.addEventListener('webglcontextlost', () => {
+    padNotice('The graphics card dropped the picture. Getting it back…', 0);
+    clearTimeout(timer);
+    timer = setTimeout(() => location.reload(), 5000);
+  });
+  canvas.addEventListener('webglcontextrestored', () => {
+    clearTimeout(timer);
+    padNotice('Picture restored', 2000);
+  });
+}

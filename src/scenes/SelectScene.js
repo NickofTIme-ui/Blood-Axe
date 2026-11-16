@@ -225,8 +225,16 @@ export class SelectScene extends Phaser.Scene {
   begin(data) {
     if (this.leaving) return;
     this.leaving = true;
+    let started = false;
+    const go = () => {
+      if (started || !this.sys.isActive()) return;
+      started = true;
+      this.scene.start('Arena', { ...data, stage: this.stageId, section: this.section });
+    };
     this.time.delayedCall(320, () => this.cameras.main.fadeOut(420, 0, 0, 0));
-    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Arena', { ...data, stage: this.stageId, section: this.section }));
+    this.cameras.main.once('camerafadeoutcomplete', go);
+    // (and if the fade's end never comes, the screen must not sit black: go anyway)
+    setTimeout(go, 2500);
   }
 
   // ---- online: the two select screens talk over the link (net/Link.js)
