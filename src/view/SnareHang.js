@@ -14,7 +14,7 @@ import { depthScale } from './depths.js';
 
 export const HANG = {
   yank: 10,   // frames from the noose biting to hanging (an ease with an overshoot)
-  clear: 14,  // px from the top of his head to the mud while he hangs
+  clear: 44,  // px from the top of his head to the mud while he hangs (clear air under him: he's strung up, not stood on his head)
   drop: 0.2,  // how fast he comes down again once loose (per frame, of the whole lift)
   sway: 7,    // degrees of swing, dying away to `still`
   still: 2.5,
@@ -70,22 +70,29 @@ export function hangSprite(view, s, f, bodyH = null) {
   return true;
 }
 
-// The lowest painted pixel of the frame's figure (its leading boot), in frame px; cached per
-// frame. Null where the pixels can't be read (no texture manager: the tests).
+// The lowest painted pixel of the frame's figure (its leading boot), in frame px (the frame
+// as the sprite's origin counts it, trim included); cached per frame. Null where the pixels
+// can't be read (no canvas: the tests).
 const FEET = new Map();
 export function footOf(s) {
-  const fr = s.frame; const T = s.scene?.textures;
-  if (!fr || !T?.getPixelAlpha) return null;
+  const fr = s.frame;
+  if (!fr?.source?.image || typeof document === 'undefined') return null;
   const id = `${s.texture.key}|${fr.name}`;
   if (FEET.has(id)) return FEET.get(id);
   let foot = null;
-  const W = Math.round(fr.width); const H = Math.round(fr.height);
-  const stepX = Math.max(1, Math.round(W / 160));
-  for (let y = H - 1; y >= 0 && !foot; y--) {
-    const xs = [];
-    for (let x = 0; x < W; x += stepX) if ((T.getPixelAlpha(x, y, s.texture.key, fr.name) ?? 0) > 120) xs.push(x);
-    if (xs.length >= 2) foot = { x: xs[Math.floor(xs.length / 2)], y: y - 2 };
-  }
+  try {
+    const W = Math.round(fr.cutWidth); const H = Math.round(fr.cutHeight);
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const cx = cv.getContext('2d', { willReadFrequently: true });
+    cx.drawImage(fr.source.image, fr.cutX, fr.cutY, W, H, 0, 0, W, H);
+    const px = cx.getImageData(0, 0, W, H).data;
+    const trim = fr.trimmed ? fr.data.spriteSourceSize : { x: 0, y: 0 };
+    for (let y = H - 1; y >= 0 && !foot; y--) {
+      const xs = [];
+      for (let x = 0; x < W; x++) if (px[(y * W + x) * 4 + 3] > 120) xs.push(x);
+      if (xs.length >= 3) foot = { x: xs[Math.floor(xs.length / 2)] + trim.x, y: y - 2 + trim.y };
+    }
+  } catch { foot = null; }
   FEET.set(id, foot);
   return foot;
 }

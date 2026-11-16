@@ -22,7 +22,7 @@ const ART = Object.fromEntries(['trap_pine', 'trap_logpile', 'trap_logpile_loose
 const SPOT = { noose: { x: 0.718, y: 0.56 }, ground: 0.975, ring: { x: 0.45, y: 0.8 }, pine: { x: 0.47, y: 0.95 } };
 const rand = (a, b) => a + Math.random() * (b - a);
 // how high up the painted pine's notch is (px over its foot): where its trunk hinges over
-const PINE_HINGE = 52;
+const PINE_HINGE = 108; // (the painted notch: row ~500 of 720, the foot at 684, at 430/720 scale)
 
 export class WoodTrapsView {
   constructor(scene, stage) {
@@ -258,7 +258,7 @@ export class WoodTrapsView {
     v.fallen = true;
     const s = this.scene;
     v.c.setAngle(dir * 90).setDepth(pr.z + 0.6);
-    if (v.painted) v.land = { at: s.time.now, dir, y: pr.z - 12, x: pr.x + dir * PINE_HINGE }; // (its butt slides off the stump)
+    if (v.painted) v.land = { at: s.time.now, dir, y: pr.z - 12, x: pr.x + dir * 34 }; // (its butt slides off the stump, which stands beside it)
     else v.c.setY(pr.z - 12);
     v.shadow.setScale(3.6, 1.4).setPosition(pr.x + dir * 150, pr.z + 4);
     s.fx?.shake(11, 24);
@@ -486,9 +486,9 @@ export class WoodTrapsView {
       const ground = f.z - (f.floor ?? 0);
       const lift = Math.max(60, ground - A.y);
       const k = lift / ((SPOT.ground - SPOT.noose.y) * img.frame.height);
-      if (A.k >= 0.99) v.hung = { x: A.x, y: A.y + 12, k }; // (where it rests once he's gone: at full height)
+      if (A.k >= 0.99) v.hung = { x: A.x, y: A.y + 24, k }; // (where it rests once he's gone: at full height)
       // (the loop's foot round his boots: the frame's foot line sits a little past the painted soles)
-      img.setScale(k).setPosition(A.x, A.y + 12).setDepth(f.z + 0.3).setAngle(0);
+      img.setScale(k).setPosition(A.x, A.y + 24).setDepth(f.z + 0.3).setAngle(0); // (the loop round his ankle, a boot's height under the sole)
     } else {
       // empty: where it was, swaying a little (or, never having held anyone, a default height)
       const H = v.hung ?? { x: t.x, y: t.z - 150, k: 150 / ((SPOT.ground - SPOT.noose.y) * img.frame.height) };
@@ -567,6 +567,7 @@ export class WoodTrapsView {
       let m = this.marks.get(f.id);
       const want = f.alive && (f.horn && !f.horn.done || f.snare || f.chained || f.latch || f.packTell > 0 || f.netSpin > 0 || f.drive?.on || f.order && f.order.t < f.order.wait);
       if (m?.net && f.snare?.kind !== 'net') m.net.setVisible(false);
+      if (m?.coil && !(f.alive && f.snare?.kind === 'snare')) m.coil.setVisible(false);
       if (!want) { if (m) { m.text.setVisible(false); } continue; }
       if (!m) {
         m = { text: s.add.text(0, 0, '', { fontFamily: FONT.display, fontSize: '15px', color: '#ffd890', stroke: '#140c06', strokeThickness: 4 }).setOrigin(0.5, 1) };
@@ -587,9 +588,17 @@ export class WoodTrapsView {
         } else {
           // strung up by the ankle (view/SnareHang.js): the noose round it, the cord to the sapling
           const A = this.scene.views?.get(f.id)?.hangAnkle;
-          if (A && !this.scene.textures.exists(ART.trap_snare_sprung)) {
-            g.lineStyle(2, 0x2a2216, 1).strokeEllipse(A.x, A.y + 4, 16, 7);
-            g.lineStyle(1, 0xc8b890, 0.8).strokeEllipse(A.x, A.y + 3, 14, 5);
+          if (A) {
+            // the cord bitten tight round his ankle (a boot's height under the sole): three turns, over the sprite (netG draws
+            // in front of the men), and a taut stub up into the noose
+            m.coil ??= s.add.graphics();
+            const c = m.coil.clear().setVisible(true).setDepth(f.z + 0.6);
+            for (let i = 0; i < 3; i++) {
+              c.lineStyle(3, 0x2a2216, 1).strokeEllipse(A.x, A.y + 16 + i * 5, 17, 6);
+              c.lineStyle(1.5, 0xc8a870, 1).strokeEllipse(A.x, A.y + 15 + i * 5, 15, 4);
+            }
+            c.lineStyle(2.5, 0x2a2216, 1).lineBetween(A.x, A.y + 14, A.x, A.y - 8);
+            c.lineStyle(1.2, 0xc8a870, 1).lineBetween(A.x - 0.5, A.y + 14, A.x - 0.5, A.y - 8);
           }
         }
         const shake = Math.sin(now / 40) * 2;
