@@ -45,6 +45,18 @@ export const HERO_STRIPS = {
       // So pose 0, 196 px tall on the sheet, is 196 x 0.68 x 132/450 ≈ 85 px, not shorter,
       // or he shrinks the moment he breaks into a run)
       dash: strip('mage', 'dash', 8, { align: 'median', ref: 0, target: 85 }),
+      // his second set (ChatGPT, 16 Nov 2026: docs/mage-art-prompts.md section 13; the HD
+      // sheets are in data/orynArt.js). All drawn at one scale: grab pose 0, standing tall
+      // with the staff upright, is the 132; each target is its pose 0 at that same scale.
+      updraft: strip('mage', 'updraft', 6, { target: 133 }),
+      skyfall: strip('mage', 'skyfall', 6, { target: 199 }),
+      meteor: strip('mage', 'meteor', 4, { target: 172 }),
+      jab: strip('mage', 'jab', 6, { target: 104 }),
+      twirl: strip('mage', 'twirl', 6, { target: 113 }),
+      vault: strip('mage', 'vault', 6, { target: 98 }),
+      grab: strip('mage', 'grab', 8),
+      block: strip('mage', 'block', 8, { target: 97 }),
+      finSpires: strip('mage', 'finSpires', 8, { target: 113 }),
     },
   },
   rogue: {
@@ -97,12 +109,13 @@ export const HERO_ANIMS = {
     fin_storm: { needs: ['finStorm'], frames: seq('finStorm', [0, 1, 2, 3, 4, 5, 6, 7]) },
     fin_rupture: { needs: ['finRupture'], frames: seq('finRupture', [0, 1, 2, 3, 4, 5, 6, 7]) },
     fin_embers: { needs: ['finEmbers'], frames: seq('finEmbers', [0, 1, 2, 3, 4, 5, 6, 7]) },
-    // IMPALING SPIRES: the gate's staff slam without the blink (raised, slam, planted ... turning away)
-    fin_spires: { needs: ['finEmbers'], frames: seq('finEmbers', [2, 3, 4, 4, 4, 5, 6, 7]) },
+    // IMPALING SPIRES: his own strip (ready, raised, the slam, planted, held, the fist, turning, ready)
+    fin_spires: { needs: ['finSpires'], frames: seq('finSpires', [0, 1, 2, 3, 4, 5, 6, 7]) },
     jump: { frames: seq('hover', [3, 4]) },
-    // block: the staff braced up across him in both hands (combo2's follow-through pose;
-    // react pose 0, used before, holds it trailing behind him like a flinch)
-    block: { frames: seq('combo2', [3]) },
+    // (block, his block-and-hurt sheet: 0 guard, 1 a blow on the guard, 2 recovering, 3 the
+    // guard round, 4 hit in the body, 5 hit in the head, 6 falling, 7 dead)
+    block: { needs: ['block'], frames: seq('block', [0, 1]) },
+    death: { needs: ['block'], frames: seq('block', [6, 7]) },
     light1: swing(seq('combo1', [0, 1]), seq('combo1', [2]), seq('combo1', [3, 4])),
     light2: swing(seq('combo2', [0, 1]), seq('combo2', [2]), seq('combo2', [3, 4])),
     light3: swing(seq('combo3', [0, 1, 2]), seq('combo3', [3]), seq('combo3', [3, 3, 4])),
@@ -111,33 +124,32 @@ export const HERO_ANIMS = {
     force: { frames: seq('force', [0, 1, 2, 3, 4]) },
     ward: { frames: seq('ward', [0, 1, 2, 3, 4, 5]) },
     blink: { frames: seq('blink', [0, 1, 2, 3, 4, 5]) },
-    hitstun: { frames: seq('react', [1]) },
-    stagger: { frames: seq('react', [2]) },
+    hitstun: { needs: ['block'], frames: seq('block', [4]) },
+    stagger: { needs: ['block'], frames: seq('block', [5]) },
     flying: { frames: seq('react', [3]) },
     lying: { frames: seq('react', [4]) },
     getup: { frames: seq('react', [5, 6, 7]) },
-    // THE REWORK (2026-11-04): stand-in poses from his other strips until ChatGPT paints
-    // his own (docs/mage-art-prompts.md: jab, twirl, vault)
-    // the lantern jab: drawn back, the staff thrust out level (the bolt's thrust), recover
-    jab: swing(seq('combo1', [1]), seq('bolt', [3]), seq('bolt', [4]).concat(seq('combo1', [4]))),
-    // the staff twirl: the strike poses spun through fast
-    twirl: { frames: seq('combo1', [2]).concat(seq('combo2', [2]), seq('combo1', [3]), seq('combo2', [3])), fps: 18, loop: true },
+    // THE REWORK (2026-11-04) and THE SECOND SET (2026-11-15): his own strips (ChatGPT,
+    // 16 Nov 2026: docs/mage-art-prompts.md section 13)
+    jab: { needs: ['jab'], ...swing(seq('jab', [0, 1]), seq('jab', [2, 3]), seq('jab', [4, 5])) },
+    twirl: { needs: ['twirl'], frames: seq('twirl', [0, 1, 2, 3, 4, 5]), fps: 18, loop: true },
     twirlEnd: swing(seq('combo3', [2]), seq('combo3', [3]), seq('combo3', [3, 4])),
-    // the pole-vault kick: up on the staff, flying in, down
-    shoulder: { needs: ['levitate', 'dash'], ...swing(seq('levitate', [0, 1]), seq('dash', [2]), seq('levitate', [3])) },
+    // the pole-vault kick: the run in, the staff planted, up on it; the flying kick; down
+    shoulder: { needs: ['vault'], ...swing(seq('vault', [0, 1, 2]), seq('vault', [3]), seq('vault', [4, 5])) },
     // Y, Y, X: the thunder staff (the spinning slam, charged)
     thunder: swing(seq('combo3', [1, 2]), seq('combo3', [3]), seq('combo3', [3, 3, 4])),
-    // THE SECOND SET (2026-11-15), on his other strips until ChatGPT paints their own
-    // (docs/mage-art-prompts.md section 13): the UPDRAFT (the staff swept up, ending raised)
-    updraft: swing(seq('combo2', [0, 1]), seq('ward', [2]), seq('ward', [2]).concat(seq('combo2', [4]))),
-    // the SKYFALL BOLT: the staff pointed up at the sky, then brought down as it strikes
-    skyfall: { call: seq('finStorm', [1, 2, 3]), after: seq('finStorm', [4, 5, 6, 7]) },
-    // METEOR DROP: the staff raised at the top, the slam on the way down, planted, rising
-    plunge: { hang: seq('levitate', [2]), fall: seq('ward', [3]), land: seq('ward', [4, 4, 5]) },
-    // STONE SPIKES: the barrier's slam
-    spikes: { frames: seq('ward', [0, 1, 2, 3, 4, 5]) },
-    // THE TEMPEST: staff up, sparking, held; lowered at the end
-    tempest: { hold: seq('finStorm', [2, 3]), end: seq('finStorm', [6, 7]) },
+    // the UPDRAFT: the staff swept low, then up, ending raised
+    updraft: { needs: ['updraft'], ...swing(seq('updraft', [0, 1]), seq('updraft', [2, 3]), seq('updraft', [4, 5])) },
+    // the SKYFALL BOLT: the staff to the sky, the flash; then pointed down at them, planted
+    skyfall: { needs: ['skyfall'], call: seq('skyfall', [0, 1, 2]), after: seq('skyfall', [3, 4, 5]) },
+    // METEOR DROP: the staff raised at the top, diving head first, landed, rising
+    plunge: { needs: ['meteor'], hang: seq('meteor', [0]), fall: seq('meteor', [1]), land: seq('meteor', [2, 2, 3]) },
+    // STONE SPIKES: the staff called up, then driven down and planted
+    spikes: { needs: ['skyfall'], frames: seq('skyfall', [0, 1, 3, 4, 4, 5]) },
+    // THE TEMPEST: staff up, the flash held; planted at the end
+    tempest: { needs: ['skyfall'], hold: seq('skyfall', [1, 2]), end: seq('skyfall', [4, 5]) },
+    // GRAB AND THROW: his own strip (8 poses as Rurik's neck grip)
+    grab: { needs: ['grab'], poses: seq('grab', [0, 1, 2, 3, 4, 5, 6, 7]) },
     // finishers borrow his casting poses (kind -> strip)
     finisher: { storm: seq('bolt', [0, 1, 2, 2, 3, 3, 4, 5]), rupture: seq('force', [0, 1, 2, 3, 3, 3, 3, 4]), embers: seq('ward', [0, 1, 2, 3, 4, 4, 4, 5]) },
   },

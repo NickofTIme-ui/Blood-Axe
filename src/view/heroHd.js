@@ -4,7 +4,8 @@ import {HERO_ANIMS} from '../data/heroStrips.js';
 import {GRAB_SHEETS} from '../data/grabArt.js';
 import {VEXA_SHEETS} from '../data/vexaArt.js';
 import {THROAT_SHEETS} from '../data/throatArt.js';
-const SHEETS=[...HERO_HD.sheets,...GRAB_SHEETS,...VEXA_SHEETS,...THROAT_SHEETS]; // (the grab and throw: data/grabArt.js; Vexa's second set: data/vexaArt.js)
+import {ORYN_SHEETS} from '../data/orynArt.js';
+const SHEETS=[...HERO_HD.sheets,...GRAB_SHEETS,...VEXA_SHEETS,...THROAT_SHEETS,...ORYN_SHEETS]; // (the grab and throw: data/grabArt.js; Vexa's second set: data/vexaArt.js; Oryn's: data/orynArt.js)
 
 const textureKey=s=>['ulric','ulricOath'].includes(s.key)?`${s.key}-${s.name}`:`hero-${s.key}-${s.name}`;
 export function preloadHeroHd(scene){for(const s of SHEETS)if(s.baseFirst==null)scene.load.image(textureKey(s),s.file);}

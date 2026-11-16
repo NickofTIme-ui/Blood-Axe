@@ -6,6 +6,14 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 16 November 2026 (PC ChatGPT + cloud, branch `claude/project-thread-5hgifd` on 4c5cf60, NOT on main until Nick says push): ORYN'S OWN ART
+  for his second set. Nine ChatGPT strips (docs/mage-art-prompts.md section 13: updraft, skyfall, meteor, jab, twirl,
+  vault, grab, block, finSpires) baked by tools/bake-oryn-strips.py into assets/sprites/heroes-hd/oryn-mage-<name>.png
+  (one scale for all, sized off grab pose 0 = his idle; the red lantern glow turned blue to match his orb), listed in
+  src/data/orynArt.js; plain strips in assets/sprites/strips/mage_<name>.png. HERO_ANIMS.mage now uses them for the jab,
+  twirl, vault kick, Updraft, Skyfall, Meteor, Stone Spikes, Tempest, grab/throw, block, body/head hits, death and the
+  Impaling Spires finisher. Cataclysm medallions (Live Wire, Stone Spikes, The Tempest) painted: noIcon removed.
+  Originals: /mnt/project-files/oryn-art/ (the bake script reads them from art-incoming/oryn-second-set/, not in git).
 - 16 November 2026 (PC + cloud, branch `claude/project-thread-xbq83e` rebased onto 4e5fd2a, Nick: "push all"; ON MAIN, NOT on itch): DEADLY KOMBAT SOUNDS
   (Nick: "use them for the game to better the game"). 24 more takes from @danielsoundsgood's free pack,
   trimmed + mono in assets/audio/sfx (list in deadly-kombat-LICENSE.txt; keep the credit line), keys dk* and

@@ -207,16 +207,15 @@ SKILL_TREES.mage = {
       ],
     },
     {
-      // (no painted medallions yet: `noIcon` keeps the tree from asking for the files)
       id: 'cataclysm', name: 'THE CATACLYSM', color: 0x5ad0c8, blurb: 'Break the earth, call the sky',
       nodes: [
         {
-          id: 'liveWire', name: 'Live Wire', cost: 2, tier: 1, req: [], kind: 'passive', noIcon: true,
+          id: 'liveWire', name: 'Live Wire', cost: 2, tier: 1, req: [], kind: 'passive',
           text: 'Your Static marks last twice as long, and a man can carry four of them.',
           apply(s) { s.kit.static.life *= 2; s.kit.static.max = 4; },
         },
         {
-          id: 'stoneSpikes', name: 'Stone Spikes', cost: 4, tier: 2, req: ['liveWire'], kind: 'active', noIcon: true,
+          id: 'stoneSpikes', name: 'Stone Spikes', cost: 4, tier: 2, req: ['liveWire'], kind: 'active',
           text: 'NEW MOVE: D-pad DOWN (H). The staff into the floor, and a line of stone spikes bursts out along the ground ahead, throwing every man it reaches into the air. 30 mana. Also out of your combo.',
           apply(s) {
             s.skills.stoneSpikes = true;
@@ -226,7 +225,7 @@ SKILL_TREES.mage = {
           },
         },
         {
-          id: 'tempest', name: 'The Tempest', cost: 6, tier: 3, req: ['stoneSpikes'], kind: 'major', noIcon: true,
+          id: 'tempest', name: 'The Tempest', cost: 6, tier: 3, req: ['stoneSpikes'], kind: 'major',
           text: 'With 70 mana, D-pad DOWN is THE TEMPEST: you rise on the storm, nothing touches you, and lightning falls on every man in reach, three times over.',
           apply(s) { s.skills.tempest = true; },
         },
