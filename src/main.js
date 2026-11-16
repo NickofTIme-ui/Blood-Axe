@@ -18,6 +18,7 @@ import { BirthrightScene } from './scenes/BirthrightScene.js';
 import { loadFonts } from './view/fonts.js';
 import { playStartupIntro } from './core/StartupIntro.js';
 
+Error.stackTraceLimit = 30; // (a crash box shows where it came from, not just Phaser's insides)
 const RS = SETTINGS.renderScale ?? 1;
 
 // Text is rasterised at render resolution too, so it's crisp under the zoom.
@@ -42,6 +43,19 @@ if (PadPlugin?.stopListeners) {
 if (PadPlugin?.disconnectAll) {
   PadPlugin.disconnectAll = function disconnectAll() {
     for (const pad of this.gamepads ?? []) if (pad?.pad) pad.pad.connected = false;
+  };
+}
+
+// A text that's already been thrown away (its scene closed under it) can still be told to
+// re-letter itself by a late timer or event; Phaser then reaches for its freed picture and
+// throws ("reading 'drawImage'", Nick, 2026-11-16, level 1 as Vexa). A dead text has
+// nothing to draw: let it be.
+const TextProto = Phaser.GameObjects.Text?.prototype;
+if (TextProto?.updateText) {
+  const updateText = TextProto.updateText;
+  TextProto.updateText = function guardedUpdateText(...args) {
+    if (!this.canvas || !this.context || !this.frame?.data || !this.scene) return this;
+    return updateText.apply(this, args);
   };
 }
 
@@ -101,12 +115,12 @@ function crashNotice(text) {
   el.id = 'crash-notice';
   el.style.cssText = 'position:fixed;left:12px;top:12px;max-width:60%;padding:10px 14px;background:rgba(30,6,6,.92);color:#ffd8c0;font:13px/1.4 monospace;border:1px solid #a03020;border-radius:4px;z-index:200;white-space:pre-wrap;cursor:pointer';
   el.title = 'Click to hide';
-  el.textContent = `Something broke. Send Claude a screenshot of this:\n${text}`.slice(0, 900);
+  el.textContent = `Something broke. Send Claude a screenshot of this:\n${text}`.slice(0, 1800);
   el.addEventListener('click', () => el.remove());
   document.body.appendChild(el);
 }
-window.addEventListener('error', (e) => crashNotice(`${e.message}\n${(e.error?.stack ?? `${e.filename}:${e.lineno}`).split('\n').slice(0, 6).join('\n')}`));
-window.addEventListener('unhandledrejection', (e) => crashNotice(`(promise) ${e.reason?.stack ?? e.reason}`.split('\n').slice(0, 7).join('\n')));
+window.addEventListener('error', (e) => crashNotice(`${e.message}\n${(e.error?.stack ?? `${e.filename}:${e.lineno}`).split('\n').slice(0, 12).join('\n')}`));
+window.addEventListener('unhandledrejection', (e) => crashNotice(`(promise) ${e.reason?.stack ?? e.reason}`.split('\n').slice(0, 12).join('\n')));
 
 // The graphics card can drop the game's picture (WebGL "context lost": the card ran short,
 // or its driver reset), which leaves the canvas black while the game plays on. Phaser
