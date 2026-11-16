@@ -26,6 +26,25 @@ Phaser.GameObjects.GameObjectFactory.prototype.text = function text(x, y, t, sty
   return addText.call(this, x, y, t, { resolution: RS, ...style });
 };
 
+// Phaser 3.90 bug: its gamepad list has holes when a controller sits at index 1+ with none
+// at 0 (Nick's PC: several pads/virtual pads), and closing ANY scene then throws on the
+// hole ("reading 'removeAllListeners'"), which killed the scene change: stuck on the
+// loading bar, or black after picking a champion (Nick, 2026-11-16). Skip the holes.
+const PadPlugin = Phaser.Input?.Gamepad?.GamepadPlugin?.prototype;
+if (PadPlugin?.stopListeners) {
+  PadPlugin.stopListeners = function stopListeners() {
+    this.target?.removeEventListener('gamepadconnected', this.onGamepadHandler);
+    this.target?.removeEventListener('gamepaddisconnected', this.onGamepadHandler);
+    this.sceneInputPlugin?.pluginEvents?.off(Phaser.Input.Events.UPDATE, this.update);
+    for (const pad of this.gamepads ?? []) pad?.removeAllListeners();
+  };
+}
+if (PadPlugin?.disconnectAll) {
+  PadPlugin.disconnectAll = function disconnectAll() {
+    for (const pad of this.gamepads ?? []) if (pad?.pad) pad.pad.connected = false;
+  };
+}
+
 const config = {
   type: Phaser.AUTO,
   parent: 'game',
