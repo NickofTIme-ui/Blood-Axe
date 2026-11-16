@@ -53,9 +53,39 @@ export function hangSprite(view, s, f, bodyH = null) {
   const ankleY = f.z - f.h - lift;
   // (falling free: he turns back over on the way down, so he lands on his feet, not his head)
   const flip = up ? 180 * Math.min(1, k * 1.25) : 180 * k;
-  s.setPosition(ankleX + Math.sin((deg * Math.PI) / 180) * 2, ankleY);
   s.scaleX = -s.scaleX; // (turned over he'd face the other way: keep him facing where he did)
   s.angle = flip + deg;
+  // hung by a FOOT, not by the point between his feet (the sprite's origin): the lowest
+  // painted boot in this frame goes to the ankle, so the noose is round it (Nick, 2026-11-16:
+  // "the guys caught in it dont even touch the rope")
+  const foot = footOf(s);
+  let ox = 0; let oy = 0;
+  if (foot) {
+    const lx = (foot.x - s.displayOriginX) * s.scaleX; const ly = (foot.y - s.displayOriginY) * s.scaleY;
+    const r = (s.angle * Math.PI) / 180;
+    ox = lx * Math.cos(r) - ly * Math.sin(r); oy = lx * Math.sin(r) + ly * Math.cos(r);
+  }
+  s.setPosition(ankleX + Math.sin((deg * Math.PI) / 180) * 2 - ox * k, ankleY - oy * k);
   view.hangAnkle = { x: ankleX, y: ankleY, k };
   return true;
+}
+
+// The lowest painted pixel of the frame's figure (its leading boot), in frame px; cached per
+// frame. Null where the pixels can't be read (no texture manager: the tests).
+const FEET = new Map();
+export function footOf(s) {
+  const fr = s.frame; const T = s.scene?.textures;
+  if (!fr || !T?.getPixelAlpha) return null;
+  const id = `${s.texture.key}|${fr.name}`;
+  if (FEET.has(id)) return FEET.get(id);
+  let foot = null;
+  const W = Math.round(fr.width); const H = Math.round(fr.height);
+  const stepX = Math.max(1, Math.round(W / 160));
+  for (let y = H - 1; y >= 0 && !foot; y--) {
+    const xs = [];
+    for (let x = 0; x < W; x += stepX) if ((T.getPixelAlpha(x, y, s.texture.key, fr.name) ?? 0) > 120) xs.push(x);
+    if (xs.length >= 2) foot = { x: xs[Math.floor(xs.length / 2)], y: y - 2 };
+  }
+  FEET.set(id, foot);
+  return foot;
 }

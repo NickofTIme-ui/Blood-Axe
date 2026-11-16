@@ -13,8 +13,13 @@
 //   stakes    trap: a pit of stakes under a mat of leaves (readable: a darker, sunken patch).
 //             It gives under whoever lands on or walks on it: a man is done; a hero loses a
 //             fifth of his health and scrambles out. Open, it stays open
-//   current   trap: the ford's shallows: everyone in them wades slow and is pushed downstream;
-//             a man knocked down in them is carried off by the river
+//   deadfall  trap: a spiked trunk slung on a long rope from a bough far above, hauled up out
+//             of sight and tied off to a tripwire across the road. Whoever trips the wire
+//             (hero or man) hears the rope go, and a moment later it swings in from above
+//             the top of the screen and through the lane: a man is smashed apart on its
+//             spikes, a hero loses near half his health and is flung. It swings itself out,
+//             then the woodsmen's pulley hauls it back up and the wire is set again
+//             (Nick, 2026-11-16: "should swing in from above the map with a spike on it")
 //
 //   THE WOOD'S MEN (a wave's roster: 'type:role', entities/Enemy.js createEnemy)
 //   horn      the hornblower: runs for the back of the road and sounds his horn. Not stopped
@@ -38,7 +43,12 @@ export const TRAPS = {
   stakes: { heroShare: 0.2, cool: 60 },
   horn: { blow: 240, retry: 150, post: 320 },
   net: { keep: [190, 300], every: [210, 330], windup: 44, speed: 9, range: 380, reach: 30, depth: 24 },
-  current: { push: 0.85, drag: 0.45 },
+  // the deadfall: rope length (px), how high up it's held (radians off the hang: out of sight),
+  // the pull of its swing and how fast it dies, the rope's warning, how near the wire trips it,
+  // its reach along and across the lane, how low it must be to strike, what it does, and how
+  // long before it's hauled back up and how long the haul takes (cool: once a man, each drop)
+  deadfall: { len: 460, held: -1.45, pull: 0.0049, damp: 0.018, warn: 22, wire: 14, lane: 38,
+    reach: 58, low: 120, heroShare: 0.45, bossShare: 0.22, cool: 999, rest: 200, haul: 150 },
   // the convoy's Wagonmaster on the driver's bench: his whip reaches this far, after a wind-up
   // the Houndmaster's kennels: his whistle sends every loose hound in, two pounces each
   kennel: { whistle: [360, 520], tell: 34, lunges: 2, lungeAt: 220, give: 300, net: [260, 380] },
@@ -114,7 +124,7 @@ export class WoodTraps {
       for (const [id, c] of t.cool) { if (c <= 1) t.cool.delete(id); else t.cool.set(id, c - 1); }
       if (t.type === 'snare') this.updateSnare(t);
       else if (t.type === 'stakes') this.updateStakes(t);
-      else if (t.type === 'current') this.updateCurrent(t);
+      else if (t.type === 'deadfall') this.updateDeadfall(t);
     }
     for (const f of this.world.fighters) {
       if (f.chained) this.holdChained(f);
@@ -168,7 +178,7 @@ export class WoodTraps {
       if (R.t === L.delay) this.world.events.emit('logsLoose', { pile: R.pile });
       const k = (R.t - L.delay) / L.sweep;
       if (k < 0 || k > 1) continue;
-      const roll = R.pile.roll; const front = roll.z0 + (roll.z1 - roll.z0) * k;
+      const roll = R.pile.lane; const front = roll.z0 + (roll.z1 - roll.z0) * k;
       R.front = front;
       for (const f of this.world.fighters) {
         if (!f.alive || f.x < roll.x0 || f.x > roll.x1 || Math.abs(f.z - front) > L.band || f.h - (f.floor ?? 0) > 60) continue;
@@ -248,22 +258,54 @@ export class WoodTraps {
     if (t.hz) for (const [id, c] of t.hz.cool) { if (c <= 1) t.hz.cool.delete(id); else t.hz.cool.set(id, c - 1); }
   }
 
-  // ------------------------------------------------------------ the ford's current
+  // ------------------------------------------------------------ the deadfall
 
-  updateCurrent(t) {
-    const C = TRAPS.current; const B = this.world.bounds;
+  // Where the trunk is: its middle's x, and how high it is off the ground (its rope hangs
+  // from a bough `len` + its hang height up, straight over the wire)
+  deadfallAt(t) {
+    const D = TRAPS.deadfall;
+    const a = t.angle ?? D.held;
+    return { x: t.x + Math.sin(a) * D.len, h: D.len + 50 - Math.cos(a) * D.len, a };
+  }
+
+  updateDeadfall(t) {
+    const D = TRAPS.deadfall;
+    t.state ??= 'set'; t.angle ??= D.held; t.spin ??= 0; t.t ??= 0;
+    t.t++;
+    if (t.state === 'set') {
+      // the wire: anyone on his feet crossing it in the lane
+      const who = this.world.fighters.find((f) => f.alive && !f.entering && (f.team === 'player' || f.team === 'enemy')
+        && Math.abs(f.x - t.x) <= D.wire && Math.abs(f.z - t.z) <= D.lane && f.h - (f.floor ?? 0) < 10);
+      if (who) { t.state = 'warn'; t.t = 0; this.world.events.emit('deadfallTrip', { trap: t, fighter: who }); }
+      return;
+    }
+    if (t.state === 'warn') {
+      if (t.t >= D.warn) { t.state = 'swing'; t.t = 0; t.spin = 0; this.world.events.emit('deadfallSwing', { trap: t }); }
+      return;
+    }
+    if (t.state === 'haul') {
+      // the pulley takes it back up, slowly, out of sight; then the wire is set again
+      t.angle += (D.held - t.angle) * Math.min(1, 1 / Math.max(1, D.haul - t.t));
+      if (t.t >= D.haul) { t.state = 'set'; t.angle = D.held; t.spin = 0; t.t = 0; t.cool.clear(); this.world.events.emit('deadfallSet', { trap: t }); }
+      return;
+    }
+    // swinging: a heavy pendulum, its swing dying away
+    t.spin += -D.pull * Math.sin(t.angle) - D.damp * t.spin;
+    t.angle += t.spin;
+    if (t.state === 'swing' && Math.abs(t.angle) < 0.05 && Math.abs(t.spin) < 0.003) { t.state = 'hang'; t.t = 0; }
+    if (t.state === 'hang' && t.t >= D.rest) { t.state = 'haul'; t.t = 0; return; }
+    const at = this.deadfallAt(t);
+    if (at.h > D.low || Math.abs(t.spin) < 0.008) return; // (up high, or barely moving: it nudges, it doesn't kill)
+    const dir = Math.sign(t.spin) || 1;
     for (const f of this.world.fighters) {
-      if (!f.alive || f.entering || f.x < t.x0 || f.x > t.x1 || f.h - (f.floor ?? 0) > 8) continue;
-      if (f.cinematic || f.state === 'grabbed') continue;
-      f.wading = this.world.frame;
-      // wading: slower going, and the water leans on you downstream (toward the camera)
-      f.x -= ((f.vx ?? 0) / 60) * C.drag;
-      f.z = Math.min(B.maxZ, f.z + C.push * (t.push ?? 1) * (f.state === 'knockdown' ? 2.2 : 1));
-      // a man knocked down in it, at the edge of the shallows: the river has him
-      if (f.team === 'enemy' && !f.stats.boss && f.state === 'knockdown' && f.z >= B.maxZ - 1 && !f.removeMe) {
-        this.world.events.emit('swept', { fighter: f, trap: t });
-        this.stage.pitKill(f);
-      }
+      if (!f.alive || t.cool.has(f.id) || Math.abs(f.x - at.x) > D.reach || Math.abs(f.z - t.z) > D.lane || f.h > at.h + 40) continue;
+      t.cool.set(f.id, D.cool);
+      t.hz ??= { id: `deadfall${t.id}`, cool: new Map() };
+      t.hz.cool.delete(f.id);
+      if (f.team === 'player') this.stage.hurt(t.hz, f, f.stats.maxHealth * D.heroShare, dir, 'bolt');
+      else if (f.stats.boss) this.stage.hurt(t.hz, f, f.stats.maxHealth * D.bossShare, dir, 'bolt');
+      else this.stage.hurt(t.hz, f, f.health + 1, dir, 'trample'); // (smashed apart on the spikes)
+      this.world.events.emit('deadfallHit', { trap: t, fighter: f, dir });
     }
   }
 
@@ -512,6 +554,11 @@ export class WoodTraps {
       b.kennelSet = true;
       b.kennel = { t: 0, next: TRAPS.kennel.whistle[0], net: null };
       b.script = (brain, target) => this.houndmasterScript(b, brain, target);
+    }
+    // his own hounds out of their kennel once he has walked in (the field is held still till then)
+    if (b?.alive && b.kennelSet && !b.pensOut && b.state !== 'bossEntrance') {
+      b.pensOut = true;
+      for (const k of st.section.boss?.pensAtStart ?? []) this.openPen(this.pens.find((q) => q.id === k && q.section === st.index));
     }
   }
 

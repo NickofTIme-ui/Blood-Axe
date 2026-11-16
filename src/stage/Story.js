@@ -41,7 +41,7 @@
 //                       line-ups are dead (default 1)
 //           'wreckage'  trapped until the prop with this `tag` is broken
 //           'reach'     trapped until a hero gets to him (a platforming route)
-//           'cage'      locked in: a hero stands at the lock (`lock`: { x, z }, default where
+//           'cage'      locked in: a hero stands at the lock (`lock`: { x, z, h? }, default where
 //                       he is) and holds INTERACT (E, D-pad up) for `hold` frames, with no
 //                       enemy left standing
 //           'execution' on the gallows: his section's men (its first `wave` line-ups, or with
@@ -614,7 +614,7 @@ export class Story {
   pickLock(n, heroes) {
     const L = n.lock ?? n.home;
     const p = heroes.find((q) => q.grounded && Math.abs(q.x - L.x) <= NPC.reach && Math.abs(q.z - L.z) <= NPC.depth + 10
-      && Math.abs(q.floor - n.h) <= NPC.height);
+      && Math.abs(q.floor - (L.h ?? n.h)) <= NPC.height);
     if (!p) return;
     const calm = this.stage.livingFoes().length === 0;
     this.prompts.push({ npc: n, kind: calm ? 'open' : 'busy', hero: p, at: L, progress: n.pick / (n.hold ?? NPC.pick) });

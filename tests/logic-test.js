@@ -3485,17 +3485,42 @@ test('wood traps: the woodsman swings his net and throws it; a hero in its path 
   assert(n.stats.name === 'Woodsman', 'his job');
 });
 
-test("wood traps: the ford's current leans a hero downstream; a man knocked down at its edge is swept away", () => {
-  const t = STAGE_WOOD.traps.find((q) => q.type === 'current');
-  const { world, p, st, run } = woodSetup(3, { x: (t.x0 + t.x1) / 2, z: 360 });
-  killFoes(world);
-  run(30);
-  assert(p.z > 370, `pushed toward us (${p.z.toFixed(0)})`);
-  const e = woodFoe(world, st, 'grunt', t.x0 + 40, world.bounds.maxZ);
-  let swept = 0; world.events.on('swept', () => swept++);
-  e.fsm.change('knockdown', { dir: 1 });
-  run(3, () => { p.x = t.x0 - 200; });
-  assert(swept === 1, 'the river has him');
+test("wood: the ford has no current any more (an invisible river nobody could see: Nick, 2026-11-16)", () => {
+  assert(!STAGE_WOOD.traps.some((q) => q.type === 'current'), 'no current in the ford');
+});
+
+test('wood: the log pile: a blow cuts its rope and the logs come down on the men below (it stays where it stands once the ford fight starts)', () => {
+  const { world, p, st, c, run } = woodSetup(WOOD_SEC('ford'), { x: 5340, z: 310 });
+  killFoes(world); run(2);
+  const pile = st.props.find((q) => q.kind === 'logpile');
+  st.fightOn = true; run(30); // (the wagon's rolling code once dragged it off to NaN here)
+  assert(Number.isFinite(pile.x) && pile.x === 5390 && pile.y === 0, `still standing where it was, within reach (${pile.x}, ${pile.y})`);
+  const foes = [5330, 5420, 5480].map((x) => woodFoe(world, st, 'grunt', x, 420));
+  p.x = 5340; p.z = 310; p.facing = 1; st.placeOnGround(p);
+  let loose = 0; world.events.on('logsLoose', () => loose++);
+  for (let k = 0; k < 2; k++) { c.script = { [c.t + 1]: ['attack'] }; run(20); }
+  assert(pile.broken && loose === 1, 'the rope is cut');
+  run(90);
+  assert(foes.every((f) => !f.alive), 'the men below are flattened');
+});
+
+test('wood: the deadfall: a man on the wire lets the spiked trunk go; it swings in from above the screen, smashes the men in its lane, then is hauled back up and set', () => {
+  const { world, p, st, run } = woodSetup(WOOD_SEC('ford'), { x: 4700, z: 480 });
+  killFoes(world); run(2);
+  const T = st.woodTraps; const t = T.traps.find((q) => q.type === 'deadfall');
+  assert(t && T.deadfallAt(t).h > 400, 'held up out of sight');
+  const e = woodFoe(world, st, 'grunt', t.x, t.z);
+  const hits = []; world.events.on('deadfallHit', (ev) => hits.push(ev.fighter));
+  run(3);
+  assert(t.state === 'warn', `he trips it (${t.state})`);
+  run(60, () => { e.x = t.x - 20; e.z = t.z; e.vx = 0; e.vz = 0; if (e.state !== 'dead' && e.alive) e.fsm.change('idle'); p.x = 4700; p.z = 480; });
+  assert(hits.includes(e) && !e.alive, 'smashed on its spikes');
+  run(1200, () => { p.x = 4700; p.z = 480; });
+  assert(t.state === 'set' && T.deadfallAt(t).h > 400, `hauled back up and set (${t.state})`);
+  // a hero who trips it takes near half his health
+  p.x = t.x; p.z = t.z; const hp = p.stats.maxHealth; p.health = hp;
+  run(80, () => { p.x = t.x; p.z = t.z; });
+  assert(hits.includes(p) && Math.abs(hp - p.health - hp * TRAPS.deadfall.heroShare) < 1, `a hero is hit hard, once (${hp} -> ${p.health})`);
 });
 
 test('wood: ambushers hang in the branches for their tell, then drop', () => {
@@ -3522,10 +3547,10 @@ test('boss phases: the Houndmaster calls his pack, then rages; each phase once, 
   assert(b?.stats.name === 'The Houndmaster', 'he is here');
   const cd0 = b.controller.ai.attackCooldown[0];
   const up = st.livingFoes().length;
-  assert(st.livingFoes().filter((e) => e.stats.id === 'hound').length === 2, 'two hounds come in with him');
+  assert(st.livingFoes().filter((e) => e.stats.id === 'hound').length === 2, 'his two hounds are out of their kennel');
   b.health = b.stats.maxHealth * 0.6;
   run(2, () => { p.health = p.stats.maxHealth; });
-  assert(phases.join() === 'pack' && st.livingFoes().length === up + 3, `his pack (${phases}, ${st.livingFoes().length} up)`);
+  assert(phases.join() === 'pack' && st.livingFoes().length === up + 2, `his pack (${phases}, ${st.livingFoes().length} up)`);
   assert(b.controller.ai.attackCooldown[0] < cd0 && ENEMIES.stalker.ai.attackCooldown[0] === cd0, 'he quickens (his own brain, not the shared data)');
   assert(st.bossInPhase('pack') && !st.bossInPhase('frenzy'), 'in the pack phase');
   const walk = b.stats.walkSpeed;
@@ -3548,20 +3573,22 @@ test('kennels: hounds wait behind their pen gates (not foes, untouchable) till h
   const { world, p, st, run } = woodSetup(WOOD_SEC('kennels'), { x: 7700, z: 440 });
   run(700, () => { p.health = p.stats.maxHealth; p.awe = 0; });
   const penned = world.fighters.filter((f) => f.penned != null);
-  assert(penned.length === 5 && penned.every((f) => f.invincible && f.alive), `five hounds in the pens (${penned.length})`);
+  assert(penned.length === 4 && penned.every((f) => f.invincible && f.alive), `four hounds still in the pens (${penned.length})`);
+  const out = world.fighters.filter((f) => f.alive && f.stats.id === 'hound' && f.penned == null);
+  assert(out.length === 2, `his own two came out of the middle kennel when he walked in (${out.length})`);
   assert(!st.livingFoes().some((f) => f.penned != null), 'not counted as foes behind bars');
   const b = st.boss;
   b.health = b.stats.maxHealth * 0.6;
   let opened = 0; world.events.on('penOpen', () => opened++);
   run(2, () => { p.health = p.stats.maxHealth; });
-  assert(opened === 2 && world.fighters.filter((f) => f.penned != null).length === 2, 'the pack phase drops two gates');
+  assert(opened === 1 && world.fighters.filter((f) => f.penned != null).length === 2, 'the pack phase drops a gate');
   let whistles = 0; let pounces = 0;
   world.events.on('whistle', () => whistles++);
   run(900, () => { p.health = p.stats.maxHealth; p.awe = 0; b.health = Math.max(b.health, b.stats.maxHealth * 0.55); for (const h of world.fighters) if (h.order && h.state === 'heavy') pounces++; });
   assert(whistles >= 1 && pounces > 0, `he whistles (${whistles}) and they pounce`);
   b.health = b.stats.maxHealth * 0.2;
   run(2, () => { p.health = p.stats.maxHealth; });
-  assert(opened === 3 && !world.fighters.some((f) => f.penned != null), 'the frenzy lets out the last of them');
+  assert(opened === 2 && !world.fighters.some((f) => f.penned != null), 'the frenzy lets out the last of them');
 });
 
 test('kennels: a hound knocked down in an open pen gets the gate slammed on it; he whistles that pen open once more', () => {

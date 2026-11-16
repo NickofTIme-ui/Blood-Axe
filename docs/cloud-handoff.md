@@ -14,6 +14,24 @@ branch, or ChatGPT's work gets lost.
   twirl, vault kick, Updraft, Skyfall, Meteor, Stone Spikes, Tempest, grab/throw, block, body/head hits, death and the
   Impaling Spires finisher. Cataclysm medallions (Live Wire, Stone Spikes, The Tempest) painted: noIcon removed.
   Originals: /mnt/project-files/oryn-art/ (the bake script reads them from art-incoming/oryn-second-set/, not in git).
+- 16 November 2026 (cloud, branch `claude/project-thread-xchgku` on 4c5cf60; NOT on main until Nick says push,
+  NOT on itch). GALLOWS WOOD FIXES (Nick's notes):
+  1. The ford's invisible river (trap 'current', almost transparent) is gone, code and test.
+  2. LOG PILE never worked: its `roll` field was read as the convoy wagon's `roll` by Stage.updateRolling, which
+     set its x to NaN the moment the ford fight began; and it sat on its own solid block's top (y 90, out of
+     reach). Now `lane` (data + WoodTraps + WoodTrapsView) and `y: 0`. Test added.
+  3. The swinging log (blade hazard) is now the DEADFALL trap (WoodTraps type 'deadfall', TRAPS.deadfall): a
+     tripwire across the lane at x 5040 z 360; anyone tripping it hears the rope go, 22 frames later a spiked trunk
+     swings in from above the top of the screen (damped pendulum), smashes men (trample: gibbed), 22% of a boss,
+     45% of a hero (once a drop), swings itself out, is hauled back up and re-set. View: drawDeadfall; painted log
+     with code-drawn stakes until ChatGPT `trap_deadfall` (prompt /mnt/project-files/level2-art-nov16/prompts.md).
+  4. Cage carts: blocks widened to the painted wheels and dirt (z1 352 / 462); lock spots carry `h: 0`
+     (Story.pickLock uses lock.h) since the prisoners now stand inside the block.
+  5. Houndmaster `size: 1.2`; his escort is gone: boss `pensAtStart: [1]` opens the middle kennel (now 2 hounds)
+     once he has walked in; the pack phase opens pen 0, the frenzy pen 2.
+  6. Felled pines (painted): split into a stump that stays and a trunk hinged at the notch (PINE_HINGE); the fall
+     shivers, leans, accelerates (exp curve), then drops off the stump, bounces twice; bigger shake, logs thud,
+     splash only over water.
 - 16 November 2026 (PC + cloud, branch `claude/project-thread-xbq83e` rebased onto 4e5fd2a, Nick: "push all"; ON MAIN, NOT on itch): DEADLY KOMBAT SOUNDS
   (Nick: "use them for the game to better the game"). 24 more takes from @danielsoundsgood's free pack,
   trimmed + mono in assets/audio/sfx (list in deadly-kombat-LICENSE.txt; keep the credit line), keys dk* and

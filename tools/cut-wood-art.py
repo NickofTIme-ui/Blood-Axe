@@ -25,6 +25,9 @@ JOBS = {
     'snare.png': ['trap_snare', 'trap_snare_sprung'],
     'stakes.png': ['trap_stakes', 'trap_stakes_open'],
     'pen_gate.png': ['pen_gate'],
+    # round 2 (2026-11-16): the ford's deadfall; the Houndmaster's net, flying and fallen
+    'deadfall.png': ['trap_deadfall'],
+    'houndmaster_net.png': ['net_fly', 'net_down'],
     'ferns.png': ['fern_1', 'fern_2', 'fern_3'],
 }
 

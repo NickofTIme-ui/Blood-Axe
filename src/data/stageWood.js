@@ -167,14 +167,16 @@ export const STAGE_WOOD = {
       props: [
         // THE LOG PILE up the far bank: cut its stay rope and the trunks come down across the
         // road below (stage/WoodTraps.js), on whoever is coming for Ansel
-        { kind: 'logpile', x: 5390, z: 292, roll: { x0: 5290, x1: 5530, z0: 300, z1: 545 }, drop: null },
+        // (y 0: it stands inside the solid block that keeps men out of it; left to the
+        // ground under it, it sat on that block's top, 90 up, out of every axe's reach, and
+        // the rope could never be cut: Nick, 2026-11-16 "the pile of wood still does nothing")
+        { kind: 'logpile', x: 5390, z: 292, y: 0, lane: { x0: 5290, x1: 5530, z0: 300, z1: 545 }, drop: null },
         { kind: 'barrel', x: 5520, z: 300, drop: 'health' },
         // barrels off the convoy, washed up on the near bank
         ...group([['barrel-grey', 4700, 500], ['barrel-v1', 4746, 504, { drop: 'mana' }]]),
       ],
-      // a log hung on two ropes over the near bank, swinging across the road: strike it back
-      // into them (Stage.js blade, drawn as a log)
-      hazards: [{ type: 'blade', look: 'log', x: 5040, z: 330, swing: 90, phase: 0 }],
+      // (the swinging log that hung here is now the DEADFALL, a trap: see `traps` below)
+      hazards: [],
     },
     {
       // the convoy's last wagon, still rolling: armoured, its prisoners inside, guards round
@@ -204,7 +206,7 @@ export const STAGE_WOOD = {
       objective: 'Kill the Houndmaster',
       hint: 'Knock a hound into an open pen and the gate slams on it. When he whistles, move! Dodge out of his chain',
       // the pens at the back of the clearing, under the painted kennels: hounds behind bars
-      pens: [{ x: 7640, z: 270, count: 2 }, { x: 7820, z: 270, count: 1 }, { x: 8030, z: 270, count: 2 }],
+      pens: [{ x: 7640, z: 270, count: 2 }, { x: 7820, z: 270, count: 2 }, { x: 8030, z: 270, count: 2 }],
       fightAt: 7560,
       waves: [],
       props: [
@@ -221,7 +223,10 @@ export const STAGE_WOOD = {
       // them. (His own painted strips: docs/campaign/art-levels-1-2.md; until then he wears
       // the Stalker's.)
       boss: {
-        type: 'stalker', name: 'The Houndmaster', health: 3.6, damage: 1.1, escort: ['hound', 'hound'],
+        type: 'stalker', name: 'The Houndmaster', health: 3.6, damage: 1.1, size: 1.2, // (size: a head over his men: Nick, 2026-11-16)
+        // his two hounds come bursting out of the middle kennel once he's walked in (they
+        // stood parked beside him as an escort: Nick, 2026-11-16 "should come out of the kennel")
+        pensAtStart: [1],
         entrance: { from: 140, to: 330, speed: 72, stepEvery: 28, awe: 30 },
         // beaten: his crimes and his sentence (stage/Sentence.js)
         sentence: {
@@ -237,7 +242,7 @@ export const STAGE_WOOD = {
         // whistle sends every loose hound in, and from the net phase he throws a weighted net:
         // stage/WoodTraps.js)
         phases: [
-          { id: 'pack', at: 0.66, pens: [0, 1], ai: { attackCooldown: [24, 56] } },
+          { id: 'pack', at: 0.66, pens: [0], ai: { attackCooldown: [24, 56] } },
           { id: 'net', at: 0.5 },
           { id: 'frenzy', at: 0.33, rage: true, pens: [2], adds: ['stalker'], damage: 1.25, speed: 1.2, ai: { attackCooldown: [16, 40], comboChance: 0.8 } },
         ],
@@ -270,9 +275,11 @@ export const STAGE_WOOD = {
     { kind: 'pit', x0: 3080, x1: 3380, ...FULL },
     { kind: 'block', x0: 3130, x1: 3200, z0: 360, z1: 480, top: 30 },
     { kind: 'block', x0: 3260, x1: 3330, z0: 360, z1: 480, top: 30 },
-    // the two cage carts (painted, view/NpcView.js): solid, and a man can be stood on one
-    { kind: 'block', x0: 3660, x1: 3840, z0: 300, z1: 334, top: 50, hideArt: true },
-    { kind: 'block', x0: 4060, x1: 4220, z0: 420, z1: 448, top: 50, hideArt: true },
+    // the two cage carts (painted, view/NpcView.js): solid, and a man can be stood on one.
+    // Their footprints run out to the painted wheels and the dirt under them, the whole width
+    // of the cart (Nick, 2026-11-16: "you can walk through its shadow"); the drawbar is free
+    { kind: 'block', x0: 3636, x1: 3848, z0: 304, z1: 352, top: 50, hideArt: true },
+    { kind: 'block', x0: 4040, x1: 4226, z0: 416, z1: 462, top: 50, hideArt: true },
     // THE HIGH SHELF (optional): a mossy boulder at the back of the road (+70: a held jump),
     // and over it a rock shelf 150 higher, like the Gallows Ascent's roost: Vexa's double
     // jump, Oryn's rise, Rurik with WIND STEP. (Rock: the wood's painted rock tiles)
@@ -298,13 +305,15 @@ export const STAGE_WOOD = {
   ],
 
   // the wood's traps (stage/WoodTraps.js): snares in the leaves, a stake pit under a mat of them,
-  // the ford's shallows. Taught where they can't hurt much first (the hanging tree's clearing)
+  // the deadfall over the ford's road. Taught where they can't hurt much first (the hanging tree's clearing)
   traps: [
     { type: 'snare', section: 1, x: 1880, z: 470 },
     { type: 'snare', section: 1, x: 2470, z: 330 },
     { type: 'stakes', section: 2, x: 3500, z: 486, w: 76, d: 44 }, // (out of the ravine stream's picture, where it hid: 2026-11-15)
     { type: 'snare', section: 2, x: 3960, z: 455 },
-    { type: 'current', section: 3, x0: 4640, x1: 4900 },
+    // the near bank's DEADFALL: a spiked trunk hauled up out of sight, tied to a wire across
+    // the road. Trip it (or let them) and it swings in from above (stage/WoodTraps.js)
+    { type: 'deadfall', section: 3, x: 5040, z: 360 },
   ],
 
   lanterns: WOOD_LANTERNS,
@@ -333,11 +342,11 @@ export const STAGE_WOOD = {
     { id: 'hanged-2', name: 'a hanged woman', pose: 'hanged', x: 2222, z: 296, drop: 84 },
     {
       id: 'tanners', name: 'the tanner\'s boys', x: 3750, z: 340, pose: 'cage', group: true, rescue: 'cage',
-      lock: { x: 3750, z: 372 }, flee: { x: 3000, z: 500 }, gather: { x: 8720, z: 470 },
+      lock: { x: 3750, z: 372, h: 0 }, flee: { x: 3000, z: 500 }, gather: { x: 8720, z: 470 },
     },
     {
       id: 'wenna', name: 'Old Wenna', x: 4140, z: 450, pose: 'cage', rescue: 'cage',
-      lock: { x: 4140, z: 482 }, flee: { x: 3000, z: 400 }, gather: { x: 8600, z: 380 },
+      lock: { x: 4140, z: 482, h: 0 }, flee: { x: 3000, z: 400 }, gather: { x: 8600, z: 380 },
     },
     {
       id: 'ansel', name: 'Ansel the wheelwright', x: 4560, z: 440, pose: 'lame', rescue: 'escort', section: 'ford',

@@ -16,11 +16,13 @@ import { TRAPS } from '../stage/WoodTraps.js';
 const BARK = artKey('wood', 'surf-log');
 // the painted traps (ChatGPT, 2026-11-14; tools/cut-wood-art.py): each falls back to code
 const ART = Object.fromEntries(['trap_pine', 'trap_logpile', 'trap_logpile_loose', 'trap_log', 'trap_snare',
-  'trap_snare_sprung', 'trap_stakes', 'trap_stakes_open', 'pen_gate'].map((n) => [n, artKey('wood', n)]));
+  'trap_snare_sprung', 'trap_stakes', 'trap_stakes_open', 'pen_gate', 'trap_deadfall', 'net_fly', 'net_down'].map((n) => [n, artKey('wood', n)]));
 // where things are in the paintings (fractions of the cut-out): the sprung snare's noose,
 // the armed snare's ring of cord, the pine's foot
 const SPOT = { noose: { x: 0.718, y: 0.56 }, ground: 0.975, ring: { x: 0.45, y: 0.8 }, pine: { x: 0.47, y: 0.95 } };
 const rand = (a, b) => a + Math.random() * (b - a);
+// how high up the painted pine's notch is (px over its foot): where its trunk hinges over
+const PINE_HINGE = 52;
 
 export class WoodTrapsView {
   constructor(scene, stage) {
@@ -43,6 +45,14 @@ export class WoodTrapsView {
       const v = { g: scene.add.graphics() };
       const key = t.type === 'snare' ? ART.trap_snare : t.type === 'stakes' ? ART.trap_stakes : null;
       if (key && scene.textures.exists(key)) v.img = scene.add.image(t.x, t.z, key);
+      if (t.type === 'deadfall') {
+        // its own painting when it comes (ChatGPT: trap_deadfall); till then the painted log
+        // with sharpened stakes lashed through it
+        const k = scene.textures.exists(ART.trap_deadfall) ? ART.trap_deadfall : scene.textures.exists(ART.trap_log) ? ART.trap_log : null;
+        if (k) v.ram = scene.add.image(0, 0, k).setOrigin(0.5, 0.5);
+        v.own = k === ART.trap_deadfall;
+        v.front = scene.add.graphics();
+      }
       this.traps.set(t.id, v);
     }
     // the kennels' pen gates: iron-banded timber bars in front of the hounds (they drop into
@@ -121,7 +131,7 @@ export class WoodTrapsView {
     for (const P of this.pileLabels) {
       const pr = P.pr; const sec = this.stage.sections.findIndex((q) => pr.x >= q.x0 && pr.x < q.x1);
       const foes = this.stage.livingFoes?.() ?? [];
-      const below = foes.some((f) => f.x > pr.roll.x0 - 60 && f.x < pr.roll.x1 + 60);
+      const below = foes.some((f) => f.x > pr.lane.x0 - 60 && f.x < pr.lane.x1 + 60);
       const show = !pr.broken && this.stage.fightOn && this.stage.index === sec && below;
       P.label.setVisible(show).setText(show ? 'CUT THE ROPE!' : '').setY(pr.z - 150 - Math.abs(Math.sin(now / 260)) * 5);
     }
@@ -157,11 +167,23 @@ export class WoodTrapsView {
     const c = s.add.container(pr.x, pr.z - (pr.y ?? 0)).setDepth(pr.z);
     const shadow = s.add.ellipse(pr.x, pr.z, 90, 14, 0x000000, 0.45).setDepth(DEPTH.floor + 2);
     if (s.textures.exists(ART.trap_pine)) {
-      // painted: the notch is cut on its left, the side it falls to (so it's mirrored to fall right)
-      const img = s.add.image(0, 8, ART.trap_pine).setOrigin(SPOT.pine.x, SPOT.pine.y);
-      img.setScale(430 / img.height).setFlipX((pr.fellDir ?? 1) > 0);
+      // painted: the notch is cut on its left, the side it falls to (so it's mirrored to fall right).
+      // Two pieces of the one painting: the stump (roots and the foot of the trunk, up to the
+      // notch) stays standing; the rest hinges over at the notch (Nick, 2026-11-16: the trees
+      // "awkwardly flop over": the whole tree, roots and all, used to tip over from the ground)
+      const flip = (pr.fellDir ?? 1) > 0;
+      const stumpImg = s.add.image(0, 8, ART.trap_pine).setOrigin(SPOT.pine.x, SPOT.pine.y);
+      const sc = 430 / stumpImg.height; stumpImg.setScale(sc).setFlipX(flip);
+      const FH = stumpImg.frame.height; const FW = stumpImg.frame.width;
+      const cut = SPOT.pine.y * FH - PINE_HINGE / sc; // (the notch's row in the painting)
+      stumpImg.setCrop(0, cut, FW, FH - cut);
+      const stump = s.add.container(pr.x, pr.z - (pr.y ?? 0)).setDepth(pr.z - 0.1).add(stumpImg);
+      // the hinge: the container sits at the notch; the trunk hangs off it, foot where it was
+      c.setY(pr.z - (pr.y ?? 0) + 8 - PINE_HINGE);
+      const img = s.add.image(0, PINE_HINGE, ART.trap_pine).setOrigin(SPOT.pine.x, SPOT.pine.y).setScale(sc).setFlipX(flip);
+      img.setCrop(0, 0, FW, cut + 2);
       c.add(img);
-      const v = { c, notch: s.add.graphics(), shadow, H, W, hits: 0, fallen: false, painted: true };
+      const v = { c, stump, notch: s.add.graphics().setY(PINE_HINGE - 8), shadow, H, W, hits: 0, fallen: false, painted: true, hingeY: c.y };
       c.add(v.notch);
       return v;
     }
@@ -204,14 +226,27 @@ export class WoodTrapsView {
   }
 
   syncPines() {
+    const now = this.scene.time.now;
     for (const [id, v] of this.pines) {
       const pr = this.stage.props.find((p) => p.id === id);
       const F = this.rig.falls.find((f) => f.pr === pr);
       if (F && !v.fallen) {
-        // over she goes: slow at first, then faster and faster (gravity), the last of it a slam
+        // over she goes, as a tree does: the cut gives and it hangs a moment, shivering, then
+        // leans; gravity takes it and it comes down faster and faster, the last of it a slam
+        // (the sim's own count: it lands, and crushes, at TRAPS.pine.fall)
         const k = Math.min(1, F.t / TRAPS.pine.fall);
-        v.c.setAngle(F.dir * 90 * k * k);
-        v.shadow.setScale(1 + k * 2.4, 1).setX(pr.x + F.dir * k * k * 110);
+        const lean = (Math.exp(4.2 * k) - 1) / (Math.exp(4.2) - 1);
+        const shiver = k < 0.3 ? Math.sin(now / 22) * 0.8 * (1 - k / 0.3) : 0;
+        v.c.setAngle(F.dir * (90 * lean + shiver));
+        v.shadow.setScale(1 + lean * 2.4, 1).setX(pr.x + F.dir * lean * 110);
+      }
+      if (v.land) {
+        // the slam: it drops off the stump onto the road, bounces once, twice, and lies still
+        const e = (now - v.land.at) / 1000;
+        const drop = Math.min(1, e / 0.12);
+        const bounce = 7 * Math.exp(-5.5 * e) * Math.abs(Math.sin(e * 15));
+        v.c.setAngle(v.land.dir * (90 - bounce)).setY(v.hingeY + (v.land.y - v.hingeY) * drop * drop).setX(pr.x + (v.land.x - pr.x) * drop);
+        if (e > 1.2) { v.c.setAngle(v.land.dir * 90).setPosition(v.land.x, v.land.y); v.land = null; }
       }
     }
   }
@@ -221,13 +256,20 @@ export class WoodTrapsView {
     const v = this.pines.get(pr.id);
     if (!v) return;
     v.fallen = true;
-    v.c.setAngle(dir * 90).setY(pr.z - 12).setDepth(pr.z + 0.6);
-    v.shadow.setScale(3.6, 1.4).setPosition(pr.x + dir * 150, pr.z + 4);
     const s = this.scene;
-    s.fx?.shake(6, 14);
-    playSfx(s, 'waterSplash', { volume: 0.6, minGapMs: 0 });
-    for (let i = 0; i < 26; i++) {
-      s.gore?.spawn({ x: rand(x0, x1), z: pr.z + rand(-20, 20), h: rand(4, 30), vx: rand(-60, 60), vz: 0, vh: rand(80, 220), tint: i % 3 ? 0x2a3a20 : 0x5a4028, scale: rand(0.4, 0.9), decal: false, life: rand(30, 60) });
+    v.c.setAngle(dir * 90).setDepth(pr.z + 0.6);
+    if (v.painted) v.land = { at: s.time.now, dir, y: pr.z - 12, x: pr.x + dir * PINE_HINGE }; // (its butt slides off the stump)
+    else v.c.setY(pr.z - 12);
+    v.shadow.setScale(3.6, 1.4).setPosition(pr.x + dir * 150, pr.z + 4);
+    s.fx?.shake(11, 24);
+    playSfx(s, 'woodLogs', { volume: 1, pitch: -500, minGapMs: 0 });
+    playSfx(s, DK.wood, { volume: 0.9, pitch: -900, minGapMs: 0 });
+    const wet = this.stage.terrain?.inPit((x0 + x1) / 2, pr.z);
+    if (wet) playSfx(s, 'waterSplash', { volume: 0.8, minGapMs: 0 });
+    // the length of it: needles and bark burst up, the crown end hardest; dust (or spray) all along
+    for (let i = 0; i < 44; i++) {
+      const u = Math.random(); const x = dir > 0 ? x0 + (x1 - x0) * u : x1 - (x1 - x0) * u; // (u: out toward the crown)
+      s.gore?.spawn({ x, z: pr.z + rand(-22, 22), h: rand(4, 30), vx: rand(-80, 80) + dir * 60 * u, vz: 0, vh: rand(100, 200 + 180 * u), tint: wet && i % 2 ? 0x8aa0a8 : i % 3 ? 0x2a3a20 : 0x5a4028, scale: rand(0.4, 1), decal: false, life: rand(30, 70) });
     }
   }
 
@@ -242,7 +284,7 @@ export class WoodTrapsView {
     const rope = s.add.graphics().setDepth(pr.z + 0.5);
     const trunks = [];
     for (let i = 0; i < 4; i++) {
-      const w = pr.roll.x1 - pr.roll.x0 - 36;
+      const w = pr.lane.x1 - pr.lane.x0 - 36;
       const t = s.textures.exists(BARK)
         ? s.add.tileSprite(0, 0, w, 28, BARK).setTileScale(0.12).setTint(i % 2 ? 0xb0a898 : 0xc8bca8)
         : s.add.rectangle(0, 0, w, 28, 0x3a2a1a);
@@ -253,7 +295,7 @@ export class WoodTrapsView {
       for (const t of trunks) t.destroy();
       trunks.length = 0;
       for (let i = 0; i < 4; i++) {
-        const w = pr.roll.x1 - pr.roll.x0 - 20;
+        const w = pr.lane.x1 - pr.lane.x0 - 20;
         trunks.push(s.add.image(0, 0, ART.trap_log).setOrigin(0, 1).setDisplaySize(w, 34).setVisible(false).setFlipX(i % 2 === 1));
       }
     }
@@ -294,7 +336,7 @@ export class WoodTrapsView {
     for (const R of this.rig.rolls) {
       const v = this.piles.get(R.pile.id);
       if (!v) continue;
-      const pr = R.pile; const roll = pr.roll;
+      const pr = R.pile; const roll = pr.lane;
       if (!v.loose) { v.loose = true; this.drawPile(v, pr); }
       const g = v.rollG.clear();
       const k = (R.t - L.delay) / L.sweep;
@@ -370,31 +412,58 @@ export class WoodTrapsView {
             if (i % 2 === 0) g.fillStyle(0x6a0a0a, 0.8).fillTriangle(x - 2, y - 4, x + 2, y - 4, x, y - 14);
           }
         }
-      } else if (t.type === 'current') {
-        g.setDepth(DEPTH.floor + 3.6);
-        const B = this.scene.world.bounds; const top = B.minZ - 20; const bot = SETTINGS.height + 80;
-        // the shallows: cold water over the stones, running toward us
-        // a ribbon that narrows going back and feathers at its banks, not a box
-        const w = t.x1 - t.x0; const cx = (t.x0 + t.x1) / 2;
-        const edge = (y) => (w / 2) * Math.min(1.2, 0.15 + 1.6 * (y - top) / (bot - top)); // (a wedge from the back: no flat top)
-        for (const [grow, a] of [[1.16, 0.08], [1.08, 0.1], [1, 0.14], [0.9, 0.16]]) {
-          g.fillStyle(0x1a2a34, a).fillPoints([
-            { x: cx - edge(top) * grow, y: top }, { x: cx + edge(top) * grow, y: top },
-            { x: cx + edge(bot) * grow, y: bot }, { x: cx - edge(bot) * grow, y: bot }], true);
-        }
-        // the stones breaking the surface, foam on their upstream sides
-        for (let i = 0; i < 9; i++) {
-          const y = top + 40 + ((i * 97) % (bot - top - 80)); const half = edge(y) * 0.8;
-          const x = cx - half + ((i * 71) % (half * 2));
-          g.fillStyle(0x2a2a26, 0.7).fillEllipse(x, y, 16 + (i % 3) * 6, 6 + (i % 2) * 3);
-          g.fillStyle(0xd8e8ee, 0.25).fillEllipse(x, y - 3, 14 + (i % 3) * 5, 2);
-        }
-        for (let i = 0; i < 26; i++) {
-          const x = t.x0 + 20 + ((i * 53) % (t.x1 - t.x0 - 40));
-          const y = top + (((t0 / 9) + i * 61) % (bot - top));
-          g.lineStyle(1.5, 0xc8dce4, 0.22 + (i % 3) * 0.08).lineBetween(x, y, x + 3, y + 14 + (i % 4) * 4);
-        }
-      }
+      } else if (t.type === 'deadfall') this.drawDeadfall(v, t, t0);
+    }
+  }
+
+  // The deadfall: the tripwire across the road, and the spiked trunk on its long rope from a
+  // bough above the top of the screen (stage/WoodTraps.js deadfallAt)
+  drawDeadfall(v, t, t0) {
+    const g = v.g; const fr = v.front.clear();
+    const D = TRAPS.deadfall; const at = this.rig.deadfallAt(t);
+    g.setDepth(t.z - 1); fr.setDepth(t.z + 2);
+    // the wire: a cord across the lane between two pegs, a glint on it while it's set
+    const z0 = t.z - D.lane; const z1 = t.z + D.lane;
+    g.fillStyle(0x2a2216, 1).fillRect(t.x - 2, z0 - 12, 4, 14).fillRect(t.x - 2, z1 - 10, 4, 14);
+    if (t.state === 'set') {
+      g.lineStyle(1.5, 0xa89870, 0.85).lineBetween(t.x, z0 - 6, t.x + 1, z1 - 4);
+      g.fillStyle(0xe8f0ff, 0.3 + 0.35 * Math.max(0, Math.sin(t0 / 330 + t.id))).fillCircle(t.x, t.z + Math.sin(t0 / 900) * D.lane * 0.6, 2);
+    } else {
+      g.lineStyle(1.5, 0xa89870, 0.7).lineBetween(t.x, z0 - 6, t.x + 8, z0 + 4).lineBetween(t.x, z1 - 4, t.x - 6, z1 - 14); // (snapped)
+    }
+    // the trunk: where it is on screen; its shadow on the road grows as it comes down
+    const y = t.z - at.h; const px = t.x; const py = t.z - (D.len + 50);
+    const near = Math.max(0, 1 - at.h / 300);
+    if (near > 0) g.fillStyle(0x000000, 0.15 + 0.3 * near).fillEllipse(at.x, t.z, 90 + 90 * near, 10 + 6 * near);
+    const visible = y > -80;
+    if (!visible) { v.ram?.setVisible(false); return; }
+    // the rope, from out of sight up in the boughs, forked to the two lashings
+    const rot = at.a * 0.35;
+    const c = Math.cos(rot); const sn = Math.sin(rot);
+    const P = (lx, ly) => ({ x: at.x + lx * c - ly * sn, y: y + lx * sn + ly * c });
+    const l = P(-44, -16); const r = P(44, -16); const fork = { x: at.x + (px - at.x) * 0.12, y: y + (py - y) * 0.12 };
+    g.lineStyle(4, 0x5a4a30, 1).lineBetween(px, py, fork.x, fork.y);
+    g.lineStyle(3, 0x6a5a40, 1).lineBetween(fork.x, fork.y, l.x, l.y).lineBetween(fork.x, fork.y, r.x, r.y);
+    if (v.ram) {
+      v.ram.setVisible(true).setPosition(at.x, y).setRotation(rot).setDepth(t.z + 1.5);
+      if (v.own) v.ram.setScale(220 / v.ram.frame.width);
+      else v.ram.setDisplaySize(200, 40);
+    } else {
+      const body = [P(-100, -18), P(100, -18), P(100, 18), P(-100, 18)];
+      fr.fillStyle(0x3a2a1a, 1).fillPoints(body, true);
+    }
+    if (!v.own) {
+      // the stakes: sharpened, lashed through the trunk, out both ends and along its belly;
+      // dark with what they've already been through
+      const spike = (bx, by, tx, ty, w) => {
+        const a = P(bx, by); const b = P(tx, ty); const nx = -(b.y - a.y); const ny = b.x - a.x; const k = w / Math.max(1, Math.hypot(nx, ny));
+        fr.fillStyle(0xc8a878, 1).fillTriangle(a.x + nx * k, a.y + ny * k, a.x - nx * k, a.y - ny * k, b.x, b.y);
+        const m = { x: a.x + (b.x - a.x) * 0.55, y: a.y + (b.y - a.y) * 0.55 };
+        fr.fillStyle(0x6a0a0a, 0.85).fillTriangle(m.x + nx * k * 0.5, m.y + ny * k * 0.5, m.x - nx * k * 0.5, m.y - ny * k * 0.5, b.x, b.y);
+      };
+      for (const [dy, len] of [[-10, 42], [6, 50], [16, 36]]) { spike(96, dy, 96 + len, dy + dy * 0.3, 6); spike(-96, dy, -96 - len, dy + dy * 0.3, 6); }
+      for (const dx of [-60, -20, 20, 60]) spike(dx, 16, dx + (dx > 0 ? 8 : -8), 48, 5);
+      fr.fillStyle(0x7a6a48, 1).fillPoints([P(-48, -20), P(-40, -20), P(-40, 20), P(-48, 20)], true).fillPoints([P(40, -20), P(48, -20), P(48, 20), P(40, 20)], true);
     }
   }
 
@@ -413,7 +482,7 @@ export class WoodTrapsView {
     img.setTexture(ART.trap_snare_sprung).setOrigin(SPOT.noose.x, SPOT.noose.y);
     const f = t.caught != null ? this.scene.world.fighters.find((o) => o.id === t.caught) : null;
     const A = f ? this.scene.views?.get(f.id)?.hangAnkle : null;
-    if (A && A.k > 0.6) {
+    if (A && A.k > 0.05) { // (from the moment it bites: the cord goes up with him)
       const ground = f.z - (f.floor ?? 0);
       const lift = Math.max(60, ground - A.y);
       const k = lift / ((SPOT.ground - SPOT.noose.y) * img.frame.height);
@@ -497,6 +566,7 @@ export class WoodTrapsView {
     for (const f of this.scene.world.fighters) {
       let m = this.marks.get(f.id);
       const want = f.alive && (f.horn && !f.horn.done || f.snare || f.chained || f.latch || f.packTell > 0 || f.netSpin > 0 || f.drive?.on || f.order && f.order.t < f.order.wait);
+      if (m?.net && f.snare?.kind !== 'net') m.net.setVisible(false);
       if (!want) { if (m) { m.text.setVisible(false); } continue; }
       if (!m) {
         m = { text: s.add.text(0, 0, '', { fontFamily: FONT.display, fontSize: '15px', color: '#ffd890', stroke: '#140c06', strokeThickness: 4 }).setOrigin(0.5, 1) };
@@ -506,7 +576,11 @@ export class WoodTrapsView {
       m.text.setVisible(true).setPosition(f.x, top - 10).setDepth(f.z + 200);
       if (f.snare) {
         // caught: the cord (or the net) on him; a hero gets the call to cut free
-        if (f.snare.kind === 'net') {
+        if (f.snare.kind === 'net' && s.textures.exists(ART.net_down)) {
+          // the painted net, fallen over him, weights in the mud
+          m.net ??= s.add.image(0, 0, ART.net_down).setOrigin(0.5, 0.96);
+          m.net.setVisible(true).setPosition(f.x, f.z - f.h + 4).setDepth(f.z + 0.4).setScale(130 / m.net.frame.width);
+        } else if (f.snare.kind === 'net') {
           g.lineStyle(1.5, 0xb8a880, 0.9);
           for (let i = -3; i <= 3; i++) g.lineBetween(f.x + i * 12, f.z - f.h - 120, f.x + i * 16, f.z - f.h);
           for (let j = 0; j < 5; j++) g.lineBetween(f.x - 50, f.z - f.h - 120 + j * 28, f.x + 50, f.z - f.h - 116 + j * 28);
@@ -591,8 +665,17 @@ export class WoodTrapsView {
     }
     this.lashes = this.lashes.filter((L) => L.t < 14);
     // nets in the air: weighted mesh flying flat, turning
-    for (const n of this.rig.nets) {
+    this.netImgs ??= [];
+    this.netImgs.forEach((im) => im.setVisible(false));
+    for (const [i, n] of this.rig.nets.entries()) {
       const y = n.z - n.h; const r = 30;
+      if (s.textures.exists(ART.net_fly)) {
+        // the painted net, spread and spinning a little as it flies
+        const im = this.netImgs[i] ??= s.add.image(0, 0, ART.net_fly);
+        im.setVisible(true).setPosition(n.x, y).setDepth(n.z + 1).setScale(110 / im.frame.width).setAngle(Math.sin(n.run / 9) * 12);
+        g.fillStyle(0x000000, 0.3).fillEllipse(n.x, n.z, 60, 8);
+        continue;
+      }
       g.lineStyle(1.5, 0xc8b890, 0.95).strokeEllipse(n.x, y, r * 2.4, r * 0.8);
       for (let i = 0; i < 6; i++) { const a = n.run / 14 + i * 1.047; g.lineBetween(n.x - Math.cos(a) * r * 1.2, y - Math.sin(a) * r * 0.4, n.x + Math.cos(a) * r * 1.2, y + Math.sin(a) * r * 0.4); }
       g.fillStyle(0x000000, 0.3).fillEllipse(n.x, n.z, 60, 8);
@@ -679,7 +762,14 @@ export class WoodTrapsView {
       playSfx(s, 'woodCreak', { volume: 0.8, minGapMs: 200 });
       s.time.delayedCall(Math.max(0, (tell / 60) * 1000 - 400), () => playSfx(s, 'woodCreak', { volume: 0.6, pitch: 200, minGapMs: 100 }));
     });
-    ev.on('swept', ({ fighter }) => playSfx(s, 'waterSplash', { volume: 0.7, minGapMs: 0 }));
+    // the deadfall: the wire goes, the rope screams through the pulley, the trunk comes in
+    ev.on('deadfallTrip', () => { playSfx(s, 'woodSnare', { volume: 0.9, minGapMs: 0 }); playSfx(s, 'woodCreak', { volume: 1, pitch: -300, minGapMs: 0 }); });
+    ev.on('deadfallSwing', ({ trap }) => { playSfx(s, 'heavySwing', { volume: 0.9, pitch: -1100, minGapMs: 0 }); this.crowBurst(trap.x - 200, top() + 20, 6, true); });
+    ev.on('deadfallHit', ({ fighter, dir }) => {
+      s.fx?.shake(fighter.team === 'player' ? 8 : 6, 18);
+      playSfx(s, 'woodLogs', { volume: 0.8, minGapMs: 80 });
+      for (let i = 0; i < 14; i++) s.gore?.spawn({ x: fighter.x, z: fighter.z + rand(-6, 6), h: rand(30, 90), vx: dir * rand(80, 320), vz: 0, vh: rand(80, 260), tint: 0x7a0808, scale: rand(0.4, 1), decal: i % 3 === 0, life: rand(30, 60) });
+    });
     // the convoy: the whip, the Wagonmaster knocked off his bench, the wagon brought up short
     ev.on('whipWindup', () => playSfx(s, 'woodWhip', { volume: 0.3, pitch: -500, minGapMs: 200 }));
     ev.on('whipCrack', ({ fighter, dir }) => { playSfx(s, 'woodWhip', { volume: 1, minGapMs: 0 }); this.lashes.push({ f: fighter, dir, t: 0 }); });
