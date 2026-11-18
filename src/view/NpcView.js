@@ -104,6 +104,7 @@ const STRANDED_RELIEF = 0.45; // the part of his time freed (stage/Story.js free
 const STRANDED_REACH = 230; // a hero this near (x), the stranded child leans down to him
 const WALK_STEP = 16;  // ...a frame of his own eight-frame walk (a full stride: 128 px)
 CELLS.miner = CELLS.villager;
+for (const id of ['villager-woman', 'villager-tanner', 'villager-burner']) CELLS[id] = CELLS.villager; // (the wood's captives: the villager's order)
 CELLS['miner-old'] = { stand: 0, sit: 1, wave: 2, kneel: 3, run: HOBBLE };
 CELLS.elder.run = HOBBLE; // (the barn's old man, running out: data/stageVillage.js crowd)
 const PRISONER = { kneel: 0, wave: 1, cower: 2, run: RUN, stand: 6, bound: 0 };
@@ -129,10 +130,11 @@ const PRISONERS = {
 // one look per head. Until each has a sheet of their own (ChatGPT art list, A7).
 const WOOD_LOOKS = {
   joren: [{ who: 'captive', s: 1 }],
-  tanners: [{ who: 'boy', tint: 0xdccab4, s: 1.05 }, { who: 'boy', tint: 0xc4ccd6, s: 0.94 }, { who: 'villager', tint: 0xd8c4ae, s: 0.92 }],
+  // (each head's own painted villager where there's one: ChatGPT, 2026-11-18)
+  tanners: [{ who: 'boy', tint: 0xdccab4, s: 1.05 }, { who: 'boy', tint: 0xc4ccd6, s: 0.94 }, { who: 'villager-tanner', s: 0.98 }],
   wenna: [{ who: 'mother', tint: 0xbab6b4, s: 0.9 }],
   ansel: [{ who: 'elder', tint: 0xe0d2bc, s: 1 }],
-  convoy: [{ who: 'prisoner-a', s: 1 }, { who: 'prisoner-b', tint: 0xd6ccc4, s: 0.97 }, { who: 'mother', tint: 0xcabcb0, s: 0.95 }],
+  convoy: [{ who: 'villager-burner', s: 1 }, { who: 'villager-woman', s: 0.96 }, { who: 'prisoner-a', s: 1 }, { who: 'prisoner-b', tint: 0xd6ccc4, s: 0.97 }, { who: 'mother', tint: 0xcabcb0, s: 0.95 }],
 };
 const IRON = 0x5e5e66;
 const IRON_LIT = 0x9a9aa4;

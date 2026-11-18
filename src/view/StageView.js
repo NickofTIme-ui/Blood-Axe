@@ -20,6 +20,12 @@ import { drawScorpion, listenScorpion } from './VincentView.js';
 import { SiegeAnim } from './SiegeAnim.js';
 import { PropShatter, SHATTER, LAMP_ART } from './PropShatter.js';
 import { propLight, lightProp, rimGlow, groundUnder, moveGround } from './propGround.js';
+import { SPRITES } from './levelArt.js';
+
+// the convoy's draught horses (horses() below): their size on the 'horse-pull' sheet, how
+// far ahead of the wagon's front they walk, how far up the road from its base the far one
+// is, and how much nearer the near one stands
+const HORSE = { scale: 0.42, ahead: 50, lift: 40, dz: 14 };
 
 const rand = (a, b) => a + Math.random() * (b - a);
 // a colour darkened (k < 1) or lightened
@@ -2123,15 +2129,18 @@ export class StageView {
   // throws up mud; gone round the bend once it escapes
   syncRolling() {
     for (const pr of this.stage.props) {
-      if (!pr.roll || pr.broken) continue;
+      if (!pr.roll) continue;
       const v = this.propSprites.get(pr.id);
+      if (pr.broken) { if (v) this.horses(pr, v, 'bolt'); continue; }
       if (!v?.img?.active) continue;
       if (pr.escaped) {
+        this.horses(pr, v, 'gone');
         if (!v.gone) { v.gone = true; this.scene.tweens.add({ targets: [v.img, v.shadow, v.under, ...(v.ground ?? []), v.rim].filter(Boolean), alpha: 0, duration: 900 }); }
         continue;
       }
       if (v.gone) { v.gone = false; v.under?.setAlpha(0.55); v.img.setAlpha(1); v.shadow?.setAlpha(0.35); v.ground?.forEach((g, i) => g.setAlpha(i ? 1 : 0.85)); v.rim?.setAlpha(0.4); } // (back where it started: the checkpoint)
       const moving = pr.x > (pr.roll.from ?? pr.x) && !pr.halted; // (halted: stage/WoodTraps.js)
+      this.horses(pr, v, moving ? 'haul' : pr.halted ? 'halted' : 'stand');
       const t = this.scene.time.now / 16.7;
       v.img.setPosition(pr.x, pr.z - (pr.y ?? 0) - (moving ? Math.abs(Math.sin(t * 0.25)) * 2 : 0)).setAngle(moving ? Math.sin(t * 0.13) * 0.8 : 0);
       v.shadow?.setPosition(pr.x, pr.z - (pr.y ?? 0));
@@ -2155,6 +2164,60 @@ export class StageView {
         this.scene.gore.spawn({ x: pr.x - pr.w / 2 + 10, z: pr.z + 4, h: 4, vx: -rand(20, 70), vz: 0, vh: rand(20, 60), tint: 0x3a2e22, scale: rand(0.4, 0.8), decal: false, life: 30 });
       }
     }
+  }
+
+  // The convoy's team: two draught horses in harness ahead of the wagon (painted, SPRITES
+  // 'horse-pull': 0-5 hauling, 6 standing, 7 rearing), their traces back to its front.
+  // View only. Hauling, their steps follow the ground the wagon covers; brought up short
+  // (a pine across the road), they rear, then stand blowing; wrecked, they break their
+  // traces and bolt up the road (the stampede's gallop frames), fading out.
+  horses(pr, v, mode) {
+    const S = SPRITES['horse-pull'];
+    if (!S) return;
+    const sc = this.scene;
+    if (!v.horses) {
+      if (mode === 'gone' || mode === 'bolt') return;
+      v.horses = [0, 1].map(() => sc.add.image(0, 0, S.key, 'f0').setOrigin(0.5, 1).setScale(HORSE.scale));
+      v.traces = sc.add.graphics();
+      v.horseRun = 0; v.horseX = pr.x; v.horseT = 0; v.horseMode = mode;
+    }
+    if (mode !== v.horseMode) { v.horseMode = mode; v.horseT = 0; }
+    v.horseT++;
+    const front = pr.x + pr.w * 0.5;
+    if (mode === 'gone') { v.horses.forEach((h) => h.setVisible(false)); v.traces.clear(); return; }
+    v.traces.clear();
+    if (mode === 'bolt') {
+      // traces snapped: off up the road at a flat gallop, gone in a second and a half
+      const k = v.horseT;
+      const gallop = sc.textures.exists('horse-gallop-0');
+      v.horses.forEach((h, i) => {
+        if (k > 90) { h.setVisible(false); return; }
+        const x = front + 70 + i * 26 + k * k * 0.09 + k * 2;
+        if (gallop) h.setTexture(`horse-gallop-${Math.floor(k * 0.35 + i * 3) % 6}`).setOrigin(0.5, 0.97).setScale(0.36);
+        else h.setTexture(S.key, `f${Math.floor(k / 4 + i * 2) % 6}`);
+        h.setPosition(x, pr.z - HORSE.lift + i * HORSE.dz).setDepth(pr.z - HORSE.lift + i * HORSE.dz).setFlipX(false).setAlpha(Math.max(0, 1 - k / 90));
+      });
+      return;
+    }
+    v.horseRun += Math.abs(pr.x - v.horseX); v.horseX = pr.x;
+    const y = pr.z - (pr.y ?? 0);
+    v.horses.forEach((h, i) => {
+      // (the far horse a step behind and up the road a little, the near one lower and ahead;
+      // HORSE.lift: the wagon's painted wheels stand that far up its picture)
+      const hz = y - HORSE.lift + i * HORSE.dz;
+      const hx = front + HORSE.ahead + i * 22;
+      let cell = 6;
+      if (mode === 'haul') cell = Math.floor(v.horseRun / 14 + i * 3) % 6;
+      else if (mode === 'halted') cell = v.horseT < 50 + i * 12 ? (Math.floor((v.horseT + i * 9) / 18) % 2 ? 7 : 6) : 6;
+      h.setTexture(S.key, `f${cell}`).setOrigin(0.5, 1).setScale(HORSE.scale).setVisible(true).setAlpha(1).setFlipX(false)
+        .setPosition(hx, hz).setDepth(hz).setTint(i === 0 ? 0xb8bcc4 : 0xffffff);
+      // the traces: collar to the wagon's front, sagging a little when they stand
+      const sag = mode === 'haul' ? 2 : 6;
+      const cx = hx - h.displayWidth * 0.12; const cy = hz - h.displayHeight * 0.55;
+      v.traces.lineStyle(2.5, 0x15100c, 1).beginPath().moveTo(cx, cy);
+      v.traces.lineTo((cx + front) / 2, (cy + y - 70) / 2 + sag).lineTo(front, y - 70).strokePath();
+    });
+    v.traces.setDepth(y - 1);
   }
 
   update() {

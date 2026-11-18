@@ -29,7 +29,13 @@ JOBS = {
     'deadfall.png': ['trap_deadfall'],
     'houndmaster_net.png': ['net_fly', 'net_down'],
     'ferns.png': ['fern_1', 'fern_2', 'fern_3'],
+    # round 3 (2026-11-18): more men strung up by one ankle (and a hound by a hind leg),
+    # three poses each (data/snaredArt.js); resized to SNARED_H tall
+    'snared_stalker.png': ['snared_stalker_1', 'snared_stalker_2', 'snared_stalker_3'],
+    'snared_butcher.png': ['snared_butcher_1', 'snared_butcher_2', 'snared_butcher_3'],
+    'snared_hound.png': ['snared_hound_1', 'snared_hound_2', 'snared_hound_3'],
 }
+SNARED_H = 400  # (the grunt's poses were cut to this by hand, 2026-11-16)
 
 
 def key(img):
@@ -87,7 +93,8 @@ def main(src):
         if not f.exists():
             print(f'skip {raw} (not there)'); continue
         for name, p in zip(names, split(key(Image.open(f)), len(names))):
-            if p.height > MAX: p = p.resize((round(p.width * MAX / p.height), MAX), Image.LANCZOS)
+            top = SNARED_H if name.startswith('snared_') else MAX
+            if p.height > top: p = p.resize((round(p.width * top / p.height), top), Image.LANCZOS)
             p.save(OUT / f'{name}.png', optimize=True)
             print(f'{raw} -> {name}.png {p.width}x{p.height}')
 

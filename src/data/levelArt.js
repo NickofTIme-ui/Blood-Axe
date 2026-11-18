@@ -66,7 +66,10 @@ export const LEVEL_ART = {
       // round 2 (2026-11-16): the ford's deadfall, the Houndmaster's net (flying, fallen)
       'trap_deadfall', 'net_fly', 'net_down',
       // a grunt caught in a snare, upside down by one ankle (data/snaredArt.js)
-      'snared_grunt_1', 'snared_grunt_2', 'snared_grunt_3'],
+      'snared_grunt_1', 'snared_grunt_2', 'snared_grunt_3',
+      // ...and (round 3, 2026-11-18) a stalker, a butcher and a hound by a hind leg
+      'snared_stalker_1', 'snared_stalker_2', 'snared_stalker_3', 'snared_butcher_1', 'snared_butcher_2', 'snared_butcher_3',
+      'snared_hound_1', 'snared_hound_2', 'snared_hound_3'],
     props: { wagon: { file: 'convoy_wagon.png', pair: true }, cagecart: { file: 'cage_cart.png', pair: true, texture: 'cagecart' } },
     surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, log: { px: 40 }, plank: { fit: true } },
   },
@@ -169,6 +172,12 @@ export const SPRITE_SHEETS = {
   // graded like Nicholas so they stand out from the painted street: Nick, 2026-10-16,
   // "you need to really see the npcs to interact with them")
   villager: { file: 'assets/sprites/npc/villager.png', frames: 8, height: 235, grade: NPC_GRADE },
+  // more of the wood's captives, in the villager sheet's 8 poses (view/NpcView.js WOOD_LOOKS;
+  // ChatGPT, 2026-11-18): a woodcutter's wife in a moss shawl, a tanner's apprentice, a
+  // charcoal burner
+  'villager-woman': { file: 'assets/sprites/npc/villager_woman.png', frames: 8, height: 235, grade: NPC_GRADE },
+  'villager-tanner': { file: 'assets/sprites/npc/villager_tanner.png', frames: 8, height: 240, grade: NPC_GRADE },
+  'villager-burner': { file: 'assets/sprites/npc/villager_burner.png', frames: 8, height: 232, grade: NPC_GRADE },
   mother: { file: 'assets/sprites/npc/mother.png', frames: 6, height: 235, grade: NPC_GRADE },
   boy: { file: 'assets/sprites/npc/boy.png', frames: 6, height: 170, grade: NPC_GRADE },
   // Tam, the boy trapped up on the burning roofs (view/NpcView.js drawStranded): cling, wave
@@ -238,6 +247,12 @@ export const SPRITE_SHEETS = {
   'hound-atk1': { file: 'assets/enemies/strips/hound_atk1.png', frames: 4, height: 120 },
   'hound-react': { file: 'assets/enemies/strips/hound_react.png', frames: 3, height: 120 },
   'hound-doom': { file: 'assets/enemies/strips/hound_doom.png', frames: 4, height: 120 },
+  // its jaws locked in a hero, dragging him (stage/WoodTraps.js latch): 0 the grab, 1-4
+  // braced and hauling back, worrying at him (ChatGPT, 2026-11-18). Optional
+  'hound-drag': { file: 'assets/enemies/strips/hound_drag.png', frames: 5, height: 120 },
+  // the convoy's draught horses (view/StageView.js syncRolling): 0-5 the plodding haul,
+  // 6 standing, 7 rearing (ChatGPT, 2026-11-18). Tallest pose (rearing) ~1.27x the walk
+  'horse-pull': { file: 'assets/fx/horse_pull.png', frames: 8, height: 300 },
   // the Crusher's strips: each is scaled to its tallest pose (the hammer hauled up, the
   // sparks, the dust), and the machine is painted at a different size in each, so each
   // strip has its own height that keeps the hull and wheels the walk's size (matched by eye
