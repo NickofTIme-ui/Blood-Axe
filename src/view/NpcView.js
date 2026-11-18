@@ -782,7 +782,7 @@ export class NpcView {
       if(st.opening?.active) {
         const moving=st.opening.progress<1;
         f.x=-280+360*st.opening.progress-c.i*55;
-        f.z=380+c.i*95;f.facing=1;f.vx=moving?300:0;f.vz=0;f.sprinting=moving;
+        f.z=380+c.i*95;f.facing=1;f.vx=moving?300:0;f.vz=0;f.sprinting=moving&&!st.opening.walk; // (the wood's: a walk in)
         if(f.state!==(moving?'walk':'idle'))f.fsm.change(moving?'walk':'idle');
         f.fsm.frame++;
         c.view.sprite?.setVisible(true);c.view.shadow?.setVisible(true);c.view.update();

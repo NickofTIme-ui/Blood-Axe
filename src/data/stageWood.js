@@ -59,6 +59,10 @@ export const STAGE_WOOD = {
   // the other two Oath Keepers (view/NpcView.js): with you at the start, then scouting
   // ahead; they wait at the blocked road, and leave with you after the last words
   companions: { leaveAfter: 'opening', meet: 8500, farewell: 'turn' },
+  // THE TREE LINE (stage/WoodOpening.js): the three walk in out of the dark to where the road
+  // goes in under the pines; the convoy's ruts run on ahead; its lanterns far up the road
+  openingScene: 'treeLine',
+  ruts: { x0: 60, x1: 1500, z: 400 },
 
   sections: [
     {
@@ -159,7 +163,7 @@ export const STAGE_WOOD = {
       id: 'ford', name: 'THE OLD FORD', x0: 4400, x1: 5600,
       spawn: { x: 4460, z: 440 },
       objective: 'Get Ansel across the ford',
-      hint: 'Keep them away from him: he freezes when they come close',
+      hint: 'Keep them away from him: he freezes when they come close. The shallows slow everyone, them too',
       fightAt: 4860,
       // (the second, on the far bank: a WOODSMAN with a net, and the men he pins you for)
       waves: [['stalker', 'grunt'], ['stalker:net', 'grunt', 'grunt', 'stalker']],
@@ -204,7 +208,7 @@ export const STAGE_WOOD = {
       id: 'kennels', name: 'THE KENNELS', x0: 7200, x1: 8400,
       spawn: { x: 7260, z: 440 },
       objective: 'Kill the Houndmaster',
-      hint: 'Knock a hound into an open pen and the gate slams on it. When he whistles, move! Dodge out of his chain',
+      hint: 'Knock a hound into an open pen and the gate slams on it. When he whistles, move! Dodge out of his chain. Hit him before his horn sounds',
       // the pens at the back of the clearing, under the painted kennels: hounds behind bars
       pens: [{ x: 7640, z: 270, count: 2 }, { x: 7820, z: 270, count: 2 }, { x: 8030, z: 270, count: 2 }],
       fightAt: 7560,
@@ -287,6 +291,10 @@ export const STAGE_WOOD = {
     { kind: 'block', x0: 3990, x1: 4130, z0: 282, z1: 330, top: 220 },
 
     // ---- IV THE OLD FORD: a stream with a wide log bridge (Ansel walks it)
+    // THE SHALLOWS: either side of the deep channel the stream spreads out knee-deep over its
+    // stones, the ford itself. Everyone wades through it at half pace, the men and the hounds
+    // too (and Ansel, lame), under the deadfall and the log pile (stage/Terrain.js 'wade')
+    { kind: 'wade', x0: 4980, x1: 5420, ...FULL, slow: 0.5 },
     { kind: 'pit', x0: 5160, x1: 5240, ...FULL },
     { kind: 'block', x0: 5140, x1: 5260, z0: 380, z1: 470, top: 10, mat: 'log' },
 
@@ -364,9 +372,11 @@ export const STAGE_WOOD = {
     {
       id: 'opening', on: 'start', hold: true, delay: 150,
       lines: [
-        // (the tree line: the ruts read, a howl far off in the wood, the crows going up ahead)
+        // (the tree line, stage/WoodOpening.js: the ruts read, the convoy's lanterns far up the
+        // road between the trees, a howl far off in the wood, the crows going up ahead)
         ['VEXA', 'Cart ruts. Chain marks in the mud. They came this way.'],
-        ['ORYN', 'Listen.', { sfx: 'woodHowl', volume: 0.55, pitch: -200 }],
+        ['RURIK', 'There. Lanterns, up the road. The convoy.', { convoy: true }],
+        ['ORYN', 'Listen.', { sfx: 'woodHowl', volume: 0.6, pitch: -200 }],
         ['RURIK', 'Hounds. They\'ve got our scent already.', { crows: 640 }],
         ['VEXA', 'Then we hunt them before they hunt us.'],
         ['ORYN', 'The wood crawls with them. Vexa and I take the trees.'],
@@ -392,6 +402,7 @@ export const STAGE_WOOD = {
     { id: 'pack', on: 'phase:kennels:pack', lines: [['HOUNDMASTER', 'Up, my beauties! Pull them down!']] },
     { id: 'frenzy', on: 'phase:kennels:frenzy', lines: [['HOUNDMASTER', 'Then I\'ll feed you to them by hand!']] },
     { id: 'broken', on: 'broken:kennels', lines: [['HOUNDMASTER', 'No... not the last of them. Not my dogs...']] },
+    { id: 'hmHorn', on: 'horn:kennels', lines: [['HOUNDMASTER', 'To me! Every blade in the wood, to me!']] },
     { id: 'penned', on: 'penSlam:kennels', lines: [['RURIK', 'Back in your cage, cur.']] },
     { id: 'mist', at: 3460, lines: [['RURIK', 'A lantern burning in the mist. While it\'s lit, they\'ll keep coming. Smash it.']] },
     // at the blocked road only Nicholas talks (Nick, 2026-11-05: the saved wait there quietly)

@@ -643,7 +643,9 @@ export class Story {
     const dx = tx - n.x; const dz = lead.z - n.z;
     if (Math.abs(lead.x - n.x) < NPC.follow && Math.abs(dz) < NPC.depth) { n.moving = false; return; }
     const d = Math.hypot(dx, dz) || 1;
-    const step = NPC.speed / 60;
+    // (lame, and wading through the ford's shallows: slower still. Terrain.wadeAt)
+    n.wading = !!T?.wades?.length && n.h <= 1 && T.wadeAt(n.x, n.z) < 1;
+    const step = NPC.speed / 60 * (n.wading ? T.wadeAt(n.x, n.z) : 1);
     const nx = n.x + (dx / d) * step; const nz = n.z + (dz / d) * step;
     // (he walks; he doesn't jump: never into a pit or up a ledge. Blocked, he looks along
     // the lane for the way across — a bridge, a log — and heads for that)

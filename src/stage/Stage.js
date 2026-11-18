@@ -117,6 +117,7 @@ import { LOOT } from '../data/trophies.js';
 import { Controller } from '../core/Controller.js';
 import { VillageOpening } from './VillageOpening.js';
 import { MillRescue } from './MillRescue.js';
+import { WoodOpening } from './WoodOpening.js';
 import { WoodTraps } from './WoodTraps.js';
 import { KingHakon } from './KingHakon.js';
 import { parSeconds } from '../progression/LevelRank.js';
@@ -376,6 +377,8 @@ export class Stage {
     if (this.fightOn) this.wakeWaiting();
     this.world.events.emit('sectionStart', { index: i, section: sec });
     if(i===0 && teleport && this.data.openingFormation) this.opening = new VillageOpening(this);
+    // (Gallows Wood: the walk in to the tree line, stage/WoodOpening.js)
+    else if (i === 0 && teleport && this.data.openingScene === 'treeLine' && this.story) this.opening = new WoodOpening(this);
     // (picked up past the start: the villager Varek struck down at the opening lies where he fell)
     else if (this.data.openingFormation && !this.opening) { const n = this.story?.npc('captive'); if (n) n.state = 'dead'; }
   }

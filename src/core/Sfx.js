@@ -126,6 +126,8 @@ export const SFX = {
   woodNet: 'assets/audio/sfx/wood-net.wav',         // a weighted net thrown
   woodWhip: 'assets/audio/sfx/wood-whip.wav',       // the Wagonmaster's whip
   woodRain: 'assets/audio/sfx/wood-rain.wav',       // the wood's bed of rain and wind (looped)
+  woodCrows: 'assets/audio/sfx/wood-crows.wav',     // crows going up out of the trees: caws, wings
+  woodWade: 'assets/audio/sfx/wood-wade.wav',       // a step through the ford's shallows
 };
 
 const lastPlayed = {};

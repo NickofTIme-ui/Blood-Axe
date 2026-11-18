@@ -15,6 +15,8 @@
 //   crumble { ..., fall: 32, back: 240 }  a rotten plank: stood on, it shakes for `fall`
 //           frames, drops, and is back `back` frames later
 //   pit     { x0, x1, z0, z1 }   no floor: whoever goes in falls out of the fight
+//   wade    { x0, x1, z0, z1, slow }  shallow water over the floor (Gallows Wood's ford): it
+//           is still floor, but whoever walks in it on foot wades, at `slow` of his pace
 //
 // A man can step up STEP px without jumping. Anything taller is a wall to whoever is
 // below its top: he stops against it (one axis at a time, so he slides along it).
@@ -33,6 +35,7 @@ export class Terrain {
     this.world = world;
     this.blocks = [];
     this.pits = [];
+    this.wades = [];
     let id = 1;
     // a piece laid to the lane's old back (floorTop) or front (floorBottom) edge reaches the
     // lane's real edges, so nobody walks round behind a ledge or past the end of a pit
@@ -43,6 +46,7 @@ export class Terrain {
     for (const raw of defs) {
       const d = edge(raw);
       if (d.kind === 'pit') { this.pits.push({ id: id++, ...d }); continue; }
+      if (d.kind === 'wade') { this.wades.push({ id: id++, slow: 0.5, ...d }); continue; }
       const b = { id: id++, kind: d.kind ?? 'block', ...d, base: { x0: d.x0, x1: d.x1, top: d.top }, solid: true, dx: 0, dtop: 0 };
       if (b.kind === 'crumble') { b.fall = d.fall ?? 32; b.back = d.back ?? 240; b.shake = 0; b.down = 0; }
       this.blocks.push(b);
@@ -60,6 +64,13 @@ export class Terrain {
     let best = null;
     for (const b of this.blocks) if (b.solid && this.inside(b, x, z) && (!best || b.top > best.top)) best = b;
     return best;
+  }
+
+  // Shallow water under (x, z) on the floor itself (not on a log or a stone over it): how much
+  // of his pace a man keeps wading through it (1: dry ground).
+  wadeAt(x, z) {
+    for (const w of this.wades) if (x > w.x0 && x < w.x1 && z >= w.z0 && z <= w.z1 && !this.blockAt(x, z) && !this.inPit(x, z)) return w.slow;
+    return 1;
   }
 
   inPit(x, z) { return this.pits.some((p) => x > p.x0 && x < p.x1 && z >= p.z0 && z <= p.z1); }

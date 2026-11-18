@@ -164,6 +164,7 @@ export class TerrainView {
     applyAtmosphere(scene, data.theme, this.width); // (depth: the backdrop recedes, the lane stays crisp)
     this.drawFloor();
     this.drawVeils(data.veils ?? []);
+    this.drawWades();
     this.drawPits();
     this.blockGfx = new Map();
     for (const b of this.terrain?.blocks ?? []) this.blockGfx.set(b.id, this.makeBlock(b));
@@ -292,6 +293,65 @@ export class TerrainView {
       if (ruled) g.lineBetween(p.x0, p.z0, p.x0, p.z1 + 40);
       if (ruled) g.lineBetween(p.x1, p.z0, p.x1, p.z1 + 40);
       if (ruled && p.z0 > SETTINGS.world.floorTop) g.lineBetween(p.x0, p.z0, p.x1, p.z0);
+    }
+  }
+
+  // THE FORD'S SHALLOWS (terrain 'wade'): the stream spread out wide and shallow over a bed of
+  // stones, knee-deep, so it reads as water you can walk into (Nick, 2026-11-16: no more
+  // invisible river). The painted water, paler and browner than the deep channel and half
+  // see-through, the stones of the bed under it, ripples running with it. Under the channel.
+  drawWades() {
+    const s = this.scene;
+    for (const p of this.terrain?.wades ?? []) {
+      const top = (p.z0 <= SETTINGS.world.floorTop ? p.z0 - 56 : p.z0 - 10);
+      const bottom = SETTINGS.height + 120;
+      const flare = (p.x1 - p.x0) * 0.16;
+      const d = DEPTH.floor + 3.6;
+      const shape = streamRibbon({ ...p, x0: p.x0, x1: p.x1 }, top, bottom, flare);
+      const mask = () => s.make.graphics({ add: false }).fillStyle(0xffffff, 1).fillPoints(shape, true).createGeometryMask();
+      // (wet mud round it, then the stones of the bed showing through)
+      const g = s.add.graphics().setDepth(d);
+      g.fillStyle(0x05080a, 0.55).fillPoints(shape.map((q) => ({ x: q.x + Math.sign(q.x - (p.x0 + p.x1) / 2) * 14, y: q.y })), true);
+      g.fillStyle(0x1c2428, 1).fillPoints(shape, true);
+      let k = Math.round(p.x0) % 991 + 5;
+      const r = () => { k = (k * 9301 + 49297) % 233280; return k / 233280; };
+      const bed = s.add.graphics().setDepth(d + 0.01);
+      for (let i = 0; i < 120; i++) {
+        const y = top + 30 + r() * (bottom - top - 30); const t = (y - top) / (bottom - top); const sc = 0.5 + t * 0.9;
+        const x = p.x0 - flare * t + r() * (p.x1 - p.x0 + flare * 2 * t);
+        const rr = (4 + r() * 9) * sc;
+        bed.fillStyle(0x2e3634, 1).fillEllipse(x, y, rr * 2.2, rr * 1.1);
+        bed.fillStyle(0x4a5450, 0.8).fillEllipse(x - rr * 0.2, y - rr * 0.25, rr * 1.3, rr * 0.5);
+      }
+      bed.setMask(mask());
+      if (s.textures.exists('water-src')) {
+        const ws = s.add.tileSprite(p.x0 - flare, top, p.x1 - p.x0 + flare * 2, bottom - top, 'water-src').setOrigin(0).setTileScale(0.32)
+          .setDepth(d + 0.02).setTint(0x9aa898).setAlpha(0.55);
+        ws.setMask(mask());
+        s.tweens.add({ targets: ws, tilePositionY: -1024, duration: 16000, repeat: -1 });
+        s.tweens.add({ targets: ws, tilePositionX: { from: 0, to: 12 }, duration: 3200, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+      } else {
+        g.fillStyle(0x4a6070, 0.45).fillPoints(shape, true);
+      }
+      // ripples: pale rings opening and fading, all over it, running with the water
+      const rip = s.add.graphics().setDepth(d + 0.03);
+      rip.setMask(mask());
+      const rings = Array.from({ length: 26 }, (_, i) => ({ x: p.x0 - flare + r() * (p.x1 - p.x0 + flare * 2), y: top + 40 + r() * (bottom - top - 40), t: (i * 37) % 90 }));
+      const tick = () => {
+        rip.clear();
+        for (const q of rings) {
+          q.t++; q.y += 0.25;
+          if (q.t > 90) { q.t = 0; q.x = p.x0 - flare + r() * (p.x1 - p.x0 + flare * 2); q.y = top + 40 + r() * (bottom - top - 60); }
+          const u = q.t / 90; const sc = 0.5 + ((q.y - top) / (bottom - top)) * 0.9;
+          rip.lineStyle(1.2, 0xd0dce0, 0.35 * (1 - u)).strokeEllipse(q.x, q.y, (6 + u * 26) * sc, (2 + u * 8) * sc);
+        }
+      };
+      s.events.on('update', tick);
+      s.events.once('shutdown', () => s.events.off('update', tick));
+      // the lip where the water meets the mud: a broken pale line
+      const lip = s.add.graphics().setDepth(d + 0.04);
+      lip.lineStyle(1.5, 0xc8d4d8, 0.35);
+      for (let i = 0; i < shape.length - 1; i += 2) if (r() < 0.7) lip.lineBetween(shape[i].x, shape[i].y, shape[i + 1].x, shape[i + 1].y);
     }
   }
 

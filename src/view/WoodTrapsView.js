@@ -37,6 +37,8 @@ export class WoodTrapsView {
     this.lashes = []; // the Wagonmaster's whip, cracking
     this.netG = scene.add.graphics().setDepth(DEPTH.floor + 50);
     this.makeCrowTexture();
+    if (stage.data.ruts) this.drawRuts(stage.data.ruts);
+    this.convoy = null; // (the opening: the convoy's lanterns going away up the road)
     for (const pr of stage.props) {
       if (pr.kind === 'pine') this.pines.set(pr.id, this.makePine(pr));
       if (pr.kind === 'logpile') this.piles.set(pr.id, this.makePile(pr));
@@ -566,7 +568,7 @@ export class WoodTrapsView {
     const g = this.netG.clear();
     for (const f of this.scene.world.fighters) {
       let m = this.marks.get(f.id);
-      const want = f.alive && (f.horn && !f.horn.done || f.snare || f.chained || f.latch || f.packTell > 0 || f.netSpin > 0 || f.drive?.on || f.order && f.order.t < f.order.wait);
+      const want = f.alive && (f.horn && !f.horn.done || f.bossHorn || f.snare || f.chained || f.latch || f.packTell > 0 || f.netSpin > 0 || f.drive?.on || f.order && f.order.t < f.order.wait);
       if (m?.net && f.snare?.kind !== 'net') m.net.setVisible(false);
       if (m?.coil && !(f.alive && f.snare?.kind === 'snare' && !this.scene.views?.get(f.id)?.hangAnkle?.painted)) m.coil.setVisible(false);
       if (!want) { if (m) { m.text.setVisible(false); } continue; }
@@ -647,10 +649,11 @@ export class WoodTrapsView {
         }
         continue;
       }
-      if (f.horn) {
+      if (f.horn || f.bossHorn) {
         // the hornblower: his name over him, and while he blows, how near it is to sounding
-        const blowing = f.horn.state === 'blow';
-        m.text.setText(blowing ? 'STOP THE HORN!' : 'HORNBLOWER').setColor(blowing ? '#ff9a70' : '#ffd890');
+        // (the Houndmaster's own horn: only the call to stop it, once it's at his lips)
+        const blowing = (f.horn ?? f.bossHorn).state === 'blow';
+        m.text.setText(blowing ? (f.bossHorn ? 'STOP HIS HORN!' : 'STOP THE HORN!') : f.bossHorn ? '' : 'HORNBLOWER').setColor(blowing ? '#ff9a70' : '#ffd890');
         // the horn itself, raised to his lips while he blows
         const hx = f.x + f.facing * 18; const hy = f.z - f.h - (f.stats.body?.h ?? 120) * 0.82;
         g.fillStyle(0xd8c8a0, 1).fillTriangle(hx, hy - 4, hx, hy + 4, hx + f.facing * (blowing ? 34 : 20), hy - (blowing ? 14 : 0));
@@ -693,6 +696,95 @@ export class WoodTrapsView {
     this.netG.setDepth(DEPTH.floor + 900);
   }
 
+  // ------------------------------------------------------------ the tree line (the opening)
+
+  // The convoy's trail where the road goes in under the pines (data `ruts`): two deep wheel
+  // ruts full of rainwater, the drag of the chains between them, and bare feet beside them,
+  // the prisoners walked behind the carts. It stops at the streams (the carts forded them).
+  drawRuts(R) {
+    const s = this.scene; const T = this.stage.terrain;
+    const g = s.add.graphics().setDepth(DEPTH.floor + 3.5);
+    let k = 31; const r = () => { k = (k * 9301 + 49297) % 233280; return k / 233280; };
+    const wet = (x, z) => T?.inPit(x, z) || T?.blockAt(x, z);
+    for (const [dz, w] of [[-22, 9], [22, 11]]) {
+      for (let x = R.x0; x < R.x1; x += 6) {
+        const z = R.z + dz + Math.sin(x / 140) * 6 + Math.sin(x / 37) * 1.5;
+        if (wet(x, z)) continue;
+        g.fillStyle(0x0a0806, 0.55).fillEllipse(x, z, 9, w); // (the rut cut in the mud)
+        g.fillStyle(0x3a2c1e, 0.35).fillEllipse(x, z - w * 0.45, 8, 2); // (its far lip, turned up)
+        if (r() < 0.05) {
+          const l = 30 + r() * 60; // rainwater lying in it, the moon in it
+          g.fillStyle(0x56687a, 0.55).fillEllipse(x + l / 2, z, l, w * 0.55);
+          g.fillStyle(0xb8c8d4, 0.35).fillEllipse(x + l / 2 - 4, z - 1, l * 0.4, 1.5);
+        }
+      }
+    }
+    // the chains dragged between: a broken, wavering scrape
+    g.lineStyle(2, 0x0a0806, 0.5);
+    for (let x = R.x0; x < R.x1; x += 14) {
+      const z = R.z + Math.sin(x / 140) * 6 + Math.sin(x / 23) * 4;
+      if (!wet(x, z) && r() < 0.8) g.lineBetween(x, z, x + 10, R.z + Math.sin((x + 10) / 140) * 6 + Math.sin((x + 10) / 23) * 4);
+    }
+    // bare feet in the mud beside the ruts (the prisoners, walked behind the carts)
+    for (let x = R.x0 + 20; x < R.x1; x += 26 + r() * 30) {
+      const z = R.z + (r() < 0.5 ? -46 : 46) + (r() - 0.5) * 16;
+      if (wet(x, z)) continue;
+      g.fillStyle(0x0c0a08, 0.45).fillEllipse(x, z, 9, 4).fillEllipse(x + 5, z - 1, 3, 2);
+    }
+  }
+
+  // Far up the road, between the trunks at the back: the convoy's lanterns swinging on their
+  // poles, going away into the wood, the black shapes of the carts under them; then gone.
+  drawConvoy() {
+    const s = this.scene; const C = this.convoy;
+    C.t++;
+    this.convoyG ??= s.add.graphics().setDepth(DEPTH.floor - 0.95);
+    const g = this.convoyG.clear();
+    const life = 520;
+    if (C.t > life) { g.destroy(); this.convoyG = null; this.convoy = null; return; }
+    const a = Math.min(1, C.t / 50) * Math.min(1, (life - C.t) / 140);
+    const y = SETTINGS.world.floorTop - 62;
+    for (let i = 0; i < 3; i++) {
+      const x = C.x + i * 70 + C.t * 0.35 + Math.sin(C.t / 22 + i) * 2;
+      const ly = y - 34 + Math.sin(C.t / 9 + i * 2) * 2; // (the lantern swinging on its pole)
+      g.fillStyle(0x020304, 0.55 * a).fillRect(x - 24, y - 16, 48, 18); // the cart
+      g.fillStyle(0x020304, 0.55 * a).fillCircle(x - 14, y + 3, 6).fillCircle(x + 14, y + 3, 6);
+      g.lineStyle(1.5, 0x020304, 0.6 * a).lineBetween(x + 18, y - 16, x + 18, ly);
+      g.fillStyle(0xffa040, 0.08 * a).fillCircle(x + 18, ly, 26);
+      g.fillStyle(0xffb050, 0.22 * a).fillCircle(x + 18, ly, 10);
+      g.fillStyle(0xffe0a0, 0.95 * a).fillCircle(x + 18, ly, 2.6);
+    }
+  }
+
+  // ------------------------------------------------------------ the ford's shallows
+
+  // Anyone knee-deep in the shallows (Terrain.wadeAt): a ring of water round his shins, and
+  // while he slogs on, spray kicked up at each step and the slosh of it
+  drawWading() {
+    const s = this.scene; const T = this.stage.terrain;
+    this.wadeG ??= s.add.graphics().setDepth(DEPTH.floor + 40);
+    const g = this.wadeG.clear();
+    const now = s.time.now;
+    const feet = [
+      ...this.scene.world.fighters.filter((f) => f.alive && f.grounded && f.h - (f.floor ?? 0) < 2 && (f.floor ?? 0) <= 0).map((f) => ({ id: f.id, x: f.x, z: f.z, moving: Math.abs(f.vx) + Math.abs(f.vz) > 20, w: 34 * (f.stats.size ?? 1) })),
+      ...(this.stage.story?.npcs ?? []).filter((n) => n.wading && n.moving !== false).map((n) => ({ id: `n${n.id}`, x: n.x, z: n.z, moving: true, w: 30 })),
+    ];
+    this.wadeStep ??= new Map();
+    for (const f of feet) {
+      if (T.wadeAt(f.x, f.z) >= 1) { this.wadeStep.delete(f.id); continue; }
+      const bob = Math.sin(now / 140 + f.x) * 1.5;
+      g.fillStyle(0x9ab0b8, 0.22).fillEllipse(f.x, f.z - 3, f.w * 1.5 + bob, 10);
+      g.lineStyle(1.5, 0xe0eaec, 0.5).strokeEllipse(f.x, f.z - 3, f.w * 1.3 + bob, 8);
+      if (!f.moving) continue;
+      const k = (this.wadeStep.get(f.id) ?? 0) + 1;
+      this.wadeStep.set(f.id, k);
+      if (k % 10 === 1) {
+        for (let i = 0; i < 4; i++) s.gore?.spawn({ x: f.x + rand(-14, 14), z: f.z + rand(-4, 4), h: rand(2, 10), vx: rand(-60, 60), vz: rand(-10, 10), vh: rand(90, 170), tint: 0xb8ccd4, scale: rand(0.25, 0.5), decal: false, life: rand(16, 26) });
+      }
+      if (k % 20 === 1) playSfx(s, 'woodWade', { volume: 0.45, spread: 160, minGapMs: 90 });
+    }
+  }
+
   // ------------------------------------------------------------ crows
 
   makeCrowTexture() {
@@ -719,6 +811,8 @@ export class WoodTrapsView {
   // (silent: Nick, 2026-11-15, the caw was a random squawk)
   crowBurst(x, y, n = 9) {
     const s = this.scene;
+    // their caws and the clatter of wings going up (recorded: assets/audio/sfx/wood-crows.wav)
+    playSfx(s, 'woodCrows', { volume: Math.min(1, 0.45 + n * 0.05), spread: 120, minGapMs: 400 });
     for (let i = 0; i < n; i++) {
       const img = s.add.image(x + rand(-70, 70), y + rand(-10, 30), 'wood-crow-0').setDepth(DEPTH.floor + 800).setScale(rand(0.7, 1.15));
       const dir = Math.random() < 0.5 ? -1 : 1;
@@ -803,6 +897,7 @@ export class WoodTrapsView {
     ev.on('storyCue', ({ cue }) => {
       if (cue?.sfx) playSfx(s, cue.sfx, { volume: cue.volume ?? 0.8, pitch: cue.pitch ?? 0, minGapMs: 0 });
       if (cue?.crows != null) this.crowBurst(cue.crows, top() + 30, 10);
+      if (cue?.convoy) this.convoy = { t: 0, x: (s.cameras.main.scrollX ?? 0) + SETTINGS.width * 0.62 };
     });
     ev.on('bossPhase', ({ phase }) => { if (phase.pens?.length && phase.id === 'pack') playSfx(s, 'woodHorn', { volume: 0.9, minGapMs: 0 }); });
     ev.on('fightStart', ({ section }) => { if (section?.howl) playSfx(s, 'woodHowl', { volume: 0.9, minGapMs: 0 }); });
@@ -819,6 +914,8 @@ export class WoodTrapsView {
     if (this.rig.mists.length) { this.drawMist(); this.drawSignals(); }
     if (this.pileLabels.length) this.drawPileLabels();
     this.syncCrows(dt);
+    if (this.stage.terrain?.wades?.length) this.drawWading();
+    if (this.convoy) this.drawConvoy();
     // as you come up to the hanging tree, its crows go up
     const tree = this.stage.data.gallows;
     if (tree && !this.treeCrows && this.scene.players?.some((p) => p.x > tree.x - 640)) {

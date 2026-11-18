@@ -69,6 +69,14 @@ export function canJump(f) {
 
 // How much faster than a walk he's moving (1 unless sprinting: stats.sprint.speed).
 export const sprintMult = (f) => (f.sprinting && f.stats.sprint ? f.stats.sprint.speed : 1);
+// How much of his pace he keeps on the ground he's on (shallow water: data terrain 'wade').
+// Sets f.wading for the view's splashes. On a log or a stone over the water he walks dry.
+export const wadeMult = (f) => {
+  const T = f.world?.terrain;
+  const k = T?.wades?.length && f.grounded && f.h - (f.floor ?? 0) < 2 && (f.floor ?? 0) <= 0 ? T.wadeAt(f.x, f.z) : 1;
+  f.wading = k < 1;
+  return k;
+};
 
 export function startJump(f, isAirJump = false) {
   const c = f.controller;
@@ -470,7 +478,8 @@ export const FIGHTER_STATES = {
       f.sprintArmed = false; // (moving: an armed sprint has been used)
       // (walkPace: a hero who STRUTS on foot, slower than his walkSpeed; his sprint, his
       // jumps and his air speed still use the full walkSpeed, so no gap gets harder)
-      const k = f.sprinting ? sprintMult(f) : sprintMult(f) * (f.stats.walkPace ?? 1);
+      // (WADING: knee-deep in the ford's shallows he slogs, sprint or not: Terrain.wadeAt)
+      const k = (f.sprinting ? sprintMult(f) : sprintMult(f) * (f.stats.walkPace ?? 1)) * wadeMult(f);
       f.vx = c.moveX * f.stats.walkSpeed * k;
       f.vz = c.moveZ * f.stats.depthSpeed * k;
       faceInput(f);
@@ -878,8 +887,9 @@ export const FIGHTER_STATES = {
       let dz = c.moveZ;
       if (!dx && !dz) dx = f.facing; // no direction held: roll forward
       const len = Math.hypot(dx, dz);
-      f.vx = (dx / len) * d.speed;
-      f.vz = (dz / len) * d.speed * 0.75;
+      const w = 0.4 + 0.6 * wadeMult(f); // (a roll through the shallows: a short, heavy one)
+      f.vx = (dx / len) * d.speed * w;
+      f.vz = (dz / len) * d.speed * 0.75 * w;
       // which roll animation: up the screen (away), down (toward us) or sideways
       f.dodgeDir = Math.abs(dz) > Math.abs(dx) * 1.2 ? (dz < 0 ? 'up' : 'down') : 'side';
       if (f.dodgeDir === 'side' && dx) f.facing = Math.sign(dx);

@@ -3399,7 +3399,9 @@ test('wood: an escort follows the hero, freezes and loses his nerve with enemies
     const x0 = a.x;
     run(30);
     assert(a.cower && a.x === x0 && a.nerve < NPC.nerve, 'he freezes and his nerve goes');
-    run(Math.ceil(NPC.nerve / NPC.fear));
+    // (the man kept standing over him: the wave's others wade the shallows slowly now, and
+    // shoving past they could jostle him out of reach)
+    run(Math.ceil(NPC.nerve / NPC.fear), () => { if (foe.alive) { foe.x = a.x + 60; foe.z = a.z; } });
     assert(a.state === 'lost', `lost (${a.state}, nerve ${a.nerve})`);
   }
 });
@@ -3630,6 +3632,65 @@ test("kennels: the Houndmaster's chain drags a hero in; a dodge breaks it", () =
   assert(!p.chained, 'a dodge breaks it');
 });
 
+test("kennels: from half health the Houndmaster backs off and blows his horn; struck, it breaks off; sounded, his men come", () => {
+  const { world, p, st, run } = woodSetup(WOOD_SEC('kennels'), { x: 7700, z: 440 });
+  const keep = () => { p.health = p.stats.maxHealth; p.awe = 0; };
+  run(700, keep);
+  const b = st.boss;
+  b.health = b.stats.maxHealth * 0.45; // (into his net phase)
+  run(2, keep);
+  const clear = () => { for (const f of world.fighters) if (f.team === 'enemy' && f !== b) { f.health = 0; f.removeMe = true; } };
+  let raised = 0; let sounded = 0; let broken = 0;
+  world.events.on('hornRaised', (e) => { if (e.boss) raised++; });
+  world.events.on('hornSounded', (e) => { if (e.boss) sounded++; });
+  world.events.on('hornBroken', (e) => { if (e.fighter === b) broken++; });
+  // (the hero stands off; nobody touches him: he gets his horn up)
+  for (let i = 0; i < 900 && !(b.bossHorn?.state === 'blow'); i++) run(1, () => { keep(); clear(); p.x = b.x - 260; p.z = b.z; });
+  assert(raised === 1 && b.bossHorn?.state === 'blow', `the horn to his lips (${raised}, ${b.bossHorn?.state})`);
+  // struck while he blows: broken off
+  b.health -= 5;
+  run(2, () => { keep(); clear(); });
+  assert(broken === 1 && !b.bossHorn, 'struck, the call is broken off');
+  // the next time, let it sound: more men come
+  for (let i = 0; i < 2400 && !sounded; i++) run(1, () => { keep(); if (!sounded) clear(); p.x = b.x - 260; p.z = b.z; });
+  assert(sounded === 1, `it sounds (${sounded})`);
+  const men = world.fighters.filter((f) => f.team === 'enemy' && f.alive && f !== b && f.stats.id !== 'hound').length;
+  assert(men >= 2, `his men come running (${men})`);
+  assert(st.story.beats.find((x) => x.id === 'hmHorn').fired, 'he calls for them');
+});
+
+test('wood: the ford\'s shallows slow everyone wading them, the hero, his foes and Ansel; on the log over the channel he walks dry', () => {
+  const { world, p, st, run } = woodSetup(WOOD_SEC('ford'), { x: 4700, z: 330, hold: { right: true } });
+  const w = st.terrain.wades[0];
+  assert(w && w.x0 < 5160 && w.x1 > 5240, 'shallows either side of the deep channel');
+  killFoes(world);
+  run(30, () => killFoes(world));
+  const dry = p.vx;
+  p.x = w.x0 + 30; p.z = 330;
+  run(10, () => killFoes(world));
+  assert(p.wading && p.vx > 0 && p.vx < dry * 0.6, `wading: slower (${Math.round(p.vx)} vs ${Math.round(dry)})`);
+  assert(st.terrain.wadeAt(5200, 420) === 1, 'on the log bridge over the channel: dry');
+  const e = woodFoe(world, st, 'grunt', w.x0 + 60, 470);
+  assert(st.terrain.wadeAt(e.x, e.z) < 1, 'a foe in it wades too');
+});
+
+test('wood: the opening walks the three in to the tree line, plays its words with the convoy\'s lanterns, then lets them go', () => {
+  const world = new World({ seed: 11 });
+  const c = new Scripted({}, {});
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 200, z: 440, controller: c }));
+  const st = new Stage(world, STAGE_WOOD);
+  st.start(p, { section: 0 });
+  let convoy = 0; world.events.on('storyCue', ({ cue }) => { if (cue?.convoy) convoy++; });
+  assert(st.opening?.active && p.x < 0, `they start out of sight on the left (${Math.round(p.x)})`);
+  const run = (n) => { for (let i = 0; i < n; i++) { world.tick(); st.update(); } };
+  run(60);
+  assert(p.x > -170 && p.x < 150 && p.state === 'walk', 'walking in');
+  for (let i = 0; i < 60 * 60 && st.opening.active; i++) { if (i % 90 === 0) c.script = { [c.t + 1]: ['padRight'] }; run(1); }
+  assert(!st.opening.active && Math.abs(p.x - 150) < 2, `let go at the tree line (${Math.round(p.x)})`);
+  assert(convoy === 1 && st.story.done.has('opening'), 'the convoy seen, the words done');
+  assert(!st.fightOn, 'the fight waits up the road (fightAt)');
+});
+
 test('kennels: his last hound dead, the Houndmaster breaks: slower, and his last words change', () => {
   const { world, p, st, run } = woodSetup(WOOD_SEC('kennels'), { x: 7700, z: 440 });
   run(700, () => { p.health = p.stats.maxHealth; p.awe = 0; });
@@ -3832,6 +3893,7 @@ test('campaign: no section\'s fight is held open by a man stuck off-screen (the 
       let f = 0;
       for (; f < 60 * 120 && st.phase === 'fight'; f++) {
         if (st.story) { st.story.current = null; st.story.queue = []; }
+        if (f === 0 && st.data.openingScene) st.opening?.cancel(); // (the wood's walk in to the tree line, played)
         if (f === 1 && sec.fightAt != null) { p.x = Math.max(p.x, sec.fightAt + 5); if (st.terrain) p.floor = p.h = Math.max(0, st.terrain.groundAt(p.x, p.z)); }
         if (f === 1 && sec.fightAfter) st.story?.done.add(sec.fightAfter); // (the scene it waits for, played)
         if (f === 1 && sec.needs) for (const pr of st.props) if (pr.tag === sec.needs) st.breakProp(pr, 1); // (what the hero must smash, smashed)

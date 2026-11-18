@@ -59,6 +59,11 @@ export const TRAPS = {
   // the Houndmaster's chain whip (from his pack phase): wound back (the tell), cracked out, and
   // it drags the hero in to him and his dogs; a dodge (or any button, mashed) breaks it
   chain: { every: [240, 360], windup: 38, reach: [90, 300], depth: 40, damage: 6, pull: 8, hold: 34, mash: 3 },
+  // the Houndmaster's own horn (from his net phase): he backs off to the back of the yard and
+  // blows it, the bar over him filling (the tell). Strike him and it's broken off; let it
+  // sound and the men in `calls` come running from both ends of the road. `max` calls a fight,
+  // `every` frames between tries, and not while `foes` or more are already up
+  bossHorn: { every: [420, 600], first: 90, back: 120, blow: 210, max: 2, foes: 5, calls: [['grunt', 'stalker'], ['stalker', 'grunt', 'butcher']] },
   // his last hound dead: the fight goes out of him (slower, open, a different last word)
   broken: { speed: 0.72, damage: 0.8, ai: { attackCooldown: [44, 84], comboChance: 0.25, blockChance: 0.05 } },
   // a loose pack (two hounds or more on one hero): they circle him at a distance and go in one
@@ -580,6 +585,8 @@ export class WoodTraps {
     if (!b.alive) return false;
     K.t++;
     this.checkBroken(b);
+    const horn = this.bossHornScript(b, brain, target);
+    if (horn != null) return horn;
     if (this.chainScript(b, brain, target)) return true;
     if (K.t >= K.next && ['idle', 'walk'].includes(b.state)) {
       const pack = this.world.fighters.filter((f) => f.alive && f.stats.id === 'hound' && f.penned == null && !f.order);
@@ -621,6 +628,64 @@ export class WoodTraps {
         return true;
       }
     }
+    return false;
+  }
+
+  // THE HOUNDMASTER'S HORN (from his net phase on): off to the back of the yard, away from the
+  // hero, and the horn to his lips. Struck, it's broken off (he tries again later); sounded,
+  // more of his men come running from both ends of the road. Returns null when he's not at it.
+  bossHornScript(b, brain, target) {
+    const K = b.kennel; const T = TRAPS.bossHorn;
+    if (K.broken || !(this.stage.bossInPhase?.('net') || this.stage.bossInPhase?.('frenzy'))) { if (K.horn) { K.horn = null; b.hornT = 0; b.bossHorn = null; } return null; }
+    K.hornCalls ??= 0;
+    if (K.hornCalls >= T.max) return null;
+    K.hornAt = (K.hornAt ?? T.every[0] - T.first) + 1;
+    const H = K.horn;
+    if (!H) {
+      if (K.hornAt < T.every[0] || K.windup > 0 || K.chain > 0 || !['idle', 'walk'].includes(b.state)) return null;
+      if (this.stage.livingFoes().length >= T.foes) return null;
+      K.horn = { state: 'back', t: 0, hp: b.health };
+      b.bossHorn = K.horn;
+      return null;
+    }
+    H.t++;
+    if (b.health < H.hp) { // struck: the call is broken off
+      if (H.state === 'blow') this.world.events.emit('hornBroken', { fighter: b });
+      K.horn = null; b.bossHorn = null; b.hornT = 0;
+      K.hornAt = T.every[0] - (T.every[1] - T.every[0]); // (a while before he tries again)
+      return null;
+    }
+    if (!['idle', 'walk'].includes(b.state)) return null;
+    const B = this.world.bounds;
+    if (H.state === 'back') {
+      // to the back of the yard, on the far side of him from the hero
+      const side = Math.sign(b.x - target.x) || 1;
+      H.post ??= { x: Math.max(B.minX + 40, Math.min(B.maxX - 40, b.x + side * 140)), z: B.minZ + 20 };
+      const dx = H.post.x - b.x; const dz = H.post.z - b.z;
+      brain.moveX = Math.abs(dx) > 10 ? Math.sign(dx) : 0;
+      brain.moveZ = Math.abs(dz) > 8 ? Math.sign(dz) : 0;
+      brain.facingHint = brain.moveX || Math.sign(target.x - b.x) || b.facing;
+      if ((!brain.moveX && !brain.moveZ) || H.t > T.back) {
+        H.state = 'blow'; H.t = 0;
+        this.world.events.emit('hornRaised', { fighter: b, boss: true });
+        this.stage.story?.trigger(`horn:${this.stage.section?.id}`);
+      }
+      return true;
+    }
+    // blowing: the bar fills; he holds his ground
+    brain.facingHint = Math.sign(target.x - b.x) || b.facing;
+    b.hornT = H.t / T.blow;
+    if (H.t < T.blow) return true;
+    const calls = T.calls[Math.min(K.hornCalls, T.calls.length - 1)];
+    K.hornCalls++; K.horn = null; b.bossHorn = null; b.hornT = 0;
+    K.hornAt = -((this.world.frame * 11) % (T.every[1] - T.every[0]));
+    this.world.events.emit('hornSounded', { fighter: b, boss: true });
+    const heroes = this.heroes;
+    calls.forEach((type, k) => {
+      const side = k % 2 ? -1 : 1;
+      const e = createEnemy(this.world, type, offscreenX(this.world, heroes, side, k >> 1), B.minZ + 30 + ((k * 97) % Math.max(1, B.maxZ - B.minZ - 60)), { entering: true });
+      this.stage.setOnGround(e);
+    });
     return false;
   }
 
