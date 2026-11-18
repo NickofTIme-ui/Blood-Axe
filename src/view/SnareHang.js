@@ -66,7 +66,7 @@ export function hangSprite(view, s, f, bodyH = null) {
     s.setOrigin(P.ax, P.ay);
     // (his length from the knot to his fingertips: a man's painted height, a bit more with
     // the leg stretched straight; hung high enough to clear the mud by HANG.clear)
-    const reach = h * HANG.paintedReach;
+    const reach = h * (P.reach ?? HANG.paintedReach);
     const sc = reach / P.len;
     s.setScale(sc * face, sc);
     s.angle = deg;

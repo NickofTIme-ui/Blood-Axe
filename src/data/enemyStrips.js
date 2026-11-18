@@ -130,6 +130,11 @@ export const ENEMY_STRIPS = {
   // docs/boss-look-art-prompts.md
   orsk: bossSet('orsk'),
   twin: bossSet('twin'),
+  // Gallows Wood (ChatGPT, 2026-11-18, docs/campaign/level2-art-round3.md): the convoy's
+  // Wagonmaster ('butcher:driver', the Butcher's moves: a bullwhip for the cleaver, a
+  // cudgel, the whip's lash for the hook) and the Houndmaster (the Stalker's moves)
+  wagonmaster: bossSet('wagonmaster'),
+  houndmaster: bossSet('houndmaster'),
 };
 // hanging limp on Rurik's blade (the impale finisher, view/ImpaledRig.js): intact, back
 // arm gone, front arm gone, both gone. ChatGPT, 2026-10-25 (the grunt's came first)
@@ -249,7 +254,7 @@ export const ENEMY_ANIMS = {
 };
 
 // a boss's own look -> the kind whose moves (and size) he has
-export const LOOKS = { orsk: 'berserker', twin: 'gladiator' };
+export const LOOKS = { orsk: 'berserker', twin: 'gladiator', wagonmaster: 'butcher', houndmaster: 'stalker' };
 for (const [look, kind] of Object.entries(LOOKS)) ENEMY_ANIMS[look] = ENEMY_ANIMS[kind];
 ENEMY_STRIPS.executioner=Object.fromEntries(Object.entries({walk:8,react:6,atk1:5,atk2:5,heavy:6,special:6}).map(([name,frames])=>[name,{file:`assets/npcs/mill-rescue/executioner-${name}.png`,frames,ref:0,ground:'drawn'}]));
 // (the Headsman's Rush: his overhead chop, held high through the charge)

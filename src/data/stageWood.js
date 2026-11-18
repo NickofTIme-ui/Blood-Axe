@@ -220,10 +220,10 @@ export const STAGE_WOOD = {
       // THE HOUNDMASTER: the Stalker's kind, grown into the convoy's master, with his war
       // hounds (data/enemies.js `hound`). Two of them come in with him; he blows his horn
       // for the pack at two thirds, and at one third he goes into a frenzy with the last of
-      // them. (His own painted strips: docs/campaign/art-levels-1-2.md; until then he wears
-      // the Stalker's.)
+      // them. (His own painted strips, enemyStrips.js `houndmaster`: the Stalker's moves in his
+      // own look; until they load he wears the Stalker's.)
       boss: {
-        type: 'stalker', name: 'The Houndmaster', health: 3.6, damage: 1.1, size: 1.2, // (size: a head over his men: Nick, 2026-11-16)
+        type: 'stalker', look: 'houndmaster', name: 'The Houndmaster', health: 3.6, damage: 1.1, size: 1.2, // (size: a head over his men: Nick, 2026-11-16)
         // his two hounds come bursting out of the middle kennel once he's walked in (they
         // stood parked beside him as an escort: Nick, 2026-11-16 "should come out of the kennel")
         pensAtStart: [1],

@@ -6,6 +6,15 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 18 November 2026 (PC ChatGPT, branch `claude/project-thread-yllxzx` on main c3ed4c7, NOT on main until Nick says
+  push): GALLOWS WOOD ART ROUND 3 (Nick: "both" = the level 2 art half). The Wagonmaster and the Houndmaster now
+  have their own painted strips (enemyStrips `wagonmaster`/`houndmaster`, LOOKS -> butcher/stalker; the driver
+  role picks it in ArenaScene.makeView; a boss's view is remade on bossSpawn so his `look` actually shows, which
+  also fixes Orsk/Twins), hound drag poses (HoundView, `hound-drag`), snared stalker/butcher/hound poses
+  (snaredArt.js, per-pose `reach`), two draught horses pulling the convoy wagon (StageView.horses, `horse-pull`),
+  three new wood villagers (NpcView WOOD_LOOKS). All view-only. Details and chats: docs/campaign/level2-art-round3.md.
+  Checked in Chrome on the PC (convoy, kennels, a forced latch and snare, the cage carts). The PC has no node:
+  run npm test and rebuild dist/game.js (npm run bundle) in the cloud before main.
 - 16 November 2026 (PC ChatGPT + cloud, branch `claude/project-thread-5hgifd` on 4c5cf60, NOT on main until Nick says push): ORYN'S OWN ART
   for his second set. Nine ChatGPT strips (docs/mage-art-prompts.md section 13: updraft, skyfall, meteor, jab, twirl,
   vault, grab, block, finSpires) baked by tools/bake-oryn-strips.py into assets/sprites/heroes-hd/oryn-mage-<name>.png

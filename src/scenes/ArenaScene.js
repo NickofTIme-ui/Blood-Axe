@@ -772,6 +772,14 @@ export class ArenaScene extends Phaser.Scene {
       playSfx(this, 'kick', { volume: 1, pitch: -1900, minGapMs: 0 });
     });
     ev.on('bossSpawn', ({ boss }) => {
+      // (his view was made as he was added, before Stage.makeBoss gave him his own `look`:
+      // remade now so he wears his own painted strips, e.g. the Houndmaster, Orsk)
+      const look = typeof boss.stats.look === 'string' ? boss.stats.look : null;
+      const view = this.views.get(boss.id);
+      if (look && this.registry.get('enemySprites')?.[look] && view?.sheet && view.sheet !== this.registry.get('enemySprites')[look]) {
+        view.destroy();
+        this.views.set(boss.id, this.makeView(boss));
+      }
       playMusic(this, this.stage.section?.boss?.music ?? 'boss'); // (a boss's own `music`: King Vaurath keeps the finale's track)
       this.callout(boss.stats.name.toUpperCase(), '#ff2a1a', 26);
       this.fx.shake(6, 20);
@@ -1696,7 +1704,9 @@ export class ArenaScene extends Phaser.Scene {
     // named enemies with hand-animated strips (data/enemyStrips.js); the doll runs underneath
     // (strips: wears another's; a boss's own set (`look`) once it's painted, else his kind's)
     const sheets = this.registry.get('enemySprites');
-    const sheet = f.team === 'enemy' && !this.dollsOnly && (sheets?.[f.stats.look] ?? sheets?.[f.stats.strips ?? f.stats.id]);
+    // (a man with a job of his own wears his own look: the convoy's Wagonmaster, stage/WoodTraps.js)
+    const own = { driver: 'wagonmaster' }[f.role] ?? f.stats.look;
+    const sheet = f.team === 'enemy' && !this.dollsOnly && (sheets?.[own] ?? sheets?.[f.stats.strips ?? f.stats.id]);
     if (sheet && f.stats.art && ENEMY_ART[f.stats.art]) return new SpriteEnemyView(this, f, sheet);
     if (f.stats.art && ENEMY_ART[f.stats.art]) return new EnemyView(this, f);
     // the Mage and the Rogue, once their painted strips are all in (data/heroStrips.js)

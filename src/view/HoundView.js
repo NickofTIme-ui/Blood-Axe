@@ -46,11 +46,18 @@ export class HoundView {
     else if (st === 'knockdown' || st === 'getup') { name = 'hound-react'; i = st === 'getup' ? 2 : 1; }
     else if (st === 'dead') { name = 'hound-doom'; i = Math.floor(fr / 8); }
     else if (st === 'walk' || st === 'jump') i = Math.floor(this.run * 1.6);
+    // its jaws locked in a hero, hauling him back (stage/WoodTraps.js latch): the grab, then
+    // braced and worrying at him, a beat every 7 frames
+    if (f.latchOn != null && f.alive && SPRITES['hound-drag'] && !['knockdown', 'getup', 'dead'].includes(st)) {
+      this.dragT = (this.dragT ?? 0) + 1;
+      name = 'hound-drag'; i = this.dragT < 8 ? 0 : 1 + Math.floor((this.dragT - 8) / 7) % 4;
+    } else this.dragT = 0;
     const S = SPRITES[name];
     i = name === 'hound-walk' ? i % S.count : Math.min(S.count - 1, Math.max(0, i));
     this.img.setTexture(S.key, `f${i}`).setPosition(f.x, f.z - f.h).setFlipX(f.facing < 0).setDepth(f.z).setAlpha(alpha);
     if (f.flash > 0) this.img.setTintFill(0xffffff); else this.img.clearTint();
-    this.img.setAngle(0); this.img.scaleX = Math.abs(this.img.scaleX); // (hangSprite turns it over)
+    // (hangSprite turns it over, or swaps in a painted hanging pose with its own origin and size)
+    this.img.setAngle(0).setOrigin(0.5, 1).setScale(0.5);
     hangSprite(this, this.img, f, this.img.displayHeight * 0.8); // (snared: strung up by a hind leg)
   }
 
