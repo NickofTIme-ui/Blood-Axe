@@ -6,7 +6,7 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 18 November 2026 (cloud, branch `claude/project-thread-ts3chl` on main c3ed4c7; NOT on main until Nick says push,
+- 18 November 2026 (cloud, branch `claude/project-thread-ts3chl` on main c3ed4c7; ON MAIN 18 Nov (Nick: "go go go"),
   NOT on itch). GALLOWS WOOD, the gameplay + sound half of "finish level 2" (a PC thread does the art):
   1. WADING: terrain kind 'wade' (stage/Terrain.js wadeAt): the old ford's stream spreads out knee-deep either side of
      the deep channel (x 4980-5420, all lanes). Anyone on foot in it walks at half pace (fighterStates walk: wadeMult;
@@ -29,8 +29,8 @@ branch, or ChatGPT's work gets lost.
      through Nick's Chrome (one download per new tab: Chrome blocks a second download from the same tab) packed into
      one file, then device_stage_files. tools/sfx-gen/wood.js no longer writes any of these.
   Tests: logic-test (horn, shallows, opening); the escort test now holds its grunt beside Ansel.
-- 18 November 2026 (PC ChatGPT, branch `claude/project-thread-yllxzx` on main c3ed4c7, NOT on main until Nick says
-  push): GALLOWS WOOD ART ROUND 3 (Nick: "both" = the level 2 art half). The Wagonmaster and the Houndmaster now
+- 18 November 2026 (PC ChatGPT, branch `claude/project-thread-yllxzx` on main c3ed4c7, ON MAIN 18 Nov with the gameplay
+  half, NOT on itch): GALLOWS WOOD ART ROUND 3 (Nick: "both" = the level 2 art half). The Wagonmaster and the Houndmaster now
   have their own painted strips (enemyStrips `wagonmaster`/`houndmaster`, LOOKS -> butcher/stalker; the driver
   role picks it in ArenaScene.makeView; a boss's view is remade on bossSpawn so his `look` actually shows, which
   also fixes Orsk/Twins), hound drag poses (HoundView, `hound-drag`), snared stalker/butcher/hound poses
