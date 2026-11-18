@@ -6,6 +6,29 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 18 November 2026 (cloud, branch `claude/project-thread-ts3chl` on main c3ed4c7; NOT on main until Nick says push,
+  NOT on itch). GALLOWS WOOD, the gameplay + sound half of "finish level 2" (a PC thread does the art):
+  1. WADING: terrain kind 'wade' (stage/Terrain.js wadeAt): the old ford's stream spreads out knee-deep either side of
+     the deep channel (x 4980-5420, all lanes). Anyone on foot in it walks at half pace (fighterStates walk: wadeMult;
+     a roll through it is short), hounds and men too, and lame Ansel (Story.updateEscort). On the log bridge or a stone
+     you walk dry. Drawn by TerrainView.drawWades (painted water, paler, the stone bed through it, ripples);
+     WoodTrapsView.drawWading puts a ring of water round each wader's shins, spray at each step, wood-wade.wav.
+  2. THE HOUNDMASTER'S HORN (WoodTraps.bossHornScript, TRAPS.bossHorn): from his net phase (half health) he backs off
+     to the back of the yard and blows (bar over him, "STOP HIS HORN!"); hit him and it's broken off; let it sound and
+     2, then 3 men come running from both ends (max 2 calls a fight, not while 5 are already up). Story beat 'hmHorn'.
+  3. THE TREE LINE OPENING (stage/WoodOpening.js, data `openingScene: 'treeLine'`, `ruts`): the three walk in out
+     of the dark to the trees, the convoy's wheel ruts, chain drag and bare footprints run ahead in the mud
+     (WoodTrapsView.drawRuts), a new line "There. Lanterns, up the road." shows the convoy's lanterns going away
+     between the trunks (cue { convoy }), then the howl and the crows. Started past section 0 or with the words
+     already played, it ends at once. Same shape as VillageOpening (active/progress), so the HUD hides and the
+     companions walk in with them.
+  4. SOUNDS are recorded now (tools/sfx-gen/wood-recorded.sh, sources in tools/sfx-gen/recorded-wood/, credits in
+     assets/audio/sfx/wood-recorded-SOURCES.txt; all public domain or CC0): howl = Yellowstone wolves (NPS),
+     crows = Yellowstone ravens + Kenney wing flutter (the crows are heard again: WoodTrapsView.crowBurst), horn =
+     a hunting horn, whistle, whip crack, a seamless rain loop, and the wading slosh (Wikimedia Commons). Got them
+     through Nick's Chrome (one download per new tab: Chrome blocks a second download from the same tab) packed into
+     one file, then device_stage_files. tools/sfx-gen/wood.js no longer writes any of these.
+  Tests: logic-test (horn, shallows, opening); the escort test now holds its grunt beside Ansel.
 - 16 November 2026 (PC ChatGPT + cloud, branch `claude/project-thread-5hgifd` on 4c5cf60, NOT on main until Nick says push): ORYN'S OWN ART
   for his second set. Nine ChatGPT strips (docs/mage-art-prompts.md section 13: updraft, skyfall, meteor, jab, twirl,
   vault, grab, block, finSpires) baked by tools/bake-oryn-strips.py into assets/sprites/heroes-hd/oryn-mage-<name>.png
