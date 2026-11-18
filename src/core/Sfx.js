@@ -114,7 +114,9 @@ export const SFX = {
   rogueVanish: 'assets/audio/sfx/rogue-vanish.wav',      // gone into smoke
   rogueSmoke: 'assets/audio/sfx/rogue-smoke.wav',        // the smoke bomb
   rogueNight: 'assets/audio/sfx/rogue-night.wav',        // Night Falls coming down
-  // Gallows Wood's (2026-11-05): made in code by tools/sfx-gen/wood.js (ours outright, no licence)
+  // Gallows Wood's: real recordings (2026-11-18, tools/sfx-gen/wood-recorded.sh; public domain / CC0:
+  // the howl and the crows from the National Park Service's Yellowstone sound library, the rest
+  // from Wikimedia Commons; list in assets/audio/sfx/wood-recorded-SOURCES.txt) and Kenney CC0
   woodHowl: 'assets/audio/sfx/wood-howl.wav',       // hounds baying out of the trees
   woodHorn: 'assets/audio/sfx/wood-horn.wav',       // the hornblower's call; the Houndmaster's pack
   woodWhistle: 'assets/audio/sfx/wood-whistle.wav', // the Houndmaster's whistle: his hounds lunge

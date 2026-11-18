@@ -282,5 +282,8 @@ const SOUNDS = {
 // (Nick, 2026-11-15: the made-up fall, logs, creak, snare and net sounded horrible and the
 // crows' caw was a random squawk: those are recorded Kenney sounds now, tools/sfx-gen/wood-kenney.sh,
 // and the crows go up silent. Don't overwrite them from here.)
-const RECORDED = new Set(['wood-crows.wav', 'wood-creak.wav', 'wood-fall.wav', 'wood-logs.wav', 'wood-snare.wav', 'wood-net.wav']);
+// (2026-11-18: the howl, horn, whistle, whip, rain and the crows are real recordings too:
+// tools/sfx-gen/wood-recorded.sh, sources in assets/audio/sfx/wood-recorded-SOURCES.txt)
+const RECORDED = new Set(['wood-crows.wav', 'wood-creak.wav', 'wood-fall.wav', 'wood-logs.wav', 'wood-snare.wav', 'wood-net.wav',
+  'wood-howl.wav', 'wood-horn.wav', 'wood-whistle.wav', 'wood-whip.wav', 'wood-rain.wav', 'wood-wade.wav']);
 for (const [name, make] of Object.entries(SOUNDS)) if (!RECORDED.has(name)) wav(name, make());

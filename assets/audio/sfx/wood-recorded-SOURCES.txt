@@ -1,0 +1,21 @@
+Gallows Wood recorded sounds (2026-11-18). Trimmed, filtered and levelled by
+tools/sfx-gen/wood-recorded.sh. Every source is public domain or CC0: no licence
+condition applies, but credit is given here (and to the National Park Service, as it asks).
+
+wood-howl.wav     Wolves howling, 17.2-24 s of "Wolves" (yell-YELLWolvesDec252013.mp3),
+                  Yellowstone National Park sound library, National Park Service. Public domain.
+                  https://www.nps.gov/yell/learn/photosmultimedia/sounds-wolves.htm
+wood-crows.wav    Common Raven calls (yell-RavenBlackSandBasin.mp3), same library, National Park
+                  Service. Public domain.
+                  https://www.nps.gov/yell/learn/photosmultimedia/sounds-raven.htm
+                  + wing flutter from Kenney "RPG Audio" cloth sounds (CC0, kenney-LICENSE.txt)
+wood-horn.wav     "Hunting horn tone.ogg", Alon-De-Lon, Wikimedia Commons. CC0.
+                  https://commons.wikimedia.org/wiki/File:Hunting_horn_tone.ogg
+wood-whistle.wav  "Human whistling.ogg", TwoWings, Wikimedia Commons. Public domain.
+                  https://commons.wikimedia.org/wiki/File:Human_whistling.ogg
+wood-whip.wav     one crack from "Peitschen.ogg", Basel, Wikimedia Commons. Public domain.
+                  https://commons.wikimedia.org/wiki/File:Peitschen.ogg
+wood-rain.wav     "Rain (1).ogg", ezwa, Wikimedia Commons. Public domain (made a seamless loop).
+                  https://commons.wikimedia.org/wiki/File:Rain_(1).ogg
+wood-wade.wav     "Sloshing canister of water.ogg", stephan, Wikimedia Commons. Public domain.
+                  https://commons.wikimedia.org/wiki/File:Sloshing_canister_of_water.ogg
