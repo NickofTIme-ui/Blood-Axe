@@ -6,6 +6,21 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 19 November 2026 (cloud, branch `claude/project-thread-slyl5t` on main 2208944; ON MAIN (Nick: "push all"), NOT on itch).
+  GALLOWS WOOD GROUNDING PASS (Nick: "objects still feel copied and pasted into the world, the trees and snares
+  still feel off, the tree trap going over the river"):
+  1. Streams and the ford's shallows (TerrainView streamRibbon/streamBend/streamBanks): banks wander instead of
+     ruled lines, wet mud either side, stones half over the water's edge, darker water, a 130 px dark fade where
+     they come out of the trees (they read as glass panels standing in the road). The shallows get banks too.
+  2. Cage-cart mist (WoodTrapsView.drawMist): pooled soft 'glow' puffs instead of a grid of flat grey ellipses.
+  3. Painted traps (pine stump/trunk, log pile, snares, deadfall, pen gates) take PROP_LIGHT.gallowsWood like the
+     crates, with groundUnder contact pools (the pine's flat shadow ellipse is hidden when painted).
+  4. Moved out of the water: lanterns 3080 -> 2990 and 5140 -> 4800; shallows narrowed to x 5000-5350; log pile
+     5390 -> 5470 (dry far bank, its block and lane with it; barrel to 5560/492); deadfall 5040 -> 4880 (near
+     bank under the pines). Snares moved to the road's edges (z 496 / 306 / 492); the hanging tree's keg off the
+     lantern post. logic-test log pile test follows the new x.
+  Screens: cloud headless Chromium runs out of memory booting the game; use Nick's Chrome (pump frames with
+  game.step(), the tab runs ~1 fps in the background). Before shots: project files level2-grounding/before/.
 - 18 November 2026 (cloud, branch `claude/project-thread-ts3chl` on main c3ed4c7; ON MAIN 18 Nov (Nick: "go go go"),
   NOT on itch). GALLOWS WOOD, the gameplay + sound half of "finish level 2" (a PC thread does the art):
   1. WADING: terrain kind 'wade' (stage/Terrain.js wadeAt): the old ford's stream spreads out knee-deep either side of
