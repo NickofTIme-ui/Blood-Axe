@@ -42,7 +42,8 @@ const shrineFootprint = (r) => ({ kind: 'block', x0: r.x - 52, x1: r.x + 52, z0:
 // Joren on the hanging tree's bough, out at its tip past the dead: the hounds worry under him
 const JOREN_BOUGH = { x: 2280, z: 300 };
 
-const WOOD_LANTERNS = [{ x: 780, z: 290 }, { x: 2050, z: 290 }, { x: 3080, z: 290 }, { x: 5140, z: 290 }, { x: 7400, z: 290 }, { x: 8600, z: 290 }];
+// (each on dry ground: one stood on the cage carts' stream bank and one out in the ford's water, Nick 2026-11-19)
+const WOOD_LANTERNS = [{ x: 780, z: 290 }, { x: 2050, z: 290 }, { x: 2990, z: 290 }, { x: 4800, z: 290 }, { x: 7400, z: 290 }, { x: 8600, z: 290 }];
 
 export const STAGE_WOOD = {
   id: 'gallowsWood',
@@ -128,7 +129,7 @@ export const STAGE_WOOD = {
       props: [
         { kind: 'barrel', x: 2700, z: 480, drop: 'health' },
         // the hangmen's kit by the tree: a long crate of rope, a keg, and a sack
-        ...group([['crate-long', 1960, 300], ['keg2', 2016, 304], ['sack', 2620, 300]]),
+        ...group([['crate-long', 1930, 300], ['keg2', 1990, 306], ['sack', 2620, 300]]), // (clear of the lantern post at 2050)
       ],
       hazards: [],
       rest: SHRINE_TREE,
@@ -174,8 +175,9 @@ export const STAGE_WOOD = {
         // (y 0: it stands inside the solid block that keeps men out of it; left to the
         // ground under it, it sat on that block's top, 90 up, out of every axe's reach, and
         // the rope could never be cut: Nick, 2026-11-16 "the pile of wood still does nothing")
-        { kind: 'logpile', x: 5390, z: 292, y: 0, lane: { x0: 5290, x1: 5530, z0: 300, z1: 545 }, drop: null },
-        { kind: 'barrel', x: 5520, z: 300, drop: 'health' },
+        // (on the dry far bank past the shallows: it stood with its feet in the water, Nick 2026-11-19)
+        { kind: 'logpile', x: 5470, z: 292, y: 0, lane: { x0: 5370, x1: 5590, z0: 300, z1: 545 }, drop: null },
+        { kind: 'barrel', x: 5560, z: 492, drop: 'health' },
         // barrels off the convoy, washed up on the near bank
         ...group([['barrel-grey', 4700, 500], ['barrel-v1', 4746, 504, { drop: 'mana' }]]),
       ],
@@ -294,13 +296,13 @@ export const STAGE_WOOD = {
     // THE SHALLOWS: either side of the deep channel the stream spreads out knee-deep over its
     // stones, the ford itself. Everyone wades through it at half pace, the men and the hounds
     // too (and Ansel, lame), under the deadfall and the log pile (stage/Terrain.js 'wade')
-    { kind: 'wade', x0: 4980, x1: 5420, ...FULL, slow: 0.5 },
+    { kind: 'wade', x0: 5000, x1: 5350, ...FULL, slow: 0.5 }, // (narrower: the log pile and the lanterns stand on dry banks either side)
     { kind: 'pit', x0: 5160, x1: 5240, ...FULL },
     { kind: 'block', x0: 5140, x1: 5260, z0: 380, z1: 470, top: 10, mat: 'log' },
 
     // ---- IV the log pile up the far bank (and its posts once it's let go): solid, like the
     // rest of the wood's things (Nick, 2026-11-15: "a lot of stuff you can walk right through")
-    { kind: 'block', x0: 5280, x1: 5500, z0: 270, z1: 300, top: 90, hideArt: true },
+    { kind: 'block', x0: 5360, x1: 5580, z0: 270, z1: 300, top: 90, hideArt: true },
     // the lantern posts along the road: a man can't walk through a post
     ...WOOD_LANTERNS.map((l) => ({ kind: 'block', x0: l.x - 10, x1: l.x + 10, z0: l.z - 8, z1: l.z + 8, top: 170, hideArt: true })),
 
@@ -315,13 +317,17 @@ export const STAGE_WOOD = {
   // the wood's traps (stage/WoodTraps.js): snares in the leaves, a stake pit under a mat of them,
   // the deadfall over the ford's road. Taught where they can't hurt much first (the hanging tree's clearing)
   traps: [
-    { type: 'snare', section: 1, x: 1880, z: 470 },
-    { type: 'snare', section: 1, x: 2470, z: 330 },
+    // (the snares' saplings grow at the road's edges, by the ferns and the trees, not out of
+    // the middle of the open mud: Nick 2026-11-19)
+    { type: 'snare', section: 1, x: 1880, z: 496 },
+    { type: 'snare', section: 1, x: 2470, z: 306 },
     { type: 'stakes', section: 2, x: 3500, z: 486, w: 76, d: 44 }, // (out of the ravine stream's picture, where it hid: 2026-11-15)
-    { type: 'snare', section: 2, x: 3960, z: 455 },
+    { type: 'snare', section: 2, x: 3960, z: 492 },
     // the near bank's DEADFALL: a spiked trunk hauled up out of sight, tied to a wire across
     // the road. Trip it (or let them) and it swings in from above (stage/WoodTraps.js)
-    { type: 'deadfall', section: 3, x: 5040, z: 360 },
+    // (on the near bank under the pines, before the water: its trunk hung over the open river from
+    // nothing, Nick 2026-11-19 "the tree trap going over the river")
+    { type: 'deadfall', section: 3, x: 4880, z: 360 },
   ],
 
   lanterns: WOOD_LANTERNS,

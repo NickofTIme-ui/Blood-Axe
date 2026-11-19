@@ -12,6 +12,13 @@ import { FONT } from './fonts.js';
 import { playSfx, DK } from '../core/Sfx.js';
 import { artKey } from './levelArt.js';
 import { TRAPS } from '../stage/WoodTraps.js';
+import { PROP_LIGHT, lightProp, groundUnder } from './propGround.js';
+
+// The wood's own light on its painted traps, as on its crates and barrels (view/propGround.js):
+// they were painted clean and warm, and stood out of the night road like stickers (Nick,
+// 2026-11-19: "the trees and snares still feel off and not part of the map")
+const WOOD_LIGHT = PROP_LIGHT.gallowsWood;
+const woodLit = (img, k = 1) => { if (img) lightProp(img, WOOD_LIGHT, k); return img; };
 
 const BARK = artKey('wood', 'surf-log');
 // the painted traps (ChatGPT, 2026-11-14; tools/cut-wood-art.py): each falls back to code
@@ -46,12 +53,14 @@ export class WoodTrapsView {
     for (const t of this.rig.traps) {
       const v = { g: scene.add.graphics() };
       const key = t.type === 'snare' ? ART.trap_snare : t.type === 'stakes' ? ART.trap_stakes : null;
-      if (key && scene.textures.exists(key)) v.img = scene.add.image(t.x, t.z, key);
+      if (key && scene.textures.exists(key)) v.img = woodLit(scene.add.image(t.x, t.z, key), t.type === 'snare' ? 0.9 : 1);
+      // sat in the mud: a dark wet pool under it (the sapling's foot, the mat's edge)
+      if (v.img && t.type === 'snare') v.ground = groundUnder(scene, t.x + 30, t.z + 2, 90, t.z - 1.2, { seed: t.id + 11, deep: 0.7 });
       if (t.type === 'deadfall') {
         // its own painting when it comes (ChatGPT: trap_deadfall); till then the painted log
         // with sharpened stakes lashed through it
         const k = scene.textures.exists(ART.trap_deadfall) ? ART.trap_deadfall : scene.textures.exists(ART.trap_log) ? ART.trap_log : null;
-        if (k) v.ram = scene.add.image(0, 0, k).setOrigin(0.5, k === ART.trap_deadfall ? 0.54 : 0.5); // (the painting: its trunk's middle)
+        if (k) v.ram = woodLit(scene.add.image(0, 0, k).setOrigin(0.5, k === ART.trap_deadfall ? 0.54 : 0.5), 1.1); // (the painting: its trunk's middle)
         v.own = k === ART.trap_deadfall;
         v.front = scene.add.graphics();
       }
@@ -60,7 +69,7 @@ export class WoodTrapsView {
     // the kennels' pen gates: iron-banded timber bars in front of the hounds (they drop into
     // the mud when a phase lets them out). Painted gates are on the ChatGPT list.
     this.gates = this.rig.pens.map((pen) => ({ pen, g: scene.add.graphics().setDepth(pen.z + 8), drop: 0,
-      img: scene.textures.exists(ART.pen_gate) ? scene.add.image(pen.x, pen.z + 10, ART.pen_gate).setOrigin(0.5, 1).setDepth(pen.z + 8) : null }));
+      img: scene.textures.exists(ART.pen_gate) ? woodLit(scene.add.image(pen.x, pen.z + 10, ART.pen_gate).setOrigin(0.5, 1).setDepth(pen.z + 8)) : null }));
     this.drawGates();
     // the mist banks and the Ashen's signal lanterns in them (stage/WoodTraps.js updateMist)
     this.mistG = scene.add.graphics().setDepth(1500);
@@ -75,27 +84,34 @@ export class WoodTrapsView {
 
   // ------------------------------------------------------------ the mist and its lantern
 
+  // The mist: soft drifting banks (the 'glow' puff, so no edges show), not a grid of flat
+  // ellipses (Nick, 2026-11-19: it read as a heap of grey circles laid over the carts)
   drawMist() {
-    const g = this.mistG.clear(); const cam = this.scene.cameras.main; const B = this.scene.world.bounds;
+    const cam = this.scene.cameras.main; const B = this.scene.world.bounds;
     const heroes = this.scene.players?.filter((p) => p.alive) ?? [];
     const now = this.scene.time.now;
+    const pool = this.mistPuffs ??= [];
+    let n = 0;
     for (const M of this.rig.mists) {
       if (M.x1 < cam.scrollX - 100 || M.x0 > cam.scrollX + cam.width / cam.zoom + 100) continue;
-      const base = M.out ? 0.32 : 0.62;
-      for (let x = M.x0; x <= M.x1; x += 60) {
-        for (let z = B.minZ - 60; z <= B.maxZ + 20; z += 36) {
-          const wob = Math.sin(now / 1700 + x * 0.013 + z * 0.05) * 22;
-          const cx = x + wob; const cy = z - 40;
+      const base = M.out ? 0.3 : 0.58;
+      for (let x = M.x0, i = 0; x <= M.x1; x += 80, i++) {
+        for (let z = B.minZ - 40, j = 0; z <= B.maxZ + 30; z += 50, j++) {
+          const drift = Math.sin(now / 2300 + i * 1.7 + j * 0.9) * 34;
+          const cx = x + drift + (j % 2) * 40; const cy = z - 46 + Math.sin(now / 1900 + i + j * 2.1) * 6;
           // thin around each hero: he sees a little way into it; past that, men are shapes
           let k = 1;
-          for (const p of heroes) { const d = Math.hypot((p.x - cx) * 0.8, (p.z - z) * 1.6); k = Math.min(k, Math.max(0, Math.min(1, (d - 110) / 170))); }
-          const edge = Math.min(1, (x - M.x0) / 160, (M.x1 - x) / 160);
-          const a = base * k * Math.max(0, edge) * (0.8 + 0.2 * Math.sin(now / 900 + x * 0.02));
+          for (const p of heroes) { const d = Math.hypot((p.x - cx) * 0.8, (p.z - z) * 1.6); k = Math.min(k, Math.max(0, Math.min(1, (d - 100) / 190))); }
+          const edge = Math.min(1, (x - M.x0) / 200, (M.x1 - x) / 200);
+          const a = base * k * Math.max(0, edge) * (0.75 + 0.25 * Math.sin(now / 1100 + i * 0.7 + j));
           if (a < 0.02) continue;
-          g.fillStyle(0x8a96a0, a * 0.55).fillEllipse(cx, cy, 150, 90);
+          const img = pool[n] ??= this.scene.add.image(0, 0, 'glow').setTint(0x8a98a4).setDepth(1500);
+          img.setVisible(true).setPosition(cx, cy).setDisplaySize(300 + (j % 3) * 40, 130 + (i % 2) * 30).setAlpha(Math.min(0.5, a * 0.42));
+          n++;
         }
       }
     }
+    for (let i = n; i < pool.length; i++) pool[i].setVisible(false);
   }
 
   drawSignals() {
@@ -179,11 +195,16 @@ export class WoodTrapsView {
       const FH = stumpImg.frame.height; const FW = stumpImg.frame.width;
       const cut = SPOT.pine.y * FH - PINE_HINGE / sc; // (the notch's row in the painting)
       stumpImg.setCrop(0, cut, FW, FH - cut);
+      woodLit(stumpImg, 1.05);
       const stump = s.add.container(pr.x, pr.z - (pr.y ?? 0)).setDepth(pr.z - 0.1).add(stumpImg);
+      // its roots in the mud: a soft dark pool and a little kicked-up dirt, not a flat ring
+      groundUnder(s, pr.x, pr.z - (pr.y ?? 0) + 4, 120, pr.z - 0.2, { seed: pr.id + 7, deep: 0.8 });
+      shadow.setVisible(false);
       // the hinge: the container sits at the notch; the trunk hangs off it, foot where it was
       c.setY(pr.z - (pr.y ?? 0) + 8 - PINE_HINGE);
       const img = s.add.image(0, PINE_HINGE, ART.trap_pine).setOrigin(SPOT.pine.x, SPOT.pine.y).setScale(sc).setFlipX(flip);
       img.setCrop(0, 0, FW, cut + 2);
+      woodLit(img, 1.05);
       c.add(img);
       const v = { c, stump, notch: s.add.graphics().setY(PINE_HINGE - 8), shadow, H, W, hits: 0, fallen: false, painted: true, hingeY: c.y };
       c.add(v.notch);
@@ -302,9 +323,14 @@ export class WoodTrapsView {
       }
     }
     const painted = s.textures.exists(ART.trap_logpile);
+    let v0ground = null;
     const img = painted ? s.add.image(pr.x, pr.z + 6, ART.trap_logpile).setOrigin(0.5, 0.96).setDepth(pr.z - 1.8) : null;
-    if (img) img.setScale(240 / img.width);
-    const v = { g, ends, rope, logs, trunks, rollG: s.add.graphics().setDepth(pr.z), loose: false, img, painted };
+    if (img) {
+      img.setScale(240 / img.width);
+      woodLit(img);
+      v0ground = groundUnder(s, pr.x, pr.z + 4, 210, pr.z - 2.2, { seed: pr.id + 3 });
+    }
+    const v = { g, ends, rope, logs, trunks, rollG: s.add.graphics().setDepth(pr.z), loose: false, img, painted, ground: v0ground };
     this.drawPile(v, pr);
     return v;
   }

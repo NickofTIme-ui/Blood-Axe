@@ -102,14 +102,18 @@ function raggedRect(x, y, w, h, seed, straight, amp = 5) {
 // A wood stream's outline (a pit across the whole lane): narrow where it comes out of the
 // trees at the back, exact to the pit through the lane, then widening toward the camera; its
 // banks worn, not ruled
+const streamBend = (p, y, k) => Math.sin(y * 0.021 + p.x0 * 0.7 + k) * 7 + Math.sin(y * 0.057 + k * 3) * 4;
 function streamRibbon(p, top, bottom, flare) {
   const z0 = p.z0; const z1 = p.z1;
-  const inset = (p.x1 - p.x0) * 0.4; // (a wedge out of the dark under the trees: no flat top)
+  const inset = (p.x1 - p.x0) * 0.42; // (a wedge out of the dark under the trees: no flat top)
   const side = (y) => (y < z0 ? inset * ((z0 - y) / (z0 - top)) : y > z1 ? -flare * ((y - z1) / (bottom - z1)) : 0);
   const pts = [];
   const n = Math.ceil((bottom - top) / 10);
-  for (let i = 0; i <= n; i++) { const y = top + (bottom - top) * (i / n); pts.push({ x: p.x1 - side(y) - wob(i, p.x0 + 1) * 4, y }); }
-  for (let i = n; i >= 0; i--) { const y = top + (bottom - top) * (i / n); pts.push({ x: p.x0 + side(y) + wob(i, p.x0 + 2) * 4, y }); }
+  // (each bank wanders on its own, a slow bend and a ragged edge, so it never reads as a ruled
+  // panel standing in the road: Nick, 2026-11-19 "copied and pasted into the world")
+  const bend = (y, k) => streamBend(p, y, k);
+  for (let i = 0; i <= n; i++) { const y = top + (bottom - top) * (i / n); pts.push({ x: p.x1 - side(y) + bend(y, 1) - wob(i, p.x0 + 1) * 3, y }); }
+  for (let i = n; i >= 0; i--) { const y = top + (bottom - top) * (i / n); pts.push({ x: p.x0 + side(y) + bend(y, 4) + wob(i, p.x0 + 2) * 3, y }); }
   return pts;
 }
 
@@ -272,7 +276,7 @@ export class TerrainView {
         const bottom = ribbon ? SETTINGS.height + 120 : p.z1 + 40;
         const flare = ribbon ? (p.x1 - p.x0) * 0.22 : 0;
         const ws = s.add.tileSprite(p.x0 - flare, top, p.x1 - p.x0 + flare * 2, bottom - top, 'water-src').setOrigin(0).setTileScale(0.32).setDepth(DEPTH.floor + 4.1);
-        if (ribbon) ws.setTint(0x6c8490); // (black water under the pines, not a bright rapid)
+        if (ribbon) ws.setTint(0x4e626c); // (black water under the pines, not a bright rapid: a step darker, it stood out of the mud like a lit panel)
         const wm = s.make.graphics({ add: false }).fillStyle(0xffffff, 1).fillPoints(ribbon ? streamRibbon(p, top, bottom, flare) : raggedRect(p.x0, top, p.x1 - p.x0, p.z1 + 40 - top, p.x0, 'none'), true);
         if (ribbon) this.streamBanks(p, top, bottom, flare);
         ws.setMask(wm.createGeometryMask()); // (its banks worn, not ruled)
@@ -326,7 +330,7 @@ export class TerrainView {
       bed.setMask(mask());
       if (s.textures.exists('water-src')) {
         const ws = s.add.tileSprite(p.x0 - flare, top, p.x1 - p.x0 + flare * 2, bottom - top, 'water-src').setOrigin(0).setTileScale(0.32)
-          .setDepth(d + 0.02).setTint(0x9aa898).setAlpha(0.55);
+          .setDepth(d + 0.02).setTint(0x7c8c88).setAlpha(0.5);
         ws.setMask(mask());
         s.tweens.add({ targets: ws, tilePositionY: -1024, duration: 16000, repeat: -1 });
         s.tweens.add({ targets: ws, tilePositionX: { from: 0, to: 12 }, duration: 3200, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
@@ -348,6 +352,11 @@ export class TerrainView {
       };
       s.events.on('update', tick);
       s.events.once('shutdown', () => s.events.off('update', tick));
+      // where it comes out from under the trees it's dark, and its banks are wet mud and
+      // stones, as the deep streams' are (no flat-topped pale panel in the road)
+      const shade = gradient(s, 'water-shade', [[0, 0x020406, 1], [1, 0x020406, 0]], false);
+      s.add.image(p.x0 - flare, top - 4, shade).setOrigin(0).setDisplaySize(p.x1 - p.x0 + flare * 2, 130).setDepth(d + 0.035).setMask(mask());
+      this.streamBanks(p, top, bottom, flare, d - 0.2);
       // the lip where the water meets the mud: a broken pale line
       const lip = s.add.graphics().setDepth(d + 0.04);
       lip.lineStyle(1.5, 0xc8d4d8, 0.35);
@@ -357,21 +366,28 @@ export class TerrainView {
 
   // A wood stream's banks: wet black mud just outside the water, a scatter of wet stones and
   // a few reeds along each side, and the stones' foam where the water parts round them.
-  streamBanks(p, top, bottom, flare) {
+  streamBanks(p, top, bottom, flare, depth = DEPTH.floor + 3.8) {
     const s = this.scene;
-    const g = s.add.graphics().setDepth(DEPTH.floor + 3.8);
-    const z0 = p.z0; const inset = (p.x1 - p.x0) * 0.4;
+    const g = s.add.graphics().setDepth(depth);
+    const edgeStones = s.add.graphics().setDepth(depth + 0.4); // (over the water's edge)
+    const z0 = p.z0; const inset = (p.x1 - p.x0) * 0.42;
     const sideAt = (y) => (y < z0 ? inset * ((z0 - y) / (z0 - top)) : y > p.z1 ? -flare * ((y - p.z1) / (bottom - p.z1)) : 0);
     let k = Math.round(p.x0) % 997 + 11;
     const r = () => { k = (k * 9301 + 49297) % 233280; return k / 233280; };
     for (let y = top + 6; y < bottom; y += 7) {
       const t = (y - top) / (bottom - top); const sc = 0.6 + t * 0.7;
-      for (const [edge, dir] of [[p.x0 + sideAt(y), -1], [p.x1 - sideAt(y), 1]]) {
-        g.fillStyle(0x07090a, 0.5).fillEllipse(edge + dir * 6 * sc, y, 18 * sc, 9 * sc); // (wet mud)
-        if (r() < 0.22) {
-          const sx = edge + dir * (2 + r() * 8) * sc; const rr = (3 + r() * 6) * sc;
-          g.fillStyle(0x22282a, 1).fillEllipse(sx, y, rr * 2.2, rr * 1.3);
-          g.fillStyle(0x4a5654, 0.9).fillEllipse(sx - rr * 0.2, y - rr * 0.35, rr * 1.4, rr * 0.6); // (its wet top)
+      for (const [edge, dir] of [[p.x0 + sideAt(y) + streamBend(p, y, 4), -1], [p.x1 - sideAt(y) + streamBend(p, y, 1), 1]]) {
+        // (wet mud: dark right at the water, fading out into the road)
+        g.fillStyle(0x05070a, 0.55).fillEllipse(edge + dir * 8 * sc, y, 26 * sc, 10 * sc);
+        g.fillStyle(0x05070a, 0.25).fillEllipse(edge + dir * 24 * sc, y, 40 * sc, 12 * sc);
+        if (r() < 0.4) {
+          // a wet stone: some half in the water, over its edge, so the bank's line breaks up
+          const over = r() < 0.5; const sx = edge + dir * (over ? -2 - r() * 6 : 2 + r() * 12) * sc; const rr = (3 + r() * 7) * sc;
+          const sg = over ? edgeStones : g;
+          sg.fillStyle(0x000000, 0.4).fillEllipse(sx + 2, y + rr * 0.5, rr * 2.4, rr * 1.1);
+          sg.fillStyle(0x22282a, 1).fillEllipse(sx, y, rr * 2.2, rr * 1.3);
+          sg.fillStyle(0x4a5654, 0.9).fillEllipse(sx - rr * 0.2, y - rr * 0.35, rr * 1.4, rr * 0.6); // (its wet top)
+          if (over) sg.lineStyle(1, 0xc8d4d8, 0.35).strokeEllipse(sx, y + rr * 0.3, rr * 2.8, rr * 1.2); // (the water parting round it)
         }
         if (r() < 0.08) {
           g.lineStyle(1.5, 0x3a4a30, 0.9);
@@ -393,7 +409,7 @@ export class TerrainView {
     if (bottom !== null) {
       // (where it comes out from under the trees: dark, as if out of a culvert in the roots)
       const shade = gradient(s, 'water-shade', [[0, 0x020406, 1], [1, 0x020406, 0]], false);
-      s.add.image(p.x0 - flare, top - 4, shade).setOrigin(0).setDisplaySize(w + flare * 2, 70).setDepth(d + 0.05).setMask(mask);
+      s.add.image(p.x0 - flare, top - 4, shade).setOrigin(0).setDisplaySize(w + flare * 2, 130).setDepth(d + 0.05).setMask(mask);
     }
     // (wet mud: the ground darkens toward the water, outside the stream)
     const wet = gradient(s, 'water-wet', [[0, 0x000000, 0], [1, 0x05080a, 0.55]], true);

@@ -3492,13 +3492,13 @@ test("wood: the ford has no current any more (an invisible river nobody could se
 });
 
 test('wood: the log pile: a blow cuts its rope and the logs come down on the men below (it stays where it stands once the ford fight starts)', () => {
-  const { world, p, st, c, run } = woodSetup(WOOD_SEC('ford'), { x: 5340, z: 310 });
+  const { world, p, st, c, run } = woodSetup(WOOD_SEC('ford'), { x: 5420, z: 310 });
   killFoes(world); run(2);
   const pile = st.props.find((q) => q.kind === 'logpile');
   st.fightOn = true; run(30); // (the wagon's rolling code once dragged it off to NaN here)
-  assert(Number.isFinite(pile.x) && pile.x === 5390 && pile.y === 0, `still standing where it was, within reach (${pile.x}, ${pile.y})`);
-  const foes = [5330, 5420, 5480].map((x) => woodFoe(world, st, 'grunt', x, 420));
-  p.x = 5340; p.z = 310; p.facing = 1; st.placeOnGround(p);
+  assert(Number.isFinite(pile.x) && pile.x === 5470 && pile.y === 0, `still standing where it was, within reach (${pile.x}, ${pile.y})`);
+  const foes = [5410, 5500, 5560].map((x) => woodFoe(world, st, 'grunt', x, 420));
+  p.x = 5420; p.z = 310; p.facing = 1; st.placeOnGround(p);
   let loose = 0; world.events.on('logsLoose', () => loose++);
   for (let k = 0; k < 2; k++) { c.script = { [c.t + 1]: ['attack'] }; run(20); }
   assert(pile.broken && loose === 1, 'the rope is cut');
