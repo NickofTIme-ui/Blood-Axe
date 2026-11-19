@@ -69,7 +69,10 @@ export const LEVEL_ART = {
       'snared_grunt_1', 'snared_grunt_2', 'snared_grunt_3',
       // ...and (round 3, 2026-11-18) a stalker, a butcher and a hound by a hind leg
       'snared_stalker_1', 'snared_stalker_2', 'snared_stalker_3', 'snared_butcher_1', 'snared_butcher_2', 'snared_butcher_3',
-      'snared_hound_1', 'snared_hound_2', 'snared_hound_3'],
+      'snared_hound_1', 'snared_hound_2', 'snared_hound_3',
+      // the streams and the old ford, each with its own banks (view/TerrainView.js paintedWater;
+      // ChatGPT, 2026-11-19: tools/cut-water-art.py)
+      'water_stream', 'water_ford', 'water_stone_1', 'water_stone_2', 'water_stone_3'],
     props: { wagon: { file: 'convoy_wagon.png', pair: true }, cagecart: { file: 'cage_cart.png', pair: true, texture: 'cagecart' } },
     surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, log: { px: 40 }, plank: { fit: true } },
   },
@@ -82,7 +85,7 @@ export const LEVEL_ART = {
     ],
     wall: { height: 340 },
     ground: true,
-    pieces: ['furnace'],
+    pieces: ['furnace', 'water_river'], // (the underground river's crossings: view/TerrainView.js paintedWater)
     props: {
       shackle: { file: 'prop_shackle.png', pair: true }, counterweight: { file: 'prop_counterweight.png', pair: true },
       rubble: { file: 'prop_rubble.png', pair: true },

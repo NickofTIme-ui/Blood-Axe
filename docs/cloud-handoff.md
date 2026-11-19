@@ -1782,3 +1782,11 @@ Rurik's ground walk is 20% slower (walkPace 0.8). Up/down/diagonal walks are sti
 - **The Infernal Wall (fire barrier) is gone**: Barrier.js, MageFX FireWallView, Enemy.atWall, ArenaScene/FireAmbience fireRegions.
 - Stone Spikes are drawn with the painted mine shards (`collapse_spikes.png`) turned point-up. The new moves borrow his other poses; ChatGPT prompts for their own strips (plus grab, block/hurt/death, the Spires finisher, the three medallions): `docs/mage-art-prompts.md` section 13 (section 10's jab/twirl/vault still to paint too).
 - Sim changes (both online players need the new build).
+
+## Cloud, 2026-11-19: painted water for every waterway (ChatGPT)
+- Nick: "The waterways in the level and in the game need to look better, the art around it and all".
+- ChatGPT (Nick's Chrome) painted four pieces from in-game screenshots: a forest stream with banks, the wide ford, the Hollow Mountain underground river, and a sheet of three mossy stepping stones. Raw paintings and prompts: project files `water-art/` (`prompts.md`, `raw/`).
+- `python tools/cut-water-art.py <raw dir>` keys out the magenta, crops the sky/back strip, fades the top and outer bank edges, despills pink and writes `assets/env/wood/water_stream.png`, `water_ford.png`, `water_stone_1..3.png` and `assets/env/mine/water_river.png` (registered in `src/data/levelArt.js`).
+- `TerrainView.paintedWater(kind)` / `layWater()`: wood pits (streams), the wood wade (ford) and mine pits (river) draw the painting stretched over the hazard (the channel is the middle `frac` of the image, the rest are banks), with a faint additive flow tile masked to the hazard on top. A pit inside a painted wade is skipped (the ford painting has its own channel). `drawStones` uses the painted stones when present. Everything falls back to the old code-drawn water if a file is missing.
+- Still code-drawn: the mine's rock pillars and the block top behind the mine log bridge.
+- Before/after shots: project files `level2-grounding/water-before/` and `water-art/after/`. Cloud headless shots work if requests for other levels' assets are aborted (otherwise Chromium OOMs).

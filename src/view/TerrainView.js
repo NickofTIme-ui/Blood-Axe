@@ -99,6 +99,9 @@ function raggedRect(x, y, w, h, seed, straight, amp = 5) {
   return pts;
 }
 
+// where the painted stepping stones' flat tops are (a share of each cut-out's height from its top)
+const STONE_TOP = 0.32;
+
 // A wood stream's outline (a pit across the whole lane): narrow where it comes out of the
 // trees at the back, exact to the pit through the lane, then widening toward the camera; its
 // banks worn, not ruled
@@ -255,9 +258,44 @@ export class TerrainView {
     }
   }
 
+  // The painted water (ChatGPT, 2026-11-19: Nick, "the waterways in the level and in the game
+  // need to look better, the art around it and all"): one painting per kind of crossing, the
+  // water with its own banks, stretched over the crossing so its water lies where you fall in.
+  // `frac`: how much of the painting's width is water. Null when it isn't painted (code-drawn).
+  paintedWater(kind) {
+    const W = { wood: { pit: ['wood', 'water_stream', 0.44], wade: ['wood', 'water_ford', 0.7] }, mine: { pit: ['mine', 'water_river', 0.7] } };
+    const e = W[this.wood ? 'wood' : this.mine ? 'mine' : '']?.[kind];
+    return e && this.scene.textures.exists(artKey(e[0], e[1])) ? { key: artKey(e[0], e[1]), frac: e[2] } : null;
+  }
+
+  // Lay a painting over a crossing from `top` to `bottom`, its water over x0..x1; and the
+  // painted tile's current running over the water, faint, so it still moves
+  layWater(P, x0, x1, top, bottom, depth, shape) {
+    const s = this.scene;
+    const w = (x1 - x0) / P.frac;
+    s.add.image((x0 + x1) / 2, top, P.key).setOrigin(0.5, 0).setDisplaySize(w, bottom - top).setDepth(depth);
+    if (!s.textures.exists('water-src')) return;
+    const flow = s.add.tileSprite(x0 - (w - (x1 - x0)) * 0.1, top, (x1 - x0) + (w - (x1 - x0)) * 0.2, bottom - top, 'water-src').setOrigin(0).setTileScale(0.32)
+      .setDepth(depth + 0.01).setTint(0x9ab4c0).setAlpha(0.13).setBlendMode(Phaser.BlendModes.ADD);
+    flow.setMask(s.make.graphics({ add: false }).fillStyle(0xffffff, 1).fillPoints(shape, true).createGeometryMask());
+    s.tweens.add({ targets: flow, tilePositionY: -1024, duration: 11000, repeat: -1 });
+  }
+
   drawPits() {
     const s = this.scene;
+    const ford = this.paintedWater('wade');
     for (const p of this.terrain?.pits ?? []) {
+      // (the ford's deep channel is in the ford's own painting)
+      if (ford && (this.terrain?.wades ?? []).some((w) => p.x0 >= w.x0 && p.x1 <= w.x1)) continue;
+      const P = this.paintedWater('pit');
+      if (P) {
+        const ribbon = this.wood && p.z0 <= SETTINGS.world.floorTop;
+        const top = ribbon ? p.z0 - 56 : p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0);
+        const bottom = ribbon ? SETTINGS.height + 120 : p.z1 + 40;
+        const shape = ribbon ? streamRibbon(p, top, bottom, (p.x1 - p.x0) * 0.22) : raggedRect(p.x0, top, p.x1 - p.x0, bottom - top, p.x0, 'none');
+        this.layWater(P, p.x0, p.x1, top, bottom, DEPTH.floor + 4.1, shape);
+        continue;
+      }
       const g = s.add.graphics().setDepth(DEPTH.floor + 4);
       g.fillStyle(this.water ? 0x0c1820 : 0x000000, 1).fillRect(p.x0, p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0), p.x1 - p.x0, p.z1 - p.z0 + (p.z0 <= SETTINGS.world.floorTop ? 50 : 0) + 40);
       // a cold glow at the lip so the edge reads (in the village: a burning cellar, its fire far
@@ -306,12 +344,14 @@ export class TerrainView {
   // see-through, the stones of the bed under it, ripples running with it. Under the channel.
   drawWades() {
     const s = this.scene;
+    const painted = this.paintedWater('wade');
     for (const p of this.terrain?.wades ?? []) {
       const top = (p.z0 <= SETTINGS.world.floorTop ? p.z0 - 56 : p.z0 - 10);
       const bottom = SETTINGS.height + 120;
       const flare = (p.x1 - p.x0) * 0.16;
       const d = DEPTH.floor + 3.6;
       const shape = streamRibbon({ ...p, x0: p.x0, x1: p.x1 }, top, bottom, flare);
+      if (painted) { this.layWater(painted, p.x0, p.x1, top, bottom, d, shape); continue; }
       const mask = () => s.make.graphics({ add: false }).fillStyle(0xffffff, 1).fillPoints(shape, true).createGeometryMask();
       // (wet mud round it, then the stones of the bed showing through)
       const g = s.add.graphics().setDepth(d);
@@ -603,6 +643,24 @@ export class TerrainView {
     const { top, front, b } = v;
     const w = x1 - x0; const depth = yTop1 - yTop0;
     const rows = Math.max(2, Math.round(depth / 45));
+    // painted (ChatGPT, 2026-11-19: three wet boulders, tools/cut-water-art.py): one per row,
+    // their flat tops where you land, the back ones darker
+    const keys = [1, 2, 3].map((n) => artKey('wood', `water_stone_${n}`)).filter((k) => this.scene.textures.exists(k));
+    if (keys.length) {
+      v.arts ??= [];
+      for (let i = 0; i < rows; i++) {
+        const key = keys[(Math.round(b.x0 / 10) + i) % keys.length];
+        const img = v.arts[i] ??= this.scene.add.image(0, 0, key).setOrigin(0.5, STONE_TOP);
+        const cy = yTop0 + depth * ((i + 0.5) / rows);
+        const cx = (x0 + x1) / 2 + (wob(i, b.x0) - 0.5) * w * 0.2;
+        const k = 0.7 + 0.3 * (i / Math.max(1, rows - 1));
+        img.setTexture(key).setPosition(cx, cy).setScale((w * 1.25) / img.frame.width).setFlipX((i + Math.round(b.x0)) % 2 === 1)
+          .setTint(Phaser.Display.Color.GetColor(Math.round(255 * k), Math.round(255 * k), Math.round(255 * k)))
+          .setDepth(i === rows - 1 ? b.z1 + 0.5 : b.z0 - 0.5 + i * 0.01).setVisible(true);
+      }
+      top.setVisible(false); front.setVisible(false);
+      return;
+    }
     const drop = Math.max(0, b.top) + 18; // (down into the water)
     // a stone's outline: a rough, flattish lump, never a clean ellipse
     const lump = (cx, cy, rx, ry, seed) => {
