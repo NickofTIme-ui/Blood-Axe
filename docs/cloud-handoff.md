@@ -6,7 +6,26 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 20 November 2026 (cloud, branch `claude/project-thread-gp94mg` on main beecaf1; NOT pushed yet, NOT on itch).
+- 20 November 2026 (cloud, branch `claude/project-thread-snjnrt` rebased on main 1e158b7; ON MAIN (Nick: "push all"), NOT on itch).
+  WAR HOUNDS HUNT LIKE DOGS (Nick: "the dogs kind of just shuffle around weirdly, they need animations and
+  different things to do"). The cause: hounds used the man's brain (face the hero always, full pace or stop), so
+  circling was a sideways slide, and the painted walk strip's 6 cells are nearly the same pose.
+  1. entities/HoundHunt.js (data/enemies.js `hound.hunts`): modes stalk, circle, flank (wide arc to his back, in
+     from behind), rush (snap / pounce), bark, howl (first sight, or a packmate killed), retreat (after a bite;
+     bolts when hurt), sniff (no hero near), plus a skitter back from a swing (30%). Faces where it runs, eases
+     in and out of a pace, keeps room from packmates. World dice only (online-safe). `f.hunt.mode` for the view.
+     The pack (WoodTraps.packScript): a hound whose turn it isn't hunts with noAttack (circles on its own place
+     on the ring, barks, howls); the turn hound tells, then rushes. Joren's tree hounds rush when pulled off.
+  2. view/HoundView.js paint(): galloping bound/pitch at speed, low creep stalking/retreating, nose-down sniff,
+     bark head-snaps, howl (react cell 0), cringe on a hit (doom cell 0), flat out when knocked down (doom 3),
+     thrashing when grabbed, a squeeze on turning, breathing idle (atk1 cell 3). Optional strips used as soon
+     as they're listed in SPRITE_SHEETS: hound-run/idle/bark/howl/sniff/flinch/grabbed. Prompts:
+     docs/hound-art-prompts.md (= project files hound-art/prompts.md). Barks/sniffs fire events
+     (houndBark, houndSniff) that play `houndBark` / `houndSniff` sounds once recordings are added to Sfx.js.
+  3. tools/hound-preview/index.html: hounds hunting a standing hero with nothing else loaded (?n=3), for shots
+     from the cloud (the full game OOMs headless). Before/after gif: project files hound-art/.
+  4. logic-test: new lone-hound test; the Houndmaster chain test puts the hero on whichever side of him has room.
+- 20 November 2026 (cloud, branch `claude/project-thread-gp94mg` rebased on main 1e158b7; ON MAIN (Nick: "push all"), NOT on itch).
   THREE LEVEL 2 FIXES from Nick:
   1. CHAIN THROWS ("ashen grunt's chain breaks in pieces visually"): new src/view/chainDraw.js draws one connected
      iron chain (dark spine under overlapping flat/edge-on links). Used by SpriteEnemyView.drawHook (the Butcher's

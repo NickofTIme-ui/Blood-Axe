@@ -37,27 +37,107 @@ export class HoundView {
     if (this.painted) this.img = scene.add.image(fighter.x, fighter.z, SPRITES['hound-walk'].key, 'f0').setOrigin(0.5, 1).setScale(0.5);
   }
 
-  // the painted hound: which strip and cell, from the same state the drawing reads
+  // the painted hound: which strip and cell, from the same state the drawing reads, and the
+  // body motion laid over it (Nick, 2026-11-20: "they kind of just shuffle around weirdly").
+  // What it is doing (entities/HoundHunt.js `hunt.mode`) picks the pose: a bounding gallop at
+  // a run, a low creep stalking or slinking off, nose down sniffing, planted barking, head
+  // thrown back howling, a cringe when struck, flat out when knocked down, thrashing when a
+  // hero has it by the scruff. Painted strips that don't exist yet (data/levelArt.js
+  // `hound-run`, `hound-idle`, `hound-bark`, `hound-howl`, `hound-sniff`, `hound-flinch`,
+  // `hound-grabbed`) are used the moment they're added; till then the nearest painted pose.
   paint(st, fr, alpha) {
     const f = this.f;
+    const H = f.hunt;
+    const mode = H?.mode;
+    const d = f.facing;
+    const speed = Math.hypot(f.vx ?? 0, f.vz ?? 0) / Math.max(1, f.stats.walkSpeed);
+    const has = (n) => !!SPRITES[n];
     let name = 'hound-walk'; let i = 0;
-    if ((st === 'light1' || st === 'heavy') && f.move) { name = 'hound-atk1'; i = phaseCell(f.move, fr, ATK_CELLS); }
-    else if (st === 'hitstun' || st === 'stagger') name = 'hound-react';
-    else if (st === 'knockdown' || st === 'getup') { name = 'hound-react'; i = st === 'getup' ? 2 : 1; }
-    else if (st === 'dead') { name = 'hound-doom'; i = Math.floor(fr / 8); }
-    else if (st === 'walk' || st === 'jump') i = Math.floor(this.run * 1.6);
+    let bob = 0; let tilt = 0; let sx = 1; let sy = 1; let shove = 0; let size = 1;
+    const cyc = this.run * 1.6; // (cells along the ground covered: the feet never skate)
+    if ((st === 'light1' || st === 'heavy') && f.move) {
+      name = 'hound-atk1'; i = phaseCell(f.move, fr, ATK_CELLS);
+      const ph = movePhase(f.move, fr);
+      if (ph === 'startup') { sy = 0.94; sx = 1.04; tilt = 2; } // (coiled)
+      else if (ph === 'active') { sx = 1.08; sy = 0.96; tilt = st === 'heavy' ? -6 : -3; }
+    } else if (st === 'grabbed') {
+      // by the scruff: legs going, twisting to get its jaws round
+      if (has('hound-grabbed')) { name = 'hound-grabbed'; i = Math.floor(fr / 5); }
+      else { name = 'hound-react'; i = 2; size = 1.3; }
+      tilt = Math.sin(fr * 0.6) * 9; bob = Math.abs(Math.sin(fr * 0.6)) * -3;
+    } else if (st === 'hitstun' || st === 'stagger') {
+      // a cringe away from the blow, then a rear on a big one
+      if (has('hound-flinch')) { name = 'hound-flinch'; i = Math.floor(fr / 4); }
+      else if (st === 'stagger' && fr > 8) { name = 'hound-react'; i = 0; size = 1.3; }
+      else { name = 'hound-doom'; i = 0; }
+      const k = Math.max(0, 1 - fr / 10);
+      shove = -d * 8 * k; tilt = -4 * k; sy = 1 - 0.08 * k; sx = 1 + 0.05 * k;
+    } else if (st === 'knockdown') {
+      name = 'hound-doom'; i = 3; // (flat out)
+      tilt = fr < 8 ? -12 + fr * 1.5 : 0;
+    } else if (st === 'getup') {
+      name = 'hound-doom'; i = fr < (f.stats.getupFrames ?? 12) / 2 ? 2 : 1;
+    } else if (st === 'dead') { name = 'hound-doom'; i = Math.floor(fr / 8); }
+    else if (st === 'jump') { name = 'hound-atk1'; i = 1; tilt = (f.vh ?? 0) > 0 ? -5 : 4; }
+    else if (mode === 'howl' && (st === 'idle' || st === 'walk')) {
+      // head thrown back, baying
+      const t = H.t;
+      if (has('hound-howl')) { name = 'hound-howl'; i = t < 8 ? 0 : t < 50 ? 1 + Math.floor(t / 10) % 2 : 0; }
+      else if (t < 6 || t > 54) { name = 'hound-atk1'; i = 3; }
+      else { name = 'hound-react'; i = 0; size = 1.3; sy = 0.97 + 0.03 * Math.sin(t * 0.25); }
+    } else if (mode === 'bark' && (st === 'idle' || st === 'walk')) {
+      // planted, snapping its head forward on every bark
+      const beat = ((H.t + f.id * 7) % 17);
+      const snap = beat < 6 ? 1 - beat / 6 : 0;
+      if (has('hound-bark')) { name = 'hound-bark'; i = snap > 0.3 ? 1 + (beat > 2 ? 1 : 0) : 0; }
+      else { name = 'hound-drag'; i = snap > 0.4 ? 2 : 3; }
+      shove = d * 5 * snap; bob = -3 * snap; tilt = -3 * snap; sx = 1 + 0.04 * snap;
+      if (st === 'walk') { bob = 0; }
+    } else if (st === 'walk' && (mode === 'sniff' || (mode === 'stalk' && speed < 0.5) || (mode === 'retreat' && speed < 0.5))) {
+      // the creep: low, nose down, slow steps
+      if (has('hound-sniff') && mode === 'sniff') { name = 'hound-sniff'; i = Math.floor(cyc) % SPRITES['hound-sniff'].count; }
+      else i = Math.floor(cyc);
+      sy = mode === 'sniff' ? 0.9 : 0.93; sx = 1.04;
+      tilt = mode === 'sniff' ? 6 + Math.sin(this.t * 0.3) * 2 : 3; // (nose down, casting about)
+      bob = Math.abs(Math.sin(cyc * Math.PI / 3)) * -1;
+    } else if (st === 'walk') {
+      // the run: a bounding gallop at speed (the strip faster, the body rising and pitching
+      // with each bound), a trot below that
+      const fast = speed > 0.75;
+      if (fast && has('hound-run')) { name = 'hound-run'; i = Math.floor(cyc * 1.15); }
+      else i = Math.floor(cyc);
+      const ph = cyc * Math.PI / 3; // (one bound a cycle of the six cells)
+      if (fast) { bob = -Math.abs(Math.sin(ph)) * 7; tilt = Math.cos(ph) * 5; sx = 1 + 0.05 * Math.sin(ph); sy = 1 - 0.05 * Math.sin(ph); }
+      else { bob = -Math.abs(Math.sin(ph * 2)) * 2.5; tilt = Math.cos(ph * 2) * 1.5; }
+      if (mode === 'retreat') { sy *= 0.95; tilt += 3; } // (tail down, head low)
+    } else if (mode === 'sniff') {
+      // stopped, nose to the ground
+      if (has('hound-sniff')) { name = 'hound-sniff'; i = 0; } else { name = 'hound-walk'; i = 2; }
+      sy = 0.9; sx = 1.04; tilt = 8 + Math.sin(this.t * 0.5) * 2;
+    } else {
+      // standing: breathing, the flanks going (a panting idle, not a frozen walk frame)
+      if (has('hound-idle')) { name = 'hound-idle'; i = Math.floor(this.t / 8); }
+      else { name = 'hound-atk1'; i = 3; }
+      sy = 1 + 0.018 * Math.sin(this.t * 0.22); sx = 1 - 0.008 * Math.sin(this.t * 0.22);
+      if (f.packTell > 0) { name = has('hound-bark') ? 'hound-bark' : 'hound-drag'; i = has('hound-bark') ? 0 : 1; sy = 0.95; } // (its turn: braced, about to go)
+    }
     // its jaws locked in a hero, hauling him back (stage/WoodTraps.js latch): the grab, then
     // braced and worrying at him, a beat every 7 frames
     if (f.latchOn != null && f.alive && SPRITES['hound-drag'] && !['knockdown', 'getup', 'dead'].includes(st)) {
       this.dragT = (this.dragT ?? 0) + 1;
       name = 'hound-drag'; i = this.dragT < 8 ? 0 : 1 + Math.floor((this.dragT - 8) / 7) % 4;
+      tilt = Math.sin(this.dragT * 0.9) * 4; size = 1; shove = 0;
     } else this.dragT = 0;
     const S = SPRITES[name];
-    i = name === 'hound-walk' ? i % S.count : Math.min(S.count - 1, Math.max(0, i));
-    this.img.setTexture(S.key, `f${i}`).setPosition(f.x, f.z - f.h).setFlipX(f.facing < 0).setDepth(f.z).setAlpha(alpha);
+    const loop = ['hound-walk', 'hound-run', 'hound-idle', 'hound-sniff', 'hound-grabbed', 'hound-flinch'].includes(name) && st !== 'dead';
+    i = loop ? ((i % S.count) + S.count) % S.count : Math.min(S.count - 1, Math.max(0, i));
+    // a turn isn't a pop: it squeezes through side-on for a few frames
+    if (d !== this.lastFacing) { this.turnT = this.lastFacing == null ? 0 : 6; this.lastFacing = d; }
+    if (this.turnT > 0) { sx *= 0.55 + 0.45 * (1 - this.turnT / 6); this.turnT--; }
+    this.img.setTexture(S.key, `f${i}`).setPosition(f.x + shove, f.z - f.h + bob).setFlipX(d < 0).setDepth(f.z).setAlpha(alpha);
     if (f.flash > 0) this.img.setTintFill(0xffffff); else this.img.clearTint();
     // (hangSprite turns it over, or swaps in a painted hanging pose with its own origin and size)
-    this.img.setAngle(0).setOrigin(0.5, 1).setScale(0.5);
+    this.img.setAngle(tilt * d).setOrigin(0.5, 1).setScale(0.5 * size * sx, 0.5 * size * sy);
     hangSprite(this, this.img, f, this.img.displayHeight * 0.8); // (snared: strung up by a hind leg)
   }
 
@@ -69,8 +149,10 @@ export class HoundView {
     const d = f.facing;
     let lean = 0; let stretch = 0; let crouch = 0; let jaw = 0.15; let roll = 0; let alpha = 1;
     // the run cycle follows the ground covered, so it never skates
-    this.run += Math.abs(f.x - this.lastX) * 0.06 + Math.abs(f.vz ?? 0) * 0.0008;
-    this.lastX = f.x;
+    // (ground covered in depth counts too: a dog running up or down the road gallops)
+    this.run += Math.hypot(f.x - this.lastX, f.z - (this.lastZ ?? f.z)) * 0.06;
+    this.lastX = f.x; this.lastZ = f.z;
+    this.t = (this.t ?? 0) + 1;
     let gait = st === 'walk' ? this.run : 0;
     if ((st === 'light1' || st === 'heavy') && f.move) {
       const ph = movePhase(f.move, fr);

@@ -37,6 +37,7 @@
 //   and only then do they drop.
 //
 import { createEnemy, offscreenX, inView } from '../entities/Enemy.js';
+import { hunt, setHunt } from '../entities/HoundHunt.js';
 
 // All of it is the sim's (online: both machines step it the same); the view listens for the
 // events it emits.
@@ -928,22 +929,18 @@ export class WoodTraps {
   }
 
   packScript(h, brain, target) {
-    const T = TRAPS.pack; const P = this.packTurn; const B = this.world.bounds;
-    const dx = target.x - h.x; const dz = target.z - h.z;
+    const P = this.packTurn;
+    const dx = target.x - h.x;
     if (P?.id === h.id) {
-      if (P.tell > 0) { P.tell--; h.packTell = P.tell; brain.facingHint = Math.sign(dx) || h.facing; return true; }
+      if (P.tell > 0) { P.tell--; h.packTell = P.tell; brain.facingHint = Math.sign(dx) || h.facing; brain.moveX = 0; brain.moveZ = 0; if (!P.tell) setHunt(h, 'rush', 90); return true; }
       h.packTell = 0;
-      return false; // (his turn: in he goes, the hound's own fighting)
+      return false; // (his turn: in he goes, the hound's own hunting)
     }
     h.packTell = 0;
     if (!['idle', 'walk'].includes(h.state)) return false;
-    // round him on a ring, each its own place on it
-    const a = h.id * 2.399 + this.world.frame * T.spin;
-    const tx = target.x + Math.cos(a) * T.ring;
-    const tz = Math.max(B.minZ + 10, Math.min(B.maxZ - 10, target.z + Math.sin(a) * T.ring * 0.4));
-    brain.moveX = Math.abs(tx - h.x) > 12 ? Math.sign(tx - h.x) : 0;
-    brain.moveZ = Math.abs(tz - h.z) > 8 ? Math.sign(tz - h.z) : 0;
-    brain.facingHint = Math.sign(dx) || h.facing;
+    // not its turn: it circles, barks, howls, slinks about (entities/HoundHunt.js), never in
+    hunt(brain, target, { noAttack: true });
+    brain.terrainSteer(target);
     return true;
   }
 

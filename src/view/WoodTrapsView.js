@@ -1056,6 +1056,11 @@ export class WoodTrapsView {
     ev.on('chained', () => { playSfx(s, 'stoneStep', { volume: 1, minGapMs: 0 }); s.fx?.shake(3, 8); });
     ev.on('houndLatch', () => { playSfx(s, 'woodHowl', { volume: 0.35, pitch: 700, minGapMs: 300 }); s.fx?.shake(3, 8); });
     ev.on('houndWorry', () => playSfx(s, 'kick', { volume: 0.35, pitch: -200, minGapMs: 100 }));
+    // the hunting hounds (entities/HoundHunt.js): the howl on first sight or a packmate killed;
+    // barks, sniffs and a yelp play once their recordings are in (Sfx houndBark, houndSniff)
+    ev.on('houndHowl', () => playSfx(s, 'woodHowl', { volume: 0.45, pitch: 250, minGapMs: 1500 }));
+    ev.on('houndBark', () => playSfx(s, 'houndBark', { volume: 0.6, minGapMs: 140 }));
+    ev.on('houndSniff', () => playSfx(s, 'houndSniff', { volume: 0.4, minGapMs: 600 }));
     ev.on('houndShaken', () => playSfx(s, 'kick', { volume: 0.7, minGapMs: 0 }));
     ev.on('houndmasterBroken', () => playSfx(s, 'woodHowl', { volume: 0.6, pitch: -400, minGapMs: 0 }));
     ev.on('signalOut', () => { playSfx(s, 'doorClose2', { volume: 0.8, pitch: 300, minGapMs: 0 }); s.fx?.shake(3, 10); });

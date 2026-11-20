@@ -1,0 +1,44 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Hound preview</title>
+<style>html,body{margin:0;background:#222}</style></head>
+<body>
+<script src="../../lib/phaser.min.js"></script>
+<script type="module">
+// tools/hound-preview: the war hounds hunting a hero who stands still, nothing else loaded
+// (entities/HoundHunt.js + view/HoundView.js). ?n=3 for a pack. Serve the repo root and open
+// tools/hound-preview/index.html.
+import { World } from '../../src/core/World.js';
+import { Fighter } from '../../src/entities/Fighter.js';
+import { Controller } from '../../src/core/Controller.js';
+import { CHARACTERS } from '../../src/data/characters.js';
+import { createEnemy } from '../../src/entities/Enemy.js';
+import { SPRITE_SHEETS } from '../../src/data/levelArt.js';
+import { buildLevelArt } from '../../src/view/levelArt.js';
+import { HoundView } from '../../src/view/HoundView.js';
+const n = +(new URLSearchParams(location.search).get('n') ?? 1);
+class P extends Phaser.Scene {
+  preload() { for (const [k, S] of Object.entries(SPRITE_SHEETS)) if (k.startsWith('hound')) this.load.image(`sprsrc-${k}`, '../../' + S.file); }
+  create() {
+    buildLevelArt(this);
+    this.add.rectangle(0, 0, 2400, 1200, 0x4a4436).setOrigin(0);
+    const w = this.world = new World({ seed: 5 });
+    const hero = new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 640, z: 470, controller: new Controller() });
+    w.addFighter(hero);
+    this.heroBox = this.add.rectangle(640, 470, 40, 110, 0x8090a0).setOrigin(0.5, 1);
+    this.views = [];
+    for (let k = 0; k < n; k++) { const h = createEnemy(w, 'hound', 1150 + k * 60, 430 + k * 40); this.views.push(new HoundView(this, h)); }
+    this.label = this.add.text(10, 10, '', { font: '16px monospace', color: '#fff' });
+    window.W = w; window.S = this;
+  }
+  step() {
+    const w = this.world; const hero = w.fighters[0];
+    hero.health = hero.stats.maxHealth; hero.x = 640; hero.z = 470;
+    w.tick();
+    for (const v of this.views) v.update();
+    this.heroBox.setPosition(hero.x, hero.z).setDepth(hero.z);
+    this.label.setText(this.views.map((v) => `${v.f.hunt?.mode ?? '-'} ${v.f.state}`).join('   '));
+  }
+  update() { if (!window.manual) this.step(); }
+}
+window.game = new Phaser.Game({ type: Phaser.CANVAS, width: 1280, height: 640, parent: document.body, scene: P, backgroundColor: '#333' });
+</script></body></html>

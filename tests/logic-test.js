@@ -3726,6 +3726,23 @@ test('wood: a loose pack circles a hero and goes in one at a time, ears up first
   assert(maxAt <= 1, `never two in at once (${maxAt})`);
 });
 
+test('wood: a lone hound hunts like a dog: faces where it runs, and does more than one thing (Nick, 2026-11-20)', () => {
+  const { world, p, st, run } = woodSetup(0, { x: 300, z: 440 });
+  killFoes(world); run(2);
+  const h = woodFoe(world, st, 'hound', 700, 440);
+  const modes = new Set(); let howls = 0; let barks = 0; let backwards = 0; let moving = 0; let bites = 0;
+  world.events.on('houndHowl', () => howls++); world.events.on('houndBark', () => barks++);
+  run(1500, () => { p.health = p.stats.maxHealth; p.x = 300; p.z = 440;
+    if (h.hunt) modes.add(h.hunt.mode);
+    if (['light1', 'heavy'].includes(h.state) && h.fsm.frame === 1) bites++;
+    if (h.state === 'walk' && Math.abs(h.vx) > 60) { moving++; if (Math.sign(h.vx) !== h.facing && !['rush', 'bark'].includes(h.hunt.mode) && !h.hunt.skitter && h.hunt.t < h.hunt.dur * 0.7) backwards++; } });
+  assert(howls >= 1, `it howls on first sight (${howls})`);
+  assert(bites >= 2, `it goes in (${bites})`);
+  for (const m of ['circle', 'retreat']) assert(modes.has(m), `it ${m}s (${[...modes]})`);
+  assert(modes.size >= 5, `several things to do (${[...modes]})`);
+  assert(backwards <= moving * 0.05, `no running backwards (${backwards} of ${moving})`);
+});
+
 test("wood: a hound's bite can lock on and drag a hero; mashing shakes it off", () => {
   const { world, p, st, c, run } = woodSetup(0, { x: 300, z: 440 });
   killFoes(world); run(2);

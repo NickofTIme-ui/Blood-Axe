@@ -171,6 +171,7 @@ export const ENEMIES = {
     name: 'War Hound',
     title: 'Fed on the fallen',
     view: 'hound',
+    hunts: true, // (it hunts like a dog: entities/HoundHunt.js)
     body: { w: 70, h: 52 },
     look: { color: 0x1a1614, accent: 0x5a5660, skin: 0x2a2220 },
 

@@ -13,6 +13,7 @@ import { Fighter } from './Fighter.js';
 import { ENEMIES } from '../data/enemies.js';
 import { usable } from './fighterStates.js';
 import { SETTINGS } from '../config/settings.js';
+import { hunt, setHunt } from './HoundHunt.js';
 
 // Enemies never pop into view: a new one is placed just past the edge of anything a
 // hero's screen can show, and walks on (his brain's 'entering' leg, below). Placement
@@ -150,7 +151,7 @@ export class EnemyBrain extends Controller {
     // hero comes close or hurts him. Then he's on the hero for good.
     if (f.worry) {
       const close = this.world.fighters.some((o) => o.team === 'player' && o.alive && Math.abs(o.x - f.x) < ENTER.worry && Math.abs(o.z - f.z) < 120);
-      if (close || f.health < f.stats.maxHealth) f.worry = null;
+      if (close || f.health < f.stats.maxHealth) { f.worry = null; if (f.stats.hunts) { setHunt(f, 'rush', 90); f.hunt.howled = true; } } // (it's been baying at the tree: straight at him)
       else {
         const side = ((this.world.frame + f.id * 37) % 120) < 60 ? -1 : 1;
         const tx = f.worry.x + side * 46; const tz = f.worry.z + 24;
@@ -174,6 +175,16 @@ export class EnemyBrain extends Controller {
     }
     // Lost an arm: the fight has gone out of him — he tries to run.
     if (f.maimed?.armF || f.maimed?.armB) return this.panic(target);
+
+    // A war hound hunts like a dog, not a man (entities/HoundHunt.js): it runs where it's
+    // going, circles, flanks, barks, howls, slinks off. A Mage's wall or a ledge between it
+    // and its hero: the man's way round those (below).
+    if (f.stats.hunts && !this.world.barriers?.between(f, target.x)
+      && !(this.world.terrain && Math.abs((target.floor ?? 0) - (f.floor ?? 0)) > 40)) {
+      hunt(this, target);
+      this.terrainSteer(target);
+      return;
+    }
 
     const ai = this.ai;
     const dx = target.x - f.x;
