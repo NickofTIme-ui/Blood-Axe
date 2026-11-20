@@ -28,7 +28,9 @@ lvl wood-whistle.wav 7
 ffmpeg -v error -y -ss 12.66 -t 0.55 -i Peitschen.ogg -af "highpass=f=280,afade=t=in:d=0.005,afade=t=out:st=0.3:d=0.25" -ac 1 -ar 44100 $T/whip.wav
 topeak whip.wav wood-whip.wav
 # a step through the ford's shallows
-ffmpeg -v error -y -ss 4.32 -t 0.42 -i Sloshing_canister_of_water.ogg -af "highpass=f=120,lowpass=f=5000,asetrate=44100*0.9,aresample=44100,afade=t=in:d=0.02,afade=t=out:st=0.25:d=0.17" -ac 1 -ar 44100 $T/wade.wav
+# wade (2026-11-20): the canister glug read as croaking frogs (a single ~1.35 kHz tone, pitch-spread
+# per step). Now a soft swish cut from the tail of the game's own water-splash.mp3.
+ffmpeg -v error -y -ss 1.5 -t 0.42 -i "$OUT/water-splash.mp3" -af "highpass=f=250,lowpass=f=6000,afade=t=in:d=0.04,afade=t=out:st=0.2:d=0.22" -ac 1 -ar 44100 $T/wade.wav
 topeak wade.wav wood-wade.wav
 # crows going up: wings clattering (Kenney cloth, quick and high), then the ravens' calls
 ffmpeg -v error -y -ss 3.85 -t 5.2 -i yell-RavenBlackSandBasin.mp3 -i $K/rpg_cloth1.ogg -i $K/rpg_cloth4.ogg -i $K/rpg_cloth1.ogg -filter_complex "[0]highpass=f=250,volume=1.8,adelay=250|250[c];[1]asetrate=44100*1.5,aresample=44100,volume=0.5[a];[2]asetrate=44100*1.7,aresample=44100,volume=0.4,adelay=110|110[b];[3]asetrate=44100*1.9,aresample=44100,volume=0.3,adelay=220|220[d];[c][a][b][d]amix=inputs=4:normalize=0,afade=t=out:st=4.6:d=0.8,$N" $E $OUT/wood-crows.wav

@@ -6,6 +6,22 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 20 November 2026 (cloud, branch `claude/project-thread-gp94mg` on main beecaf1; NOT pushed yet, NOT on itch).
+  THREE LEVEL 2 FIXES from Nick:
+  1. CHAIN THROWS ("ashen grunt's chain breaks in pieces visually"): new src/view/chainDraw.js draws one connected
+     iron chain (dark spine under overlapping flat/edge-on links). Used by SpriteEnemyView.drawHook (the Butcher's
+     meat hook and the Stalker's chain sickle; laid from the hook end so links ride out with it) and WoodTrapsView
+     (the Houndmaster's whirl over his head and the chain on a caught hero). Was a dotted row of 4 px squares.
+     Before/after: project files chain-throw/before-after.png.
+  2. FROG SOUNDS ("wayyyyy overdone"): it was the wading sound. wood-wade.wav was a glug with one ~1.35 kHz tone,
+     played for every wader (hounds, men, villagers) every 20 frames at +-160 cents: a frog chorus. Now a soft swish
+     cut from the tail of water-splash.mp3 (tools/sfx-gen/wood-recorded.sh), heard only for heroes, every 36 frames,
+     volume 0.22, spread 40, minGap 420 ms.
+  3. SITTING DOGS ("just sit there you cant hit them"): the kennel pens' hounds were set down a section early,
+     invincible behind bars, and sat in view as you came up from the convoy. No hound waits in a pen now
+     (WoodTraps.updatePens); when a phase or pensAtStart opens a pen, its hounds run in from off-screen on the pen's
+     side (openPen). Slamming a knocked-down hound into an open pen still works. Logic tests updated (and the
+     chain-drag test now puts the hero on the roomier side, it was timing-fragile against the right wall).
 - 19 November 2026 (cloud, branch `claude/project-thread-slyl5t` on main 2208944; ON MAIN (Nick: "push all"), NOT on itch).
   GALLOWS WOOD GROUNDING PASS (Nick: "objects still feel copied and pasted into the world, the trees and snares
   still feel off, the tree trap going over the river"):

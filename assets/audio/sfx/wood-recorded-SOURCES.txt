@@ -17,5 +17,6 @@ wood-whip.wav     one crack from "Peitschen.ogg", Basel, Wikimedia Commons. Publ
                   https://commons.wikimedia.org/wiki/File:Peitschen.ogg
 wood-rain.wav     "Rain (1).ogg", ezwa, Wikimedia Commons. Public domain (made a seamless loop).
                   https://commons.wikimedia.org/wiki/File:Rain_(1).ogg
-wood-wade.wav     "Sloshing canister of water.ogg", stephan, Wikimedia Commons. Public domain.
-                  https://commons.wikimedia.org/wiki/File:Sloshing_canister_of_water.ogg
+wood-wade.wav     a soft swish cut from the tail of water-splash.mp3 (the game's own splash).
+                  (Until 2026-11-20 it was a glug from "Sloshing canister of water.ogg", which
+                  sounded like croaking frogs.)

@@ -104,7 +104,6 @@ export class WoodTraps {
     // the kennels' pens: hounds behind their gates, let out as the Houndmaster's fight turns
     this.pens = [];
     stage.sections.forEach((sec, i) => (sec.pens ?? []).forEach((pen, k) => this.pens.push({ id: k, section: i, ...pen, hounds: [], placed: false, open: false })));
-    this.penFresh = true;
     this.world.events.on('bossPhase', ({ phase }) => { for (const k of phase.pens ?? []) this.openPen(this.pens.find((q) => q.id === k && q.section === this.stage.index)); });
     // the mist banks and their signal lanterns (a section's `mist`)
     this.mists = [];
@@ -541,18 +540,10 @@ export class WoodTraps {
   // behind bars: not foes yet, and nothing reaches them. The boss gets his whistle and net.
   updatePens() {
     const st = this.stage;
-    for (const pen of this.pens) {
-      if (pen.placed || st.index < pen.section - 1 || st.index > pen.section) continue;
-      if (!this.penFresh && inView(this.world, this.heroes, pen.x)) continue;
-      pen.placed = true;
-      for (let k = 0; k < (pen.count ?? 1); k++) {
-        const e = createEnemy(this.world, pen.type ?? 'hound', pen.x + (k - ((pen.count ?? 1) - 1) / 2) * 34, pen.z + k * 6);
-        st.setOnGround(e);
-        e.penned = pen.id; e.lurking = -1; e.invincible = true; e.facing = k % 2 ? 1 : -1;
-        pen.hounds.push(e);
-      }
-    }
-    this.penFresh = false;
+    // (no hounds wait in the pens any more. Nick, 2026-11-20: "the dogs just sitting in the
+    // convoy area need to go away they just sit there you cant hit them": set down behind bars
+    // a section early, invincible, they sat in plain sight as you came up from the convoy. A
+    // pen's hounds now come running in when his phase opens it: see openPen)
     this.updateSlams();
     const b = st.boss;
     if (b?.alive && st.section?.pens && !b.kennelSet) {
@@ -570,8 +561,16 @@ export class WoodTraps {
   openPen(pen) {
     if (!pen || pen.open) return;
     pen.open = true;
-    // (a pen never filled, the level come up mid-fight: its hounds come out of it all the same)
-    if (!pen.hounds.length) for (let k = 0; k < (pen.count ?? 1); k++) { const e = createEnemy(this.world, pen.type ?? 'hound', pen.x + k * 30, pen.z); this.stage.setOnGround(e); e.dropIn = true; pen.hounds.push(e); }
+    // an empty pen (they don't wait in them now): its hounds come running in from off-screen,
+    // from the pen's side of the screen, the moment its gate drops
+    if (!pen.hounds.length) {
+      const heroes = this.heroes;
+      const side = pen.x >= (heroes[0]?.x ?? pen.x) ? 1 : -1;
+      for (let k = 0; k < (pen.count ?? 1); k++) {
+        const e = createEnemy(this.world, pen.type ?? 'hound', offscreenX(this.world, heroes, side, k), pen.z + 40 + k * 30, { entering: true });
+        this.stage.setOnGround(e); pen.hounds.push(e);
+      }
+    }
     for (const e of pen.hounds) { e.penned = null; e.lurking = null; e.invincible = false; e.facing = 1; }
     pen.hounds = pen.hounds.filter((e) => e.alive);
     this.world.events.emit('penOpen', { pen });
@@ -917,7 +916,6 @@ export class WoodTraps {
     for (const M of this.mists) if (M.section >= section) { M.sent = 0; M.t = 0; }
     this.packTurn = null;
     for (const pen of this.pens) if (pen.section >= section) { pen.placed = false; pen.open = false; pen.shut = 0; pen.hounds = []; }
-    this.penFresh = true;
     for (const C of this.carts) if (C.pr.section >= section && !C.pr.broken) { C.pr.halted = false; C.driver = null; C.mounted = false; C.fresh = true; }
   }
 }

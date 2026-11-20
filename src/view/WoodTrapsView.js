@@ -12,6 +12,7 @@ import { FONT } from './fonts.js';
 import { playSfx, DK } from '../core/Sfx.js';
 import { artKey } from './levelArt.js';
 import { TRAPS } from '../stage/WoodTraps.js';
+import { chainPath, drawChain } from './chainDraw.js';
 import { PROP_LIGHT, lightProp, groundUnder } from './propGround.js';
 
 // The wood's own light on its painted traps, as on its crates and barrels (view/propGround.js):
@@ -164,16 +165,18 @@ export class WoodTrapsView {
       const top = f.z - f.h - (f.stats.body?.h ?? 120);
       if (f.chainT > 0) {
         const r = 30 + 14 * f.chainT; const cx = f.x - f.facing * 6; const cy = top + 4;
-        g.lineStyle(3, 0x6a6a72, 1).strokeEllipse(cx, cy, r * 2.2, r * 0.6);
-        for (let i = 0; i < 10; i++) { const a = now / 55 + i * 0.63; g.fillStyle(0x9a9aa2, 1).fillCircle(cx + Math.cos(a) * r * 1.1, cy + Math.sin(a) * r * 0.3, 2.5); }
+        // one unbroken loop of chain whirled over his head, its links running round it
+        const ring = []; const rx = r * 1.1; const ry = r * 0.3;
+        for (let i = 0; i <= 48; i++) { const a = (i / 48) * Math.PI * 2; ring.push({ x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry }); }
+        drawChain(g, ring, { link: 10, thick: 6, phase: now / 6 });
       }
       if (f.chained) {
         const b = this.scene.world.fighters.find((o) => o.id === f.chained.by);
         if (!b) continue;
         const hx = b.x + b.facing * 20; const hy = b.z - b.h - (b.stats.body?.h ?? 120) * 0.6;
         const px = f.x; const py = f.z - f.h - (f.stats.body?.h ?? 120) * 0.45;
-        g.lineStyle(3, 0x4a4a52, 1).lineBetween(hx, hy, px, py);
-        for (let i = 0; i <= 12; i++) { const k = i / 12; g.fillStyle(0x8a8a92, 1).fillCircle(hx + (px - hx) * k, hy + (py - hy) * k + Math.sin(k * Math.PI) * 10, 2.5); }
+        // pulled taut-ish: a shallow sag, drawn from the hero back to his fist
+        drawChain(g, chainPath({ x: px, y: py }, { x: hx, y: hy }, 10), { link: 10, thick: 7 });
       }
     }
   }
@@ -792,7 +795,7 @@ export class WoodTrapsView {
     const g = this.wadeG.clear();
     const now = s.time.now;
     const feet = [
-      ...this.scene.world.fighters.filter((f) => f.alive && f.grounded && f.h - (f.floor ?? 0) < 2 && (f.floor ?? 0) <= 0).map((f) => ({ id: f.id, x: f.x, z: f.z, moving: Math.abs(f.vx) + Math.abs(f.vz) > 20, w: 34 * (f.stats.size ?? 1) })),
+      ...this.scene.world.fighters.filter((f) => f.alive && f.grounded && f.h - (f.floor ?? 0) < 2 && (f.floor ?? 0) <= 0).map((f) => ({ id: f.id, x: f.x, z: f.z, moving: Math.abs(f.vx) + Math.abs(f.vz) > 20, w: 34 * (f.stats.size ?? 1), hero: f.team === 'player' })),
       ...(this.stage.story?.npcs ?? []).filter((n) => n.wading && n.moving !== false).map((n) => ({ id: `n${n.id}`, x: n.x, z: n.z, moving: true, w: 30 })),
     ];
     this.wadeStep ??= new Map();
@@ -807,7 +810,10 @@ export class WoodTrapsView {
       if (k % 10 === 1) {
         for (let i = 0; i < 4; i++) s.gore?.spawn({ x: f.x + rand(-14, 14), z: f.z + rand(-4, 4), h: rand(2, 10), vx: rand(-60, 60), vz: rand(-10, 10), vh: rand(90, 170), tint: 0xb8ccd4, scale: rand(0.25, 0.5), decal: false, life: rand(16, 26) });
       }
-      if (k % 20 === 1) playSfx(s, 'woodWade', { volume: 0.45, spread: 160, minGapMs: 90 });
+      // (Nick, 2026-11-20: "the frog sounds is wayyyyy overdone": every wader, hounds and
+      // villagers too, glugged every third of a second at a random pitch. Now only a hero's
+      // own steps are heard, a soft swish every other stride, never stacked)
+      if (k % 36 === 1 && f.hero) playSfx(s, 'woodWade', { volume: 0.22, spread: 40, minGapMs: 420 });
     }
   }
 

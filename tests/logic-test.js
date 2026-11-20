@@ -3571,19 +3571,18 @@ test('boss phases: the Houndmaster calls his pack, then rages; each phase once, 
   assert(t2.st.story.beats.find((x) => x.id === 'pack').fired && t2.st.story.beats.find((x) => x.id === 'frenzy').fired, 'their lines');
 });
 
-test('kennels: hounds wait behind their pen gates (not foes, untouchable) till his phases drop them; his whistle sends the pack in, two pounces each', () => {
+test('kennels: no hounds sit waiting behind the pen gates (Nick: untouchable dogs just sitting there); his phases drop a gate and its hounds run in; his whistle sends the pack in, two pounces each', () => {
   const { world, p, st, run } = woodSetup(WOOD_SEC('kennels'), { x: 7700, z: 440 });
   run(700, () => { p.health = p.stats.maxHealth; p.awe = 0; });
-  const penned = world.fighters.filter((f) => f.penned != null);
-  assert(penned.length === 4 && penned.every((f) => f.invincible && f.alive), `four hounds still in the pens (${penned.length})`);
-  const out = world.fighters.filter((f) => f.alive && f.stats.id === 'hound' && f.penned == null);
-  assert(out.length === 2, `his own two came out of the middle kennel when he walked in (${out.length})`);
-  assert(!st.livingFoes().some((f) => f.penned != null), 'not counted as foes behind bars');
+  assert(!world.fighters.some((f) => f.penned != null), 'nobody waiting in the pens');
+  assert(!world.fighters.some((f) => f.alive && f.team === 'enemy' && f.invincible && f !== st.boss), 'no untouchable enemy standing about');
+  const out = world.fighters.filter((f) => f.alive && f.stats.id === 'hound');
+  assert(out.length === 2, `his own two came in when he walked in (${out.length})`);
   const b = st.boss;
   b.health = b.stats.maxHealth * 0.6;
   let opened = 0; world.events.on('penOpen', () => opened++);
   run(2, () => { p.health = p.stats.maxHealth; });
-  assert(opened === 1 && world.fighters.filter((f) => f.penned != null).length === 2, 'the pack phase drops a gate');
+  assert(opened === 1 && world.fighters.filter((f) => f.alive && f.stats.id === 'hound').length >= 4, 'the pack phase drops a gate and its two come running');
   let whistles = 0; let pounces = 0;
   world.events.on('whistle', () => whistles++);
   run(900, () => { p.health = p.stats.maxHealth; p.awe = 0; b.health = Math.max(b.health, b.stats.maxHealth * 0.55); for (const h of world.fighters) if (h.order && h.state === 'heavy') pounces++; });
@@ -3622,7 +3621,7 @@ test("kennels: the Houndmaster's chain drags a hero in; a dodge breaks it", () =
   run(2);
   for (const f of world.fighters) if (f.team === 'enemy' && f !== b) f.health = 0;
   let cracks = 0; world.events.on('chainCrack', () => cracks++);
-  for (let i = 0; i < 900 && !p.chained; i++) run(1, () => { p.health = p.stats.maxHealth; p.awe = 0; p.invincible = false; b.health = Math.max(b.health, b.stats.maxHealth * 0.55); if (!p.chained && p.state !== 'hitstun') { p.x = b.x + 200; p.z = b.z; } });
+  for (let i = 0; i < 900 && !p.chained; i++) run(1, () => { p.health = p.stats.maxHealth; p.awe = 0; p.invincible = false; b.health = Math.max(b.health, b.stats.maxHealth * 0.55); if (!p.chained && p.state !== 'hitstun') { p.x = b.x + (b.x > (world.bounds.minX + world.bounds.maxX) / 2 ? -200 : 200); p.z = b.z; } }); // (p on the roomier side of him: not pinned against a wall)
   assert(cracks >= 1 && p.chained, `caught on the chain (${cracks})`);
   const gap = Math.abs(b.x - p.x);
   run(8, () => { p.health = p.stats.maxHealth; });

@@ -27,6 +27,7 @@ import { BodyFeel, easedSpread, swingBody } from './animFeel.js';
 import { dangerEdge, dangerGlint, isDanger } from './dangerCue.js';
 import { SENTENCE } from '../stage/Sentence.js';
 import { dyeImage } from './dye.js';
+import { chainPath, drawChain } from './chainDraw.js';
 
 // On his knees for his sentence (stage/Sentence.js) without painted kneeling art: his
 // standing frame sinks this share of his height into the floor, cropped at the knee.
@@ -714,14 +715,10 @@ export class SpriteEnemyView {
     const tip = { x: f.x + f.facing * (hb.x + hb.w), y: f.z - f.h - (hb.y + hb.h / 2) };
     const p = { x: lerp(hand.x, tip.x, out), y: lerp(hand.y, tip.y, out) };
     const g = this.chain.setDepth(f.z + 0.4);
-    const n = Math.max(4, Math.round(Math.hypot(p.x - hand.x, p.y - hand.y) / 5));
-    for (let i = 0; i <= n; i++) {
-      const t = i / n;
-      const x = lerp(hand.x, p.x, t);
-      const y = lerp(hand.y, p.y, t) + Math.sin(t * Math.PI) * (1 - out) * 14;
-      g.fillStyle(0x1a1a1e, 1).fillRect(x - 2, y - 2, 4, 4);
-      g.fillStyle(i % 2 ? 0x9a9aa2 : 0x5a5a62, 1).fillRect(x - 1.5, y - 1.5, 3, 3);
-    }
+    // one connected chain from the hook back to his fist (laid from the hook end, so the links
+    // ride out with it and are reeled into his hand on the way back, never sliding about)
+    const k = depthScale(f.z) * (f.stats?.size ?? 1);
+    drawChain(g, chainPath(p, hand, (1 - out) * 14), { link: 10 * k, thick: Math.max(4, 7 * k) });
     const P2 = ART_PX;
     this.hook.setVisible(true).setPosition(p.x, p.y).setDepth(f.z + 0.5)
       .setScale(P2 * (this.hookDef.scale ?? 1) * f.facing, P2 * (this.hookDef.scale ?? 1));
