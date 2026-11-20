@@ -80,7 +80,7 @@ const PLANKS = ['deb-plank-2', 'deb-plank-3', 'deb-plank-4', 'deb-plank-5'];
 const DEBRIS = {
   barrel: ['deb-stave-0', 'deb-stave-1', 'deb-stave-3', ...SPLINTERS],
   crate: [...PLANKS, ...SPLINTERS], chest: [...PLANKS, ...SPLINTERS], fence: ['deb-plank-0', 'deb-plank-1', ...PLANKS, ...SPLINTERS],
-  stall: ['deb-plank-0', ...PLANKS, ...SPLINTERS], trestle: [...PLANKS, ...SPLINTERS], rack: [...PLANKS, ...SPLINTERS], handcart: [...PLANKS, ...SPLINTERS],
+  stall: ['deb-plank-0', ...PLANKS, ...SPLINTERS], trestle: [...PLANKS, ...SPLINTERS], rack: [...PLANKS, ...SPLINTERS], handcart: [...PLANKS, ...SPLINTERS], wagon: [...PLANKS, ...PLANKS, ...SPLINTERS],
   urn: ['deb-shard-0', 'deb-shard-1', 'deb-shard-2'],
   haycart: [...PLANKS, ...SPLINTERS, 'deb-straw-0', 'deb-straw-1'],
   lamppost: [...SPLINTERS, 'deb-glass-0', 'deb-glass-1'],
@@ -857,6 +857,7 @@ export class StageView {
       }
     }
     if (pr.kind === 'archers' || pr.kind === 'catapult') this.siege.hit(pr, dir);
+    if (pr.kind === 'wagon') { this.wagonHit(pr, v, dir); return; }
     playSfx(this.scene, pr.kind === 'wall' ? 'block' : 'kick', { volume: 0.5, pitch: pr.kind === 'wall' ? -600 : -200, minGapMs: 0 });
     this.scene.tweens.add({ targets: v.img, x: pr.x + dir * 4, duration: 40, yoyo: true, repeat: 1 });
     this.chips(pr, 6, dir);
@@ -864,9 +865,73 @@ export class StageView {
     if (pr.kind === 'wall') v.img.setTint(0xffffff - 0x101010 * (5 - pr.hp));
   }
 
+  // The convoy's wagon struck: it rocks on its springs (syncRolling plays the jolt), iron
+  // rings and wood cracks, sparks and splinters fly from where the blow landed, and it
+  // darkens and sags a little more each time; every few blows a plank or a bar comes away
+  // and the people inside shout (Nick, 2026-11-20: "it needs to feel better")
+  wagonHit(pr, v, dir) {
+    const sc = this.scene;
+    const hp0 = PROPS.wagon.hp; const worn = 1 - pr.hp / hp0;
+    v.jolt = { t: 0, dir: dir || 1, big: 1 };
+    playSfx(sc, Math.random() < 0.5 ? 'dkWood1' : 'dkWood2', { volume: 0.85, pitch: -300 + Math.random() * 200, minGapMs: 0 });
+    playSfx(sc, 'block', { volume: 0.45, pitch: -500 + Math.random() * 300, minGapMs: 0 });
+    const hx = pr.x - dir * pr.w * 0.42; const hh = pr.h * (0.35 + Math.random() * 0.3);
+    sc.gore.spark(hx, pr.z, hh, 0xffd9a0, 12);
+    this.chips(pr, 12, dir);
+    sc.fx?.shake(2, 6);
+    // a white flash, then duller and darker the more it's taken
+    v.img.setTintFill(0xfff4e0);
+    sc.time.delayedCall(45, () => { if (v.img.active && !pr.broken) v.img.clearTint().setTint(Phaser.Display.Color.GetColor(255 - 70 * worn, 248 - 80 * worn, 240 - 85 * worn)); });
+    // (every third of its strength: a board off, the iron bent, and a cry from inside)
+    const stage = Math.floor(worn * 3);
+    if (stage > (v.wagonStage ?? 0)) {
+      v.wagonStage = stage;
+      v.jolt.big = 2.2;
+      sc.fx?.shake(4, 10);
+      playSfx(sc, 'woodCreak', { volume: 0.9, pitch: -200, minGapMs: 0 });
+      this.chips(pr, 16, dir);
+      this.ironBits(pr, 4, dir, hx, hh);
+      const n = this.stage.story?.npcs?.find((q) => q.pose === 'convoy' && q.tag === pr.tag);
+      if (n) { n.helpText = ['IT\'S GIVING!', 'AGAIN! HIT IT AGAIN!', 'ONE MORE!'][stage - 1] ?? 'GET US OUT!'; n.helpAge = 110; n.helpCalled = true; }
+    }
+  }
+
+  // bent straps and bolts off the wagon's iron, bouncing on the road
+  ironBits(pr, n, dir, x, h) {
+    for (let i = 0; i < n; i++) {
+      this.scene.gore.spawn({
+        x: x + rand(-pr.w * 0.3, pr.w * 0.3), z: pr.z + rand(-4, 6), h: h + rand(-20, 20),
+        vx: dir * rand(60, 280) + rand(-60, 60), vz: rand(-50, 50), vh: rand(160, 400),
+        tint: i % 2 ? 0x2a2a30 : 0x4a4a54, texture: 'px', scale: rand(1.6, 3.4), decal: false, life: rand(240, 380), spin: rand(-14, 14),
+        material: PHYSICS.stone,
+      });
+    }
+  }
+
+  // ...and wrecked: the whole thing bursts, a crack and a crash and iron bouncing off the
+  // road, the bed slumping onto a broken wheel; the people inside pour out of the back
+  // (view/NpcView.js crowdHead)
+  wagonBreak(pr, v, dir) {
+    const sc = this.scene;
+    v.jolt = null;
+    playSfx(sc, 'dkSlam', { volume: 1, pitch: -300, minGapMs: 0 });
+    playSfx(sc, 'woodFall', { volume: 0.9, minGapMs: 0 });
+    playSfx(sc, 'gateOpen', { volume: 0.6, pitch: -400, minGapMs: 0 });
+    sc.fx?.shake(9, 18);
+    this.chips(pr, 44, dir); this.chips(pr, 26, -dir);
+    sc.gore.spark(pr.x, pr.z, pr.h * 0.5, 0xffd9a0, 26);
+    this.ironBits(pr, 14, dir, pr.x, pr.h * 0.5); this.ironBits(pr, 8, -dir, pr.x, pr.h * 0.4);
+    // a ring of dust off the road
+    const ring = sc.add.ellipse(pr.x, pr.z, 60, 16).setStrokeStyle(4, 0xb8a890, 0.7).setDepth(DEPTH.shadows + 0.1);
+    sc.tweens.add({ targets: ring, scaleX: 6, scaleY: 5, alpha: 0, duration: 420, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+    const n = this.stage.story?.npcs?.find((q) => q.pose === 'convoy' && q.tag === pr.tag);
+    if (n) { n.helpText = 'OUT! ALL OF YOU, RUN!'; n.helpAge = 120; }
+  }
+
   propBreak(pr, dir, blast = false, power = 1) {
     const v = this.propSprites.get(pr.id);
     if (v?.own) return;
+    if (pr.kind === 'wagon' && v?.img?.active) this.wagonBreak(pr, v, dir || 1);
     if (pr.kind === 'lamppost') {
       this.chips(pr, 10, dir);
       v.ground?.forEach((g) => g.setAlpha(g.alpha * 0.5));
@@ -2142,7 +2207,15 @@ export class StageView {
       const moving = pr.x > (pr.roll.from ?? pr.x) && !pr.halted; // (halted: stage/WoodTraps.js)
       this.horses(pr, v, moving ? 'haul' : pr.halted ? 'halted' : 'stand');
       const t = this.scene.time.now / 16.7;
-      v.img.setPosition(pr.x, pr.z - (pr.y ?? 0) - (moving ? Math.abs(Math.sin(t * 0.25)) * 2 : 0)).setAngle(moving ? Math.sin(t * 0.13) * 0.8 : 0);
+      // (struck: it rocks on its springs and settles, wagonHit)
+      let jx = 0; let ja = 0; let jy = 1;
+      if (v.jolt) {
+        const J = v.jolt; const e = Math.exp(-J.t / 9) * J.big;
+        jx = J.dir * 5 * e * Math.cos(J.t * 0.5); ja = J.dir * 1.6 * e * Math.sin(J.t * 0.45); jy = 1 - 0.03 * e * Math.cos(J.t * 0.7);
+        if (++J.t > 50) v.jolt = null;
+      }
+      v.img.setPosition(pr.x + jx, pr.z - (pr.y ?? 0) - (moving ? Math.abs(Math.sin(t * 0.25)) * 2 : 0)).setAngle((moving ? Math.sin(t * 0.13) * 0.8 : 0) + ja)
+        .setScale(v.s, v.s * jy);
       v.shadow?.setPosition(pr.x, pr.z - (pr.y ?? 0));
       moveGround(v.ground, pr.x, pr.z - (pr.y ?? 0));
       // its weight in the mud: a dark pool of shadow under the bed, and the two ruts its wheels
@@ -2184,6 +2257,7 @@ export class StageView {
     if (mode !== v.horseMode) { v.horseMode = mode; v.horseT = 0; }
     v.horseT++;
     const front = pr.x + pr.w * 0.5;
+    const ws = pr.w / 200; // (the wagon's size against the one they were placed for)
     if (mode === 'gone') { v.horses.forEach((h) => h.setVisible(false)); v.traces.clear(); return; }
     v.traces.clear();
     if (mode === 'bolt') {
@@ -2204,7 +2278,7 @@ export class StageView {
     v.horses.forEach((h, i) => {
       // (the far horse a step behind and up the road a little, the near one lower and ahead;
       // HORSE.lift: the wagon's painted wheels stand that far up its picture)
-      const hz = y - HORSE.lift + i * HORSE.dz;
+      const hz = y - HORSE.lift * ws + i * HORSE.dz;
       const hx = front + HORSE.ahead + i * 22;
       let cell = 6;
       if (mode === 'haul') cell = Math.floor(v.horseRun / 14 + i * 3) % 6;
@@ -2215,7 +2289,7 @@ export class StageView {
       const sag = mode === 'haul' ? 2 : 6;
       const cx = hx - h.displayWidth * 0.12; const cy = hz - h.displayHeight * 0.55;
       v.traces.lineStyle(2.5, 0x15100c, 1).beginPath().moveTo(cx, cy);
-      v.traces.lineTo((cx + front) / 2, (cy + y - 70) / 2 + sag).lineTo(front, y - 70).strokePath();
+      v.traces.lineTo((cx + front) / 2, (cy + y - 70 * ws) / 2 + sag).lineTo(front, y - 70 * ws).strokePath();
     });
     v.traces.setDepth(y - 1);
   }

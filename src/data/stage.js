@@ -183,7 +183,9 @@ export const PROPS = {
   catapult: { hp: 7, w: 130, h: 120 }, // (the Shattered Ascent) a siege catapult on the heights: wreck it and the bombardment thins (hazard 'bombard', `silence`)
   archers: { hp: 6, w: 180, h: 190 }, // an archer post: a timber hoarding, its bowmen behind the mantlet: wreck it and their volleys stop (hazard 'bombard' `look: 'arrows'`, `silence`)
   winch: { hp: 6, w: 110, h: 150 }, // (the Iron Gates) a drum and chain that holds the gate down: break both and it rises (`opens` + `tag`)
-  wagon: { hp: 16, w: 200, h: 110 }, // the convoy's prisoner wagon: rolls away (`roll`); wreck it and they're out
+  // the convoy's prisoner wagon: rolls away (`roll`); wreck it and they're out (half as big
+  // again, and fewer, heavier blows: Nick, 2026-11-20, "needs to be bigger, and feel better")
+  wagon: { hp: 12, w: 300, h: 165 },
   // (the Black Keep, data/stageKeep.js)
   pin: { hp: 4, w: 52, h: 96 }, // the Ash Mill's drive pins: break all three and the stone stops (`tag` + section.needs)
   conduit: { hp: 6, w: 54, h: 180 }, // an ember conduit: forge fire fed up to the King; while one stands he's warded (boss phase `ward`)

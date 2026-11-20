@@ -20,6 +20,7 @@ import { World } from '../core/World.js';
 import { Controller } from '../core/Controller.js';
 import { createPlayer } from '../entities/Player.js';
 import { SPRITES } from './levelArt.js';
+import { FOLK, FOLK_CELLS } from '../data/folk.js';
 import { keyLayer, cutPieces } from './envArt.js';
 import { drawVincent, hideVincent } from './VincentView.js';
 import { StableMasterView } from './StableMasterView.js';
@@ -108,6 +109,19 @@ for (const id of ['villager-woman', 'villager-tanner', 'villager-burner']) CELLS
 CELLS['miner-old'] = { stand: 0, sit: 1, wave: 2, kneel: 3, run: HOBBLE };
 CELLS.elder.run = HOBBLE; // (the barn's old man, running out: data/stageVillage.js crowd)
 const PRISONER = { kneel: 0, wave: 1, cower: 2, run: RUN, stand: 6, bound: 0 };
+// the common folk a hero frees (data/folk.js), each on a sheet of their own: a six-pose run
+// with the legs swapping, sinking as a foot strikes and lifting in flight (FOLK_BOB)
+const FOLK_RUN = FOLK_CELLS.run;
+const FOLK_BOB = [1.6, 0, -2.2, 1.6, 0, -2.2];
+const FOLK_BY_ID = Object.fromEntries(FOLK.map((F) => [F.id, F]));
+for (const F of FOLK) CELLS[F.id] = FOLK_CELLS;
+const FOLK_STEP = 21;   // px of ground a pose of a folk runner's cycle covers (at depth scale and size 1)
+const HOBBLE_STEP = 12; // ...and an old one's hobble (shorter steps, falling behind)
+const FOLK_FADE = 140;
+// ...and the convoy's prisoners out of the wrecked wagon (crowdHead): sim frames after the
+// wreck the first jumps, frames between each, frames in the air; how high its bed is and
+// the hop above it (px, depth scale 1); how far behind its back they land, and apart
+const SPILL = { first: 10, every: 13, jump: 16, bed: 46, hop: 22, out: 30, gap: 38 };  // px from where they run to, a fleeing crowd fades out over this
 for (const id of ['tobin', 'hilde', 'bram', 'a', 'b', 'c']) CELLS[`prisoner-${id}`] = PRISONER;
 
 // Who is chained at the ore face (stageMine.js / stageAscent.js npcs with pose 'chained'),
@@ -177,13 +191,14 @@ export class NpcView {
     const beat = Math.floor(t / 7);
     const i = Array.isArray(c) ? c[beat % c.length] : c;
     if ((c === RUN || c === HOBBLE) && !this.smooth) y += RUN_BOB[beat % 4] * k;
+    if (c === FOLK_RUN) y += FOLK_BOB[beat % 6] * k;
     let img = v.imgs[this.curN];
     if (!img) v.imgs.push(img = this.scene.add.image(x, y, S.key, 'f0').setOrigin(0.5, 1));
     this.curN++;
     // alive, not a picture: a breath, and a little sway (more on the rope, a shiver when
     // cowering), each man on his own beat
     const now = this.scene.time.now; const ph = (v.seed ?? 0) * 0.9 + this.curN * 1.7;
-    const walk = c === RUN || (this.smooth && Array.isArray(c));
+    const walk = c === RUN || c === FOLK_RUN || pose === 'look' || (this.smooth && Array.isArray(c));
     const br = walk ? 0 : Math.sin(now * 0.0026 + ph);
     const sway = walk ? 0 : c === HOBBLE ? 4 + 2 * (beat % 2) : pose === 'hang' ? 3.5 * Math.sin(now * 0.0017 + ph) : pose === 'cower' || pose === 'cling' ? 0.9 * Math.sin(now * 0.021 + ph) : 1.1 * Math.sin(now * 0.0011 + ph);
     // (tilt, squash: a lean and a give at the knees the stage asks for, stage/MillRescue.js)
@@ -368,12 +383,18 @@ export class NpcView {
     if (n.pose === 'chained') { this.drawChained(n, v, g, y, k, t, pose, dir); return; }
     if (n.pose === 'group' || n.pose === 'convoy') {
       // (the barn's group is the miller's people: Irvolino leads them, data/speakers.js MILLER)
-      for (let i = 0; i < 3; i++) {
+      this.fadeNear(n, g);
+      const heads = n.people ?? 3;
+      for (let i = 0; i < heads; i++) {
         const first=this.curN;
-        // (crowd: a sheet for each of the three, data/stageVillage.js; otherwise all three
-        // on the villager sheet, the middle one smaller)
-        const who = n.crowd?.[i] ?? (i === 0 && n.id === 'barn' ? 'irvolino' : undefined);
-        this.figure(g, n.x - 44 + i * 42, y + (i % 2) * 6, k * (n.crowd || i !== 1 ? 1 : 0.75), pose, t + i * 5, tun(i + 4), dir, who);
+        // (each their own person, data/folk.js; or crowd: a sheet for each of the three,
+        // data/stageVillage.js; otherwise all three on the villager sheet, the middle one smaller)
+        const H = this.crowdHead(n, i, heads, k, t, pose, dir);
+        if (H.hide) continue; // (still inside the wreck)
+        const who = H.who ?? n.crowd?.[i] ?? (i === 0 && n.id === 'barn' ? 'irvolino' : undefined);
+        this.tilt = H.tilt;
+        this.figure(g, n.x + H.dx, y + H.dz - (H.up ?? 0), k * (H.s ?? (n.crowd || i !== 1 ? 1 : 0.75)), H.pose, H.tt, tun(i + 4), H.dir, who);
+        this.tilt = undefined;
         if(i===0&&n.carrier)for(const img of v.imgs.slice(first,this.curN))img.setAlpha(g.alpha*(n.carrierBlend??0));
       }
       return;
@@ -384,6 +405,102 @@ export class NpcView {
     this.tilt = n.tilt; this.squash = n.squash;
     this.figure(g, n.x, y, k, pose, tt, tun(0), dir, n.actArt ?? n.art);
     this.tilt = this.squash = undefined;
+  }
+
+  // Who the i-th of a freed crowd is (data/folk.js): dealt from the pool the first time
+  // they're drawn, nobody twice in a level, the crowd's own wishes first (`folk`: the
+  // tanner's boys are boys). Undefined if nobody's painted yet, or a crowd keeps its own.
+  folkFor(n, i) {
+    if (!(n.pose === 'group' || n.pose === 'convoy' || n.group)) return undefined;
+    const key = `${n.id}:${i}`;
+    const deal = (this.folkDeal ??= new Map());
+    if (deal.has(key)) return deal.get(key);
+    const used = new Set(deal.values());
+    const free = (id) => SPRITES[id] && !used.has(id);
+    let who = (n.folk ?? []).find(free);
+    if (!who) {
+      // (each level starts the deal at its own place in the pool, so level 2's first
+      // freed aren't level 1's first again)
+      const id = this.stage.data.id ?? '';
+      let at = 0; for (const ch of id) at = (at * 31 + ch.charCodeAt(0)) % FOLK.length;
+      for (let j = 0; j < FOLK.length && !who; j++) if (free(FOLK[(at + j) % FOLK.length].id)) who = FOLK[(at + j) % FOLK.length].id;
+    }
+    // (more freed than painted: a face again, though never two together in one crowd)
+    if (!who) who = FOLK.map((F) => F.id).find((id) => SPRITES[id] && ![0, 1, 2, 3].some((j) => deal.get(`${n.id}:${j}`) === id));
+    if (who) deal.set(key, who);
+    return who;
+  }
+
+  // The i-th of a freed crowd this frame: who, where (dx, dz off the crowd's spot), in what
+  // pose, at what beat (tt), facing which way, leaning how far. Freed, they flinch from the
+  // crash, then straighten and look to the hero who freed them (one or two raise a hand),
+  // not all at once. Running, they don't move as one block: they string out (the young in
+  // front, the old falling behind, hobbling), spread over the road, each on their own
+  // stride, the feet keeping pace with the ground they cover, now and then one glancing
+  // back over a shoulder (Nick, 2026-11-20).
+  crowdHead(n, i, heads, k, t, pose, dir, gap = 42) {
+    const who = this.folkFor(n, i);
+    const F = who && FOLK_BY_ID[who];
+    const seed = ((this.cur?.seed ?? 0) * 31 + i * 17) % 97;
+    // (out of the convoy's wagon: they land in a ragged line behind its back door, SPILL)
+    const wagon = n.pose === 'convoy' && (n.state === 'free' || n.state === 'fleeing') ? this.wagonOf(n) : null;
+    const home = wagon ? -wagon.w * 0.5 - SPILL.out - i * SPILL.gap : (i - (heads - 1) / 2) * gap;
+    const H = { who, s: F?.s, dx: home, dz: wagon ? ((i * 37) % 5 - 2) * 10 : (i % 2) * 6, pose, tt: t + i * 5, dir, tilt: undefined };
+    if (n.state === 'free' && wagon) {
+      // one by one out of the smashed back of the wagon: a jump down from its bed, an arc
+      // through the air, a stumble on landing (a crouch), then up, looking to the hero
+      const f = n.t - SPILL.first - i * SPILL.every;
+      if (f < 0) { H.hide = true; return H; }
+      const door = -wagon.w * 0.42;
+      const j = Math.min(1, f / SPILL.jump);
+      H.dx = door + (home - door) * j;
+      H.up = j < 1 ? SPILL.bed * k * (1 - j) + Math.sin(j * Math.PI) * SPILL.hop * k : 0;
+      H.dir = -1;
+      H.pose = j < 1 ? 'run' : f < SPILL.jump + 12 ? 'cower' : (i % 2 ? 'wave' : 'stand');
+      H.tt = (f * 0.6) * 7 / 4;
+      return H;
+    }
+    if (n.state === 'free' && F) {
+      const f = n.t - i * 5; // (not all at once)
+      H.pose = f < 16 ? 'cower' : f > 24 && (i === heads - 1 || seed % 3 === 0) ? 'wave' : 'stand';
+      let near = null; let best = Infinity;
+      for (const p of this.stage.players ?? []) {
+        if (!p.alive) continue;
+        const d = Math.abs(p.x - n.x - home);
+        if (d < best) { best = d; near = p; }
+      }
+      if (near && f >= 16) H.dir = Math.sign(near.x - n.x - home) || dir;
+    } else if (n.state === 'fleeing') {
+      const hobble = F?.gait === 'hobble';
+      // (how far behind the front they end up, taken slowly enough that nobody runs backwards
+      // while they drop back; the old ones keep falling behind, at their own pace)
+      const far = (F?.lag ?? i * 24) + i * 8;
+      const s = Math.min(1, n.t / Math.max(70, far / 0.7)); const ease = s * (2 - s);
+      const lag = far * ease + (hobble ? n.t * 0.55 : 0);
+      H.dx = (wagon ? home : home * (1 - 0.5 * ease)) - dir * lag;
+      H.dz += ((seed % 5) - 2) * 9 * ease;
+      const ground = Math.max(0, (n.stride ?? 0) - lag) + seed * 3;
+      if (F) {
+        H.tt = (ground / ((hobble ? HOBBLE_STEP : FOLK_STEP) * k * F.s)) * 7;
+        const glance = n.t > 40 && !hobble && (n.t + seed * 11) % 150 < 20;
+        H.pose = glance ? 'look' : 'run';
+        H.tilt = glance ? 0 : hobble ? 2 : 5;
+      } else H.tt = (ground / (RUN_STEP * k)) * 7;
+    }
+    return H;
+  }
+
+  // the convoy's wagon a crowd rides in (stage/Story.js 'convoy': the prop with its tag)
+  wagonOf(n) {
+    return (this.wagons ??= new Map()).get(n.id) ?? this.wagons.set(n.id, this.stage.props.find((q) => q.kind === 'wagon' && q.tag === n.tag) ?? null).get(n.id);
+  }
+
+  // a fleeing crowd fades as it nears the spot it runs to (and is gone: stage/Story.js),
+  // instead of blinking out
+  fadeNear(n, g) {
+    if (n.state !== 'fleeing' || !n.flee) return;
+    const d = Math.hypot(n.flee.x - n.x, (n.flee.z ?? n.z) - n.z);
+    g.setAlpha(g.alpha * Math.min(1, d / FOLK_FADE));
   }
 
   // The guide (Nicholas, stage/Story.js `guide`): walking on ahead, or waiting, looking on
@@ -524,7 +641,13 @@ export class NpcView {
       } else if (n.state === 'fleeing' || n.state === 'gathered') {
         const p = n.state === 'fleeing' ? 'run' : 'stand';
         const dir = n.state === 'fleeing' ? n.dir ?? -1 : -1;
-        for (let i = 0; i < many; i++) this.figure(g, n.x - (many - 1) * 20 + i * 40, y + (i % 2) * 6, k * (many > 1 && i === 1 ? 0.85 : 1), p, t + i * 5, tun(i), dir);
+        this.fadeNear(n, g);
+        for (let i = 0; i < many; i++) {
+          const H = this.crowdHead(n, i, many, k, t, p, dir, 40);
+          this.tilt = H.tilt;
+          this.figure(g, n.x + H.dx, y + H.dz, k * (H.s ?? (many > 1 && i === 1 ? 0.85 : 1)), H.pose, H.tt, tun(i), H.dir, H.who);
+          this.tilt = undefined;
+        }
       }
       if (this.scene.textures.exists('cagecart')) {
         // the wood's painted cage cart (assets/env/wood/cage_cart.png): its cage locked, or

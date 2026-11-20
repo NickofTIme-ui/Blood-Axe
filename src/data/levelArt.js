@@ -1,3 +1,4 @@
+import { FOLK_PAINTED, FOLK_FRAMES } from './folk.js';
 // levelArt.js — The painted art for the campaign's levels, by file name. Every entry is
 // optional: a file that isn't there yet is skipped, and the level keeps drawing that piece
 // in code (view/VillageView.js, view/WoodView.js, view/StageView.js). The prompts for each
@@ -171,6 +172,8 @@ const NPC_GRADE = { contrast: 1.12, saturation: 1.18, outline: 2, rim: 0.45 };
 // (the king: sharper and brighter still, a warmer rim: he is the brightest thing in the square)
 const KING_GRADE = { contrast: 1.15, saturation: 1.12, outline: 2, rim: 0.6 };
 export const SPRITE_SHEETS = {
+  // the common folk a hero frees, each their own person (data/folk.js)
+  ...Object.fromEntries(FOLK_PAINTED.map((id) => [id, { file: `assets/sprites/npc/folk/${id.slice(5)}.png`, frames: FOLK_FRAMES, height: 235, grade: NPC_GRADE, centre: true }])),
   // (the village's people are cut at the heroes' height, a standing man about 110 px, and
   // graded like Nicholas so they stand out from the painted street: Nick, 2026-10-16,
   // "you need to really see the npcs to interact with them")

@@ -41,6 +41,23 @@ branch, or ChatGPT's work gets lost.
      splash + spray into the ford; body/bone hits, blood and shake on each man struck.
   "CUT THE ROPE!" now shows while men are between the pile and the ford (its lane x 5200-5540).
   No new art needed (it reuses trap_logpile and trap_log).
+- 20 November 2026 (cloud, branch `claude/project-thread-ru32ee` on main beecaf1; NOT pushed until Nick says, NOT on itch).
+  FREED VILLAGERS + CONVOY WAGON + NICHOLAS (Nick: saved NPCs "run away really crappy", "always the same few
+  people"; the convoy wagon "needs to be bigger and feel better"; "you must see Nicholas"):
+  1. Cause: every old villager/prisoner sheet's three run cells are one picture (the legs never swap), cycled on a
+     timer, so they slid. New pool of 16 people in src/data/folk.js (men, women, elders, kids), each to be painted
+     by ChatGPT as a 10-cell sheet (stand, cower, thanks, look back, 6-pose run with the legs swapping). Prompts +
+     pose guide: docs/folk/. Bake: python tools/bake-folk-sheet.py painted.png assets/sprites/npc/folk/<name>.png,
+     then add the id to FOLK_PAINTED (only listed sheets load). With none painted the old looks stay.
+  2. NpcView folkFor deals them to freed crowds (barn groups, townsfolk, miners, convoy, cage groups; `folk` on an
+     npc = preferred ids), nobody twice in a level. crowdHead: freed, they flinch then turn to the hero (some raise a
+     hand); running, they string out (old ones hobble and fall behind), spread over the road, feet locked to the
+     ground they cover, glance back now and then, and fade out near where they run to.
+  3. Convoy wagon (data/stage.js PROPS.wagon): w 300 h 165 hp 12 (was 200/110/16), roof top 138, horses/traces
+     scaled. StageView wagonHit (rocks on its springs, flash, sparks, splinters, darker each blow; at each third a
+     creak, planks and iron off, a cry from inside) and wagonBreak (slam, shake, iron and planks everywhere, dust
+     ring). Its prisoners are 5 now (people: 5, freeFor 95) and jump out of the back one by one.
+  4. Level 2 end: freed villagers' gather spots moved behind and to either side of Nicholas (8550, 470).
 - 19 November 2026 (cloud, branch `claude/project-thread-slyl5t` on main 2208944; ON MAIN (Nick: "push all"), NOT on itch).
   GALLOWS WOOD GROUNDING PASS (Nick: "objects still feel copied and pasted into the world, the trees and snares
   still feel off, the tree trap going over the river"):

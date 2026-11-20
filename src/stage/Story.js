@@ -101,7 +101,7 @@ export const LINE = {
 const HEROES = new Set(['RURIK', 'ORYN', 'VEXA']);
 
 export const NPC = {
-  speed: 110, reach: 44, depth: 32, height: 34, talkReach: 90, talkDepth: 260, freeFor: 50,
+  speed: 110, fleeSpeed: 150, reach: 44, depth: 32, height: 34, talkReach: 90, talkDepth: 260, freeFor: 50,
   askReach: 70, askDepth: 50,          // how near a hero must be to ask (INTERACT)
   pick: 45,                            // frames of INTERACT held to open a cage
   nerve: 100, threat: 110, threatDepth: 50, fear: 0.12, // escort: his nerve, how near a foe frightens him, the drain per foe a frame
@@ -469,7 +469,8 @@ export class Story {
       } else if (n.state === 'fleeing') {
         const dx = n.flee.x - n.x; const dz = (n.flee.z ?? n.z) - n.z;
         const d = Math.hypot(dx, dz);
-        const step = (n.sprint ?? NPC.speed) / 60; // (sprint: one who runs for his life, stage/MillRescue.js)
+        // (sprint: one who runs for his life, stage/MillRescue.js; a freed crowd runs flat out: NPC.fleeSpeed)
+        const step = (n.sprint ?? (n.pose === 'group' || n.pose === 'convoy' || n.group ? NPC.fleeSpeed : NPC.speed)) / 60;
         if (d <= step) { n.state = 'safe'; n.t = 0; } else { n.x += (dx / d) * step; n.z += (dz / d) * step; n.dir = Math.sign(dx) || n.dir; n.stride = (n.stride ?? 0) + step; }
         n.h = T ? Math.max(0, T.groundAt(n.x, n.z)) : 0;
       }
