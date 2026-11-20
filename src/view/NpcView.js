@@ -19,13 +19,20 @@ import { FONT } from './fonts.js';
 import { World } from '../core/World.js';
 import { Controller } from '../core/Controller.js';
 import { createPlayer } from '../entities/Player.js';
-import { SPRITES } from './levelArt.js';
 import { FOLK, FOLK_CELLS } from '../data/folk.js';
+import { SPRITES, artKey } from './levelArt.js';
+import { boughPoint } from '../data/hangingTree.js';
+import { PROP_LIGHT, lightProp } from './propGround.js';
 import { keyLayer, cutPieces } from './envArt.js';
 import { drawVincent, hideVincent } from './VincentView.js';
 import { StableMasterView } from './StableMasterView.js';
 import { ShoutPlate } from './ShoutPlate.js';
 
+// the hanging tree's dead (drawHanged): the rope's x in each picture (a fraction of its width)
+// and where the shroud starts under it (picture px); the body's height in the world at depth 1,
+// and how far his feet hang clear of the mud
+const HANGED_FIT = { hanged_1: { rope: 0.525, head: 95 }, hanged_2: { rope: 0.565, head: 116 }, hanged_3: { rope: 0.558, head: 150 } };
+const HANGED = { body: 100, clear: 16 };
 const TUNIC = [0x5a6a5a, 0x6a5a48, 0x4a5468, 0x6a4a4a, 0x5a5048, 0x58586a];
 const SKIN = 0xc8a080;
 const HEROES = ['warrior', 'mage', 'rogue'];
@@ -709,7 +716,8 @@ export class NpcView {
     const k = depthScale(n.home.z);
     const bx = n.home.x; const by = n.home.z - n.h;
     // (`hold`: how far under the rope line his hands are: on the painted bough's lower limb)
-    const ropeTop = this.stage.data.gallows ? this.stage.data.gallows.z - 214 : by - 200;
+    // (his rope is tied under the bough's tip, data/hangingTree.js: it used to start in the sky)
+    const ropeTop = this.stage.data.gallows ? boughPoint(this.stage.data.gallows, 'tip').y : by - 200;
     const bough = ropeTop + (n.hold ?? 0); // (where his hands are: up his own rope, the noose slipped)
     const hands = 92 * k; // (the hanging pose: his feet this far under his hands)
     const tun = TUNIC[v.seed % TUNIC.length];
@@ -745,18 +753,63 @@ export class NpcView {
   }
 
   // The dead on the hanging tree (Gallows Wood): left there by the hangmen, turning slowly.
-  // View only (no rescue). CODE ART: rope and the captive sheet's hanging pose.
+  // View only (no rescue). Painted (ChatGPT, 2026-11-20: three shrouded dead, assets/env/wood/
+  // hanged_1..3.png, the rope running out of each picture's top), each rope tied under a real
+  // bough of the painted tree (data/hangingTree.js), lit like the wood's props, swaying and
+  // turning a little, a soft shadow on the mud under it. (Nick, 2026-11-20: "at the hanging tree
+  // must fix the guys hanging it looks bad": they were the captive's hanging-by-the-hands pose,
+  // on a line from the sky.) Code-drawn rope and figure only if the paintings are missing.
   drawHanged(n, v, t) {
     const g = v.g;
-    const k = depthScale(n.z);
-    const y = n.z - n.h;
-    const bough = this.stage.data.gallows ? this.stage.data.gallows.z - 214 : y - 200;
+    const s = this.scene;
+    const G = this.stage.data.gallows;
     v.halo.setVisible(false); v.shadow.setVisible(false);
-    g.setVisible(true).setAlpha(1).setDepth(n.z - 1);
-    const sway = Math.sin(t * 0.03 + v.seed) * 2.5;
-    const drop = n.drop ?? 70;
-    g.lineStyle(2, 0x6a5a40, 1).lineBetween(n.x, bough, n.x + sway * 0.5, bough + drop);
-    this.figure(g, n.x + sway, bough + drop + 92 * k, k * 0.95, SPRITES.captive ? 'hang' : 'stand', 0, 0x3a3630, 1, SPRITES.captive ? 'captive' : undefined);
+    const key = artKey('wood', n.art ?? 'hanged_1');
+    if (!G || !s.textures.exists(key)) {
+      const k = depthScale(n.z);
+      const bough = G ? G.z - 214 : n.z - n.h - 200;
+      g.setVisible(true).setAlpha(1).setDepth(n.z - 1);
+      const sway = Math.sin(t * 0.03 + v.seed) * 2.5;
+      const drop = n.drop ?? 70;
+      g.lineStyle(2, 0x6a5a40, 1).lineBetween(n.x, bough, n.x + sway * 0.5, bough + drop);
+      this.figure(g, n.x + sway, bough + drop + 92 * k, k * 0.95, SPRITES.captive ? 'hang' : 'stand', 0, 0x3a3630, 1, SPRITES.captive ? 'captive' : undefined);
+      return;
+    }
+    g.setVisible(true).setAlpha(1).setDepth(G.z + 0.5);
+    const tie = boughPoint(G, n.bough);
+    const fit = HANGED_FIT[n.art] ?? HANGED_FIT.hanged_1;
+    if (!v.hanged) { v.hanged = s.add.image(0, 0, key).setOrigin(fit.rope, 0); lightProp(v.hanged, PROP_LIGHT.gallowsWood, 0.92); }
+    const img = v.hanged;
+    const H = img.frame.realHeight ?? img.frame.height;
+    const bodyPx = H - fit.head; // (the shroud, head to foot, in the picture)
+    const sc = (HANGED.body * depthScale(n.z)) / bodyPx;
+    // the rope between the bough and his head: as long as it has to be for his feet to hang
+    // clear of the mud; the painted rope is cut short, or drawn on up to the bough
+    const ropeLen = Math.max(8, (n.z - HANGED.clear) - tie.y - bodyPx * sc);
+    const painted = fit.head * sc;
+    const cut = Math.max(0, (painted - ropeLen) / sc);
+    img.setCrop(0, cut, img.frame.width, H - cut);
+    // (slow and heavy: a sway from the knot and a slow turn on the rope, each its own pace)
+    const ph = t * 0.022 + (v.seed ?? 0) * 1.7;
+    const ang = Math.sin(ph) * 1.6 + Math.sin(ph * 0.37) * 0.8;
+    const turn = 1 - 0.12 * (0.5 + 0.5 * Math.sin(t * 0.009 + (v.seed ?? 0)));
+    const extra = Math.max(0, ropeLen - painted); // (rope drawn on above the painting)
+    const rad = Phaser.Math.DegToRad(ang);
+    const topX = tie.x - Math.sin(rad) * extra; const topY = tie.y + Math.cos(rad) * extra;
+    if (extra > 0) {
+      g.lineStyle(3.2 * sc / 0.17, 0x2c241a, 1).lineBetween(tie.x, tie.y, topX, topY);
+      g.lineStyle(1.2 * sc / 0.17, 0x6e5e44, 0.9).lineBetween(tie.x - 0.6, tie.y, topX - 0.6, topY);
+    }
+    // a twist of rope round the bough where it's tied
+    g.fillStyle(0x3a3022, 1).fillEllipse(tie.x, tie.y - 1, 9, 5);
+    g.lineStyle(1, 0x7a6a4c, 0.8).strokeEllipse(tie.x, tie.y - 1, 9, 5);
+    // (the cropped picture keeps its origin at the original top: move it up by the cut)
+    img.setPosition(topX + Math.sin(rad) * cut * sc, topY - Math.cos(rad) * cut * sc)
+      .setScale(sc * turn, sc).setAngle(ang).setDepth(G.z + 0.6).setVisible(true).setFlipX(!!n.flip);
+    // his shadow on the mud under him, moving with him
+    const foot = tie.x - Math.sin(rad) * (ropeLen + bodyPx * sc);
+    const sh = v.hangShadow ??= s.add.image(0, 0, 'glow').setTint(0x000000).setDepth(DEPTH.shadows);
+    sh.setPosition(foot, n.z + 4).setDisplaySize(46 * depthScale(n.z), 12).setAlpha(0.32).setVisible(true);
   }
 
   // Vincent, the Gatewright (the Iron Gates): in his cage on the guardroom landing, gripping

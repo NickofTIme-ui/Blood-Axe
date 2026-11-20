@@ -73,7 +73,14 @@ export const LEVEL_ART = {
       'snared_hound_1', 'snared_hound_2', 'snared_hound_3',
       // the streams and the old ford, each with its own banks (view/TerrainView.js paintedWater;
       // ChatGPT, 2026-11-19: tools/cut-water-art.py)
-      'water_stream', 'water_ford', 'water_stone_1', 'water_stone_2', 'water_stone_3'],
+      'water_stream', 'water_ford', 'water_stone_1', 'water_stone_2', 'water_stone_3',
+      // round 4 (2026-11-20, tools/cut-wood-art.py): the hanging tree's dead (view/NpcView.js
+      // drawHanged), the Ashen signal lantern lit and knocked down (view/WoodTrapsView.js), the
+      // cage carts' boulder and shelf (view/TerrainView.js), the war horn (view/WoodTrapsView.js)
+      'hanged_1', 'hanged_2', 'hanged_3', 'signal_lantern', 'signal_lantern_down', 'boulder_shelf',
+      'war_horn', 'war_horn_blow',
+      // the treetops along the top of the back wall (view/WoodView.js canopy)
+      'canopy'],
     props: { wagon: { file: 'convoy_wagon.png', pair: true }, cagecart: { file: 'cage_cart.png', pair: true, texture: 'cagecart' } },
     surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, log: { px: 40 }, plank: { fit: true } },
   },

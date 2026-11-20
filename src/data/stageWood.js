@@ -156,7 +156,7 @@ export const STAGE_WOOD = {
         { kind: 'chest', x: 4230, z: 498, drop: 'health' },
         // a SECRET up on the high shelf at the back (terrain: the boulder and the shelf): Vexa's
         // double jump, Oryn's rise, or Rurik with WIND STEP; nobody needs it
-        { kind: 'crate', x: 4060, z: 305, drop: 'relic', secret: true },
+        { kind: 'crate', x: 4190, z: 305, drop: 'relic', secret: true },
       ],
       hazards: [],
     },
@@ -290,9 +290,11 @@ export const STAGE_WOOD = {
     { kind: 'block', x0: 4040, x1: 4226, z0: 416, z1: 462, top: 50, hideArt: true },
     // THE HIGH SHELF (optional): a mossy boulder at the back of the road (+70: a held jump),
     // and over it a rock shelf 150 higher, like the Gallows Ascent's roost: Vexa's double
-    // jump, Oryn's rise, Rurik with WIND STEP. (Rock: the wood's painted rock tiles)
-    { kind: 'block', x0: 3910, x1: 3990, z0: 282, z1: 336, top: 70 },
-    { kind: 'block', x0: 3990, x1: 4130, z0: 282, z1: 330, top: 220 },
+    // jump, Oryn's rise, Rurik with WIND STEP. One painted outcrop (boulder_shelf.png,
+    // view/WoodView.js drawShelf), the blocks fitted to its tops (Nick, 2026-11-20: the rock
+    // tiles' "flat straight lines" stuck out; were 3910-3990 and 3990-4130)
+    { kind: 'block', x0: 3856, x1: 4074, z0: 282, z1: 336, top: 70, tag: 'boulder' },
+    { kind: 'block', x0: 4074, x1: 4318, z0: 282, z1: 330, top: 220, tag: 'shelf' },
 
     // ---- IV THE OLD FORD: a stream with a wide log bridge (Ansel walks it)
     // THE SHALLOWS: either side of the deep channel the stream spreads out knee-deep over its
@@ -350,12 +352,14 @@ export const STAGE_WOOD = {
   npcs: [
     {
       id: 'joren', name: 'Joren', x: JOREN_BOUGH.x, z: JOREN_BOUGH.z, pose: 'treed', rescue: 'treed', section: 'tree', wave: 1,
-      freeFor: 60, hold: 96, // (time to drop down and get up; his hands on the painted bough)
+      freeFor: 60, hold: 48, // (time to drop down and get up; his hands this far under the rope's knot on the bough's tip)
       flee: { x: 1600, z: 300 }, gather: { x: 8700, z: 300 },
     },
-    // the hangmen's dead, still on the tree (view only)
-    { id: 'hanged-1', name: 'a hanged man', pose: 'hanged', x: 2160, z: 296, drop: 64 },
-    { id: 'hanged-2', name: 'a hanged woman', pose: 'hanged', x: 2222, z: 296, drop: 84 },
+    // the hangmen's dead, still on the tree (view only): each tied under one of the painted
+    // tree's boughs (data/hangingTree.js), its painting (view/NpcView.js drawHanged)
+    { id: 'hanged-1', name: 'a hanged man', pose: 'hanged', art: 'hanged_1', bough: 'left', x: 2037, z: 300 },
+    { id: 'hanged-3', name: 'an old man, hanged', pose: 'hanged', art: 'hanged_3', bough: 'leftIn', x: 2069, z: 302, flip: true },
+    { id: 'hanged-2', name: 'a hanged woman', pose: 'hanged', art: 'hanged_2', bough: 'inner', x: 2247, z: 298 },
     {
       id: 'tanners', name: 'the tanner\'s boys', x: 3750, z: 340, pose: 'cage', group: true, rescue: 'cage',
       folk: ['folk-boy', 'folk-lad', 'folk-apprentice'], // (data/folk.js: boys, once they're painted)

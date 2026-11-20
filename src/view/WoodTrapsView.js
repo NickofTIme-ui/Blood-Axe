@@ -7,7 +7,7 @@
 // paintings come (the ChatGPT art list: notched pine, log pile, snare, stake pit).
 
 import { SETTINGS } from '../config/settings.js';
-import { DEPTH } from './depths.js';
+import { DEPTH, depthScale } from './depths.js';
 import { FONT } from './fonts.js';
 import { playSfx, DK } from '../core/Sfx.js';
 import { artKey } from './levelArt.js';
@@ -24,7 +24,15 @@ const woodLit = (img, k = 1) => { if (img) lightProp(img, WOOD_LIGHT, k); return
 const BARK = artKey('wood', 'surf-log');
 // the painted traps (ChatGPT, 2026-11-14; tools/cut-wood-art.py): each falls back to code
 const ART = Object.fromEntries(['trap_pine', 'trap_logpile', 'trap_logpile_loose', 'trap_log', 'trap_snare',
-  'trap_snare_sprung', 'trap_stakes', 'trap_stakes_open', 'pen_gate', 'trap_deadfall', 'net_fly', 'net_down'].map((n) => [n, artKey('wood', n)]));
+  'trap_snare_sprung', 'trap_stakes', 'trap_stakes_open', 'pen_gate', 'trap_deadfall', 'net_fly', 'net_down',
+  'signal_lantern', 'signal_lantern_down', 'war_horn', 'war_horn_blow'].map((n) => [n, artKey('wood', n)]));
+// the painted signal lantern (ChatGPT, 2026-11-20; Nick: "the signal lantern needs GOOD ART"):
+// its height in the world, the pole's middle and the fire in the lantern (fractions of the
+// picture), and the fallen one's height (its snapped foot at its left end, by the stump)
+// the war horn (war_horn / war_horn_blow): its mouthpiece in each picture, its length in the
+// world on a man 120 tall
+const HORN = { mouth: { x: 0.006, y: 0.476 }, mouthBlow: 0.51, len: 54 };
+const SIGNAL = { h: 210, pole: 0.393, fire: { x: 0.709, y: 0.349 }, downH: 86 };
 // where things are in the paintings (fractions of the cut-out): the sprung snare's noose,
 // the armed snare's ring of cord, the pine's foot
 const SPOT = { noose: { x: 0.718, y: 0.56 }, ground: 0.975, ring: { x: 0.45, y: 0.8 }, pine: { x: 0.47, y: 0.95 } };
@@ -129,6 +137,39 @@ export class WoodTrapsView {
       const M = this.rig.mists.find((m) => m.tag === pr.tag);
       const x = pr.x; const z = pr.z;
       g.fillStyle(0x000000, 0.4).fillEllipse(x, z + 2, 40, 10);
+      const painted = this.scene.textures.exists(ART.signal_lantern);
+      if (painted) {
+        const down = !!pr.broken && this.scene.textures.exists(ART.signal_lantern_down);
+        S.img ??= this.scene.add.image(0, 0, ART.signal_lantern).setOrigin(SIGNAL.pole, 1);
+        if (down !== S.down) {
+          // knocked down: the pole across the mud, the lantern smashed and its embers dying
+          S.down = down;
+          S.img.setTexture(down ? ART.signal_lantern_down : ART.signal_lantern).setOrigin(down ? 0.02 : SIGNAL.pole, 1);
+          S.img.setScale((down ? SIGNAL.downH : SIGNAL.h) * depthScale(z) / S.img.frame.height);
+          // (lit warm by its own fire: the wood's cold light only at the foot)
+          if (down) lightProp(S.img, WOOD_LIGHT, 0.9); else S.img.setTint(0xffe0d0, 0xffe0d0, WOOD_LIGHT.low, WOOD_LIGHT.low);
+        }
+        S.img.setPosition(down ? x - 20 : x, z + 6).setDepth(z);
+        if (pr.broken) {
+          // the last embers in the smashed lantern, going out
+          const k = Math.max(0, 1 - (pr.brokenT = (pr.brokenT ?? 0) + 1) / 400);
+          if (k > 0) gl.fillStyle(0xff4020, 0.14 * k * (0.7 + 0.3 * Math.sin(now / 90))).fillCircle(x + S.img.displayWidth * 0.82 - 20, z - 10, 26);
+          S.label.setVisible(false);
+          continue;
+        }
+        // the fire: a flicker of light round the lantern and down the pole and the mist, and
+        // now and then a spark going up
+        const fl = 0.75 + 0.25 * Math.sin(now / 70) * Math.sin(now / 113);
+        const w = S.img.displayWidth; const h = S.img.displayHeight;
+        const lx = x + (SIGNAL.fire.x - SIGNAL.pole) * w; const ly = z + 6 - (1 - SIGNAL.fire.y) * h;
+        gl.fillStyle(0xff4020, 0.13 * fl).fillCircle(lx, ly, 90).fillStyle(0xff6030, 0.18 * fl).fillCircle(lx, ly, 40).fillStyle(0xffb070, 0.22 * fl).fillCircle(lx, ly, 14);
+        gl.fillStyle(0xff4020, 0.08 * fl).fillEllipse(lx - 10, z + 4, 150, 26); // (its red on the mud)
+        const sp = (now / 900 + x) % 1;
+        gl.fillStyle(0xffb060, 0.8 * (1 - sp)).fillCircle(lx + Math.sin(now / 300) * 6, ly - 20 - sp * 60, 1.6);
+        const show = fight && this.stage.index === M?.section;
+        S.label.setVisible(show).setText(show ? 'SMASH THE SIGNAL LANTERN' : '').setY(z - SIGNAL.h - 16 - Math.abs(Math.sin(now / 300)) * 4);
+        continue;
+      }
       if (pr.broken) {
         // knocked down: the pole in the mud, the lantern smashed and dark beside it
         g.fillStyle(0x1e1610, 1).fillRect(x - 70, z - 6, 110, 7);
@@ -693,7 +734,7 @@ export class WoodTrapsView {
       const want = f.alive && (f.horn && !f.horn.done || f.bossHorn || f.snare || f.chained || f.latch || f.packTell > 0 || f.netSpin > 0 || f.drive?.on || f.order && f.order.t < f.order.wait);
       if (m?.net && f.snare?.kind !== 'net') m.net.setVisible(false);
       if (m?.coil && !(f.alive && f.snare?.kind === 'snare' && !this.scene.views?.get(f.id)?.hangAnkle?.painted)) m.coil.setVisible(false);
-      if (!want) { if (m) { m.text.setVisible(false); } continue; }
+      if (!want) { if (m) { m.text.setVisible(false); m.horn?.setVisible(false); } continue; }
       if (!m) {
         m = { text: s.add.text(0, 0, '', { fontFamily: FONT.display, fontSize: '15px', color: '#ffd890', stroke: '#140c06', strokeThickness: 4 }).setOrigin(0.5, 1) };
         this.marks.set(f.id, m);
@@ -776,17 +817,62 @@ export class WoodTrapsView {
         // (the Houndmaster's own horn: only the call to stop it, once it's at his lips)
         const blowing = (f.horn ?? f.bossHorn).state === 'blow';
         m.text.setText(blowing ? (f.bossHorn ? 'STOP HIS HORN!' : 'STOP THE HORN!') : f.bossHorn ? '' : 'HORNBLOWER').setColor(blowing ? '#ff9a70' : '#ffd890');
-        // the horn itself, raised to his lips while he blows
-        const hx = f.x + f.facing * 18; const hy = f.z - f.h - (f.stats.body?.h ?? 120) * 0.82;
-        g.fillStyle(0xd8c8a0, 1).fillTriangle(hx, hy - 4, hx, hy + 4, hx + f.facing * (blowing ? 34 : 20), hy - (blowing ? 14 : 0));
-        g.fillStyle(0x6a5030, 1).fillCircle(hx + f.facing * (blowing ? 34 : 20), hy - (blowing ? 14 : 0), blowing ? 7 : 5);
+        // the horn itself (painted, ChatGPT 2026-11-20: Nick, "the horns need art and to be
+        // implemented well"): slung at his hip while he runs for his post; raised to his lips
+        // as he blows, tipping up as his breath runs out, the bell shaking; how near it is to
+        // sounding over him. (The Houndmaster's own horn the same.)
+        const body = f.stats.body?.h ?? 120;
+        const k = blowing ? Math.min(1, f.hornT ?? 0) : 0;
+        if (s.textures.exists(ART.war_horn)) {
+          const key = blowing && k > 0.25 ? ART.war_horn_blow : ART.war_horn;
+          m.horn ??= s.add.image(0, 0, ART.war_horn).setOrigin(HORN.mouth.x, HORN.mouth.y);
+          const flip = f.facing < 0;
+          const oy = key === ART.war_horn_blow ? HORN.mouthBlow : HORN.mouth.y;
+          if (m.horn.texture.key !== key || m.horn.flipX !== flip) m.horn.setTexture(key).setFlipX(flip).setOrigin(flip ? 1 - HORN.mouth.x : HORN.mouth.x, oy);
+          const len = (f.bossHorn ? HORN.len * 1.25 : HORN.len) * (body / 120);
+          const shake = blowing ? Math.sin(now / 28) * (0.6 + 1.6 * k) : 0;
+          const mx = f.x + f.facing * (blowing ? body * 0.1 : -body * 0.04);
+          const my = f.z - f.h - body * (blowing ? 0.86 : 0.42);
+          // (degrees up from level toward his front: raised to his lips, tipping higher as he
+          // blows; slung, it hangs bell-down)
+          const up = blowing ? 14 + 26 * k + shake : -62;
+          m.horn.setVisible(true).setPosition(mx, my).setScale(len / m.horn.frame.width)
+            .setAngle(flip ? up : -up).setDepth(f.z + (blowing ? 0.6 : -0.2));
+          lightProp(m.horn, WOOD_LIGHT, 1.05);
+          if (blowing) {
+            // the call building: rings of sound off the bell, more and stronger as it comes
+            const a = Phaser.Math.DegToRad(up);
+            const bellX = mx + f.facing * Math.cos(a) * len; const bellY = my - Math.sin(a) * len;
+            const dir = flip ? Math.PI + a : -a;
+            for (let i = 0; i < 3; i++) {
+              const p = ((now / 420) + i / 3) % 1;
+              g.lineStyle(2, 0xffe8c0, (0.12 + 0.4 * k) * (1 - p)).beginPath()
+                .arc(bellX, bellY, 8 + p * (26 + 40 * k), dir - 0.7, dir + 0.7).strokePath();
+            }
+          }
+        } else {
+          const hx = f.x + f.facing * 18; const hy = f.z - f.h - body * 0.82;
+          g.fillStyle(0xd8c8a0, 1).fillTriangle(hx, hy - 4, hx, hy + 4, hx + f.facing * (blowing ? 34 : 20), hy - (blowing ? 14 : 0));
+          g.fillStyle(0x6a5030, 1).fillCircle(hx + f.facing * (blowing ? 34 : 20), hy - (blowing ? 14 : 0), blowing ? 7 : 5);
+        }
         if (blowing) {
-          const k = Math.min(1, f.hornT ?? 0);
           g.fillStyle(0x000000, 0.7).fillRect(f.x - 40, top - 4, 80, 8);
           g.fillStyle(k > 0.75 ? 0xff5a3a : 0xffb050, 1).fillRect(f.x - 39, top - 3, 78 * k, 6);
         }
       }
     }
+    // the horn's blast, once it sounds: rings going out through the wood, the rain shaken off
+    // the boughs over him, the mist torn (hornSounded, listen)
+    for (const B of this.hornBlasts ??= []) {
+      B.t++;
+      for (let i = 0; i < 4; i++) {
+        const p = Math.max(0, Math.min(1, (B.t - i * 7) / 50));
+        if (p <= 0 || p >= 1) continue;
+        g.lineStyle(4 * (1 - p) + 1, 0xffe0b0, 0.55 * (1 - p)).strokeEllipse(B.x, B.y, 60 + p * 900, 24 + p * 300);
+      }
+      for (const d of B.drops) { d.y += d.v; d.v += 0.35; if (d.y < B.ground) g.fillStyle(0xb8d0e8, 0.7).fillRect(d.x, d.y, 1.5, 6); }
+    }
+    this.hornBlasts = this.hornBlasts.filter((B) => B.t < 90);
     // the whip's lash: out flat along the road, a crack of dust where its tip lands
     for (const L of this.lashes) {
       L.t++;
@@ -1022,7 +1108,16 @@ export class WoodTrapsView {
     ev.on('stakesKill', () => playSfx(s, 'rogueStab', { volume: 0.9, pitch: -300, minGapMs: 0 }));
     ev.on('netWindup', () => playSfx(s, 'woodNet', { volume: 0.35, pitch: -300, minGapMs: 200 }));
     ev.on('netThrown', () => playSfx(s, 'woodNet', { volume: 0.9, minGapMs: 0 }));
-    ev.on('hornSounded', () => playSfx(s, 'woodHorn', { volume: 1, minGapMs: 0 }));
+    ev.on('hornSounded', ({ fighter: f } = {}) => {
+      playSfx(s, 'woodHorn', { volume: 1, minGapMs: 0 });
+      if (!f) return;
+      // the blast: rings out through the wood from him, a shake, the rain shaken down off the
+      // boughs over him (drawMarks)
+      const body = f.stats.body?.h ?? 120; const y = f.z - f.h - body * 0.9;
+      const drops = Array.from({ length: 40 }, (_, i) => ({ x: f.x - 260 + ((i * 97) % 520), y: y - 260 - ((i * 53) % 160), v: 2 + (i % 5) }));
+      (this.hornBlasts ??= []).push({ x: f.x + f.facing * 40, y, t: 0, drops, ground: f.z });
+      s.fx?.shake?.(5, 18);
+    });
     ev.on('hornRaised', () => playSfx(s, 'woodHorn', { volume: 0.18, pitch: -200, minGapMs: 500 }));
     ev.on('hornBroken', () => playSfx(s, 'kick', { volume: 0.5, minGapMs: 0 }));
     ev.on('ambushTell', ({ x, tell }) => {

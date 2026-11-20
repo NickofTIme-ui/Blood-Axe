@@ -34,8 +34,20 @@ JOBS = {
     'snared_stalker.png': ['snared_stalker_1', 'snared_stalker_2', 'snared_stalker_3'],
     'snared_butcher.png': ['snared_butcher_1', 'snared_butcher_2', 'snared_butcher_3'],
     'snared_hound.png': ['snared_hound_1', 'snared_hound_2', 'snared_hound_3'],
+    # round 4 (2026-11-20): the hanging tree's dead (shrouded, each rope running out of the
+    # top: the cut's top is the rope's end), the Ashen signal lantern (burning, knocked down),
+    # the cage carts' boulder and shelf, the war horn (level, blown)
+    'hanged.png': ['hanged_1', 'hanged_2', 'hanged_3'],
+    'signal_lantern.png': ['signal_lantern', 'signal_lantern_down'],
+    'boulder_shelf.png': ['boulder_shelf'],
+    'horn.png': ['war_horn', 'war_horn_blow'],
 }
 SNARED_H = 400  # (the grunt's poses were cut to this by hand, 2026-11-16)
+# pictures whose halves touch (the signal lantern's mud mounds, and the lit one's smoke over
+# the fallen one): each piece as a raw box (x0, y0, x1, y1), anything outside it cleared
+SPLIT_AT = {'signal_lantern.png': [(0, 0, 600, 1024, (470, 560)), (480, 560, 1536, 1024, None)]}
+# smoke and mist painted purple-grey on the magenta: made a plain grey (it read as magic)
+DEPURPLE = {'signal_lantern.png', 'horn.png', 'boulder_shelf.png'}
 
 
 def key(img):
@@ -48,6 +60,15 @@ def key(img):
     r = np.where(fringe, grey, r); b = np.where(fringe, grey, b)
     out = np.stack([r, g, b, al], -1).clip(0, 255).astype(np.uint8)
     return Image.fromarray(out, 'RGBA')
+
+
+def depurple(img):
+    a = np.asarray(img).astype(np.int32)
+    r, g, b, al = a[..., 0], a[..., 1], a[..., 2], a[..., 3]
+    smoke = (r > g + 25) & (b > g + 25) & (b * 10 > r * 6)
+    luma = (r * 3 + g * 5 + b * 2) // 10 + 18
+    for c in range(3): a[..., c] = np.where(smoke, luma, a[..., c])
+    return Image.fromarray(a.clip(0, 255).astype(np.uint8), 'RGBA')
 
 
 def runs(mask, min_gap):
@@ -86,13 +107,43 @@ def split(img, n):
     return pieces
 
 
+def canopy(f, out_h=420, blend=160):
+    """The treetops over the back wall (canopy.png): keyed, trimmed top and bottom, its ends
+    cross-faded into each other so it repeats along the level without a seam."""
+    img = depurple(key(Image.open(f)))
+    box = img.getchannel('A').point(lambda v: 255 if v > 40 else 0).getbbox()
+    img = img.crop((0, box[1], img.width, img.height))
+    a = np.asarray(img).astype(np.float32)
+    w = a.shape[1] - blend
+    out = a[:, :w].copy()
+    t = np.linspace(0, 1, blend)[None, :, None]
+    out[:, :blend] = a[:, w:] * (1 - t) + a[:, :blend] * t
+    img = Image.fromarray(out.clip(0, 255).astype(np.uint8), 'RGBA')
+    img = img.resize((round(img.width * out_h / img.height), out_h), Image.LANCZOS)
+    img.save(OUT / 'canopy.png', optimize=True)
+    print(f'canopy.png -> canopy.png {img.width}x{img.height}')
+
+
 def main(src):
     src = Path(src)
+    if (src / 'canopy.png').exists(): canopy(src / 'canopy.png')
     for raw, names in JOBS.items():
         f = src / raw
         if not f.exists():
             print(f'skip {raw} (not there)'); continue
-        for name, p in zip(names, split(key(Image.open(f)), len(names))):
+        img = key(Image.open(f))
+        if raw in DEPURPLE: img = depurple(img)
+        if raw in SPLIT_AT:
+            pieces = []
+            for x0, y0, x1, y1, notch in SPLIT_AT[raw]:
+                a = np.asarray(img).copy()
+                keep = np.zeros(a.shape[:2], bool); keep[y0:y1, x0:x1] = True
+                if notch: keep[notch[1]:, notch[0]:] = False  # (the lit pole's box stops short of the fallen one's mud)
+                a[..., 3] = np.where(keep, a[..., 3], 0)
+                pieces.append(split(Image.fromarray(a, 'RGBA'), 1)[0])
+        else:
+            pieces = split(img, len(names))
+        for name, p in zip(names, pieces):
             top = SNARED_H if name.startswith('snared_') else MAX
             if p.height > top: p = p.resize((round(p.width * top / p.height), top), Image.LANCZOS)
             p.save(OUT / f'{name}.png', optimize=True)

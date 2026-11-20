@@ -13,7 +13,13 @@
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { drawCastle } from './castle.js';
-import { PaintedLevel } from './levelArt.js';
+import { PaintedLevel, artKey } from './levelArt.js';
+import { LEVEL_ART } from '../data/levelArt.js';
+import { PROP_LIGHT, lightProp } from './propGround.js';
+
+// the painted boulder and shelf (drawShelf): its width in px, the boulder's left edge (share
+// of the width), its top faces' y (px of 720)
+const SHELF_ART = { w: 1077, left: 0.04, lo: 365, hi: 40 };
 
 const COL = {
   skyTop: 0x05080c, skyLow: 0x1c2630,
@@ -46,6 +52,11 @@ export class WoodBackdrop {
     if (art.has('far')) art.layer('far', DEPTH.far - 1); else this.drawCastle();
     if (art.has('mid')) art.layer('mid', DEPTH.far + 2); else this.drawPines();
     if (art.has('wall')) art.wall(); else this.drawTrunks();
+    // the treetops over the wall: its trunks used to end on a straight line against the sky
+    // whenever the camera went up (Nick, 2026-11-20: "the trees cut off in the sky really
+    // abruptly"); a painted band of pine crowns (ChatGPT, canopy.png) laps over the wall's top
+    // and finishes the forest in a ragged skyline
+    if (art.has('wall') && art.has('canopy')) this.canopy();
     // (the painted mud darkened and its puddles' glare taken down: fighters read against it,
     // and it sits back behind them the way the village's paving does; Nick's review 2026-11-05)
     if (art.has('ground')) art.ground().setTint(0x8c9294); else this.drawRoad();
@@ -154,6 +165,39 @@ export class WoodBackdrop {
     g.fillStyle(0x000000, 0.35).fillRect(0, top, this.width, 24);
   }
 
+  // The cage carts' boulder and the rock shelf over it (terrain tags 'boulder', 'shelf'): one
+  // painted mossy outcrop (boulder_shelf.png) in place of the rock tiles' boxes. Its picture:
+  // the boulder's top face at y 365 of 720 (left 47%), the shelf's at y 40 (the rest); scaled so
+  // both meet their blocks' tops, standing on the boulder's front edge.
+  drawShelf() {
+    const T = this.stage.terrain?.blocks ?? [];
+    const lo = T.find((b) => b.tag === 'boulder'); const hi = T.find((b) => b.tag === 'shelf');
+    if (!lo || !hi || !this.art.has('boulder_shelf')) return;
+    const key = artKey('wood', 'boulder_shelf');
+    const loY = (lo.z0 + lo.z1) / 2 - lo.top; const hiY = (hi.z0 + hi.z1) / 2 - hi.top;
+    const k = (loY - hiY) / (SHELF_ART.lo - SHELF_ART.hi);
+    const img = this.scene.add.image(lo.x0 - SHELF_ART.left * SHELF_ART.w * k, hiY - SHELF_ART.hi * k, key).setOrigin(0, 0).setScale(k)
+      .setDepth(lo.z0 - 1);
+    lightProp(img, PROP_LIGHT.gallowsWood, 1);
+    lo.hideArt = true; hi.hideArt = true;
+    // (a dark pool where it meets the mud)
+    this.scene.add.image(img.x + img.displayWidth / 2, lo.z1 + 2, 'glow').setTint(0x000000).setAlpha(0.35)
+      .setDisplaySize(img.displayWidth * 1.05, 28).setDepth(DEPTH.shadows);
+  }
+
+  // the band of treetops along the top of the back wall (canopy.png, repeating): its dense lower
+  // half over the wall's top edge, its crowns up into the sky
+  canopy() {
+    const s = this.scene;
+    const key = artKey('wood', 'canopy');
+    const img = s.textures.get(key).getSourceImage();
+    const top = SETTINGS.world.floorTop - 50;
+    const wallTop = top - LEVEL_ART.wood.wall.height + 8;
+    const h = 300; const k = h / img.height;
+    s.add.tileSprite(0, wallTop - h * 0.62, this.width, h, key).setOrigin(0).setTileScale(k, k)
+      .setDepth(DEPTH.floor - 0.995).setTint(0xc8d0d8, 0xc8d0d8, 0x8a929a, 0x8a929a);
+  }
+
   // the hanging tree, the convoy's carts, the rockslide (data: gallows, carts, the pass)
   drawSetPieces() {
     const s = this.scene;
@@ -179,6 +223,7 @@ export class WoodBackdrop {
       g.fillStyle(0x1a140e, 1).fillCircle(c.x - 48, c.z - 8, 14).fillCircle(c.x + 60, c.z + 2, 14);
       g.fillStyle(0x3a2e20, 1).fillCircle(c.x - 48, c.z - 8, 4);
     }
+    this.drawShelf();
     const pass = D.sections.find((sec) => sec.id === 'pass');
     if (pass) {
       // the rockslide: boulders heaped across the pass, higher than anyone can climb

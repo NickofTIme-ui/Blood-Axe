@@ -41,6 +41,22 @@ branch, or ChatGPT's work gets lost.
      (WoodTraps.updatePens); when a phase or pensAtStart opens a pen, its hounds run in from off-screen on the pen's
      side (openPen). Slamming a knocked-down hound into an open pen still works. Logic tests updated (and the
      chain-drag test now puts the hero on the roomier side, it was timing-fragile against the right wall).
+- 20 November 2026 (cloud, branch `claude/project-thread-i5k685`; ON MAIN (Nick: "push all"), NOT on itch).
+  GALLOWS WOOD ART ROUND 4 (Nick: hanged men "look bad, TOtally fix this"; "the signal lantern needs GOOD ART"; the
+  cage-cart rock's "flat straight lines"; "the trees cut off in the sky really abrubtly"; "the horns need art"):
+  ChatGPT paintings made in Nick's Chrome (raws: project files level2-art-nov20/raw; cut by tools/cut-wood-art.py,
+  which now also splits touching halves by box and greys purple smoke).
+  1. Hanging tree (data/hangingTree.js, NpcView.drawHanged): three shrouded dead (hanged_1..3; ChatGPT refused
+     uncovered hanged bodies), each rope tied under a real bough of hanging_tree.png, in front of the tree, slow
+     sway + turn, wood light, shadow on the mud. Joren's rope starts at the bough tip (hold 96 -> 48).
+  2. Signal lantern (WoodTrapsView.drawSignals): signal_lantern / signal_lantern_down, red fire glow + sparks.
+  3. Cage carts' boulder + shelf (WoodView.drawShelf, terrain tags boulder/shelf): one painted outcrop; blocks now
+     3856-4074 (+70) and 4074-4318 (+220); the relic crate on the shelf moved to x 4190.
+  4. Treetops (WoodView.canopy): canopy.png band over the back wall's top edge.
+  5. War horn (WoodTrapsView drawMarks): painted horn slung at the hip, raised and tipping up while blown, sound
+     rings off the bell; when it sounds, rings out through the wood, a shake, rain shaken off the boughs.
+  npm test passes. Cloud headless Chromium still runs out of memory booting the game (canvas renderer and
+  aborting other levels' art didn't help): after shots need Nick's Chrome on a pushed build.
 - 20 November 2026 (cloud, branch `claude/project-thread-boigcz` on main beecaf1; NOT pushed yet, NOT on itch).
   GALLOWS WOOD LOG PILE (the old ford; Nick: "breaking the log thing is soo bad, make them roll better, make the
   whole thing feel better"). The old version slid four flat painted logs down the screen as one wall.
