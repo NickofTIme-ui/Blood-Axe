@@ -22,6 +22,25 @@ branch, or ChatGPT's work gets lost.
      (WoodTraps.updatePens); when a phase or pensAtStart opens a pen, its hounds run in from off-screen on the pen's
      side (openPen). Slamming a knocked-down hound into an open pen still works. Logic tests updated (and the
      chain-drag test now puts the hero on the roomier side, it was timing-fragile against the right wall).
+- 20 November 2026 (cloud, branch `claude/project-thread-boigcz` on main beecaf1; NOT pushed yet, NOT on itch).
+  GALLOWS WOOD LOG PILE (the old ford; Nick: "breaking the log thing is soo bad, make them roll better, make the
+  whole thing feel better"). The old version slid four flat painted logs down the screen as one wall.
+  1. Sim (stage/WoodTraps.js updateRolls/rollLog, TRAPS.logs): cutting the rope makes the pile groan (22 frames),
+     then burst. Its six trunks (WoodTraps.PILE_LOGS, matching the painted stack) come off one after another, each
+     its own body: falls off the stack, bounces, hops over ruts, rolls down the bank WEST to the ford gathering
+     speed (fanned out across the road), fetches up against blocks, splashes into the shallows, then floats off
+     downstream and is gone. Deterministic (world.roll) for online.
+  2. Hits: each trunk going fast bowls over whoever is in its way: men are killed and flung (Stage.hurt kind
+     'log': big knockdown, 'CRUSHED!'), bosses lose 20%, heroes take 18 (not while the trunk is still spilling off
+     the stack, so the one who cut it isn't hit). The trunk rides up over him and slows a little.
+  3. Look (WoodTrapsView makeLogArt/paintRoller): each trunk is drawn end-on like the painted pile: the top log's
+     cut end (cropped from trap_logpile) turning as it rolls, a sliver of the painted log's bark sliding over its
+     top, shaded round; sinks into the water with a dark waterline, ripples. Shadows, mud kicked up behind.
+  4. Feel: rope crack + creak on the cut, the pile shudders; the burst = logs thunder, heavy slam, shake 12,
+     controller rumble, crows, dust/bark burst; a wood knock per trunk let go; slam + shake + dust on each bounce;
+     splash + spray into the ford; body/bone hits, blood and shake on each man struck.
+  "CUT THE ROPE!" now shows while men are between the pile and the ford (its lane x 5200-5540).
+  No new art needed (it reuses trap_logpile and trap_log).
 - 19 November 2026 (cloud, branch `claude/project-thread-slyl5t` on main 2208944; ON MAIN (Nick: "push all"), NOT on itch).
   GALLOWS WOOD GROUNDING PASS (Nick: "objects still feel copied and pasted into the world, the trees and snares
   still feel off, the tree trap going over the river"):

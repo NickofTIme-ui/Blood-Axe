@@ -31,6 +31,12 @@ const SPOT = { noose: { x: 0.718, y: 0.56 }, ground: 0.975, ring: { x: 0.45, y: 
 const rand = (a, b) => a + Math.random() * (b - a);
 // how high up the painted pine's notch is (px over its foot): where its trunk hinges over
 const PINE_HINGE = 108; // (the painted notch: row ~500 of 720, the foot at 684, at 430/720 scale)
+// the rolling trunks' little canvases (paintRoller): the cut end's radius, the bark strip's
+// height and its round (one full turn), the canvas, where the cut end's middle sits in it,
+// the far end's curve; and where in the painted pile (trap_logpile, 698x562) the top log's
+// cut end is, and which part of the painted side-on log (trap_log) to lay round it
+const LOG_ART = { r: 48, body: 40, period: 266, w: 104, h: 126, cy: 74, cap: 8,
+  end: { x: 358, y: 105, r: 72 }, bark: { x: 820, y: 40, w: 180, h: 260 } };
 
 export class WoodTrapsView {
   constructor(scene, stage) {
@@ -150,7 +156,7 @@ export class WoodTrapsView {
     for (const P of this.pileLabels) {
       const pr = P.pr; const sec = this.stage.sections.findIndex((q) => pr.x >= q.x0 && pr.x < q.x1);
       const foes = this.stage.livingFoes?.() ?? [];
-      const below = foes.some((f) => f.x > pr.lane.x0 - 60 && f.x < pr.lane.x1 + 60);
+      const below = foes.some((f) => f.x > pr.lane.x0 && f.x < pr.lane.x1); // (where its trunks will go: down the bank to the ford)
       const show = !pr.broken && this.stage.fightOn && this.stage.index === sec && below;
       P.label.setVisible(show).setText(show ? 'CUT THE ROPE!' : '').setY(pr.z - 150 - Math.abs(Math.sin(now / 260)) * 5);
     }
@@ -308,23 +314,6 @@ export class WoodTrapsView {
     const rows = [[-66, -22, 22, 66], [-44, 0, 44], [-22, 22]];
     rows.forEach((row, r) => row.forEach((dx) => logs.push({ x: pr.x + dx, y: pr.z - 18 - r * 34 })));
     const rope = s.add.graphics().setDepth(pr.z + 0.5);
-    const trunks = [];
-    for (let i = 0; i < 4; i++) {
-      const w = pr.lane.x1 - pr.lane.x0 - 36;
-      const t = s.textures.exists(BARK)
-        ? s.add.tileSprite(0, 0, w, 28, BARK).setTileScale(0.12).setTint(i % 2 ? 0xb0a898 : 0xc8bca8)
-        : s.add.rectangle(0, 0, w, 28, 0x3a2a1a);
-      trunks.push(t.setOrigin(0, 1).setVisible(false));
-    }
-    if (s.textures.exists(ART.trap_log)) {
-      // painted log: the same log for each trunk, rolling (a little bob and a turn of the light)
-      for (const t of trunks) t.destroy();
-      trunks.length = 0;
-      for (let i = 0; i < 4; i++) {
-        const w = pr.lane.x1 - pr.lane.x0 - 20;
-        trunks.push(s.add.image(0, 0, ART.trap_log).setOrigin(0, 1).setDisplaySize(w, 34).setVisible(false).setFlipX(i % 2 === 1));
-      }
-    }
     const painted = s.textures.exists(ART.trap_logpile);
     let v0ground = null;
     const img = painted ? s.add.image(pr.x, pr.z + 6, ART.trap_logpile).setOrigin(0.5, 0.96).setDepth(pr.z - 1.8) : null;
@@ -333,7 +322,7 @@ export class WoodTrapsView {
       woodLit(img);
       v0ground = groundUnder(s, pr.x, pr.z + 4, 210, pr.z - 2.2, { seed: pr.id + 3 });
     }
-    const v = { g, ends, rope, logs, trunks, rollG: s.add.graphics().setDepth(pr.z), loose: false, img, painted, ground: v0ground };
+    const v = { g, ends, rope, logs, loose: false, img, painted, ground: v0ground };
     this.drawPile(v, pr);
     return v;
   }
@@ -362,41 +351,145 @@ export class WoodTrapsView {
     rope.fillStyle(0xe8c890, 0.9).fillRect(pr.x - 2, pr.z - 38, 6, 3);
   }
 
+  // The trunks' own look, made once: a cut end (from the painted pile's top log) to turn,
+  // and a strip of the painted log's bark laid round the way it goes (so it can scroll as the
+  // trunk turns). Each rolling trunk is then drawn into its own little canvas each frame:
+  // its top going back from us, the bark sliding over it, shaded round, and the cut end
+  // turning in front (LOG_ART: canvas px, twice the size it shows)
+  makeLogArt() {
+    if (this.logArt !== undefined) return this.logArt;
+    const s = this.scene; const R = LOG_ART.r;
+    const pile = s.textures.exists(ART.trap_logpile) ? s.textures.get(ART.trap_logpile).getSourceImage() : null;
+    const side = s.textures.exists(ART.trap_log) ? s.textures.get(ART.trap_log).getSourceImage() : s.textures.exists(BARK) ? s.textures.get(BARK).getSourceImage() : null;
+    const canvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+    // the cut end
+    const disc = canvas(R * 2, R * 2); const d = disc.getContext('2d');
+    d.save(); d.beginPath(); d.arc(R, R, R, 0, Math.PI * 2); d.clip();
+    if (pile) { const c = LOG_ART.end; d.drawImage(pile, c.x - c.r, c.y - c.r, c.r * 2, c.r * 2, 0, 0, R * 2, R * 2); }
+    else {
+      d.fillStyle = '#2a1e14'; d.fillRect(0, 0, R * 2, R * 2);
+      d.fillStyle = '#b89468'; d.beginPath(); d.arc(R, R, R * 0.84, 0, Math.PI * 2); d.fill();
+      d.strokeStyle = 'rgba(122,90,56,0.8)'; d.lineWidth = 2;
+      for (const k of [0.62, 0.42, 0.22]) { d.beginPath(); d.arc(R, R, R * k, 0, Math.PI * 2); d.stroke(); }
+      d.beginPath(); d.moveTo(R, R); d.lineTo(R * 1.7, R * 0.6); d.stroke(); // (a split: so the turn can be seen)
+    }
+    d.restore();
+    // the bark round it: half its round from the painting, then the same mirrored, so it
+    // wraps without a seam
+    const P = LOG_ART.period; const H = LOG_ART.body;
+    const bark = canvas(P, H); const b = bark.getContext('2d');
+    if (side) {
+      const c = side === s.textures.get(ART.trap_log)?.getSourceImage() ? LOG_ART.bark : { x: 0, y: 0, w: side.width, h: side.height };
+      b.setTransform(0, 1, 1, 0, 0, 0); b.drawImage(side, c.x, c.y, c.w, c.h, 0, 0, H, P / 2);
+      b.setTransform(0, 1, -1, 0, P, 0); b.drawImage(side, c.x, c.y, c.w, c.h, 0, 0, H, P / 2);
+      b.setTransform(1, 0, 0, 1, 0, 0);
+    } else { b.fillStyle = '#3a2a1a'; b.fillRect(0, 0, P, H); }
+    this.logArt = { disc, bark };
+    return this.logArt;
+  }
+
+  makeRoller(v, pr, g) {
+    const s = this.scene; const A = LOG_ART;
+    const key = `logroll-${pr.id}-${g.i}`;
+    if (s.textures.exists(key)) s.textures.remove(key);
+    const tex = s.textures.createCanvas(key, A.w, A.h);
+    const img = s.add.image(g.x, g.z, key).setOrigin(0.5, (A.cy + A.r) / A.h).setScale(TRAPS.logs.r / A.r);
+    woodLit(img, 1.05);
+    const shadow = s.add.ellipse(g.x, g.z, TRAPS.logs.r * 2.3, 13, 0x000000, 0.42);
+    const water = s.add.graphics();
+    return { g, tex, img, shadow, water, key, drawn: null };
+  }
+
+  // One trunk, as it stands this frame: its top going back from us with the bark sliding
+  // over it, shaded round; the cut end turning in front, lit from the same side whatever
+  // way it has turned
+  paintRoller(o, wet = 0) {
+    const A = LOG_ART; const art = this.makeLogArt(); const ctx = o.tex.context; const g = o.g;
+    const R = A.r; const cx = A.w / 2; const cy = A.cy; const top = 4; const cap = A.cap;
+    const ang = Math.round(g.ang * 40) / 40; const sunk = Math.round(wet * 20) / 20;
+    if (o.drawn === ang && o.sunk === sunk) return;
+    o.drawn = ang; o.sunk = sunk;
+    ctx.clearRect(0, 0, A.w, A.h);
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(cx, top + cap, R, cap, 0, 0, Math.PI * 2); ctx.rect(cx - R, top + cap, R * 2, cy - top - cap); ctx.clip();
+    const off = (((ang * R) % A.period) + A.period) % A.period;
+    for (let k = -1; k <= 1; k++) ctx.drawImage(art.bark, cx - R - off + k * A.period, top);
+    let sh = ctx.createLinearGradient(cx - R, 0, cx + R, 0);
+    sh.addColorStop(0, 'rgba(0,0,0,0.7)'); sh.addColorStop(0.28, 'rgba(0,0,0,0.12)'); sh.addColorStop(0.42, 'rgba(255,236,200,0.1)');
+    sh.addColorStop(0.7, 'rgba(0,0,0,0.2)'); sh.addColorStop(1, 'rgba(0,0,0,0.75)');
+    ctx.fillStyle = sh; ctx.fillRect(cx - R, top, R * 2, cy - top);
+    sh = ctx.createLinearGradient(0, top, 0, top + cap * 2.4);
+    sh.addColorStop(0, 'rgba(0,0,0,0.55)'); sh.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sh; ctx.fillRect(cx - R, top, R * 2, cap * 2.4);
+    ctx.restore();
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang); ctx.drawImage(art.disc, -R, -R, R * 2, R * 2); ctx.restore();
+    // (the light stays put while the end turns)
+    const lit = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R * 1.02);
+    lit.addColorStop(0, 'rgba(255,240,210,0.14)'); lit.addColorStop(0.6, 'rgba(0,0,0,0.05)'); lit.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = lit; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+    if (sunk > 0) {
+      // down in the stream: the water over its lower part, a bright line where it meets it
+      const line = cy + R * (1 - sunk * 0.75);
+      ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R + 1, 0, Math.PI * 2); ctx.clip();
+      ctx.fillStyle = 'rgba(28,44,54,0.72)'; ctx.fillRect(cx - R - 2, line, R * 2 + 4, A.h - line);
+      ctx.fillStyle = 'rgba(190,214,226,0.4)'; ctx.fillRect(cx - R - 2, line - 1, R * 2 + 4, 2);
+      ctx.restore();
+    }
+    o.tex.refresh();
+  }
+
   syncPiles() {
-    const L = TRAPS.logs;
+    const L = TRAPS.logs; const now = this.scene.time.now;
+    const live = new Set();
     for (const R of this.rig.rolls) {
       const v = this.piles.get(R.pile.id);
       if (!v) continue;
-      const pr = R.pile; const roll = pr.lane;
-      if (!v.loose) { v.loose = true; this.drawPile(v, pr); }
-      const g = v.rollG.clear();
-      const k = (R.t - L.delay) / L.sweep;
-      if (k < 0) continue;
-      // the trunks thundering down across the road, end over end, a wall of them
-      const front = roll.z0 + (roll.z1 - roll.z0) * Math.min(1, k);
-      for (let i = 0; i < 4; i++) {
-        const z = front - i * 16; const w = roll.x1 - roll.x0;
-        const x = roll.x0 + 10 + (i % 2) * 18; const T = v.trunks[i];
-        g.fillStyle(0x000000, 0.35).fillEllipse(roll.x0 + w / 2, z + 8, w, 12);
-        // the bark turning as it rolls, round shading top and bottom, the cut ends pale
-        T.setVisible(true).setPosition(x, z - 2).setDepth(front + 0.9 - i * 0.01);
-        if (T.tilePositionY !== undefined) T.tilePositionY = -(R.t * 6 + i * 11);
-        if (T.type === 'Image') {
-          T.y -= Math.abs(Math.sin(R.t * 0.35 + i * 1.7)) * 3; // (bouncing over the ruts)
-          T.setTint(i % 2 ? 0xc8c0b0 : 0xffffff);
-          continue;
-        }
-        g.fillStyle(0x000000, 0.4).fillRect(x, z - 10, w - 36, 8);
-        g.fillStyle(0xffffff, 0.06).fillRect(x, z - 28, w - 36, 5);
-        g.fillStyle(0x2a1e14, 1).fillEllipse(x + w - 36, z - 16, 16, 30);
-        g.fillStyle(0xb89468, 1).fillEllipse(x + w - 36, z - 16, 12, 26);
-        g.lineStyle(1, 0x7a5a38, 0.8).strokeEllipse(x + w - 36, z - 16, 6, 14);
+      live.add(v);
+      const pr = R.pile;
+      if (R.t < L.delay) {
+        // the rope gone, the pile groans and shifts, harder and harder, before it goes
+        const k = R.t / L.delay;
+        if (v.img) v.img.setPosition(pr.x + Math.sin(R.t * 2.3) * (0.5 + k * 2.5), pr.z + 6 + Math.abs(Math.sin(R.t * 1.7)) * k * 1.5).setAngle(Math.sin(R.t * 1.1) * k * 1.2);
+        continue;
       }
-      g.setDepth(front + 1);
-      if (k > 1) for (const T of v.trunks) T.setAlpha(Math.max(0, 1 - (k - 1) * 4));
-      if (k <= 1 && R.t % 3 === 0) this.scene.gore?.spawn({ x: rand(roll.x0, roll.x1), z: front + 6, h: 4, vx: rand(-40, 40), vz: 0, vh: rand(40, 110), tint: 0x2a2018, scale: rand(0.5, 1), decal: false, life: 30 });
-      if (k > 1) { g.setAlpha(Math.max(0, 1 - (k - 1) * 4)); }
+      if (!v.loose) { v.loose = true; if (v.img) v.img.setPosition(pr.x, pr.z + 6).setAngle(0); this.drawPile(v, pr); }
+      v.rollers ??= new Map();
+      for (const g of R.logs) {
+        let o = v.rollers.get(g.i);
+        if (g.state === 'gone') { if (o) this.dropRoller(o); v.rollers.delete(g.i); continue; }
+        if (!o) v.rollers.set(g.i, o = this.makeRoller(v, pr, g));
+        const wet = g.wet && g.h < 1;
+        // (settling down into the water as it slows, then bobbing)
+        o.wet = wet ? Math.min(1, (o.wet ?? 0) + 0.05) : 0;
+        const bob = g.state === 'float' ? Math.sin(now / 420 + g.i * 1.3) * 1.5 : 0;
+        const sink = o.wet * 6 + bob;
+        o.img.setVisible(g.state !== 'stack').setPosition(g.x, g.z - g.h + sink).setDepth(g.z + 0.6);
+        if (g.state !== 'stack') this.paintRoller(o, o.wet ? o.wet * (0.45 + (g.state === 'float' ? 0.15 : 0)) + (bob + 1.5) / 40 : 0);
+        // fading: rested a long while on the bank, or carried away downstream
+        const fade = g.state === 'float' ? Math.max(0, Math.min(1, (pr.lane.z1 + 150 - g.z) / 80)) : g.state === 'rest' ? Math.max(0, Math.min(1, (L.life - g.age) / 60)) : 1;
+        o.img.setAlpha(fade);
+        o.shadow.setVisible(g.state !== 'stack' && !wet).setPosition(g.x, g.z + 2).setDepth(g.z - 0.4)
+          .setScale(Math.max(0.4, 1 - g.h / 120), 1).setAlpha(Math.max(0.15, 1 - g.h / 90) * fade);
+        const w = o.water.clear();
+        if (wet) {
+          // sat down in the water: the stream laps round its lower half, rings spread off it
+          w.setDepth(g.z + 0.7);
+          const ring = ((now / 1600 + g.i * 0.37) % 1);
+          w.lineStyle(1, 0x9ab4c0, 0.28 * (1 - ring) * fade * o.wet).strokeEllipse(g.x, g.z + 1, L.r * (2.2 + ring * 2), 8 + ring * 8);
+        }
+        // mud and leaves kicked up behind it as it bowls along the bank
+        const sp = Math.hypot(g.vx, g.vz);
+        if (g.state === 'roll' && !g.wet && g.h < 2 && sp > 2.5 && Math.random() < 0.35)
+          this.scene.gore?.spawn({ x: g.x - Math.sign(g.vx) * L.r * 0.6, z: g.z + rand(-4, 4), h: 2, vx: -g.vx * rand(6, 16), vz: 0, vh: rand(60, 60 + sp * 22), tint: Math.random() < 0.3 ? 0x3a4a22 : 0x2a2018, scale: rand(0.35, 0.8), decal: false, life: rand(18, 34) });
+      }
     }
+    // gone from the sim: clear away whatever is left
+    for (const v of this.piles.values()) if (v.rollers?.size && !live.has(v)) { for (const o of v.rollers.values()) this.dropRoller(o); v.rollers.clear(); }
+  }
+
+  dropRoller(o) {
+    o.img.destroy(); o.shadow.destroy(); o.water.destroy();
+    if (this.scene.textures.exists(o.key)) this.scene.textures.remove(o.key);
   }
 
   // ------------------------------------------------------------ snares, stakes, the ford
@@ -881,8 +974,48 @@ export class WoodTrapsView {
     });
     ev.on('pineFalling', ({ prop }) => { playSfx(s, DK.wood, { volume: 1, pitch: -650, spread: 60, minGapMs: 0 }); playSfx(s, 'woodFall', { volume: 1, minGapMs: 0 }); this.crowBurst(prop.x, top() + 40, 6, false); });
     ev.on('pineDown', ({ prop, dir, x0, x1 }) => this.pineDown(prop, dir, x0, x1));
-    ev.on('propBreak', ({ prop }) => { if (prop.kind === 'logpile') playSfx(s, 'woodSnare', { volume: 0.8, minGapMs: 0 }); });
-    ev.on('logsLoose', () => { playSfx(s, 'woodLogs', { volume: 1, minGapMs: 0 }); s.fx?.shake(5, 40); });
+    // the log pile: the rope parts with a crack and the stack groans; then it bursts, and its
+    // trunks come thundering down the bank, clattering, thumping, bowling men over, and go
+    // into the ford in sheets of spray
+    ev.on('propBreak', ({ prop }) => {
+      if (prop.kind !== 'logpile') return;
+      playSfx(s, 'woodSnare', { volume: 1, minGapMs: 0 });
+      playSfx(s, DK.wood, { volume: 0.9, pitch: 300, minGapMs: 0 });
+      playSfx(s, 'woodCreak', { volume: 1, pitch: -500, spread: 40, minGapMs: 0 });
+      s.fx?.shake(3, 8);
+      for (let i = 0; i < 10; i++) s.gore?.spawn({ x: prop.x + rand(-10, 10), z: prop.z + 4, h: rand(30, 60), vx: rand(-160, 160), vz: 0, vh: rand(80, 220), tint: 0xb8a070, scale: rand(0.25, 0.5), decal: false, life: rand(20, 40) });
+    });
+    ev.on('logsLoose', ({ pile }) => {
+      playSfx(s, 'woodLogs', { volume: 1, minGapMs: 0 });
+      playSfx(s, 'dkSlam', { volume: 1, pitch: -700, spread: 60, minGapMs: 0 });
+      s.time.delayedCall(520, () => playSfx(s, 'woodLogs', { volume: 0.75, pitch: -350, minGapMs: 0 }));
+      s.fx?.shake(12, 28);
+      s.rumble?.(1, 0.6, 520);
+      this.crowBurst(pile.x, top() + 40, 6, false);
+      // the stack's dust, bark and moss bursting out of it
+      for (let i = 0; i < 34; i++) s.gore?.spawn({ x: pile.x + rand(-90, 90), z: pile.z + rand(0, 20), h: rand(0, 120), vx: rand(-260, 120), vz: 0, vh: rand(40, 260), tint: i % 4 === 0 ? 0x3a4a22 : i % 3 ? 0x2a2018 : 0x6a5032, scale: rand(0.4, 1.1), decal: false, life: rand(30, 60) });
+    });
+    ev.on('logFree', () => playSfx(s, DK.wood, { volume: 0.55, pitch: -200, spread: 300, minGapMs: 40 }));
+    ev.on('logBounce', ({ log, power }) => {
+      playSfx(s, 'dkSlam', { volume: Math.min(0.85, 0.2 + power * 0.07), pitch: -650, spread: 220, minGapMs: 60 });
+      if (power > 4) playSfx(s, DK.wood, { volume: 0.35, pitch: -500, spread: 200, minGapMs: 90 });
+      s.fx?.shake(Math.min(6, power * 0.8), 8);
+      if (power > 5) s.rumble?.(0.5, 0.2, 120);
+      for (let i = 0; i < 4 + Math.min(8, power); i++) s.gore?.spawn({ x: log.x + rand(-20, 20), z: log.z + rand(-4, 4), h: 2, vx: rand(-110, 110), vz: 0, vh: rand(50, 90 + power * 18), tint: i % 3 ? 0x2a2018 : 0x4a3a28, scale: rand(0.4, 0.9), decal: false, life: rand(18, 34) });
+    });
+    ev.on('logSplash', ({ log, power }) => {
+      playSfx(s, 'waterSplash', { volume: Math.min(1, 0.45 + power * 0.07), spread: 220, minGapMs: 70 });
+      s.fx?.shake(Math.min(5, 1 + power * 0.5), 8);
+      for (let i = 0; i < 8 + power * 2; i++) s.gore?.spawn({ x: log.x + rand(-26, 26), z: log.z + rand(-6, 6), h: 2, vx: log.vx * rand(10, 40) + rand(-90, 90), vz: 0, vh: rand(120, 200 + power * 34), tint: i % 3 ? 0x9ab0bc : 0x6a8494, scale: rand(0.3, 0.8), decal: false, life: rand(24, 44) });
+    });
+    ev.on('logHit', ({ fighter, dir, speed }) => {
+      playSfx(s, DK.bodyBig, { volume: 1, minGapMs: 0 });
+      playSfx(s, 'dkSlam', { volume: 0.6, pitch: -400, minGapMs: 0 });
+      if (fighter.team !== 'player' || Math.random() < 0.4) playSfx(s, 'dkBone', { volume: 0.8, minGapMs: 60 });
+      s.fx?.shake(fighter.team === 'player' ? 9 : 7, 14);
+      s.rumble?.(0.8, 0.5, 220);
+      for (let i = 0; i < 12; i++) s.gore?.spawn({ x: fighter.x, z: fighter.z + rand(-6, 6), h: rand(20, 70), vx: dir * rand(60, 160 + speed * 30), vz: 0, vh: rand(80, 260), tint: i % 4 === 0 ? 0x2a2018 : 0x7a0808, scale: rand(0.4, 1), decal: i % 3 === 0, life: rand(30, 60) });
+    });
     ev.on('snared', ({ fighter, kind }) => playSfx(s, kind === 'net' ? 'kick' : 'woodSnare', { volume: 0.8, minGapMs: 0 }));
     ev.on('snareTug', () => playSfx(s, 'woodCreak', { volume: 0.25, pitch: 300, minGapMs: 80 }));
     ev.on('stakesOpen', () => playSfx(s, 'doorClose2', { volume: 0.7, pitch: -600, minGapMs: 0 }));

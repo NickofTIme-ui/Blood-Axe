@@ -6,8 +6,13 @@
 //   pine      prop: a notched pine on the bank. Three good blows and it goes over the way it
 //             was struck, crushing whoever is under it; where it lands it becomes the log
 //             bridge (terrain blocks with its `bridge` tag stand only once it is down)
-//   logpile   prop: the stay rope of a stacked woodpile up the bank. Cut it and the trunks
-//             thunder down across the lane in the band below (x0..x1), flattening a wave
+//   logpile   prop: the stay rope of a stacked woodpile up the far bank. Cut it and the pile
+//             groans, then bursts: its six trunks tumble off the stack one after another,
+//             bounce, and roll away down the bank to the ford, each its own weight, spinning
+//             end-on, hopping over the ruts and gathering speed, fanned out across the road.
+//             A man in a trunk's way is bowled over and flung (dead); a hero takes a knock.
+//             They hit the shallows in a burst of spray, and the stream carries them off
+//             (Nick, 2026-11-20: "make them roll better, make the whole thing feel better")
 //   snare     trap: a noose hidden in the leaves, its bent sapling; whoever steps in is caught
 //             by the ankle: men struggle a while, a hero mashes any button to cut free
 //   stakes    trap: a pit of stakes under a mat of leaves (readable: a darker, sunken patch).
@@ -38,7 +43,14 @@ import { createEnemy, offscreenX, inView } from '../entities/Enemy.js';
 
 export const TRAPS = {
   pine: { fall: 46, len: 250, lane: 34, heroDamage: 22 },
-  logs: { delay: 26, sweep: 64, band: 26, heroDamage: 18 },
+  // the log pile: the groan before it goes (frames), then each trunk's release (frames after
+  // the burst, bottom row first), its radius and how far back from its cut end it lies (px);
+  // the bank's pull down to the stream (px/frame²: west, and a little toward us), gravity,
+  // top speed, how fast it must be going to hurt, the hero's grace while it is still
+  // spilling off the stack (frames), how the shallows drag it and how fast the stream
+  // carries it off
+  logs: { delay: 22, heroDamage: 18, r: 24, len: 46, bankX: -0.3, bankZ: 0.01, grav: 0.55, max: 9,
+    hurtAt: 2.2, grace: 24, drag: 0.955, drift: 0.7, life: 900 },
   snare: { reach: 22, hold: 150, mash: 5, enemyHold: 130 },
   stakes: { heroShare: 0.2, cool: 60 },
   horn: { blow: 240, retry: 150, post: 320 },
@@ -112,7 +124,7 @@ export class WoodTraps {
     this.world.events.on('propBreak', ({ prop, dir }) => {
       if (prop.kind === 'signal') for (const M of this.mists) if (M.tag === prop.tag && !M.out) { M.out = true; this.world.events.emit('signalOut', { prop, mist: M }); }
       if (prop.kind === 'pine') this.fell(prop, dir);
-      if (prop.kind === 'logpile') this.rolls.push({ pile: prop, t: 0, hz: { id: `logs${prop.id}`, cool: new Map() } });
+      if (prop.kind === 'logpile') this.rolls.push({ pile: prop, t: 0, logs: [] });
     });
   }
 
@@ -174,24 +186,107 @@ export class WoodTraps {
 
   // ------------------------------------------------------------ the log pile
 
+  // Where each trunk lies in the stack (the painted pile, view/WoodTrapsView.js: the cut ends
+  // to us): its offset from the pile's middle, how high its middle is, when it lets go after
+  // the burst, and the shove it gets coming off (px/frame: x, z, up)
+  static PILE_LOGS = [
+    { dx: -50, up: 47, at: 0, push: [-3.2, 0.5, 1.2] }, { dx: 0, up: 49, at: 3, push: [-2.2, 2.3, 1.8] }, { dx: 48, up: 47, at: 6, push: [-1.4, 3.9, 1.6] },
+    { dx: -26, up: 94, at: 9, push: [-2.8, 1.3, 2.6] }, { dx: 30, up: 94, at: 12, push: [-2, 3.1, 2.8] },
+    { dx: 3, up: 144, at: 17, push: [-2.4, 1.9, 3.4] },
+  ];
+
   updateRolls() {
-    const L = TRAPS.logs;
+    const L = TRAPS.logs; const terrain = this.stage.terrain;
     for (const R of this.rolls) {
       R.t++;
-      for (const [id, c] of R.hz.cool) { if (c <= 1) R.hz.cool.delete(id); else R.hz.cool.set(id, c - 1); }
-      if (R.t === L.delay) this.world.events.emit('logsLoose', { pile: R.pile });
-      const k = (R.t - L.delay) / L.sweep;
-      if (k < 0 || k > 1) continue;
-      const roll = R.pile.lane; const front = roll.z0 + (roll.z1 - roll.z0) * k;
-      R.front = front;
-      for (const f of this.world.fighters) {
-        if (!f.alive || f.x < roll.x0 || f.x > roll.x1 || Math.abs(f.z - front) > L.band || f.h - (f.floor ?? 0) > 60) continue;
-        const dir = Math.sign(f.x - (roll.x0 + roll.x1) / 2) || 1;
-        if (f.team === 'player') this.stage.hurt(R.hz, f, L.heroDamage, dir, 'beam');
-        else this.stage.hurt(R.hz, f, f.stats.boss ? f.stats.maxHealth * 0.2 : f.health + 1, dir, f.stats.boss ? 'beam' : 'trample');
+      const pr = R.pile; const lane = pr.lane;
+      if (R.t === L.delay) {
+        // the stay rope gone, the pile bursts
+        R.logs = WoodTraps.PILE_LOGS.map((s, i) => {
+          const j = (k) => (this.world.roll(9100 + pr.id * 8 + i, k) - 0.5);
+          return { i, x: pr.x + s.dx, z: pr.z + 8, h: Math.max(0, s.up - L.r), vx: 0, vz: 0, vh: 0, ang: j(0) * 6, spin: 0,
+            wait: s.at, push: [s.push[0] * (1 + j(1) * 0.3), s.push[1] * (1 + j(2) * 0.3), s.push[2] * (1 + j(3) * 0.4)],
+            state: 'stack', age: 0, wet: false, hz: { id: `logs${pr.id}-${i}`, cool: new Map() } };
+        });
+        this.world.events.emit('logsLoose', { pile: pr });
       }
+      for (const g of R.logs) this.rollLog(R, g, L, terrain, lane);
+      R.done = R.logs.length > 0 && R.logs.every((g) => g.state === 'gone');
     }
-    this.rolls = this.rolls.filter((R) => R.t <= L.delay + L.sweep + 30);
+    this.rolls = this.rolls.filter((R) => !R.done);
+  }
+
+  rollLog(R, g, L, terrain, lane) {
+    for (const [id, c] of g.hz.cool) { if (c <= 1) g.hz.cool.delete(id); else g.hz.cool.set(id, c - 1); }
+    if (g.state === 'gone') return;
+    if (g.state === 'stack') {
+      if (g.wait-- > 0) return;
+      g.state = 'roll'; [g.vx, g.vz, g.vh] = g.push;
+      this.world.events.emit('logFree', { pile: R.pile, log: g });
+    }
+    g.age++;
+    const wetAt = g.wet || (terrain ? terrain.wadeAt(g.x, g.z) < 1 || terrain.inPit(g.x, g.z) : false); // (once in, the water has it)
+    if (g.state === 'float' || g.state === 'rest') {
+      // carried off down the stream (toward us, out of the picture), or lying still on the bank
+      if (g.state === 'float') { g.vz += (L.drift - g.vz) * 0.03; g.z += g.vz; g.x += Math.sin(g.age / 40 + g.i) * 0.15; g.ang += Math.sin(g.age / 30 + g.i) * 0.01; }
+      if (g.z > lane.z1 + 160 || g.age > L.life) g.state = 'gone';
+      return;
+    }
+    // airborne: gravity; on the ground: the bank's pull and the ruts
+    const ground = 0;
+    if (!wetAt) { g.vx += L.bankX; g.vz += L.bankZ; } // (down the bank: it falls down it in the air too)
+    if (g.h > ground || g.vh > 0) g.vh -= L.grav;
+    else {
+      g.vz *= 0.985;
+      // a rut, a root, a stone: it hops (and comes down with a thump)
+      const sp = Math.abs(g.vx);
+      if (sp > 3.5 && this.world.roll(9300 + g.i, g.age) < 0.03 + sp * 0.004) g.vh = 1.4 + this.world.roll(9400 + g.i, g.age) * (1 + sp * 0.25);
+    }
+    g.vx = Math.max(-L.max, Math.min(L.max, g.vx));
+    const was = terrain?.blockAt(g.x, g.z);
+    g.x += g.vx; g.z += g.vz; g.h += g.vh;
+    // a log, a stone, a post in its way (the log over the channel): it fetches up against it
+    const b = terrain?.blockAt(g.x, g.z);
+    if (b && b !== was && b.top > g.h + 4) {
+      g.x -= g.vx; g.z -= g.vz;
+      const p = Math.abs(g.vx);
+      g.vx = -g.vx * 0.25; g.vz *= 0.5; g.vh = Math.max(g.vh, p * 0.3);
+      if (p > 1.5) this.world.events.emit('logBounce', { pile: R.pile, log: g, power: p });
+    }
+    // the road's edges: it bumps off the back bank / the front verge
+    if (g.z < lane.z0) { g.z = lane.z0; g.vz = Math.abs(g.vz) * 0.4; }
+    if (g.z > lane.z1) { g.z = lane.z1; g.vz = -Math.abs(g.vz) * 0.35; }
+    if (g.h <= ground) {
+      const fall = -g.vh;
+      g.h = ground;
+      if (fall > 2.2) { g.vh = fall * 0.38; this.world.events.emit('logBounce', { pile: R.pile, log: g, power: fall }); }
+      else g.vh = 0;
+    }
+    // rolling without slipping: it turns as far as it goes
+    g.spin = g.vx / L.r; g.ang += g.spin;
+    // into the shallows: spray, and the water drags it to a stop; then the stream has it
+    if (wetAt) {
+      if (!g.wet) { g.wet = true; this.world.events.emit('logSplash', { pile: R.pile, log: g, power: Math.hypot(g.vx, g.vz) }); }
+      g.vx *= L.drag; g.vz *= L.drag;
+      if (Math.hypot(g.vx, g.vz) < 0.5 && g.h <= 0.5) { g.state = 'float'; g.age = 0; }
+    } else if (g.h <= 0 && Math.hypot(g.vx, g.vz) < 0.15 && g.age > 60) { g.state = 'rest'; g.age = 0; }
+    // whoever is in its way
+    const speed = Math.hypot(g.vx, g.vz);
+    if (speed < L.hurtAt) return;
+    for (const f of this.world.fighters) {
+      if (!f.alive || f.entering || Math.abs(f.x - g.x) > L.r + 16) continue;
+      if (f.z < g.z - L.len || f.z > g.z + 10) continue;
+      if (f.h - (f.floor ?? 0) > g.h + L.r * 2 + 12) continue; // (jumped clear over it)
+      if (f.team === 'player' && g.age < L.grace) continue;     // (spilling past him off the stack)
+      if (g.hz.cool.has(f.id)) continue;
+      const dir = Math.sign(g.vx) || -1;
+      if (f.team === 'player') this.stage.hurt(g.hz, f, L.heroDamage, dir, 'log');
+      else this.stage.hurt(g.hz, f, f.stats.boss ? f.stats.maxHealth * 0.2 : f.health + 1, dir, 'log');
+      if (!g.hz.cool.has(f.id)) continue; // (couldn't be hurt just now: rolling, down, in a finisher)
+      // it rides up over him and loses a little of its way
+      g.vx *= 0.82; g.vh = Math.max(g.vh, 2.4);
+      this.world.events.emit('logHit', { pile: R.pile, log: g, fighter: f, dir, speed });
+    }
   }
 
   // ------------------------------------------------------------ snares

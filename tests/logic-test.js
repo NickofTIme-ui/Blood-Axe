@@ -3491,19 +3491,29 @@ test("wood: the ford has no current any more (an invisible river nobody could se
   assert(!STAGE_WOOD.traps.some((q) => q.type === 'current'), 'no current in the ford');
 });
 
-test('wood: the log pile: a blow cuts its rope and the logs come down on the men below (it stays where it stands once the ford fight starts)', () => {
+test('wood: the log pile: a blow cuts its rope, the pile bursts and its trunks roll down the bank to the ford, flattening the men in their way (it stays where it stands once the ford fight starts)', () => {
   const { world, p, st, c, run } = woodSetup(WOOD_SEC('ford'), { x: 5420, z: 310 });
   killFoes(world); run(2);
   const pile = st.props.find((q) => q.kind === 'logpile');
   st.fightOn = true; run(30); // (the wagon's rolling code once dragged it off to NaN here)
   assert(Number.isFinite(pile.x) && pile.x === 5470 && pile.y === 0, `still standing where it was, within reach (${pile.x}, ${pile.y})`);
-  const foes = [5410, 5500, 5560].map((x) => woodFoe(world, st, 'grunt', x, 420));
+  const foes = [[5380, 340], [5330, 420], [5300, 480]].map(([x, z]) => woodFoe(world, st, 'grunt', x, z));
   p.x = 5420; p.z = 310; p.facing = 1; st.placeOnGround(p);
-  let loose = 0; world.events.on('logsLoose', () => loose++);
+  let loose = 0, splash = 0, bounce = 0; const hit = new Set();
+  world.events.on('logsLoose', () => loose++); world.events.on('logSplash', () => splash++); world.events.on('logBounce', () => bounce++);
+  world.events.on('logHit', ({ fighter }) => hit.add(fighter));
   for (let k = 0; k < 2; k++) { c.script = { [c.t + 1]: ['attack'] }; run(20); }
   assert(pile.broken && loose === 1, 'the rope is cut');
-  run(90);
-  assert(foes.every((f) => !f.alive), 'the men below are flattened');
+  const R = st.woodTraps.rolls[0];
+  assert(R?.logs.length === 6, 'six trunks come off the stack');
+  run(120, () => { for (const f of foes) if (f.alive && f.state !== 'knockdown') { f.vx = 0; f.vz = 0; } });
+  assert(foes.every((f) => !f.alive && hit.has(f)), `the men in their way are bowled over (${foes.filter((f) => !f.alive).length}/3)`);
+  assert(!hit.has(p), 'the hero who cut it is not hit by the trunks spilling past him');
+  assert(bounce > 0 && splash >= 3, `they bounce, and go into the ford (${bounce} bounces, ${splash} splashes)`);
+  const zs = R.logs.map((g) => g.z); assert(Math.max(...zs) - Math.min(...zs) > 120, `fanned out across the road (${zs.map(Math.round)})`);
+  assert(R.logs.every((g) => Number.isFinite(g.x) && g.x < 5400), `all down the bank (${R.logs.map((g) => Math.round(g.x))})`);
+  run(1200);
+  assert(!st.woodTraps.rolls.length, 'the stream carries them off');
 });
 
 test('wood: the deadfall: a man on the wire lets the spiked trunk go; it swings in from above the screen, smashes the men in its lane, then is hauled back up and set', () => {

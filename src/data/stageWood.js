@@ -176,7 +176,9 @@ export const STAGE_WOOD = {
         // ground under it, it sat on that block's top, 90 up, out of every axe's reach, and
         // the rope could never be cut: Nick, 2026-11-16 "the pile of wood still does nothing")
         // (on the dry far bank past the shallows: it stood with its feet in the water, Nick 2026-11-19)
-        { kind: 'logpile', x: 5470, z: 292, y: 0, lane: { x0: 5370, x1: 5590, z0: 300, z1: 545 }, drop: null },
+        // (lane: where its trunks go, rolling down the bank to the ford and into it, z0..z1
+        // the road's back and front edges; the call to cut it shows while men are in it)
+        { kind: 'logpile', x: 5470, z: 292, y: 0, lane: { x0: 5200, x1: 5540, z0: 300, z1: 545 }, drop: null },
         { kind: 'barrel', x: 5560, z: 492, drop: 'health' },
         // barrels off the convoy, washed up on the near bank
         ...group([['barrel-grey', 4700, 500], ['barrel-v1', 4746, 504, { drop: 'mana' }]]),

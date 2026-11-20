@@ -1871,11 +1871,11 @@ export class Stage {
     else {
       f.fsm.change('knockdown', kind === 'fire' || kind === 'beam' || kind === 'arrow'
         ? { vx: dir * 160, vh: 260 }
-        : kind === 'trample' ? { vx: dir * 620, vh: 380 } : kind === 'bolt' ? { vx: dir * 760, vh: 240 } : { vx: dir * 420, vh: 320 });
+        : kind === 'trample' ? { vx: dir * 620, vh: 380 } : kind === 'log' ? { vx: dir * 640, vh: 470 } : kind === 'bolt' ? { vx: dir * 760, vh: 240 } : { vx: dir * 420, vh: 320 });
     }
     const e = {
       attacker: null, defender: f, dir, kind: 'hazard', hazard: kind,
-      move: { cut: crushed ? 'crush' : kind === 'fire' ? 'fire' : kind === 'bolt' || kind === 'arrow' ? 'pierce' : kind === 'crate' || kind === 'beam' || kind === 'trample' ? 'blunt' : 'slash', damage: dmg, hitstop: 6, fx: crushed?'trample':undefined },
+      move: { cut: crushed ? 'crush' : kind === 'fire' ? 'fire' : kind === 'bolt' || kind === 'arrow' ? 'pierce' : kind === 'crate' || kind === 'beam' || kind === 'trample' || kind === 'log' ? 'blunt' : 'slash', damage: dmg, hitstop: 6, fx: crushed?'trample':undefined },
       x: f.x, z: f.z, h: f.h + f.stats.body.h * 0.5, damage: dmg, fatality: crushed?'explode':'none',
     };
     this.world.events.emit('hazardHit', { hazard: hz, fighter: f, kind });
