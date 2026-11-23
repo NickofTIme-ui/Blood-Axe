@@ -50,7 +50,7 @@ import { sharedProgress } from '../progression/Progress.js';
 import { CHARACTERS } from '../data/characters.js';
 import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
-import { playMusic, playCue, stopMusic, toggleMute } from '../core/Music.js';
+import { playMusic, playCue, stopMusic, toggleMute, currentMusic } from '../core/Music.js';
 import { syncSanctuaryMusic } from '../core/SanctuaryMusic.js';
 import { syncWoodMusic } from '../core/WoodMusic.js';
 import { playSfx, fleshBite, FLESH_CUT, DK } from '../core/Sfx.js';
@@ -838,6 +838,25 @@ export class ArenaScene extends Phaser.Scene {
 
   // A campaign level walked out of: the level is saved as done (once), the king's scene
   // plays (skippable), then the tally with who was saved and where the road goes next.
+  // A Black Keep scene played from the F8 test menu (view/TestNavigator.js): the fight
+  // stops dead behind it (no hits, no level sounds) and its music comes back after
+  playKeepScene(kind) {
+    if (this.cutawayOn) return;
+    const track = currentMusic();
+    this.cutawayOn = true;
+    this.sound.pauseAll(); // (before the scene starts its own music, so that keeps playing)
+    this.scene.pause();
+    this.scene.launch('Cutaway', {
+      kind,
+      onDone: () => {
+        this.cutawayOn = false;
+        this.scene.resume();
+        this.sound.resumeAll();
+        if (track) playMusic(this, track);
+      },
+    });
+  }
+
   campaignLevelDone(stats, hud) {
     const D = this.stageData;
     const N = nextLevel(D);

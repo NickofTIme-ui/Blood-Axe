@@ -63,7 +63,7 @@ export class TestNavigator {
     let group=null;
     for(const [label,section,moment,g]of TEST_SCENES){if(g!==group)heading(group=g);add(label,()=>{this.close();this.go('village',section,moment);});}
     heading('The Black Keep scenes');
-    for(const [label,kind]of KEEP_SCENES)add(label,()=>{this.close();const A=this.arena;if(A.cutawayOn)return;A.cutawayOn=true;A.scene.launch('Cutaway',{kind,onDone:()=>{A.cutawayOn=false;}});});
+    for(const [label,kind]of KEEP_SCENES)add(label,()=>{this.close();this.arena.playKeepScene?.(kind);});
     heading('Test arenas');
     add('Practice yard (the tutorial)',()=>{this.close();this.go('practice',0,'checkpoint');});
     p.appendChild(document.createElement('hr'));add('Close',()=>this.close());document.body.appendChild(p);

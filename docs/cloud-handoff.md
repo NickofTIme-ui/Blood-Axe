@@ -35,6 +35,10 @@ branch, or ChatGPT's work gets lost.
   LEFT"); then the oath, one line more each scene, whole in V with "THE OATH WILL BE KEPT". Rewritten lines name
   the Oath Keepers and show the king's men fearing them. The messenger/captain/guards are the painted Ashen
   grunt; the king's theme (showdown) plays under every scene. Headless shots of all five checked frame by frame.
+  Round 2 (Nick, same day): the F8 menu plays any of the five (ArenaScene.playKeepScene freezes the fight and its
+  sounds behind it, then brings the level's music back); the war map is now its own last part after the oath,
+  timed to Nick's track assets/audio/war-map.mp3 ("14 Ending", MUSIC.warmap): accents at 3.9 / 8.15 / 12.2 /
+  16.3 s set the token down, land it, ring the next place, push in on the Keep; it fades to black with the music.
   Headless tip: the Title scene crashes headless Chromium; stub Title's create/update before it starts and
   abort unneeded assets with page.route, then start 'Cutaway' directly.
 - 20 November 2026 (cloud, branch `claude/project-thread-snjnrt` rebased on main 1e158b7; ON MAIN (Nick: "push all"), NOT on itch).

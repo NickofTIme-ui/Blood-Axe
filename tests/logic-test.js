@@ -4641,18 +4641,18 @@ test('gates: the level is wired in: the ascent leads to it, its cutaway exists',
   assert(src.includes("{ act: 'helm' }") && src.includes("{ act: 'gutter' }") && src.includes("gutter: () => this.gutter()"), 'the helm, and the fire that goes out');
 });
 
-test('the Black Keep scenes: five chapters, one shape (the Keep, the hall, the war map, the oath growing a line each)', () => {
+test('the Black Keep scenes: five chapters, one shape (the Keep, the hall, the oath growing a line each, then the war map)', () => {
   const src = readFileSync(new URL('../src/scenes/CutawayScene.js', import.meta.url), 'utf8');
   const kinds = [STAGE_VILLAGE, STAGE_WOOD, STAGE_MINE, STAGE_ASCENT, STAGE_GATES].map((s) => s.cutaway);
   kinds.forEach((k, i) => {
     const m = src.match(new RegExp(`\\n  ${k}: \\{\\n    chapter: (\\d)`));
     assert(m && Number(m[1]) === i, `${k} is chapter ${i + 1}`);
-    const body = src.slice(src.indexOf(`\n  ${k}: {`), src.indexOf('\n  },', src.indexOf(`\n  ${k}: {`)));
-    assert(body.includes("{ act: 'map' }"), `${k}: the war map moves on`);
   });
   assert((src.match(/^  '.*',$/gm) ?? []).length >= 5 && src.includes('export const OATH'), 'five lines of the oath');
   assert(src.includes('ROADS[t]') && src.includes('TENSION.guards[t]'), 'the roads count down and the guard thins out');
-  assert(src.includes('if (!b) { this.oath(); return; }') && src.includes('if (this.endWait) { this.finish(); return; }'), 'every scene ends on the oath, and waits for a press');
+  assert(src.includes('if (!b) { this.oath(); return; }') && src.includes('if (this.endWait) { this.endWait = false; this.map(); return; }'), 'every scene ends on the oath, then the war map (Nick: after each scene)');
+  assert(src.includes('if (this.mapWait) { this.finish(); return; }') && !src.includes("{ act: 'map' }"), 'the map is its own part, last, and waits for a press');
+  assert(src.includes("playCue(this, 'warmap', 0)") && src.includes('s?.isPlaying ? s.seek'), 'the map has its own music, and keeps time by it');
 });
 
 test('gates: every hero walks the Iron Gates (no upgrades), without a fall, raises the gate, saves the town; the saved come back', () => {

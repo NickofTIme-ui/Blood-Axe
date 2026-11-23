@@ -11,11 +11,13 @@
 //      cracked, the war map he threw stays on the floor, the captain he burned stays a pile
 //      of ash, and every scene there are fewer guards (the last scene: none). The camera
 //      moves to whoever speaks.
-//   3. THE WAR MAP: an insert of the king's map. The Oath Keepers' red token moves one place
-//      along the road and knocks down the king's black marker there; the roads left to the
-//      Black Keep are counted down (four, three, two, one, none).
-//   4. THE OATH: a cut to black, the three Oath Keepers' faces, and their oath, one line more
+//   3. THE OATH: a cut to black, the three Oath Keepers' faces, and their oath, one line more
 //      each scene, until in the fifth it is whole.
+//   4. THE WAR MAP, last, as its own part with its own music (Nick, 23 Nov: "after each scene
+//      then have the map progression scene, I will provide music for it"; 'warmap' in
+//      core/Music.js, silence until his track is in). The Oath Keepers' red token moves one
+//      place along the road and knocks down the king's black marker there; the roads left to
+//      the Black Keep are counted down (four, three, two, one, none); the next place rings.
 //
 // The king himself comes apart scene by scene: confidence (he shows his power), irritation
 // (he cracks the throne), frustration (he throws the map), unease (he burns his own captain),
@@ -33,7 +35,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { FONT, epicFill } from '../view/fonts.js';
 import { playSfx } from '../core/Sfx.js';
-import { playMusic, stopMusic } from '../core/Music.js';
+import { playMusic, playCue, stopMusic } from '../core/Music.js';
 import { DialogueBox } from '../view/DialogueBox.js';
 import { torchFlame } from '../view/TorchFlame.js';
 
@@ -50,7 +52,6 @@ export const CUTAWAYS = {
       { who: 'VAURATH', text: 'No. Varek was careless. I am not.' },
       { act: 'ember' }, // his power, shown: ember-fire gathered in one hand, then a wave of ash that puts out every torch
       { who: 'VAURATH', text: 'An oath is only words, Marshal. Words burn like everything else.' },
-      { act: 'map' },
       { who: 'VAURATH', text: 'Close the wood road. Hang whoever they try to free, and make them watch.' },
     ],
   },
@@ -64,7 +65,6 @@ export const CUTAWAYS = {
       { act: 'strike' }, // irritation: his fist on the arm of the throne; the stone cracks (and stays cracked)
       { who: 'MALGOR', text: 'Give me the mountain road. They won\'t pass me.' },
       { who: 'VAURATH', text: 'Patience, Marshal. The pass is buried. Let them crawl into the mine after their people.' },
-      { act: 'map' },
       { who: 'VAURATH', text: 'Work the captives harder. If the Oath Keepers want them, let them dig.' },
     ],
   },
@@ -76,7 +76,6 @@ export const CUTAWAYS = {
       { who: 'VAURATH', text: 'With the miners.' },
       { who: 'MALGOR', text: 'The Crusher is scrap. The Chain Warden is in the river.' },
       { who: 'MALGOR', text: 'And my men have started saying their names.' },
-      { act: 'map' },
       { act: 'hurl' }, // frustration: the war map and its markers flung off the table across the hall (and left there)
       { who: 'VAURATH', text: 'Every road I close, they open. Every wall I build, they climb.' },
       { who: 'VAURATH', text: 'Send for Orsk. Burn the ascent. Leave them nothing to stand on.' },
@@ -94,7 +93,6 @@ export const CUTAWAYS = {
       { who: 'CAPTAIN', text: 'My king, the men are afraid. They say the Oath Keepers cannot be killed...' },
       { act: 'kill' }, // unease, turned on his own: an ember bolt from his hand; the captain burns to ash where he stands
       { who: 'VAURATH', text: 'Now they have something else to be afraid of.' },
-      { act: 'map' },
     ],
   },
   fear: {
@@ -110,7 +108,6 @@ export const CUTAWAYS = {
       { who: 'VAURATH', text: 'Then burn the prison wing. Every cell. Every soul.' },
       { who: 'MESSENGER', text: 'My king... those are the prisoners they came for...' },
       { who: 'VAURATH', text: 'Yes. Let them climb my walls for ashes.' },
-      { act: 'map' },
       { act: 'doors' }, // the Keep's doors boom; the messenger runs; the fire comes back into his hand
       { who: 'VAURATH', text: 'Let them come.' },
     ],
@@ -182,6 +179,7 @@ export class CutawayScene extends Phaser.Scene {
     this.finished = false;
     this.busy = false;
     this.endWait = false;
+    this.mapWait = false;
     this.crackDone = false;
   }
 
@@ -211,6 +209,7 @@ export class CutawayScene extends Phaser.Scene {
     this.box = new DialogueBox(this);
     this.ui.add(this.box.root);
     this.oathLayer = this.add.container(0, 0); // (the oath, over everything)
+    this.mapLayer = this.add.container(0, 0); // (and the war map after it)
 
     const k = this.input.keyboard;
     k?.on('keydown', (e) => {
@@ -546,7 +545,10 @@ export class CutawayScene extends Phaser.Scene {
     this.shot = shot;
   }
 
-  update(time) { this.box?.update(time); }
+  update(time) {
+    this.box?.update(time);
+    if (this.mapBeats && !this.finished) this.mapClock();
+  }
 
   // a line in the box (who null: the box goes)
   say(who, text = '', hint = 'CLICK / SPACE  next      ESC  skip') {
@@ -558,14 +560,15 @@ export class CutawayScene extends Phaser.Scene {
 
   next() {
     if (this.finished || this.busy || this.root.alpha < 0.5) return;
-    if (this.endWait) { this.finish(); return; }
+    if (this.mapWait) { this.finish(); return; }
+    if (this.endWait) { this.endWait = false; this.map(); return; }
     this.step++;
     const b = this.def.beats[this.step];
     if (!b) { this.oath(); return; }
     const acts = {
       enter: () => this.enter(b), ember: () => this.ember(), strike: () => this.strike(), hurl: () => this.hurl(),
       horns: () => this.horns(), kill: () => this.kill(), helm: () => this.helm(), gutter: () => this.gutter(),
-      map: () => this.map(), doors: () => this.doors(),
+      doors: () => this.doors(),
     };
     if (b.act) { acts[b.act]?.(); if (!acts[b.act]) this.next(); return; }
     // (a line waits for a press: it never moves on by itself)
@@ -871,87 +874,153 @@ export class CutawayScene extends Phaser.Scene {
 
   // ------------------------------------------------------------ 3. the war map
 
+  // The war map, timed to its music (Nick's "14 Ending", MUSIC.warmap: 23 s; its accents fall
+  // every 4 s, at 4.0, 8.15, 12.2 and 16.3, the last hit at 18.45, and it dies away by 20.5).
+  // The beats below are seconds into the track; update() fires them by the track's own clock
+  // (its seek), so they stay on the music even if it starts late. Without the track: the
+  // scene's clock. A press skips the rest.
   map() {
     const W = SETTINGS.width; const H = SETTINGS.height;
     const t = this.t;
-    this.act(4800, () => {
-      const c = this.insert;
-      c.removeAll(true);
-      c.setAlpha(0);
-      c.add(this.add.rectangle(-60, -60, W + 120, H + 120, 0x000000, 0.86).setOrigin(0));
-      // the parchment (scorched and torn from the fourth scene: it was thrown, and trodden on)
-      const p = this.add.graphics();
-      const x0 = 96; const y0 = 76; const pw = W - 192; const ph = H - 150;
-      p.fillStyle(0x6a5232, 1).fillRect(x0 - 4, y0 - 4, pw + 8, ph + 8);
-      p.fillStyle(0xb39a6a, 1).fillRect(x0, y0, pw, ph);
-      p.fillStyle(0xc6ae7c, 1).fillRect(x0 + 18, y0 + 16, pw - 36, ph - 32);
-      const rnd = new Phaser.Math.RandomDataGenerator(['war-map']);
-      for (let i = 0; i < 40; i++) p.fillStyle(0x6a5030, 0.06 + rnd.frac() * 0.08).fillCircle(rnd.between(x0, x0 + pw), rnd.between(y0, y0 + ph), rnd.between(6, 40));
-      // mountains and rivers inked in, the old map under the war
-      p.lineStyle(1.5, 0x5a4024, 0.5);
-      for (let i = 0; i < 14; i++) { const mx = rnd.between(x0 + 30, x0 + pw - 30); const my = rnd.between(y0 + 30, y0 + ph - 40); p.lineBetween(mx - 10, my + 6, mx, my - 6); p.lineBetween(mx, my - 6, mx + 10, my + 6); }
-      p.lineStyle(2, 0x4a5a6a, 0.45).beginPath(); p.moveTo(x0 + 10, y0 + 280); p.lineTo(x0 + 140, y0 + 240); p.lineTo(x0 + 260, y0 + 300); p.lineTo(x0 + 400, y0 + 250); p.strokePath();
-      if (t >= 3) { // burned and torn
-        p.fillStyle(0x000000, 1).fillTriangle(x0 + pw - 120, y0 - 6, x0 + pw + 6, y0 - 6, x0 + pw + 6, y0 + 110);
-        p.lineStyle(3, 0xff6a20, 0.7).lineBetween(x0 + pw - 120, y0 - 4, x0 + pw + 4, y0 + 110);
-        p.fillStyle(0x000000, 1).fillTriangle(x0 - 6, y0 + ph + 6, x0 + 90, y0 + ph + 6, x0 - 6, y0 + ph - 70);
+    this.say(null);
+    this.tweens.add({ targets: this.oathLayer, alpha: 0, duration: 900 });
+    const c = this.mapLayer;
+    c.setAlpha(1);
+    c.add(this.add.rectangle(-60, -60, W + 120, H + 120, 0x000000, 1).setOrigin(0));
+    const m = this.add.container(0, 0); // (the map itself: the camera pushes in on it)
+    c.add(m);
+    // the parchment (scorched and torn from the fourth scene: it was thrown, and trodden on)
+    const p = this.add.graphics().setAlpha(0);
+    const x0 = 96; const y0 = 76; const pw = W - 192; const ph = H - 150;
+    p.fillStyle(0x6a5232, 1).fillRect(x0 - 4, y0 - 4, pw + 8, ph + 8);
+    p.fillStyle(0xb39a6a, 1).fillRect(x0, y0, pw, ph);
+    p.fillStyle(0xc6ae7c, 1).fillRect(x0 + 18, y0 + 16, pw - 36, ph - 32);
+    const rnd = new Phaser.Math.RandomDataGenerator(['war-map']);
+    for (let i = 0; i < 40; i++) p.fillStyle(0x6a5030, 0.06 + rnd.frac() * 0.08).fillCircle(rnd.between(x0, x0 + pw), rnd.between(y0, y0 + ph), rnd.between(6, 40));
+    p.lineStyle(1.5, 0x5a4024, 0.5);
+    for (let i = 0; i < 14; i++) { const mx = rnd.between(x0 + 30, x0 + pw - 30); const my = rnd.between(y0 + 30, y0 + ph - 40); p.lineBetween(mx - 10, my + 6, mx, my - 6); p.lineBetween(mx, my - 6, mx + 10, my + 6); }
+    p.lineStyle(2, 0x4a5a6a, 0.45).beginPath(); p.moveTo(x0 + 10, y0 + 280); p.lineTo(x0 + 140, y0 + 240); p.lineTo(x0 + 260, y0 + 300); p.lineTo(x0 + 400, y0 + 250); p.strokePath();
+    if (t >= 3) { // burned and torn
+      p.fillStyle(0x000000, 1).fillTriangle(x0 + pw - 120, y0 - 6, x0 + pw + 6, y0 - 6, x0 + pw + 6, y0 + 110);
+      p.lineStyle(3, 0xff6a20, 0.7).lineBetween(x0 + pw - 120, y0 - 4, x0 + pw + 4, y0 + 110);
+      p.fillStyle(0x000000, 1).fillTriangle(x0 - 6, y0 + ph + 6, x0 + 90, y0 + ph + 6, x0 - 6, y0 + ph - 70);
+    }
+    m.add(p);
+    // the road: what they've won already in red, the rest dashed ink
+    const road = this.add.graphics().setAlpha(0);
+    for (let i = 0; i < ROUTE.length - 1; i++) {
+      const a = ROUTE[i]; const b = ROUTE[i + 1];
+      const won = i < t - 1;
+      for (let k = 0; k < 12; k += won ? 1 : 2) {
+        road.lineStyle(won ? 4 : 2, won ? 0x8a1010 : 0x4a3420, won ? 0.9 : 0.7);
+        road.lineBetween(a.x + (b.x - a.x) * k / 12, a.y + (b.y - a.y) * k / 12, a.x + (b.x - a.x) * (k + 1) / 12, a.y + (b.y - a.y) * (k + 1) / 12);
       }
-      c.add(p);
-      // the road
-      const road = this.add.graphics();
-      for (let i = 0; i < ROUTE.length - 1; i++) {
-        const a = ROUTE[i]; const b = ROUTE[i + 1];
-        const won = i < t;
-        const n = 12;
-        for (let s = 0; s < n; s += won ? 1 : 2) {
-          const u0 = s / n; const u1 = (s + 1) / n;
-          road.lineStyle(won ? 4 : 2, won ? 0x8a1010 : 0x4a3420, won ? 0.9 : 0.7);
-          road.lineBetween(a.x + (b.x - a.x) * u0, a.y + (b.y - a.y) * u0, a.x + (b.x - a.x) * u1, a.y + (b.y - a.y) * u1);
-        }
-      }
-      c.add(road);
-      // the places, and the king's black marker on every one he still holds
-      const flags = [];
-      ROUTE.forEach((r, i) => {
-        c.add(this.glyph(r.glyph, r.x, r.y, i === ROUTE.length - 1));
-        const label = this.add.text(r.x, r.y + 26, r.name, { fontFamily: FONT.display, fontSize: '12px', color: '#3a2410' }).setOrigin(0.5, 0);
-        c.add(label);
-        if (i === ROUTE.length - 1) return; // (the Keep: his own)
+    }
+    m.add(road);
+    const trail = this.add.graphics(); // (the road they take this time, inked red behind the token)
+    m.add(trail);
+    // the places, and the king's black marker on every one he still holds
+    const places = []; const flags = [];
+    ROUTE.forEach((r, i) => {
+      const g = this.glyph(r.glyph, r.x, r.y, i === ROUTE.length - 1);
+      const label = this.add.text(r.x, r.y + 26, r.name, { fontFamily: FONT.display, fontSize: '12px', color: '#3a2410' }).setOrigin(0.5, 0);
+      const set = [g, label];
+      if (i < ROUTE.length - 1) {
         const f = this.flag(r.x + 18, r.y - 4);
         if (i < t) { f.setAngle(84); f.y += 10; f.setAlpha(0.8); } // (knocked down in an earlier scene)
         flags[i] = f;
-        c.add(f);
-      });
-      // the Oath Keepers' token: from where it was to where they are now
-      const from = t > 0 ? ROUTE[t - 1] : { x: ROUTE[0].x - 90, y: ROUTE[0].y + 40 };
-      const to = ROUTE[t];
-      const tok = this.token(from.x, from.y);
-      c.add(tok);
-      // the roads left
-      const roads = this.add.text(W / 2, y0 + ph - 34, ROADS[t], { fontFamily: FONT.display, fontSize: '22px' }).setOrigin(0.5).setAlpha(0);
-      roads.setLetterSpacing?.(4);
-      epicFill(roads, ['#c03020', '#7a0a08', '#300402']);
-      c.add(roads);
-      this.tweens.add({ targets: c, alpha: 1, duration: 450 });
-      playSfx(this, 'chestOpen1', { volume: 0.25, pitch: -600, minGapMs: 0 });
-      this.time.delayedCall(800, () => {
-        this.tweens.add({
-          targets: tok, x: to.x, y: to.y, duration: 1100, ease: 'Sine.easeInOut',
-          onComplete: () => {
-            playSfx(this, 'dkSlam', { volume: 0.8, pitch: -700, minGapMs: 0 });
-            this.cameras.main.shake(200, 0.006);
-            const f = flags[t];
-            if (f) this.tweens.add({ targets: f, angle: 84, y: f.y + 10, duration: 260, ease: 'Bounce.easeOut' });
-            this.tweens.add({ targets: tok, scale: 1.25, duration: 120, yoyo: true });
-          },
-        });
-      });
-      this.time.delayedCall(2200, () => {
-        this.tweens.add({ targets: roads, alpha: 1, duration: 500 });
-        playSfx(this, 'kick', { volume: 0.5, pitch: -2200, minGapMs: 0 });
-      });
-      this.time.delayedCall(4200, () => this.tweens.add({ targets: c, alpha: 0, duration: 500, onComplete: () => c.removeAll(true) }));
+        set.push(f);
+      }
+      for (const o of set) o.setAlpha(0);
+      m.add(set);
+      places.push(set);
     });
+    // the Oath Keepers' token: from where it was to where they are now
+    const from = t > 0 ? ROUTE[t - 1] : { x: ROUTE[0].x - 90, y: ROUTE[0].y + 40 };
+    const to = ROUTE[t];
+    const tok = this.token(from.x, from.y).setAlpha(0);
+    m.add(tok);
+    const roads = this.add.text(W / 2, y0 + ph - 34, ROADS[t], { fontFamily: FONT.display, fontSize: '22px' }).setOrigin(0.5).setAlpha(0);
+    roads.setLetterSpacing?.(4);
+    epicFill(roads, ['#c03020', '#7a0a08', '#300402']);
+    m.add(roads);
+    const nx = ROUTE[t + 1];
+    const keep = ROUTE[ROUTE.length - 1];
+    const burst = (x, y, tint, s = 3) => {
+      const b = this.add.image(x, y, 'glow').setScale(s * 0.4).setTint(tint).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.9);
+      m.add(b);
+      this.tweens.add({ targets: b, scale: s, alpha: 0, duration: 700, ease: 'Quad.easeOut', onComplete: () => b.destroy() });
+    };
+    const beats = [
+      // the parchment comes up; the road and its places are inked in one by one
+      [0.0, () => this.tweens.add({ targets: p, alpha: 1, duration: 1200 })],
+      // (the hall is gone behind the map: when the map fades out with the music, it's to black)
+      [0.2, () => { for (const o of [this.root, this.grade, this.insert, this.ui]) o.setVisible(false); }],
+      [0.6, () => this.tweens.add({ targets: road, alpha: 1, duration: 1400 })],
+      ...ROUTE.map((r, i) => [1.0 + i * 0.5, () => this.tweens.add({ targets: places[i], alpha: (o) => (flags.includes(o) && i < t ? 0.8 : 1), duration: 500 })]),
+      // the first accent: the Oath Keepers' token is set down
+      [3.9, () => {
+        tok.setScale(2.2).setAlpha(1);
+        this.tweens.add({ targets: tok, scale: 1, duration: 260, ease: 'Quad.easeIn' });
+        this.time.delayedCall(260, () => { burst(from.x, from.y, 0xff3020); this.cameras.main.shake(160, 0.004); });
+      }],
+      // it marches up the road to the next accent, inking it red behind it
+      [4.25, () => {
+        this.tweens.add({
+          targets: tok, x: to.x, y: to.y, duration: 3800, ease: 'Sine.easeInOut',
+          onUpdate: () => { trail.clear().lineStyle(4, 0x8a1010, 0.9).lineBetween(from.x, from.y, tok.x, tok.y); },
+        });
+      }],
+      // the second: it lands; the king's marker goes down
+      [8.15, () => {
+        burst(to.x, to.y, 0xff3020, 4);
+        this.cameras.main.shake(260, 0.008);
+        playSfx(this, 'dkSlam', { volume: 0.6, pitch: -700, minGapMs: 0 });
+        const f = flags[t];
+        if (f) this.tweens.add({ targets: f, angle: 84, y: f.y + 10, duration: 300, ease: 'Bounce.easeOut' });
+        this.tweens.add({ targets: tok, scale: 1.3, duration: 140, yoyo: true });
+      }],
+      // the count
+      [10.2, () => { roads.setScale(1.4); this.tweens.add({ targets: roads, alpha: 1, scale: 1, duration: 600, ease: 'Quad.easeOut' }); }],
+      // the third: where the road goes next
+      [12.2, () => {
+        const ring = this.add.circle(nx.x, nx.y - 4, 30).setStrokeStyle(3, 0xb01010, 0.9);
+        m.add(ring);
+        this.tweens.add({ targets: ring, scale: { from: 0.6, to: 1.3 }, alpha: { from: 1, to: 0.2 }, duration: 1000, repeat: -1 });
+        const nextName = this.add.text(W / 2, H - 27, `NEXT  ·  ${nx.name}`, { fontFamily: FONT.display, fontSize: '20px' }).setOrigin(0.5).setStroke('#000000', 5).setAlpha(0).setScale(1.4);
+        nextName.setLetterSpacing?.(5);
+        epicFill(nextName, ['#ffe0b0', '#d08040', '#4a1004']);
+        c.add(nextName);
+        this.tweens.add({ targets: nextName, alpha: 1, scale: 1, duration: 400, ease: 'Quad.easeOut' });
+      }],
+      // the fourth, the loudest: in on the Black Keep, and it flares
+      [16.3, () => {
+        const z = 1.16;
+        this.tweens.add({ targets: m, scale: z, x: (W / 2 - keep.x * z) * 0.5, y: (H / 2 - keep.y * z) * 0.5, duration: 2600, ease: 'Sine.easeInOut' });
+        burst(keep.x, keep.y - 8, t >= 4 ? 0xff2010 : 0x9070ff, 6);
+        this.cameras.main.shake(300, 0.006);
+      }],
+      [18.45, () => burst(keep.x, keep.y - 8, 0xff2010, 5)],
+      // the music dies away: so does the map
+      [19.0, () => this.tweens.add({ targets: c, alpha: 0, duration: 1500 })],
+      [20.6, () => this.finish()],
+    ];
+    this.mapBeats = beats.sort((a, b) => a[0] - b[0]);
+    this.mapSound = playCue(this, 'warmap', 0);
+    this.mapStart = this.time.now;
+    this.mapAt = -1;
+    // (a press from here on skips the rest)
+    this.busy = false;
+    this.mapWait = true;
+  }
+
+  // the map's clock: the track's own position while it plays, else the scene's
+  mapClock() {
+    const s = this.mapSound;
+    const own = (this.time.now - this.mapStart) / 1000;
+    const at = s?.isPlaying ? s.seek : own;
+    this.mapAt = Math.max(this.mapAt, at);
+    while (this.mapBeats.length && this.mapBeats[0][0] <= this.mapAt) this.mapBeats.shift()[1]();
   }
 
   // a place on the map, inked: the village's houses, the wood, the mountain, the cliffs, the
@@ -1091,7 +1160,7 @@ export class CutawayScene extends Phaser.Scene {
     this.heart?.remove();
     stopMusic(this, 600);
     this.tweens.add({
-      targets: [this.root, this.grade, this.insert, this.ui, this.oathLayer], alpha: 0, duration: 500,
+      targets: [this.root, this.grade, this.insert, this.ui, this.oathLayer, this.mapLayer], alpha: 0, duration: 500,
       onComplete: () => { const done = this.onDone; this.scene.stop(); done?.(); },
     });
   }
