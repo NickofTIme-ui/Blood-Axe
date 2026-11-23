@@ -33,6 +33,13 @@ for (y0, y1), want in zip(rows, (4, 6)):
     while len(cols) > want:
         k = min(range(len(cols) - 1), key=lambda i: cols[i + 1][0] - cols[i][1])
         cols[k] = [cols[k][0], cols[k + 1][1]]; del cols[k + 1]
+    # (two poses touching: the widest piece split at its thinnest column near its middle)
+    prof = band.sum(0)
+    while len(cols) < want:
+        k = max(range(len(cols)), key=lambda i: cols[i][1] - cols[i][0])
+        x0, x1 = cols[k]; w = x1 - x0
+        cut = x0 + w // 4 + int(np.argmin(prof[x0 + w // 4:x1 - w // 4]))
+        cols[k:k + 1] = [[x0, cut], [cut, x1]]
     assert len(cols) == want, f'row {y0}-{y1}: expected {want} poses, found {len(cols)}'
     for x0, x1 in cols:
         m = band[:, x0:x1]

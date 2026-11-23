@@ -122,7 +122,7 @@ const FOLK_RUN = FOLK_CELLS.run;
 const FOLK_BOB = [1.6, 0, -2.2, 1.6, 0, -2.2];
 const FOLK_BY_ID = Object.fromEntries(FOLK.map((F) => [F.id, F]));
 for (const F of FOLK) CELLS[F.id] = FOLK_CELLS;
-const FOLK_STEP = 21;   // px of ground a pose of a folk runner's cycle covers (at depth scale and size 1)
+const FOLK_STEP = 30;   // (measured off the painted farmer: a planted foot travels ~110 of 407 art px a pose) px of ground a pose of a folk runner's cycle covers (at depth scale and size 1)
 const HOBBLE_STEP = 12; // ...and an old one's hobble (shorter steps, falling behind)
 const FOLK_FADE = 140;
 // ...and the convoy's prisoners out of the wrecked wagon (crowdHead): sim frames after the
