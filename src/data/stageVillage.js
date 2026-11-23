@@ -160,7 +160,7 @@ export const STAGE_VILLAGE = {
       spawns: [
         // (the well's set piece, stage/WellRescue.js: the man with Mira by the hood, the butcher
         // at the well's right with her boy held out over its mouth, two more looking on)
-        [{ x: 2112, z: 326, inPlace: true }, { x: 2368, z: 300, inPlace: true }, { x: 2450, z: 362, inPlace: true }, { x: 2290, z: 456, inPlace: true }],
+        [{ x: 2112, z: 326, inPlace: true }, { x: 2345, z: 300, inPlace: true }, { x: 2450, z: 362, inPlace: true }, { x: 2290, z: 456, inPlace: true }],
         [],
       ],
       props: [

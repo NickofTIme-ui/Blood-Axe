@@ -13,9 +13,10 @@ branch, or ChatGPT's work gets lost.
   lower (WELL_RESCUE.slip) and at `throw` he's thrown down the well (hauled up on the bucket rope once the square is
   won). Hit the butcher and he drops the boy on the stones; the boy runs back, Mira shoves off her man, and they hug
   (mother sheet's cower frame) until the square is won, then run. Barks in WELL_LINES (Claude's; Nick didn't send any).
-  STILL TO DO (art, ChatGPT on the PC): Mira on her own ('mira' sheet, stand-in villager-woman), the butcher holding
-  the boy (stand-in: his hook-throw pose 'special:4' via f.stripPose), optional 'boy-held'. Not seen on screen yet:
-  cloud headless Chromium can't boot the game (OOM), so check the boy's spot at the butcher's hand on the PC.
+  ART DONE (ChatGPT, same evening; docs/well/well-art.md): assets/sprites/npc/mira.png (5 poses), boy_held.png and
+  butcher_hold.png (3 each; painted apart, ChatGPT refused them together, and joined in view/NpcView.js
+  drawWellHold at the measured fist / collar, WELL_ART). Not seen on screen yet: cloud headless Chromium can't boot
+  the game, so check the boy's spot at the butcher's fist and the butcher's size on the PC.
 
 - 23 November 2026 (cloud, branch `claude/project-thread-c5elb2`; ON MAIN (Nick: "push and resolve all finished work"), NOT on itch).
   LEVEL 1 KING SCENE IN NICK'S WORDS (Nick: "way too long.. theres a massive savage attack, tighten banter, the king's

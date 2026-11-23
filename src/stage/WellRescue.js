@@ -18,7 +18,8 @@ import { Controller } from '../core/Controller.js';
 export const WELL_RESCUE = {
   slip: [420, 840, 1140],  // fight frames at which he lets the boy slip lower (a jolt each time)
   throw: 1380,             // ...and at which he throws him down the well
-  hold: { dx: 62, h: 78 }, // the boy's hands at the butcher's fist: this far out from him, this high
+  hold: { dx: 41, h: 56 }, // where the boy hangs from the butcher's fist: his feet this far out from the man, this high
+  // (view/NpcView.js draws him exactly at the painted fist: WELL_ART)
   drop: 12,                // px lower at each slip
   rim: 52,                 // the well's stone ring, px above the ground
   mouth: { x: 2262, z: 292 }, // the middle of the well's mouth (its painting, assets/env/village/well.png)
@@ -50,7 +51,7 @@ export class WellRescue {
     const n = this.npc;
     this.phase = 'held'; // held -> falling | thrown -> back | hauling -> hug -> done
     this.clock = 0; this.age = 0; this.slips = 0; this.bark = null;
-    this.butcher = this.grip = null; this.butcherBrain = this.gripBrain = null; this.shoved = false; this.freeAt = null;
+    this.butcher = this.grip = null; this.butcherBrain = this.gripBrain = null; this.shoved = false; this.freeAt = null; this.jolt = 0; this.shoveAt = null;
     if (!n) return;
     if (!first && this.stage.story.isRescued(n.id)) { this.phase = 'done'; n.split = false; return; }
     n.split = true; n.freeFor = 1e9;
@@ -129,13 +130,15 @@ export class WellRescue {
     if (this.hurt(f)) { this.dropBoy(); return; }
     const face = Math.sign(D.mouth.x - f.x) || -1;
     this.posed(f, face);
-    f.stripPose = 'special:4'; // (arm out: until the painted hold is in, his hook throw's reach)
+    // (his painted hold, data/levelArt.js 'butcher-hold', is drawn over him by view/NpcView.js;
+    // without it, his hook throw's reach stands in)
+    f.stripPose = 'special:4';
     const fight = st.index === si && st.fightOn && !st.story.holding && !st.world.hold;
     if (fight) {
       this.clock++;
       if (this.clock === 1) { this.say(WELL_LINES.start, 180); st.world.events.emit('wellRescueStart'); st.world.events.emit('millWarning', { text: 'SAVE THE BOY!' }); }
       const k = D.slip.indexOf(this.clock);
-      if (k >= 0) { this.slips = k + 1; this.say(WELL_LINES.slip[k] ?? WELL_LINES.slip.at(-1), 160); this.cry(k % 2 ? WELL_LINES.miraHeld : WELL_LINES.boy, 120); st.world.events.emit('wellSlip', { slips: this.slips }); }
+      if (k >= 0) { this.slips = k + 1; this.jolt = 24; this.say(WELL_LINES.slip[k] ?? WELL_LINES.slip.at(-1), 160); this.cry(k % 2 ? WELL_LINES.miraHeld : WELL_LINES.boy, 120); st.world.events.emit('wellSlip', { slips: this.slips }); }
       if (this.clock >= D.throw) { this.throwBoy(); return; }
     }
     // kicking at the end of his arm, swinging a little; lower each time he slips
@@ -143,10 +146,13 @@ export class WellRescue {
     b.x = f.x + face * D.hold.dx; b.z = f.z - 2;
     b.h = D.hold.h - this.slips * D.drop + (this.age % 60 < 4 && this.slips ? -2 : 0);
     b.pose = 'wave'; b.dir = -face; b.tilt = kick * (5 + 2 * this.slips);
+    // the painted hold: arm up (0), shaking him as he slips (1), arm lowered (2)
+    if (this.jolt > 0) this.jolt--;
+    b.held = true; b.holder = f; b.frame = this.jolt > 0 ? 1 : this.slips >= 2 ? 2 : 0;
   }
 
   dropBoy() {
-    const b = this.boy;
+    const b = this.boy; b.held = false; b.holder = null;
     this.phase = 'falling'; this.t = 0; this.from = { x: b.x, z: b.z, h: b.h };
     // he drops him short of the well's mouth, in front of the ring
     this.to = { x: b.x, z: Math.max(b.z + 30, this.D.mouth.z + 36), h: 0 };
@@ -157,7 +163,7 @@ export class WellRescue {
   }
 
   throwBoy() {
-    const b = this.boy;
+    const b = this.boy; b.held = false; b.holder = null;
     this.phase = 'thrown'; this.t = 0; this.from = { x: b.x, z: b.z, h: b.h };
     this.say(WELL_LINES.throw, 120);
     this.cry(WELL_LINES.miraThrown, 200);
@@ -246,7 +252,7 @@ export class WellRescue {
     // the boy loose: she turns on him (a shove with everything she has), and he's in the fight
     const free = this.phase !== 'held' && this.phase !== 'thrown';
     if (free && ++this.shoveT >= this.D.shove) {
-      this.shoved = true;
+      this.shoved = true; this.shoveAt = this.age;
       g.vx = 260 * Math.sign(g.x - n.x || -1);
       if (g.fsm.states?.stagger || g.fsm.has?.('stagger')) g.fsm.change('stagger');
       this.release(g, this.gripBrain);
@@ -264,10 +270,12 @@ export class WellRescue {
     n.dir = Math.sign(b.x - n.x) || 1;
     if (this.phase === 'held' || this.phase === 'thrown') {
       // straining for him while held; on the ground sobbing once he's down the well
-      n.act = this.phase === 'thrown' && this.t > 16 ? 'cower' : 'wave';
+      // (screaming for him while she cries out, straining for him between)
+      n.act = this.phase === 'thrown' && this.t > 16 ? 'cower' : n.helpAge > 0 ? 'scream' : 'wave';
       n.tilt = this.phase === 'held' && this.grip?.wellGrip ? 6 * Math.sin(this.age * 0.15) - 6 : 0;
     } else {
-      n.act = this.npcLoose() ? 'wave' : 'wave'; n.tilt = 0;
+      // (turning on the man who held her: the shove, then reaching for her boy)
+      n.act = this.shoveAt != null && this.age - this.shoveAt < 26 ? 'shove' : 'wave'; n.tilt = 0;
     }
   }
 

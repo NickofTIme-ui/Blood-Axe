@@ -193,6 +193,13 @@ export const SPRITE_SHEETS = {
   'villager-burner': { file: 'assets/sprites/npc/villager_burner.png', frames: 8, height: 232, grade: NPC_GRADE },
   mother: { file: 'assets/sprites/npc/mother.png', frames: 6, height: 235, grade: NPC_GRADE },
   boy: { file: 'assets/sprites/npc/boy.png', frames: 6, height: 170, grade: NPC_GRADE },
+  // THE WELL (stage/WellRescue.js; ChatGPT, 2026-11-23, prompts docs/well/well-art.md): Mira on her
+  // own (stand, sobbing crouch, straining for her boy, screaming with both arms out, the shove),
+  // the boy hoisted by his collar (kicking, reaching down, hanging), and the butcher's arm-out
+  // hold (up, shaking, lowered). Baked to equal cells by tools/bake-pose-row.py
+  mira: { file: 'assets/sprites/npc/mira.png', frames: 5, height: 235, grade: NPC_GRADE },
+  'boy-held': { file: 'assets/sprites/npc/boy_held.png', frames: 3, height: 150, grade: NPC_GRADE },
+  'butcher-hold': { file: 'assets/sprites/npc/butcher_hold.png', frames: 3, height: 300 },
   // Tam, the boy trapped up on the burning roofs (view/NpcView.js drawStranded): cling, wave
   // x2, call, flinch, reach down, relief, climb down (ChatGPT, 2026-10-24, from the boy sheet
   // above). Height: his standing pose as tall as the boy's (about 157 px)

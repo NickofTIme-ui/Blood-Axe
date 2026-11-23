@@ -1,6 +1,7 @@
 import { DEPTH } from './depths.js';
 import { FONT } from './fonts.js';
 import { ShoutPlate, INK } from './ShoutPlate.js';
+import { SPRITES } from './levelArt.js';
 
 // The well's set piece (stage/WellRescue.js) on screen: the butcher's taunts over his head
 // (red ink on parchment, like the hangman's: view/ShoutPlate.js), and the bucket rope when
@@ -18,6 +19,11 @@ export class WellRescueView {
 
   update() {
     const r = this.rig, b = r.bark, f = r.butcher;
+    // holding the boy, painted: he's drawn in his hold (view/NpcView.js drawWellHold), so his
+    // own sprite stands down (his shadow stays)
+    if (f?.alive && r.boy?.held && SPRITES['boy-held'] && SPRITES['butcher-hold']) {
+      const v = this.scene.views.get(f.id); v?.sprite?.setVisible(false); v?.puppet?.root?.setVisible(false);
+    }
     const on = !!b && !!f?.alive && !this.stage.story.holding;
     this.plate.setVisible(on);
     if (on) {

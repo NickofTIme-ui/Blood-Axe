@@ -78,6 +78,11 @@ const CELLS = {
   villager: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7 },
   mother: { stand: 0, cower: 1, wave: 2, run: RUN },
   boy: { stand: 0, cower: 1, wave: 2, run: RUN },
+  // the well (stage/WellRescue.js): Mira apart from her boy, the boy at the end of the
+  // butcher's arm, and the butcher's hold (h0 up, h1 shaking him, h2 lowered)
+  mira: { stand: 0, cower: 1, wave: 2, scream: 3, shove: 4, run: [2, 3], kneel: 1, sit: 1 },
+  'boy-held': { h0: 0, h1: 1, h2: 2, wave: 0, cower: 2, stand: 2 },
+  'butcher-hold': { h0: 0, h1: 1, h2: 2, stand: 0 },
   // ...and the boy trapped up on a roof (Tam; drawStranded): clinging, waving (two beats),
   // calling, flinching from the sparks, reaching down to a hero, relieved, climbing down
   'boy-roof': { cling: 0, wave: [1, 2], call: 3, flinch: 4, reach: 5, relief: 6, climb: 7, stand: 6 },
@@ -107,6 +112,15 @@ const DEATH_SHIFT = 44; const DEATH_HEAD = 112;
 const HOBBLE = [0, 0, 0, 0];
 const GUIDE_STEP = 24; // px of road a beat of the guide's walk covers (at depth scale 1)
 const SMITH_STEP = 15; // ...and a beat of Hale's walk (stage/SmithLife.js: an unhurried big man)
+// the well's painted hold (stage/WellRescue.js): where the butcher's fist is in each of his
+// three poses, and where the boy's collar is in each of his, as fractions of the trimmed cell
+// (tools/bake-pose-row.py, measured off assets/sprites/npc/butcher_hold.png and boy_held.png);
+// tint: the butcher graded down a little to sit with the enemy strips
+const WELL_ART = {
+  fist: [[0.943, 0.166], [0.964, 0.166], [0.861, 0.328]],
+  collar: [[0.701, 0.085], [0.648, 0.056], [0.522, 0.067]],
+  tint: 0xf2e6dc,
+};
 const RUN_STEP = 26;  // px of ground a beat of a sprinter's run covers (stage/Story.js `sprint`)
 const STRANDED_RELIEF = 0.45; // the part of his time freed (stage/Story.js freeFor) he stands relieved, before he climbs down
 const STRANDED_REACH = 230; // a hero this near (x), the stranded child leans down to him
@@ -390,6 +404,12 @@ export class NpcView {
       this.figure(g, n.x, y, k, pose, t, tun(2), dir, SPRITES.mira ? 'mira' : 'villager-woman');
       this.tilt = undefined;
       const b = n.boy;
+      // held out by the butcher, both painted: him in his hold, the boy hanging from his fist
+      if (b?.shown && b.held && b.holder?.alive && SPRITES['boy-held'] && SPRITES['butcher-hold']) {
+        this.drawWellHold(g, b, t);
+        g.setDepth(n.z);
+        return;
+      }
       if (b?.shown) {
         const bk = depthScale(b.z), by = b.z - b.h;
         g.setDepth(b.z);
@@ -430,6 +450,26 @@ export class NpcView {
     this.tilt = n.tilt; this.squash = n.squash;
     this.figure(g, n.x, y, k, pose, tt, tun(0), dir, n.actArt ?? n.art);
     this.tilt = this.squash = undefined;
+  }
+
+  // THE WELL (stage/WellRescue.js): the butcher in his painted hold over the well, and the boy
+  // hanging by the collar from his fist (their sheets: data/levelArt.js 'butcher-hold' and
+  // 'boy-held'; the fist and the collar: WELL_ART, in fractions of each sheet's cell)
+  drawWellHold(g, b, t) {
+    const f = b.holder, fr = b.frame ?? 0, face = f.facing || -1;
+    const fk = depthScale(f.z), B = SPRITES['butcher-hold'], C = SPRITES['boy-held'];
+    const fist = WELL_ART.fist[fr], col = WELL_ART.collar[fr];
+    const fy = f.z - f.h;
+    g.setDepth(f.z);
+    const tint = this.tint; this.tint = WELL_ART.tint;
+    this.sprite(g, f.x, fy, fk, `h${fr}`, t, face, 'butcher-hold');
+    this.tint = tint;
+    const hx = f.x + face * (fist[0] - 0.5) * B.fw * 0.5 * fk, hy = fy - (1 - fist[1]) * B.fh * 0.5 * fk;
+    const bx = hx - face * (col[0] - 0.5) * C.fw * 0.5 * fk, by = hy + (1 - col[1]) * C.fh * 0.5 * fk;
+    g.setDepth(f.z + 0.5);
+    this.tilt = b.tilt * 0.4;
+    this.sprite(g, bx, by, fk, `h${fr}`, t, face, 'boy-held');
+    this.tilt = undefined;
   }
 
   // Who the i-th of a freed crowd is (data/folk.js): dealt from the pool the first time
