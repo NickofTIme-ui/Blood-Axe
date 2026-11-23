@@ -168,7 +168,10 @@ export class VillageBackdrop {
     const r = rng(51);
     const special = (x) => this.data.sections.find((sec) => x >= sec.x0 && x < sec.x1)?.id;
     const painted = this.art.has('wall');
-    if (painted) this.paintedFire.add(this.art.wall(), true);
+    // (the houses stop at the church: nothing but the night stands behind the north gate's palisade, Nick 2026-11-23)
+    // (the houses stop behind the church's tallest pinnacle, where the cut can't be seen: past it
+    // only the sky stands over the church's roof and the north gate's palisade, Nick 2026-11-23)
+    if (painted) this.paintedFire.add(this.art.wall(this.data.church ? this.data.church.x + 169 : this.width), true);
     // Architecture stays behind the lane; only the matching loading deck is solid.
     this.art.piece('mill', 4500, 5200, { bottom: 8 });
     for (let x = 0; x < this.width;) {
