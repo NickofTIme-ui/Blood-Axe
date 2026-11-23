@@ -8,8 +8,8 @@ branch, or ChatGPT's work gets lost.
 
 - 23 November 2026 (cloud, branch `claude/project-thread-c5elb2` on main b190d4c; NOT on main until Nick says push, NOT on itch).
   LEVEL 1 KING SCENE TIGHTENED (Nick: "way too long.. theres a massive savage attack, tighten banter, the king's
-  doling out orders. He is fierce."). The `kingParting` beat in src/data/stageVillage.js went from 11 lines to 7,
-  all barked orders, with shorter hold times. Moments kingLook / kingPoint / kingSwear / kingGo kept (KingHakon.js
+  doling out orders. He is fierce."). The `kingParting` beat in src/data/stageVillage.js went from 11 lines to Nick's own 6,
+  with shorter hold times (the cry from the well moves into the well set piece). Moments kingLook / kingPoint / kingSwear / kingGo kept (KingHakon.js
   poses and the parting art hang on them), and the swear to meet at the church stays (the church beat calls back
   to it). dist/game.js rebuilt; npm test passes.
 

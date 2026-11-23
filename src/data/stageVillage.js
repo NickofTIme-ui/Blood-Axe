@@ -509,15 +509,14 @@ export const STAGE_VILLAGE = {
     {
       id: 'kingParting', on: 'kingParting', hold: true,
       lines: [
-        // (Nick, 2026-11-23: "way too long... a massive savage attack. Tighten banter. The
-        // king's doling out orders. He is fierce." Eleven lines cut to seven, all orders)
-        ['RURIK', 'Father!', { minFrames: 60 }],
-        ['KING', 'Ashen dogs! Get your blade up, boy!', { moment: 'kingLook', minFrames: 100 }],
-        ['VOICE', '(from the well) Not the boy!', { minFrames: 90 }],
-        ['KING', 'The well! Mira and her son. Save them!', { moment: 'kingPoint', minFrames: 100 }],
-        ['KING', 'I take the children to the church. Meet me there. Swear it!', { moment: 'kingSwear', minFrames: 130 }],
-        ['RURIK', 'I swear it.', { minFrames: 60 }],
-        ['KING', 'GO! Make them bleed!', { moment: 'kingGo', minFrames: 80 }],
+        // (Nick's own lines, 2026-11-23: "way too long... a massive savage attack. Tighten
+        // banter. The king's doling out orders. He is fierce.")
+        ['RURIK', "Father! You're still standing!", { minFrames: 60 }],
+        ['KING', "Oathkeepers! Save who's left—regroup at the church!", { moment: 'kingLook', minFrames: 100 }],
+        ['KING', 'Mira and her boy are pinned at the well—go!', { moment: 'kingPoint', minFrames: 100 }],
+        ['KING', "I'll get the survivors to the church. Meet me there.", { moment: 'kingSwear', minFrames: 120 }],
+        ['RURIK', 'On my life, I swear it.', { minFrames: 60 }],
+        ['KING', 'Hold to your oath!', { moment: 'kingGo', minFrames: 80 }],
       ],
     },
     {
