@@ -77,6 +77,7 @@ export class BootScene extends Phaser.Scene {
     // (and one painted dark capstone stack for all three: the old caps read pale, like snow; Nick's second level 1 review)
     this.load.image('village-chimney-cap', 'assets/env/village/chimney_cap.png');
     this.load.image('keep-hall', 'assets/env/keep_hall.png'); // the Black Keep's throne room (scenes/CutawayScene.js)
+    this.load.image('malgor-helm', 'assets/cinematics/malgor-helm.png'); // Malgor's helm rolls across the hall in Black Keep scene V (ChatGPT, 23 Nov)
     this.load.image('keep-war-map', 'assets/cinematics/keep-war-map.jpg'); // the king's war map after each Black Keep scene (ChatGPT, 23 Nov)
     this.load.image('bridge-log-src', 'assets/env/bridge_log.png'); // the painted log bridge (view/TerrainView.js drawBlock)
     this.load.image('bodies-src', 'assets/env/bodies.png'); // the painted fallen villagers (view/NpcView.js drawBodies)

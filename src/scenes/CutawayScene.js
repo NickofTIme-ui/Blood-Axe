@@ -798,20 +798,25 @@ export class CutawayScene extends Phaser.Scene {
     this.frame('wide', 500);
     this.act(2800, () => {
       this.say('VOICE', '(a helm rolls across the floor)');
-      const h = this.add.graphics();
-      h.fillStyle(0x2a2a30, 1).fillCircle(0, 0, 16).fillRect(-16, 0, 32, 10);
-      h.fillStyle(0x6a5a3a, 1).fillRect(-16, -2, 32, 3); // the gold band
-      h.fillStyle(0x0a0a0c, 1).fillRect(-8, -4, 16, 3); // the eye slit
-      h.fillStyle(0x4a0a08, 1).fillCircle(-6, 6, 3).fillCircle(5, 8, 2); // his blood on it
-      h.lineStyle(2, 0x0a0a0c, 1).lineBetween(4, -16, -2, 2); // the split
+      // his painted helm (ChatGPT, 23 Nov), split and bloodied; the code-drawn one if it didn't load
+      const painted = this.textures.exists('malgor-helm');
+      const h = painted ? this.add.image(0, 0, 'malgor-helm') : this.add.graphics();
+      if (painted) h.setScale(76 / h.width);
+      else h.fillStyle(0x2a2a30, 1).fillCircle(0, 0, 16).fillRect(-16, 0, 32, 10);
+      if (!painted) {
+        h.fillStyle(0x6a5a3a, 1).fillRect(-16, -2, 32, 3); // the gold band
+        h.fillStyle(0x0a0a0c, 1).fillRect(-8, -4, 16, 3); // the eye slit
+        h.fillStyle(0x4a0a08, 1).fillCircle(-6, 6, 3).fillCircle(5, 8, 2); // his blood on it
+        h.lineStyle(2, 0x0a0a0c, 1).lineBetween(4, -16, -2, 2); // the split
+      }
       h.setPosition(-30, H - 100);
       this.root.add(h);
       playSfx(this, 'block', { volume: 0.6, pitch: -1400, minGapMs: 0 });
       this.tweens.add({
-        targets: h, x: W * 0.68, angle: 540, duration: 1500, ease: 'Quad.easeOut',
+        targets: h, x: W * 0.68, angle: 450, duration: 1500, ease: 'Quad.easeOut',
         onComplete: () => {
           playSfx(this, 'block', { volume: 0.4, pitch: -1800, minGapMs: 0 });
-          this.tweens.add({ targets: h, angle: 520, duration: 180, yoyo: true, repeat: 1 });
+          this.tweens.add({ targets: h, angle: 435, duration: 180, yoyo: true, repeat: 1 }); // comes to rest on its side
         },
       });
       this.time.delayedCall(1000, () => this.stagger(this.messenger, 16));
