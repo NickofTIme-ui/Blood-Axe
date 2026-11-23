@@ -557,6 +557,9 @@ export class CutawayScene extends Phaser.Scene {
   say(who, text = '', hint = 'CLICK / SPACE  next      ESC  skip') {
     this.tweens.killTweensOf(this.box.root);
     if (!who) { this.box.setAlpha(0); return; }
+    // the kneeling messenger looks up, afraid, to speak, and bows his head again to listen
+    const m = this.messenger;
+    if (m?.sheet && m.alpha > 0 && m.frame?.texture?.key === `${m.sheet.key}-kneel` && (who === 'MESSENGER' || who === 'VAURATH')) this.pose(m, 'kneel', who === 'MESSENGER' ? 2 : 1);
     this.box.show(who, text, 'full', hint).setAlpha(0);
     this.tweens.add({ targets: this.box.root, alpha: 1, duration: 250 });
   }
