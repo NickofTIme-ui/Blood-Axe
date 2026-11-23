@@ -13,7 +13,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { drawCastle } from './castle.js';
-import { PaintedLevel, artKey } from './levelArt.js';
+import { PaintedLevel, artKey, featheredKey } from './levelArt.js';
 import { LEVEL_ART } from '../data/levelArt.js';
 import { PROP_LIGHT, lightProp } from './propGround.js';
 
@@ -51,7 +51,8 @@ export class WoodBackdrop {
     if (art.has('sky')) art.layer('sky', DEPTH.sky); else this.drawSky();
     if (art.has('far')) art.layer('far', DEPTH.far - 1); else this.drawCastle();
     if (art.has('mid')) art.layer('mid', DEPTH.far + 2); else this.drawPines();
-    if (art.has('wall')) art.wall(); else this.drawTrunks();
+    // (the wall's upper trunks in the canopy's cold dark, warming to its own light by the mud)
+    if (art.has('wall')) art.wall().setTint(0x7c8898, 0x7c8898, 0xf0f0f0, 0xf0f0f0); else this.drawTrunks();
     // the treetops over the wall: its trunks used to end on a straight line against the sky
     // whenever the camera went up (Nick, 2026-11-20: "the trees cut off in the sky really
     // abruptly"); a painted band of pine crowns (ChatGPT, canopy.png) laps over the wall's top
@@ -189,13 +190,15 @@ export class WoodBackdrop {
   // half over the wall's top edge, its crowns up into the sky
   canopy() {
     const s = this.scene;
-    const key = artKey('wood', 'canopy');
+    // (its lower trunks melt down into the wall's, lapping further over it, and it's graded to
+    // meet the wall's own light: it ended on a hard dark line over a brighter wall, Nick 2026-11-23)
+    const key = featheredKey(s, artKey('wood', 'canopy'), { bottom: 0.47 });
     const img = s.textures.get(key).getSourceImage();
     const top = SETTINGS.world.floorTop - 50;
     const wallTop = top - LEVEL_ART.wood.wall.height + 8;
     const h = 300; const k = h / img.height;
-    s.add.tileSprite(0, wallTop - h * 0.62, this.width, h, key).setOrigin(0).setTileScale(k, k)
-      .setDepth(DEPTH.floor - 0.995).setTint(0xc8d0d8, 0xc8d0d8, 0x8a929a, 0x8a929a);
+    s.add.tileSprite(0, wallTop - h * 0.62 + 60, this.width, h, key).setOrigin(0).setTileScale(k, k)
+      .setDepth(DEPTH.floor - 0.995).setTint(0xc8d0d8, 0xc8d0d8, 0xb4bcc4, 0xb4bcc4);
   }
 
   // the hanging tree, the convoy's carts, the rockslide (data: gallows, carts, the pass)
