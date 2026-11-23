@@ -382,6 +382,24 @@ export class NpcView {
     }
     if (n.pose === 'child' && n.rescue === 'reach' && this.drawStranded(n, g, y, k, t)) return;
     if (n.pose === 'child') return this.figure(g, n.x, y, k * 0.7 / (SPRITES.boy ? 0.7 : 1), pose, t, tun(1), dir, 'boy');
+    if (n.pose === 'family' && n.split) {
+      // torn apart at the well (stage/WellRescue.js): Mira on her own, and her boy wherever
+      // he is (at the end of the butcher's arm, on the stones, down the well). Her own sheet
+      // without him once it's painted ('mira'), till then the village woman's
+      this.tilt = n.tilt;
+      this.figure(g, n.x, y, k, pose, t, tun(2), dir, SPRITES.mira ? 'mira' : 'villager-woman');
+      this.tilt = undefined;
+      const b = n.boy;
+      if (b?.shown) {
+        const bk = depthScale(b.z), by = b.z - b.h;
+        g.setDepth(b.z);
+        const sm = this.smooth; this.tilt = b.tilt; this.smooth = b.pose === 'run';
+        this.figure(g, b.x, by, bk * 0.7 / (SPRITES.boy ? 0.7 : 1), b.pose, b.pose === 'run' ? ((b.stride ?? 0) / (RUN_STEP * bk)) * 7 : t, tun(1), b.dir ?? 1, SPRITES['boy-held'] && b.pose === 'wave' && b.h > 20 ? 'boy-held' : 'boy');
+        this.tilt = undefined; this.smooth = sm;
+        g.setDepth(n.z);
+      }
+      return;
+    }
     if (n.pose === 'family') {
       // (the painted mother carries her child; the drawn one has him at her side)
       if (!this.figure(g, n.x, y, k, pose, t, tun(2), dir, 'mother')) this.figure(g, n.x + 22 * dir * -1, y + 4, k * 0.68, pose, t + 7, tun(3), dir);

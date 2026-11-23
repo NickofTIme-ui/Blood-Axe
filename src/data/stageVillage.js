@@ -94,6 +94,8 @@ export const STAGE_VILLAGE = {
   // against a pack of Ashen men (stage/KingHakon.js, view/KingView.js); the two part there
   // and meet again at the church, where he is dying (the beat 'elder' below)
   king: { section: 'square', at: 1440, x: 1760, z: 400 },
+  // THE WELL (Nick, 2026-11-23): the butcher holds Mira's boy out over it (stage/WellRescue.js)
+  wellRescue: { npc: 'mira', section: 'square' },
   gateTalk: {
     elsbeth:{who:'ELSBETH',before:'Irvolino is gone. Your father got us into the church. Let me help him now.',after:'Hale and I will carry him. He won’t be left alone.'},
     hale:{who:'HALE',before:"He held the church door while we brought the children in. He's been asking for you.",after:"We'll lay him by the altar. No one will leave him alone."},
@@ -156,7 +158,9 @@ export const STAGE_VILLAGE = {
       // ...and then the HORDE: a pack of thralls from both ends of the square (one against many)
       waves: [['grunt', 'butcher', 'grunt', 'grunt'], ['stalker', 'grunt', 'grunt'], [...Array(9).fill('thrall'), 'butcher']],
       spawns: [
-        [{ x: 2230, z: 340, inPlace: true }, { x: 2330, z: 380, inPlace: true }, { x: 2400, z: 320, inPlace: true }, { x: 2300, z: 470, inPlace: true }],
+        // (the well's set piece, stage/WellRescue.js: the man with Mira by the hood, the butcher
+        // at the well's right with her boy held out over its mouth, two more looking on)
+        [{ x: 2112, z: 326, inPlace: true }, { x: 2368, z: 300, inPlace: true }, { x: 2450, z: 362, inPlace: true }, { x: 2290, z: 456, inPlace: true }],
         [],
       ],
       props: [
@@ -460,7 +464,7 @@ export const STAGE_VILLAGE = {
   npcs: [
     { id: 'hale', name: 'Hale the smith', x: 960, z: 296, talk: 'hale', art: 'hale', life: 'smith' }, // (on his feet, so he's seen: Nick, 2026-10-16; his own painted sheet and life, stage/SmithLife.js: Nick, 2026-11-02)
     {
-      id: 'mira', name: 'Mira and her son', x: 2300, z: 300, pose: 'family', rescue: 'defend', section: 'square', wave: 1,
+      id: 'mira', name: 'Mira and her son', x: 2178, z: 330, pose: 'family', rescue: 'defend', section: 'square', wave: 1,
       flee: { x: 1500, z: 300 }, gather: { x: 8740, z: 300 },
     },
     {

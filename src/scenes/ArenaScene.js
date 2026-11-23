@@ -56,6 +56,7 @@ import { syncWoodMusic } from '../core/WoodMusic.js';
 import { playSfx, fleshBite, FLESH_CUT, DK } from '../core/Sfx.js';
 import { BattlefieldAudio } from '../core/BattlefieldAudio.js';
 import {MillRescueView} from '../view/MillRescueView.js';
+import {WellRescueView} from '../view/WellRescueView.js';
 import {WoodTrapsView} from '../view/WoodTrapsView.js';
 import { WoodWeather } from '../view/WoodWeather.js';
 import { runTickJobs } from '../core/TickJobs.js';
@@ -483,6 +484,7 @@ export class ArenaScene extends Phaser.Scene {
     this.gore.dismemberer.minZ = this.world.bounds.minZ; // (a stage's own lane: `laneTop`)
     this.stageView = new StageView(this, this.stage);
     this.millRescueView=this.stage.millRescue?new MillRescueView(this,this.stage):null;
+    this.wellRescueView=this.stage.wellRescue?new WellRescueView(this,this.stage):null;
     this.woodTrapsView=this.stage.woodTraps?new WoodTrapsView(this,this.stage):null;
     // (after the StageView: it makes the 'glow' texture the terrain's lanterns use)
     this.terrainView = this.stage.terrain || this.stageData.theme ? new TerrainView(this, this.stage) : null;
@@ -1840,6 +1842,7 @@ export class ArenaScene extends Phaser.Scene {
     this.updateFinisherMarker();
     this.stageView.update();
     this.millRescueView?.update();
+    this.wellRescueView?.update();
     this.woodTrapsView?.update();
     this.woodWeather?.update();
     this.updateStageCamera();
