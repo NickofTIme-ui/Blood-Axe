@@ -6,6 +6,13 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 23 November 2026 (cloud, branch `claude/project-thread-c5elb2` on main b190d4c; NOT on main until Nick says push, NOT on itch).
+  LEVEL 1 KING SCENE TIGHTENED (Nick: "way too long.. theres a massive savage attack, tighten banter, the king's
+  doling out orders. He is fierce."). The `kingParting` beat in src/data/stageVillage.js went from 11 lines to 7,
+  all barked orders, with shorter hold times. Moments kingLook / kingPoint / kingSwear / kingGo kept (KingHakon.js
+  poses and the parting art hang on them), and the swear to meet at the church stays (the church beat calls back
+  to it). dist/game.js rebuilt; npm test passes.
+
 - 20 November 2026 (cloud, branch `claude/project-thread-snjnrt` rebased on main 1e158b7; ON MAIN (Nick: "push all"), NOT on itch).
   WAR HOUNDS HUNT LIKE DOGS (Nick: "the dogs kind of just shuffle around weirdly, they need animations and
   different things to do"). The cause: hounds used the man's brain (face the hero always, full pace or stop), so

@@ -509,17 +509,15 @@ export const STAGE_VILLAGE = {
     {
       id: 'kingParting', on: 'kingParting', hold: true,
       lines: [
-        ['RURIK', 'Father!', { minFrames: 90 }],
-        ['KING', 'Rurik. They told me the ford took you.', { moment: 'kingLook', minFrames: 150 }],
-        ['RURIK', 'It nearly did. Who did this?', { minFrames: 120 }],
-        ['KING', 'Ashen men. They came at dusk and put the whole village to the torch.', { minFrames: 180 }],
-        ['VOICE', '(from the well) Not the boy! He\'s a child!', { minFrames: 150 }],
-        ['KING', 'Mira and her son. Go to them.', { moment: 'kingPoint', minFrames: 150 }],
-        ['KING', 'The children are hiding in the cellars. I will get them to the church.', { minFrames: 180 }],
-        ['RURIK', 'Then I go with you. We fight together.', { minFrames: 150 }],
-        ['KING', 'Not tonight. Meet me at the church, Rurik. Swear it.', { moment: 'kingSwear', minFrames: 180 }],
-        ['RURIK', 'I swear it.', { minFrames: 120 }],
-        ['KING', 'Then go!', { moment: 'kingGo', minFrames: 90 }],
+        // (Nick, 2026-11-23: "way too long... a massive savage attack. Tighten banter. The
+        // king's doling out orders. He is fierce." Eleven lines cut to seven, all orders)
+        ['RURIK', 'Father!', { minFrames: 60 }],
+        ['KING', 'Ashen dogs! Get your blade up, boy!', { moment: 'kingLook', minFrames: 100 }],
+        ['VOICE', '(from the well) Not the boy!', { minFrames: 90 }],
+        ['KING', 'The well! Mira and her son. Save them!', { moment: 'kingPoint', minFrames: 100 }],
+        ['KING', 'I take the children to the church. Meet me there. Swear it!', { moment: 'kingSwear', minFrames: 130 }],
+        ['RURIK', 'I swear it.', { minFrames: 60 }],
+        ['KING', 'GO! Make them bleed!', { moment: 'kingGo', minFrames: 80 }],
       ],
     },
     {
