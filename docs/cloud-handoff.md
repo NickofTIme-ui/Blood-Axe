@@ -25,6 +25,18 @@ branch, or ChatGPT's work gets lost.
   wrecked post's shells (and their painted landing marks) at once; a bombard hazard left behind (out of
   updateHazards' range) clears its shells instead of freezing them on the ground. logic-test mill-archers test
   covers both.
+- 23 November 2026 (cloud, branch `claude/project-thread-4uaj22` on main b190d4c; NOT on main yet, NOT on itch).
+  THE BLACK KEEP SCENES, final pass (Nick: "drastically enhanced to their final versions... cohesive... hyping up
+  the Oathkeepers and with each scene building tension"). src/scenes/CutawayScene.js rewritten; design and the
+  art still to paint: docs/black-keep-scenes.md. All five scenes now share one shape: the painted Keep from
+  outside with the chapter (I-V) and more fire on the approach each time; the throne room with a camera that
+  cuts to whoever speaks, a hall that remembers (crack, thrown map, captain's ash) and a guard that deserts
+  (6/4/3/2/0); the war map insert (the Oath Keepers' token takes the next place, "FOUR ROADS..." to "NO ROADS
+  LEFT"); then the oath, one line more each scene, whole in V with "THE OATH WILL BE KEPT". Rewritten lines name
+  the Oath Keepers and show the king's men fearing them. The messenger/captain/guards are the painted Ashen
+  grunt; the king's theme (showdown) plays under every scene. Headless shots of all five checked frame by frame.
+  Headless tip: the Title scene crashes headless Chromium; stub Title's create/update before it starts and
+  abort unneeded assets with page.route, then start 'Cutaway' directly.
 - 20 November 2026 (cloud, branch `claude/project-thread-snjnrt` rebased on main 1e158b7; ON MAIN (Nick: "push all"), NOT on itch).
   WAR HOUNDS HUNT LIKE DOGS (Nick: "the dogs kind of just shuffle around weirdly, they need animations and
   different things to do"). The cause: hounds used the man's brain (face the hero always, full pace or stop), so
