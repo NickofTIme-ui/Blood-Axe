@@ -109,6 +109,7 @@ export class BootScene extends Phaser.Scene {
     for (const L of PARALLAX_LAYERS) this.load.image(`plxsrc-${L.name}`, `assets/env/parallax/${L.file}`);
     preloadLevelArt(this); // (the campaign levels' painted art: data/levelArt.js)
     preloadPropArt(this); // (the props and debris repainted, 2026-11-02: view/propArt.js)
+    for (const p of ['rage', 'hurl', 'cast', 'defy']) this.load.image(`king-${p}`, `assets/enemies/king_vaurath_${p}.png`); // his acts in the Black Keep scenes (ChatGPT, 23 Nov)
     this.load.image('king-vaurath', 'assets/enemies/king_vaurath_stand.png'); // the king in his cutaways (scenes/CutawayScene.js)
     // the speakers' portraits for the dialogue box (data/speakers.js; one not painted yet gets a stand-in)
     for (const id of PORTRAIT_IDS) this.load.image(`portrait-${id}`, `assets/ui/portraits/${id}.png`);

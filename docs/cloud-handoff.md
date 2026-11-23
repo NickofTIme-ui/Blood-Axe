@@ -44,7 +44,7 @@ branch, or ChatGPT's work gets lost.
   wrecked post's shells (and their painted landing marks) at once; a bombard hazard left behind (out of
   updateHazards' range) clears its shells instead of freezing them on the ground. logic-test mill-archers test
   covers both.
-- 23 November 2026 (cloud, branch `claude/project-thread-4uaj22` on main b190d4c; NOT on main yet, NOT on itch).
+- 23 November 2026 (cloud; ON MAIN (Nick: "finnish and push all"), NOT on itch).
   THE BLACK KEEP SCENES, final pass (Nick: "drastically enhanced to their final versions... cohesive... hyping up
   the Oathkeepers and with each scene building tension"). src/scenes/CutawayScene.js rewritten; design and the
   art still to paint: docs/black-keep-scenes.md. All five scenes now share one shape: the painted Keep from
@@ -60,6 +60,9 @@ branch, or ChatGPT's work gets lost.
   16.3 s set the token down, land it, ring the next place, push in on the Keep; it fades to black with the music.
   Headless tip: the Title scene crashes headless Chromium; stub Title's create/update before it starts and
   abort unneeded assets with page.route, then start 'Cutaway' directly.
+  Round 3: ALL ITS ART PAINTED in ChatGPT on the PC and wired in: the war map (keep-war-map.jpg), the kneeling
+  messenger (grunt_kneel.png), King Vaurath's four acts (king_vaurath_rage/hurl/cast/defy.png via kingPose) and
+  Malgor's fallen helm (malgor-helm.png). Nothing in these scenes is code-drawn any more except effects.
 - 20 November 2026 (cloud, branch `claude/project-thread-snjnrt` rebased on main 1e158b7; ON MAIN (Nick: "push all"), NOT on itch).
   WAR HOUNDS HUNT LIKE DOGS (Nick: "the dogs kind of just shuffle around weirdly, they need animations and
   different things to do"). The cause: hounds used the man's brain (face the hero always, full pace or stop), so

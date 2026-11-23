@@ -41,27 +41,15 @@ Code: `src/scenes/CutawayScene.js` (played by `ArenaScene.campaignLevelDone` aft
 The king's theme (`showdown`, the Keep's music) plays under all five, so the finale's music
 is already his when the player gets there.
 
-## Still code-drawn (paint in ChatGPT on Nick's PC)
+## Painted art (ChatGPT on Nick's PC, 23 Nov, all in)
 
-Same style block as `docs/keep-art-prompts.md`. Each is a drop-in once its loader line is
-added (noted per item).
-
-1. **The war map** `assets/cinematics/keep-war-map.png`, 1536x864, opaque. Prompt: "A
-   king's war map seen from straight above, filling the frame: old stained parchment pinned
-   to a black wooden table, ink drawings of a road climbing from a small village (bottom
-   left) through a dark forest, a mountain with a mine mouth, sheer cliffs with a stair, a
-   great iron-barred gate, to a black castle on a crag (top right). Candle wax drips, a
-   dagger stuck in one corner, soot, dried blood. No text, no labels, no people." Wiring:
-   load it as `keep-war-map` in BootScene and draw it under the route in `map()`.
-2. **The messenger kneeling** `assets/enemies/strips/grunt_kneel.png`, 3 poses, the prompt
-   in `docs/kneel-art-prompts.md` with the Ashen grunt (attach `grunt_walk.png` and
-   `grunt_react.png`): pose 1 dropping to one knee, 2 on one knee with head bowed, 3 head
-   raised in fear. Wiring: allow `kneel` in the grunt's set (`src/data/enemyStrips.js`);
-   `enter()` already uses `enemy-grunt-kneel` when it exists.
-3. **King Vaurath's acts** `assets/enemies/king_vaurath_acts.png`, 5 poses, one row, same
-   painting as `king_vaurath_stand.png` (attach it), facing right, black background: 1 one
-   palm raised with fire in it, 2 fist brought down at his side, 3 arm swept wide (throwing),
-   4 arm thrust forward (casting a bolt), 5 sword drawn and raised. Today he never moves:
-   only the fire, his eyes and the camera do.
-4. **Malgor's fallen helm** (scene V) `assets/cinematics/malgor-helm.png`, transparent: his
-   spiked helm (attach `warlord_react.png`), dented and split, blood on it, on its side.
+- The war map `assets/cinematics/keep-war-map.jpg` (loaded as `keep-war-map`; the route's
+  places sit on it at `PAINTED_AT` in CutawayScene.js). The code parchment is the fallback.
+- The kneeling messenger `assets/enemies/strips/grunt_kneel.png` (3 poses: dropping, bowed,
+  looking up to speak; `say()` switches 1 and 2 as the king and messenger talk).
+- King Vaurath's acts `assets/enemies/king_vaurath_{rage,hurl,cast,defy}.png`, already facing
+  left, swapped in by `kingPose()` (KING_POSES holds each one's body height, feet and the
+  hand the fire goes to): rage = fist on the throne (II), hurl = the map thrown (III),
+  cast = the captain burned (IV), defy = sword raised, "Let them come." (V).
+- Malgor's fallen helm `assets/cinematics/malgor-helm.png` (scene V), rolls in and comes to
+  rest on its side.

@@ -151,6 +151,14 @@ const TENSION = {
 // sheet): his height on screen, and his eye and the hands on his sword's pommel, where the
 // ember-fire gathers, in source pixels before the flip
 const KING_ART = { srcW: 419, srcH: 830, height: 250, eye: [283, 100], hand: [350, 330] };
+// his acts (ChatGPT, 23 Nov: assets/enemies/king_vaurath_<pose>.png, already facing left):
+// body = crown to feet in px, feetX = where his feet are, pt = the hand that does the act
+const KING_POSES = {
+  rage: { body: 519, feetX: 203, pt: [75, 177] }, // the fist brought down on the throne
+  hurl: { body: 520, feetX: 175, pt: [364, 71] }, // the backhand that throws the map
+  cast: { body: 540, feetX: 227, pt: [35, 92] }, // the open palm that burns the captain
+  defy: { body: 535, feetX: 171, pt: [245, 261] }, // the sword raised: "Let them come."
+};
 
 // where everyone stands in the hall (960 x 540)
 const SPOT = {
@@ -421,6 +429,26 @@ export class CutawayScene extends Phaser.Scene {
     if (this.textures.exists(key)) f.setTexture(key, `f${frame}`);
   }
 
+  // he moves: the standing king is swapped for one of his painted acts (and back with
+  // pose null); his eyes hide while he's in one, the ember-light follows his hand
+  kingPose(name) {
+    const king = this.king; if (!king) return null;
+    const [kx, ky] = SPOT.king;
+    const P = KING_POSES[name];
+    if (!P || !this.textures.exists(`king-${name}`)) {
+      king.setTexture('king-vaurath').setFlipX(true).setOrigin(0.5, 1).setScale(KING_ART.height / king.height);
+      this.eyes?.setVisible(true);
+      this.breath?.resume();
+      return null;
+    }
+    this.breath?.pause();
+    king.setTexture(`king-${name}`).setFlipX(false);
+    const sc = KING_ART.height / P.body;
+    king.setScale(sc).setOrigin(P.feetX / king.width, 1).setPosition(kx, ky);
+    this.eyes?.setVisible(false);
+    return [kx + (P.pt[0] - P.feetX) * sc, ky - (king.height - P.pt[1]) * sc];
+  }
+
   drawKing(W, H) {
     const [kx, ky] = SPOT.king;
     if (this.textures.exists('king-vaurath')) {
@@ -436,8 +464,8 @@ export class CutawayScene extends Phaser.Scene {
       this.eyes = this.add.rectangle(ex, ey, 6, 2, 0xffa040).setBlendMode(Phaser.BlendModes.ADD);
       this.hand = this.add.image(hx, hy, 'glow').setScale(0).setTint(0xff8a30).setBlendMode(Phaser.BlendModes.ADD);
       this.root.add([back, king, this.kingLight, this.eyes, this.hand]);
-      // he breathes, slowly; nothing else about him moves
-      this.tweens.add({ targets: king, scaleY: king.scaleY * 1.006, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      // he breathes, slowly (paused while he's in one of his acts: kingPose)
+      this.breath = this.tweens.add({ targets: king, scaleY: king.scaleY * 1.006, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     } else {
       // (the art failed to load: a code-drawn stand-in, tall, crowned, a long cape, ember eyes)
       const k = this.add.graphics();
@@ -688,6 +716,8 @@ export class CutawayScene extends Phaser.Scene {
   strike() {
     this.frame('king', 500);
     this.act(1900, () => {
+      this.time.delayedCall(470, () => this.kingPose('rage'));
+      this.time.delayedCall(1750, () => this.kingPose(null));
       this.time.delayedCall(600, () => {
         this.cameras.main.shake(300, 0.012);
         playSfx(this, 'kick', { volume: 1, pitch: -2000, minGapMs: 0 });
@@ -708,6 +738,8 @@ export class CutawayScene extends Phaser.Scene {
     this.act(2200, () => {
       if (!this.table) return;
       const [tx, ty] = SPOT.table;
+      this.time.delayedCall(330, () => this.kingPose('hurl'));
+      this.time.delayedCall(2050, () => this.kingPose(null));
       this.time.delayedCall(450, () => {
         this.cameras.main.shake(300, 0.01);
         playSfx(this, 'kick', { volume: 0.9, pitch: -1200, minGapMs: 0 });
@@ -751,6 +783,10 @@ export class CutawayScene extends Phaser.Scene {
     this.frame('two', 400);
     this.act(3000, () => {
       const mx = m.x; const my = m.y - 60;
+      const home = [this.hand.x, this.hand.y];
+      const palm = this.kingPose('cast');
+      if (palm) this.hand.setPosition(...palm);
+      this.time.delayedCall(2700, () => { this.kingPose(null); this.hand.setPosition(...home); });
       this.tweens.add({ targets: this.hand, scale: 1.6, alpha: 1, duration: 500, ease: 'Sine.easeIn' });
       playSfx(this, 'fireWhoosh', { volume: 0.6, pitch: -400, minGapMs: 0 });
       this.time.delayedCall(600, () => {
@@ -873,6 +909,8 @@ export class CutawayScene extends Phaser.Scene {
       this.time.delayedCall(3600, () => {
         this.say(null);
         this.frame('king', 700);
+        const fist = this.kingPose('defy');
+        if (fist) this.hand.setPosition(...fist);
         this.hand.setAlpha(1);
         this.tweens.add({ targets: this.hand, scale: 3.4, duration: 900, ease: 'Back.easeOut' });
         this.tweens.add({ targets: this.kingLight, alpha: 0.6, duration: 900 });
