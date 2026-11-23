@@ -94,6 +94,8 @@ export const STAGE_VILLAGE = {
   // against a pack of Ashen men (stage/KingHakon.js, view/KingView.js); the two part there
   // and meet again at the church, where he is dying (the beat 'elder' below)
   king: { section: 'square', at: 1440, x: 1760, z: 400 },
+  // THE WELL (Nick, 2026-11-23): the butcher holds Mira's boy out over it (stage/WellRescue.js)
+  wellRescue: { npc: 'mira', section: 'square' },
   gateTalk: {
     elsbeth:{who:'ELSBETH',before:'Irvolino is gone. Your father got us into the church. Let me help him now.',after:'Hale and I will carry him. He won’t be left alone.'},
     hale:{who:'HALE',before:"He held the church door while we brought the children in. He's been asking for you.",after:"We'll lay him by the altar. No one will leave him alone."},
@@ -156,7 +158,9 @@ export const STAGE_VILLAGE = {
       // ...and then the HORDE: a pack of thralls from both ends of the square (one against many)
       waves: [['grunt', 'butcher', 'grunt', 'grunt'], ['stalker', 'grunt', 'grunt'], [...Array(9).fill('thrall'), 'butcher']],
       spawns: [
-        [{ x: 2230, z: 340, inPlace: true }, { x: 2330, z: 380, inPlace: true }, { x: 2400, z: 320, inPlace: true }, { x: 2300, z: 470, inPlace: true }],
+        // (the well's set piece, stage/WellRescue.js: the man with Mira by the hood, the butcher
+        // at the well's right with her boy held out over its mouth, two more looking on)
+        [{ x: 2112, z: 326, inPlace: true }, { x: 2368, z: 300, inPlace: true }, { x: 2450, z: 362, inPlace: true }, { x: 2290, z: 456, inPlace: true }],
         [],
       ],
       props: [
@@ -339,7 +343,7 @@ export const STAGE_VILLAGE = {
       id: 'gate', ground: 'v-church', groundFade: 160, name: 'THE NORTH GATE', x0: 8400, x1: 9400,
       // the paving's painted wall cut the church off on a hard line: its top melts away
       // under the church, so the church's own walls and steps run down to the street
-      groundTopFade: { depth: 44, x0: CHURCH.x - 345, x1: CHURCH.x + 345, feather: 70 },
+      groundTopFade: { depth: 50, x0: CHURCH.x - 345, x1: 9475, feather: 70 }, // (and under the gate: its own road meets the street)
       spawn: { x: 8460, z: 440 },
       objective: 'The road north',
       hint: '',
@@ -352,7 +356,7 @@ export const STAGE_VILLAGE = {
   ],
 
   // walk out of the north gate once the vow is made: the pursuit begins
-  exit: { x: 9280, after: 'churchFarewell' },
+  exit: { x: 9280, after: 'churchFarewell', gate: { x: 9290, z: 254 } }, // (gate: walked out through it, stage/Stage.js updateWalkOut)
 
   terrain: [
     // ---- I THE ASHEN ROAD: a cart to hop (or walk round), a heap of burnt timbers at
@@ -460,7 +464,7 @@ export const STAGE_VILLAGE = {
   npcs: [
     { id: 'hale', name: 'Hale the smith', x: 960, z: 296, talk: 'hale', art: 'hale', life: 'smith' }, // (on his feet, so he's seen: Nick, 2026-10-16; his own painted sheet and life, stage/SmithLife.js: Nick, 2026-11-02)
     {
-      id: 'mira', name: 'Mira and her son', x: 2300, z: 300, pose: 'family', rescue: 'defend', section: 'square', wave: 1,
+      id: 'mira', name: 'Mira and her son', x: 2178, z: 330, pose: 'family', rescue: 'defend', section: 'square', wave: 1,
       flee: { x: 1500, z: 300 }, gather: { x: 8740, z: 300 },
     },
     {
@@ -525,8 +529,9 @@ export const STAGE_VILLAGE = {
     {
       id: 'mira', on: 'rescued:mira', calm: true,
       lines: [
-        ['MIRA', 'They took my husband. Chained him with the others and drove them north like cattle.'],
-        ['MIRA', 'To the castle. We\'ll wait at the north gate.'],
+        // (the well's set piece, stage/WellRescue.js: said with her boy in her arms)
+        ['MIRA', 'They chained my husband and dragged him north. To the castle.'],
+        ['MIRA', "We'll wait at the north gate. Bring him home."],
       ],
     },
     { id: 'roofs', at: 2880, calm: true, lines: [['VEXA', '(from across the village) Square\'s clear! Take the roofs, the lanes are burning!']] },

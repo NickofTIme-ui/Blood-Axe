@@ -50,12 +50,13 @@ import { sharedProgress } from '../progression/Progress.js';
 import { CHARACTERS } from '../data/characters.js';
 import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
-import { playMusic, playCue, stopMusic, toggleMute } from '../core/Music.js';
+import { playMusic, playCue, stopMusic, toggleMute, currentMusic } from '../core/Music.js';
 import { syncSanctuaryMusic } from '../core/SanctuaryMusic.js';
 import { syncWoodMusic } from '../core/WoodMusic.js';
 import { playSfx, fleshBite, FLESH_CUT, DK } from '../core/Sfx.js';
 import { BattlefieldAudio } from '../core/BattlefieldAudio.js';
 import {MillRescueView} from '../view/MillRescueView.js';
+import {WellRescueView} from '../view/WellRescueView.js';
 import {WoodTrapsView} from '../view/WoodTrapsView.js';
 import { WoodWeather } from '../view/WoodWeather.js';
 import { runTickJobs } from '../core/TickJobs.js';
@@ -483,6 +484,7 @@ export class ArenaScene extends Phaser.Scene {
     this.gore.dismemberer.minZ = this.world.bounds.minZ; // (a stage's own lane: `laneTop`)
     this.stageView = new StageView(this, this.stage);
     this.millRescueView=this.stage.millRescue?new MillRescueView(this,this.stage):null;
+    this.wellRescueView=this.stage.wellRescue?new WellRescueView(this,this.stage):null;
     this.woodTrapsView=this.stage.woodTraps?new WoodTrapsView(this,this.stage):null;
     // (after the StageView: it makes the 'glow' texture the terrain's lanterns use)
     this.terrainView = this.stage.terrain || this.stageData.theme ? new TerrainView(this, this.stage) : null;
@@ -838,6 +840,25 @@ export class ArenaScene extends Phaser.Scene {
 
   // A campaign level walked out of: the level is saved as done (once), the king's scene
   // plays (skippable), then the tally with who was saved and where the road goes next.
+  // A Black Keep scene played from the F8 test menu (view/TestNavigator.js): the fight
+  // stops dead behind it (no hits, no level sounds) and its music comes back after
+  playKeepScene(kind) {
+    if (this.cutawayOn) return;
+    const track = currentMusic();
+    this.cutawayOn = true;
+    this.sound.pauseAll(); // (before the scene starts its own music, so that keeps playing)
+    this.scene.pause();
+    this.scene.launch('Cutaway', {
+      kind,
+      onDone: () => {
+        this.cutawayOn = false;
+        this.scene.resume();
+        this.sound.resumeAll();
+        if (track) playMusic(this, track);
+      },
+    });
+  }
+
   campaignLevelDone(stats, hud) {
     const D = this.stageData;
     const N = nextLevel(D);
@@ -1840,6 +1861,7 @@ export class ArenaScene extends Phaser.Scene {
     this.updateFinisherMarker();
     this.stageView.update();
     this.millRescueView?.update();
+    this.wellRescueView?.update();
     this.woodTrapsView?.update();
     this.woodWeather?.update();
     this.updateStageCamera();

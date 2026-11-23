@@ -2803,6 +2803,15 @@ test('village: every hero walks the whole level on his own legs (no upgrades), w
   }
 });
 
+test('village: at the end the hero walks up the road and out through the north gate, fading into the dark', () => {
+  const r = villageRun('warrior');
+  assert(r.won === 1 && r.stage.walkOut, 'the level was won at its gate');
+  const G = STAGE_VILLAGE.exit.gate;
+  for (let i = 0; i < 400; i++) { r.world.tick(); r.stage.update(); }
+  assert(Math.abs(r.p.x - G.x) < 3 && Math.abs(r.p.z - G.z) < 3, `he stands in the gateway (${Math.round(r.p.x)}, ${Math.round(r.p.z)})`);
+  assert(r.p.goneOut === 0, `he has faded out (${r.p.goneOut})`);
+});
+
 test('village: the story plays in order: the opening, Hale, the family, the vow; the level ends only after the vow', () => {
   let wonBeforeVow = false;
   const r = villageRun('warrior', { onTick: (w, st) => { if (st.phase === 'won' && !st.story.done.has('vow')) wonBeforeVow = true; } });
@@ -4285,7 +4294,7 @@ test('ascent: the level is wired in: Hollow Mountain leads to it, its cutaway ex
   // (scenes/CutawayScene.js needs Phaser to load: read it as text)
   const src = readFileSync(new URL('../src/scenes/CutawayScene.js', import.meta.url), 'utf8');
   assert(new RegExp(`\\n  ${STAGE_ASCENT.cutaway}: \\{`).test(src), `the king's fourth scene (${STAGE_ASCENT.cutaway})`);
-  assert(src.includes("{ act: 'horns' }") && src.includes("{ act: 'kill' }") && src.includes("b.act === 'kill'"), 'horns, and the captain who brings bad news');
+  assert(src.includes("{ act: 'horns' }") && src.includes("{ act: 'kill' }") && src.includes("kill: () => this.kill()"), 'horns, and the captain who brings bad news');
 });
 
 test('ascent: every hero walks the Shattered Ascent (no upgrades), without a fall, defends the shelter, wrecks the battery, frees Bram', () => {
@@ -4638,7 +4647,21 @@ test('gates: the level is wired in: the ascent leads to it, its cutaway exists',
   assert(STAGES[STAGE_ASCENT.next.id] === STAGE_GATES, 'the ascent leads on to the gates');
   const src = readFileSync(new URL('../src/scenes/CutawayScene.js', import.meta.url), 'utf8');
   assert(new RegExp(`\\n  ${STAGE_GATES.cutaway}: \\{`).test(src), `the king's fifth scene (${STAGE_GATES.cutaway})`);
-  assert(src.includes("{ act: 'helm' }") && src.includes("{ act: 'gutter' }") && src.includes("b.act === 'gutter'"), 'the helm, and the fire that goes out');
+  assert(src.includes("{ act: 'helm' }") && src.includes("{ act: 'gutter' }") && src.includes("gutter: () => this.gutter()"), 'the helm, and the fire that goes out');
+});
+
+test('the Black Keep scenes: five chapters, one shape (the Keep, the hall, the oath growing a line each, then the war map)', () => {
+  const src = readFileSync(new URL('../src/scenes/CutawayScene.js', import.meta.url), 'utf8');
+  const kinds = [STAGE_VILLAGE, STAGE_WOOD, STAGE_MINE, STAGE_ASCENT, STAGE_GATES].map((s) => s.cutaway);
+  kinds.forEach((k, i) => {
+    const m = src.match(new RegExp(`\\n  ${k}: \\{\\n    chapter: (\\d)`));
+    assert(m && Number(m[1]) === i, `${k} is chapter ${i + 1}`);
+  });
+  assert((src.match(/^  '.*',$/gm) ?? []).length >= 5 && src.includes('export const OATH'), 'five lines of the oath');
+  assert(src.includes('ROADS[t]') && src.includes('TENSION.guards[t]'), 'the roads count down and the guard thins out');
+  assert(src.includes('if (!b) { this.oath(); return; }') && src.includes('if (this.endWait) { this.endWait = false; this.map(); return; }'), 'every scene ends on the oath, then the war map (Nick: after each scene)');
+  assert(src.includes('if (this.mapWait) { this.finish(); return; }') && !src.includes("{ act: 'map' }"), 'the map is its own part, last, and waits for a press');
+  assert(src.includes("playCue(this, 'warmap', 0)") && src.includes('s?.isPlaying ? s.seek'), 'the map has its own music, and keeps time by it');
 });
 
 test('gates: every hero walks the Iron Gates (no upgrades), without a fall, raises the gate, saves the town; the saved come back', () => {

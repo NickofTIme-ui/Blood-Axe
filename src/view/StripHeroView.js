@@ -323,6 +323,7 @@ export class StripHeroView {
     if (st === 'getup') alpha = fr % 4 < 2 ? 0.6 : 1;
     if (st === 'dead') alpha = Math.max(0, 1 - Math.max(0, fr - 90) / 60);
     alpha *= this.fade ?? 1; // (a companion fading into the dark: view/NpcView.js)
+    alpha *= f.goneOut ?? 1; // (walked out through the level's gate: stage/Stage.js updateWalkOut)
     s.setAlpha(alpha);
 
     const lift = f.h + (hover && !downed ? hover.height + (float?.lift ?? 0) : 0);

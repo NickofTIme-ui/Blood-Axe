@@ -6,13 +6,33 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 23 November 2026 (cloud; ON MAIN (Nick: "finish and push all"), NOT on itch).
+  LEVEL 1 WELL SET PIECE (Nick: "The Mira and the boy at the well is serious scene please give those npc the love
+  and that set piece too"). stage/WellRescue.js + view/WellRescueView.js + tests/well-rescue-test.js. The square's
+  butcher holds Mira's boy out over the well, the man nearest her holds her by the hood. In the fight the boy slips
+  lower (WELL_RESCUE.slip) and at `throw` he's thrown down the well (hauled up on the bucket rope once the square is
+  won). Hit the butcher and he drops the boy on the stones; the boy runs back, Mira shoves off her man, and they hug
+  (mother sheet's cower frame) until the square is won, then run. Barks in WELL_LINES (Claude's; Nick didn't send any).
+  STILL TO DO (art, ChatGPT on the PC): Mira on her own ('mira' sheet, stand-in villager-woman), the butcher holding
+  the boy (stand-in: his hook-throw pose 'special:4' via f.stripPose), optional 'boy-held'. Not seen on screen yet:
+  cloud headless Chromium can't boot the game (OOM), so check the boy's spot at the butcher's hand on the PC.
+
 - 23 November 2026 (cloud, branch `claude/project-thread-c5elb2`; ON MAIN (Nick: "push and resolve all finished work"), NOT on itch).
   LEVEL 1 KING SCENE IN NICK'S WORDS (Nick: "way too long.. theres a massive savage attack, tighten banter, the king's
   doling out orders. He is fierce."). The `kingParting` beat in src/data/stageVillage.js went from 11 lines to Nick's
   own 6, with shorter hold times. Moments kingLook / kingPoint / kingSwear / kingGo kept (KingHakon.js poses and the
   parting art hang on them). "Not the boy!" from the well is gone: the well set piece (next) carries Mira's cry.
 
-- 23 November 2026 (cloud, on main b190d4c; NOT pushed yet, ask Nick).
+- 23 November 2026 (cloud, ON MAIN). NORTH GATE EXIT (Nick: "the gate to the woods is just fixed there looking
+  horrible"). VillageView: the gate piece now spans 9105-9475 (as tall as the houses), bottom 66, warm firelit tint,
+  left edge feathered into the church; the gate section's groundTopFade runs on under it so its road meets the street.
+  stageVillage exit.gate {x:9290,z:254}: Stage.updateWalkOut walks the heroes up the road into the gateway at the
+  level's end, fading them out (fighter.goneOut, read by StripHeroView). logic-test covers it.
+  NEW ART WAITING: ChatGPT painted a proper north gate (gate_v2, 1536x1024, magenta above). It is only on Nick's PC:
+  Documents\blood-axe\art-incoming\north-gate\gate_v2.png (+ .webp, and local commit c4a0fd2 on
+  claude/project-thread-fxkxlm, unpushed: PC git and Chrome are not signed in to GitHub). To fit it: replace
+  assets/env/village/gate.png and recheck the piece's size/bottom/tint. Prompt: project files north-gate/prompt.md.
+- 23 November 2026 (cloud, ON MAIN 01d9ab1).
   CHURCH SEAM AT THE NORTH GATE (Nick: "the line between the art layers doesnt blend"). The north gate's paving
   (ground_church.jpg) has a stone wall painted along its top, drawn over the church's lower walls, so the church
   ended on a hard horizontal line. StageView.fadedGround takes a section's new `groundTopFade` { depth, x0, x1,
@@ -25,6 +45,22 @@ branch, or ChatGPT's work gets lost.
   wrecked post's shells (and their painted landing marks) at once; a bombard hazard left behind (out of
   updateHazards' range) clears its shells instead of freezing them on the ground. logic-test mill-archers test
   covers both.
+- 23 November 2026 (cloud, branch `claude/project-thread-4uaj22` on main b190d4c; NOT on main yet, NOT on itch).
+  THE BLACK KEEP SCENES, final pass (Nick: "drastically enhanced to their final versions... cohesive... hyping up
+  the Oathkeepers and with each scene building tension"). src/scenes/CutawayScene.js rewritten; design and the
+  art still to paint: docs/black-keep-scenes.md. All five scenes now share one shape: the painted Keep from
+  outside with the chapter (I-V) and more fire on the approach each time; the throne room with a camera that
+  cuts to whoever speaks, a hall that remembers (crack, thrown map, captain's ash) and a guard that deserts
+  (6/4/3/2/0); the war map insert (the Oath Keepers' token takes the next place, "FOUR ROADS..." to "NO ROADS
+  LEFT"); then the oath, one line more each scene, whole in V with "THE OATH WILL BE KEPT". Rewritten lines name
+  the Oath Keepers and show the king's men fearing them. The messenger/captain/guards are the painted Ashen
+  grunt; the king's theme (showdown) plays under every scene. Headless shots of all five checked frame by frame.
+  Round 2 (Nick, same day): the F8 menu plays any of the five (ArenaScene.playKeepScene freezes the fight and its
+  sounds behind it, then brings the level's music back); the war map is now its own last part after the oath,
+  timed to Nick's track assets/audio/war-map.mp3 ("14 Ending", MUSIC.warmap): accents at 3.9 / 8.15 / 12.2 /
+  16.3 s set the token down, land it, ring the next place, push in on the Keep; it fades to black with the music.
+  Headless tip: the Title scene crashes headless Chromium; stub Title's create/update before it starts and
+  abort unneeded assets with page.route, then start 'Cutaway' directly.
 - 20 November 2026 (cloud, branch `claude/project-thread-snjnrt` rebased on main 1e158b7; ON MAIN (Nick: "push all"), NOT on itch).
   WAR HOUNDS HUNT LIKE DOGS (Nick: "the dogs kind of just shuffle around weirdly, they need animations and
   different things to do"). The cause: hounds used the man's brain (face the hero always, full pace or stop), so

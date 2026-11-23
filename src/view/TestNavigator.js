@@ -21,6 +21,14 @@ export const TEST_SCENES=[
   ['Throat finisher (tap attack behind a runner)',2,'throat','Combat tests'],
 ];
 
+// The Black Keep scenes (scenes/CutawayScene.js), played straight over the arena: [label, kind]
+// (listed here, not imported: CutawayScene needs Phaser to load, and the tests load this file)
+export const KEEP_SCENES=[
+  ['I · The village stands (after level 1)','learns'],['II · The cages are empty (after level 2)','convoy'],
+  ['III · The mountain could not hold them (after level 3)','collapse'],['IV · The army runs (after level 4)','retreat'],
+  ['V · The gates have fallen (after level 5)','fear'],
+];
+
 // The level picker: the campaign's levels in play order, named as the game names them
 // ("Level 2: GALLOWS WOOD"). The Director's Cut's old stages (THE OATH ROAD, THE GALLOWS
 // ASCENT) are left out: they're on the title's DIRECTOR'S CUT menu.
@@ -54,6 +62,8 @@ export class TestNavigator {
     select.onchange=fill;fill();
     let group=null;
     for(const [label,section,moment,g]of TEST_SCENES){if(g!==group)heading(group=g);add(label,()=>{this.close();this.go('village',section,moment);});}
+    heading('The Black Keep scenes');
+    for(const [label,kind]of KEEP_SCENES)add(label,()=>{this.close();this.arena.playKeepScene?.(kind);});
     heading('Test arenas');
     add('Practice yard (the tutorial)',()=>{this.close();this.go('practice',0,'checkpoint');});
     p.appendChild(document.createElement('hr'));add('Close',()=>this.close());document.body.appendChild(p);
