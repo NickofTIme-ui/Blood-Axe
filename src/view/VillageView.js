@@ -185,10 +185,10 @@ export class VillageBackdrop {
         const gx = this.data.exit?.x ?? this.width - 120;
         if (!this.art.has('gate')) this.drawGate(g, 9180, this.width, top);
         else {
-          // the town's palisade as tall as the houses, its left edge melting into the church, lit by
-          // the burning town (it stood small and moonlit blue, pasted on: Nick, 2026-11-23), its
+          // the town's palisade (painted for this spot in ChatGPT: gate.png, 2026-11-23) as tall as
+          // the houses, its left edge melting into the church, lit by the burning town (it stood small and moonlit blue, pasted on: Nick, 2026-11-23), its
           // road coming down to the street through the paving's faded top (stageVillage 'gate')
-          this.art.piece('gate', 9105, 9475, { bottom: 66, feather: { left: 0.08 } })?.setTint(0xb48a78, 0xb48a78, 0x9a7468, 0x9a7468);
+          this.art.piece('gate', 9105, 9475, { bottom: 55, feather: { left: 0.06 } })?.setTint(0xd8c4b8, 0xd8c4b8, 0xb8a49c, 0xb8a49c);
         }
         x = this.width; continue;
       }

@@ -28,10 +28,9 @@ branch, or ChatGPT's work gets lost.
   left edge feathered into the church; the gate section's groundTopFade runs on under it so its road meets the street.
   stageVillage exit.gate {x:9290,z:254}: Stage.updateWalkOut walks the heroes up the road into the gateway at the
   level's end, fading them out (fighter.goneOut, read by StripHeroView). logic-test covers it.
-  NEW ART WAITING: ChatGPT painted a proper north gate (gate_v2, 1536x1024, magenta above). It is only on Nick's PC:
-  Documents\blood-axe\art-incoming\north-gate\gate_v2.png (+ .webp, and local commit c4a0fd2 on
-  claude/project-thread-fxkxlm, unpushed: PC git and Chrome are not signed in to GitHub). To fit it: replace
-  assets/env/village/gate.png and recheck the piece's size/bottom/tint. Prompt: project files north-gate/prompt.md.
+  NEW ART (fitted): ChatGPT painted the north gate for this spot (chat "BA · Level 1 · North gate"; prompt in project
+  files north-gate/prompt.md). Original on Nick's PC art-incoming\north-gate\gate_v2.png; magenta keyed to RGBA as
+  assets/env/village/gate.png. Piece bottom 55, light tint. Fetched with folder access (device_stage_files), not RC.
 - 23 November 2026 (cloud, ON MAIN 01d9ab1).
   CHURCH SEAM AT THE NORTH GATE (Nick: "the line between the art layers doesnt blend"). The north gate's paving
   (ground_church.jpg) has a stone wall painted along its top, drawn over the church's lower walls, so the church
