@@ -39,4 +39,4 @@ export const FOLK_FRAMES = 10;
 
 // the folk whose sheet is in the folder (assets/sprites/npc/folk/<id without "folk-">.png):
 // only these are loaded (data/levelArt.js) and dealt out
-export const FOLK_PAINTED = ['folk-farmer', 'folk-maid', 'folk-miller', 'folk-shepherd', 'folk-lad', 'folk-weaver', 'folk-oneeye'];
+export const FOLK_PAINTED = ['folk-farmer', 'folk-maid', 'folk-miller', 'folk-shepherd', 'folk-lad', 'folk-weaver', 'folk-oneeye', 'folk-mother', 'folk-apprentice', 'folk-lass', 'folk-greybeard', 'folk-goodwife', 'folk-redhead', 'folk-girl', 'folk-boy', 'folk-granny'];
