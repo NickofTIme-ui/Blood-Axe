@@ -4,6 +4,8 @@ import { playMusic } from './Music.js';
 // Repeated calls preserve the same loop, including throughout the father's scene.
 export function syncSanctuaryMusic(scene, play = playMusic) {
   const st=scene.stage;
+  // (never over the level's end: the Black Keep scene and its war map have their own music)
+  if(scene.cutawayOn||scene.tallyUp)return false;
   if(scene.stageId!=='village'||scene.leaving||st?.section?.id!=='gate'||st.sentence?.running||st.sequence?.running)return false;
   const father=st.story?.npc('hakon');
   if(!father||!scene.players.some(p=>p.alive&&Math.abs(p.x-father.x)<=700))return false;

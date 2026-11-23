@@ -8,6 +8,7 @@ assert(!syncSanctuaryMusic(scene,play));scene.stage.section.id='gate';assert(!sy
 scene.players[0].x=8500;assert(syncSanctuaryMusic(scene,play));
 scene.stage.sentence={running:true};assert(!syncSanctuaryMusic(scene,play));scene.stage.sentence.running=false;
 assert(syncSanctuaryMusic(scene,play));scene.leaving=true;assert(!syncSanctuaryMusic(scene,play));assert.equal(calls,2);
+scene.leaving=false;assert(syncSanctuaryMusic(scene,play));scene.cutawayOn=true;assert(!syncSanctuaryMusic(scene,play),'the Black Keep scene keeps its own music');scene.cutawayOn=false;scene.tallyUp=true;assert(!syncSanctuaryMusic(scene,play),'and so does the tally');
 const music=readFileSync('src/core/Music.js','utf8');assert(music.includes("sanctuary: 'assets/audio/safety-in-the-sanctuary.mp3'"));
 assert(readFileSync('assets/audio/safety-in-the-sanctuary.mp3').length>1000000);
 const gore=readFileSync('src/effects/Gore.js','utf8').split('  onMaim(')[1].split('  // Red mist')[0];

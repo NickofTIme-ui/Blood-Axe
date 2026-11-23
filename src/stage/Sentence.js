@@ -1,5 +1,5 @@
-// Sentence.js — THE SENTENCE. The Oath Keepers swore, the night their village burned, that
-// every captain who led the Ashen there would kneel, hear his crimes and pay for them.
+// Sentence.js — THE SENTENCE. The Oath Keepers' oath is older than the night their village
+// burned: every captain who leads the Ashen against their people kneels, hears his crimes and pays.
 // So a boss is never simply cut down: beaten, he drops to his knees, the field goes still,
 // the hero who beat him walks up, proclaims his crimes and his sentence, and the one who
 // passes the sentence swings the blade. Then his men, who watched it, break and run.
@@ -416,6 +416,6 @@ export function sentenceLines(b, h, def, speaker = speakerOf(b.stats.name)) {
   if (def.last && !def.silent) lines.push([speaker, def.last]);
   else lines.push([speaker, SILENCE], [hero, NOTHING]);
   const as = h.stats.sentence?.as ?? `${h.stats.name} of the Oath Keepers`;
-  lines.push([hero, `By the oath we swore over our burning home, I, ${as}, sentence you to die.`]);
+  lines.push([hero, `By the oath I keep, I, ${as}, sentence you to die.`]);
   return lines;
 }

@@ -46,8 +46,8 @@ export const CUTAWAYS = {
       { act: 'enter' },
       { who: 'MESSENGER', text: 'My king. The village stands. Varek is dead, and every man he led.' },
       { who: 'VAURATH', text: 'Who.' },
-      { who: 'MESSENGER', text: 'Three of them, my king. Hakon\'s son, Rurik, and two more. They swore an oath over the old king\'s body.' },
-      { who: 'MESSENGER', text: 'The men are calling them the Oath Keepers.' },
+      { who: 'MESSENGER', text: 'Three of them, my king. Hakon\'s son, Rurik, and the two who ride with him.' },
+      { who: 'MESSENGER', text: 'Oath Keepers, my king. And now our men are saying the name.' },
       { who: 'MALGOR', text: 'Let me ride, my king. I\'ll bring you their heads.' },
       { who: 'VAURATH', text: 'No. Varek was careless. I am not.' },
       { act: 'ember' }, // his power, shown: ember-fire gathered in one hand, then a wave of ash that puts out every torch
@@ -177,6 +177,16 @@ const SHOTS = {
   two: [560, 300, 1.16],
   hall: [240, 330, 1.3],
 };
+// the king's guard along the back of the hall, in desertion order (the first ones stay
+// longest): which painted sheet, which pose, where, how big, which way he faces, how lit
+const GUARD_POSTS = [
+  { id: 'grunt', strip: 'walk', frame: 0, x: 96, y: 366, scale: 0.78, flip: false, tint: 0x8a84a0 },
+  { id: 'penitent', strip: 'walk', frame: 3, x: 196, y: 372, scale: 0.74, flip: false, tint: 0x8c84a8 },
+  { id: 'gladiator', strip: 'walk', frame: 0, x: 452, y: 368, scale: 0.8, flip: true, tint: 0x7a7490 },
+  { id: 'stalker', strip: 'walk', frame: 5, x: 300, y: 362, scale: 0.72, flip: false, tint: 0x948ca8 },
+  { id: 'grunt', strip: 'walk', frame: 4, x: 150, y: 360, scale: 0.7, flip: true, tint: 0x6e6880 },
+  { id: 'berserker', strip: 'walk', frame: 2, x: 404, y: 361, scale: 0.76, flip: false, tint: 0x7c7690 },
+];
 const SHOT_OF = { VAURATH: 'king', MESSENGER: 'kneel', CAPTAIN: 'kneel', MALGOR: 'malgor', VOICE: 'wide' };
 
 export class CutawayScene extends Phaser.Scene {
@@ -375,13 +385,19 @@ export class CutawayScene extends Phaser.Scene {
     if (t >= 3) this.leftovers(W, H);
     // the king's guard, along the back of the hall, facing the throne; fewer every scene
     this.guards = [];
-    const posts = [96, 196, 452, 300, 150, 404];
+    // (a mixed guard, no two alike: his soldiers, a penitent, a gladiator, a stalker...
+    // each its own painted sheet, stance, size and facing; the grunt stands in for any
+    // sheet that isn't loaded)
     for (let i = 0; i < TENSION.guards[t]; i++) {
-      const gd = this.figure('grunt', 'walk', 0, posts[i], 366 + (i % 2) * 6, 0.78);
+      const g = GUARD_POSTS[i];
+      const gd = this.figure(g.id, g.strip, g.frame, g.x, g.y, g.scale, g.flip)
+        || this.figure('grunt', 'walk', g.frame % 8, g.x, g.y, 0.78, g.flip);
       if (!gd) break;
-      gd.setTint(0x8a84a0);
+      gd.setTint(g.tint);
       this.guards.push(gd);
       this.root.add(gd);
+      // they shift on their feet, each in his own time
+      this.tweens.add({ targets: gd, y: gd.y - 1.5, duration: 1400 + i * 230, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: i * 170 });
     }
     // the war table at the foot of the dais, the map on it (until he throws it)
     if (t <= 2) this.drawTable();

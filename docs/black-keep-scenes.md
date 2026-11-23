@@ -12,7 +12,7 @@ Code: `src/scenes/CutawayScene.js` (played by `ArenaScene.campaignLevelDone` aft
 
 | After | Scene | The king | What it says about the Oath Keepers |
 |---|---|---|---|
-| 1 The Village | I · THE VILLAGE STANDS | confident: shows his power, waves of ash put out the torches | they get their name ("the men are calling them the Oath Keepers") |
+| 1 The Village | I · THE VILLAGE STANDS | confident: shows his power, waves of ash put out the torches | the king learns who they are; his own men start saying "Oath Keepers" |
 | 2 Gallows Wood | II · THE CAGES ARE EMPTY | irritated: cracks the throne arm with his fist | the wood went quiet; every prisoner walked free |
 | 3 Hollow Mountain | III · THE MOUNTAIN COULD NOT HOLD THEM | frustrated: throws the war map across the hall | even Malgor's men have started saying their names |
 | 4 Shattered Ascent | IV · THE ARMY RUNS | uneasy: burns his own captain for saying they can't be killed | his army is running from them |

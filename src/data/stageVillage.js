@@ -519,7 +519,7 @@ export const STAGE_VILLAGE = {
         // (Nick's own lines, 2026-11-23: "way too long... a massive savage attack. Tighten
         // banter. The king's doling out orders. He is fierce.")
         ['RURIK', "Father! You're still standing!", { minFrames: 60 }],
-        ['KING', "Oathkeepers! Save who's left—regroup at the church!", { moment: 'kingLook', minFrames: 100 }],
+        ['KING', "Son, you and your fellow Oathkeepers: save who's left. To the church!", { moment: 'kingLook', minFrames: 100 }],
         ['KING', 'Mira and her boy are pinned at the well—go!', { moment: 'kingPoint', minFrames: 100 }],
         ['KING', "I'll get the survivors to the church. Meet me there.", { moment: 'kingSwear', minFrames: 120 }],
         ['RURIK', 'On my life, I swear it.', { minFrames: 60 }],
