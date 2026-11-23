@@ -12,7 +12,16 @@ branch, or ChatGPT's work gets lost.
   own 6, with shorter hold times. Moments kingLook / kingPoint / kingSwear / kingGo kept (KingHakon.js poses and the
   parting art hang on them). "Not the boy!" from the well is gone: the well set piece (next) carries Mira's cry.
 
-- 23 November 2026 (cloud, on main b190d4c; NOT pushed yet, ask Nick).
+- 23 November 2026 (cloud, ON MAIN). NORTH GATE EXIT (Nick: "the gate to the woods is just fixed there looking
+  horrible"). VillageView: the gate piece now spans 9105-9475 (as tall as the houses), bottom 66, warm firelit tint,
+  left edge feathered into the church; the gate section's groundTopFade runs on under it so its road meets the street.
+  stageVillage exit.gate {x:9290,z:254}: Stage.updateWalkOut walks the heroes up the road into the gateway at the
+  level's end, fading them out (fighter.goneOut, read by StripHeroView). logic-test covers it.
+  NEW ART WAITING: ChatGPT painted a proper north gate (gate_v2, 1536x1024, magenta above). It is only on Nick's PC:
+  Documents\blood-axe\art-incoming\north-gate\gate_v2.png (+ .webp, and local commit c4a0fd2 on
+  claude/project-thread-fxkxlm, unpushed: PC git and Chrome are not signed in to GitHub). To fit it: replace
+  assets/env/village/gate.png and recheck the piece's size/bottom/tint. Prompt: project files north-gate/prompt.md.
+- 23 November 2026 (cloud, ON MAIN 01d9ab1).
   CHURCH SEAM AT THE NORTH GATE (Nick: "the line between the art layers doesnt blend"). The north gate's paving
   (ground_church.jpg) has a stone wall painted along its top, drawn over the church's lower walls, so the church
   ended on a hard horizontal line. StageView.fadedGround takes a section's new `groundTopFade` { depth, x0, x1,

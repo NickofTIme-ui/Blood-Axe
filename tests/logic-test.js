@@ -2803,6 +2803,15 @@ test('village: every hero walks the whole level on his own legs (no upgrades), w
   }
 });
 
+test('village: at the end the hero walks up the road and out through the north gate, fading into the dark', () => {
+  const r = villageRun('warrior');
+  assert(r.won === 1 && r.stage.walkOut, 'the level was won at its gate');
+  const G = STAGE_VILLAGE.exit.gate;
+  for (let i = 0; i < 400; i++) { r.world.tick(); r.stage.update(); }
+  assert(Math.abs(r.p.x - G.x) < 3 && Math.abs(r.p.z - G.z) < 3, `he stands in the gateway (${Math.round(r.p.x)}, ${Math.round(r.p.z)})`);
+  assert(r.p.goneOut === 0, `he has faded out (${r.p.goneOut})`);
+});
+
 test('village: the story plays in order: the opening, Hale, the family, the vow; the level ends only after the vow', () => {
   let wonBeforeVow = false;
   const r = villageRun('warrior', { onTick: (w, st) => { if (st.phase === 'won' && !st.story.done.has('vow')) wonBeforeVow = true; } });

@@ -821,6 +821,7 @@ export class Stage {
       return;
     }
     this.opening?.tail(); // (the commanders still running off)
+    if (this.walkOut) { this.updateWalkOut(); return; }
     // KING HAKON in the market square (stage/KingHakon.js): met on the way in from the road;
     // while he fights and the two of them talk, the stage is his
     if (this.king?.waiting) this.king.update(); // (holding the square till a hero comes up the road)
@@ -900,7 +901,39 @@ export class Stage {
       // the level's last stretch is won: walk out of it (once its last words are said)
       const E = this.data.exit;
       const said = !E.after || this.story?.done.has(E.after);
-      if (said && !this.story?.busy && this.players.some((q) => q.alive && q.x >= E.x)) this.win();
+      if (said && !this.story?.busy && this.players.some((q) => q.alive && q.x >= E.x)) {
+        // (`gate`: the heroes walk up the road and out through it into the dark)
+        if (E.gate) this.walkOut = { age: 0 };
+        this.win();
+      }
+    }
+  }
+
+  // The level walked out of through its gate (data `exit.gate` {x, z}): each hero turns his
+  // back on the street, walks up the road into the gateway and is lost in the dark beyond
+  // (Nick, 2026-11-23: the level just stopped in front of the gate). Ticks only: online-safe.
+  updateWalkOut() {
+    const W = this.walkOut;
+    const G = this.data.exit.gate;
+    W.age++;
+    this.world.holdStill(2);
+    for (const [i, p] of this.players.entries()) {
+      if (!p.alive) continue;
+      const tx = G.x + (i ? 26 : 0) * (i % 2 ? -1 : 1); const tz = G.z;
+      const dx = tx - p.x; const dz = tz - p.z;
+      const d = Math.hypot(dx, dz);
+      const step = Math.min(d, 3.2);
+      const moving = d > 1;
+      if (moving) { p.x += (dx / d) * step; p.z += (dz / d) * step; }
+      p.vx = moving ? (dx / Math.max(d, 1)) * 190 : 0; p.vz = 0; p.h = p.floor = 0; p.vh = 0;
+      if (Math.abs(dx) > 4) p.facing = dx > 0 ? 1 : -1;
+      p.sprinting = false; p.unbounded = true; p.invincible = true;
+      const state = moving ? 'walk' : 'idle';
+      if (p.state !== state) p.fsm.change(state);
+      p.fsm.frame++;
+      // into the gateway's shadow: fading over the last stretch of road, gone at the gate
+      const left = Math.max(0, p.z - tz);
+      p.goneOut = Math.min(1, left / 60);
     }
   }
 
