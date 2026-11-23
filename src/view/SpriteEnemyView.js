@@ -113,6 +113,8 @@ export class SpriteEnemyView {
     const fr = f.fsm.frame;
     const A = this.A;
     const loop = (a) => a.frames[Math.floor((fr * a.fps) / 60) % a.frames.length];
+    // a pose the stage holds him in (stage/WellRescue.js: the butcher with the boy at arm's length)
+    if (f.stripPose && f.alive) return f.stripPose;
 
     if (ATTACKS.includes(st) && f.move) {
       const atk = this.anim(st);

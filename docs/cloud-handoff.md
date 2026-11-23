@@ -6,6 +6,17 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 23 November 2026 (cloud; ON MAIN (Nick: "finish and push all"), NOT on itch).
+  LEVEL 1 WELL SET PIECE (Nick: "The Mira and the boy at the well is serious scene please give those npc the love
+  and that set piece too"). stage/WellRescue.js + view/WellRescueView.js + tests/well-rescue-test.js. The square's
+  butcher holds Mira's boy out over the well, the man nearest her holds her by the hood. In the fight the boy slips
+  lower (WELL_RESCUE.slip) and at `throw` he's thrown down the well (hauled up on the bucket rope once the square is
+  won). Hit the butcher and he drops the boy on the stones; the boy runs back, Mira shoves off her man, and they hug
+  (mother sheet's cower frame) until the square is won, then run. Barks in WELL_LINES (Claude's; Nick didn't send any).
+  STILL TO DO (art, ChatGPT on the PC): Mira on her own ('mira' sheet, stand-in villager-woman), the butcher holding
+  the boy (stand-in: his hook-throw pose 'special:4' via f.stripPose), optional 'boy-held'. Not seen on screen yet:
+  cloud headless Chromium can't boot the game (OOM), so check the boy's spot at the butcher's hand on the PC.
+
 - 23 November 2026 (cloud, branch `claude/project-thread-c5elb2`; ON MAIN (Nick: "push and resolve all finished work"), NOT on itch).
   LEVEL 1 KING SCENE IN NICK'S WORDS (Nick: "way too long.. theres a massive savage attack, tighten banter, the king's
   doling out orders. He is fierce."). The `kingParting` beat in src/data/stageVillage.js went from 11 lines to Nick's

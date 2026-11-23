@@ -117,6 +117,7 @@ import { LOOT } from '../data/trophies.js';
 import { Controller } from '../core/Controller.js';
 import { VillageOpening } from './VillageOpening.js';
 import { MillRescue } from './MillRescue.js';
+import { WellRescue } from './WellRescue.js';
 import { WoodOpening } from './WoodOpening.js';
 import { WoodTraps } from './WoodTraps.js';
 import { KingHakon } from './KingHakon.js';
@@ -244,6 +245,7 @@ export class Stage {
     // every captain beaten kneels, hears his crimes and is executed (stage/Sentence.js)
     this.sentence = new Sentence(this);
     if(data.id==='village')this.millRescue=new MillRescue(this);
+    if(data.wellRescue&&this.story)this.wellRescue=new WellRescue(this); // (the boy over the well: stage/WellRescue.js)
     this.stats = { kills: 0, finishers: 0, secrets: 0, deaths: 0, frames: 0, damage: 0 };
     this.par = parSeconds(data); // (the level's grade: progression/LevelRank.js)
     let id = 1;
@@ -468,6 +470,7 @@ export class Stage {
     const won = this.cleared === this.checkpoint; // died (a trap) after the fight here was already won
     this.story?.resetSection(this.checkpoint);
     if(this.checkpoint===3)this.millRescue?.reset();
+    if(this.wellRescue&&this.checkpoint===this.wellRescue.section)this.wellRescue.reset();
     this.woodTraps?.reset(this.checkpoint);
     for (const hz of this.hazards) if (hz.type === 'collapse' && hz.section <= this.checkpoint) hz.front = null; // (the rock starts again behind you)
     for (const hz of this.hazards) if (hz.type === 'bombard') hz.shells = []; // (nothing left in the air)
@@ -828,6 +831,7 @@ export class Stage {
     if (this.king?.active && this.king.holding) {
       this.story?.update();
       this.king.update();
+      this.wellRescue?.update(); // (the boy over the well, there behind him while they talk)
       return;
     }
     this.king?.tail(); // (running off up the lane)
@@ -841,6 +845,7 @@ export class Stage {
     if (!this.world.hold) this.updateCarry();
     this.updateProps();
     this.millRescue?.update();
+    this.wellRescue?.update();
     if (!this.world.hold) this.woodTraps?.update();
     this.updatePickups();
     this.updateDowned();
