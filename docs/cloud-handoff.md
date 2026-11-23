@@ -6,6 +6,12 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 23 November 2026 (cloud, branch `claude/project-thread-c5elb2`; ON MAIN (Nick: "push and resolve all finished work"), NOT on itch).
+  LEVEL 1 KING SCENE IN NICK'S WORDS (Nick: "way too long.. theres a massive savage attack, tighten banter, the king's
+  doling out orders. He is fierce."). The `kingParting` beat in src/data/stageVillage.js went from 11 lines to Nick's
+  own 6, with shorter hold times. Moments kingLook / kingPoint / kingSwear / kingGo kept (KingHakon.js poses and the
+  parting art hang on them). "Not the boy!" from the well is gone: the well set piece (next) carries Mira's cry.
+
 - 23 November 2026 (cloud, on main b190d4c; NOT pushed yet, ask Nick).
   CHURCH SEAM AT THE NORTH GATE (Nick: "the line between the art layers doesnt blend"). The north gate's paving
   (ground_church.jpg) has a stone wall painted along its top, drawn over the church's lower walls, so the church

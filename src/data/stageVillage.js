@@ -512,17 +512,14 @@ export const STAGE_VILLAGE = {
     {
       id: 'kingParting', on: 'kingParting', hold: true,
       lines: [
-        ['RURIK', 'Father!', { minFrames: 90 }],
-        ['KING', 'Rurik. They told me the ford took you.', { moment: 'kingLook', minFrames: 150 }],
-        ['RURIK', 'It nearly did. Who did this?', { minFrames: 120 }],
-        ['KING', 'Ashen men. They came at dusk and put the whole village to the torch.', { minFrames: 180 }],
-        ['VOICE', '(from the well) Not the boy! He\'s a child!', { minFrames: 150 }],
-        ['KING', 'Mira and her son. Go to them.', { moment: 'kingPoint', minFrames: 150 }],
-        ['KING', 'The children are hiding in the cellars. I will get them to the church.', { minFrames: 180 }],
-        ['RURIK', 'Then I go with you. We fight together.', { minFrames: 150 }],
-        ['KING', 'Not tonight. Meet me at the church, Rurik. Swear it.', { moment: 'kingSwear', minFrames: 180 }],
-        ['RURIK', 'I swear it.', { minFrames: 120 }],
-        ['KING', 'Then go!', { moment: 'kingGo', minFrames: 90 }],
+        // (Nick's own lines, 2026-11-23: "way too long... a massive savage attack. Tighten
+        // banter. The king's doling out orders. He is fierce.")
+        ['RURIK', "Father! You're still standing!", { minFrames: 60 }],
+        ['KING', "Oathkeepers! Save who's left—regroup at the church!", { moment: 'kingLook', minFrames: 100 }],
+        ['KING', 'Mira and her boy are pinned at the well—go!', { moment: 'kingPoint', minFrames: 100 }],
+        ['KING', "I'll get the survivors to the church. Meet me there.", { moment: 'kingSwear', minFrames: 120 }],
+        ['RURIK', 'On my life, I swear it.', { minFrames: 60 }],
+        ['KING', 'Hold to your oath!', { moment: 'kingGo', minFrames: 80 }],
       ],
     },
     {
