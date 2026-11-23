@@ -133,6 +133,9 @@ const ROUTE = [
   { name: 'THE IRON GATES', glyph: 'gate', x: 660, y: 300 },
   { name: 'THE BLACK KEEP', glyph: 'keep', x: 790, y: 178 },
 ];
+// where the places are on the painted map (assets/cinematics/keep-war-map.jpg, ChatGPT 23 Nov:
+// 1536x1024 shown 960 wide, 50 px cropped off the top): measured off the painting
+const PAINTED_AT = [{ x: 133, y: 371 }, { x: 275, y: 250 }, { x: 433, y: 358 }, { x: 566, y: 184 }, { x: 684, y: 275 }, { x: 804, y: 91 }];
 const ROADS = ['FOUR ROADS TO THE BLACK KEEP', 'THREE ROADS TO THE BLACK KEEP', 'TWO ROADS TO THE BLACK KEEP', 'ONE ROAD TO THE BLACK KEEP', 'NO ROADS LEFT'];
 
 // what the tension sets, scene by scene (index: the chapter, 0-4)
@@ -889,6 +892,11 @@ export class CutawayScene extends Phaser.Scene {
     c.add(this.add.rectangle(-60, -60, W + 120, H + 120, 0x000000, 1).setOrigin(0));
     const m = this.add.container(0, 0); // (the map itself: the camera pushes in on it)
     c.add(m);
+    // the painted map when it's in (its places where the painting has them); else drawn in code
+    const painted = this.textures.exists('keep-war-map');
+    const R = painted ? ROUTE.map((r, i) => ({ ...r, ...PAINTED_AT[i] })) : ROUTE;
+    const art = painted ? this.add.image(0, -50, 'keep-war-map').setOrigin(0).setDisplaySize(W, W / 1.5).setAlpha(0) : null;
+    if (art) m.add(art);
     // the parchment (scorched and torn from the fourth scene: it was thrown, and trodden on)
     const p = this.add.graphics().setAlpha(0);
     const x0 = 96; const y0 = 76; const pw = W - 192; const ph = H - 150;
@@ -905,12 +913,20 @@ export class CutawayScene extends Phaser.Scene {
       p.lineStyle(3, 0xff6a20, 0.7).lineBetween(x0 + pw - 120, y0 - 4, x0 + pw + 4, y0 + 110);
       p.fillStyle(0x000000, 1).fillTriangle(x0 - 6, y0 + ph + 6, x0 + 90, y0 + ph + 6, x0 - 6, y0 + ph - 70);
     }
+    if (painted) { // (the painting is the parchment: from the fourth scene, only its burned corner)
+      p.clear();
+      if (t >= 3) {
+        p.fillStyle(0x000000, 1).fillTriangle(0, 0, 150, 0, 0, 170);
+        p.lineStyle(3, 0xff6a20, 0.75).lineBetween(150, 0, 0, 170);
+      }
+    }
     m.add(p);
     // the road: what they've won already in red, the rest dashed ink
     const road = this.add.graphics().setAlpha(0);
-    for (let i = 0; i < ROUTE.length - 1; i++) {
-      const a = ROUTE[i]; const b = ROUTE[i + 1];
+    for (let i = 0; i < R.length - 1; i++) {
+      const a = R[i]; const b = R[i + 1];
       const won = i < t - 1;
+      if (painted && !won) continue; // (the painting has its own road)
       for (let k = 0; k < 12; k += won ? 1 : 2) {
         road.lineStyle(won ? 4 : 2, won ? 0x8a1010 : 0x4a3420, won ? 0.9 : 0.7);
         road.lineBetween(a.x + (b.x - a.x) * k / 12, a.y + (b.y - a.y) * k / 12, a.x + (b.x - a.x) * (k + 1) / 12, a.y + (b.y - a.y) * (k + 1) / 12);
@@ -921,11 +937,19 @@ export class CutawayScene extends Phaser.Scene {
     m.add(trail);
     // the places, and the king's black marker on every one he still holds
     const places = []; const flags = [];
-    ROUTE.forEach((r, i) => {
-      const g = this.glyph(r.glyph, r.x, r.y, i === ROUTE.length - 1);
-      const label = this.add.text(r.x, r.y + 26, r.name, { fontFamily: FONT.display, fontSize: '12px', color: '#3a2410' }).setOrigin(0.5, 0);
+    R.forEach((r, i) => {
+      const last = i === R.length - 1;
+      let g;
+      if (!painted) g = this.glyph(r.glyph, r.x, r.y, last);
+      else if (last) { // (the painted Keep: a light in it that won't stop)
+        g = this.add.image(r.x, r.y, 'glow').setScale(2.6).setTint(t >= 4 ? 0xff3020 : 0x9070ff).setBlendMode(Phaser.BlendModes.ADD);
+        this.tweens.add({ targets: g, scale: 3.2, duration: t >= 4 ? 420 : 900, yoyo: true, repeat: -1 });
+      } else g = this.add.container(0, 0);
+      const label = painted
+        ? this.add.text(r.x, r.y + 30, r.name, { fontFamily: FONT.display, fontSize: '13px', color: '#f4e4c4' }).setOrigin(0.5, 0).setStroke('#140a04', 4)
+        : this.add.text(r.x, r.y + 26, r.name, { fontFamily: FONT.display, fontSize: '12px', color: '#3a2410' }).setOrigin(0.5, 0);
       const set = [g, label];
-      if (i < ROUTE.length - 1) {
+      if (!last) {
         const f = this.flag(r.x + 18, r.y - 4);
         if (i < t) { f.setAngle(84); f.y += 10; f.setAlpha(0.8); } // (knocked down in an earlier scene)
         flags[i] = f;
@@ -936,16 +960,17 @@ export class CutawayScene extends Phaser.Scene {
       places.push(set);
     });
     // the Oath Keepers' token: from where it was to where they are now
-    const from = t > 0 ? ROUTE[t - 1] : { x: ROUTE[0].x - 90, y: ROUTE[0].y + 40 };
-    const to = ROUTE[t];
+    const from = t > 0 ? R[t - 1] : { x: R[0].x - 90, y: R[0].y + 40 };
+    const to = R[t];
     const tok = this.token(from.x, from.y).setAlpha(0);
     m.add(tok);
-    const roads = this.add.text(W / 2, y0 + ph - 34, ROADS[t], { fontFamily: FONT.display, fontSize: '22px' }).setOrigin(0.5).setAlpha(0);
+    const roads = this.add.text(W / 2, painted ? H - 80 : y0 + ph - 34, ROADS[t], { fontFamily: FONT.display, fontSize: '22px' }).setOrigin(0.5).setAlpha(0);
     roads.setLetterSpacing?.(4);
     epicFill(roads, ['#c03020', '#7a0a08', '#300402']);
     m.add(roads);
-    const nx = ROUTE[t + 1];
-    const keep = ROUTE[ROUTE.length - 1];
+    if (painted) roads.setStroke('#140a04', 6);
+    const nx = R[t + 1];
+    const keep = R[R.length - 1];
     const burst = (x, y, tint, s = 3) => {
       const b = this.add.image(x, y, 'glow').setScale(s * 0.4).setTint(tint).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.9);
       m.add(b);
@@ -953,11 +978,11 @@ export class CutawayScene extends Phaser.Scene {
     };
     const beats = [
       // the parchment comes up; the road and its places are inked in one by one
-      [0.0, () => this.tweens.add({ targets: p, alpha: 1, duration: 1200 })],
+      [0.0, () => this.tweens.add({ targets: [p, art].filter(Boolean), alpha: 1, duration: 1200 })],
       // (the hall is gone behind the map: when the map fades out with the music, it's to black)
       [0.2, () => { for (const o of [this.root, this.grade, this.insert, this.ui]) o.setVisible(false); }],
       [0.6, () => this.tweens.add({ targets: road, alpha: 1, duration: 1400 })],
-      ...ROUTE.map((r, i) => [1.0 + i * 0.5, () => this.tweens.add({ targets: places[i], alpha: (o) => (flags.includes(o) && i < t ? 0.8 : 1), duration: 500 })]),
+      ...R.map((r, i) => [1.0 + i * 0.5, () => this.tweens.add({ targets: places[i], alpha: (o) => (flags.includes(o) && i < t ? 0.8 : 1), duration: 500 })]),
       // the first accent: the Oath Keepers' token is set down
       [3.9, () => {
         tok.setScale(2.2).setAlpha(1);
@@ -987,6 +1012,7 @@ export class CutawayScene extends Phaser.Scene {
         const ring = this.add.circle(nx.x, nx.y - 4, 30).setStrokeStyle(3, 0xb01010, 0.9);
         m.add(ring);
         this.tweens.add({ targets: ring, scale: { from: 0.6, to: 1.3 }, alpha: { from: 1, to: 0.2 }, duration: 1000, repeat: -1 });
+        if (painted) c.add(this.add.rectangle(0, H - 50, W, 50, 0x000000, 0.65).setOrigin(0));
         const nextName = this.add.text(W / 2, H - 27, `NEXT  ·  ${nx.name}`, { fontFamily: FONT.display, fontSize: '20px' }).setOrigin(0.5).setStroke('#000000', 5).setAlpha(0).setScale(1.4);
         nextName.setLetterSpacing?.(5);
         epicFill(nextName, ['#ffe0b0', '#d08040', '#4a1004']);
