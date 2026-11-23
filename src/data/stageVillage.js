@@ -337,6 +337,9 @@ export const STAGE_VILLAGE = {
     },
     {
       id: 'gate', ground: 'v-church', groundFade: 160, name: 'THE NORTH GATE', x0: 8400, x1: 9400,
+      // the paving's painted wall cut the church off on a hard line: its top melts away
+      // under the church, so the church's own walls and steps run down to the street
+      groundTopFade: { depth: 44, x0: CHURCH.x - 345, x1: CHURCH.x + 345, feather: 70 },
       spawn: { x: 8460, z: 440 },
       objective: 'The road north',
       hint: '',

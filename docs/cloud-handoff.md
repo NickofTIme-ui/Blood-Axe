@@ -6,6 +6,13 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 23 November 2026 (cloud, on main b190d4c; NOT pushed yet, ask Nick).
+  CHURCH SEAM AT THE NORTH GATE (Nick: "the line between the art layers doesnt blend"). The north gate's paving
+  (ground_church.jpg) has a stone wall painted along its top, drawn over the church's lower walls, so the church
+  ended on a hard horizontal line. StageView.fadedGround takes a section's new `groundTopFade` { depth, x0, x1,
+  feather }: between x0 and x1 the paving's top melts away over `depth` px (feathered at the ends), so the
+  church's own walls and steps run down into the street. Set in stageVillage.js on the 'gate' section (44 px,
+  the church's width). Code only, no new art. dist/game.js rebuilt.
 - 20 November 2026 (cloud, branch `claude/project-thread-snjnrt` rebased on main 1e158b7; ON MAIN (Nick: "push all"), NOT on itch).
   WAR HOUNDS HUNT LIKE DOGS (Nick: "the dogs kind of just shuffle around weirdly, they need animations and
   different things to do"). The cause: hounds used the man's brain (face the hero always, full pace or stop), so

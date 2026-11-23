@@ -595,7 +595,10 @@ export class StageView {
 
   // A section's own paving, tiled from x0 to x1 and faded out over `fade` px at each end
   // (drawn once into a canvas at the game's render scale, so it costs one image)
-  fadedGround(key, src, x0, x1, top, h, s, fade, tint) {
+  // `topFade` { depth, x0, x1 }: between x0 and x1 its top edge also melts away over `depth`
+  // px, so a building painted behind it (the church at the north gate) runs down into the
+  // paving instead of being cut off on a straight line (Nick, 2026-11-23)
+  fadedGround(key, src, x0, x1, top, h, s, fade, tint, topFade = null) {
     const R = SETTINGS.renderScale ?? 1;
     const w = x1 - x0 + fade * 2;
     const cv = document.createElement('canvas');
@@ -609,6 +612,25 @@ export class StageView {
     g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(f, 'rgba(0,0,0,1)');
     g.addColorStop(1 - f, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = g; c.fillRect(0, 0, cv.width, cv.height);
+    if (topFade) {
+      // a mask of what to rub out: fully at the top edge, nothing `depth` px down, and
+      // feathered off at both ends; cut out of the paving in one go (destination-out)
+      const fx0 = Math.round((topFade.x0 - (x0 - fade)) * R); const fw = Math.round((topFade.x1 - topFade.x0) * R);
+      const fh = Math.round(topFade.depth * R); const feather = Math.round((topFade.feather ?? 60) * R);
+      const m = document.createElement('canvas'); m.width = Math.max(1, fw); m.height = Math.max(1, fh);
+      const mc = m.getContext('2d');
+      const v = mc.createLinearGradient(0, 0, 0, fh);
+      for (let k = 0; k <= 8; k++) { const t = k / 8; const e = 1 - t * t * (3 - 2 * t); v.addColorStop(t, `rgba(0,0,0,${e.toFixed(3)})`); }
+      mc.fillStyle = v; mc.fillRect(0, 0, fw, fh);
+      mc.globalCompositeOperation = 'destination-in';
+      const hz = mc.createLinearGradient(0, 0, fw, 0); const ff = Math.min(0.5, feather / Math.max(1, fw));
+      hz.addColorStop(0, 'rgba(0,0,0,0)'); hz.addColorStop(ff, 'rgba(0,0,0,1)');
+      hz.addColorStop(1 - ff, 'rgba(0,0,0,1)'); hz.addColorStop(1, 'rgba(0,0,0,0)');
+      mc.fillStyle = hz; mc.fillRect(0, 0, fw, fh);
+      c.globalCompositeOperation = 'destination-out';
+      c.drawImage(m, fx0, 0);
+      c.globalCompositeOperation = 'source-over';
+    }
     const tex = `${key}-fade-${x0}`;
     if (this.scene.textures.exists(tex)) this.scene.textures.remove(tex);
     this.scene.textures.addCanvas(tex, cv);
@@ -633,7 +655,7 @@ export class StageView {
         const tint = Phaser.Display.Color.GetColor(b, b, b);
         // `groundFade`: its own paving melts into the level's street at both ends instead of
         // starting on a ruled line (the village's sections: Nick's level 1 review, 2026-11-03)
-        if (sec.groundFade) this.fadedGround(key, src, sec.x0, sec.x1, top, H - top, s, sec.groundFade, tint);
+        if (sec.groundFade) this.fadedGround(key, src, sec.x0, sec.x1, top, H - top, s, sec.groundFade, tint, sec.groundTopFade);
         else scene.add.tileSprite(sec.x0, top, width, H - top, key).setOrigin(0).setDepth(DEPTH.floor + 1.5)
           .setTileScale(s, s).setTint(tint);
       }
