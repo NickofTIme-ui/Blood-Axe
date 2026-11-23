@@ -1420,7 +1420,10 @@ export class Stage {
   updateHazards() {
     for (const hz of this.hazards) {
       // only the hazards near the action run (the rest wait, so their timing is fresh)
-      if (this.index < hz.section - 1 || this.index > hz.last + 1) continue;
+      if (this.index < hz.section - 1 || this.index > hz.last + 1) {
+        if (hz.type === 'bombard' && hz.shells?.length) hz.shells = []; // (left behind: its marks don't stay frozen on the ground)
+        continue;
+      }
       hz.t++;
       for (const [id, c] of hz.cool) { if (c <= 1) hz.cool.delete(id); else hz.cool.set(id, c - 1); }
       if (hz.type === 'fire') this.updateFire(hz);
@@ -1678,6 +1681,11 @@ export class Stage {
       hz.t = 0;
     }
     if (!shots) { hz.shells = hz.shells.filter((s) => s.land > hz.t); }
+    // a post wrecked: what it had in the air is gone, its marks off the ground with it
+    if (hz.silence && hz.shells.length) {
+      const down = new Set(this.props.filter((pr) => pr.tag === hz.silence && pr.broken).map((pr) => pr.id));
+      if (down.size) hz.shells = hz.shells.filter((s) => s.post == null || !down.has(s.post));
+    }
     const arrows = hz.look === 'arrows';
     const P = Math.round((hz.period ?? B.period) * (arrows ? ARROW_SLOW : 1));
     if (shots && !held && hz.t % P === 0) {
@@ -1686,6 +1694,8 @@ export class Stage {
         ? this.livingFoes().filter((e) => !e.entering && !e.stats.boss)
         : this.players.filter((p) => p.alive);
       const b = this.world.bounds;
+      // which post looses each one (Nick, 2026-11-23: wreck a post and its marks go with it)
+      const posts = hz.silence ? this.props.filter((pr) => pr.tag === hz.silence && !pr.broken) : [];
       let fired = 0;
       for (let i = 0; i < shots && heroes.length; i++) {
         const p = heroes[i % heroes.length];
@@ -1695,7 +1705,7 @@ export class Stage {
         const z = Math.max(b.minZ + 10, Math.min(b.maxZ - 10, p.z + (r() * 2 - 1) * 50));
         x = Math.max(b.minX + 20, Math.min(b.maxX - 20, x));
         if (this.nearDrop(x, z, arrows ? B.arrowClear : B.pitClear)) continue;
-        hz.shells.push({ x, z, from: hz.t, land: hz.t + (hz.warn ?? B.warn) });
+        hz.shells.push({ x, z, from: hz.t, land: hz.t + (hz.warn ?? B.warn), post: posts.length ? posts[i % posts.length].id : null });
         fired++;
       }
       if (fired) this.world.events.emit('shellLaunch', { hazard: hz, count: fired });

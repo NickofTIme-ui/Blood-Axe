@@ -3010,13 +3010,24 @@ test('village: the archers by the mill shoot from the roofs on; their arrows sta
   assert(st.bombardShots(hz) === 2, 'the mill yard is under them too');
   const posts = st.props.filter((pr) => pr.tag === 'millArchers');
   assert(posts.length === 2 && posts.every((pr) => pr.kind === 'archers' && pr.section === mill), 'two archer posts in the mill yard');
+  // (Nick, 2026-11-23: the marks on the ground went with the post) a volley in the air from
+  // both posts: wreck one and only its marks are gone; wreck the other and none are left
+  hz.shells = posts.flatMap((pr, i) => [{ x: 5000 + i * 100, z: 420, from: hz.t, land: hz.t + 50, post: pr.id }]);
   st.breakProp(posts[0], 1);
   assert(st.bombardShots(hz) === 1, 'one wrecked: half the volley');
+  tick(1);
+  assert(hz.shells.every((sh) => sh.post !== posts[0].id) && hz.shells.some((sh) => sh.post === posts[1].id), 'the wrecked post\'s marks are gone, the other\'s stay');
   const beats = []; world.events.on('storyBeat', (ev) => beats.push(ev.beat.id));
   st.story.beats.find((b) => b.id === 'millSilenced').fired = false;
   st.breakProp(posts[1], 1);
   tick(30);
   assert(st.bombardShots(hz) === 0 && beats.includes('millSilenced'), `both wrecked: the arrows stop (${beats})`);
+  assert(hz.shells.length === 0, 'both wrecked: no marks left on the ground');
+  // gone on past it: nothing of it left frozen on the ground
+  hz.shells = [{ x: 5000, z: 420, from: hz.t, land: hz.t + 50 }];
+  st.enterSection(hz.last + 2);
+  tick(1);
+  assert(hz.shells.length === 0, 'left behind: its marks are cleared');
   // and past the mill yard it never shoots
   const fresh = new Stage(new World({ seed: 6 }), STAGE_VILLAGE);
   fresh.enterSection(mill + 1);

@@ -13,6 +13,12 @@ branch, or ChatGPT's work gets lost.
   feather }: between x0 and x1 the paving's top melts away over `depth` px (feathered at the ends), so the
   church's own walls and steps run down into the street. Set in stageVillage.js on the 'gate' section (44 px,
   the church's width). Code only, no new art. dist/game.js rebuilt.
+- 23 November 2026 (cloud, branch `claude/project-thread-vo7ae1` rebased on main 01d9ab1; ON MAIN (Nick: "push"), NOT on itch).
+  ARROW MARKS GO WITH THE ARCHER POST (Nick: "red circle arrow marks stay on the ground if you destroy the archer
+  tower"). Stage.updateBombard now tags each shell with the post (`silence` prop id) that loosed it and drops a
+  wrecked post's shells (and their painted landing marks) at once; a bombard hazard left behind (out of
+  updateHazards' range) clears its shells instead of freezing them on the ground. logic-test mill-archers test
+  covers both.
 - 20 November 2026 (cloud, branch `claude/project-thread-snjnrt` rebased on main 1e158b7; ON MAIN (Nick: "push all"), NOT on itch).
   WAR HOUNDS HUNT LIKE DOGS (Nick: "the dogs kind of just shuffle around weirdly, they need animations and
   different things to do"). The cause: hounds used the man's brain (face the hero always, full pace or stop), so
