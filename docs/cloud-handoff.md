@@ -6,6 +6,13 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 24 November 2026 (cloud; ON MAIN (Nick: "push all"), NOT on itch).
+  LEVEL 1 STABLES: HORSES QUIET, GATE BAR MARKED (Nick: "the horses that are trapped somehow speak english"; "make a
+  visual to get attention to where its needed to break"). stage/Story.js: no help cry for an npc with pose 'horses'
+  (the stable master's own shout, view/StableMasterView.js, calls for them). view/VillageView.js updateGateMark: a
+  pulsing ground ring, bobbing chevron and SMASH THE GATE BAR over the `stables` wreckage until it breaks. Keg rack
+  6252 -> 6030 and hay cart 6570 -> 6830 (data/stageVillage.js) so the gate stands alone.
+
 - 24 November 2026 (cloud, branch `claude/project-thread-8xssj4`; NOT on main yet, NOT on itch).
   MAGE X FINISHER (IMPALING SPIRES) NO LONGER TIES HIM UP (Nick: "have him run through the animation 40 percent
   faster and be able to move on while the npc is impaled"). combat/Mage.js MAGE_FINISHERS.spires: slam 14 -> 10,
