@@ -1,11 +1,12 @@
 // Level 1's props smash well (Nick, 2026-11-02): packed in clusters, a man flung into them
-// goes through and they go over in a row; crates stacked on one that breaks come down; a
+// goes through and they go over in a row; nothing is stacked on anything (anywhere); a
 // lamp post knocked over burns where it lands and sets a hay cart alight; the stable herd
 // smashes what stands in its lane (stage/Stage.js CHAIN, LAMP; view/PropShatter.js).
 import assert from 'node:assert/strict';
 import {World} from '../src/core/World.js';
 import {Stage} from '../src/stage/Stage.js';
 import {STAGE_VILLAGE} from '../src/data/stageVillage.js';
+import {ARENAS} from '../src/data/stages.js';
 import {createPlayer} from '../src/entities/Player.js';
 import {Controller} from '../src/core/Controller.js';
 function setup(section=1,x=1500){const w=new World({seed:7}),p=createPlayer(w,new Controller(),'warrior',x,420),st=new Stage(w,STAGE_VILLAGE);st.start(p,{section});w.hold=null;return {w,p,st};}
@@ -59,27 +60,14 @@ const run=(w,st,n)=>{for(let i=0;i<n;i++){w.tick();st.update();}};
  assert(!b.tumble,'and comes to rest');
 }
 {
- // a crate up on another is knocked off it by a light blow, tumbles down and lands
- const {w,p,st}=setup();
- const top=st.props.find((pr)=>pr.section===1&&pr.under!==undefined&&pr.under!==null);
- const x0=top.x;const landed=[];w.events.on('propLand',(e)=>landed.push(e.prop));
- st.strikeProp(top,1,1);
- assert(top.fall&&!top.broken,'knocked off, not broken');
- run(w,st,60);
- assert(landed.includes(top));assert(top.x>x0+15,'it came down off the side');assert.equal(top.y,0);
- void p;
-}
-{
- // a crate stacked on another comes down when it goes, and lands
- const {w,st}=setup();
- const top=st.props.find((pr)=>pr.section===1&&pr.under!==undefined);
- const base=st.props.find((pr)=>pr.id===top.under);
- assert(top.y>base.y+20,'up on the crate below');
- assert(!st.solidAt(top.x,top.z,0)?.prop||st.solidAt(top.x,top.z,0).prop!==top,'(the one below is what you walk into)');
- const landed=[];w.events.on('propLand',(e)=>landed.push(e.prop));
- st.breakProp(base,1,false,0);run(w,st,60);
- assert(landed.includes(top),'it lands');assert.equal(top.y,base.y,'on the ground');
- assert(top.broken||top.hp<2,'and the fall cracks it');
+ // NOTHING STACKED, anywhere in the game (Nick, 2026-11-24: "don't stack anything up ... it just
+ // looks horrid"): every crate, barrel, sack and pot in every level stands on the ground
+ for(const [id,data] of Object.entries(ARENAS)){
+  for(const [si,sec] of (data.sections??[]).entries())for(const pr of sec.props??[])assert(!pr.stack,`${id} section ${si}: ${pr.look??pr.kind} is stacked on something`);
+  const w=new World({seed:7}),st=new Stage(w,data);
+  const up=st.props.filter((pr)=>pr.under!==undefined&&pr.under!==null);
+  assert.equal(up.length,0,`${id}: props up on others (${up.map((pr)=>pr.look??pr.kind)})`);
+ }
 }
 {
  // the lamp by the hay cart: it falls, burns where it lands, and the cart goes up
@@ -104,4 +92,4 @@ const run=(w,st,n)=>{for(let i=0;i<n;i++){w.tick();st.update();}};
  for(let i=0;i<1500&&lane.some((pr)=>!pr.broken);i++){w.tick();st.updateHazards();st.updateProps();}
  assert(lane.every((pr)=>pr.broken),`the herd smashes the crates in its lane (${lane.filter((pr)=>!pr.broken).length} left)`);
 }
-console.log('Prop smashing checks passed: clusters, chain through a cluster, cracked neighbours, stacked crates fall, lamp oil and the hay cart burn, the herd smashes its lane.');
+console.log('Prop smashing checks passed: clusters, chain through a cluster, cracked neighbours, nothing stacked in any level, lamp oil and the hay cart burn, the herd smashes its lane.');
