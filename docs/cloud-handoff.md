@@ -6,7 +6,7 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 24 November 2026 (cloud; branch claude/project-thread-i5k685, waiting on Nick's OK to push, NOT on itch).
+- 24 November 2026 (cloud; ON MAIN bb0dd05 (Nick: "push all"), NOT on itch).
   LEVEL 2 ART: THE HANGED DEAD AND ANSEL REPAINTED (Nick: "i also want the art for the hanging guys redone, bring up
   the quality, the rope and all"; "the guy with the broken leg needs new art bring up the quality"). ChatGPT (Nick's
   Chrome): three new shrouded dead (ChatGPT still refuses bodies; finer sackcloth, rope bindings, a hooded one),
