@@ -1519,6 +1519,27 @@ test('mage finisher: X = impaling spires hoists each runner high on the stone, t
   for (const r of rs) assert(r.state === 'dead' && r.h - r.floor < 2 && !r.spirePin, `dropped (${r.state})`);
 });
 
+test('mage finisher: spires let the mage go early — he moves on while the runners still hang', () => {
+  const S = MAGE_FINISHERS.spires;
+  const t = mageSetup({ script: { 1: ['attack'] } });
+  const rs = [[740, 420], [820, 440]].map(([x, z]) => {
+    const r = t.world.addFighter(new Fighter({ stats: ENEMIES.grunt, team: 'enemy', x, z, controller: new Scripted() }));
+    r.controller.scared = true; r.facing = 1;
+    return r;
+  });
+  t.run(3);
+  assert(t.p.exec?.kind === 'spires', `spires (${t.p.exec?.kind})`);
+  const shatters = [];
+  t.world.events.on('finisherBeat', (b) => { if (b.type === 'spiresShatter') shatters.push(b); });
+  let freeAt = null;
+  for (let i = 0; i < S.total + 40 && freeAt == null; i++) { t.world.tick(); if (t.p.state !== 'execute') freeAt = i; }
+  assert(freeAt != null && freeAt < S.erupt + S.step + S.free + 16, `free early (${freeAt})`);
+  for (const r of rs) assert(r.state === 'executed' && r.spireHang && r.h - r.floor > 40, `still hanging (${r.state} ${(r.h - r.floor).toFixed(0)})`);
+  t.run(S.total + 20);
+  assert(shatters.length === 1, `one shatter (${shatters.length})`);
+  for (const r of rs) assert(r.state === 'dead' && r.h - r.floor < 2, `dropped (${r.state})`);
+});
+
 test('mage finisher: rupture holds each runner apart in the air before the burst', () => {
   const t = mageSetup({ script: { 1: ['heavy'] } });
   const rs = [[740, 420], [800, 430], [860, 410]].map(([x, z]) => {

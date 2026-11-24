@@ -6,6 +6,13 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 24 November 2026 (cloud, branch `claude/project-thread-8xssj4`; NOT on main yet, NOT on itch).
+  MAGE X FINISHER (IMPALING SPIRES) NO LONGER TIES HIM UP (Nick: "have him run through the animation 40 percent
+  faster and be able to move on while the npc is impaled"). combat/Mage.js MAGE_FINISHERS.spires: slam 14 -> 10,
+  erupt 30 -> 21, step 7 -> 5; the Mage is free `free` (12) frames after the last spire. The runners hang on their own
+  (spireHold, driven from the victim's 'executed' state via v.spireHang) and drop at one shared shatter 78 frames
+  after the first spire. MageFX.js untouched.
+
 - 23 November 2026 (cloud; ON MAIN (Nick: "finish and push all"), NOT on itch).
   LEVEL 1 WELL SET PIECE (Nick: "The Mira and the boy at the well is serious scene please give those npc the love
   and that set piece too"). stage/WellRescue.js + view/WellRescueView.js + tests/well-rescue-test.js. The square's
