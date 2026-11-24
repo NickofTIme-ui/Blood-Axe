@@ -658,8 +658,12 @@ export const MAGE_FINISHERS = {
   // IMPALING SPIRES (X): he drives the staff into the floor, the ground splits towards
   // them, and a spire of black stone bursts up under each runner, through him, and hoists
   // him high; he hangs there, twitching, bleeding down the stone; then the Mage closes his
-  // fist and the spires burst into rubble, dropping what's left of them
-  spires: { total: 150, slam: 14, erupt: 30, step: 7, rise: 7, height: 78, shatter: 108, drop: 10 },
+  // fist and the spires burst into rubble, dropping what's left of them.
+  // (Nick, 2026-11-24: it tied him up too long. His part plays 40% faster (slam 14 -> 10,
+  // erupt 30 -> 21, step 7 -> 5) and he's free `free` frames after the last spire, while
+  // the runners hang on their own until the shatter (hang = frames from the first spire
+  // to the shatter); total = when the last of them is down.)
+  spires: { total: 109, slam: 10, erupt: 21, step: 5, rise: 7, height: 78, hang: 78, shatter: 99, drop: 10, free: 12 },
   // he blinks into their path, slams the staff, sigils open under them, and the gate burns
   embers: { total: 116, vanish: 3, arrive: 10, slam: 22, erupt: 42, step: 4, release: 80 },
 };
@@ -695,6 +699,27 @@ function runOn(f, ex, frame, until) {
       v.execRun = true;
     }
   }
+}
+
+// A runner on a spire (IMPALING SPIRES): shot up it, a slow sag down it under his own
+// weight, then at the shatter he drops with the rubble. Kept on the world's clock, so it
+// plays the same whether the Mage is still standing over him or has moved on (then the
+// runner's own 'executed' state calls this, via v.spireHang). One shatter for all of them.
+export function spireHold(v, hang) {
+  const F = MAGE_FINISHERS.spires;
+  const now = v.world.frame;
+  const t = now - v.spirePin.at;
+  const end = hang.shatterAt ?? Infinity;
+  const up = Math.min(1, t / F.rise);
+  const sag = Math.max(0, Math.min(now, end) - v.spirePin.at - F.rise) * 0.06;
+  const fall = now >= end ? Math.min(1, (now - end) / F.drop) : 0;
+  v.liftH = Math.max(0, (F.height * (1 - (1 - up) ** 3) - sag) * (1 - fall * fall));
+  if (now >= end && !hang.shattered) {
+    hang.shattered = true;
+    const f = hang.by;
+    f.world.events.emit('finisherBeat', { attacker: f, victim: hang.targets[0], kind: 'spires', type: 'spiresShatter', dir: f.facing, targets: hang.targets, index: 0 });
+  }
+  if (now >= end + F.drop) { v.liftH = 0; v.execRelease = { dead: true }; }
 }
 
 export function mageFinisherStart(f, ex) {
@@ -770,30 +795,26 @@ export function runMageFinisher(f, ex, frame) {
     runOn(f, ex, frame, F.slam);
     once(ex, 'slam', frame, F.slam, () => {
       for (const v of T) { v.execRun = false; v.execFlinch = true; }
+      ex.hang = { by: f, targets: T, shatterAt: null, shattered: false };
       beat(f, ex, 'spiresSlam', T[0]);
     });
     T.forEach((v, i) => {
-      const at = F.erupt + i * F.step;
-      once(ex, `erupt${i}`, frame, at, () => {
+      once(ex, `erupt${i}`, frame, F.erupt + i * F.step, () => {
         v.health = 0;
         v.execFlinch = false;
         v.spirePin = { at: w.frame, x: v.x, z: v.z };
+        if (ex.hang.shatterAt == null) ex.hang.shatterAt = w.frame + F.hang;
         f.hitstop = i === 0 ? 6 : 2;
         beat(f, ex, 'spiresErupt', v, { main: i === 0 });
         mageKill(f, v, 'spires', Math.sign(v.x - f.x) || f.facing);
       });
-      if (!v.spirePin || v.state !== 'executed') return;
-      // shot up the spire, then a slow sag down it under his own weight; after the
-      // shatter he drops with the rubble
-      const up = Math.min(1, (frame - at) / F.rise);
-      const sag = Math.max(0, Math.min(frame, F.shatter) - at - F.rise) * 0.06;
-      const fall = frame >= F.shatter ? Math.min(1, (frame - F.shatter) / F.drop) : 0;
-      v.liftH = Math.max(0, (F.height * (1 - (1 - up) ** 3) - sag) * (1 - fall * fall));
+      if (v.spirePin && v.state === 'executed') spireHold(v, ex.hang);
     });
-    once(ex, 'shatter', frame, F.shatter, () => beat(f, ex, 'spiresShatter', T[0]));
-    once(ex, 'release', frame, F.shatter + F.drop, () => {
-      for (const v of T) { v.liftH = 0; v.execRelease = { dead: true }; }
-    });
+    // his part is done: he pulls the staff free and moves on; the stone holds them
+    if (frame >= F.erupt + (T.length - 1) * F.step + F.free) {
+      for (const v of T) if (v.state === 'executed' && v.spirePin) v.spireHang = ex.hang;
+      return f.fsm.change('idle');
+    }
   } else if (ex.kind === 'embers') {
     runOn(f, ex, frame, F.slam);
     once(ex, 'vanish', frame, F.vanish, () => {

@@ -11,7 +11,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { movePhase, totalFrames, inWindow } from '../combat/MoveRunner.js';
 import { FINISH, FINISHERS, CHAIN, IMPALE, THROAT, impalePin, impalePierce, planFinisher, chainTimes, throatStagger } from '../combat/Finisher.js';
-import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher, cataclysmState } from '../combat/Mage.js';
+import { mageStates, isMageFinisher, mageFinisherStart, runMageFinisher, cataclysmState, spireHold } from '../combat/Mage.js';
 import { rogueStates, rollMine,isRogueFinisher, rogueFinisherStart, runRogueFinisher, vaultTarget } from '../combat/Rogue.js';
 import { skillStates, plungeReady } from '../combat/Skills.js';
 import { JUGGLE, SUNDER, juggleLand, airMoveFor } from '../combat/Juggle.js';
@@ -784,7 +784,7 @@ export const FIGHTER_STATES = {
     exit(f) {
       // cut short somehow: let go of anyone still held
       for (const v of f.exec?.targets ?? []) {
-        if (v.state === 'executed') v.execRelease = v.health > 0 ? { vx: 0, vh: 0, free: true } : { dead: true };
+        if (v.state === 'executed' && !v.spireHang) v.execRelease = v.health > 0 ? { vx: 0, vh: 0, free: true } : { dead: true };
       }
       f.exec = null;
       f.blinkGone = false;
@@ -805,6 +805,7 @@ export const FIGHTER_STATES = {
       f.execIndex = p.index ?? 0;
       f.liftH = 0;
       f.execRelease = null;
+      f.spireHang = null;
       f.execCut = null;
       f.execFlinch = false;
       f.execStopped = false;
@@ -814,6 +815,7 @@ export const FIGHTER_STATES = {
     update(f) {
       f.invincible = true;
       f.vx = 0; f.vz = 0;
+      if (f.spireHang) spireHold(f, f.spireHang); // (left hanging on a spire: the Mage has moved on)
       f.h = f.floor + (f.liftH ?? 0);
       f.vh = f.h > f.floor ? f.stats.gravity / 60 : 0; // held up: cancel this step's gravity
       const r = f.execRelease;
@@ -826,9 +828,9 @@ export const FIGHTER_STATES = {
         if (r.bowl) f.bowl = { frames: 40, dir: Math.sign(r.vx), hit: new Set([f.id]) };
         return;
       }
-      if (f.execBy?.state !== 'execute') f.fsm.change(f.health > 0 ? 'idle' : 'dead');
+      if (!f.spireHang && f.execBy?.state !== 'execute') f.fsm.change(f.health > 0 ? 'idle' : 'dead');
     },
-    exit(f) { f.liftH = 0; f.shock = 0; f.spirePin = null; },
+    exit(f) { f.liftH = 0; f.shock = 0; f.spirePin = null; f.spireHang = null; },
   },
 
   // Beaten, on his knees, hearing his sentence (stage/Sentence.js). Nothing moves him and

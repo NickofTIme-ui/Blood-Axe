@@ -309,9 +309,11 @@ export class MageView {
       const slam = P({ lean: 0.12, gx: 22, gy: -46, ang: -1.57, two: 20, crouch: 5, glow: 1.8, lift: 0.3 });
       if (fr < F.slam - 2) return blend(POSES.idle, up, easeOut(fr / (F.slam - 2)));
       if (fr < F.slam + 1) return blend(up, slam, easeIn((fr - F.slam + 2) / 3));
-      if (fr < F.shatter) return slam;
-      if (fr < F.shatter + 4) return { ...slam, open: 0, sigil: 1.4, glow: 2.2 };
-      return blend(slam, { ...POSES.idle, lean: -0.05, head: -0.1 }, smooth((fr - F.shatter - 4) / 26));
+      // (he no longer waits for the shatter: the staff comes up out of the floor as the
+      // last spire goes in, and he's free to move — combat/Mage.js spires.free)
+      const done = F.erupt + (ex.targets.length - 1) * F.step;
+      if (fr < done + 2) return slam;
+      return blend(slam, { ...POSES.idle, lean: -0.05, head: -0.1 }, smooth((fr - done - 2) / F.free));
     }
     // embers: gone, back in the runner's path, the staff slammed down, the gate burns
     const slam = P({ lean: 0.12, gx: 22, gy: -46, ang: -1.57, two: 20, crouch: 5, glow: 1.8, lift: 0.3 });
