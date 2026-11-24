@@ -136,6 +136,28 @@ const ROUTE = [
 // where the places are on the painted map (assets/cinematics/keep-war-map.jpg, ChatGPT 23 Nov:
 // 1536x1024 shown 960 wide, 50 px cropped off the top): measured off the painting
 const PAINTED_AT = [{ x: 133, y: 371 }, { x: 275, y: 250 }, { x: 433, y: 358 }, { x: 566, y: 184 }, { x: 684, y: 275 }, { x: 804, y: 91 }];
+// the roads between the places on the painted map, along its own dotted roads (one per
+// level: from place i to place i+1); the first is how they came into the village
+const PAINTED_ROADS = [
+  [[133, 371], [176, 377], [205, 362], [218, 338], [234, 312], [252, 302], [266, 284], [275, 250]],
+  [[275, 250], [262, 282], [262, 300], [288, 304], [312, 318], [332, 336], [348, 346], [380, 362], [410, 364], [433, 358]],
+  [[433, 358], [462, 340], [484, 318], [488, 292], [496, 268], [518, 252], [538, 228], [552, 204], [566, 184]],
+  [[566, 184], [571, 214], [577, 246], [583, 282], [598, 312], [628, 328], [660, 324], [680, 306], [684, 275]],
+  [[684, 275], [712, 262], [744, 252], [760, 240], [758, 212], [772, 192], [806, 178], [836, 160], [826, 138], [812, 114], [804, 91]],
+];
+const INTO_VILLAGE = [[40, 420], [70, 400], [100, 392], [133, 371]];
+// a road as evenly spaced points (every `step` px), each with its heading
+const roadPoints = (pts, step = 7) => {
+  const out = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [ax, ay] = pts[i]; const [bx, by] = pts[i + 1];
+    const len = Math.hypot(bx - ax, by - ay); const ang = Math.atan2(by - ay, bx - ax);
+    for (let d = 0; d < len; d += step) out.push({ x: ax + (bx - ax) * d / len, y: ay + (by - ay) * d / len, ang });
+  }
+  const [lx, ly] = pts[pts.length - 1];
+  out.push({ x: lx, y: ly, ang: out.length ? out[out.length - 1].ang : 0 });
+  return out;
+};
 const ROADS = ['FOUR ROADS TO THE BLACK KEEP', 'THREE ROADS TO THE BLACK KEEP', 'TWO ROADS TO THE BLACK KEEP', 'ONE ROAD TO THE BLACK KEEP', 'NO ROADS LEFT'];
 
 // what the tension sets, scene by scene (index: the chapter, 0-4)
@@ -179,13 +201,14 @@ const SHOTS = {
 };
 // the king's guard along the back of the hall, in desertion order (the first ones stay
 // longest): which painted sheet, which pose, where, how big, which way he faces, how lit
-const GUARD_POSTS = [
-  { id: 'grunt', strip: 'walk', frame: 0, x: 96, y: 366, scale: 0.78, flip: false, tint: 0x8a84a0 },
-  { id: 'penitent', strip: 'walk', frame: 3, x: 196, y: 372, scale: 0.74, flip: false, tint: 0x8c84a8 },
-  { id: 'gladiator', strip: 'walk', frame: 0, x: 452, y: 368, scale: 0.8, flip: true, tint: 0x7a7490 },
-  { id: 'stalker', strip: 'walk', frame: 5, x: 300, y: 362, scale: 0.72, flip: false, tint: 0x948ca8 },
-  { id: 'grunt', strip: 'walk', frame: 4, x: 150, y: 360, scale: 0.7, flip: true, tint: 0x6e6880 },
-  { id: 'berserker', strip: 'walk', frame: 2, x: 404, y: 361, scale: 0.76, flip: false, tint: 0x7c7690 },
+const GUARD_POSTS = [ // (Nick: lined up facing the player, by rank: the lowest at the hall's
+  // far end, the highest nearest the throne; the lowest desert first, so this list is highest first)
+  { id: 'gladiator', strip: 'walkD', frame: 0, x: 452, y: 368, scale: 0.84, flip: false, tint: 0x9088a8 },
+  { id: 'butcher', strip: 'walkD', frame: 0, x: 382, y: 368, scale: 0.82, flip: false, tint: 0x9088a8 },
+  { id: 'berserker', strip: 'walkD', frame: 0, x: 312, y: 368, scale: 0.8, flip: false, tint: 0x9088a8 },
+  { id: 'stalker', strip: 'walkD', frame: 0, x: 244, y: 368, scale: 0.76, flip: false, tint: 0x9088a8 },
+  { id: 'penitent', strip: 'walkD', frame: 0, x: 174, y: 368, scale: 0.76, flip: false, tint: 0x9088a8 },
+  { id: 'grunt', strip: 'walkD', frame: 0, x: 104, y: 368, scale: 0.74, flip: false, tint: 0x9088a8 },
 ];
 const SHOT_OF = { VAURATH: 'king', MESSENGER: 'kneel', CAPTAIN: 'kneel', MALGOR: 'malgor', VOICE: 'wide' };
 
@@ -385,13 +408,12 @@ export class CutawayScene extends Phaser.Scene {
     if (t >= 3) this.leftovers(W, H);
     // the king's guard, along the back of the hall, facing the throne; fewer every scene
     this.guards = [];
-    // (a mixed guard, no two alike: his soldiers, a penitent, a gladiator, a stalker...
-    // each its own painted sheet, stance, size and facing; the grunt stands in for any
-    // sheet that isn't loaded)
+    // (a mixed guard in a line, facing out of the hall, ranked: GUARD_POSTS)
     for (let i = 0; i < TENSION.guards[t]; i++) {
       const g = GUARD_POSTS[i];
       const gd = this.figure(g.id, g.strip, g.frame, g.x, g.y, g.scale, g.flip)
-        || this.figure('grunt', 'walk', g.frame % 8, g.x, g.y, 0.78, g.flip);
+        || this.figure(g.id, 'walk', 0, g.x, g.y, g.scale, g.flip) // (no front view loaded: side on)
+        || this.figure('grunt', 'walk', 0, g.x, g.y, 0.78, g.flip);
       if (!gd) break;
       gd.setTint(g.tint);
       this.guards.push(gd);
@@ -988,7 +1010,7 @@ export class CutawayScene extends Phaser.Scene {
     for (let i = 0; i < R.length - 1; i++) {
       const a = R[i]; const b = R[i + 1];
       const won = i < t - 1;
-      if (painted && !won) continue; // (the painting has its own road)
+      if (painted) continue; // (the painting has its own road, and the won ones are painted in red: PAINTED_ROADS)
       for (let k = 0; k < 12; k += won ? 1 : 2) {
         road.lineStyle(won ? 4 : 2, won ? 0x8a1010 : 0x4a3420, won ? 0.9 : 0.7);
         road.lineBetween(a.x + (b.x - a.x) * k / 12, a.y + (b.y - a.y) * k / 12, a.x + (b.x - a.x) * (k + 1) / 12, a.y + (b.y - a.y) * (k + 1) / 12);
@@ -997,6 +1019,24 @@ export class CutawayScene extends Phaser.Scene {
     m.add(road);
     const trail = this.add.graphics(); // (the road they take this time, inked red behind the token)
     m.add(trail);
+    // on the painted map the road is painted too: a stroke of blood-red ink laid down a dab at
+    // a time (ChatGPT's brush marks, 'map-path'), every road they've already won, and this
+    // time's road growing behind the token as it marches
+    const pathLayer = this.add.container(0, 0).setAlpha(0);
+    m.add(pathLayer);
+    const dab = (pt, n) => {
+      if (this.textures.exists('map-path')) {
+        const d = this.add.image(pt.x, pt.y, 'map-path', n % 8).setRotation(pt.ang + (((n * 37) % 11) - 5) * 0.03);
+        d.setScale(20 / d.width * (0.9 + ((n * 13) % 5) * 0.05));
+        pathLayer.add(d);
+        return d;
+      }
+      const d = this.add.circle(pt.x, pt.y, 3.2, 0x8a1010, 0.92);
+      pathLayer.add(d);
+      return d;
+    };
+    if (painted) PAINTED_ROADS.slice(0, Math.max(0, t)).forEach((r) => roadPoints(r).forEach((pt, n) => dab(pt, n)));
+    const march = painted ? roadPoints(t > 0 ? PAINTED_ROADS[t - 1] : INTO_VILLAGE) : null;
     // the places, and the king's black marker on every one he still holds
     const places = []; const flags = [];
     R.forEach((r, i) => {
@@ -1022,7 +1062,7 @@ export class CutawayScene extends Phaser.Scene {
       places.push(set);
     });
     // the Oath Keepers' token: from where it was to where they are now
-    const from = t > 0 ? R[t - 1] : { x: R[0].x - 90, y: R[0].y + 40 };
+    const from = t > 0 ? R[t - 1] : painted ? { x: INTO_VILLAGE[0][0], y: INTO_VILLAGE[0][1] } : { x: R[0].x - 90, y: R[0].y + 40 };
     const to = R[t];
     const tok = this.token(from.x, from.y).setAlpha(0);
     m.add(tok);
@@ -1043,7 +1083,7 @@ export class CutawayScene extends Phaser.Scene {
       [0.0, () => this.tweens.add({ targets: [p, art].filter(Boolean), alpha: 1, duration: 1200 })],
       // (the hall is gone behind the map: when the map fades out with the music, it's to black)
       [0.2, () => { for (const o of [this.root, this.grade, this.insert, this.ui]) o.setVisible(false); }],
-      [0.6, () => this.tweens.add({ targets: road, alpha: 1, duration: 1400 })],
+      [0.6, () => this.tweens.add({ targets: [road, pathLayer], alpha: 1, duration: 1400 })],
       ...R.map((r, i) => [1.0 + i * 0.5, () => this.tweens.add({ targets: places[i], alpha: (o) => (flags.includes(o) && i < t ? 0.8 : 1), duration: 500 })]),
       // the first accent: the Oath Keepers' token is set down
       [3.9, () => {
@@ -1053,6 +1093,18 @@ export class CutawayScene extends Phaser.Scene {
       }],
       // it marches up the road to the next accent, inking it red behind it
       [4.25, () => {
+        if (march) { // (along the painted road, painting it as it goes)
+          let laid = 0; const step = { u: 0 };
+          this.tweens.add({
+            targets: step, u: 1, duration: 3800, ease: 'Sine.easeInOut',
+            onUpdate: () => {
+              const k = Math.min(march.length - 1, Math.round(step.u * (march.length - 1)));
+              tok.setPosition(march[k].x, march[k].y);
+              for (; laid <= k; laid++) { const d = dab(march[laid], laid + 3); d.setScale(d.scaleX * 1.25); this.tweens.add({ targets: d, scale: d.scaleX / 1.25, duration: 220 }); }
+            },
+          });
+          return;
+        }
         this.tweens.add({
           targets: tok, x: to.x, y: to.y, duration: 3800, ease: 'Sine.easeInOut',
           onUpdate: () => { trail.clear().lineStyle(4, 0x8a1010, 0.9).lineBetween(from.x, from.y, tok.x, tok.y); },
