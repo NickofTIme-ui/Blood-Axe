@@ -1935,3 +1935,8 @@ Rurik's ground walk is 20% slower (walkPace 0.8). Up/down/diagonal walks are sti
 - `TerrainView.paintedWater(kind)` / `layWater()`: wood pits (streams), the wood wade (ford) and mine pits (river) draw the painting stretched over the hazard (the channel is the middle `frac` of the image, the rest are banks), with a faint additive flow tile masked to the hazard on top. A pit inside a painted wade is skipped (the ford painting has its own channel). `drawStones` uses the painted stones when present. Everything falls back to the old code-drawn water if a file is missing.
 - Still code-drawn: the mine's rock pillars and the block top behind the mine log bridge.
 - Before/after shots: project files `level2-grounding/water-before/` and `water-art/after/`. Cloud headless shots work if requests for other levels' assets are aborted (otherwise Chromium OOMs).
+
+## Cloud, 2026-11-23: convoy horses bigger (level 2)
+- Nick: "the horses look to small on the wagon in the convoy". They stood about as tall as a wagon wheel (the wagon grew 1.5x in 00785fc; the team didn't).
+- `HORSE` in `src/view/StageView.js`: scale 0.42 -> 0.72 (a draught horse's back at Rurik's shoulder, head above him), `ahead` 50 -> 84 and the second horse's stagger 22 -> 36 (`step`) so the bigger team still meets the wagon's front with its traces, `dz` 14 -> 16. The bolting gallop (wagon wrecked) uses `HORSE.gallop` 0.62 (was 0.36) so they don't shrink as they break free.
+- View only, no sim change. Checked against a to-scale paste-up of the wagon, horse sheet and Rurik; tests pass. Not played by a person.

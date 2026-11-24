@@ -25,7 +25,9 @@ import { SPRITES } from './levelArt.js';
 // the convoy's draught horses (horses() below): their size on the 'horse-pull' sheet, how
 // far ahead of the wagon's front they walk, how far up the road from its base the far one
 // is, and how much nearer the near one stands
-const HORSE = { scale: 0.42, ahead: 50, lift: 40, dz: 14 };
+// (Nick, 2026-11-23: "the horses look too small on the wagon": scale 0.42 stood them about
+// as tall as a wheel; 0.72 brings a heavy draught horse's back to Rurik's shoulder, head above him)
+const HORSE = { scale: 0.72, ahead: 84, lift: 40, dz: 16, step: 36, gallop: 0.62 };
 
 const rand = (a, b) => a + Math.random() * (b - a);
 // a colour darkened (k < 1) or lightened
@@ -2288,8 +2290,8 @@ export class StageView {
       const gallop = sc.textures.exists('horse-gallop-0');
       v.horses.forEach((h, i) => {
         if (k > 90) { h.setVisible(false); return; }
-        const x = front + 70 + i * 26 + k * k * 0.09 + k * 2;
-        if (gallop) h.setTexture(`horse-gallop-${Math.floor(k * 0.35 + i * 3) % 6}`).setOrigin(0.5, 0.97).setScale(0.36);
+        const x = front + HORSE.ahead + 36 + i * (HORSE.step + 8) + k * k * 0.09 + k * 2;
+        if (gallop) h.setTexture(`horse-gallop-${Math.floor(k * 0.35 + i * 3) % 6}`).setOrigin(0.5, 0.97).setScale(HORSE.gallop);
         else h.setTexture(S.key, `f${Math.floor(k / 4 + i * 2) % 6}`);
         h.setPosition(x, pr.z - HORSE.lift + i * HORSE.dz).setDepth(pr.z - HORSE.lift + i * HORSE.dz).setFlipX(false).setAlpha(Math.max(0, 1 - k / 90));
       });
@@ -2301,7 +2303,7 @@ export class StageView {
       // (the far horse a step behind and up the road a little, the near one lower and ahead;
       // HORSE.lift: the wagon's painted wheels stand that far up its picture)
       const hz = y - HORSE.lift * ws + i * HORSE.dz;
-      const hx = front + HORSE.ahead + i * 22;
+      const hx = front + HORSE.ahead + i * HORSE.step;
       let cell = 6;
       if (mode === 'haul') cell = Math.floor(v.horseRun / 14 + i * 3) % 6;
       else if (mode === 'halted') cell = v.horseT < 50 + i * 12 ? (Math.floor((v.horseT + i * 9) / 18) % 2 ? 7 : 6) : 6;
