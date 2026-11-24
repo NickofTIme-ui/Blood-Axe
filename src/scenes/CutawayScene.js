@@ -123,8 +123,9 @@ export const OATH = [
   'And the king on his black throne answers for all of it.',
 ];
 
-// The war map: the road from the village to the Keep. The Oath Keepers' token stands on the
-// place they have just won (the scene's chapter); what's left is counted down.
+// The war map: the road from the village to the Keep. The Oath Keepers' token starts on the
+// place they have just won (the scene's chapter) and marches along the road to the next one
+// (Nick, 24 Nov: village to Gallows Wood after level 1, and on); what's left is counted down.
 const ROUTE = [
   { name: 'THE VILLAGE', glyph: 'house', x: 175, y: 352 },
   { name: 'GALLOWS WOOD', glyph: 'trees', x: 292, y: 238 },
@@ -1009,7 +1010,7 @@ export class CutawayScene extends Phaser.Scene {
     const road = this.add.graphics().setAlpha(0);
     for (let i = 0; i < R.length - 1; i++) {
       const a = R[i]; const b = R[i + 1];
-      const won = i < t - 1;
+      const won = i < t;
       if (painted) continue; // (the painting has its own road, and the won ones are painted in red: PAINTED_ROADS)
       for (let k = 0; k < 12; k += won ? 1 : 2) {
         road.lineStyle(won ? 4 : 2, won ? 0x8a1010 : 0x4a3420, won ? 0.9 : 0.7);
@@ -1035,8 +1036,8 @@ export class CutawayScene extends Phaser.Scene {
       pathLayer.add(d);
       return d;
     };
-    if (painted) PAINTED_ROADS.slice(0, Math.max(0, t)).forEach((r) => roadPoints(r).forEach((pt, n) => dab(pt, n)));
-    const march = painted ? roadPoints(t > 0 ? PAINTED_ROADS[t - 1] : INTO_VILLAGE) : null;
+    if (painted) [INTO_VILLAGE, ...PAINTED_ROADS.slice(0, t)].forEach((r) => roadPoints(r).forEach((pt, n) => dab(pt, n)));
+    const march = painted ? roadPoints(PAINTED_ROADS[t]) : null;
     // the places, and the king's black marker on every one he still holds
     const places = []; const flags = [];
     R.forEach((r, i) => {
@@ -1053,7 +1054,7 @@ export class CutawayScene extends Phaser.Scene {
       const set = [g, label];
       if (!last) {
         const f = this.flag(r.x + 18, r.y - 4);
-        if (i < t) { f.setAngle(84); f.y += 10; f.setAlpha(0.8); } // (knocked down in an earlier scene)
+        if (i < t) { f.setAngle(84); f.y += 10; f.setAlpha(0.8); } // (knocked down in an earlier scene; this one's goes down as the token is set on it)
         flags[i] = f;
         set.push(f);
       }
@@ -1062,8 +1063,8 @@ export class CutawayScene extends Phaser.Scene {
       places.push(set);
     });
     // the Oath Keepers' token: from where it was to where they are now
-    const from = t > 0 ? R[t - 1] : painted ? { x: INTO_VILLAGE[0][0], y: INTO_VILLAGE[0][1] } : { x: R[0].x - 90, y: R[0].y + 40 };
-    const to = R[t];
+    const from = R[t];
+    const to = R[t + 1];
     const tok = this.token(from.x, from.y).setAlpha(0);
     m.add(tok);
     const roads = this.add.text(W / 2, painted ? H - 80 : y0 + ph - 34, ROADS[t], { fontFamily: FONT.display, fontSize: '22px' }).setOrigin(0.5).setAlpha(0);
@@ -1089,7 +1090,11 @@ export class CutawayScene extends Phaser.Scene {
       [3.9, () => {
         tok.setScale(2.2).setAlpha(1);
         this.tweens.add({ targets: tok, scale: 1, duration: 260, ease: 'Quad.easeIn' });
-        this.time.delayedCall(260, () => { burst(from.x, from.y, 0xff3020); this.cameras.main.shake(160, 0.004); });
+        this.time.delayedCall(260, () => {
+          burst(from.x, from.y, 0xff3020); this.cameras.main.shake(160, 0.004);
+          const f = flags[t]; // (the place they just won: the king's marker goes down)
+          if (f) this.tweens.add({ targets: f, angle: 84, y: f.y + 10, alpha: 0.8, duration: 300, ease: 'Bounce.easeOut' });
+        });
       }],
       // it marches up the road to the next accent, inking it red behind it
       [4.25, () => {
@@ -1110,13 +1115,11 @@ export class CutawayScene extends Phaser.Scene {
           onUpdate: () => { trail.clear().lineStyle(4, 0x8a1010, 0.9).lineBetween(from.x, from.y, tok.x, tok.y); },
         });
       }],
-      // the second: it lands; the king's marker goes down
+      // the second: it lands at the next place (the king still holds it: his marker stands)
       [8.15, () => {
         burst(to.x, to.y, 0xff3020, 4);
         this.cameras.main.shake(260, 0.008);
         playSfx(this, 'dkSlam', { volume: 0.6, pitch: -700, minGapMs: 0 });
-        const f = flags[t];
-        if (f) this.tweens.add({ targets: f, angle: 84, y: f.y + 10, duration: 300, ease: 'Bounce.easeOut' });
         this.tweens.add({ targets: tok, scale: 1.3, duration: 140, yoyo: true });
       }],
       // the count

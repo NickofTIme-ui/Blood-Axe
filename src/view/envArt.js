@@ -19,6 +19,15 @@ export const GROUNDS = {
   'v-stables': 'assets/env/village/ground_stables.jpg',
   'v-hall': 'assets/env/village/ground_hall.jpg',
   'v-church': 'assets/env/village/ground_church.jpg',
+  // Gallows Wood's own floors, one per stretch of the road (data/stageWood.js sections'
+  // `ground`; ChatGPT, 2026-11-24, tools/bake-floor.py: Nick, "the floor look has suffered").
+  // (the blocked road at the end walks on the road's own)
+  'w-road': 'assets/env/wood/ground_road.jpg',
+  'w-tree': 'assets/env/wood/ground_tree.jpg',
+  'w-carts': 'assets/env/wood/ground_carts.jpg',
+  'w-ford': 'assets/env/wood/ground_ford.jpg',
+  'w-convoy': 'assets/env/wood/ground_convoy.jpg',
+  'w-kennels': 'assets/env/wood/ground_kennels.jpg',
 };
 
 // Make an image tile seamlessly left-to-right by blending its last `frac` into its start.

@@ -98,6 +98,10 @@ const CELLS = {
   hale: { stand: 0, look: 1, wave: 2, run: RUN, point: 6, wipe: 7, cower: 1, kneel: 7, sit: 7 },
   // the wood's captives: bound on the rope, hanging, in the cage, at its bars, limping
   captive: { bound: 0, hang: 1, cower: 2, grip: 3, limp: [4, 5], stand: 4, run: [4, 5] },
+  // Joren, strung up by his wrists on the hanging tree (drawTreed; his own sheet, Nick 2026-11-24:
+  // "heavily upgrade this guy"): hanging, kicking, dropped to one knee, standing, a four-beat run.
+  // The two hanging cells sit with his wrists at the top of the cell (the rope is drawn to them)
+  joren: { hang: 0, kick: [0, 1], cower: 2, kneel: 2, sit: 2, stand: 3, wave: 3, run: [4, 5, 6, 7] },
   // Ansel, with his splinted leg and crutch painted in
   ansel: { stand: 0, wave: 1, cower: 2, limp: [3, 4, 5, 6], run: [3, 4, 5, 6], kneel: 2, sit: 2 },
   // Nicholas, the guide: the villager's order (wave: he points the way on; cower: braced),
@@ -171,7 +175,7 @@ const PRISONERS = {
 // villager (Nick's review, 2026-11-05): a painted sheet each, a tint and a size; a group takes
 // one look per head. Until each has a sheet of their own (ChatGPT art list, A7).
 const WOOD_LOOKS = {
-  joren: [{ who: 'captive', s: 1 }],
+  joren: [{ who: 'joren', s: 1 }],
   // (each head's own painted villager where there's one: ChatGPT, 2026-11-18)
   tanners: [{ who: 'boy', tint: 0xdccab4, s: 1.05 }, { who: 'boy', tint: 0xc4ccd6, s: 0.94 }, { who: 'villager-tanner', s: 0.98 }],
   wenna: [{ who: 'mother', tint: 0xbab6b4, s: 0.9 }],
@@ -776,18 +780,21 @@ export class NpcView {
     // (his rope is tied under the bough's tip, data/hangingTree.js: it used to start in the sky)
     const ropeTop = this.stage.data.gallows ? boughPoint(this.stage.data.gallows, 'tip').y : by - 200;
     const bough = ropeTop + (n.hold ?? 0); // (where his hands are: up his own rope, the noose slipped)
-    const hands = 92 * k; // (the hanging pose: his feet this far under his hands)
+    const own = !!SPRITES.joren;
+    // (the hanging pose: his feet this far under his hands; his own sheet's hanging cells have
+    // his wrists at the cell's top, so the whole cell)
+    const hands = own ? SPRITES.joren.fh * 0.5 * k : 92 * k;
     const tun = TUNIC[v.seed % TUNIC.length];
-    const who = SPRITES.captive ? 'captive' : undefined;
+    const who = own ? 'joren' : SPRITES.captive ? 'captive' : undefined;
     const needs = n.state === 'threatened';
     v.halo.setVisible(needs).setPosition(bx, bough + hands * 0.5).setDepth(n.home.z - 0.6).setAlpha(needs ? 0.25 + 0.2 * Math.sin(t * 0.12) : 0);
     v.shadow.setVisible(false);
     g.setVisible(true).setAlpha(1).setDepth(n.home.z);
-    if (n.state === 'lost') { this.fallen(g, bx, by, k, tun); return; }
+    if (n.state === 'lost') { v.rope?.setVisible(false); this.fallen(g, bx, by, k, tun); return; }
     if (n.state === 'threatened') {
       const kick = n.cower ? Math.sin(t * 0.45) * 3 : Math.sin(t * 0.03) * 1.5;
-      g.lineStyle(2, 0x6a5a40, 1).lineBetween(bx, ropeTop, bx + kick * 0.6, bough + 4); // the rope he climbed
-      this.figure(g, bx + kick, bough + hands, k, who ? 'hang' : 'cower', 0, tun, -1, who);
+      if (!this.treedRope(v, bx, ropeTop, bx + kick * 0.6, bough + 4, n.home.z)) g.lineStyle(2, 0x6a5a40, 1).lineBetween(bx, ropeTop, bx + kick * 0.6, bough + 4); // the rope he's tied by
+      this.figure(g, bx + kick, bough + hands, k, own && n.cower ? 'kick' : who ? 'hang' : 'cower', t, tun, -1, who);
       const frac = Math.max(0, Math.min(1, n.nerve / (n.hp ?? NPC.nerve)));
       if (frac < 1) {
         const my = bough - 22;
@@ -798,15 +805,33 @@ export class NpcView {
     }
     if (n.state === 'free') {
       // he lets go and drops, then gets up
-      g.lineStyle(2, 0x6a5a40, 1).lineBetween(bx, ropeTop, bx, bough);
+      // (the cut rope's end left hanging from the bough)
+      if (!this.treedRope(v, bx, ropeTop, bx, ropeTop + (bough - ropeTop) * 0.7, n.home.z)) g.lineStyle(2, 0x6a5a40, 1).lineBetween(bx, ropeTop, bx, bough);
       const d = Math.min(1, n.t / 14);
       const y = bough + hands + (by - bough - hands) * d * d;
       this.figure(g, bx, y, k, d < 1 && who ? 'hang' : 'cower', t, tun, -1, who);
       return;
     }
-    if (n.state === 'safe' || n.state === 'gone') { g.setVisible(false); return; }
+    if (n.state === 'safe' || n.state === 'gone') { g.setVisible(false); v.rope?.setVisible(false); return; }
+    v.rope?.setVisible(false);
     g.setDepth(n.z);
     this.figure(g, n.x, n.z - n.h, depthScale(n.z), n.state === 'fleeing' ? 'run' : 'stand', t, tun, n.dir ?? -1, n.state === 'fleeing' ? who : undefined);
+  }
+
+  // Joren's rope, from the bough down to his wrists: the hanged dead's painted hemp (a twist of
+  // it tiled, drawHanged's strand), not a drawn line. False if that painting isn't loaded.
+  treedRope(v, x0, y0, x1, y1, z) {
+    const s = this.scene;
+    const key = artKey('wood', 'hanged_1');
+    if (!s.textures.exists(key)) return false;
+    const st = HANGED_FIT.hanged_1.strand;
+    const tex = s.textures.get(key);
+    if (!tex.has('strand')) tex.add('strand', 0, st[0], 0, st[1] - st[0], st[2]);
+    if (!v.rope) { v.rope = s.add.tileSprite(0, 0, st[1] - st[0], st[2], key, 'strand').setOrigin(0.5, 0); lightProp(v.rope, PROP_LIGHT.gallowsWood, 0.92); }
+    const sc = 0.2; const len = Math.max(1, Math.hypot(x1 - x0, y1 - y0));
+    v.rope.setSize(st[1] - st[0], len / sc).setTilePosition(0, -len / sc).setPosition(x0, y0).setScale(sc)
+      .setAngle(-Phaser.Math.RadToDeg(Math.atan2(x1 - x0, y1 - y0))).setDepth(z - 0.01).setVisible(true);
+    return true;
   }
 
   // The dead on the hanging tree (Gallows Wood): left there by the hangmen, turning slowly.

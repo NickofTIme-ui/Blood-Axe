@@ -61,7 +61,9 @@ export class WoodTrapsView {
     this.lashes = []; // the Wagonmaster's whip, cracking
     this.netG = scene.add.graphics().setDepth(DEPTH.floor + 50);
     this.makeCrowTexture();
-    if (stage.data.ruts) this.drawRuts(stage.data.ruts);
+    // (the convoy's ruts are painted into the road's own floor now, ground_road.jpg: the
+    // code-drawn ones read as dotted lines across it. drawRuts stays for a level without one)
+    if (stage.data.ruts && !stage.sections[0]?.ground) this.drawRuts(stage.data.ruts);
     this.convoy = null; // (the opening: the convoy's lanterns going away up the road)
     for (const pr of stage.props) {
       if (pr.kind === 'pine') this.pines.set(pr.id, this.makePine(pr));
@@ -951,8 +953,8 @@ export class WoodTrapsView {
     }
   }
 
-  // Far up the road, between the trunks at the back: the convoy's lanterns swinging on their
-  // poles, going away into the wood, the black shapes of the carts under them; then gone.
+  // Far up the road, between the trunks at the back: the convoy's lanterns swinging, going
+  // away into the wood; then gone.
   drawConvoy() {
     const s = this.scene; const C = this.convoy;
     C.t++;
@@ -965,9 +967,8 @@ export class WoodTrapsView {
     for (let i = 0; i < 3; i++) {
       const x = C.x + i * 70 + C.t * 0.35 + Math.sin(C.t / 22 + i) * 2;
       const ly = y - 34 + Math.sin(C.t / 9 + i * 2) * 2; // (the lantern swinging on its pole)
-      g.fillStyle(0x020304, 0.55 * a).fillRect(x - 24, y - 16, 48, 18); // the cart
-      g.fillStyle(0x020304, 0.55 * a).fillCircle(x - 14, y + 3, 6).fillCircle(x + 14, y + 3, 6);
-      g.lineStyle(1.5, 0x020304, 0.6 * a).lineBetween(x + 18, y - 16, x + 18, ly);
+      // (only the lanterns: the code-drawn carts under them, black boxes on wheels, are gone:
+      // Nick, 2026-11-24 "the wagons in the beginning of level two look bad remove")
       g.fillStyle(0xffa040, 0.08 * a).fillCircle(x + 18, ly, 26);
       g.fillStyle(0xffb050, 0.22 * a).fillCircle(x + 18, ly, 10);
       g.fillStyle(0xffe0a0, 0.95 * a).fillCircle(x + 18, ly, 2.6);

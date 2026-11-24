@@ -12,6 +12,25 @@ branch, or ChatGPT's work gets lost.
   stage/Terrain.js underFoot: felled pine [6, 8], ford raft [8, 16]); a hero WALKING or rolling can't step off a bridge
   into the water, nor from the ford's shallows into its unseen deep channel (entities/Fighter.js integrate, `railed`);
   hit, thrown or jumping, he still goes in. Test in tests/logic-test.js. No art changed.
+- 24 November 2026 (cloud; ON MAIN 01be6ad (Nick: "push"), NOT on itch).
+  LEVEL 2 FLOORS REPAINTED (Nick: "the floor look has suffered", picked option 1). The old floor was one 1448x724
+  Magnific ground.png stretched and tiled ~9 times. Now six ChatGPT-painted floors, one per area, each 1352x1024:
+  assets/env/wood/ground_{road,tree,carts,ford,convoy,kennels}.jpg, wired in envArt.js GROUNDS and on the
+  stageWood sections (`ground: 'w-<name>'`, `groundFade: 160`, so each area fades into the next; the pass reuses
+  w-road). tools/bake-floor.py crossfades the right 12% of a painting into its left edge so it tiles without a seam
+  (`python tools/bake-floor.py painted.png assets/env/wood/ground_<name>.jpg`). The code-drawn wheel ruts are
+  skipped when the first section has its own floor. Prompts and ChatGPT originals:
+  /mnt/project-files/level2-floors/ (prompts.md, raw/). Also: the opening convoy's code-drawn carts were removed
+  (58aefe9, on main).
+
+- 24 November 2026 (cloud; ON MAIN (Nick: "push and resolve all finnished work"), NOT on itch).
+  JOREN REPAINTED (Nick, with a shot of the man strung up by his wrists: "i meant heavily uprgade this guy"). His own
+  sheet assets/sprites/npc/joren.png (ChatGPT): hanging by his tied wrists, kicking on the rope, dropped to one knee,
+  standing with his wrists tied, a four-beat run (he used to run on the captive's crutch limp). The hanging cells are
+  cut at his wrists and sit at the cell top; drawTreed draws his rope as the dead's painted hemp (treedRope, the
+  hanged_1 strand) down to them, and the cut end left on the bough after. hold 48 -> 16 so his feet stay clear of
+  the mud at his new size. Joren and Ansel use a milder WOOD_FOLK_GRADE (their art is warm already). Sheet script
+  /mnt/project-files/level2-art-nov24/joren_sheet.py, raws in raw/.
 
 - 24 November 2026 (cloud; ON MAIN bb0dd05 (Nick: "push all"), NOT on itch).
   LEVEL 2 ART: THE HANGED DEAD AND ANSEL REPAINTED (Nick: "i also want the art for the hanging guys redone, bring up
