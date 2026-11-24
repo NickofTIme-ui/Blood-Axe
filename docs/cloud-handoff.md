@@ -6,7 +6,7 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 24 November 2026 (cloud; branch claude/project-thread-i5k685, waiting on Nick's OK to push, NOT on itch).
+- 24 November 2026 (cloud; ON MAIN (Nick: "push and resolve all finnished work"), NOT on itch).
   JOREN REPAINTED (Nick, with a shot of the man strung up by his wrists: "i meant heavily uprgade this guy"). His own
   sheet assets/sprites/npc/joren.png (ChatGPT): hanging by his tied wrists, kicking on the rope, dropped to one knee,
   standing with his wrists tied, a four-beat run (he used to run on the captive's crutch limp). The hanging cells are
