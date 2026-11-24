@@ -1106,8 +1106,15 @@ export class Stage {
         // (`lift`: drawn higher on the wall behind, so a blow at the boards as drawn lands too)
         const hw = (pr.hitW ?? pr.w) / 2;
         const box = { left: pr.x - hw, right: pr.x + hw, bottom: pr.y, top: pr.y + pr.h + (pr.lift ?? 0), z: pr.z };
-        if (!overlaps(hb, box, f.activeAttack ? (pr.reach ?? 30) : Math.max(ps.depth, pr.reach ?? 0))) continue;
+        const depth = f.activeAttack ? (pr.reach ?? 30) : Math.max(ps.depth, pr.reach ?? 0);
+        // (the convoy's horses, in harness ahead of the wagon: a blow on them lands on it, and
+        // they shy in their traces: view/StageView.js horses)
+        const team = pr.harness && pr.roll && !pr.escaped
+          ? { left: pr.x + pr.w / 2 + pr.harness[0], right: pr.x + pr.w / 2 + pr.harness[1], bottom: pr.y, top: pr.y + pr.harness[2], z: pr.z } : null;
+        const onTeam = !overlaps(hb, box, depth) && team && overlaps(hb, team, depth);
+        if (!onTeam && !overlaps(hb, box, depth)) continue;
         pr.hitBy.add(info);
+        if (onTeam) pr.teamHit = this.world.frame;
         // a kick doesn't break a crate or a chest: it sends it skidding off down the lane
         // (Rurik's Sparta kick, the Rogue's crescent kick, the Mage's force blast)
         const shoves = f.activeAttack ? info.move.bowl || info.move.fx === 'rkick' : true;

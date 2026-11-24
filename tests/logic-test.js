@@ -4114,7 +4114,40 @@ test('wood: the convoy set piece: the pine felled across the road ahead stops th
   const pine = st.props.find((q) => q.kind === 'pine' && q.section === k);
   st.breakProp(pine, -1);
   run(60 * 40, () => killGuards(world));
-  assert(wagon.halted === 'pine' && !wagon.escaped && wagon.x + wagon.w / 2 <= pine.x - (pine.len ?? 250), `blocked (${Math.round(wagon.x)})`);
+  assert(wagon.halted === 'pine' && !wagon.escaped && !wagon.broken && wagon.x + wagon.w / 2 + wagon.harness[1] <= pine.x - (pine.len ?? 250), `blocked, the horses short of the log too (${Math.round(wagon.x)})`);
+});
+
+test('wood: the convoy set piece: the pine dropped on the wagon smashes it open and frees them', () => {
+  const k = WOOD_SEC('convoy');
+  const { world, p, st, run } = woodSetup(k, { x: 5900, z: 440 });
+  p.invincible = true;
+  const wagon = st.props.find((pr) => pr.tag === 'convoy');
+  const pine = st.props.find((q) => q.kind === 'pine' && q.section === k);
+  // (rolling on till its team is under where the trunk will lie)
+  run(60 * 60, () => { killGuards(world); if (wagon.x + wagon.w / 2 + wagon.harness[1] > pine.x - (pine.len ?? 250) + 40) wagon.halted = 'test'; });
+  assert(!wagon.broken && !wagon.escaped, 'still whole, under the pine');
+  wagon.halted = false;
+  st.breakProp(pine, -1);
+  run(120, () => killGuards(world));
+  assert(wagon.broken && st.story.rescued.has('convoy'), 'crushed open: they are out');
+});
+
+test('wood: the convoy wagon is struck where it is painted, horses and all', () => {
+  const k = WOOD_SEC('convoy');
+  const { world, p, st, run, c } = woodSetup(k, { x: 5900, z: 440 });
+  p.invincible = true;
+  const wagon = st.props.find((pr) => pr.tag === 'convoy');
+  wagon.halted = 'test'; // (held still while we swing)
+  const hp = wagon.hp;
+  // a swing at its painted back end (past its old 300 px), and one at the horses
+  const swing = (x, z) => { p.x = x; p.z = z; p.h = p.floor = 0; st.placeOnGround(p); p.facing = 1; c.registerPress('attack'); };
+  for (const [x, z] of [[wagon.x - 230, wagon.z + 36], [wagon.x + wagon.w / 2 + 40, wagon.z - 30]]) {
+    const before = wagon.hp;
+    swing(x, z);
+    run(40, () => { killGuards(world); p.x = x; p.z = z; });
+    assert(wagon.hp < before, `a blow at x ${Math.round(x - wagon.x)} from its middle lands (hp ${wagon.hp})`);
+  }
+  assert(wagon.hp < hp && wagon.teamHit != null, 'the horses took one');
 });
 
 test('wood: the wagon is no pushover: a few heavy blows will not wreck it', () => {

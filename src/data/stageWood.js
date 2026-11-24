@@ -192,7 +192,7 @@ export const STAGE_WOOD = {
       id: 'convoy', name: 'THE CONVOY', x0: 5600, x1: 7200,
       spawn: { x: 5660, z: 440 },
       objective: 'Stop the prisoner wagon',
-      hint: 'Stop the wagon: smash it, knock the Wagonmaster off, or fell the pine ahead of it',
+      hint: 'Stop the wagon: smash it, knock the Wagonmaster off, or chop the notched pine: in its path it blocks the road, on top of it it smashes the wagon open',
       fightAt: 5860,
       // (the last: the kennel wagon's hounds let loose, with their handler. It was a horde of
       // thralls: the market square's, again; the wood's pack is its own)
@@ -411,6 +411,7 @@ export const STAGE_WOOD = {
     { id: 'ansel-lost', on: 'lost:ansel', lines: [['ANSEL', 'No... no, leave me... Run!']] },
     { id: 'kennelWagon', on: 'wave:convoy:4', lines: [['VOICE', 'Open the kennel wagon! Let the dogs run them down!']] },
     { id: 'wagonCry', at: 5720, lines: [['PRISONER', 'Help! They\'re taking us to the Keep!']] },
+    { id: 'convoyPine', on: 'wave:convoy:1', lines: [['RURIK', 'That pine up the road is notched to fall. Drop it on the wagon!']] }, // (Nick, 2026-11-24: the pine had no purpose)
     { id: 'wagon', on: 'rescued:convoy', lines: [['PRISONER', 'Wheel\'s smashed! Out, all of you! Run!']] },
     { id: 'wagon-lost', on: 'lost:convoy', calm: true, lines: [['RURIK', 'Gone. We\'ll find you at the Keep. I swear it.']] },
     { id: 'kennels', at: 7300, calm: true, lines: [['ORYN', '(from the trees) The Houndmaster runs the convoy. Kneel at the shrine. Then put him down.']] },

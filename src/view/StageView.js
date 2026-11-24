@@ -27,7 +27,12 @@ import { SPRITES } from './levelArt.js';
 // is, and how much nearer the near one stands
 // (Nick, 2026-11-23: "the horses look too small on the wagon": scale 0.42 stood them about
 // as tall as a wheel; 0.72 brings a heavy draught horse's back to Rurik's shoulder, head above him)
-const HORSE = { scale: 0.72, ahead: 84, lift: 40, dz: 16, step: 36, gallop: 0.62 };
+const HORSE = { scale: 0.72, ahead: 84, lift: 0, dz: 16, step: 36, gallop: 0.62 };
+// Painted props whose picture has empty canvas under their feet: how far down the picture
+// they stand (origin y). The convoy wagon's painting has its wheels 18% up from the bottom
+// edge, so drawn from the bottom it floated ~70 px above where it really is and blows only
+// landed on the empty mud under it (Nick, 2026-11-24: "serious hit detection work")
+export const PROP_FOOT = { wagon: 0.82 };
 
 const rand = (a, b) => a + Math.random() * (b - a);
 // a colour darkened (k < 1) or lightened
@@ -728,7 +733,7 @@ export class StageView {
     // (y: up on a ledge, it's drawn on the ledge; its shadow too, just over the ledge's top.
     // `lift`: drawn higher than it's struck, on a doorway painted on the back wall)
     const y = (pr.y ?? 0) + (pr.lift ?? 0);
-    const img = this.scene.add.image(pr.x, pr.z - y, key).setOrigin(0.5, 1).setScale(s).setDepth(pr.z);
+    const img = this.scene.add.image(pr.x, pr.z - y, key).setOrigin(0.5, lvl ? PROP_FOOT[pr.kind] ?? 1 : 1).setScale(s).setDepth(pr.z);
     const shadow = this.scene.add.ellipse(pr.x, pr.z - y, pr.w * 1.2, 10, 0x000000, 0.35).setDepth(y ? pr.z - 0.3 : DEPTH.shadows).setVisible(!pr.lift);
     const v = { img, shadow, s };
     // sat into the street, not stuck on it (view/propGround.js): the shared crates, barrels
@@ -904,7 +909,9 @@ export class StageView {
     v.jolt = { t: 0, dir: dir || 1, big: 1 };
     playSfx(sc, Math.random() < 0.5 ? 'dkWood1' : 'dkWood2', { volume: 0.85, pitch: -300 + Math.random() * 200, minGapMs: 0 });
     playSfx(sc, 'block', { volume: 0.45, pitch: -500 + Math.random() * 300, minGapMs: 0 });
-    const hx = pr.x - dir * pr.w * 0.42; const hh = pr.h * (0.35 + Math.random() * 0.3);
+    // (a blow on the horses: the sparks fly off their harness, and they shy: horses())
+    const team = pr.teamHit != null && this.scene.world.frame - pr.teamHit < 2;
+    const hx = team ? pr.x + pr.w / 2 + 60 + Math.random() * 90 : pr.x - dir * pr.w * 0.42; const hh = team ? 70 + Math.random() * 40 : pr.h * (0.35 + Math.random() * 0.3);
     sc.gore.spark(hx, pr.z, hh, 0xffd9a0, 12);
     this.chips(pr, 12, dir);
     sc.fx?.shake(2, 6);
@@ -1011,7 +1018,7 @@ export class StageView {
       : pr.kind === 'barrel' && v.key?.includes('tar') ? 'prop-barrel-tar-broken'
       : this.art2.has(`prop-${pr.kind}-v0-broken`) && v.key !== `prop-${pr.kind}` ? `prop-${pr.kind}-v0-broken` : `prop-${pr.kind}-broken`;
     if (this.scene.textures.exists(wreck)) {
-      v.img.setTexture(wreck).setOrigin(0.5, 1).setPosition(pr.x, pr.z - (pr.y ?? 0) - (pr.lift ?? 0)).setDepth(pr.z - 0.2).clearTint();
+      v.img.setTexture(wreck).setOrigin(0.5, (this.scene.registry.get('levelArt') ?? []).includes(v.key) ? PROP_FOOT[pr.kind] ?? 1 : 1).setPosition(pr.x, pr.z - (pr.y ?? 0) - (pr.lift ?? 0)).setDepth(pr.z - 0.2).clearTint();
       if (v.light) lightProp(v.img, v.light, 0.9); // (what's left of it, in the same light)
       moveGround(v.ground, pr.x, pr.z - (pr.y ?? 0));
       v.ground?.slice(0, 2).forEach((g) => g.setAlpha(g.alpha * 0.6)); // (lower now: less shadow)
@@ -2306,11 +2313,13 @@ export class StageView {
     const y = pr.z - (pr.y ?? 0);
     v.horses.forEach((h, i) => {
       // (the far horse a step behind and up the road a little, the near one lower and ahead;
-      // HORSE.lift: the wagon's painted wheels stand that far up its picture)
+      // HORSE.lift: how far up the road from the wagon's feet the far one walks)
       const hz = y - HORSE.lift * ws + i * HORSE.dz;
       const hx = front + HORSE.ahead + i * HORSE.step;
       let cell = 6;
-      if (mode === 'haul') cell = Math.floor(v.horseRun / 14 + i * 3) % 6;
+      const shy = pr.teamHit != null && this.scene.world.frame - pr.teamHit < 26 + i * 6; // (struck: they shy and rear in the traces)
+      if (shy) cell = Math.floor((this.scene.world.frame - pr.teamHit + i * 5) / 9) % 2 ? 6 : 7;
+      else if (mode === 'haul') cell = Math.floor(v.horseRun / 14 + i * 3) % 6;
       else if (mode === 'halted') cell = v.horseT < 50 + i * 12 ? (Math.floor((v.horseT + i * 9) / 18) % 2 ? 7 : 6) : 6;
       h.setTexture(S.key, `f${cell}`).setOrigin(0.5, 1).setScale(HORSE.scale).setVisible(true).setAlpha(1).setFlipX(false)
         .setPosition(hx, hz).setDepth(hz).setTint(i === 0 ? 0xb8bcc4 : 0xffffff);
@@ -2318,7 +2327,7 @@ export class StageView {
       const sag = mode === 'haul' ? 2 : 6;
       const cx = hx - h.displayWidth * 0.12; const cy = hz - h.displayHeight * 0.55;
       v.traces.lineStyle(2.5, 0x15100c, 1).beginPath().moveTo(cx, cy);
-      v.traces.lineTo((cx + front) / 2, (cy + y - 70 * ws) / 2 + sag).lineTo(front, y - 70 * ws).strokePath();
+      v.traces.lineTo((cx + front) / 2, (cy + y - 26 * ws) / 2 + sag).lineTo(front, y - 26 * ws).strokePath(); // (to the front axle)
     });
     v.traces.setDepth(y - 1);
   }

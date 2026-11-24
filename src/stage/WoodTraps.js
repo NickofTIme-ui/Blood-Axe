@@ -109,7 +109,7 @@ export class WoodTraps {
     this.downed = []; // pines lying across the road (the wagon can't pass one)
     for (const pr of stage.props) {
       if (!pr.roll || !pr.roof || !stage.terrain) continue;
-      const half = pr.w * 0.45;
+      const half = (pr.hitW ?? pr.w) * 0.48; // (the painted body, end to end)
       const b = { id: 9000 + pr.id, kind: 'cart', x0: pr.x - half, x1: pr.x + half, z0: pr.z - pr.roof.d, z1: pr.z + pr.roof.d, top: pr.roof.top, solid: true, dx: 0, dtop: 0, hideArt: true, base: {} };
       stage.terrain.blocks.push(b);
       this.carts.push({ pr, b, driver: null, fresh: true }); // (fresh: the level is only now coming up)
@@ -177,6 +177,18 @@ export class WoodTraps {
         if (!f.alive || f.x < x0 || f.x > x1 || Math.abs(f.z - pr.z) > P.lane || f.h > 120) continue;
         if (f.team === 'player') this.stage.hurt(this.hz, f, P.heroDamage, F.dir, 'beam');
         else this.stage.hurt(this.hz, f, f.stats.boss ? f.stats.maxHealth * 0.25 : f.health + 1, F.dir, f.stats.boss ? 'beam' : 'trample');
+      }
+      // the convoy's wagon or its team under it: the trunk comes down across them and
+      // smashes the wagon open (the prisoners out, its driver thrown); ahead of them it lies
+      // across the road and they pull up short of it (updateCart). Nick, 2026-11-24: "the
+      // tree you can chop down in the convoy has no purpose"
+      for (const C of this.carts) {
+        const W = C.pr;
+        if (W.broken || W.escaped || Math.abs(W.z - pr.z) > P.lane + 20) continue;
+        const back = W.x - (W.hitW ?? W.w) / 2; const nose = W.x + W.w / 2 + (W.harness?.[1] ?? 0);
+        if (nose < x0 || back > x1) continue;
+        this.stage.breakProp(W, F.dir, true, 2);
+        this.world.events.emit('pineCrush', { prop: W, pine: pr });
       }
       for (const b of this.stage.terrain?.blocks ?? []) if (b.tag === pr.bridge && b.waiting) { b.solid = true; b.waiting = false; }
       this.downed.push({ x0, x1, z: pr.z });
@@ -549,13 +561,16 @@ export class WoodTraps {
     C.fresh = false;
     if (C.driver && !C.driver.alive && C.driver.drive?.on) this.dismount(C.driver); // (killed outright on the bench)
     if (!pr.halted && !pr.broken && !pr.escaped) {
+      // (the team's noses: the horses walk ahead of the wagon and pull up at the log, not
+      // through it)
+      const nose = pr.w / 2 + (pr.harness?.[1] ?? 0);
       for (const P of this.downed) {
-        if (Math.abs(P.z - pr.z) > 50 || pr.x + pr.w / 2 < P.x0 - 4 || pr.x > P.x1) continue;
-        pr.x = Math.min(pr.x, P.x0 - 4 - pr.w / 2);
+        if (Math.abs(P.z - pr.z) > 50 || pr.x + nose < P.x0 - 4 || pr.x > P.x1) continue;
+        pr.x = Math.min(pr.x, P.x0 - 4 - nose);
         this.stopWagon(C, 'pine');
       }
     }
-    const half = pr.w * 0.45;
+    const half = (pr.hitW ?? pr.w) * 0.48; // (the painted body, end to end)
     b.dx = (pr.x - half) - b.x0;
     b.x0 = pr.x - half; b.x1 = pr.x + half;
     b.solid = !pr.broken && !pr.escaped;
