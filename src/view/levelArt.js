@@ -106,7 +106,7 @@ export function buildLevelArt(scene) {
   for (const [name, S] of Object.entries(SPRITE_SHEETS)) {
     if (!T.exists(`sprsrc-${name}`)) continue;
     try {
-      const { canvas, count, fw, fh } = importFxStrip(T.get(`sprsrc-${name}`).getSourceImage(), { frames: S.frames, height: S.height, bg: 'black', centre: S.centre });
+      const { canvas, count, fw, fh } = importFxStrip(T.get(`sprsrc-${name}`).getSourceImage(), { frames: S.frames, height: S.height, bg: S.bg ?? 'black', centre: S.centre });
       if (S.grade) gradeSheet(canvas, S.grade);
       const key = `spr-${name}`;
       if (T.exists(key)) T.remove(key);

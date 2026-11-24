@@ -6,6 +6,17 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 24 November 2026 (cloud; ON MAIN bb0dd05 (Nick: "push all"), NOT on itch).
+  LEVEL 2 ART: THE HANGED DEAD AND ANSEL REPAINTED (Nick: "i also want the art for the hanging guys redone, bring up
+  the quality, the rope and all"; "the guy with the broken leg needs new art bring up the quality"). ChatGPT (Nick's
+  Chrome): three new shrouded dead (ChatGPT still refuses bodies; finer sackcloth, rope bindings, a hooded one),
+  cut by tools/cut-wood-art.py at HANGED_H 520 (was 720: nearer their size on screen, less shimmer) with depurple;
+  HANGED_FIT re-measured. The rope from the bough down to each painting is now the painted hemp itself (a tiled
+  twist of it, `strand` in HANGED_FIT) instead of a drawn brown line. Ansel has his own sheet
+  assets/sprites/npc/ansel.png (stand, call for help, cower, 4-beat limp on the crutch, splint painted in), keyed on
+  transparent; SPRITE_SHEETS takes `bg` now ('magenta'). Raws: /mnt/project-files/level2-art-nov24/raw/, sheet
+  script ansel_sheet.py there.
+
 - 24 November 2026 (cloud; ON MAIN 1036fdf (Nick: "continue"), NOT on itch).
   NOTHING STACKED, ANYWHERE (Nick: "dont stack anything up in the game as far as the crates and stuff, it just looks
   horrid"). STANDING RULE: no `stack: true` props in any level, and no goods up on trestles, stalls, hand carts or

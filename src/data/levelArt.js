@@ -224,6 +224,12 @@ export const SPRITE_SHEETS = {
   // its boots at the same spot in its cell; height: the begging pose as tall as the
   // villager sheet's kneeling one (170 px)
   'villager-death': { file: 'assets/sprites/npc/villager_death.png', frames: 4, height: 170, grade: NPC_GRADE },
+  // Ansel the wheelwright, the wood's escort with the broken leg (data/stageWood.js; Nick,
+  // 2026-11-24: "the guy with the broken leg needs new art bring up the quality"). ChatGPT,
+  // his splinted leg and crutch painted in: stand, call for help, cower, a four-beat limp on
+  // the crutch. Laid one figure per equal cell on transparent (magenta keyed); height puts him
+  // standing at about 115 px
+  ansel: { file: 'assets/sprites/npc/ansel.png', frames: 7, height: 246, grade: NPC_GRADE, centre: true, bg: 'magenta' },
   captive: { file: 'assets/sprites/npc/captive.png', frames: 6, height: 250 }, // (big: the hanging pose's rope makes it the tallest, and a standing man must still match the heroes)
   // the mine's chained prisoners (view/NpcView.js PRISONERS): the villager and elder sheets
   // again, cut at the heroes' height (a standing man as tall as the captive above) and so
