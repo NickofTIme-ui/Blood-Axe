@@ -45,7 +45,7 @@ export const CUTAWAYS = {
     beats: [
       { act: 'enter' },
       { who: 'MESSENGER', text: 'My king. The village stands. Varek is dead, and every man he led.' },
-      { who: 'VAURATH', text: 'Who.' },
+      { who: 'VAURATH', text: 'Who did this?' },
       { who: 'MESSENGER', text: 'Three of them, my king. Hakon\'s son, Rurik, and the two who ride with him.' },
       { who: 'MESSENGER', text: 'Oath Keepers, my king. And now our men are saying the name.' },
       { who: 'MALGOR', text: 'Let me ride, my king. I\'ll bring you their heads.' },
@@ -61,7 +61,7 @@ export const CUTAWAYS = {
       { act: 'enter', run: true },
       { who: 'MESSENGER', text: 'My king... the Houndmaster is dead. His hounds with him. The cages are empty.' },
       { who: 'MESSENGER', text: 'They came out of the rain, and the wood went quiet. Every prisoner walked free.' },
-      { who: 'VAURATH', text: 'Empty.' },
+      { who: 'VAURATH', text: 'Every prisoner? The Houndmaster swore that wood would hold them.' },
       { act: 'strike' }, // irritation: his fist on the arm of the throne; the stone cracks (and stays cracked)
       { who: 'MALGOR', text: 'Give me the mountain road. They won\'t pass me.' },
       { who: 'VAURATH', text: 'Patience, Marshal. The pass is buried. Let them crawl into the mine after their people.' },
@@ -73,7 +73,7 @@ export const CUTAWAYS = {
     beats: [
       { act: 'enter' },
       { who: 'MESSENGER', text: 'We brought the mountain down on them, my king. They walked out the far side. With the miners.' },
-      { who: 'VAURATH', text: 'With the miners.' },
+      { who: 'VAURATH', text: 'So my own miners walk with them now.' },
       { who: 'MALGOR', text: 'The Crusher is scrap. The Chain Warden is in the river.' },
       { who: 'MALGOR', text: 'And my men have started saying their names.' },
       { act: 'hurl' }, // frustration: the war map and its markers flung off the table across the hall (and left there)
@@ -87,7 +87,7 @@ export const CUTAWAYS = {
       { act: 'horns' }, // the retreat sounding across the Keep: long, low horns; the torches shiver
       { act: 'enter', run: true },
       { who: 'CAPTAIN', text: 'My king... Orsk is dead. The ascent is lost. The men are running for the gates.' },
-      { who: 'VAURATH', text: 'Running.' },
+      { who: 'VAURATH', text: 'My army is running from three people?' },
       { who: 'MALGOR', text: 'Give me the Iron Gates, my king. Nothing passes me.' },
       { who: 'VAURATH', text: 'Take them. Every man behind the iron. Let the Oath Keepers break themselves on it.' },
       { who: 'CAPTAIN', text: 'My king, the men are afraid. They say the Oath Keepers cannot be killed...' },
