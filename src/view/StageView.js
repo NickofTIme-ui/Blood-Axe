@@ -84,6 +84,13 @@ const CHUNKS = {
 // the loose bits each kind throws off (view/propArt.js debris)
 const SPLINTERS = ['deb-splinter-0', 'deb-splinter-1', 'deb-splinter-2', 'deb-splinter-3'];
 const PLANKS = ['deb-plank-2', 'deb-plank-3', 'deb-plank-4', 'deb-plank-5'];
+// The convoy wagon's own colours (sampled from convoy_wagon.png): its dark weathered boards
+// and its grey iron. Everything knocked off it or its team is these colours (Nick,
+// 2026-11-24: "have the debris ... match the color of the carriage"). WAGON_TINT: the
+// painted planks and splinters (warm brown, about 0x8f6344) multiplied down to its boards.
+const WAGON_BITS = [0x4d3c33, 0x342c2c, 0x5a4a40, 0x46464e, 0x767070];
+const WAGON_TINT = [0xabc9ff, 0x8aa0d0, 0x9cb4e8];
+const WAGON_SPARK = 0xb8b4b2;
 const DEBRIS = {
   barrel: ['deb-stave-0', 'deb-stave-1', 'deb-stave-3', ...SPLINTERS],
   crate: [...PLANKS, ...SPLINTERS], chest: [...PLANKS, ...SPLINTERS], fence: ['deb-plank-0', 'deb-plank-1', ...PLANKS, ...SPLINTERS],
@@ -916,8 +923,10 @@ export class StageView {
       playSfx(sc, REC.horseWhinny, { volume: 0.6, spread: 150, minGapMs: 0 });
     }
     const hx = team ? pr.x + pr.w / 2 + 60 + Math.random() * 90 : pr.x - dir * pr.w * 0.42; const hh = team ? 70 + Math.random() * 40 : pr.h * (0.35 + Math.random() * 0.3);
-    sc.gore.spark(hx, pr.z, hh, 0xffd9a0, 12);
-    this.chips(pr, 12, dir);
+    sc.gore.spark(hx, pr.z, hh, WAGON_SPARK, team ? 6 : 12);
+    // (off the horses' harness: from round them, not the wagon's boards)
+    const at = team ? { x0: pr.x + pr.w / 2 + 20, x1: pr.x + pr.w / 2 + 200, h0: 50, h1: 130 } : null;
+    this.chips(pr, 12, dir, at);
     sc.fx?.shake(2, 6);
     // a white flash, then duller and darker the more it's taken
     v.img.setTintFill(0xfff4e0);
@@ -929,7 +938,7 @@ export class StageView {
       v.jolt.big = 2.2;
       sc.fx?.shake(4, 10);
       playSfx(sc, 'woodCreak', { volume: 0.9, pitch: -200, minGapMs: 0 });
-      this.chips(pr, 16, dir);
+      this.chips(pr, 16, dir, at);
       this.ironBits(pr, 4, dir, hx, hh);
       const n = this.stage.story?.npcs?.find((q) => q.pose === 'convoy' && q.tag === pr.tag);
       if (n) { n.helpText = ['IT\'S GIVING!', 'AGAIN! HIT IT AGAIN!', 'ONE MORE!'][stage - 1] ?? 'GET US OUT!'; n.helpAge = 110; n.helpCalled = true; }
@@ -942,7 +951,7 @@ export class StageView {
       this.scene.gore.spawn({
         x: x + rand(-pr.w * 0.3, pr.w * 0.3), z: pr.z + rand(-4, 6), h: h + rand(-20, 20),
         vx: dir * rand(60, 280) + rand(-60, 60), vz: rand(-50, 50), vh: rand(160, 400),
-        tint: i % 2 ? 0x2a2a30 : 0x4a4a54, texture: 'px', scale: rand(1.6, 3.4), decal: false, life: rand(240, 380), spin: rand(-14, 14),
+        tint: i % 2 ? 0x46464e : 0x767070, texture: 'px', scale: rand(1.6, 3.4), decal: false, life: rand(240, 380), spin: rand(-14, 14),
         material: PHYSICS.stone,
       });
     }
@@ -959,7 +968,7 @@ export class StageView {
     playSfx(sc, 'gateOpen', { volume: 0.6, pitch: -400, minGapMs: 0 });
     sc.fx?.shake(9, 18);
     this.chips(pr, 44, dir); this.chips(pr, 26, -dir);
-    sc.gore.spark(pr.x, pr.z, pr.h * 0.5, 0xffd9a0, 26);
+    sc.gore.spark(pr.x, pr.z, pr.h * 0.5, WAGON_SPARK, 26);
     this.ironBits(pr, 14, dir, pr.x, pr.h * 0.5); this.ironBits(pr, 8, -dir, pr.x, pr.h * 0.4);
     // a ring of dust off the road
     const ring = sc.add.ellipse(pr.x, pr.z, 60, 16).setStrokeStyle(4, 0xb8a890, 0.7).setDepth(DEPTH.shadows + 0.1);
@@ -1042,7 +1051,11 @@ export class StageView {
     }
   }
 
-  chips(pr, n, dir) {
+  chips(pr, n, dir, at = null) {
+    // (at: where they fly from, {x0, x1, h0, h1}; else anywhere on the prop)
+    const X = () => (at ? rand(at.x0, at.x1) : pr.x + rand(-pr.w / 2, pr.w / 2));
+    const Hh = () => (pr.y ?? 0) + (at ? rand(at.h0, at.h1) : rand(8, pr.h));
+    const wagon = pr.kind === 'wagon';
     // the painted loose bits (view/propArt.js debris): staves and hoops off a barrel, boards and
     // splinters off a crate or a fence, shards off a pot, glass off a lantern
     const bits = DEBRIS[pr.kind]?.filter((k) => this.art2.has(k));
@@ -1051,20 +1064,20 @@ export class StageView {
       for (let i = 0; i < Math.ceil(n * 0.6); i++) {
         const key = bits[Math.floor(Math.random() * bits.length)];
         gore.spawn({
-          x: pr.x + rand(-pr.w / 2, pr.w / 2), z: pr.z + rand(-4, 6), h: (pr.y ?? 0) + rand(8, pr.h),
+          x: X(), z: pr.z + rand(-4, 6), h: Hh(),
           vx: dir * rand(40, 240) + rand(-80, 80), vz: rand(-40, 40), vh: rand(120, 360),
-          tint: 0xffffff, texture: key, scale: rand(0.17, 0.27), decal: false, life: rand(240, 420), spin: rand(-12, 12),
+          tint: wagon ? WAGON_TINT[i % WAGON_TINT.length] : 0xffffff, texture: key, scale: rand(0.17, 0.27), decal: false, life: rand(240, 420), spin: rand(-12, 12),
           material: PHYSICS[pr.kind === 'urn' ? 'pottery' : 'wood'],
         });
       }
       return;
     }
-    const colors = pr.kind === 'wall' ? [0x5a524a, 0x3e3732, 0x8a8070] : pr.kind === 'urn' ? [0x9a5a3a, 0x3a1e14]
+    const colors = wagon ? WAGON_BITS : pr.kind === 'wall' ? [0x5a524a, 0x3e3732, 0x8a8070] : pr.kind === 'urn' ? [0x9a5a3a, 0x3a1e14]
       : pr.kind === 'chest' ? [0x5a3418, 0x3a3a42, 0xc8a040] : [0x7a4a24, 0x3a2210, 0x5a5a62];
     const gore = this.scene.gore;
     for (let i = 0; i < n; i++) {
       gore.spawn({
-        x: pr.x + rand(-pr.w / 2, pr.w / 2), z: pr.z + rand(-4, 4), h: (pr.y ?? 0) + rand(8, pr.h),
+        x: X(), z: pr.z + rand(-4, 4), h: Hh(),
         vx: dir * rand(40, 260) + rand(-80, 80), vz: rand(-40, 40), vh: rand(120, 380),
         tint: colors[i % colors.length], texture: 'px', scale: rand(0.8, 2), decal: false, life: rand(180, 300), spin: rand(-10, 10),
         material: PHYSICS[pr.kind === 'wall' ? 'stone' : pr.kind === 'urn' ? 'pottery' : 'wood'],
