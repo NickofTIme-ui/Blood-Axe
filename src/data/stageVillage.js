@@ -300,6 +300,10 @@ export const STAGE_VILLAGE = {
     },
     {
       id: 'hall', ground: 'v-hall', groundFade: 160, name: 'THE LONGHALL', x0: 7100, x1: 8400,
+      // the paving's own painted wall (braziers, a fence) ran along under the longhall as a second
+      // band with a hard line on top: it's rubbed out under the hall, which now stands right on
+      // the paving's stone step (view/VillageView.js, longhall bottom 40) (Nick, 2026-11-24)
+      groundTopFade: { depth: 40, hold: 0.7, x0: 7340, x1: 8260, feather: 50 },
       spawn: { x: 7160, z: 440 },
       objective: 'Kill the Ash Captain',
       hint: 'His archers are firing: wreck their post',
