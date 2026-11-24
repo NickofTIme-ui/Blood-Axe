@@ -332,6 +332,16 @@ export const STAGE_WOOD = {
     // (on the near bank under the pines, before the water: its trunk hung over the open river from
     // nothing, Nick 2026-11-19 "the tree trap going over the river")
     { type: 'deadfall', section: 3, x: 4880, z: 360 },
+    // MORE OF THEM, all through the wood (Nick, 2026-11-24: "i want more tree swinging traps
+    // in the woods, i love that"): snares at the road's edges and a deadfall over the road in
+    // every stretch from the start to the kennels
+    { type: 'snare', section: 0, x: 380, z: 494 },
+    { type: 'deadfall', section: 1, x: 2480, z: 470 },
+    { type: 'snare', section: 4, x: 6300, z: 494 },
+    { type: 'deadfall', section: 4, x: 6560, z: 460 },
+    { type: 'snare', section: 4, x: 6860, z: 494 },
+    { type: 'snare', section: 5, x: 7460, z: 494 },
+    { type: 'snare', section: 5, x: 8160, z: 306 },
   ],
 
   lanterns: WOOD_LANTERNS,
