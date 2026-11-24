@@ -96,10 +96,10 @@ export const STAGE_WOOD = {
         { kind: 'barrel', x: 420, z: 300, drop: null },
         // a sack cart's load tipped in the ditch where a wheel went (the near edge)
         ...group([['sack', 660, 502], ['sack', 700, 506], ['crate-v2', 748, 500]]),
-        // the rear guard's camp at the road's end: their table, a crate and a jug on it, their
-        // water and ale beside it, against the trees
+        // the rear guard's camp at the road's end: their table, a crate and a jug on the ground
+        // by it, their water and ale beside it, against the trees (nothing stacked: Nick, 2026-11-24)
         { kind: 'trestle', x: 1080, z: 300, drop: null },
-        ...group([['crate-v5', -22, 0, { stack: true }], ['urn', 30, 0, { stack: true, drop: 'mana' }]]),
+        ...group([['urn', 968, 304, { drop: 'mana' }], ['crate-v5', 1003, 302]]),
         ...group([['barrel-v3', 1160, 302], ['keg', 1206, 306]]),
         // a SECRET: a poacher's cache in the ferns at the back of the road, behind where you
         // come in (only found by turning back)
@@ -151,7 +151,7 @@ export const STAGE_WOOD = {
         { kind: 'signal', tag: 'signal', x: 3880, z: 492, drop: null },
         { kind: 'crate', x: 4300, z: 300, drop: 'mana' },
         // the broken carts' loads spilled along the near edge of the road
-        ...group([['crate-v6', 3560, 500], ['crate-v0', 0, 0, { stack: true }], ['sack', 3616, 504]]),
+        ...group([['crate-v6', 3560, 500], ['crate-v0', 3612, 502], ['sack', 3660, 504]]),
         // the convoy's strongbox, dropped when the axle went
         { kind: 'chest', x: 4230, z: 498, drop: 'health' },
         // a SECRET up on the high shelf at the back (terrain: the boulder and the shelf): Vexa's
@@ -207,7 +207,7 @@ export const STAGE_WOOD = {
         { kind: 'pine', x: 6980, z: 318, fellDir: -1, len: 300, bridge: 'convoyPine', drop: null },
         { kind: 'barrel', x: 5700, z: 480, drop: 'health' },
         // the convoy's supplies, dumped at the roadside to lighten the wagons
-        ...group([['crate-v5', 5780, 300], ['crate-v1', 0, 0, { stack: true }], ['barrel-tar', 5840, 302]]),
+        ...group([['crate-v1', 5726, 302], ['crate-v5', 5780, 300], ['barrel-tar', 5840, 302]]),
       ],
       hazards: [],
     },
