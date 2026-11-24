@@ -3,6 +3,7 @@
 //
 //   heavy        -> viper   VIPER STRIKE: tiny crouch, burst through the enemy, strike in passing
 //   kick         -> rkick   crescent kick; down+kick = low sweep; nobody in reach = KNIFE throw
+//                           kick again once the crescent kick lands = SPINNING ROUNDHOUSE
 //   magic        -> mine    drop a WIDOW MINE without breaking stride (combat/Mine.js);
 //                           a man in kicking distance ahead gets it planted ON him by hand
 //   jump at an ally        VAULT off his shoulder, far higher than a jump
@@ -90,6 +91,7 @@ const throwCost = (f) => kitOf(f).knife.cost ?? f.stats.dodge.cost;
 export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeAttackState }) {
   const kick = makeAttackState('kick');
   const sweep = makeAttackState('sweep');
+  const roundhouse = makeAttackState('roundhouse');
   return {
     // VIPER STRIKE: a crouch of a few frames, then she bursts THROUGH him (she isn't
     // pushed aside by the bodies she passes), the blades crossing as she goes, up to
@@ -136,6 +138,7 @@ export function rogueStates({ tryActions, stopMoving, friction, faceInput, makeA
       },
     },
     kick,
+    roundhouse, // kick, kick: the crescent kick, then the spinning roundhouse to the head
     sweep,
 
     // KNIFE: a quick draw from the thigh, the arm snaps, the blade spins away.

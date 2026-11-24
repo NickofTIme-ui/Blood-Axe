@@ -653,7 +653,20 @@ export const CHARACTERS = {
         damage: 6, hitstun: 26, hitstop: 5, shake: 2,
         knockback: { x: 260, y: 0 }, guardDamage: 30, lunge: 90,
         hitbox: { x: 6, y: 50, w: 64, h: 40 },
+        // land it and press kick again: the SPINNING ROUNDHOUSE to the head (Nick, 24 Nov 2026)
+        chains: [{ button: 'kick', next: 'roundhouse', onHit: true, from: 7, to: 19 }],
         cancels: [{ from: 9, to: 21, into: ['dodge', 'attack', 'jump', 'magic'] }],
+      },
+      // SPINNING ROUNDHOUSE (kick, then kick again once the first has landed; the
+      // 'roundhouse' state): she turns her back, spins, and her heel takes him in the head.
+      // Lunges in after the man the crescent kick pushed back, and knocks him flat.
+      roundhouse: {
+        cut: 'blunt', fx: 'rkick',
+        startup: 7, active: 4, recovery: 15,
+        damage: 12, hitstun: 30, hitstop: 9, shake: 4,
+        knockback: { x: 320, y: 180 }, knockdown: true, guardDamage: 34, lunge: 170,
+        hitbox: { x: 0, y: 52, w: 84, h: 62 },
+        cancels: [{ from: 13, to: 26, into: ['dodge', 'attack', 'jump', 'magic'] }],
       },
       sweep: { // down + kick: a low spinning sweep that takes the legs
         cut: 'blunt', fx: 'rkick',

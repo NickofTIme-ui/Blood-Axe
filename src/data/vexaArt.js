@@ -15,5 +15,6 @@ export const VEXA_SHEETS = [
   sheet('rollUp', 6),    // the shoulder roll seen from behind (rolling up the lane)
   sheet('rollDown', 6),  // ...and from the front (rolling down it)
   sheet('breath', 6),    // her idle (5 Nov): one guard pose breathing, edited from a single image, steadied on pose 0
+  sheet('roundhouse', 6), // SPINNING ROUNDHOUSE (24 Nov, job 25): planted, back turned, knee chambered, the heel to his head, through, guard
   sheet('block', 8),    // guard, a blow on it, recover, guard round, body hit, head hit, falling, dead
 ];

@@ -22,7 +22,7 @@ const FLIP_FRAMES = 40; // ticks the double-jump flip takes (about the time she'
 const clamp01 =(t) => Math.max(0, Math.min(1, t));
 // How hard each strip-drawn swing reads in the body (view only: anticipation coil, strike
 // drive, damped settle; see swingBody in view/animFeel.js)
-const SWING_K = { light1: 0.5, light2: 0.55, light3: 0.85, heavy: 1.15, airAttack: 0.5, kick: 0.7, jab: 0.6, twirlEnd: 0.8, thunder: 1.2, shoulder: 0.7, rush: 0.9 };
+const SWING_K = { light1: 0.5, light2: 0.55, light3: 0.85, heavy: 1.15, airAttack: 0.5, kick: 0.7, roundhouse: 0.9, jab: 0.6, twirlEnd: 0.8, thunder: 1.2, shoulder: 0.7, rush: 0.9 };
 // swings that draw their move's `smear` (the Mage's staff arcs: data/characters.js)
 const SMEARED = ['light1', 'light2', 'light3', 'airAttack', 'twirlEnd', 'thunder'];
 
@@ -87,7 +87,7 @@ export class StripHeroView {
     const K = f.stats.kit ?? {};
     const tick = f.world?.frame ?? 0;
     const loop = (a) => a.frames[Math.floor((tick * a.fps) / 60) % a.frames.length];
-    const a = A[st];
+    const a = A[st] ?? (st === 'roundhouse' ? A.kick : undefined); // (Vexa's roundhouse: her kick poses until its strip is in)
 
     // gone (Vexa in the smoke of a backstab, or between the cuts of Night Falls)
     if (f.hidden) return null;

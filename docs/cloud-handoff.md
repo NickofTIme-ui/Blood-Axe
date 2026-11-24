@@ -2024,3 +2024,7 @@ Nick: "snare trap needs a sounds, also hold the NPC for longer".
 - Now `pilgrim` in `src/data/stageWood.js` is a held conversation (asked with INTERACT, skippable with D-pad left): who beat him and why, the pass brought down, the carts into Hollow Mountain, Rurik/Vexa/Oryn answering, his name and his promise to meet them on the far side (sets up the Shattered Ascent and his last words). The `short` entry is gone.
 - The `turn` scene at 8780 has two versions: lines with `{ unless: 'done:pilgrim' }` / `{ if: 'done:pilgrim' }` (Story.js `fire` now honours `unless` on a line, not just `if`).
 - Tests: logic tests for the held talk and both turn versions. No art or sound needed.
+
+## Cloud, 2026-11-24: Vexa's kick chains into a SPINNING ROUNDHOUSE
+- Nick: "kick then spinning roundhouse when they are close". Kick, and once the crescent kick has landed (so he's close), kick again: `moves.roundhouse` (src/data/characters.js; chain on `moves.kick`, onHit, frames 7-19), state `roundhouse` in combat/Rogue.js. Lunges after him, 12 damage, to the head, knocks him flat. Sound + 3 afterimages in effects/RogueFX.js. Logic test.
+- Art: ChatGPT strip in chat "BA · Rogue · Strips" (docs/rogue-art-prompts.md job 25), baked by tools/bake-vexa-strip.py (6 poses, ref 5, 180) into `assets/sprites/heroes-hd/vexa-rogue-roundhouse.png`, listed in data/vexaArt.js. Source strip (60% of ChatGPT's 2172 px original): project files `vexa-roundhouse/rogue_roundhouse.png`. Without the sheet she plays her kick poses.

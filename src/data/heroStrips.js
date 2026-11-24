@@ -172,6 +172,9 @@ export const HERO_ANIMS = {
     light4: swing(seq('combo4', [0, 1]), seq('combo4', [2]), seq('combo4', [2, 3])),
     viper: swing(seq('viper', [0]), seq('viper', [1, 2]), seq('viper', [3, 4, 5])),
     kick: swing(seq('moves', [0]), seq('moves', [1]), seq('moves', [2])),
+    // the SPINNING ROUNDHOUSE (kick, kick): chambered, back turned, spinning, the heel to his head,
+    // through, landing back in guard (her own strip, data/vexaArt.js)
+    roundhouse: { needs: ['roundhouse'], ...swing(seq('roundhouse', [0, 1, 2]), seq('roundhouse', [3, 4]), seq('roundhouse', [5])) },
     // (moves2, her second moves sheet: 0-2 the leg sweep, 3 the sidearm throw, 4 setting a
     // mine, 5 springing away, 6 the fan thrown in the air, 7 the boot planted to vault)
     sweep: { needs: ['moves2'], ...swing(seq('moves2', [0]), seq('moves2', [1]), seq('moves2', [2])) },

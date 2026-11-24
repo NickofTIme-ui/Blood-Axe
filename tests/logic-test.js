@@ -1636,6 +1636,25 @@ test('rogue: kick in reach = crescent kick; nobody near = a knife; down = sweep'
   assert(s.p.state === 'sweep', `sweep (${s.p.state})`);
 });
 
+test('rogue: kick, kick = crescent kick then the spinning roundhouse (only once the first lands)', () => {
+  const t = rogueSetup({ script: { 1: ['kick'], 10: ['kick'] }, foes: [[650]] });
+  const e = t.es[0];
+  e.health = 1e4; e.stats = { ...e.stats, maxHealth: 1e4 };
+  let spun = false; let hp = 0;
+  for (let i = 0; i < 60; i++) {
+    t.run(1);
+    if (t.p.state === 'roundhouse') { spun = true; if (!hp) hp = e.health; }
+  }
+  assert(spun, 'the second kick spins into the roundhouse');
+  assert(e.health < hp, `the roundhouse lands too (${hp} -> ${e.health})`);
+  assert(['knockdown', 'flying', 'lying', 'getup'].includes(e.state), `it knocks him down (${e.state})`);
+  // the crescent kick whiffs (nobody there once she's started): no roundhouse
+  const w = rogueSetup({ script: { 1: ['kick'], 10: ['kick'] }, foes: [[650]] });
+  w.run(1); w.es[0].x = 2000; let spunW = false;
+  for (let i = 0; i < 30; i++) { w.run(1); if (w.p.state === 'roundhouse') spunW = true; }
+  assert(!spunW, 'no roundhouse off a missed kick');
+});
+
 test('rogue: shadow window — dodging a blow at the last instant, then hitting him, exposes him', () => {
   const t = rogueSetup({ foes: [[650]] });
   const e = t.es[0];

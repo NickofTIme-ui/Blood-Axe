@@ -35,6 +35,7 @@ export const ROGUE_SOUNDS = {
   shadow: [['rogueVanish', { volume: 0.6, pitch: 300 }], ['rogueGuard', { volume: 0.35, pitch: 700 }]],
   viper: [[DK.whooshLong, { volume: 0.85, pitch: 100 }], [REC.vexaAttack, { volume: 0.6, minGapMs: 250 }]],
   kick: [['dkWhoosh4', { volume: 0.7, pitch: 200 }]],
+  roundhouse: [[REC.vexaAttack, { volume: 0.6, minGapMs: 250 }], ['dkWhoosh4', { volume: 0.85, pitch: -250, minGapMs: 0 }]], // the spin
   knife: [[DK.whoosh, { volume: 0.6, pitch: 900 }], [REC.vexaSteel, { volume: 0.4, pitch: 400 }]],
   fan: [[DK.whoosh, { volume: 0.7, pitch: 800 }], [DK.whooshLong, { volume: 0.4, pitch: 600 }]],
   starHit: [['bladeHit8', { volume: 0.5, pitch: 500, minGapMs: 25 }], [DK.body, { volume: 0.3, pitch: 400, minGapMs: 25 }]],
@@ -73,9 +74,10 @@ export class RogueFX {
 
     ev.on('attackStart', ({ fighter, state }) => {
       if (!isRogue(fighter)) return;
-      const k = { light1: 'swing1', light2: 'swing2', light3: 'swing3', light4: 'swing4', viper: 'viper', kick: 'kick', sweep: 'kick', knife: 'knife', fan: 'fan', dive: 'dive', airAttack: 'swing1', rush: 'rush', backstab: 'swing4' }[state];
+      const k = { light1: 'swing1', light2: 'swing2', light3: 'swing3', light4: 'swing4', viper: 'viper', kick: 'kick', roundhouse: 'roundhouse', sweep: 'kick', knife: 'knife', fan: 'fan', dive: 'dive', airAttack: 'swing1', rush: 'rush', backstab: 'swing4' }[state];
       if (k) this.sound(k, fighter);
       if (state === 'viper') this.afterimages(fighter, 5);
+      if (state === 'roundhouse') this.afterimages(fighter, 3);
       if (state === 'rush') this.afterimages(fighter, 9, VIOLET);
     });
     ev.on('hit', (e) => {

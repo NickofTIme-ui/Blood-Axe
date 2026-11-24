@@ -319,3 +319,15 @@ her own chat so the steel matches her daggers.
     death, on flat magenta." (Drawn additive over an EXPOSED man's head.)
 
 Crop each to its contents with a little magenta margin; the importer trims and scales.
+
+## 25. Spinning roundhouse (kick, kick) (2026-11-24)
+
+> Same character, same scale, same style as the earlier strips in this chat. **6 poses in
+> one row**, side view, black background, wide gaps, a dagger in each hand held tight. A
+> SPINNING ROUNDHOUSE KICK TO THE HEAD: (1) front foot planted, hips turning, rear knee up;
+> (2) back to the viewer mid-spin; (3) coming round, kicking knee chambered high; (4) the
+> strike, leg fully out to the RIGHT at head height, heel leading; (5) follow-through, the
+> leg dropping; (6) landing back in her low guard facing right.
+
+Save as `rogue_roundhouse.png`, baked with `tools/bake-vexa-strip.py` into
+`assets/sprites/heroes-hd/vexa-rogue-roundhouse.png` (entry `roundhouse`).
