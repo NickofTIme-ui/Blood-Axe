@@ -13,6 +13,12 @@ branch, or ChatGPT's work gets lost.
   pulsing ground ring, bobbing chevron and SMASH THE GATE BAR over the `stables` wreckage until it breaks. Keg rack
   6252 -> 6030 and hay cart 6570 -> 6830 (data/stageVillage.js) so the gate stands alone.
 
+- 24 November 2026 (cloud, ON MAIN (Nick: "push all"), NOT on itch).
+  LEVEL 2 ENDING: ONLY NICHOLAS AND THE OATH KEEPERS (Nick: "maybe just have nicholas and the oathkeepers at the end";
+  the freed were a clump of mismatched, repeated villagers there). data/stageWood.js: Joren, the tanner's boys, Wenna
+  and the convoy's five have no `gather` any more (freed, they run off and are gone); Ansel waits on the far bank of
+  the ford where he says he'll hide (gather 5500,330), so his thank-you can still be heard; Nicholas moved up off the
+  bottom edge (8550,470 -> 8560,400) so the talk box no longer covers him. Test in tests/logic-test.js.
 - 24 November 2026 (cloud, branch `claude/project-thread-8xssj4`; NOT on main yet, NOT on itch).
   MAGE X FINISHER (IMPALING SPIRES) NO LONGER TIES HIM UP (Nick: "have him run through the animation 40 percent
   faster and be able to move on while the npc is impaled"). combat/Mage.js MAGE_FINISHERS.spires: slam 14 -> 10,

@@ -363,7 +363,7 @@ export const STAGE_WOOD = {
     {
       id: 'joren', name: 'Joren', x: JOREN_BOUGH.x, z: JOREN_BOUGH.z, pose: 'treed', rescue: 'treed', section: 'tree', wave: 1,
       freeFor: 60, hold: 48, // (time to drop down and get up; his hands this far under the rope's knot on the bough's tip)
-      flee: { x: 1600, z: 300 }, gather: { x: 8700, z: 300 },
+      flee: { x: 1600, z: 300 },
     },
     // the hangmen's dead, still on the tree (view only): each tied under one of the painted
     // tree's boughs (data/hangingTree.js), its painting (view/NpcView.js drawHanged)
@@ -373,25 +373,26 @@ export const STAGE_WOOD = {
     {
       id: 'tanners', name: 'the tanner\'s boys', x: 3750, z: 340, pose: 'cage', group: true, rescue: 'cage',
       folk: ['folk-boy', 'folk-lad', 'folk-apprentice'], // (data/folk.js: boys, once they're painted)
-      lock: { x: 3750, z: 372, h: 0 }, flee: { x: 3000, z: 500 }, gather: { x: 8800, z: 320 },
+      lock: { x: 3750, z: 372, h: 0 }, flee: { x: 3000, z: 500 },
     },
     {
       id: 'wenna', name: 'Old Wenna', x: 4140, z: 450, pose: 'cage', rescue: 'cage',
-      lock: { x: 4140, z: 482, h: 0 }, flee: { x: 3000, z: 400 }, gather: { x: 8660, z: 350 },
+      lock: { x: 4140, z: 482, h: 0 }, flee: { x: 3000, z: 400 },
     },
     {
       id: 'ansel', name: 'Ansel the wheelwright', x: 4560, z: 440, pose: 'lame', rescue: 'escort', section: 'ford',
-      to: { x: 5440 }, flee: null, gather: { x: 8900, z: 360 },
+      to: { x: 5440 }, flee: null, gather: { x: 5500, z: 330 }, // (he hides on the far bank, as he says, not at the end)
     },
     {
       id: 'convoy', name: 'the prisoners in the wagon', x: 6080, z: 320, pose: 'convoy', rescue: 'convoy', tag: 'convoy',
       people: 5, freeFor: 95, // (five of them, scrambling out of the back of the wreck one by one: view/NpcView.js crowdHead)
-      flee: { x: 5700, z: 500 }, gather: { x: 8360, z: 320 },
+      flee: { x: 5700, z: 500 },
     },
     // (Nicholas, the mountain guide: he meets them again on the Shattered Ascent)
-    // (Nicholas in front, in the clear: the freed wait behind him and off to either side,
-    // gathers above, never in front of him or over him: Nick, 2026-11-20 "you must see Nicholas")
-    { id: 'pilgrim', name: 'Nicholas', art: 'nicholas', x: 8550, z: 470, pose: 'wounded', talk: 'pilgrim', ask: true },
+    // At the blocked road it's only Nicholas and the Oath Keepers: the freed go home and
+    // don't gather here (Nick, 2026-11-24: "just have nicholas and the oathkeepers at the end")
+    // (up off the bottom edge, where the talk box hid him, and clear of the crowd that's gone)
+    { id: 'pilgrim', name: 'Nicholas', art: 'nicholas', x: 8560, z: 400, pose: 'wounded', talk: 'pilgrim', ask: true },
   ],
 
   story: [

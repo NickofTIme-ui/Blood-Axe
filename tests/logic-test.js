@@ -4531,6 +4531,14 @@ test('wood: the pilgrim is Nicholas (Nick), who says he will meet them on the fa
   assert(STAGE_ASCENT.npcs.some((n) => n.id === 'nicholas' && n.guide), 'and he guides them on the ascent');
 });
 
+test('wood: at the blocked road it is only Nicholas and the Oath Keepers (Nick, 2026-11-24): none of the freed gather there', () => {
+  const turn = STAGE_WOOD.story.find((b) => b.id === 'turn').at;
+  const there = STAGE_WOOD.npcs.filter((n) => n.gather && n.gather.x > turn - 900);
+  assert(there.length === 0, `nobody waits at the end (${there.map((n) => n.id).join(',')})`);
+  const pg = STAGE_WOOD.npcs.find((n) => n.id === 'pilgrim');
+  assert(pg.z <= 420, `Nicholas sits up the road, not under the talk box (z ${pg.z})`);
+});
+
 // ------------------------------------------------------------ The Iron Gates (level 5)
 
 const GATE_SEC = (id) => STAGE_GATES.sections.findIndex((q) => q.id === id);
