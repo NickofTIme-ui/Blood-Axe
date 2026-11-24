@@ -61,7 +61,9 @@ export class WoodTrapsView {
     this.lashes = []; // the Wagonmaster's whip, cracking
     this.netG = scene.add.graphics().setDepth(DEPTH.floor + 50);
     this.makeCrowTexture();
-    if (stage.data.ruts) this.drawRuts(stage.data.ruts);
+    // (the convoy's ruts are painted into the road's own floor now, ground_road.jpg: the
+    // code-drawn ones read as dotted lines across it. drawRuts stays for a level without one)
+    if (stage.data.ruts && !stage.sections[0]?.ground) this.drawRuts(stage.data.ruts);
     this.convoy = null; // (the opening: the convoy's lanterns going away up the road)
     for (const pr of stage.props) {
       if (pr.kind === 'pine') this.pines.set(pr.id, this.makePine(pr));

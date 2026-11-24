@@ -6,6 +6,17 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 24 November 2026 (cloud; NOT on main yet (waiting on Nick's "push"), NOT on itch).
+  LEVEL 2 FLOORS REPAINTED (Nick: "the floor look has suffered", picked option 1). The old floor was one 1448x724
+  Magnific ground.png stretched and tiled ~9 times. Now six ChatGPT-painted floors, one per area, each 1352x1024:
+  assets/env/wood/ground_{road,tree,carts,ford,convoy,kennels}.jpg, wired in envArt.js GROUNDS and on the
+  stageWood sections (`ground: 'w-<name>'`, `groundFade: 160`, so each area fades into the next; the pass reuses
+  w-road). tools/bake-floor.py crossfades the right 12% of a painting into its left edge so it tiles without a seam
+  (`python tools/bake-floor.py painted.png assets/env/wood/ground_<name>.jpg`). The code-drawn wheel ruts are
+  skipped when the first section has its own floor. Prompts and ChatGPT originals:
+  /mnt/project-files/level2-floors/ (prompts.md, raw/). Also: the opening convoy's code-drawn carts were removed
+  (58aefe9, on main).
+
 - 24 November 2026 (cloud; ON MAIN (Nick: "push and resolve all finnished work"), NOT on itch).
   JOREN REPAINTED (Nick, with a shot of the man strung up by his wrists: "i meant heavily uprgade this guy"). His own
   sheet assets/sprites/npc/joren.png (ChatGPT): hanging by his tied wrists, kicking on the rope, dropped to one knee,

@@ -67,7 +67,7 @@ export const STAGE_WOOD = {
 
   sections: [
     {
-      id: 'road', name: 'THE WOOD ROAD', x0: 0, x1: 1500,
+      id: 'road', ground: 'w-road', groundFade: 160, name: 'THE WOOD ROAD', x0: 0, x1: 1500,
       spawn: { x: 150, z: 440 },
       objective: 'Follow the convoy',
       hint: 'Chop the notched pine: it falls across the stream',
@@ -108,7 +108,7 @@ export const STAGE_WOOD = {
       hazards: [],
     },
     {
-      id: 'tree', name: 'THE HANGING TREE', x0: 1500, x1: 2900,
+      id: 'tree', ground: 'w-tree', groundFade: 160, name: 'THE HANGING TREE', x0: 1500, x1: 2900,
       spawn: { x: 1560, z: 440 },
       objective: 'Get the hounds off Joren',
       hint: 'Pull the hounds off the tree or kill them: his grip is going',
@@ -135,7 +135,7 @@ export const STAGE_WOOD = {
       rest: SHRINE_TREE,
     },
     {
-      id: 'carts', name: 'THE CAGE CARTS', x0: 2900, x1: 4400,
+      id: 'carts', ground: 'w-carts', groundFade: 160, name: 'THE CAGE CARTS', x0: 2900, x1: 4400,
       spawn: { x: 2960, z: 440 },
       objective: 'Open the cages',
       hint: 'Smash the red lantern on its pole: while it burns, more of them come out of the mist. Then hold E (D-pad up) at a cage lock',
@@ -161,7 +161,7 @@ export const STAGE_WOOD = {
       hazards: [],
     },
     {
-      id: 'ford', name: 'THE OLD FORD', x0: 4400, x1: 5600,
+      id: 'ford', ground: 'w-ford', groundFade: 160, name: 'THE OLD FORD', x0: 4400, x1: 5600,
       spawn: { x: 4460, z: 440 },
       objective: 'Get Ansel across the ford',
       hint: 'Keep them away from him: he freezes when they come close. The shallows slow everyone, them too',
@@ -192,7 +192,7 @@ export const STAGE_WOOD = {
     {
       // the convoy's last wagon, still rolling: armoured, its prisoners inside, guards round
       // it. Smash it before it gets away up the road, or they're gone (Stage.updateRolling)
-      id: 'convoy', name: 'THE CONVOY', x0: 5600, x1: 7200,
+      id: 'convoy', ground: 'w-convoy', groundFade: 160, name: 'THE CONVOY', x0: 5600, x1: 7200,
       spawn: { x: 5660, z: 440 },
       objective: 'Stop the prisoner wagon',
       hint: 'Stop the wagon: smash it, knock the Wagonmaster off, or chop the notched pine: in its path it blocks the road, on top of it it smashes the wagon open',
@@ -212,7 +212,7 @@ export const STAGE_WOOD = {
       hazards: [],
     },
     {
-      id: 'kennels', name: 'THE KENNELS', x0: 7200, x1: 8400,
+      id: 'kennels', ground: 'w-kennels', groundFade: 160, name: 'THE KENNELS', x0: 7200, x1: 8400,
       spawn: { x: 7260, z: 440 },
       objective: 'Kill the Houndmaster',
       hint: 'Knock a hound into an open pen and the gate slams on it. When he whistles, move! Dodge out of his chain. Hit him before his horn sounds',
@@ -260,7 +260,7 @@ export const STAGE_WOOD = {
       },
     },
     {
-      id: 'pass', name: 'THE BLOCKED ROAD', x0: 8400, x1: 9200,
+      id: 'pass', ground: 'w-road', groundFade: 160, name: 'THE BLOCKED ROAD', x0: 8400, x1: 9200,
       spawn: { x: 8460, z: 440 },
       objective: 'The mine road',
       hint: '',
