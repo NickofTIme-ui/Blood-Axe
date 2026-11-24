@@ -31,7 +31,13 @@ import { ShoutPlate } from './ShoutPlate.js';
 // the hanging tree's dead (drawHanged): the rope's x in each picture (a fraction of its width)
 // and where the shroud starts under it (picture px); the body's height in the world at depth 1,
 // and how far his feet hang clear of the mud
-const HANGED_FIT = { hanged_1: { rope: 0.525, head: 95 }, hanged_2: { rope: 0.565, head: 116 }, hanged_3: { rope: 0.558, head: 150 } };
+// (round 5, 2026-11-24, repainted finer: `strand` is a stretch of the painted rope, picture px
+// [x0, x1, height of one twist], tiled to carry the rope on up to the bough)
+const HANGED_FIT = {
+  hanged_1: { rope: 0.566, head: 72, strand: [62, 76, 36] },
+  hanged_2: { rope: 0.528, head: 70, strand: [60, 74, 35] },
+  hanged_3: { rope: 0.538, head: 75, strand: [86, 101, 39] },
+};
 const HANGED = { body: 100, clear: 16 };
 const TUNIC = [0x5a6a5a, 0x6a5a48, 0x4a5468, 0x6a4a4a, 0x5a5048, 0x58586a];
 const SKIN = 0xc8a080;
@@ -92,6 +98,8 @@ const CELLS = {
   hale: { stand: 0, look: 1, wave: 2, run: RUN, point: 6, wipe: 7, cower: 1, kneel: 7, sit: 7 },
   // the wood's captives: bound on the rope, hanging, in the cage, at its bars, limping
   captive: { bound: 0, hang: 1, cower: 2, grip: 3, limp: [4, 5], stand: 4, run: [4, 5] },
+  // Ansel, with his splinted leg and crutch painted in
+  ansel: { stand: 0, wave: 1, cower: 2, limp: [3, 4, 5, 6], run: [3, 4, 5, 6], kneel: 2, sit: 2 },
   // Nicholas, the guide: the villager's order (wave: he points the way on; cower: braced),
   // and a ninth: lying dead
   nicholas: { stand: 0, cower: 1, wave: 2, run: RUN, sit: 6, kneel: 7, lie: 8 },
@@ -389,7 +397,9 @@ export class NpcView {
     if (n.pose === 'lame') {
       // limping on a crutch (a stick under one arm), slow
       const p = n.state === 'escort' && n.moving ? 'run' : pose;
-      if (this.figure(g, n.x, y, k, p === 'run' ? 'limp' : p, t * 0.5, tun(5), dir, SPRITES.captive ? 'captive' : n.art)) return;
+      // (his own painted sheet, crutch and splint and all: Nick, 2026-11-24)
+      const who = SPRITES[n.id] && CELLS[n.id] ? n.id : SPRITES.captive ? 'captive' : n.art;
+      if (this.figure(g, n.x, y, k, p === 'run' ? 'limp' : p, t * 0.5, tun(5), dir, who)) return;
       g.lineStyle(3 * k, 0x6a5038, 1).lineBetween(n.x + 10 * k * dir, y, n.x + 6 * k * dir, y - 44 * k);
       return;
     }
@@ -843,9 +853,19 @@ export class NpcView {
     const extra = Math.max(0, ropeLen - painted); // (rope drawn on above the painting)
     const rad = Phaser.Math.DegToRad(ang);
     const topX = tie.x - Math.sin(rad) * extra; const topY = tie.y + Math.cos(rad) * extra;
-    if (extra > 0) {
-      g.lineStyle(3.2 * sc / 0.17, 0x2c241a, 1).lineBetween(tie.x, tie.y, topX, topY);
-      g.lineStyle(1.2 * sc / 0.17, 0x6e5e44, 0.9).lineBetween(tie.x - 0.6, tie.y, topX - 0.6, topY);
+    // (the painted rope itself, a twist of it repeated, so the rope up to the bough is the same
+    // hemp as the rope in the painting, not a drawn line)
+    const st = fit.strand;
+    const tex = s.textures.get(key);
+    if (st && !tex.has('strand')) tex.add('strand', 0, st[0], 0, st[1] - st[0], st[2]);
+    if (st && !v.strand) { v.strand = s.add.tileSprite(0, 0, st[1] - st[0], st[2], key, 'strand').setOrigin(0.5, 0); lightProp(v.strand, PROP_LIGHT.gallowsWood, 0.92); }
+    if (v.strand) {
+      // (from the bough down to the painting's top; the picture's rope x lines up with the strand's middle)
+      v.strand.setSize(st[1] - st[0], Math.max(1, extra / sc)).setTilePosition(0, -extra / sc)
+        .setPosition(tie.x, tie.y).setScale(sc * turn, sc).setAngle(ang).setDepth(G.z + 0.6).setVisible(extra > 0);
+    } else if (extra > 0) {
+      g.lineStyle(10 * sc, 0x2c241a, 1).lineBetween(tie.x, tie.y, topX, topY);
+      g.lineStyle(4 * sc, 0x6e5e44, 0.9).lineBetween(tie.x - 0.6, tie.y, topX - 0.6, topY);
     }
     // a twist of rope round the bough where it's tied
     g.fillStyle(0x3a3022, 1).fillEllipse(tie.x, tie.y - 1, 9, 5);

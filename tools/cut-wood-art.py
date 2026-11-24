@@ -42,12 +42,13 @@ JOBS = {
     'boulder_shelf.png': ['boulder_shelf'],
     'horn.png': ['war_horn', 'war_horn_blow'],
 }
+HANGED_H = 520  # (round 5, 2026-11-24: the dead repainted bigger and finer; cut nearer their size on screen so they stay crisp)
 SNARED_H = 400  # (the grunt's poses were cut to this by hand, 2026-11-16)
 # pictures whose halves touch (the signal lantern's mud mounds, and the lit one's smoke over
 # the fallen one): each piece as a raw box (x0, y0, x1, y1), anything outside it cleared
 SPLIT_AT = {'signal_lantern.png': [(0, 0, 600, 1024, (470, 560)), (480, 560, 1536, 1024, None)]}
 # smoke and mist painted purple-grey on the magenta: made a plain grey (it read as magic)
-DEPURPLE = {'signal_lantern.png', 'horn.png', 'boulder_shelf.png'}
+DEPURPLE = {'signal_lantern.png', 'horn.png', 'boulder_shelf.png', 'hanged.png'}
 
 
 def key(img):
@@ -144,7 +145,7 @@ def main(src):
         else:
             pieces = split(img, len(names))
         for name, p in zip(names, pieces):
-            top = SNARED_H if name.startswith('snared_') else MAX
+            top = SNARED_H if name.startswith('snared_') else HANGED_H if name.startswith('hanged_') else MAX
             if p.height > top: p = p.resize((round(p.width * top / p.height), top), Image.LANCZOS)
             p.save(OUT / f'{name}.png', optimize=True)
             print(f'{raw} -> {name}.png {p.width}x{p.height}')
