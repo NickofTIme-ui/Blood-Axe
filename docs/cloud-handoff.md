@@ -6,7 +6,7 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 24 November 2026 (cloud; NOT on main yet (waiting on Nick's "push"), NOT on itch).
+- 24 November 2026 (cloud; ON MAIN 01be6ad (Nick: "push"), NOT on itch).
   LEVEL 2 FLOORS REPAINTED (Nick: "the floor look has suffered", picked option 1). The old floor was one 1448x724
   Magnific ground.png stretched and tiled ~9 times. Now six ChatGPT-painted floors, one per area, each 1352x1024:
   assets/env/wood/ground_{road,tree,carts,ford,convoy,kennels}.jpg, wired in envArt.js GROUNDS and on the
