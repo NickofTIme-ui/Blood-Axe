@@ -6,6 +6,29 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 24 November 2026 (cloud; ON MAIN (Nick: "update itch now"), for the next itch upload).
+  BUILD FITS ITCH AGAIN. main d86dd3e built to 1,139 files / 548 MB (itch: 1,000 files, 500 MB). Only
+  tools/build-release.py changed (the game code did not), so build as before: `py tools/build-release.py --quality 72`
+  (needs Pillow with WebP, which the PC's has). Now 830 files, ~440 MB unpacked, ~430 MB zip. It stops if a build is
+  over either limit. What it does now:
+  1. PACKS: assets/audio/sfx (219 sounds) and assets/ui/portraits + assets/ui/skilltree/icons (77 pictures) are glued
+     into assets/packs/sfx.pack and ui.pack. tools/asset-packs.js (inlined into the build's index.html) fetches them,
+     cuts them back into blob: URLs, and wraps Phaser's loader so `this.load.audio('x', 'assets/audio/sfx/x.wav')`
+     still works. Only for files loaded through Phaser's loader (not Music.js fetches, not DOM video/img). Add a
+     folder to PACKS if the file count climbs again. Credits/licence .txt files stay as files.
+  2. DROP: never-loaded files left out of the build (sprites/old, rurik-combo-v3, combo-v2 review sheet,
+     enemies/strips/_bandaged, env/options/ground-option4-clean.png, bow-shot-1/2.wav, all .md).
+  3. LOSSLESS WEBP: every see-through PNG (after the JPEG pass) is saved as lossless WebP under the same .png name
+     (browsers sniff the contents). Same pixel values in the file; Chrome's canvas readback rounds semi-transparent
+     edge pixels slightly differently (invisible). `--no-webp` turns it off.
+  4. tools/release-media/: web-sized copies that replace originals in the build only. Now: the opening cinematic
+     re-encoded 10.6 -> 5.6 Mbit/s (54 -> 29 MB, looks the same). If the film changes, re-make it (command in
+     build-release.py) or the build warns and ships the big original.
+  Checked in the cloud: all 296 packed files become blobs, sounds are in Phaser's cache and play, portraits/icons
+  load, no new load errors (the 9 missing enemy strips and keep surf_rock 404s are old). A full run past the
+  loading screen can't finish in the cloud (headless Chrome runs out of memory there, the unchanged repo too), so the
+  PC should play the build once before uploading.
+
 - 24 November 2026 (cloud; ON MAIN (Nick: "push"), NOT on itch).
   LEVEL 2 LOG BRIDGES EASIER TO CROSS (Nick: "walking across the tree bridges is difficult you fall in often, hard to
   know the borders with the art"). Bridges' footing reaches their painted logs (terrain block `grip: [back, front]`,
