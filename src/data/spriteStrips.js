@@ -201,6 +201,33 @@ export const FX_STRIPS = {
   // (ChatGPT, 2026-11-05: art/mage-wall/, repacked one slab to a cell)
   spikedwall: { file: 'assets/fx/spikedwall-strip.png', frames: 6, height: 300, bg: 'magenta' },
   spikedwallRed: { file: 'assets/fx/spikedwall-red-strip.png', frames: 6, height: 300, bg: 'magenta' },
+  // ORYN'S PAINTED MAGIC (effects/MageFX.js paint(), ChatGPT 2026-11-24, docs/mage-art-
+  // prompts.md section 14; cut from art/mage-fx/ by tools/cut-mage-fx.py). The glow sheets
+  // were painted on black and cut with their light as alpha: drawn additively.
+  // six vertical lightning bolts, stretched between any two points
+  magebolts: { file: 'assets/fx/mage-bolts-strip.png', frames: 6, height: 360 },
+  // a lightning hit bursting on a man: spark, star burst, ring, embers
+  magezap: { file: 'assets/fx/mage-zap-strip.png', frames: 8, height: 160, fps: 24 },
+  // a sky strike's blast on the floor (solid: fire and its smoke), feet on the ground line
+  magethunder: { file: 'assets/fx/mage-thunder-strip.png', frames: 8, height: 160, fps: 18 },
+  // Meteor Drop's eruption of fire and rock on its ring of runes (solid)
+  magemeteor: { file: 'assets/fx/mage-meteor-strip.png', frames: 8, height: 160, fps: 16 },
+  // the force blast's wave, rolling out to the right from the palm (left-aligned cells)
+  mageforce: { file: 'assets/fx/mage-force-strip.png', frames: 6, height: 160, fps: 22 },
+  // the blink: his shape in violet light, splitting into shards, a flash, a line (played
+  // backwards when he arrives)
+  mageblink: { file: 'assets/fx/mage-blink-strip.png', frames: 6, height: 200, fps: 20 },
+  // the rune circle on the floor (storm field, sky strike, Tempest): dim | blazing
+  magerunes: { file: 'assets/fx/mage-runes-floor-strip.png', frames: 2, height: 140 },
+  // his ward on a block | a parry: a disc of amber runes seen edge-on
+  mageward: { file: 'assets/fx/mage-ward-strip.png', frames: 2, height: 160 },
+  // Stone Spikes: six spikes of rock with glowing seams, bases on one line (solid)
+  magespikes: { file: 'assets/fx/mage-spikes-strip.png', frames: 6, height: 200 },
+  // the ball of magic swelling at his lantern (held bolt) or palm (held force), looping
+  magecharge: { file: 'assets/fx/mage-charge-strip.png', frames: 6, height: 96 },
+  // ARCANE RUPTURE (Y finisher): the prison sphere of turning gold rune rings round the
+  // man he crushes, looping as it turns
+  magecage: { file: 'assets/fx/mage-cage-strip.png', frames: 8, height: 240 },
   // Vexa's kit (effects/RogueFX.js, view/ProjectileView.js), painted on magenta; until each
   // file exists the old code drawing stands in. Widow mine, seen from the front and a little
   // above: folded shut | claws half out | armed, violet light | set off, red light.

@@ -600,6 +600,7 @@ export class StageView {
   // `topFade` { depth, x0, x1 }: between x0 and x1 its top edge also melts away over `depth`
   // px, so a building painted behind it (the church at the north gate) runs down into the
   // paving instead of being cut off on a straight line (Nick, 2026-11-23)
+  // (`hold`, `feather` optional: see below)
   fadedGround(key, src, x0, x1, top, h, s, fade, tint, topFade = null) {
     const R = SETTINGS.renderScale ?? 1;
     const w = x1 - x0 + fade * 2;
@@ -622,7 +623,11 @@ export class StageView {
       const m = document.createElement('canvas'); m.width = Math.max(1, fw); m.height = Math.max(1, fh);
       const mc = m.getContext('2d');
       const v = mc.createLinearGradient(0, 0, 0, fh);
-      for (let k = 0; k <= 8; k++) { const t = k / 8; const e = 1 - t * t * (3 - 2 * t); v.addColorStop(t, `rgba(0,0,0,${e.toFixed(3)})`); }
+      // (`hold`: the share of `depth` rubbed out whole before the melt starts, so a wall painted
+      // on the paving's top goes completely instead of leaving a ghost of itself)
+      const hold = Math.min(0.95, Math.max(0, topFade.hold ?? 0));
+      if (hold) v.addColorStop(0, 'rgba(0,0,0,1)');
+      for (let k = 0; k <= 8; k++) { const t = k / 8; const e = 1 - t * t * (3 - 2 * t); v.addColorStop(hold + t * (1 - hold), `rgba(0,0,0,${e.toFixed(3)})`); }
       mc.fillStyle = v; mc.fillRect(0, 0, fw, fh);
       mc.globalCompositeOperation = 'destination-in';
       const hz = mc.createLinearGradient(0, 0, fw, 0); const ff = Math.min(0.5, feather / Math.max(1, fw));

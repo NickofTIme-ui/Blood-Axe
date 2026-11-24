@@ -2944,7 +2944,7 @@ test('village: the barn: smashing the burning beam off its door frees the people
   for (let i = 0; i < 3; i++) { world.tick(); st.update(); }
   assert(barn.state === 'free' && freed.includes('mill-villagers'), `freed (${barn.state})`);
   for (let i = 0; i < 60 * 20; i++) { world.tick(); st.update(); acceptNpcInvitations(st); }
-  assert(barn.state === 'safe' && Math.abs(barn.x-barn.flee.x)<2, `the other villagers reach shelter (${barn.state})`);
+  assert(barn.state === 'safe' && Math.abs(barn.x-p.x)>1100, `the other villagers run on off the screen (no fading at their flee point) (${barn.state}, ${Math.abs(barn.x-p.x).toFixed(0)} px)`);
   assert(freed.filter((id) => id === 'mill-villagers').length === 1, 'reported once');
 });
 
