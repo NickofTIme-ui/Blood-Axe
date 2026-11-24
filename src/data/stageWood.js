@@ -96,10 +96,10 @@ export const STAGE_WOOD = {
         { kind: 'barrel', x: 420, z: 300, drop: null },
         // a sack cart's load tipped in the ditch where a wheel went (the near edge)
         ...group([['sack', 660, 502], ['sack', 700, 506], ['crate-v2', 748, 500]]),
-        // the rear guard's camp at the road's end: their table, a crate and a jug on it, their
-        // water and ale beside it, against the trees
+        // the rear guard's camp at the road's end: their table, a crate and a jug on the ground
+        // by it, their water and ale beside it, against the trees (nothing stacked: Nick, 2026-11-24)
         { kind: 'trestle', x: 1080, z: 300, drop: null },
-        ...group([['crate-v5', -22, 0, { stack: true }], ['urn', 30, 0, { stack: true, drop: 'mana' }]]),
+        ...group([['urn', 968, 304, { drop: 'mana' }], ['crate-v5', 1003, 302]]),
         ...group([['barrel-v3', 1160, 302], ['keg', 1206, 306]]),
         // a SECRET: a poacher's cache in the ferns at the back of the road, behind where you
         // come in (only found by turning back)
@@ -138,7 +138,7 @@ export const STAGE_WOOD = {
       id: 'carts', name: 'THE CAGE CARTS', x0: 2900, x1: 4400,
       spawn: { x: 2960, z: 440 },
       objective: 'Open the cages',
-      hint: 'Smash their signal lantern or more come out of the mist. Then hold E (D-pad up) at a lock',
+      hint: 'Smash the red lantern on its pole: while it burns, more of them come out of the mist. Then hold E (D-pad up) at a cage lock',
       fightAt: 3560,
       // (the first drops out of the branches over the carts: the crows go up first)
       spawns: [[{ x: 3660, z: 360, drop: 430, tell: 84 }, { x: 3820, z: 470, drop: 430, tell: 100 }, { x: 3560, z: 300, drop: 430, tell: 116 }], []],
@@ -151,7 +151,7 @@ export const STAGE_WOOD = {
         { kind: 'signal', tag: 'signal', x: 3880, z: 492, drop: null },
         { kind: 'crate', x: 4300, z: 300, drop: 'mana' },
         // the broken carts' loads spilled along the near edge of the road
-        ...group([['crate-v6', 3560, 500], ['crate-v0', 0, 0, { stack: true }], ['sack', 3616, 504]]),
+        ...group([['crate-v6', 3560, 500], ['crate-v0', 3612, 502], ['sack', 3660, 504]]),
         // the convoy's strongbox, dropped when the axle went
         { kind: 'chest', x: 4230, z: 498, drop: 'health' },
         // a SECRET up on the high shelf at the back (terrain: the boulder and the shelf): Vexa's
@@ -207,7 +207,7 @@ export const STAGE_WOOD = {
         { kind: 'pine', x: 6980, z: 318, fellDir: -1, len: 300, bridge: 'convoyPine', drop: null },
         { kind: 'barrel', x: 5700, z: 480, drop: 'health' },
         // the convoy's supplies, dumped at the roadside to lighten the wagons
-        ...group([['crate-v5', 5780, 300], ['crate-v1', 0, 0, { stack: true }], ['barrel-tar', 5840, 302]]),
+        ...group([['crate-v1', 5726, 302], ['crate-v5', 5780, 300], ['barrel-tar', 5840, 302]]),
       ],
       hazards: [],
     },
@@ -435,7 +435,7 @@ export const STAGE_WOOD = {
     { id: 'broken', on: 'broken:kennels', lines: [['HOUNDMASTER', 'No... not the last of them. Not my dogs...']] },
     { id: 'hmHorn', on: 'horn:kennels', lines: [['HOUNDMASTER', 'To me! Every blade in the wood, to me!']] },
     { id: 'penned', on: 'penSlam:kennels', lines: [['RURIK', 'Back in your cage, cur.']] },
-    { id: 'mist', at: 3460, lines: [['RURIK', 'A lantern burning in the mist. While it\'s lit, they\'ll keep coming. Smash it.']] },
+    { id: 'mist', at: 3460, lines: [['RURIK', 'That red lantern on the pole: it\'s calling them out of the mist. Smash it and no more come.']] },
     // at the blocked road only Nicholas talks (Nick, 2026-11-05: the saved wait there quietly).
     // Asked, it's a held conversation, not a one-liner (Nick, 2026-11-24: "give nicholas better
     // dialogue"): who he is, who hurt him, where the carts went, and the promise he keeps on the

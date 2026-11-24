@@ -201,5 +201,8 @@ export const PROPS = {
   logpile: { hp: 1, w: 46, h: 80, reach: 40 },
   // ...and the Ashen's signal lantern on its pole in the mist: while it burns, men keep coming
   // out of the mist to the fight (a section's `mist`, by `tag`); smash it and no more come
-  signal: { hp: 2, w: 34, h: 150, reach: 30 },
+  // (hitW/reach: struck anywhere on the painted pole or the lantern hung off its arm, from a
+  // step either side: it was only its pole's 34 px, and a blow at the lantern itself missed:
+  // Nick, 2026-11-24 "you cant do anything")
+  signal: { hp: 2, w: 34, h: 150, reach: 46, hitW: 150 },
 };

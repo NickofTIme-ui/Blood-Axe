@@ -6,6 +6,12 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 24 November 2026 (cloud; ON MAIN 1036fdf (Nick: "continue"), NOT on itch).
+  NOTHING STACKED, ANYWHERE (Nick: "dont stack anything up in the game as far as the crates and stuff, it just looks
+  horrid"). STANDING RULE: no `stack: true` props in any level, and no goods up on trestles, stalls, hand carts or
+  racks. All 16 stacks (level 1 village 13, level 2 wood 3) set on the ground beside what they stood on; the level 1
+  stables barrel rack removed (its kegs on the ground). tests/prop-smash-test.js fails if any level has a stacked prop.
+
 - 24 November 2026 (cloud; ON MAIN fdbd2b9 (Nick: "Push to main"), NOT on itch).
   RECORDED VOICES AND SOUNDS (Nick: "source sounds for the game ... sounds for the bad guys, vexa and the mage, and
   general sound effects"). 107 free clips (CC0 / public domain, a few CC-BY) cut by tools/sfx-gen/voices.py into
@@ -18,6 +24,18 @@ branch, or ChatGPT's work gets lost.
   spells; Kenney UI sounds in the skill tree. CREDITS: assets/audio/sfx/CREDITS-recorded.txt has every source; the
   CC-BY ones (Michel Baradari; the horse-whinny papers) MUST be credited on the itch page (paste line in that file).
   Music untouched.
+
+- 24 November 2026 (cloud; ON MAIN 3d8d870 (Nick: "continue"), NOT on itch).
+  LEVEL 2: NO BROWN LINE IN THE SKY, SIGNAL LANTERN THAT WORKS (Nick: "theres a brown line in the sky at the convoy
+  by the tree where the guys are hanging"; "it says smash the signal lantern but you cant do anything and what even
+  does that mean?"). 1) WoodTrapsView.drawDeadfall: a waiting deadfall (set / tripping) draws nothing up in the
+  boughs; it was drawn whenever its trunk was above y -80, but the fight camera looks up to -360, so its trunk sat at
+  the screen's top and its rope ran across the sky as a long brown line. It fades in as it swings down and out as it's
+  hauled up. 2) Signal lantern: struck across the whole painting (data/stage.js signal hitW 150, reach 46; it was the
+  pole's 34 px, so a blow at the lantern missed); every blow rocks it, sparks and a clank (it had no feedback, so the
+  first of its two blows looked like nothing); it flares when it calls a man out of the mist; the call over it reads
+  "SMASH THE RED LANTERN! / WHILE IT BURNS, MORE OF THEM COME"; hint and Rurik's line say the same.
+  Level 2 review list (24 points) with shots: project files level2-review-nov24/.
 
 - 24 November 2026 (cloud; ON MAIN (Nick: "push all"), NOT on itch).
   LEVEL 1 STABLES: HORSES QUIET, GATE BAR MARKED (Nick: "the horses that are trapped somehow speak english"; "make a
