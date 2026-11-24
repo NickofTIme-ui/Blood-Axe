@@ -6,7 +6,7 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 24 November 2026 (cloud, branch `claude/project-thread-raqufv`; NOT on main yet, NOT on itch).
+- 24 November 2026 (cloud; ON MAIN fdbd2b9 (Nick: "Push to main"), NOT on itch).
   RECORDED VOICES AND SOUNDS (Nick: "source sounds for the game ... sounds for the bad guys, vexa and the mage, and
   general sound effects"). 107 free clips (CC0 / public domain, a few CC-BY) cut by tools/sfx-gen/voices.py into
   assets/audio/sfx/*.mp3, registered as numbered takes in core/Sfx.js (REC.manPain, manDeath, manYell, brute*,
