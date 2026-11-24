@@ -150,6 +150,18 @@ branch, or ChatGPT's work gets lost.
      rings off the bell; when it sounds, rings out through the wood, a shake, rain shaken off the boughs.
   npm test passes. Cloud headless Chromium still runs out of memory booting the game (canvas renderer and
   aborting other levels' art didn't help): after shots need Nick's Chrome on a pushed build.
+- 24 November 2026 (cloud, branch `claude/project-thread-boigcz` on main efead59; NOT pushed yet, NOT on itch).
+  LOG PILE ROUND 2 (Nick: "breaking the rope is good except there's no way to hit anyone with it, they just go
+  into the water and float away"). Why: the ford's second wave came from the far side (x 5560+), so the men stood
+  up the bank of the pile, out of the trunks' way, and the trunks stopped dead at the water's edge.
+  1. The second wave (bar the net woodsman on the far bank) now comes after Ansel from behind, wading the ford
+     (spawns x 4420-4440): right under the trunks.
+  2. Trunks plough on through the shallows (drag 0.988 a frame, they used to stop in ~20 px), bowling the men
+     wading there, and only stop when they drop into the deep channel (then float off as before).
+  3. Each trunk steers out to its own line across the road (TRAPS.logs.steer, PILE_LOGS tz) so the six cover
+     the whole road front to back; a man is caught within 48 px either side, 54 behind / 18 in front.
+  4. Heroes are never hurt by the trunks (it's their weapon). "CUT THE ROPE!" shows from x 5000 (men in the ford).
+  New logic test: men charging across the ford at a hero by the pile; he cuts it, the trunks take them.
 - 20 November 2026 (cloud, branch `claude/project-thread-boigcz` on main beecaf1; NOT pushed yet, NOT on itch).
   GALLOWS WOOD LOG PILE (the old ford; Nick: "breaking the log thing is soo bad, make them roll better, make the
   whole thing feel better"). The old version slid four flat painted logs down the screen as one wall.

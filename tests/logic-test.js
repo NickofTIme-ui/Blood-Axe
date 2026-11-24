@@ -3554,7 +3554,9 @@ test('wood: the log pile: a blow cuts its rope, the pile bursts and its trunks r
   const pile = st.props.find((q) => q.kind === 'logpile');
   st.fightOn = true; run(30); // (the wagon's rolling code once dragged it off to NaN here)
   assert(Number.isFinite(pile.x) && pile.x === 5470 && pile.y === 0, `still standing where it was, within reach (${pile.x}, ${pile.y})`);
-  const foes = [[5380, 340], [5330, 420], [5300, 480]].map(([x, z]) => woodFoe(world, st, 'grunt', x, z));
+  // (men on the bank in front of it, and wading the shallows across the whole road, front to back:
+  // Nick, 2026-11-24 "no way to hit anyone with it")
+  const foes = [[5380, 340], [5330, 420], [5300, 480], [5270, 330], [5250, 530], [5290, 400]].map(([x, z]) => woodFoe(world, st, 'grunt', x, z));
   p.x = 5420; p.z = 310; p.facing = 1; st.placeOnGround(p);
   let loose = 0, splash = 0, bounce = 0; const hit = new Set();
   world.events.on('logsLoose', () => loose++); world.events.on('logSplash', () => splash++); world.events.on('logBounce', () => bounce++);
@@ -3564,13 +3566,30 @@ test('wood: the log pile: a blow cuts its rope, the pile bursts and its trunks r
   const R = st.woodTraps.rolls[0];
   assert(R?.logs.length === 6, 'six trunks come off the stack');
   run(120, () => { for (const f of foes) if (f.alive && f.state !== 'knockdown') { f.vx = 0; f.vz = 0; } });
-  assert(foes.every((f) => !f.alive && hit.has(f)), `the men in their way are bowled over (${foes.filter((f) => !f.alive).length}/3)`);
+  assert(foes.every((f) => !f.alive && hit.has(f)), `the men in their way are bowled over (${foes.filter((f) => !f.alive).length}/${foes.length})`);
   assert(!hit.has(p), 'the hero who cut it is not hit by the trunks spilling past him');
   assert(bounce > 0 && splash >= 3, `they bounce, and go into the ford (${bounce} bounces, ${splash} splashes)`);
   const zs = R.logs.map((g) => g.z); assert(Math.max(...zs) - Math.min(...zs) > 120, `fanned out across the road (${zs.map(Math.round)})`);
   assert(R.logs.every((g) => Number.isFinite(g.x) && g.x < 5400), `all down the bank (${R.logs.map((g) => Math.round(g.x))})`);
   run(1200);
   assert(!st.woodTraps.rolls.length, 'the stream carries them off');
+});
+
+test('wood: the log pile in a real fight: men coming across the ford at a hero by the pile; he cuts it as they wade in, and the trunks take them', () => {
+  const { world, p, st, c, run } = woodSetup(WOOD_SEC('ford'), { x: 5430, z: 320 });
+  killFoes(world); run(2); st.fightOn = true;
+  const sec = STAGE_WOOD.sections.find((q) => q.id === 'ford');
+  assert(sec.spawns[1].filter((q) => q.x < 5000).length >= 3, 'the second wave comes after Ansel from behind, across the ford');
+  const foes = [[4980, 330], [4960, 430], [5000, 510]].map(([x, z]) => woodFoe(world, st, 'grunt', x, z));
+  p.health = p.stats.maxHealth; p.immortal = true;
+  for (let i = 0; i < 600 && !foes.some((f) => f.alive && f.x > 5200); i++) run(1, () => { p.x = 5430; p.z = 320; p.facing = 1; p.vx = 0; if (p.state !== 'idle') p.fsm.change('idle'); });
+  const byLog = new Set(); world.events.on('logHit', ({ fighter }) => byLog.add(fighter));
+  const before = foes.filter((f) => f.alive);
+  for (let k = 0; k < 2; k++) { c.script = { [c.t + 1]: ['attack'] }; run(12, () => { p.x = 5430; p.z = 320; }); }
+  assert(st.props.find((q) => q.kind === 'logpile').broken, `cut (${p.state} ${Math.round(p.x)},${Math.round(p.z)}; men ${foes.map((f) => [Math.round(f.x), Math.round(f.z), f.state])})`);
+  run(140);
+  const dead = before.filter((f) => !f.alive && byLog.has(f)).length;
+  assert(dead >= 2 && dead >= before.length - 1, `most of them are taken by the trunks (${dead}/${before.length})`);
 });
 
 test('wood: the deadfall: a man on the wire lets the spiked trunk go; it swings in from above the screen, smashes the men in its lane, then is hauled back up and set', () => {

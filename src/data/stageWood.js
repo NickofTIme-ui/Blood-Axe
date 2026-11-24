@@ -166,9 +166,12 @@ export const STAGE_WOOD = {
       objective: 'Get Ansel across the ford',
       hint: 'Keep them away from him: he freezes when they come close. The shallows slow everyone, them too',
       fightAt: 4860,
-      // (the second, on the far bank: a WOODSMAN with a net, and the men he pins you for)
+      // (the second: a WOODSMAN with a net on the far bank, and the men he pins you for. They
+      // come after Ansel from behind, wading the ford: right under the log pile's trunks.
+      // From the far side they'd have stood up the bank of it, out of its way, and the logs
+      // went by into the water hitting nobody: Nick, 2026-11-24)
       waves: [['stalker', 'grunt'], ['stalker:net', 'grunt', 'grunt', 'stalker']],
-      spawns: [[], [{ x: 5560, z: 300 }, { x: 5560, z: 470 }, { x: 5580, z: 380 }, { x: 4420, z: 420 }]],
+      spawns: [[], [{ x: 5580, z: 380 }, { x: 4420, z: 330 }, { x: 4420, z: 500 }, { x: 4440, z: 420 }]],
       props: [
         // THE LOG PILE up the far bank: cut its stay rope and the trunks come down across the
         // road below (stage/WoodTraps.js), on whoever is coming for Ansel
@@ -178,7 +181,7 @@ export const STAGE_WOOD = {
         // (on the dry far bank past the shallows: it stood with its feet in the water, Nick 2026-11-19)
         // (lane: where its trunks go, rolling down the bank to the ford and into it, z0..z1
         // the road's back and front edges; the call to cut it shows while men are in it)
-        { kind: 'logpile', x: 5470, z: 292, y: 0, lane: { x0: 5200, x1: 5540, z0: 300, z1: 545 }, drop: null },
+        { kind: 'logpile', x: 5470, z: 292, y: 0, lane: { x0: 5000, x1: 5540, z0: 300, z1: 545 }, drop: null },
         { kind: 'barrel', x: 5560, z: 492, drop: 'health' },
         // barrels off the convoy, washed up on the near bank
         ...group([['barrel-grey', 4700, 500], ['barrel-v1', 4746, 504, { drop: 'mana' }]]),
