@@ -2018,3 +2018,9 @@ Nick: "snare trap needs a sounds, also hold the NPC for longer".
 ## Cloud, 2026-11-24: convoy wagon debris in the wagon's own colours
 - Nick: "have the debri from hitting the horse and carrage match the color of the carrage".
 - `src/view/StageView.js`: `WAGON_BITS` (sampled from convoy_wagon.png: dark weathered boards, grey iron), `WAGON_TINT` (the painted planks/splinters multiplied down from warm brown to the wagon's boards) and `WAGON_SPARK` (pale iron instead of orange). Used by `chips()` for the wagon, `ironBits()`, `wagonHit` and `wagonBreak`. A blow on the horses throws its bits from round the harness (`chips(..., at)`), not off the wagon's boards. Tests pass; not seen in the game (the cloud browser can't load the painted level).
+
+## Nicholas's talk at the end of level 2 (2026-11-24, cloud)
+- Nick: "give nicholas better dialogue at end of 2nd level". In the game he only ever said one squashed line (Story.js `short['wood:pilgrim']` replaced the whole beat).
+- Now `pilgrim` in `src/data/stageWood.js` is a held conversation (asked with INTERACT, skippable with D-pad left): who beat him and why, the pass brought down, the carts into Hollow Mountain, Rurik/Vexa/Oryn answering, his name and his promise to meet them on the far side (sets up the Shattered Ascent and his last words). The `short` entry is gone.
+- The `turn` scene at 8780 has two versions: lines with `{ unless: 'done:pilgrim' }` / `{ if: 'done:pilgrim' }` (Story.js `fire` now honours `unless` on a line, not just `if`).
+- Tests: logic tests for the held talk and both turn versions. No art or sound needed.

@@ -436,20 +436,35 @@ export const STAGE_WOOD = {
     { id: 'hmHorn', on: 'horn:kennels', lines: [['HOUNDMASTER', 'To me! Every blade in the wood, to me!']] },
     { id: 'penned', on: 'penSlam:kennels', lines: [['RURIK', 'Back in your cage, cur.']] },
     { id: 'mist', at: 3460, lines: [['RURIK', 'A lantern burning in the mist. While it\'s lit, they\'ll keep coming. Smash it.']] },
-    // at the blocked road only Nicholas talks (Nick, 2026-11-05: the saved wait there quietly)
+    // at the blocked road only Nicholas talks (Nick, 2026-11-05: the saved wait there quietly).
+    // Asked, it's a held conversation, not a one-liner (Nick, 2026-11-24: "give nicholas better
+    // dialogue"): who he is, who hurt him, where the carts went, and the promise he keeps on the
+    // Shattered Ascent ("I said I'd find you on this side") and dies keeping ("the first time it mattered").
     {
-      id: 'pilgrim', calm: true,
+      id: 'pilgrim', calm: true, hold: true,
       lines: [
-        ['NICHOLAS', 'The pass came down at dawn. Their own men did it, to bar the road behind them.'],
-        ['NICHOLAS', 'The carts went into the old mine. Under the mountain.'],
-        ['NICHOLAS', 'Nicholas. Thirty years I\'ve guided folk over this mountain. Go under it. I\'ll meet you on the far side.'],
+        ['NICHOLAS', 'Easy. I\'m no Ashen. Just an old man they left for the crows.'],
+        ['RURIK', 'Who did this to you?'],
+        ['NICHOLAS', 'The convoy. They wanted a guide over the pass. I said no. They asked again with their boots.'],
+        ['NICHOLAS', 'Then they brought the mountain down on the road behind them. So nobody could follow.'],
+        ['VEXA', 'And the prisoners?'],
+        ['NICHOLAS', 'Into the old mine. Hollow Mountain. The King has folk in chains down there, digging his iron.'],
+        ['ORYN', 'Then we follow them in.'],
+        ['NICHOLAS', 'Thirty years I\'ve led folk over this mountain. Never asked where they were going. Never looked back.'],
+        ['NICHOLAS', 'I\'m looking now. The name\'s Nicholas. I\'ll take the goat paths round and meet you on the far side.'],
+        ['RURIK', 'You can barely stand.'],
+        ['NICHOLAS', 'I\'ve crossed it with worse. Go. Before they bury that road too.'],
       ],
     },
     {
       id: 'turn', at: 8780, calm: true, hold: true,
       lines: [
-        ['VEXA', 'Buried. They\'d sooner bury the road than face us.'],
-        ['ORYN', 'The tracks turn into the mountain.'],
+        // (they never asked him)
+        ['VEXA', 'Buried. They\'d sooner bury the road than face us.', { unless: 'done:pilgrim' }],
+        ['ORYN', 'The tracks turn into the mountain.', { unless: 'done:pilgrim' }],
+        // (they heard him out)
+        ['VEXA', 'Stubborn old goat. I like him.', { if: 'done:pilgrim' }],
+        ['ORYN', 'The tracks turn into the mountain. Just as he said.', { if: 'done:pilgrim' }],
         ['RURIK', 'Then we go under it.'],
       ],
     },

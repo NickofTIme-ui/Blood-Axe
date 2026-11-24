@@ -3455,8 +3455,10 @@ test('wood: the pilgrim talks only when a hero near him presses INTERACT', () =>
   run(60);
   assert(!st.story.npc('pilgrim').talked && st.story.prompts.some((q) => q.kind === 'talk'), 'a prompt, no words yet');
   c.script = { [c.t + 1]: ['padUp'] };
-  run(900);
-  assert(st.story.done.has('pilgrim'), 'asked, he tells them');
+  run(120);
+  assert(st.story.current?.beat.id === 'pilgrim', 'asked, he tells them');
+  run(14 * LINE.max); // (the lines go by, as at reading pace)
+  assert(st.story.done.has('pilgrim'), `heard out (or skipped), the scene ends (${st.story.current?.beat.id} ${st.story.current?.index} ${st.story.current?.age})`);
 });
 
 // ---- the wood's traps (WoodTraps): all sim, so online stays in step
@@ -4545,9 +4547,33 @@ test('ascent: the guide waits short of a fight that is not won, keeps behind the
 test('wood: the pilgrim is Nicholas (Nick), who says he will meet them on the far side of the mountain', () => {
   const pg = STAGE_WOOD.npcs.find((n) => n.id === 'pilgrim');
   const beat = STAGE_WOOD.story.find((b) => b.id === 'pilgrim');
-  assert(pg.name === 'Nicholas' && pg.art === 'nicholas' && beat.lines.every(([w]) => w === 'NICHOLAS'), 'his name, his art, his voice');
+  assert(pg.name === 'Nicholas' && pg.art === 'nicholas' && beat.lines.some(([w]) => w === 'NICHOLAS'), 'his name, his art, his voice');
   assert(speakerInfo('NICHOLAS').name === 'Nicholas' && speakerInfo('NICHOLAS').portrait === 'nicholas', 'his portrait file');
   assert(STAGE_ASCENT.npcs.some((n) => n.id === 'nicholas' && n.guide), 'and he guides them on the ascent');
+});
+
+test('wood: asked, Nicholas holds a real conversation at the blocked road, and the turn scene knows it (Nick, 2026-11-24)', () => {
+  const pg = STAGE_WOOD.npcs.find((n) => n.id === 'pilgrim');
+  const { st, c, run } = woodSetup(WOOD_SEC('pass'), { x: pg.x - 30, z: pg.z });
+  const beat = st.story.beats.find((b) => b.id === 'pilgrim');
+  assert(beat.hold && beat.lines.length >= 8, `a held scene, not collapsed to one line (${beat.lines.length})`);
+  assert(['RURIK', 'VEXA', 'ORYN'].every((h) => beat.lines.some(([w]) => w === h)), 'the Oath Keepers answer him');
+  assert(beat.lines.some(([, t]) => /far side/.test(t)) && beat.lines.some(([, t]) => /mine/.test(t)), 'the mine, and his promise');
+  for (const b of st.story.beats) if (b.id === 'pilgrim') b.fired = false;
+  run(60);
+  c.script = { [c.t + 1]: ['padUp'] };
+  run(30);
+  assert(st.story.current?.beat.id === 'pilgrim', 'asked, the scene opens');
+  const turn = st.story.beats.find((b) => b.id === 'turn');
+  st.story.done.add('pilgrim');
+  turn.fired = false;
+  st.story.fire(turn);
+  assert(turn.lines.some(([, t]) => /Just as he said/.test(t)) && !turn.lines.some(([, t]) => /^Buried/.test(t)), 'talked: the turn remembers him');
+  const other = woodSetup(WOOD_SEC('pass'), { x: pg.x - 30, z: pg.z }).st.story;
+  const t2 = other.beats.find((b) => b.id === 'turn');
+  t2.fired = false;
+  other.fire(t2);
+  assert(t2.lines.some(([, t]) => /^Buried/.test(t)) && !t2.lines.some(([, t]) => /Just as he said/.test(t)) && t2.lines.length === 3, 'never asked: the old lines');
 });
 
 test('wood: at the blocked road it is only Nicholas and the Oath Keepers (Nick, 2026-11-24): none of the freed gather there', () => {
