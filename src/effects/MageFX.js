@@ -3,6 +3,12 @@
 // world events (combat/Mage.js, combat/Barrier.js) — nothing here changes the fight, so
 // it may use Math.random freely.
 //
+// PAINTED (2026-11-24, ChatGPT, docs/mage-art-prompts.md section 14): the lightning
+// bolts, the zap bursts, the sky strike's blast on the floor, the meteor's fire, the force
+// wave, the blink, the rune circles, the staff's charge and the stone spikes are painted
+// strips (FX.mage*, data/spriteStrips.js) played by paint() below. Each falls back to the
+// old code drawing while its file is missing.
+//
 // Built from code-drawn shapes and the shared particle/flame systems (effects/Gore.js,
 // effects/Burn.js). Sounds reuse the game's samples, pitched and layered; the lightning
 // has its own code-made crackle and thunder (elec* in core/Sfx.js). MAGE_SOUNDS below is the
@@ -78,7 +84,7 @@ export class MageFX {
       if (state === 'updraft') this.sound('updraft', fighter);
     });
     // ---- the second set (2026-11-15)
-    ev.on('skyfallCall', ({ fighter }) => { this.sound('elecCharge', fighter); this.flashAt(this.staffTip(fighter), 0xe0f0ff, 22); this.darken(40, 0.25); });
+    ev.on('skyfallCall', ({ fighter }) => { this.rune(fighter.x, fighter.z, 150, { life: 40, bright: true }); this.sound('elecCharge', fighter); this.flashAt(this.staffTip(fighter), 0xe0f0ff, 22); this.darken(40, 0.25); });
     ev.on('skyfallBolt', (e) => this.skyfall(e));
     ev.on('plungeStart', ({ fighter }) => { if (isMage(fighter)) { this.sound('meteorFall', fighter); this.flashAt(this.staffTip(fighter), 0xffc070, 26); } });
     ev.on('leapSmash', ({ fighter, x, z }) => { if (isMage(fighter)) this.meteor(fighter, x, z); });
@@ -91,7 +97,7 @@ export class MageFX {
       this.flashAt(c, 0xc8b8ff, 18);
       this.sound('boltImpact', fighter);
     });
-    ev.on('tempestStart', ({ fighter, frames }) => { this.sound('elecFull', fighter); this.darken(frames, 0.5); this.tempestRise(fighter, frames); });
+    ev.on('tempestStart', ({ fighter, frames }) => { this.rune(fighter.x, fighter.z, 240, { life: frames, bright: true }); this.sound('elecFull', fighter); this.darken(frames, 0.5); this.tempestRise(fighter, frames); });
     ev.on('tempestWave', ({ fighter }) => { this.sound('storm', fighter); this.scene.fx?.shake(6, 12); });
     ev.on('twirlHit', ({ fighter }) => this.sound('twirlHit', fighter));
     ev.on('jump', ({ fighter }) => { if (isMage(fighter)) this.pulse(fighter.x, fighter.z, 4, 0xffa040, 26); });
@@ -111,7 +117,12 @@ export class MageFX {
     ev.on('block', (e) => { if (isMage(e.defender)) this.ward(e.defender, false); });
     ev.on('parry', (e) => { if (isMage(e.defender)) this.ward(e.defender, true); });
 
-    ev.on('boltCharge', ({ fighter }) => this.sound('elecCharge', fighter));
+    ev.on('boltCharge', ({ fighter }) => {
+      this.sound('elecCharge', fighter);
+      // the lantern swells with the held bolt until it goes
+      this.chargeOrb(fighter, () => fighter.state === 'bolt' && !fighter.boltFired, () => this.staffTip(fighter),
+        () => Math.min(1, (fighter.boltCharge ?? 0) / 28));
+    });
     ev.on('boltChargeFull', ({ fighter }) => { this.sound('elecFull', fighter); this.flashAt(this.staffTip(fighter), 0xffd890, 18); });
     ev.on('boltCast', ({ fighter, plan, charged }) => {
       this.sound('boltCast', fighter);
@@ -127,7 +138,13 @@ export class MageFX {
     });
     ev.on('thunderStrike', ({ strike }) => this.thunder(strike));
     ev.on('forceBlast', (b) => this.force(b));
-    ev.on('forceCharge', ({ fighter }) => this.sound('boltCharge', fighter));
+    ev.on('forceCharge', ({ fighter }) => {
+      this.sound('boltCharge', fighter);
+      const f = fighter;
+      this.chargeOrb(f, () => f.state === 'force' && !f.forceAt,
+        () => ({ x: f.x + f.facing * 34, y: f.z - f.h - (f.stats.hover?.height ?? 0) - 62 }),
+        () => Math.min(1, (f.forceCharge ?? 0) / 34));
+    });
     ev.on('forceChargeFull', ({ fighter }) => { this.sound('magicBlock', fighter); this.flashAt({ x: fighter.x + fighter.facing * 20, y: fighter.z - 70 }, 0xeef0ff, 16); });
     ev.on('blinkOut', ({ fighter, x, z }) => { this.sound('blinkOut', fighter); this.blinkPuff(x, z, fighter, true); });
     ev.on('blinkIn', ({ fighter, x, z }) => { this.sound('blinkIn', fighter); this.blinkPuff(x, z, fighter, false); });
@@ -176,6 +193,7 @@ export class MageFX {
       const x0 = d.x + rand(-d.stats.body.w * 0.5, d.stats.body.w * 0.5);
       this.bolt({ x: x0, y: y0 }, { x: x0 + rand(-26, 26), y: y0 + rand(-22, 22) }, d.z, false, 0.3);
     }
+    this.paint('magezap', e.x, e.z - e.h, { h: 70 * power, depth: e.z + 2.5, fps: 34, from: 1, rot: rand(0, Math.PI * 2) });
     const fl = this.scene.add.image(e.x, e.z - e.h, 'soft').setTint(0x9ab8ff).setBlendMode(ADD()).setScale(0.4 * power).setDepth(e.z + 2);
     this.scene.tweens.add({ targets: fl, scale: 0.9 * power, alpha: 0, duration: 130, onComplete: () => fl.destroy() });
   }
@@ -186,6 +204,7 @@ export class MageFX {
     this.sound('thunderStaff', e.attacker);
     this.bolt({ x: d.x + rand(-10, 10), y: d.z - d.h - 420 }, { x: d.x, y: d.z - d.h - 10 }, d.z, true, 1);
     this.pulse(d.x, d.z, 2, 0xe0f0ff, 90);
+    this.blastAt('magethunder', d.x, d.z, 110);
     this.scene.fx.shake(8, 14);
   }
 
@@ -222,6 +241,7 @@ export class MageFX {
     const c = { x: t.x, y: t.z - t.h - t.stats.body.h * 0.5 };
     this.sound('storm', by);
     this.flashAt(c, 0xe8f2ff, 46);
+    this.paint('magezap', c.x, c.y, { h: 260, depth: t.z + 3, fps: 20 });
     for (let i = 0; i < 6; i++) {
       const a = rand(0, Math.PI * 2);
       this.bolt(c, { x: c.x + Math.cos(a) * rand(50, 110), y: c.y + Math.sin(a) * rand(40, 90) }, t.z, i < 2, 0.8);
@@ -261,6 +281,7 @@ export class MageFX {
       this.bolt({ x: p.x + rand(-20, 20), y: p.y - 520 }, p, t.z, true, 1.6);
       this.bolt({ x: p.x + rand(-60, 60), y: p.y - 520 }, { x: p.x, y: t.z - 6 }, t.z, true, 1.2);
       this.flashAt(p, 0xffffff, 40);
+      this.blastAt('magethunder', t.x, t.z, 130);
     }
     this.sound('storm', caster);
     this.scene.fx?.shake(12, 18);
@@ -270,6 +291,7 @@ export class MageFX {
   // Meteor Drop lands: the floor bursts in a ring of arcane fire and stone.
   meteor(f, x, z) {
     this.sound('meteorLand', f);
+    this.blastAt('magemeteor', x, z, 170, { fps: 16 });
     this.pulse(x, z, 0, 0xffa040, 120);
     this.pulse(x, z, 0, 0x9ab8ff, 90);
     this.flashAt({ x, y: z - 20 }, 0xffd8a0, 44);
@@ -286,6 +308,21 @@ export class MageFX {
     if (hits.length) this.sound('spikeImpale', line.by);
     s.quakeFX?.dust(x, z, 2, 0.6);
     for (let k = 0; k < 4; k++) s.quakeFX?.rock(x + rand(-10, 10), z, rand(-80, 80), rand(120, 260), 0.45);
+    const P = FX.magespikes;
+    if (P) {
+      // painted: the spikes of glowing-seamed stone punch up out of the floor, the
+      // ground cracks orange under them, and they sink back
+      this.pulse(x, z, 0, 0xffa040, 40);
+      for (let k = 0; k < 2; k++) {
+        const len = rand(96, 140) * (k ? 0.68 : 1) * (hits.length ? 1.15 : 1);
+        const sc = len / P.fh;
+        const sp = s.add.image(x + (k ? rand(-18, 18) : 0), z + 4 + (k ? 3 : 0), P.key, `f${(i * 2 + k + Math.floor(rand(0, 6))) % P.count}`)
+          .setOrigin(0.5, 1).setFlipX(Math.random() < 0.5).setRotation(rand(-0.12, 0.12)).setDepth(z + 0.4 + k * 0.1).setScale(sc * 0.7, 0.01);
+        s.tweens.add({ targets: sp, scaleY: sc, scaleX: sc, duration: 80, ease: 'Back.easeOut' });
+        s.tweens.add({ targets: sp, scaleY: 0.01, alpha: 0.5, delay: 560 + k * 60, duration: 260, ease: 'Quad.easeIn', onComplete: () => sp.destroy() });
+      }
+      return;
+    }
     if (!cutPieces(s, 'collapse-spikes-src', names)) return;
     for (let k = 0; k < 2; k++) {
       const len = rand(70, 104) * (k ? 0.7 : 1);
@@ -334,8 +371,94 @@ export class MageFX {
   }
 
   flashAt(p, color, r) {
+    // painted: a zap burst of about the flash's size (the flash is a crack of light)
+    if (FX.magezap && r >= 14) {
+      this.paint('magezap', p.x, p.y, { h: r * 4.2, depth: DEPTH.popups - 4, fps: 30, from: 1 });
+      const c = this.scene.add.circle(p.x, p.y, r * 0.8, 0xffffff, 0.5).setDepth(DEPTH.popups - 4).setBlendMode(ADD());
+      this.scene.tweens.add({ targets: c, scale: 1.6, alpha: 0, duration: 110, onComplete: () => c.destroy() });
+      return;
+    }
     const c = this.scene.add.circle(p.x, p.y, r, color, 0.7).setDepth(DEPTH.popups - 4).setBlendMode(ADD());
     this.scene.tweens.add({ targets: c, scale: 1.8, alpha: 0, duration: 160, onComplete: () => c.destroy() });
+  }
+
+  // Play one of the painted spell strips once at (x, y). h: height on screen; oy: origin
+  // (1 = feet on the point, for blasts on the floor); add: drawn as light (the glow sheets);
+  // glow: an extra additive copy over a solid sheet (fire and smoke); from/to: frame range.
+  // Returns the image, or null when the strip isn't in.
+  paint(name, x, y, { h = 100, oy = 0.5, ox = 0.5, depth = 0, add = true, glow = 0, fps, flip = false, rot = 0, alpha = 1, from = 0, to, sx = 1, rev = false } = {}) {
+    const P = FX[name];
+    if (!P) return null;
+    const s = this.scene;
+    const last = (to ?? P.count - 1);
+    const sc = h / P.fh;
+    const imgs = [];
+    for (const g of glow ? [false, true] : [false]) {
+      const img = s.add.image(x, y, P.key, `f${from}`).setOrigin(ox, oy).setScale(sc * sx, sc).setDepth(depth + (g ? 0.01 : 0))
+        .setFlipX(flip).setRotation(rot).setAlpha(g ? glow : alpha);
+      if (add || g) img.setBlendMode(ADD());
+      imgs.push(img);
+    }
+    const t = { f: from };
+    const n = last - from + 1;
+    const at = (q) => `f${rev ? last - (Math.min(last, q) - from) : Math.min(last, q)}`;
+    for (const im of imgs) im.setFrame(at(from));
+    s.tweens.add({
+      targets: t, f: last + 0.99, duration: (n / (fps ?? P.fps)) * 1000, ease: 'Linear',
+      onUpdate: () => { for (const im of imgs) if (im.active) im.setFrame(at(Math.floor(t.f))); },
+      onComplete: () => { for (const im of imgs) im.destroy(); },
+    });
+    return imgs[0];
+  }
+
+  // The painted rune circle lying on the floor at (x, z), w wide: fades in, holds for
+  // `life` frames (breathing, and flaring to the blazing frame when `bright`), fades out.
+  // Returns the image (or null) so a caller can end it early.
+  rune(x, z, w, { life = 40, bright = false, alpha = 0.9 } = {}) {
+    const P = FX.magerunes;
+    if (!P) return null;
+    const s = this.scene;
+    const sc = w / P.fw;
+    const img = s.add.image(x, z, P.key, bright ? 'f1' : 'f0').setScale(sc * 0.6, sc * 0.6).setDepth(z - 1).setBlendMode(ADD()).setAlpha(0);
+    s.tweens.add({ targets: img, scaleX: sc, scaleY: sc, duration: 160, ease: 'Back.easeOut' });
+    s.everyTick(life, (t) => {
+      if (!img.active) return false;
+      const k = t < 6 ? t / 6 : t > life - 12 ? Math.max(0, (life - t) / 12) : 1;
+      img.setAlpha(alpha * k * (0.8 + 0.2 * Math.sin(t * 0.5)));
+      if (!bright && t % 5 === 0) img.setFrame(Math.random() < 0.25 ? 'f1' : 'f0');
+      if (t >= life - 1) img.destroy();
+      return true;
+    });
+    return img;
+  }
+
+  // A ball of magic charging where `at()` says (his lantern, his palm) for as long as
+  // `on()` holds, growing with `level()` (0..1); it lets go in a flash. Painted only.
+  chargeOrb(f, on, at, level) {
+    const P = FX.magecharge;
+    if (!P) return;
+    const s = this.scene;
+    const img = s.add.image(0, 0, P.key, 'f0').setBlendMode(ADD()).setDepth(f.z + 3);
+    let n = 0;
+    s.everyTick(600, (t) => {
+      if (!img.active) return false;
+      if (!f.alive || !on() || t >= 599) {
+        const p = at();
+        this.flashAt(p, 0xffe0b0, 14);
+        img.destroy();
+        return false;
+      }
+      const p = at();
+      const k = level();
+      img.setPosition(p.x, p.y).setDepth(f.z + 3).setScale(((34 + 46 * k) * (0.92 + 0.08 * Math.sin(t * 0.9))) / P.fh);
+      if (t % 3 === 0) img.setFrame(`f${(n++) % P.count}`);
+      return true;
+    });
+  }
+
+  // a painted blast on the floor, feet on (x, z)
+  blastAt(name, x, z, h, opts = {}) {
+    return this.paint(name, x, z + 4, { h, oy: 1, depth: z + 1.2, add: false, glow: 0.55, ...opts });
   }
 
   // a flat ring spreading over the floor
@@ -349,6 +472,16 @@ export class MageFX {
     this.sound(parry ? 'magicBlock' : 'staffBlock', f);
     const x = f.x + f.facing * 16;
     const y = f.z - f.h - 70;
+    if (FX.mageward) {
+      // painted: a disc of amber runes thrown up edge-on in front of him
+      const W = FX.mageward;
+      const sc = (parry ? 130 : 105) / W.fh;
+      const img = this.scene.add.image(x + f.facing * 14, y, W.key, parry ? 'f1' : 'f0').setScale(sc * 0.5, sc * 0.7).setDepth(f.z + 1).setBlendMode(ADD()).setFlipX(f.facing < 0);
+      this.scene.tweens.add({ targets: img, scaleX: sc * (parry ? 1.25 : 1), scaleY: sc, duration: 70, ease: 'Back.easeOut' });
+      this.scene.tweens.add({ targets: img, alpha: 0, delay: parry ? 200 : 110, duration: parry ? 220 : 140, onComplete: () => img.destroy() });
+      this.scene.gore.spark(x + f.facing * 14, f.z, f.h + 70, parry ? 0xffe0a0 : 0xffa040, parry ? 18 : 8);
+      return;
+    }
     const ring = this.scene.add.ellipse(x, y, 20, 46).setStrokeStyle(parry ? 3 : 2, 0xffb050, 0.9).setDepth(f.z + 1).setBlendMode(ADD());
     this.scene.tweens.add({ targets: ring, scaleX: parry ? 2.4 : 1.6, scaleY: parry ? 1.6 : 1.2, alpha: 0, duration: parry ? 320 : 200, onComplete: () => ring.destroy() });
     this.scene.gore.spark(x, f.z, f.h + 70, parry ? 0xffe0a0 : 0xffa040, parry ? 16 : 7);
@@ -357,6 +490,7 @@ export class MageFX {
   // A jagged lightning line a -> b (screen points), redrawn jagged every other frame
   // while it fades; forks off the main line.
   bolt(a, b, z, charged, life = 1) {
+    if (FX.magebolts && Math.hypot(b.x - a.x, b.y - a.y) > 34) return this.paintedBolt(a, b, z, charged, life);
     const g = this.scene.add.graphics().setDepth(Math.max(z, 0) + 2).setBlendMode(ADD());
     const n = 12;
     const frames = Math.round((charged ? 14 : 10) * life);
@@ -399,8 +533,47 @@ export class MageFX {
     draw(1);
   }
 
+  // The painted bolt: one of the six bolts stretched from a to b, swapped for another
+  // (and mirrored) every other frame so it writhes, thinning as it fades; a white core
+  // line under it keeps short arcs readable.
+  paintedBolt(a, b, z, charged, life) {
+    const s = this.scene;
+    const P = FX.magebolts;
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    const rot = Math.atan2(b.y - a.y, b.x - a.x) - Math.PI / 2;
+    // a bolt's painted width is about a quarter of its cell: aim for a set thickness on
+    // screen, never fatter than a third of its length
+    const width = Math.min(len * 0.34, (charged ? 34 : 22) * Math.max(0.6, Math.min(1.6, life)));
+    const sx = width / (P.fw * 0.3);
+    const sy = len / P.fh;
+    const img = s.add.image(a.x, a.y, P.key, `f${Math.floor(Math.random() * P.count)}`).setOrigin(0.5, 0)
+      .setRotation(rot).setScale(sx, sy).setDepth(Math.max(z, 0) + 2).setBlendMode(ADD());
+    const frames = Math.round((charged ? 14 : 10) * life);
+    s.everyTick(frames, (t) => {
+      if (!img.active) return false;
+      const k = 1 - t / frames;
+      if (t % 2 === 1) img.setFrame(`f${Math.floor(Math.random() * P.count)}`).setFlipX(Math.random() < 0.5);
+      img.setAlpha(Math.min(1, k * 1.4)).setScale(sx * (0.55 + 0.45 * k), sy);
+      if (t >= frames - 1) img.destroy();
+      return true;
+    });
+    return img;
+  }
+
   // STATIC CHARGE: a ring of blue-white sparks on the floor that crackles until it fades
   stormField(f) {
+    if (FX.magerunes) {
+      this.rune(f.x, f.z, f.radius * 2.1, { life: f.life, alpha: 0.85 });
+      this.scene.everyTick(f.life, (t) => {
+        if (t % 9 === 0) {
+          const a = rand(0, Math.PI * 2);
+          const p = { x: f.x + Math.cos(a) * f.radius * 0.8, y: f.z + Math.sin(a) * f.depth * 0.8 };
+          this.bolt(p, { x: p.x + rand(-18, 18), y: p.y - rand(14, 30) }, f.z, false, 0.4);
+        }
+        return t < f.life - 1;
+      });
+      return;
+    }
     const ring = this.scene.add.ellipse(f.x, f.z, f.radius * 2, f.depth * 2).setStrokeStyle(2, 0x9ad0ff, 0.8).setDepth(f.z - 1).setBlendMode(ADD());
     const glow = this.scene.add.ellipse(f.x, f.z, f.radius * 2, f.depth * 2, 0x6aa0ff, 0.18).setDepth(f.z - 1.1).setBlendMode(ADD());
     this.scene.everyTick(f.life, (t) => {
@@ -424,6 +597,8 @@ export class MageFX {
     this.bolt(top, { x: s.x, y: s.z - 6 }, s.z, true, 1.6);
     this.bolt({ x: top.x + 40, y: top.y }, { x: s.x + rand(-40, 40), y: s.z - 6 }, s.z, false, 1);
     this.flashAt({ x: s.x, y: s.z - 20 }, 0xeef4ff, 50);
+    this.blastAt('magethunder', s.x, s.z, 150);
+    this.rune(s.x, s.z, s.radius * 2, { life: 26, bright: true });
     this.pulse(s.x, s.z, 0, 0x9ad0ff, s.radius);
     this.scene.fx?.shake(10, 18);
     this.sound('storm', s.by);
@@ -458,7 +633,14 @@ export class MageFX {
     if (level >= 1) this.scene.rumble(0.9, 0.6, 160);
     const half = (angle / 2) * Math.PI / 180;
     const hy = z - f.h - (f.stats.hover?.height ?? 0) - 62;
-    for (let i = 0; i < 3; i++) {
+    // painted: the wave of force rolling out of his palm, growing to the blast's reach
+    const W = FX.mageforce;
+    if (W) {
+      const hgt = Math.min(220, Math.max(110, radius * Math.tan(half) * 1.5)) * (1 + level * 0.25);
+      this.paint('mageforce', x + dir * 18, hy + 8, { h: hgt, ox: 0, oy: 0.55, flip: dir < 0, depth: z + 1, fps: 22 })
+        ?.setOrigin(dir < 0 ? 1 : 0, 0.55);
+    }
+    for (let i = 0; i < (W ? 1 : 3); i++) {
       const g = this.scene.add.graphics().setDepth(z + 1).setBlendMode(ADD());
       let r = 18;
       this.scene.everyTick(16, (t) => {
@@ -494,6 +676,14 @@ export class MageFX {
   // Sparks and a puff of smoke where he broke apart / re-formed; a fading afterimage.
   blinkPuff(x, z, f, out) {
     const h = (f.stats.hover?.height ?? 0) + 50;
+    // painted: going, his shape of violet light splits into shards, flashes and shrinks to
+    // a line; arriving, the same run backwards (the line opens out into him)
+    if (FX.mageblink) {
+      const top = (f.stats.body?.h ?? 110) * 1.45;
+      this.paint('mageblink', x, z - (f.stats.hover?.height ?? 0) + 6, { h: top, oy: 1, depth: z + 1.5, fps: out ? 20 : 26, rev: !out, from: out ? 0 : 1, flip: f.facing < 0 });
+      this.scene.gore.spark(x, z, h, 0xffa040, out ? 10 : 6);
+      return;
+    }
     this.scene.gore.spark(x, z, h, 0xffa040, out ? 18 : 12);
     this.scene.gore.spark(x, z, h, 0x8a9cff, out ? 10 : 6);
     for (let i = 0; i < 4; i++) this.scene.burning?.puff?.(x + rand(-14, 14), z, h + rand(-30, 30), 0.35);
@@ -591,6 +781,9 @@ export class MageFX {
         s.gore.onKill({ attacker: f, defender: v, dir: f.facing, move: { cut: 'crush', damage: 999 }, x: v.x, z: v.z, h: v.h + v.stats.body.h * 0.5, damage: 999, fatality: 'explode' }, view);
         s.gore.mist?.(v.x, v.z, v.h + 50, 10);
         this.flashAt(chest(v), 0xffd0a0, 26);
+        // the prison lets go: a blinding burst of the sphere's light, a ring blown flat
+        this.paint('magezap', chest(v).x, chest(v).y, { h: 300, depth: v.z + 3, fps: 22 });
+        this.rune(v.x, v.z, 220, { life: 24, bright: true });
         this.pulse(v.x, v.z, v.h + 40, 0xffc070, 80);
         s.fx.shake(b.last ? 10 : 6, 14);
         s.rumble(0.9, 0.7, 160);
@@ -648,6 +841,26 @@ export class MageFX {
 
   // a ring of runes holding a body in the air (rupture), closing as it's crushed
   cage(v, f) {
+    const C = FX.magecage;
+    if (C) {
+      // painted (Nick: "really good artwork"): an arcane prison sphere of turning gold rune
+      // rings round him, a blazing rune circle under him; it closes as the fist does
+      const s = this.scene;
+      const img = s.add.image(v.x, v.z, C.key, 'f0').setBlendMode(ADD()).setAlpha(0);
+      const under = this.rune(v.x, v.z, 150, { life: 80, bright: true });
+      s.everyTick(80, (t) => {
+        if (!img.active) return false;
+        if (v.state !== 'executed' || v.health <= 0) { img.destroy(); under?.destroy(); return false; }
+        const c = v.ruptureCrush ?? 0;
+        const y = v.z - v.h - v.stats.body.h * 0.5;
+        const hgt = v.stats.body.h * (1.55 - c * 0.85) * (t < 6 ? 0.6 + 0.4 * t / 6 : 1);
+        img.setPosition(v.x, y).setDepth(v.z + 1).setScale(hgt / C.fh).setAlpha(Math.min(1, t / 4))
+          .setFrame(`f${Math.floor(t / 3) % C.count}`);
+        if (t % 7 === 0) this.scene.gore.spark(v.x + rand(-20, 20), v.z, v.h + v.stats.body.h * 0.5, 0xffd890, 3);
+        return true;
+      });
+      return;
+    }
     const g = this.scene.add.graphics().setBlendMode(ADD());
     this.scene.everyTick(80, (t) => {
       if (!g.active) return false;

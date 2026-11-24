@@ -13,6 +13,21 @@ branch, or ChatGPT's work gets lost.
   (spireHold, driven from the victim's 'executed' state via v.spireHang) and drop at one shared shatter 78 frames
   after the first spire. MageFX.js untouched.
 
+- 24 November 2026 (cloud, branch `claude/project-thread-32d8m6`; ON MAIN (Nick: "push all"), NOT on itch).
+  ORYN'S MAGIC PAINTED (Nick: "need to get art for mages different lighting effects it needs to feel more powerful",
+  then "get the mages Y finnisher circle thing Really good artwork"). 10 ChatGPT sheets (made in Chrome on the PC,
+  prompts docs/mage-art-prompts.md section 14, originals art/mage-fx/) cut by tools/cut-mage-fx.py into
+  assets/fx/mage-*-strip.png (FX_STRIPS magebolts, magezap, magethunder, magemeteor, mageforce, mageblink, magerunes,
+  mageward, magespikes, magecharge, magecage). effects/MageFX.js paint()/blastAt()/rune()/chargeOrb()/paintedBolt():
+  every lightning bolt is a painted bolt stretched between its ends; flashes are painted zap bursts; sky strikes and
+  the Y,Y,X Thunder Staff leave a painted ground blast + blazing rune circle; Meteor Drop a painted fire eruption;
+  force blast a painted wave; blink a painted shape-of-light (reversed on arrival); block/parry a painted rune disc;
+  storm field, Skyfall call and Tempest a painted floor rune circle; Stone Spikes painted spikes; held Y / held kick a
+  charging orb at the lantern / palm; ARCANE RUPTURE (Y finisher) a turning gold prison sphere over a blazing rune
+  circle, shrinking as he closes his fist, bursting in a huge zap. All fall back to the old code drawing if a strip is
+  missing. Seen only in a small preview page (project files mage-fx/, before-after.jpg), not in a real fight yet: check
+  sizes on the PC (bolt thickness, blink height, cage size round big men).
+
 - 23 November 2026 (cloud; ON MAIN (Nick: "finish and push all"), NOT on itch).
   LEVEL 1 WELL SET PIECE (Nick: "The Mira and the boy at the well is serious scene please give those npc the love
   and that set piece too"). stage/WellRescue.js + view/WellRescueView.js + tests/well-rescue-test.js. The square's

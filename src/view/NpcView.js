@@ -138,11 +138,10 @@ const FOLK_BY_ID = Object.fromEntries(FOLK.map((F) => [F.id, F]));
 for (const F of FOLK) CELLS[F.id] = FOLK_CELLS;
 const FOLK_STEP = 30;   // (measured off the painted farmer: a planted foot travels ~110 of 407 art px a pose) px of ground a pose of a folk runner's cycle covers (at depth scale and size 1)
 const HOBBLE_STEP = 12; // ...and an old one's hobble (shorter steps, falling behind)
-const FOLK_FADE = 140;
 // ...and the convoy's prisoners out of the wrecked wagon (crowdHead): sim frames after the
 // wreck the first jumps, frames between each, frames in the air; how high its bed is and
 // the hop above it (px, depth scale 1); how far behind its back they land, and apart
-const SPILL = { first: 10, every: 13, jump: 16, bed: 46, hop: 22, out: 30, gap: 38 };  // px from where they run to, a fleeing crowd fades out over this
+const SPILL = { first: 10, every: 13, jump: 16, bed: 46, hop: 22, out: 30, gap: 38 };
 for (const id of ['tobin', 'hilde', 'bram', 'a', 'b', 'c']) CELLS[`prisoner-${id}`] = PRISONER;
 
 // Who is chained at the ore face (stageMine.js / stageAscent.js npcs with pose 'chained'),
@@ -428,7 +427,6 @@ export class NpcView {
     if (n.pose === 'chained') { this.drawChained(n, v, g, y, k, t, pose, dir); return; }
     if (n.pose === 'group' || n.pose === 'convoy') {
       // (the barn's group is the miller's people: Irvolino leads them, data/speakers.js MILLER)
-      this.fadeNear(n, g);
       const heads = n.people ?? 3;
       for (let i = 0; i < heads; i++) {
         const first=this.curN;
@@ -558,14 +556,6 @@ export class NpcView {
   // the convoy's wagon a crowd rides in (stage/Story.js 'convoy': the prop with its tag)
   wagonOf(n) {
     return (this.wagons ??= new Map()).get(n.id) ?? this.wagons.set(n.id, this.stage.props.find((q) => q.kind === 'wagon' && q.tag === n.tag) ?? null).get(n.id);
-  }
-
-  // a fleeing crowd fades as it nears the spot it runs to (and is gone: stage/Story.js),
-  // instead of blinking out
-  fadeNear(n, g) {
-    if (n.state !== 'fleeing' || !n.flee) return;
-    const d = Math.hypot(n.flee.x - n.x, (n.flee.z ?? n.z) - n.z);
-    g.setAlpha(g.alpha * Math.min(1, d / FOLK_FADE));
   }
 
   // The guide (Nicholas, stage/Story.js `guide`): walking on ahead, or waiting, looking on
@@ -706,7 +696,6 @@ export class NpcView {
       } else if (n.state === 'fleeing' || n.state === 'gathered') {
         const p = n.state === 'fleeing' ? 'run' : 'stand';
         const dir = n.state === 'fleeing' ? n.dir ?? -1 : -1;
-        this.fadeNear(n, g);
         for (let i = 0; i < many; i++) {
           const H = this.crowdHead(n, i, many, k, t, p, dir, 40);
           this.tilt = H.tilt;

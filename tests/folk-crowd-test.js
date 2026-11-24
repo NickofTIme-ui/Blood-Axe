@@ -59,4 +59,12 @@ for (let f = 1; f < 160; f++) {
 }
 const spread = Math.max(...last) - Math.min(...last);
 assert(spread > 150, `they string out on the road (${spread.toFixed(0)} px)`);
-console.log(`Freed crowds: ${dealt.length} heads, all different; the convoy's five jump out one by one and string out ${spread.toFixed(0)} px running.`);
+
+// no fading out at the flee point (Nick, 2026-11-24): they run on until off the screen
+const r = st.story.npc('convoy');
+r.state = 'fleeing'; r.runOff = 0; r.x = p.x - 200; r.flee = { x: p.x - 260, z: r.z };
+let frames = 0;
+while (r.state === 'fleeing' && frames < 2000) { st.story.updateNpcs([p]); frames++; }
+assert.equal(r.state === 'safe' || r.state === 'gathered', true, 'they get away in the end');
+assert(Math.abs(r.x - p.x) > 1100 || r.state === 'gathered', `gone only once off the screen (${Math.abs(r.x - p.x).toFixed(0)} px from the hero)`);
+console.log(`Freed crowds: ${dealt.length} heads, all different; the convoy's five jump out one by one and string out ${spread.toFixed(0)} px running, and run off the screen (${frames} frames) instead of fading.`);

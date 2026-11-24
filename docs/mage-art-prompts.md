@@ -293,3 +293,108 @@ Skill-tree medallions for THE CATACLYSM (like the other icons, `assets/ui/skillt
 `liveWire.png` (a crackling blue-white spark wrapped round a staff), `stoneSpikes.png` (a row of
 jagged stone spikes bursting from cracked earth), `tempest.png` (a black storm cloud with three
 lightning bolts). Then take `noIcon: true` off those three nodes in `src/data/skills.js`.
+
+---
+
+## 14. Painted spell effects (24 November 2026): make his magic feel powerful
+
+Nick: "need to get art for mages different lighting effects it needs to feel more powerful".
+Until now almost every spell effect in `src/effects/MageFX.js` was drawn by code (thin
+jagged lines, plain circles and rings). These sheets replace them. All are painted on
+**pure black** so the game can draw them with additive blending (black = invisible, the
+light adds onto the scene), except the stone spikes, which are solid and go on magenta.
+Colours match Oryn: the white-hot core and amber-gold fire of his lantern, edged with the
+deep violet-blue of his robes and staff sparks.
+
+Rules for every message: one image, one row, frames evenly spaced with wide black gaps,
+nothing touching the edges, no text, no ground, no characters, no frame borders, painted
+16-bit dark-fantasy arcade pixel-art style with a rich glow.
+
+**14a. Lightning bolts** `assets/fx/mage-bolts.png`
+> Sprite sheet for a 16-bit dark-fantasy beat 'em up, painted pixel-art style. 6 separate
+> VERTICAL lightning bolts in one row on a pure black background, wide black gaps between
+> them, each bolt reaching from the very top of its column to the very bottom. Jagged,
+> forking, violent magical lightning: a blinding white-hot core, a thick amber-gold glow
+> around it, and a thin outer haze of electric violet-blue. Each bolt a different shape,
+> with 2 to 4 small side forks. No ground, no sky, no text, nothing else in the image.
+
+**14b. Lightning hit burst** `assets/fx/mage-zap-burst.png`
+> Same style. An 8-frame animation in one row on pure black, wide gaps, every frame the
+> same size and centred: a magical lightning impact exploding on a body. Frame 1 a tiny
+> white-hot spark; 2-3 a blinding star burst with jagged arcs of white and amber-gold
+> lightning shooting outward and violet-blue crackle; 4-5 the largest, ragged ring of
+> sparks flying out; 6-8 it breaks into scattered fading embers and small blue arcs.
+> No characters, no text.
+
+**14c. Sky strike on the ground** `assets/fx/mage-thunder-ground.png`
+> Same style. An 8-frame animation in one row on pure black, wide gaps, side view of a
+> huge lightning bolt hitting the ground: the bottom of each frame is the ground line.
+> 1 the bolt's tip touches down; 2-3 a blinding white-gold explosion of light bursting up
+> and out along the ground, sparks and lightning arcs spraying sideways, rocks and dirt
+> flung up; 4-5 a wide flattened dome of amber fire and violet-blue electricity; 6-7 it
+> collapses into rising smoke and glowing embers; 8 faint embers. No bolt from the sky in
+> frames 3-8 (the game draws the bolt). No ground plane drawn, no text.
+
+**14d. Meteor Drop fire blast** `assets/fx/mage-meteor-blast.png`
+> Same style. An 8-frame animation in one row on pure black, wide gaps, side view of an
+> arcane meteor slamming into the ground; the bottom of each frame is the ground line.
+> 1 a white-hot flash; 2-4 a wide eruption of roaring orange-gold fire and molten rock
+> chunks blasting up and out, ringed with violet-blue magic runes; 5-6 a mushroom of fire
+> and black smoke; 7-8 dying flames and embers. Wide and low, about twice as wide as
+> tall. No characters, no text.
+
+**14e. Force blast shockwave** `assets/fx/mage-force-wave.png`
+> Same style. A 6-frame animation in one row on pure black, wide gaps, side view of a
+> wave of pure magical force blasting to the RIGHT out of an open palm (no hand drawn):
+> a cone of rippling, warped air with bright white-gold crescent edges, faint violet
+> rune glyphs caught in it, and streaks of dust. Frame 1 small near the left edge of its
+> cell, each frame wider and further right, 5-6 the widest, thinning and fading.
+> No characters, no text.
+
+**14f. Blink teleport** `assets/fx/mage-blink.png`
+> Same style. A 6-frame animation in one row on pure black, wide gaps, each frame a tall
+> narrow column the height of a man: a sorcerer vanishing in a teleport. 1 a tall violet-
+> blue silhouette-shaped glow; 2-3 it splits into vertical shards of violet light and
+> amber sparks; 4 a bright white-gold flash at the centre; 5-6 it implodes into a thin
+> vertical line and a few drifting motes. No person drawn, only the light. No text.
+
+**14g. Rune circles** `assets/fx/mage-runes.png`
+> Same style. 4 separate glowing magic circles in one row on pure black, wide gaps.
+> 1 and 2: a large arcane rune circle seen lying flat on the ground in low perspective
+> (a wide flat ellipse, about 4 times wider than tall), double ring, glowing runes and
+> sigils between the rings, crackling with small violet-blue and white lightning; 1 dim,
+> 2 blazing. 3 and 4: an upright round ward shield of interlocking amber-gold runes seen
+> from the side (a tall narrow ellipse, like a glowing disc turned edge-on), 3 calm,
+> 4 flaring bright. No text, no characters.
+
+**14h. Staff charge** `assets/fx/mage-charge.png`
+> Same style. A 6-frame looping animation in one row on pure black, wide gaps, every frame
+> the same size and centred: a ball of magic charging up (as on the tip of a sorcerer's
+> staff). A white-hot core in an amber-gold flame, small violet-blue arcs of lightning
+> crackling round it and sparks being sucked inward, a different arrangement each frame.
+> Round, no staff drawn, no text.
+
+**14i. Stone spikes** `assets/fx/mage-stone-spikes.png` (solid, not a glow)
+> Same style. 6 separate jagged spikes of magical stone in one row on a FLAT PURE MAGENTA
+> (#FF00FF) background, wide gaps, each pointing straight UP with its broken base flat on
+> one baseline (they burst out of the ground). Dark grey-brown rock, sharp splintered
+> points, thin seams of glowing orange-gold magic in the cracks, a few clods of earth at
+> the base. Different heights and widths, each about 3 to 5 times taller than wide.
+> No dust, no text, nothing magenta in the art itself.
+
+**14j. Arcane Rupture prison (Y finisher)** `assets/fx/mage-cage-strip.png`
+Nick (24 Nov): "get the mages Y finisher circle thing really good artwork".
+> Same style, extremely detailed and spectacular. An 8-frame looping animation in one row
+> on pure black, wide gaps, every frame the same size and centred: an ARCANE PRISON SPHERE,
+> an upright oval cage of magic closed around a victim (inside empty, no person). Three or
+> four interlocking rings of glowing amber-gold runes and sigils tilted like a gyroscope or
+> armillary sphere, a thin violet-blue energy membrane between them, tiny orbiting rune
+> glyphs, crackling violet lightning and gold sparks. Each frame the rings turn a little
+> further so the 8 frames loop. About 1 wide to 1.5 tall. No text, no frame borders.
+
+Cutting: `python tools/cut-mage-fx.py art/mage-fx/<sheet>.png assets/fx/<strip>.png <frames>
+[glow|solid|magenta] [centre|left]`, then shrink the strip to about twice the height it is
+drawn at (FX_STRIPS height) to keep the download small. Originals: art/mage-fx/ (and
+project files mage-fx/originals/). A tiny Phaser page that plays each effect over a level
+backdrop, with a before (code-drawn) mode, is in project files mage-fx/preview-harness/
+(the full game OOMs in the cloud's headless browser).
