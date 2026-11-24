@@ -6,6 +6,15 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 24 November 2026 (cloud; branch claude/project-thread-i5k685, waiting on Nick's OK to push, NOT on itch).
+  JOREN REPAINTED (Nick, with a shot of the man strung up by his wrists: "i meant heavily uprgade this guy"). His own
+  sheet assets/sprites/npc/joren.png (ChatGPT): hanging by his tied wrists, kicking on the rope, dropped to one knee,
+  standing with his wrists tied, a four-beat run (he used to run on the captive's crutch limp). The hanging cells are
+  cut at his wrists and sit at the cell top; drawTreed draws his rope as the dead's painted hemp (treedRope, the
+  hanged_1 strand) down to them, and the cut end left on the bough after. hold 48 -> 16 so his feet stay clear of
+  the mud at his new size. Joren and Ansel use a milder WOOD_FOLK_GRADE (their art is warm already). Sheet script
+  /mnt/project-files/level2-art-nov24/joren_sheet.py, raws in raw/.
+
 - 24 November 2026 (cloud; ON MAIN bb0dd05 (Nick: "push all"), NOT on itch).
   LEVEL 2 ART: THE HANGED DEAD AND ANSEL REPAINTED (Nick: "i also want the art for the hanging guys redone, bring up
   the quality, the rope and all"; "the guy with the broken leg needs new art bring up the quality"). ChatGPT (Nick's

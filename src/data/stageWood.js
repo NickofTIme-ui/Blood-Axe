@@ -365,7 +365,7 @@ export const STAGE_WOOD = {
   npcs: [
     {
       id: 'joren', name: 'Joren', x: JOREN_BOUGH.x, z: JOREN_BOUGH.z, pose: 'treed', rescue: 'treed', section: 'tree', wave: 1,
-      freeFor: 60, hold: 48, // (time to drop down and get up; his hands this far under the rope's knot on the bough's tip)
+      freeFor: 60, hold: 16, // (time to drop down and get up; his hands this far under the rope's knot on the bough's tip: his painted sheet hangs his feet about 115 px under his wrists, still clear of the mud)
       flee: { x: 1600, z: 300 },
     },
     // the hangmen's dead, still on the tree (view only): each tied under one of the painted

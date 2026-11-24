@@ -176,6 +176,9 @@ export const LEVEL_ART = {
 // The poses in each sheet are listed in docs/campaign/art-levels-1-2.md (items 8, 16,
 // 17, 25).
 const NPC_GRADE = { contrast: 1.12, saturation: 1.18, outline: 2, rim: 0.45 };
+// (the wood's own painted folk, Joren and Ansel, come out of ChatGPT warm and saturated already:
+// the ink line and a little rim, colour pulled back a touch to sit in the grey rain)
+const WOOD_FOLK_GRADE = { contrast: 1.04, saturation: 0.9, outline: 2, rim: 0.35 };
 // (the king: sharper and brighter still, a warmer rim: he is the brightest thing in the square)
 const KING_GRADE = { contrast: 1.15, saturation: 1.12, outline: 2, rim: 0.6 };
 export const SPRITE_SHEETS = {
@@ -224,12 +227,18 @@ export const SPRITE_SHEETS = {
   // its boots at the same spot in its cell; height: the begging pose as tall as the
   // villager sheet's kneeling one (170 px)
   'villager-death': { file: 'assets/sprites/npc/villager_death.png', frames: 4, height: 170, grade: NPC_GRADE },
+  // Joren, strung up by his wrists on the hanging tree (view/NpcView.js drawTreed; Nick,
+  // 2026-11-24: "heavily upgrade this guy"). ChatGPT: hanging, kicking on the rope, dropped to
+  // one knee, standing (wrists still tied), a four-beat run. The hanging cells are cut at his
+  // wrists (the rope is the dead's painted hemp, drawn to them) and sit at the cell's top;
+  // height puts him standing at about 105 px
+  joren: { file: 'assets/sprites/npc/joren.png', frames: 8, height: 231, grade: WOOD_FOLK_GRADE, centre: true, bg: 'magenta' },
   // Ansel the wheelwright, the wood's escort with the broken leg (data/stageWood.js; Nick,
   // 2026-11-24: "the guy with the broken leg needs new art bring up the quality"). ChatGPT,
   // his splinted leg and crutch painted in: stand, call for help, cower, a four-beat limp on
   // the crutch. Laid one figure per equal cell on transparent (magenta keyed); height puts him
   // standing at about 115 px
-  ansel: { file: 'assets/sprites/npc/ansel.png', frames: 7, height: 246, grade: NPC_GRADE, centre: true, bg: 'magenta' },
+  ansel: { file: 'assets/sprites/npc/ansel.png', frames: 7, height: 246, grade: WOOD_FOLK_GRADE, centre: true, bg: 'magenta' },
   captive: { file: 'assets/sprites/npc/captive.png', frames: 6, height: 250 }, // (big: the hanging pose's rope makes it the tallest, and a standing man must still match the heroes)
   // the mine's chained prisoners (view/NpcView.js PRISONERS): the villager and elder sheets
   // again, cut at the heroes' height (a standing man as tall as the captive above) and so
