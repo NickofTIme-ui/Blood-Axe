@@ -35,7 +35,7 @@ export class FireLight {
     };
     for (const l of this.lights) take(l.x, l.z, l.r, l.k);
     for (const hz of this.stage.hazards ?? []) {
-      if (hz.type !== 'fire') continue;
+      if (hz.type !== 'fire' || hz.look === 'steam') continue; // (steam gives no warm light)
       const burst = this.stage.firePhase?.(hz) === 'burst';
       take(hz.x, hz.z, burst ? 300 : 220, burst ? 1 : 0.55);
     }

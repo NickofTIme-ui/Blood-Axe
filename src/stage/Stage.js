@@ -161,7 +161,7 @@ const STAMPEDE = { period: 330, warn: 90, speed: 13, gap: 120, reach: 46, damage
 // how far on it throws him (and how much firm ground there must be: the knockdown carries him
 // on), and how far behind the hindmost hero it falls before it runs at `chaseMult` its speed
 // to catch up (it stays on screen, at your back)
-const COLLAPSE = { reach: 30, damage: 24, throw: 170, land: 120, chase: 420, chaseMult: 2.2 };
+const COLLAPSE = { grace: 75, reach: 30, damage: 24, throw: 170, land: 120, chase: 420, chaseMult: 2.2 };
 const BEAM = { period: 230, warn: 80, damage: 22, lethalH: 60 };
 // The Shattered Ascent's catapults (hazard 'bombard'): a volley every `period` frames, each
 // stone aimed at a hero (a little off where he stands), its landing spot shown for `warn`
@@ -1490,7 +1490,7 @@ export class Stage {
 
   // The fire grates erupting right now, near the action (for effects/Burn.js).
   activeFires() {
-    return this.hazards.filter((hz) => hz.type === 'fire' && Math.abs(hz.section - this.index) <= 1 && this.firePhase(hz) === 'burst');
+    return this.hazards.filter((hz) => hz.type === 'fire' && hz.look !== 'steam' && Math.abs(hz.section - this.index) <= 1 && this.firePhase(hz) === 'burst');
   }
 
   updateFire(hz) {
@@ -1501,7 +1501,7 @@ export class Stage {
     if (this.firePhase(hz) !== 'burst') return;
     for (const f of this.world.fighters) {
       if (Math.abs(f.x - hz.x) > hz.w / 2 || Math.abs(f.z - hz.z) > hz.d / 2 || f.h - (hz.y ?? 0) > 40) continue;
-      this.hurt(hz, f, FIRE.damage, Math.sign(f.x - hz.x) || 1, 'fire');
+      this.hurt(hz, f, FIRE.damage, Math.sign(f.x - hz.x) || 1, hz.look === 'steam' ? 'steam' : 'fire');
     }
   }
 
@@ -1668,9 +1668,14 @@ export class Stage {
         hz.front = Math.min(hz.front, o.front);
         o.front = null;
       }
-      this.world.events.emit('collapseStart', { hazard: hz, chained: hz.front < hz.x0 });
+      const chained = hz.front < hz.x0;
+      // (a fresh start, at the stretch's checkpoint: the mountain rumbles for a beat before the
+      // wall comes on, so a man just stood up there has time to see it and run; level 3 review)
+      hz.grace = chained ? 0 : COLLAPSE.grace;
+      this.world.events.emit('collapseStart', { hazard: hz, chained });
     }
     if (this.story?.holding) return; // (not while a held scene plays)
+    if (hz.grace > 0) { hz.grace--; return; }
     hz.surging = !!hz.surge && hz.run % hz.surge.every >= hz.surge.every - hz.surge.for;
     hz.run++;
     const C = COLLAPSE;
@@ -1913,8 +1918,9 @@ export class Stage {
     // the Mage's staff twirl: arrows glance off the spinning staff (combat/Mage.js)
     if (kind === 'arrow' && f.twirling) { hz.cool.set(f.id, 20); this.world.events.emit('arrowDeflect', { fighter: f, dir }); return; }
     if ((f.spare || f.immortal) && f.health - dmg < 1) dmg = Math.max(0, f.health - 1); // (beaten to his knees, never killed: Sequence.js; immortal: config/testMode.js)
-    if (kind === 'fire' && f.state === 'knockdown' && f.lyingSince === null) return; // already thrown clear
-    hz.cool.set(f.id, kind === 'fire' ? FIRE.tick * 3 : 50);
+    const vent = kind === 'fire' || kind === 'steam'; // (the mine's steam vents scald like a fire grate, but nothing catches)
+    if (vent && f.state === 'knockdown' && f.lyingSince === null) return; // already thrown clear
+    hz.cool.set(f.id, vent ? FIRE.tick * 3 : 50);
     f.health = Math.max(f.spare || f.immortal ? 1 : 0, f.health - dmg);
     f.flash = 6;
     const lethal = f.health <= 0;
@@ -1924,13 +1930,13 @@ export class Stage {
     else if (lethal && kind === 'fire' && f.team === 'enemy') f.fsm.change('burning', { dir });
     else if (kind === 'arrow' && !lethal && f.state !== 'knockdown' && f.h - (f.floor ?? 0) < 2) f.fsm.change('hitstun', { frames: ARROW.stun }); // (feathered: he staggers, keeps his feet)
     else {
-      f.fsm.change('knockdown', kind === 'fire' || kind === 'beam' || kind === 'arrow'
+      f.fsm.change('knockdown', vent || kind === 'beam' || kind === 'arrow'
         ? { vx: dir * 160, vh: 260 }
         : kind === 'trample' ? { vx: dir * 620, vh: 380 } : kind === 'log' ? { vx: dir * 640, vh: 470 } : kind === 'bolt' ? { vx: dir * 760, vh: 240 } : { vx: dir * 420, vh: 320 });
     }
     const e = {
       attacker: null, defender: f, dir, kind: 'hazard', hazard: kind,
-      move: { cut: crushed ? 'crush' : kind === 'fire' ? 'fire' : kind === 'bolt' || kind === 'arrow' ? 'pierce' : kind === 'crate' || kind === 'beam' || kind === 'trample' || kind === 'log' ? 'blunt' : 'slash', damage: dmg, hitstop: 6, fx: crushed?'trample':undefined },
+      move: { cut: crushed ? 'crush' : kind === 'fire' ? 'fire' : kind === 'bolt' || kind === 'arrow' ? 'pierce' : kind === 'crate' || kind === 'beam' || kind === 'trample' || kind === 'log' || kind === 'steam' ? 'blunt' : 'slash', damage: dmg, hitstop: 6, fx: crushed?'trample':undefined },
       x: f.x, z: f.z, h: f.h + f.stats.body.h * 0.5, damage: dmg, fatality: crushed?'explode':'none',
     };
     this.world.events.emit('hazardHit', { hazard: hz, fighter: f, kind });

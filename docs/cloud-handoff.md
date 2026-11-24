@@ -6,6 +6,14 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 24 November 2026 (cloud, branch claude/project-thread-k5ev14; NOT on main until Nick says push). LEVEL 3 PHASE 2
+  (masterplan https://claude.ai/artifact/QWSRL3ruDw6bajP4Zzso8X): Workings horde -> overseer + ghouls (no thralls in the
+  mine; test updated), Crusher Hall fire grates -> steam vents (`look: 'steam'`: scald, no burning, hiss), no Crusher in
+  section I (Rurik hears it pounding), Hilde's brother line points at the catapults (Bram, level 4), Oryn sees Nicholas's
+  lantern at the far side, the collapse wall waits 75 frames at a fresh checkpoint, freed miners spread out at the far
+  side, Pip's ledge 35 px lower, mine ledge rims torch-coloured instead of white, mine torches = the gates' painted
+  brazier. ART for phase 3: prompts in project files level3-art/prompts.md (floors per area plug in via a section's
+  `ground` key + view/envArt.js GROUNDS, baked with tools/bake-floor.py).
 - 24 November 2026 (cloud; ON MAIN (Nick: "update itch now"), for the next itch upload).
   BUILD FITS ITCH AGAIN. main d86dd3e built to 1,139 files / 548 MB (itch: 1,000 files, 500 MB). Only
   tools/build-release.py changed (the game code did not), so build as before: `py tools/build-release.py --quality 72`

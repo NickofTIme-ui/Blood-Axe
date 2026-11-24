@@ -1149,6 +1149,7 @@ export class StageView {
   }
 
   drawFire(hz) {
+    if (hz.look === 'steam') { this.drawSteam(hz); return; }
     if (!hz.view) {
       // Restore the original stone-rimmed firepit from props.png, including the
       // matching ember-lit artwork. Legacy look:'cart' mustn't cover this trap.
@@ -1208,6 +1209,37 @@ export class StageView {
       const life = (t - 160) / 50;
       const hgt = (1 - life * 0.6) * (60 + Math.sin(t * 0.7 + i * 1.3) * 16);
       fl.setPosition(fx, fz).setDisplaySize(26 + Math.sin(t * 0.9 + i) * 6, hgt).setDepth(fz + 0.5).setAlpha(0.95);
+    });
+  }
+
+  // A steam vent (Hollow Mountain, `look: 'steam'` on a fire hazard): the same grate and the
+  // same timing as a fire grate, but cold-lit. Warning: wisps curl up out of the grate and it
+  // hisses; the burst is a white jet that scalds (knocks down, never sets anyone alight).
+  drawSteam(hz) {
+    const s = this.scene;
+    if (!hz.view) {
+      hz.view = s.add.image(hz.x, hz.z, 'grate').setDisplaySize(hz.w, hz.d * 0.75).setDepth(DEPTH.floor + 4).setTint(0x9aa6b0);
+      hz.glow = s.add.image(hz.x, hz.z, 'glow').setDisplaySize(hz.w * 1.5, hz.d * 1.3).setTint(0xcfe4f0)
+        .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 4.1);
+      hz.puffs = Array.from({ length: 14 }, (_, i) => ({ img: s.add.image(hz.x, hz.z, 'glow').setTint(0xe8f0f4).setVisible(false), seed: i * 1.7 }));
+    }
+    hz.view.setVisible(true);
+    const phase = this.stage.firePhase(hz);
+    const t = hz.t % 210;
+    const warm = phase === 'warn' ? (t - 110) / 50 : phase === 'burst' ? 1 : 0.05;
+    hz.glow.setVisible(true).setAlpha(0.12 + 0.35 * warm);
+    hz.puffs.forEach((p, i) => {
+      const jet = phase === 'burst';
+      const wisp = phase === 'warn' && i < 5;
+      if (!jet && !wisp) { p.img.setVisible(false); return; }
+      const age = jet ? (t - 160) : (t - 110);
+      const u = ((age * (jet ? 2.2 : 0.8) + p.seed * 37) % 100) / 100; // 0 at the grate, 1 at the top
+      const hgt = jet ? 4 + u * 200 * Math.min(1, age / 6) : 4 + u * 60;
+      const fall = jet ? Math.max(0, 1 - Math.max(0, age - 38) / 12) : 1;
+      const x = hz.x + Math.sin(p.seed * 3 + u * 4) * hz.w * (jet ? 0.12 + u * 0.25 : 0.2);
+      const size = (jet ? 34 + u * 90 : 18 + u * 30);
+      p.img.setVisible(true).setPosition(x, hz.z - hgt).setDisplaySize(size, size * 0.8)
+        .setAlpha((jet ? 0.55 : 0.3) * (1 - u) * fall).setDepth(hz.z + 0.5);
     });
   }
 
@@ -2094,7 +2126,10 @@ export class StageView {
     });
     ev.on('pickup', (e) => this.pickup(e));
     ev.on('hazardFire', ({ hazard }) => {
-      if (Math.abs(this.scene.player.x - hazard.x) < 600) playSfx(this.scene, 'fireWhoosh', { volume: 0.5, minGapMs: 0 });
+      if (Math.abs(this.scene.player.x - hazard.x) < 600) {
+        if (hazard.look === 'steam') playSfx(this.scene, 'rogueSmoke', { volume: 0.6, pitch: -300, minGapMs: 0 }); // (the steam's hiss)
+        else playSfx(this.scene, 'fireWhoosh', { volume: 0.5, minGapMs: 0 });
+      }
     });
     ev.on('beamCrash', ({ hazard: hz }) => {
       const y = hz.y ?? 0;

@@ -53,7 +53,7 @@ export const STAGE_MINE = {
       objective: 'Follow the tracks into the mountain',
       hint: 'Hop the ore cart',
       fightAt: 860,
-      waves: [['grunt', 'grunt', 'stalker'], ['crusher', 'grunt']], // (the first Ore Crusher)
+      waves: [['grunt', 'grunt', 'stalker'], ['butcher', 'grunt', 'stalker']], // (an overseer; the Crusher is only heard here, pounding deeper in)
       props: [
         { kind: 'crate', x: 1180, z: 480, drop: 'health' },
         { kind: 'barrel', x: 420, z: 300, drop: null },
@@ -66,7 +66,7 @@ export const STAGE_MINE = {
       objective: 'Strike the shackles',
       hint: 'Break the posts they are chained to',
       fightAt: 1600,
-      waves: [['grunt', 'crusher', 'grunt', 'grunt'], ['crusher', 'crusher', 'stalker'], [...Array(10).fill('thrall'), 'ghoul']], // (a Crusher, then two; the last: the HORDE)
+      waves: [['grunt', 'crusher', 'grunt', 'grunt'], ['crusher', 'crusher', 'stalker'], ['ghoul', 'butcher', 'ghoul', 'crusher', 'ghoul']], // (a Crusher, then two; then the overseer and the ghouls up out of the deep shafts. No thralls: they're the Iron Gates')
       props: [
         { kind: 'shackle', tag: 'tobin', x: 1900, z: 300, drop: null },
         { kind: 'shackle', tag: 'hilde', x: 2160, z: 300, drop: null },
@@ -128,9 +128,10 @@ export const STAGE_MINE = {
       waves: [['grunt', 'grunt', 'stalker'], ['crusher', 'crusher', 'grunt']],
       props: [{ kind: 'crate', x: 7200, z: 480, drop: 'health' }],
       hazards: [
-        // the hall's furnace vents (it was the Crusher boss's, from two thirds on; no boss now)
-        { type: 'fire', x: 6400, z: 340, w: 110, d: 60, phase: 0 },
-        { type: 'fire', x: 6850, z: 470, w: 110, d: 60, phase: 105 },
+        // the hall's steam vents: the furnace's boiler blowing off through the floor grates (fire
+        // on the ground is the village's; here it scalds: hiss and wisps, then a white jet)
+        { type: 'fire', look: 'steam', x: 6400, z: 340, w: 110, d: 60, phase: 0 },
+        { type: 'fire', look: 'steam', x: 6850, z: 470, w: 110, d: 60, phase: 105 },
       ],
       rest: { x: 5900, z: 320, kind: 'oath' },
     },
@@ -215,8 +216,8 @@ export const STAGE_MINE = {
     { kind: 'crumble', x0: 3565, x1: 3620, z0: 350, z1: 470, top: 140, fall: 40, back: 200 }, // gap 45
     { kind: 'block', x0: 3620, x1: 3760, ...FULL, top: 140 },             // the gallery goes on
     // (the lift up to the high ledge at the back: the optional rescue)
-    { kind: 'lift', x0: 3650, x1: 3730, z0: 282, z1: 340, top: 140, move: { axis: 'top', range: 120, period: 300, phase: 0 } },
-    { kind: 'block', x0: 3540, x1: 3650, z0: 282, z1: 330, top: 260 },    // the high ledge
+    { kind: 'lift', x0: 3650, x1: 3730, z0: 282, z1: 340, top: 140, move: { axis: 'top', range: 85, period: 260, phase: 0 } },
+    { kind: 'block', x0: 3540, x1: 3650, z0: 282, z1: 330, top: 225 },    // the high ledge (low enough that the camera keeps Pip in frame)
     { kind: 'block', x0: 3760, x1: 3840, ...FULL, top: 70 },              // down
     // the portcullis: iron, chained to its counterweight (gone once that's broken)
     { kind: 'block', tag: 'portcullis', mat: 'iron', x0: 4160, x1: 4190, ...FULL, top: 300 },
@@ -269,22 +270,22 @@ export const STAGE_MINE = {
   npcs: [
     {
       id: 'tobin', name: 'Old Tobin', x: 1900, z: 312, pose: 'chained', rescue: 'wreckage', tag: 'tobin',
-      flee: { x: 1400, z: 480 }, gather: { x: 11260, z: 470 },
+      flee: { x: 1400, z: 480 }, gather: { x: 11470, z: 320 },
     },
     {
       id: 'hilde', name: 'Hilde', x: 2160, z: 312, pose: 'chained', rescue: 'wreckage', tag: 'hilde',
-      flee: { x: 1400, z: 400 }, gather: { x: 11340, z: 380 },
+      flee: { x: 1400, z: 400 }, gather: { x: 11560, z: 360 },
     },
     {
       id: 'miners', name: 'the chained miners', x: 2440, z: 312, pose: 'chained', group: true, rescue: 'wreckage', tag: 'miners',
-      flee: { x: 1400, z: 330 }, gather: { x: 11200, z: 330 },
+      flee: { x: 1400, z: 330 }, gather: { x: 11640, z: 310 },
     },
     // (optional: left on the high ledge when the lift was cut; reach him)
-    { id: 'pip', name: 'Pip', x: 3600, z: 300, pose: 'child', rescue: 'reach', flee: null, gather: { x: 11400, z: 330 } },
+    { id: 'pip', name: 'Pip', x: 3600, z: 300, pose: 'child', rescue: 'reach', flee: null, gather: { x: 11650, z: 420 } },
     // behind the fallen rock in the escape passage
     {
       id: 'passage', name: 'the miners in the passage', x: 10990, z: 400, pose: 'group', rescue: 'wreckage', tag: 'passage',
-      flee: { x: 11280, z: 500 }, gather: { x: 11300, z: 500 },
+      flee: { x: 11560, z: 500 }, gather: { x: 11560, z: 500 },
     },
   ],
 
@@ -297,9 +298,10 @@ export const STAGE_MINE = {
         ['RURIK', 'I follow the tracks. Whoever they chained down here comes out.'],
       ],
     },
+    { id: 'pounding', at: 700, calm: true, lines: [['RURIK', 'Hear that? Something big, deeper in. Pounding the rock.']] },
     { id: 'hammers', at: 1440, lines: [['VOICE', '(hammers on rock, a whip cracking) Faster, you dogs! The King wants his iron!']] },
     { id: 'tobin', on: 'rescued:tobin', lines: [['TOBIN', 'Forty days in the dark... Bless you.']] },
-    { id: 'hilde', on: 'rescued:hilde', lines: [['HILDE', 'They took my brother deeper in. To the crusher. Please.']] },
+    { id: 'hilde', on: 'rescued:hilde', lines: [['HILDE', 'They took my brother up the cliff road, to haul for their catapults. Find him.']] },
     { id: 'miners', on: 'rescued:miners', lines: [['MINER', 'Out, lads! Toward the light, and don\'t stop!']] },
     { id: 'shaft', at: 2900, calm: true, lines: [['VEXA', '(echoing from far off) The gate below hangs on a counterweight. Break the chain!']] },
     { id: 'pip', on: 'rescued:pip', lines: [['PIP', 'They cut the lift and left me! I\'ll take the back ladder. Go!']] },
@@ -321,7 +323,8 @@ export const STAGE_MINE = {
       id: 'daylight', at: 11300, calm: true, hold: true,
       lines: [
         ['VEXA', 'Daylight. And there, across the gorge... the Black Keep.'],
-        ['ORYN', 'The convoy took the cliff road. Only the cliffs stand between us and his gates.'],
+        ['ORYN', 'A lantern up on the goat path. Nicholas. The stubborn old goat kept his word.'],
+        ['VEXA', 'The convoy took the cliff road. Only the cliffs stand between us and his gates.'],
         ['RURIK', 'Then we climb. He\'s running out of mountain.'],
       ],
     },

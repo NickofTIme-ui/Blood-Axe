@@ -5123,10 +5123,13 @@ test('style: the same move over and over scores less than mixing it up', () => {
 });
 
 test('horde: each campaign level has a HORDE wave of thralls, and it is announced', () => {
-  for (const data of [STAGE_VILLAGE, STAGE_MINE]) {
+  for (const data of [STAGE_VILLAGE]) {
     const big = data.sections.flatMap((sec) => sec.waves ?? []).filter((w) => w.length >= 7);
     assert(big.length >= 1 && big.every((w) => w.filter((x) => x === 'thrall').length >= 8), `${data.name}: a horde of thralls`);
   }
+  // (Hollow Mountain has none either: its deep wave is the overseer and the ghouls; thralls are
+  // the Iron Gates' (level identities, 2026-11-24))
+  assert(!STAGE_MINE.sections.flatMap((sec) => sec.waves ?? []).flat().includes('thrall'), 'the mine: no thralls');
   // (Gallows Wood has none: its pack is its own, the convoy's kennel wagon let loose; 2026-11-04)
   const wood = STAGE_WOOD.sections.flatMap((sec) => sec.waves ?? []);
   assert(!wood.flat().includes('thrall') && wood.some((w) => w.filter((x) => x === 'hound').length >= 4), 'the wood: hounds, not thralls');

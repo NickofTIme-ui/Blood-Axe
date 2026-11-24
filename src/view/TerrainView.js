@@ -605,9 +605,11 @@ export class TerrainView {
         for (let x = x0 + (row % 2) * 30 + 20; x < x1; x += 60) top.lineBetween(x, y, x, Math.min(yTop1, y + 26));
       }
     }
-    if (!topArt) raggedLine(top, x0, x1, yTop0, C[1], 0.75, 2, b.x0);
+    // (the mine: a torch-lit rim, not a white line round every ledge: Nick's level 3 review)
+    const rim = this.mine && mat !== 'iron' ? (mat === 'plank' ? 0x9a6a3a : 0x7a6a58) : C[1];
+    if (!topArt) raggedLine(top, x0, x1, yTop0, rim, 0.75, 2, b.x0);
     // the landing rim along the front edge
-    raggedLine(front, x0, x1, yTop1 - 0.5, C[1], 0.9, 3, b.x0 + 7);
+    raggedLine(front, x0, x1, yTop1 - 0.5, rim, this.mine ? 0.7 : 0.9, this.mine ? 2 : 3, b.x0 + 7);
     // front face, down to the floor (or into the dark, over a pit)
     const floorY = b.z1;
     // rock goes down to the floor (or on down into the dark over a pit); a plank and the
@@ -1069,7 +1071,8 @@ export class TerrainView {
       // the painted torch post (the village: an iron cresset on a timber post, unlit) or iron
       // brazier (the gates), on magenta: cut out once; the living flame (view/TorchFlame.js)
       // burns in its cup, with a glow round it
-      const post = this.village ? 'village-torch' : this.theme === 'gates' ? 'gates-brazier' : null;
+      // (the mine: the same iron brazier as the gates, not the wood's green lantern pole: level 3 review)
+      const post = this.village ? 'village-torch' : this.theme === 'gates' || this.mine ? 'gates-brazier' : null;
       if (post && s.textures.exists(`${post}-src`)) {
         if (!s.textures.exists(post)) s.textures.addCanvas(post, keyLayer(s.textures.get(`${post}-src`).getSourceImage(), 'magenta'));
         const img = s.add.image(l.x, y0 + 3, post).setOrigin(0.5, 0.98).setDepth(l.z - 0.2);
