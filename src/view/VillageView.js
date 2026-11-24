@@ -13,6 +13,7 @@
 import { groundUnder } from './propGround.js';
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
+import { FONT } from './fonts.js';
 import { drawCastle } from './castle.js';
 import { artKey, PaintedLevel } from './levelArt.js';
 import { PaintedFire } from './PaintedFire.js';
@@ -288,11 +289,37 @@ export class VillageBackdrop {
     this.stables = { gx, top, g: this.scene.add.graphics().setDepth(DEPTH.floor - 0.95) };
   }
 
+  // The bar across the stable gate, marked so it can't be missed (Nick, 2026-11-23: "make a
+  // visual to get attention to where it's needed to break"): a pulsing ring of fire-light on
+  // the ground round it, a bobbing chevron and SMASH THE GATE BAR over it, gone once it breaks
+  updateGateMark(t, inside) {
+    const bar = this.stage.props?.find((p) => p.tag === 'stables');
+    const on = inside && bar && !bar.broken;
+    if (!on) { if (this.gateMark) for (const o of Object.values(this.gateMark)) o.setVisible(false); return; }
+    const M = this.gateMark ??= {
+      g: this.scene.add.graphics().setDepth(bar.z - 1),
+      text: this.scene.add.text(bar.x, 0, 'SMASH THE GATE BAR', { fontFamily: FONT.display, fontSize: '18px', color: '#ffd27a', stroke: '#140c06', strokeThickness: 5 }).setOrigin(0.5, 1).setDepth(1600),
+    };
+    const pulse = 0.5 + 0.5 * Math.sin(t * 0.12);
+    const bob = Math.abs(Math.sin(t * 0.09)) * 8;
+    const top = bar.z - 150;
+    const g = M.g.clear().setVisible(true);
+    // the ring on the ground, breathing out and back
+    g.lineStyle(4, 0xffb040, 0.45 + 0.4 * pulse).strokeEllipse(bar.x, bar.z + 4, 230 + 40 * pulse, 56 + 10 * pulse);
+    g.fillStyle(0xff8a20, 0.10 + 0.10 * pulse).fillEllipse(bar.x, bar.z + 4, 230 + 40 * pulse, 56 + 10 * pulse);
+    // the chevron pointing down at the bar
+    const cy = top + bob;
+    g.fillStyle(0x140c06, 0.9).fillTriangle(bar.x - 20, cy - 3, bar.x + 20, cy - 3, bar.x, cy + 23);
+    g.fillStyle(0xffd27a, 0.75 + 0.25 * pulse).fillTriangle(bar.x - 14, cy, bar.x + 14, cy, bar.x, cy + 17);
+    M.text.setVisible(true).setPosition(bar.x, cy - 8).setAlpha(0.8 + 0.2 * pulse);
+  }
+
   updateStables(t) {
     const S = this.stables;
     if (!S) return;
     const n = this.stage.story?.npcs.find((q) => q.id === 'horses');
     const inside = !n || n.state === 'trapped';
+    this.updateGateMark(t, inside);
     const g = S.g.clear();
     S.glow?.setVisible(!inside);
     if (S.open) { S.open.setVisible(!inside); S.img.setVisible(inside); } // (the gate thrown open: painted)
