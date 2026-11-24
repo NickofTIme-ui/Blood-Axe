@@ -812,6 +812,28 @@ export class MageFX {
 
 // ---------------------------------------------------------------- the walls
 
+const DUST = 0x4e463e;      // grit and dust clouds
+const CHIPS = [0xffffff, 0xe0dcd4, 0xc8ccce]; // tints over the grey 'rockchip'
+const WORN = 0x5e6264;      // what the stone darkens towards as it is battered
+
+const mix = (a, b, t) => {
+  const c = (s) => Math.round(((a >> s) & 255) + (((b >> s) & 255) - ((a >> s) & 255)) * t);
+  return (c(16) << 16) | (c(8) << 8) | c(0);
+};
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+// a flake of grey stone (tinted per chip), drawn once
+function rockChipTex(scene) {
+  if (scene.textures.exists('rockchip')) return;
+  const g = scene.make.graphics({ add: false });
+  g.fillStyle(0x121416, 1).fillPoints([{ x: 0, y: 6 }, { x: 5, y: 0 }, { x: 13, y: 2 }, { x: 15, y: 7 }, { x: 9, y: 11 }, { x: 2, y: 10 }], true);
+  g.fillStyle(0x3e4448, 1).fillPoints([{ x: 1, y: 6 }, { x: 5, y: 1 }, { x: 12, y: 3 }, { x: 14, y: 7 }, { x: 9, y: 10 }, { x: 3, y: 9 }], true);
+  g.fillStyle(0x6a7276, 1).fillPoints([{ x: 2, y: 6 }, { x: 5, y: 2 }, { x: 11, y: 3 }, { x: 8, y: 6 }], true);
+  g.fillStyle(0x262a2c, 1).fillPoints([{ x: 8, y: 6 }, { x: 11, y: 3 }, { x: 14, y: 7 }, { x: 9, y: 10 }], true);
+  g.generateTexture('rockchip', 16, 12);
+  g.destroy();
+}
+
 class EarthWallView {
   constructor(scene, b) {
     this.scene = scene;
