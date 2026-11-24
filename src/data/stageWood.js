@@ -138,7 +138,7 @@ export const STAGE_WOOD = {
       id: 'carts', name: 'THE CAGE CARTS', x0: 2900, x1: 4400,
       spawn: { x: 2960, z: 440 },
       objective: 'Open the cages',
-      hint: 'Smash their signal lantern or more come out of the mist. Then hold E (D-pad up) at a lock',
+      hint: 'Smash the red lantern on its pole: while it burns, more of them come out of the mist. Then hold E (D-pad up) at a cage lock',
       fightAt: 3560,
       // (the first drops out of the branches over the carts: the crows go up first)
       spawns: [[{ x: 3660, z: 360, drop: 430, tell: 84 }, { x: 3820, z: 470, drop: 430, tell: 100 }, { x: 3560, z: 300, drop: 430, tell: 116 }], []],
@@ -435,7 +435,7 @@ export const STAGE_WOOD = {
     { id: 'broken', on: 'broken:kennels', lines: [['HOUNDMASTER', 'No... not the last of them. Not my dogs...']] },
     { id: 'hmHorn', on: 'horn:kennels', lines: [['HOUNDMASTER', 'To me! Every blade in the wood, to me!']] },
     { id: 'penned', on: 'penSlam:kennels', lines: [['RURIK', 'Back in your cage, cur.']] },
-    { id: 'mist', at: 3460, lines: [['RURIK', 'A lantern burning in the mist. While it\'s lit, they\'ll keep coming. Smash it.']] },
+    { id: 'mist', at: 3460, lines: [['RURIK', 'That red lantern on the pole: it\'s calling them out of the mist. Smash it and no more come.']] },
     // at the blocked road only Nicholas talks (Nick, 2026-11-05: the saved wait there quietly).
     // Asked, it's a held conversation, not a one-liner (Nick, 2026-11-24: "give nicholas better
     // dialogue"): who he is, who hurt him, where the carts went, and the promise he keeps on the

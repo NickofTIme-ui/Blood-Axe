@@ -33,6 +33,8 @@ const ART = Object.fromEntries(['trap_pine', 'trap_logpile', 'trap_logpile_loose
 // world on a man 120 tall
 const HORN = { mouth: { x: 0.006, y: 0.476 }, mouthBlow: 0.51, len: 54 };
 const SIGNAL = { h: 210, pole: 0.393, fire: { x: 0.709, y: 0.349 }, downH: 86 };
+// what it's for, over it (Nick, 2026-11-24: "smash the signal lantern... what even does that mean?")
+const SIGNAL_CALL = 'SMASH THE RED LANTERN!\nWHILE IT BURNS, MORE OF THEM COME';
 // where things are in the paintings (fractions of the cut-out): the sprung snare's noose,
 // the armed snare's ring of cord, the pine's foot
 const SPOT = { noose: { x: 0.718, y: 0.56 }, ground: 0.975, ring: { x: 0.45, y: 0.8 }, pine: { x: 0.47, y: 0.95 } };
@@ -89,7 +91,8 @@ export class WoodTrapsView {
     // the mist banks and the Ashen's signal lanterns in them (stage/WoodTraps.js updateMist)
     this.mistG = scene.add.graphics().setDepth(1500);
     this.signals = stage.props.filter((pr) => pr.kind === 'signal').map((pr) => ({ pr, g: scene.add.graphics().setDepth(pr.z), glow: scene.add.graphics().setDepth(pr.z + 0.5).setBlendMode('ADD'),
-      label: scene.add.text(pr.x, pr.z - 190, '', { fontFamily: FONT.display, fontSize: '15px', color: '#ffb080', stroke: '#140c06', strokeThickness: 4 }).setOrigin(0.5, 1).setDepth(1600) }));
+      label: scene.add.text(pr.x, pr.z - 190, '', { fontFamily: FONT.display, fontSize: '15px', color: '#ffb080', stroke: '#140c06', strokeThickness: 4, align: 'center' }).setOrigin(0.5, 1).setDepth(1600),
+      flare: 0, shake: 0 }));
     // the log pile's call to cut its rope (Nick, 2026-11-15: "trees cut down and tied up for no reason")
     this.pileLabels = stage.props.filter((pr) => pr.kind === 'logpile').map((pr) => ({ pr,
       label: scene.add.text(pr.x, pr.z - 150, '', { fontFamily: FONT.display, fontSize: '15px', color: '#ffd890', stroke: '#140c06', strokeThickness: 4 }).setOrigin(0.5, 1).setDepth(1600) }));
@@ -149,7 +152,8 @@ export class WoodTrapsView {
           // (lit warm by its own fire: the wood's cold light only at the foot)
           if (down) lightProp(S.img, WOOD_LIGHT, 0.9); else S.img.setTint(0xffe0d0, 0xffe0d0, WOOD_LIGHT.low, WOOD_LIGHT.low);
         }
-        S.img.setPosition(down ? x - 20 : x, z + 6).setDepth(z);
+        S.flare = Math.max(0, S.flare - 1); S.shake = Math.max(0, S.shake - 1);
+        S.img.setPosition(down ? x - 20 : x, z + 6).setDepth(z).setAngle(down ? 0 : Math.sin(S.shake * 0.9) * S.shake * 0.35);
         if (pr.broken) {
           // the last embers in the smashed lantern, going out
           const k = Math.max(0, 1 - (pr.brokenT = (pr.brokenT ?? 0) + 1) / 400);
@@ -159,15 +163,15 @@ export class WoodTrapsView {
         }
         // the fire: a flicker of light round the lantern and down the pole and the mist, and
         // now and then a spark going up
-        const fl = 0.75 + 0.25 * Math.sin(now / 70) * Math.sin(now / 113);
+        const fl = (0.75 + 0.25 * Math.sin(now / 70) * Math.sin(now / 113)) * (1 + 1.6 * S.flare / 40);
         const w = S.img.displayWidth; const h = S.img.displayHeight;
         const lx = x + (SIGNAL.fire.x - SIGNAL.pole) * w; const ly = z + 6 - (1 - SIGNAL.fire.y) * h;
-        gl.fillStyle(0xff4020, 0.13 * fl).fillCircle(lx, ly, 90).fillStyle(0xff6030, 0.18 * fl).fillCircle(lx, ly, 40).fillStyle(0xffb070, 0.22 * fl).fillCircle(lx, ly, 14);
+        gl.fillStyle(0xff4020, 0.13 * fl).fillCircle(lx, ly, 90 + S.flare * 2).fillStyle(0xff6030, 0.18 * fl).fillCircle(lx, ly, 40).fillStyle(0xffb070, 0.22 * fl).fillCircle(lx, ly, 14);
         gl.fillStyle(0xff4020, 0.08 * fl).fillEllipse(lx - 10, z + 4, 150, 26); // (its red on the mud)
         const sp = (now / 900 + x) % 1;
         gl.fillStyle(0xffb060, 0.8 * (1 - sp)).fillCircle(lx + Math.sin(now / 300) * 6, ly - 20 - sp * 60, 1.6);
         const show = fight && this.stage.index === M?.section;
-        S.label.setVisible(show).setText(show ? 'SMASH THE SIGNAL LANTERN' : '').setY(z - SIGNAL.h - 16 - Math.abs(Math.sin(now / 300)) * 4);
+        S.label.setVisible(show).setText(show ? SIGNAL_CALL : '').setScale(1 + 0.12 * S.flare / 40).setY(z - SIGNAL.h - 16 - Math.abs(Math.sin(now / 300)) * 4);
         continue;
       }
       if (pr.broken) {
@@ -188,7 +192,7 @@ export class WoodTrapsView {
       g.fillStyle(0xffd0a0, fl).fillRect(x + 19, ly - 5, 6, 9);
       gl.fillStyle(0xff4020, 0.16 * fl).fillCircle(x + 22, ly, 70).fillStyle(0xff6030, 0.2 * fl).fillCircle(x + 22, ly, 34);
       const show = fight && this.stage.index === M?.section;
-      S.label.setVisible(show).setText(show ? 'SMASH THE SIGNAL LANTERN' : '').setY(z - 200 - Math.abs(Math.sin(now / 300)) * 4);
+      S.label.setVisible(show).setText(show ? SIGNAL_CALL : '').setScale(1 + 0.12 * S.flare / 40).setY(z - 200 - Math.abs(Math.sin(now / 300)) * 4);
     }
   }
 
@@ -600,18 +604,24 @@ export class WoodTrapsView {
     const y = t.z - at.h; const px = t.x; const py = t.z - (D.len + 50);
     const near = Math.max(0, 1 - at.h / 300);
     if (near > 0) g.fillStyle(0x000000, 0.15 + 0.3 * near).fillEllipse(at.x, t.z, 90 + 90 * near, 10 + 6 * near);
-    const visible = y > -80;
-    if (!visible) { v.ram?.setVisible(false); return; }
+    // (hauled up and waiting it hangs out of sight in the boughs: the fight camera looks far
+    // higher than the screen's top edge, so it was seen there, its rope a long brown line
+    // across the sky (Nick, 2026-11-24). Set or tripping, nothing's drawn up there; it fades in
+    // as it swings down out of the dark, and out again as it's hauled back up)
+    const out = Math.abs(at.a - D.held);
+    const show = t.state === 'set' || t.state === 'warn' ? 0 : Math.max(0, Math.min(1, (out - 0.12) / 0.3));
+    if (show <= 0) { v.ram?.setVisible(false); return; }
     // the rope, from out of sight up in the boughs, forked to the two lashings
     const rot = at.a * 0.35;
     const c = Math.cos(rot); const sn = Math.sin(rot);
     const P = (lx, ly) => ({ x: at.x + lx * c - ly * sn, y: y + lx * sn + ly * c });
     // (the painting's own ropes run up out of its top edge: the fork meets them there)
     const l = v.own ? P(-52, -46) : P(-44, -16); const r = v.own ? P(51, -46) : P(44, -16); const fork = { x: at.x + (px - at.x) * 0.12, y: y + (py - y) * 0.12 };
-    g.lineStyle(4, 0x5a4a30, 1).lineBetween(px, py, fork.x, fork.y);
-    g.lineStyle(3, 0x6a5a40, 1).lineBetween(fork.x, fork.y, l.x, l.y).lineBetween(fork.x, fork.y, r.x, r.y);
+    g.lineStyle(4, 0x5a4a30, show).lineBetween(px, py, fork.x, fork.y);
+    g.lineStyle(3, 0x6a5a40, show).lineBetween(fork.x, fork.y, l.x, l.y).lineBetween(fork.x, fork.y, r.x, r.y);
+    fr.setAlpha(show);
     if (v.ram) {
-      v.ram.setVisible(true).setPosition(at.x, y).setRotation(rot).setDepth(t.z + 1.5);
+      v.ram.setVisible(true).setAlpha(show).setPosition(at.x, y).setRotation(rot).setDepth(t.z + 1.5);
       if (v.own) v.ram.setScale(220 / v.ram.frame.width);
       else v.ram.setDisplaySize(200, 40);
     } else {
@@ -1170,6 +1180,16 @@ export class WoodTrapsView {
     ev.on('houndSniff', () => playSfx(s, 'houndSniff', { volume: 0.4, minGapMs: 600 }));
     ev.on('houndShaken', () => { playSfx(s, 'kick', { volume: 0.7, minGapMs: 0 }); playSfx(s, REC.houndYelp, { volume: 0.75, minGapMs: 0 }); });
     ev.on('houndmasterBroken', () => playSfx(s, 'woodHowl', { volume: 0.6, pitch: -400, minGapMs: 0 }));
+    ev.on('propHit', ({ prop }) => {
+      if (prop.kind !== 'signal') return;
+      // struck: the pole rocks, the lantern's glass cracks and spits sparks (one more blow)
+      const S = this.signals.find((q) => q.pr === prop); if (S) { S.shake = 18; S.flare = Math.max(S.flare, 14); }
+      playSfx(s, 'doorClose2', { volume: 0.7, pitch: 500, minGapMs: 0 });
+      s.fx?.shake(2, 6);
+      for (let i = 0; i < 8; i++) s.gore?.spawn({ x: prop.x + 50, z: prop.z + 2, h: rand(110, 150), vx: rand(-110, 110), vz: 0, vh: rand(60, 180), tint: 0xffa040, scale: rand(0.2, 0.4), decal: false, life: rand(18, 32) });
+    });
+    // a man called out of the mist by it: it flares up, so you see what's bringing them
+    ev.on('mistCall', ({ mist }) => { for (const S of this.signals) if (S.pr.tag === mist.tag) S.flare = 40; });
     ev.on('signalOut', () => { playSfx(s, 'doorClose2', { volume: 0.8, pitch: 300, minGapMs: 0 }); s.fx?.shake(3, 10); });
     ev.on('storyCue', ({ cue }) => {
       if (cue?.sfx) playSfx(s, cue.sfx, { volume: cue.volume ?? 0.8, pitch: cue.pitch ?? 0, minGapMs: 0 });
