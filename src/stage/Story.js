@@ -430,7 +430,8 @@ export class Story {
     for (const n of this.npcs) {
       n.t++;
       if(n.helpAge>0)n.helpAge--;
-      if(!n.helpCalled&&!n.stableMaster&&['threatened','trapped'].includes(n.state)&&heroes.some(p=>Math.abs(p.x-n.x)<300&&Math.abs(p.z-n.z)<200)){
+      // (no help cry from the horses: they can't speak, and the stable master already calls for them: view/StableMasterView.js)
+      if(!n.helpCalled&&!n.stableMaster&&n.pose!=='horses'&&['threatened','trapped'].includes(n.state)&&heroes.some(p=>Math.abs(p.x-n.x)<300&&Math.abs(p.z-n.z)<200)){
         n.helpCalled=true;n.helpAge=180;
         n.helpText=n.rescue==='wreckage'?'HELP! I’M TRAPPED!':n.rescue==='cage'?'GET US OUT OF HERE!':n.rescue==='execution'?'HELP! CUT ME DOWN!':n.rescue==='treed'?'GET THEM OFF ME!':'HELP! OVER HERE!';
       }

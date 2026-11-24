@@ -52,7 +52,10 @@ export const TRAPS = {
   // carries it off
   logs: { delay: 22, heroDamage: 18, r: 24, len: 46, bankX: -0.3, bankZ: 0.01, grav: 0.55, max: 9,
     hurtAt: 2.2, grace: 24, drag: 0.955, drift: 0.7, life: 900 },
-  snare: { reach: 22, hold: 150, mash: 5, enemyHold: 130 },
+  // (a man caught hangs enemyHold frames: 130 -> 330, Nick 2026-11-24 "hold the NPC for
+  // longer"; and a light hit only swings him: it takes a knockdown, a launch or a kill to
+  // cut him down)
+  snare: { reach: 22, hold: 150, mash: 5, enemyHold: 330 },
   stakes: { heroShare: 0.2, cool: 60 },
   horn: { blow: 240, retry: 150, post: 320 },
   net: { keep: [190, 300], every: [210, 330], windup: 44, speed: 9, range: 380, reach: 30, depth: 24 },
@@ -334,7 +337,10 @@ export class WoodTraps {
     if (f.team === 'player') {
       for (const a of ['attack', 'heavy', 'jump', 'dodge', 'block', 'grab', 'magic']) if (f.controller.consume?.(a, 1)) { N.left--; this.world.events.emit('snareTug', { fighter: f }); }
       if (N.left <= 0 || N.t >= N.hold) this.release(f, true);
-    } else if (N.t >= N.hold) this.release(f, true);
+    } else {
+      if (N.kind === 'snare' && f.stunFrames < 9999) f.stunFrames = 9999; // (a blow swings him, he stays strung up)
+      if (N.t >= N.hold) this.release(f, true);
+    }
   }
 
   release(f, free) {

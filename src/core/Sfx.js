@@ -124,7 +124,9 @@ export const SFX = {
   woodChop: 'assets/audio/sfx/wood-chop.wav',       // a blade biting into the notched pine
   woodFall: 'assets/audio/sfx/wood-fall.wav',       // the pine going over and crashing down
   woodLogs: 'assets/audio/sfx/wood-logs.wav',       // the log pile thundering down the bank
-  woodSnare: 'assets/audio/sfx/wood-snare.wav',     // a snare springing
+  woodSnare: 'assets/audio/sfx/wood-snare.wav',     // a snare springing: whoosh, the cord cracking taut, the sapling groaning
+  snareYelp1: 'assets/audio/sfx/snare-yelp-1.wav',  // ...and the man it snatches off his feet yelling
+  snareYelp2: 'assets/audio/sfx/snare-yelp-2.wav',
   woodNet: 'assets/audio/sfx/wood-net.wav',         // a weighted net thrown
   woodWhip: 'assets/audio/sfx/wood-whip.wav',       // the Wagonmaster's whip
   woodRain: 'assets/audio/sfx/wood-rain.wav',       // the wood's bed of rain and wind (looped)

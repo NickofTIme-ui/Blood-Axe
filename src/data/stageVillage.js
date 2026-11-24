@@ -275,9 +275,9 @@ export const STAGE_VILLAGE = {
         ...group([['barrel-v3', 5800, 300, { drop: 'health' }], ['barrel-tar', 5852, 302]]),
         { kind: 'lamppost', x: 5900, z: 283, drop: null },
         // a rack by the stable wall, two kegs up in it
-        { kind: 'rack', x: 6252, z: 296, drop: null }, // (clear of the stable master, who stood right in front of it)
+        { kind: 'rack', x: 6030, z: 296, drop: null }, // (clear of the stable master, and well away from the gate bar so it stands alone: Nick, 2026-11-23)
         ...group([['keg', -21, 0, { stack: true }], ['keg2', 21, 0, { stack: true }]]),
-        { kind: 'haycart', x: 6570, z: 298, drop: null, flip: true },
+        { kind: 'haycart', x: 6830, z: 298, drop: null, flip: true }, // (pushed down the yard, off the gate)
         // a stretch of paddock fence along the near side of the yard, the stable's feed crates
         // stacked at its end (in the herd's lane: they go through the lot)
         { kind: 'fence', x: 6700, z: 508, drop: null },

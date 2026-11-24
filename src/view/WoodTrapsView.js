@@ -1102,8 +1102,20 @@ export class WoodTrapsView {
       s.rumble?.(0.8, 0.5, 220);
       for (let i = 0; i < 12; i++) s.gore?.spawn({ x: fighter.x, z: fighter.z + rand(-6, 6), h: rand(20, 70), vx: dir * rand(60, 160 + speed * 30), vz: 0, vh: rand(80, 260), tint: i % 4 === 0 ? 0x2a2018 : 0x7a0808, scale: rand(0.4, 1), decal: i % 3 === 0, life: rand(30, 60) });
     });
-    ev.on('snared', ({ fighter, kind }) => playSfx(s, kind === 'net' ? 'kick' : 'woodSnare', { volume: 0.8, minGapMs: 0 }));
+    // a snare: the sapling whips up, the cord cracks taut, and the man it caught yells as he's
+    // snatched off his feet (Nick, 2026-11-24: "snare trap needs a sounds")
+    ev.on('snared', ({ fighter, kind }) => {
+      if (kind === 'net') { playSfx(s, 'kick', { volume: 0.8, minGapMs: 0 }); return; }
+      playSfx(s, 'woodSnare', { volume: 1, spread: 60, minGapMs: 0 });
+      if (fighter.team !== 'player' && fighter.stats?.id !== 'hound') {
+        s.time.delayedCall(90, () => playSfx(s, [['snareYelp1', 1], ['snareYelp2', 1]], { volume: 0.75, pitch: 150, spread: 120, minGapMs: 0 }));
+      }
+    });
     ev.on('snareTug', () => playSfx(s, 'woodCreak', { volume: 0.25, pitch: 300, minGapMs: 80 }));
+    // cut loose: he drops into the mud
+    ev.on('snareFree', ({ fighter, kind }) => {
+      if (kind === 'snare' && fighter.alive) playSfx(s, DK.bodyBig, { volume: 0.7, pitch: -200, minGapMs: 0 });
+    });
     ev.on('stakesOpen', () => playSfx(s, 'doorClose2', { volume: 0.7, pitch: -600, minGapMs: 0 }));
     ev.on('stakesKill', () => playSfx(s, 'rogueStab', { volume: 0.9, pitch: -300, minGapMs: 0 }));
     ev.on('netWindup', () => playSfx(s, 'woodNet', { volume: 0.35, pitch: -300, minGapMs: 200 }));
@@ -1168,6 +1180,19 @@ export class WoodTrapsView {
     ev.on('fightStart', ({ section }) => { if (section?.howl) playSfx(s, 'woodHowl', { volume: 0.9, minGapMs: 0 }); });
   }
 
+  // A man hanging in a snare: the cord and the sapling creak at each end of his swing
+  // (view/SnareHang.js swings him on sin(t * 0.11): a half swing every ~29 frames)
+  creakSnares() {
+    for (const f of this.scene.world.fighters) {
+      if (f.snare?.kind !== 'snare' || !f.alive) continue;
+      const beat = Math.floor((f.snare.t - 14) / 29);
+      this.snareBeats ??= new WeakMap(); // (the view's own count: the sim's fighter stays the sim's)
+      if (beat < 1 || beat === this.snareBeats.get(f.snare)) continue;
+      this.snareBeats.set(f.snare, beat);
+      playSfx(this.scene, 'woodCreak', { volume: Math.max(0.22, 0.6 - beat * 0.04), pitch: beat % 2 ? -350 : -150, spread: 120, minGapMs: 0 });
+    }
+  }
+
   update() {
     const dt = this.scene.game.loop.delta;
     this.syncPines();
@@ -1179,6 +1204,7 @@ export class WoodTrapsView {
     if (this.rig.mists.length) { this.drawMist(); this.drawSignals(); }
     if (this.pileLabels.length) this.drawPileLabels();
     this.syncCrows(dt);
+    this.creakSnares();
     if (this.stage.terrain?.wades?.length) this.drawWading();
     if (this.convoy) this.drawConvoy();
     // as you come up to the hanging tree, its crows go up

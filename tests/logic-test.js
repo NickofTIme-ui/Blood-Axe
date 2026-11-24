@@ -3486,6 +3486,22 @@ test('wood traps: a snare holds a hero till he mashes free, and springs only onc
   assert(st.woodTraps.traps.find((q) => q.x === t.x).sprung, 'a snare springs once');
 });
 
+test('wood traps: a snared man hangs a good while, and a light blow only swings him', () => {
+  const t = STAGE_WOOD.traps.find((q) => q.type === 'snare');
+  const { world, st, run } = woodSetup(1, { x: t.x - 400, z: t.z });
+  const e = woodFoe(world, st, 'grunt', t.x, t.z);
+  e.health = e.stats.maxHealth = 9999;
+  run(3);
+  assert(e.snare?.kind === 'snare', 'caught');
+  assert(TRAPS.snare.enemyHold >= 300, `held ${TRAPS.snare.enemyHold} frames`);
+  run(30);
+  e.fsm.change('hitstun', { frames: 20 }); // (a jab lands on him)
+  run(60);
+  assert(e.snare && e.state === 'hitstun', `still strung up after the blow (${e.state})`);
+  run(TRAPS.snare.enemyHold);
+  assert(!e.snare, 'cut down in the end');
+});
+
 test('wood traps: the stake pit impales a man outright; a hero only loses a fifth of his health', () => {
   const t = STAGE_WOOD.traps.find((q) => q.type === 'stakes');
   const { world, p, st, run } = woodSetup(2, { x: t.x - 200, z: t.z });

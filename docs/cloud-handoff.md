@@ -6,12 +6,34 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 24 November 2026 (cloud; ON MAIN (Nick: "push all"), NOT on itch).
+  LEVEL 1 STABLES: HORSES QUIET, GATE BAR MARKED (Nick: "the horses that are trapped somehow speak english"; "make a
+  visual to get attention to where its needed to break"). stage/Story.js: no help cry for an npc with pose 'horses'
+  (the stable master's own shout, view/StableMasterView.js, calls for them). view/VillageView.js updateGateMark: a
+  pulsing ground ring, bobbing chevron and SMASH THE GATE BAR over the `stables` wreckage until it breaks. Keg rack
+  6252 -> 6030 and hay cart 6570 -> 6830 (data/stageVillage.js) so the gate stands alone.
+
 - 24 November 2026 (cloud, branch `claude/project-thread-8xssj4`; NOT on main yet, NOT on itch).
   MAGE X FINISHER (IMPALING SPIRES) NO LONGER TIES HIM UP (Nick: "have him run through the animation 40 percent
   faster and be able to move on while the npc is impaled"). combat/Mage.js MAGE_FINISHERS.spires: slam 14 -> 10,
   erupt 30 -> 21, step 7 -> 5; the Mage is free `free` (12) frames after the last spire. The runners hang on their own
   (spireHold, driven from the victim's 'executed' state via v.spireHang) and drop at one shared shatter 78 frames
   after the first spire. MageFX.js untouched.
+
+- 24 November 2026 (cloud, branch `claude/project-thread-32d8m6`; ON MAIN (Nick: "push all"), NOT on itch).
+  ORYN'S MAGIC PAINTED (Nick: "need to get art for mages different lighting effects it needs to feel more powerful",
+  then "get the mages Y finnisher circle thing Really good artwork"). 10 ChatGPT sheets (made in Chrome on the PC,
+  prompts docs/mage-art-prompts.md section 14, originals art/mage-fx/) cut by tools/cut-mage-fx.py into
+  assets/fx/mage-*-strip.png (FX_STRIPS magebolts, magezap, magethunder, magemeteor, mageforce, mageblink, magerunes,
+  mageward, magespikes, magecharge, magecage). effects/MageFX.js paint()/blastAt()/rune()/chargeOrb()/paintedBolt():
+  every lightning bolt is a painted bolt stretched between its ends; flashes are painted zap bursts; sky strikes and
+  the Y,Y,X Thunder Staff leave a painted ground blast + blazing rune circle; Meteor Drop a painted fire eruption;
+  force blast a painted wave; blink a painted shape-of-light (reversed on arrival); block/parry a painted rune disc;
+  storm field, Skyfall call and Tempest a painted floor rune circle; Stone Spikes painted spikes; held Y / held kick a
+  charging orb at the lantern / palm; ARCANE RUPTURE (Y finisher) a turning gold prison sphere over a blazing rune
+  circle, shrinking as he closes his fist, bursting in a huge zap. All fall back to the old code drawing if a strip is
+  missing. Seen only in a small preview page (project files mage-fx/, before-after.jpg), not in a real fight yet: check
+  sizes on the PC (bolt thickness, blink height, cage size round big men).
 
 - 23 November 2026 (cloud; ON MAIN (Nick: "finish and push all"), NOT on itch).
   LEVEL 1 WELL SET PIECE (Nick: "The Mira and the boy at the well is serious scene please give those npc the love
@@ -1947,6 +1969,13 @@ Rurik's ground walk is 20% slower (walkPace 0.8). Up/down/diagonal walks are sti
 - Nick: "the horses look to small on the wagon in the convoy". They stood about as tall as a wagon wheel (the wagon grew 1.5x in 00785fc; the team didn't).
 - `HORSE` in `src/view/StageView.js`: scale 0.42 -> 0.72 (a draught horse's back at Rurik's shoulder, head above him), `ahead` 50 -> 84 and the second horse's stagger 22 -> 36 (`step`) so the bigger team still meets the wagon's front with its traces, `dz` 14 -> 16. The bolting gallop (wagon wrecked) uses `HORSE.gallop` 0.62 (was 0.36) so they don't shrink as they break free.
 - View only, no sim change. Checked against a to-scale paste-up of the wagon, horse sheet and Rurik; tests pass. Not played by a person.
+
+## Cloud, 2026-11-24: Gallows Wood snare sounds and a longer hold (branch claude/project-thread-okskee, not on main)
+Nick: "snare trap needs a sounds, also hold the NPC for longer".
+- `wood-snare.wav` remixed (tools/sfx-gen/wood-kenney.sh): long whoosh, the whip crack pitched up as the cord snaps taut, wood knock, sapling groan. New `snare-yelp-1/2.wav` (cut from the game's own fall screams) play for a caught enemy (not hounds, not heroes).
+- While he hangs, `WoodTrapsView.creakSnares` creaks the cord at each end of his swing, fading; `snareFree` thuds him into the mud.
+- `TRAPS.snare.enemyHold` 130 -> 330 frames, and `holdSnared` keeps a snared enemy strung up through light hits (only a knockdown, launch or kill cuts him down). Test in tests/logic-test.js.
+- More traps through the wood (Nick: "i want more tree swinging traps in the woods, i love that"): snares at x 380 (road), 6300 and 6860 (convoy), 7460 and 8160 (kennels); deadfalls at x 2480 (hanging tree) and 6560 (convoy). (A deadfall in the kennels killed the Houndmaster's hounds and broke his phases, and one at 2620 knocked the mage into the ravine: both left out.)
 
 ## Cloud, 2026-11-24: convoy wagon hit detection + the convoy pine's job (level 2)
 - Nick: "the horse and wagon at the convoy needs serious hit detection work" and "again the tree you can chop down in the convoy has no purpose".
