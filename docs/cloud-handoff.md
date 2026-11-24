@@ -6,6 +6,12 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 24 November 2026 (cloud; ON MAIN 1036fdf (Nick: "continue"), NOT on itch).
+  NOTHING STACKED, ANYWHERE (Nick: "dont stack anything up in the game as far as the crates and stuff, it just looks
+  horrid"). STANDING RULE: no `stack: true` props in any level, and no goods up on trestles, stalls, hand carts or
+  racks. All 16 stacks (level 1 village 13, level 2 wood 3) set on the ground beside what they stood on; the level 1
+  stables barrel rack removed (its kegs on the ground). tests/prop-smash-test.js fails if any level has a stacked prop.
+
 - 24 November 2026 (cloud; ON MAIN fdbd2b9 (Nick: "Push to main"), NOT on itch).
   RECORDED VOICES AND SOUNDS (Nick: "source sounds for the game ... sounds for the bad guys, vexa and the mage, and
   general sound effects"). 107 free clips (CC0 / public domain, a few CC-BY) cut by tools/sfx-gen/voices.py into
