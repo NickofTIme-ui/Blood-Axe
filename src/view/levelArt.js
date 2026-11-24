@@ -291,8 +291,8 @@ export class PaintedLevel {
 }
 
 // A copy of a texture with its left / right edges faded to nothing (made once per look).
-export function featheredKey(scene, key, { left = 0, right = 0, top = 0 } = {}) {
-  const out = `${key}-fade-${left}-${right}-${top}`;
+export function featheredKey(scene, key, { left = 0, right = 0, top = 0, bottom = 0 } = {}) {
+  const out = `${key}-fade-${left}-${right}-${top}-${bottom}`;
   const T = scene.textures;
   if (T.exists(out)) return out;
   const img = T.get(key).getSourceImage();
@@ -310,6 +310,12 @@ export function featheredKey(scene, key, { left = 0, right = 0, top = 0 } = {}) 
   if (left) fade(0, 0, W * left, 0, W * left, H, 0, 0);
   if (right) fade(W, 0, W * (1 - right), 0, W * right, H, W * (1 - right), 0);
   if (top) fade(0, 0, 0, H * top, W, H * top, 0, 0);
+  if (bottom) {
+    // (eased, so the picture runs on into what's below it instead of dissolving on a band)
+    const gr = ctx.createLinearGradient(0, H, 0, H * (1 - bottom));
+    for (let k = 0; k <= 8; k++) { const t = k / 8; gr.addColorStop(t, `rgba(0,0,0,${(1 - t * t * (3 - 2 * t)).toFixed(3)})`); }
+    ctx.fillStyle = gr; ctx.fillRect(0, H * (1 - bottom), W, H * bottom);
+  }
   T.addCanvas(out, c);
   return out;
 }
