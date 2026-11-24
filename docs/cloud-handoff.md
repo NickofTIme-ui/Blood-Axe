@@ -25,7 +25,7 @@ branch, or ChatGPT's work gets lost.
   CC-BY ones (Michel Baradari; the horse-whinny papers) MUST be credited on the itch page (paste line in that file).
   Music untouched.
 
-- 24 November 2026 (cloud; local commit, NOT pushed until Nick says, NOT on itch).
+- 24 November 2026 (cloud; ON MAIN 3d8d870 (Nick: "continue"), NOT on itch).
   LEVEL 2: NO BROWN LINE IN THE SKY, SIGNAL LANTERN THAT WORKS (Nick: "theres a brown line in the sky at the convoy
   by the tree where the guys are hanging"; "it says smash the signal lantern but you cant do anything and what even
   does that mean?"). 1) WoodTrapsView.drawDeadfall: a waiting deadfall (set / tripping) draws nothing up in the
