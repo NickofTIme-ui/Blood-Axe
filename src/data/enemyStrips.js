@@ -31,6 +31,18 @@ const DIR_WALKS = {
 };
 const dirWalks = (id) => Object.fromEntries(Object.entries(DIR_WALKS[id] ?? {}).map(([d, frames]) =>
   [`walk${d}`, { file: `${DIR}/${id}_walk${d}.png`, frames, align: 'median', ground: 'drawn', optional: true }]));
+// How tall each man's cowering crouch (pose 0 of cowerB / cowerF / cowerN) stands next to
+// him upright, so the crouch is drawn at the same body size as his flee and walk. (Sized
+// from pose 0 as if it were a standing man, the crouch came out 10-25% too big, and a runner
+// visibly shrank each time he bolted out of his cower: Nick, 2026-11-24, Gorrak running
+// from the Mage.) Measured by matching the poses' painted body area to the flee cycle's.
+const COWER_SHARE = {
+  grunt: { B: 0.87, F: 0.82, N: 0.81 }, stalker: { B: 0.91, F: 0.82, N: 0.88 },
+  butcher: { B: 0.9, F: 0.82, N: 0.86 }, ghoul: { B: 0.92, F: 0.85, N: 0.86 },
+  penitent: { B: 0.93, F: 0.83, N: 0.95 }, berserker: { B: 0.84, F: 0.89, N: 0.88 },
+  gladiator: { B: 0.93, F: 0.93, N: 0.78 },
+};
+const cowerRef = (id, side) => (COWER_SHARE[id]?.[side] ? { refFrac: [0, COWER_SHARE[id][side]] } : { ref: 0 });
 const set = (id) => ({
   ...dirWalks(id),
   walk: { file: `${DIR}/${id}_walk.png`, frames: 8, align: 'median', ground: 'drawn' },
@@ -45,12 +57,12 @@ const set = (id) => ({
   // The stumps are drawn as flat magenta marker patches (the image filter won't draw
   // gore) and painted into raw wounds at load (wounds: true -> view/woundPaint.js).
   fleeB: { file: `${DIR}/${id}_fleeB.png`, frames: 8, align: 'median', ground: 'drawn', optional: true, wounds: true },
-  cowerB: { file: `${DIR}/${id}_cowerB.png`, frames: 6, ref: 0, optional: true, wounds: true },
+  cowerB: { file: `${DIR}/${id}_cowerB.png`, frames: 6, ...cowerRef(id, 'B'), optional: true, wounds: true },
   fleeF: { file: `${DIR}/${id}_fleeF.png`, frames: 8, align: 'median', ground: 'drawn', optional: true, wounds: true },
-  cowerF: { file: `${DIR}/${id}_cowerF.png`, frames: 6, ref: 0, optional: true, wounds: true },
+  cowerF: { file: `${DIR}/${id}_cowerF.png`, frames: 6, ...cowerRef(id, 'F'), optional: true, wounds: true },
   // N = both arms gone
   fleeN: { file: `${DIR}/${id}_fleeN.png`, frames: 8, align: 'median', ground: 'drawn', optional: true, wounds: true },
-  cowerN: { file: `${DIR}/${id}_cowerN.png`, frames: 6, ref: 0, optional: true, wounds: true },
+  cowerN: { file: `${DIR}/${id}_cowerN.png`, frames: 6, ...cowerRef(id, 'N'), optional: true, wounds: true },
   // a Rogue's mine is stuck on his chest (combat/Mine.js): 4 poses, one per way of taking
   // it (f.doom.kind): 0 rigid, staring at it / 1 looking back, pleading / 2 hopping,
   // pulling at it / 3 leaning away from it. Optional: without it the hit/idle poses stand in.
