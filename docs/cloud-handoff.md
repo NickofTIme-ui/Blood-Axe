@@ -1947,3 +1947,9 @@ Rurik's ground walk is 20% slower (walkPace 0.8). Up/down/diagonal walks are sti
 - Nick: "the horses look to small on the wagon in the convoy". They stood about as tall as a wagon wheel (the wagon grew 1.5x in 00785fc; the team didn't).
 - `HORSE` in `src/view/StageView.js`: scale 0.42 -> 0.72 (a draught horse's back at Rurik's shoulder, head above him), `ahead` 50 -> 84 and the second horse's stagger 22 -> 36 (`step`) so the bigger team still meets the wagon's front with its traces, `dz` 14 -> 16. The bolting gallop (wagon wrecked) uses `HORSE.gallop` 0.62 (was 0.36) so they don't shrink as they break free.
 - View only, no sim change. Checked against a to-scale paste-up of the wagon, horse sheet and Rurik; tests pass. Not played by a person.
+
+## Cloud, 2026-11-24: Gallows Wood snare sounds and a longer hold (branch claude/project-thread-okskee, not on main)
+Nick: "snare trap needs a sounds, also hold the NPC for longer".
+- `wood-snare.wav` remixed (tools/sfx-gen/wood-kenney.sh): long whoosh, the whip crack pitched up as the cord snaps taut, wood knock, sapling groan. New `snare-yelp-1/2.wav` (cut from the game's own fall screams) play for a caught enemy (not hounds, not heroes).
+- While he hangs, `WoodTrapsView.creakSnares` creaks the cord at each end of his swing, fading; `snareFree` thuds him into the mud.
+- `TRAPS.snare.enemyHold` 130 -> 330 frames, and `holdSnared` keeps a snared enemy strung up through light hits (only a knockdown, launch or kill cuts him down). Test in tests/logic-test.js.
