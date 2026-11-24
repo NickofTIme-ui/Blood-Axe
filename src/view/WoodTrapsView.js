@@ -9,7 +9,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH, depthScale } from './depths.js';
 import { FONT } from './fonts.js';
-import { playSfx, DK } from '../core/Sfx.js';
+import { playSfx, DK, REC } from '../core/Sfx.js';
 import { artKey } from './levelArt.js';
 import { TRAPS } from '../stage/WoodTraps.js';
 import { chainPath, drawChain } from './chainDraw.js';
@@ -1161,14 +1161,14 @@ export class WoodTrapsView {
     ev.on('chainWindup', () => playSfx(s, 'stoneStep', { volume: 0.6, minGapMs: 200 }));
     ev.on('chainCrack', () => playSfx(s, 'woodWhip', { volume: 1, pitch: -300, minGapMs: 0 }));
     ev.on('chained', () => { playSfx(s, 'stoneStep', { volume: 1, minGapMs: 0 }); s.fx?.shake(3, 8); });
-    ev.on('houndLatch', () => { playSfx(s, 'woodHowl', { volume: 0.35, pitch: 700, minGapMs: 300 }); s.fx?.shake(3, 8); });
-    ev.on('houndWorry', () => playSfx(s, 'kick', { volume: 0.35, pitch: -200, minGapMs: 100 }));
+    ev.on('houndLatch', () => { playSfx(s, REC.houndGrowl, { volume: 0.8, pitch: -100, minGapMs: 300 }); playSfx(s, REC.houndBark, { volume: 0.5, pitch: -200, minGapMs: 140 }); s.fx?.shake(3, 8); });
+    ev.on('houndWorry', () => { playSfx(s, 'kick', { volume: 0.35, pitch: -200, minGapMs: 100 }); playSfx(s, REC.houndGrowl, { volume: 0.6, spread: 250, minGapMs: 350 }); });
     // the hunting hounds (entities/HoundHunt.js): the howl on first sight or a packmate killed;
-    // barks, sniffs and a yelp play once their recordings are in (Sfx houndBark, houndSniff)
+    // barks, sniffs, growls and a yelp: recorded (2026-11-24, core/Sfx.js REC)
     ev.on('houndHowl', () => playSfx(s, 'woodHowl', { volume: 0.45, pitch: 250, minGapMs: 1500 }));
-    ev.on('houndBark', () => playSfx(s, 'houndBark', { volume: 0.6, minGapMs: 140 }));
+    ev.on('houndBark', () => playSfx(s, REC.houndBark, { volume: 0.6, spread: 200, minGapMs: 140 }));
     ev.on('houndSniff', () => playSfx(s, 'houndSniff', { volume: 0.4, minGapMs: 600 }));
-    ev.on('houndShaken', () => playSfx(s, 'kick', { volume: 0.7, minGapMs: 0 }));
+    ev.on('houndShaken', () => { playSfx(s, 'kick', { volume: 0.7, minGapMs: 0 }); playSfx(s, REC.houndYelp, { volume: 0.75, minGapMs: 0 }); });
     ev.on('houndmasterBroken', () => playSfx(s, 'woodHowl', { volume: 0.6, pitch: -400, minGapMs: 0 }));
     ev.on('signalOut', () => { playSfx(s, 'doorClose2', { volume: 0.8, pitch: 300, minGapMs: 0 }); s.fx?.shake(3, 10); });
     ev.on('storyCue', ({ cue }) => {

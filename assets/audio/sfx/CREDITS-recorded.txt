@@ -1,0 +1,90 @@
+Recorded voices and effects added 2026-11-24 (cut and levelled by tools/sfx-gen/voices.py)
+==========================================================================================
+
+Every source below is CC0 / public domain (no conditions; credit given anyway) or CC-BY
+(free to use in a published or paid game ON CONDITION that the author is credited). The
+CC-BY ones are marked [CREDIT REQUIRED]: their lines must appear in the game's credits / the
+itch.io page, as the Deadly Kombat credit to @danielsoundsgood does (deadly-kombat-LICENSE.txt).
+
+Ready-to-paste credit line for the itch page:
+  Additional sounds: Michel Baradari (CC-BY 3.0, opengameart.org); horse whinnies from
+  Lemasson et al. 2015 and Briefer et al. 2015 (CC-BY 4.0, Wikimedia Commons); and CC0 sounds
+  by HaelDB, thebardofblasphemy, EZduzziteh, AuraVoice, Cici Fyre, pauliuw, bonebrah,
+  Brandon Morris, JaggedStone, rubberduck, Ogrebane and Kenney (kenney.nl).
+
+
+ENEMY VOICES
+man-pain-1..8.mp3, man-death-1..3.mp3   [CREDIT REQUIRED]
+    "11 male human pain/death sounds" by Michel Baradari, CC-BY 3.0
+    https://opengameart.org/content/11-male-human-paindeath-sounds
+    (pain1-6, painh, paino, die1, die2, deathh)
+brute-pain-1..5.mp3, brute-death-1..4.mp3, brute-yell-1..2.mp3   [CREDIT REQUIRED]
+    "15 monster grunt/pain/death sounds" by Michel Baradari, CC-BY 3.0
+    https://opengameart.org/content/15-monster-gruntpaindeath-sounds
+man-pain-9..13.mp3, man-death-4..10.mp3
+    "grunts of male death and pain" by thebardofblasphemy, CC0
+    https://opengameart.org/content/grunts-male-death-and-pain   (cut from the one long take)
+man-pain-14..16.mp3
+    "Hurt Sound Effects" by EZduzziteh, CC0
+    https://opengameart.org/content/hurt-sound-effects   (hurt_01, hurt_03, hurt_05)
+man-yell-1..8.mp3, hero-pain-1..5.mp3, hero-death.mp3
+    "Male Grunt/Yelling sounds" by HaelDB, CC0 (dual-licensed OGA-BY 3.0 / CC0; used under CC0)
+    https://opengameart.org/content/male-gruntyelling-sounds
+
+VEXA
+vexa-attack-1..6.mp3, vexa-pain-1..3.mp3
+    "Female RPG Voice Starter Pack" by Cici Fyre, CC0 (voice "Type 3": attack1-3, jump1-3,
+    damaged1-3)   https://opengameart.org/content/female-rpg-voice-starter-pack
+vexa-pain-4..7.mp3, vexa-death-1..2.mp3
+    "Female Hurt Grunts & Groans" by AuraVoice, CC0
+    https://opengameart.org/content/female-hurt-grunts-groans
+vexa-slice-1..2.mp3, vexa-steel-1..3.mp3
+    Kenney "RPG Audio", CC0 (knife_slice, knife_slice_2, draw_knife_1-3)
+    https://kenney.nl/assets/rpg-audio  (taken from github.com/Boyquotes/kenney-rpg-audio-for-godot)
+
+HOUNDS
+hound-bark-1..4.mp3, hound-yelp-1..2.mp3
+    "Dog sounds" by pauliuw, CC0   https://opengameart.org/content/dog-sounds
+hound-bark-5..8.mp3
+    "Dog barking mono" by Brandon Morris, CC0 (dual-licensed OGA-BY 3.0 / CC0; used under CC0)
+    https://opengameart.org/content/dog-barking-mono
+hound-bark-9..10.mp3, hound-sniff.mp3
+    "80 CC0 creature SFX" by rubberduck, CC0 (barking_01, barking_02, nose)
+    https://opengameart.org/content/80-cc0-creature-sfx
+hound-growl-1.mp3
+    "Dog Growl" by bonebrah, CC0   https://opengameart.org/content/dog-growl
+
+HORSES
+horse-whinny-1.mp3
+    "Wiehern.ogg" by Hü., public domain   https://commons.wikimedia.org/wiki/File:Wiehern.ogg
+horse-whinny-2..3.mp3   [CREDIT REQUIRED]
+    Lemasson A, Remeuf K, Trabalon M, Cuir F, Hausberger M (2015) "Mares Prefer the Voices of
+    Highly Fertile Stallions", PLoS ONE, audio S1 and S3, CC-BY 4.0, via Wikimedia Commons
+    https://commons.wikimedia.org/wiki/File:Mares-Prefer-the-Voices-of-Highly-Fertile-Stallions-pone.0118468.s001.oga
+    https://commons.wikimedia.org/wiki/File:Mares-Prefer-the-Voices-of-Highly-Fertile-Stallions-pone.0118468.s003.oga
+horse-whinny-4.mp3   [CREDIT REQUIRED]
+    Briefer E, Maigrot A, Mandel R, Freymond S, Bachmann I, Hillmann E (2015) "Segregation of
+    information about emotional arousal and valence in horse whinnies", Scientific Reports,
+    audio S2, CC-BY 4.0, via Wikimedia Commons
+    https://commons.wikimedia.org/wiki/File:Segregation-of-information-about-emotional-arousal-and-valence-in-horse-whinnies-srep09989-s3.oga
+horse-gallop.mp3
+    "Six Horses Galloping By.ogg" (Bruno Auzet / Freesound Community via Pixabay), CC0
+    https://commons.wikimedia.org/wiki/File:Six_Horses_Galloping_By.ogg   (3-14 s)
+
+THE MAGE
+mage-blink.mp3
+    "Teleport Spell" by Ogrebane (made for Summoning Wars), CC0
+    https://opengameart.org/content/teleport-spell
+mage-spell-1..4.mp3
+    "Magic Spell SFX" by JaggedStone, CC0 (magical_1, 3, 5, 2)
+    https://opengameart.org/content/magic-spell-sfx
+mage-stone-1..4.mp3, mage-fire-1..3.mp3
+    "80 CC0 RPG SFX" by rubberduck, CC0 (stones_01-04, spell_fire_01, 03, 05)
+    https://opengameart.org/content/80-cc0-rpg-sfx
+
+MENUS
+ui-move, ui-select, ui-confirm, ui-error, ui-back.mp3
+    Kenney "Interface Sounds", CC0 (tick_002, select_004, confirmation_002, error_004, back_001)
+    https://kenney.nl/assets/interface-sounds  (taken from github.com/Calinou/kenney-interface-sounds)
+
+All sounds were trimmed, made mono, filtered, faded and levelled; none were otherwise changed.

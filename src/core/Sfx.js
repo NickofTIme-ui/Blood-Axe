@@ -134,6 +134,37 @@ export const SFX = {
   woodWade: 'assets/audio/sfx/wood-wade.wav',       // a step through the ford's shallows
 };
 
+// Recorded voices and effects (2026-11-24): cut and levelled by tools/sfx-gen/voices.py from
+// free packs (CC0, public domain or CC-BY: every source and the credit it needs is listed in
+// assets/audio/sfx/CREDITS-recorded.txt). Each set is numbered takes, e.g. man-pain-1..16.mp3.
+const TAKES = {
+  manPain: ['man-pain', 16], manDeath: ['man-death', 10], manYell: ['man-yell', 8],          // the enemy foot soldiers
+  brutePain: ['brute-pain', 5], bruteDeath: ['brute-death', 4], bruteYell: ['brute-yell', 2], // ghouls
+  heroPain: ['hero-pain', 5],                                                                 // Rurik and the Mage
+  vexaAttack: ['vexa-attack', 6], vexaPain: ['vexa-pain', 7], vexaDeath: ['vexa-death', 2],
+  vexaSlice: ['vexa-slice', 2], vexaSteel: ['vexa-steel', 3],                                 // her knives (Kenney)
+  houndBark: ['hound-bark', 10], houndGrowl: ['hound-growl', 1], houndYelp: ['hound-yelp', 2],
+  horseWhinny: ['horse-whinny', 4],
+  mageSpell: ['mage-spell', 4], mageStone: ['mage-stone', 4], mageFire: ['mage-fire', 3],
+};
+// ...as lists for playSfx (one take picked at random each time): REC.manPain etc.
+export const REC = {};
+for (const [key, [file, n]] of Object.entries(TAKES)) {
+  REC[key] = [];
+  for (let i = 1; i <= n; i++) {
+    SFX[`${key}${i}`] = `assets/audio/sfx/${file}-${i}.mp3`;
+    REC[key].push([`${key}${i}`, 1]);
+  }
+}
+Object.assign(SFX, {
+  heroDeath: 'assets/audio/sfx/hero-death.mp3',
+  houndSniff: 'assets/audio/sfx/hound-sniff.mp3',
+  horseGallop: 'assets/audio/sfx/horse-gallop.mp3', // the stables' stampede going by
+  mageBlink: 'assets/audio/sfx/mage-blink.mp3',
+  uiMove: 'assets/audio/sfx/ui-move.mp3', uiSelect: 'assets/audio/sfx/ui-select.mp3', uiConfirm: 'assets/audio/sfx/ui-confirm.mp3',
+  uiError: 'assets/audio/sfx/ui-error.mp3', uiBack: 'assets/audio/sfx/ui-back.mp3',
+});
+
 const lastPlayed = {};
 
 // A looping sound tied to something (a projectile in flight). Returns a handle with

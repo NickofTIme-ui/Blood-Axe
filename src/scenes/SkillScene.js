@@ -456,7 +456,7 @@ export class SkillScene extends Phaser.Scene {
     const dy = (c.consume('down') ? 1 : 0) - (c.consume('up') ? 1 : 0);
     if (dx || dy) {
       this.pick = (this.pick + dx + dy * 5 + n * 5) % n;
-      playSfx(this, 'block', { volume: 0.2, pitch: 1200, minGapMs: 0 });
+      playSfx(this, 'uiMove', { volume: 0.7, minGapMs: 0 }); // (Kenney UI, 2026-11-24)
       this.refreshTrophies();
     }
     if (c.consume('confirm') || c.consume('attack')) {
@@ -464,7 +464,7 @@ export class SkillScene extends Phaser.Scene {
       const P = this.progress;
       let ok = false;
       if (P.worn().includes(id)) { P.unwear(id); ok = true; } else ok = P.wear(id);
-      if (ok) { playSfx(this, 'block', { volume: 0.7, pitch: 300, minGapMs: 0 }); this.arena.applySkills(); } else playSfx(this, 'kick', { volume: 0.3, pitch: -800, minGapMs: 0 });
+      if (ok) { playSfx(this, 'block', { volume: 0.5, pitch: 300, minGapMs: 0 }); playSfx(this, 'uiConfirm', { volume: 0.6, minGapMs: 0 }); this.arena.applySkills(); } else playSfx(this, 'uiError', { volume: 0.7, minGapMs: 0 });
       this.refreshTrophies();
     }
   }
@@ -492,7 +492,7 @@ export class SkillScene extends Phaser.Scene {
     if (c.consume('kick')) {
       const ms = this.modes;
       this.mode = ms[(ms.indexOf(this.mode) + 1) % ms.length];
-      playSfx(this, 'block', { volume: 0.3, pitch: 900, minGapMs: 0 });
+      playSfx(this, 'uiSelect', { volume: 0.6, minGapMs: 0 });
       return this.showMode();
     }
     if (this.mode === 'trophies') return this.updateTrophies(c);
@@ -504,16 +504,16 @@ export class SkillScene extends Phaser.Scene {
     if (dx || dy) {
       this.col = (this.col + dx + cols) % cols;
       this.row = (this.row + dy + 3) % 3;
-      playSfx(this, 'block', { volume: 0.2, pitch: 1200, minGapMs: 0 });
+      playSfx(this, 'uiMove', { volume: 0.7, minGapMs: 0 }); // (Kenney UI, 2026-11-24)
       this.refresh();
     }
     if (c.consume('confirm') || c.consume('attack')) {
       const k = this.card(this.col, this.row);
       if (this.progress.buy(this.heroId, k.n.id)) {
-        playSfx(this, 'block', { volume: 0.7, pitch: 300, minGapMs: 0 });
+        playSfx(this, 'block', { volume: 0.5, pitch: 300, minGapMs: 0 }); playSfx(this, 'uiConfirm', { volume: 0.6, minGapMs: 0 });
         this.arena.applySkills();
         this.taken(k);
-      } else playSfx(this, 'kick', { volume: 0.3, pitch: -800, minGapMs: 0 });
+      } else playSfx(this, 'uiError', { volume: 0.7, minGapMs: 0 });
       this.refresh();
     }
     if (c.consume('restart') || c.consume('heavy')) {

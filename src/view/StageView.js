@@ -10,7 +10,7 @@ import { PHYSICS } from '../effects/Physics.js';
 import { drawStampedeTrail } from './StampedeTrail.js';
 import { DEPTH } from './depths.js';
 import { PICKUPS, PROPS, PROP_LOOKS } from '../data/stage.js';
-import { playSfx } from '../core/Sfx.js';
+import { playSfx, REC } from '../core/Sfx.js';
 import { buildPropSheet, PROP_HD, PICKUP_HD, PICKUP_PAINTED, PICKUP_SCALE } from './propSheet.js';
 import { FX } from './stripImporter.js';
 import { BladeChain } from './BladeChain.js';
@@ -911,6 +911,10 @@ export class StageView {
     playSfx(sc, 'block', { volume: 0.45, pitch: -500 + Math.random() * 300, minGapMs: 0 });
     // (a blow on the horses: the sparks fly off their harness, and they shy: horses())
     const team = pr.teamHit != null && this.scene.world.frame - pr.teamHit < 2;
+    if (team && sc.time.now - (this.lastWhinny ?? -1e9) > 2500) { // the horses shying in their traces
+      this.lastWhinny = sc.time.now;
+      playSfx(sc, REC.horseWhinny, { volume: 0.6, spread: 150, minGapMs: 0 });
+    }
     const hx = team ? pr.x + pr.w / 2 + 60 + Math.random() * 90 : pr.x - dir * pr.w * 0.42; const hh = team ? 70 + Math.random() * 40 : pr.h * (0.35 + Math.random() * 0.3);
     sc.gore.spark(hx, pr.z, hh, 0xffd9a0, 12);
     this.chips(pr, 12, dir);
@@ -2094,6 +2098,7 @@ export class StageView {
     ev.on('stampedeWarn', ({ hazard: hz }) => {
       if (this.scene.player.x > hz.x0 - 700 && this.scene.player.x < hz.x1 + 700) {
         playSfx(this.scene, 'kick', { volume: 0.7, pitch: -2000, minGapMs: 0 });
+        playSfx(this.scene, REC.horseWhinny, { volume: 0.55, spread: 120, minGapMs: 0 }); // the horses screaming in the burning stable
         this.scene.fx?.shake(3, 40);
       }
     });
@@ -2102,6 +2107,8 @@ export class StageView {
       const d = hz.door;
       if (!d || Math.abs(this.scene.player.x - d.x) > 1100) return;
       playSfx(this.scene, 'kick', { volume: 0.8, pitch: -2400, minGapMs: 0 });
+      playSfx(this.scene, 'horseGallop', { volume: 0.9, spread: 60, minGapMs: 2000 }); // the herd thundering past
+      playSfx(this.scene, REC.horseWhinny, { volume: 0.8, spread: 150, minGapMs: 0 });
       this.scene.fx?.shake(5, 30);
       for (let i = 0; i < 14; i++) {
         this.scene.gore.spawn({ x: d.x + rand(-45, 45), z: d.z + rand(0, 24), h: rand(0, 60), vx: (hz.dir ?? 1) * rand(30, 160), vz: rand(20, 120), vh: rand(40, 140), tint: i % 4 ? 0x8a7a64 : 0xff8a30, scale: rand(0.7, 1.5), decal: false, life: rand(30, 55) });

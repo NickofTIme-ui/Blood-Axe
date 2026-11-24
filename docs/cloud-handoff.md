@@ -6,6 +6,19 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 24 November 2026 (cloud, branch `claude/project-thread-raqufv`; NOT on main yet, NOT on itch).
+  RECORDED VOICES AND SOUNDS (Nick: "source sounds for the game ... sounds for the bad guys, vexa and the mage, and
+  general sound effects"). 107 free clips (CC0 / public domain, a few CC-BY) cut by tools/sfx-gen/voices.py into
+  assets/audio/sfx/*.mp3, registered as numbered takes in core/Sfx.js (REC.manPain, manDeath, manYell, brute*,
+  heroPain, vexa*, hound*, horseWhinny, mage*). NEW core/Voices.js: enemies grunt when hit (about half the time,
+  rate-limited), cry out when killed (not beheaded, pit falls or executions), shout now and then as they swing (the
+  big ones pitched down); Rurik and the Mage grunt when hit; Vexa's voice on her big moves and when hit; hounds bark,
+  growl and yelp (the existing houndBark/houndSniff hooks now have sounds); horses whinny and the herd gallops past in
+  the stables stampede, convoy horses whinny when struck; recorded stone / spell / fire layered into the Mage's
+  spells; Kenney UI sounds in the skill tree. CREDITS: assets/audio/sfx/CREDITS-recorded.txt has every source; the
+  CC-BY ones (Michel Baradari; the horse-whinny papers) MUST be credited on the itch page (paste line in that file).
+  Music untouched.
+
 - 24 November 2026 (cloud; ON MAIN (Nick: "push all"), NOT on itch).
   LEVEL 1 STABLES: HORSES QUIET, GATE BAR MARKED (Nick: "the horses that are trapped somehow speak english"; "make a
   visual to get attention to where its needed to break"). stage/Story.js: no help cry for an npc with pose 'horses'

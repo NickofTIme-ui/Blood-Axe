@@ -15,7 +15,7 @@
 // one place to swap them.
 
 import { DEPTH } from '../view/depths.js';
-import { playSfx, DK } from '../core/Sfx.js';
+import { playSfx, DK, REC } from '../core/Sfx.js';
 import { FX } from '../view/stripImporter.js';
 import { cutPieces } from '../view/envArt.js';
 
@@ -23,33 +23,35 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const ADD = () => Phaser.BlendModes.ADD;
 
 // Each sound event of his kit -> [sample, options] layers (core/Sfx.js keys).
+// (2026-11-24: recorded spell, stone and fire takes layered in: REC.mageSpell / mageStone /
+// mageFire, and a teleport for the blink; credits in assets/audio/sfx/CREDITS-recorded.txt)
 export const MAGE_SOUNDS = {
   staffSwing: [['swingAlt', { volume: 0.45, pitch: -350 }]],
   staffImpact: [['kick', { volume: 0.55, pitch: 250 }]],
   staffBlock: [['block', { volume: 0.7, pitch: -450 }]],
-  magicBlock: [['block', { volume: 0.5, pitch: 900 }]],
-  boltCharge: [['fireWhoosh', { volume: 0.25, pitch: 900 }]], // force blast / rupture build-up (not electric)
+  magicBlock: [['block', { volume: 0.5, pitch: 900 }], [REC.mageSpell, { volume: 0.35, pitch: 300 }]],
+  boltCharge: [['fireWhoosh', { volume: 0.25, pitch: 900 }], [REC.mageSpell, { volume: 0.4, minGapMs: 200 }]], // force blast / rupture build-up (not electric)
   elecCharge: [['elecCharge', { volume: 0.55, spread: 80, minGapMs: 200 }]],
-  elecFull: [['magicBlock', { volume: 0.5, pitch: 900 }], ['elecJump', { volume: 0.5, pitch: -200 }]],
+  elecFull: [[REC.mageSpell, { volume: 0.45, pitch: 200 }], ['elecJump', { volume: 0.5, pitch: -200 }]],
   boltCast: [['mageShock', { volume: 0.9 }], ['kick', { volume: 0.4, pitch: -300 }]],
   boltImpact: [['elecShock', { volume: 0.9, minGapMs: 30 }], ['block', { volume: 0.25, pitch: 1700, minGapMs: 30 }]],
   boltJump: [['elecJump', { volume: 0.6, minGapMs: 25 }]],
   force: [[DK.whooshLong, { volume: 0.9, pitch: -500, spread: 80 }], ['dkBlast', { volume: 0.8, pitch: -200, spread: 80 }], [DK.bodyBig, { volume: 0.8, pitch: -400 }]], // (Deadly Kombat)
-  blinkOut: [[DK.whoosh, { volume: 0.7, pitch: 500 }]],
+  blinkOut: [[DK.whoosh, { volume: 0.7, pitch: 500 }], ['mageBlink', { volume: 0.7, pitch: 150 }]],
   blinkIn: [[DK.whoosh, { volume: 0.5, pitch: -200 }], ['dkPop', { volume: 0.5, pitch: 300 }]],
-  barrierCast: [[DK.whooshLong, { volume: 0.6, pitch: -300 }], ['dkSlam', { volume: 0.9, pitch: -500, spread: 60 }]],
-  earthUp: [['kick', { volume: 1, pitch: -1300 }], ['block', { volume: 0.5, pitch: -1100 }]],
+  barrierCast: [[DK.whooshLong, { volume: 0.6, pitch: -300 }], ['dkSlam', { volume: 0.9, pitch: -500, spread: 60 }], [REC.mageSpell, { volume: 0.45, pitch: -400 }], [REC.mageStone, { volume: 0.8, pitch: -300 }]],
+  earthUp: [[REC.mageStone, { volume: 1, pitch: -200 }], ['kick', { volume: 1, pitch: -1300 }], ['block', { volume: 0.5, pitch: -1100 }]],
   earthDown: [['kick', { volume: 0.7, pitch: -1500 }]],
-  earthHit: [['dkSlam', { volume: 0.6, pitch: -700, minGapMs: 60 }], ['kick', { volume: 0.5, pitch: -1100, minGapMs: 60 }]],
-  earthBreak: [['kick', { volume: 1, pitch: -1600 }], ['heavySwing', { volume: 0.5, pitch: -900 }], ['block', { volume: 0.4, pitch: -1300 }]],
+  earthHit: [[REC.mageStone, { volume: 0.7, minGapMs: 60 }], ['dkSlam', { volume: 0.6, pitch: -700, minGapMs: 60 }], ['kick', { volume: 0.5, pitch: -1100, minGapMs: 60 }]],
+  earthBreak: [[REC.mageStone, { volume: 1, pitch: -500 }], ['kick', { volume: 1, pitch: -1600 }], ['heavySwing', { volume: 0.5, pitch: -900 }], ['block', { volume: 0.4, pitch: -1300 }]],
   storm: [['lightningStrike', { volume: 0.9, spread: 60, minGapMs: 400 }], ['kick', { volume: 0.8, pitch: -1400 }]],
   rupture: [['kick', { volume: 1, pitch: -600 }], ['finisher', { volume: 0.6, pitch: -800 }]],
-  embers: [['fireWhoosh', { volume: 1, pitch: -500 }], ['kick', { volume: 0.7, pitch: -1100 }]],
+  embers: [['fireWhoosh', { volume: 1, pitch: -500 }], [REC.mageFire, { volume: 0.7 }], ['kick', { volume: 0.7, pitch: -1100 }]],
   // IMPALING SPIRES (X finisher): the staff driven into the floor, the stone bursting up
   // through a man, and the spires shattering
-  spiresSlam: [['kick', { volume: 1, pitch: -1400 }], ['heavySwing', { volume: 0.5, pitch: -700 }]],
+  spiresSlam: [[REC.mageStone, { volume: 0.9, pitch: -400 }], ['kick', { volume: 1, pitch: -1400 }], ['heavySwing', { volume: 0.5, pitch: -700 }]],
   spiresErupt: [['impaleKick', { volume: 1 }], ['kick', { volume: 0.9, pitch: -1300, minGapMs: 40 }], ['bloodSplatter', { volume: 0.8, minGapMs: 40 }]],
-  spiresShatter: [['kick', { volume: 1, pitch: -1600 }], ['block', { volume: 0.5, pitch: -1300 }], ['bloodSplatter', { volume: 0.6 }]],
+  spiresShatter: [[REC.mageStone, { volume: 1, pitch: -200 }], ['kick', { volume: 1, pitch: -1600 }], ['block', { volume: 0.5, pitch: -1300 }], ['bloodSplatter', { volume: 0.6 }]],
   // the rework (2026-11-04): the staff crackles, the lightning bites back, the wall has spikes
   staffShock: [['elecZap', { volume: 0.35, minGapMs: 50 }]],
   jab: [['bladeOut', { volume: 0.6, pitch: 300 }], ['kick', { volume: 0.5, pitch: 100 }]],
@@ -62,9 +64,9 @@ export const MAGE_SOUNDS = {
   graze: [['bloodSplatter', { volume: 0.5, pitch: 300 }], ['block', { volume: 0.4, pitch: -900 }]],
   // the second set (2026-11-15): Updraft, Skyfall Bolt, Meteor Drop, the skill tree's moves
   updraft: [['heavySwing', { volume: 0.6, pitch: 600 }], ['fireWhoosh', { volume: 0.5, pitch: 700 }]],
-  meteorFall: [['fireWhoosh', { volume: 0.9, pitch: -200 }]],
-  meteorLand: [['elecShock', { volume: 0.7 }]],
-  stoneSpike: [['kick', { volume: 0.8, pitch: -1200, minGapMs: 30 }], ['block', { volume: 0.35, pitch: -1000, minGapMs: 30 }]],
+  meteorFall: [['fireWhoosh', { volume: 0.9, pitch: -200 }], [REC.mageFire, { volume: 0.7, pitch: -300 }]],
+  meteorLand: [[REC.mageStone, { volume: 1, pitch: -600 }], ['kick', { volume: 0.9, pitch: -1500 }], [REC.mageFire, { volume: 0.6, pitch: -400 }]],
+  stoneSpike: [[REC.mageStone, { volume: 0.7, minGapMs: 30 }], ['kick', { volume: 0.8, pitch: -1200, minGapMs: 30 }], ['block', { volume: 0.35, pitch: -1000, minGapMs: 30 }]],
   spikeImpale: [['impaleKick', { volume: 0.8, minGapMs: 60 }], ['bloodSplatter', { volume: 0.6, minGapMs: 60 }]],
 };
 const STAFF_FX = ['staff', 'pulse', 'jab', 'twirl', 'vault', 'thunderStaff', 'updraft'];

@@ -54,6 +54,7 @@ import { playMusic, playCue, stopMusic, toggleMute, currentMusic } from '../core
 import { syncSanctuaryMusic } from '../core/SanctuaryMusic.js';
 import { syncWoodMusic } from '../core/WoodMusic.js';
 import { playSfx, fleshBite, FLESH_CUT, DK } from '../core/Sfx.js';
+import { voicePain, voiceDeath, voiceAttack } from '../core/Voices.js';
 import { BattlefieldAudio } from '../core/BattlefieldAudio.js';
 import {MillRescueView} from '../view/MillRescueView.js';
 import {WellRescueView} from '../view/WellRescueView.js';
@@ -211,7 +212,11 @@ export class ArenaScene extends Phaser.Scene {
           if (e.superCrit || e.crit) playSfx(this, 'dkBone', { volume: e.superCrit ? 0.8 : 0.55, spread: 120, minGapMs: 80 });
         }
       }
+      // ...and he cries out (core/Voices.js; a killing blow gets his death cry from 'kill' instead)
+      if (D && (e.damage ?? 0) > 0) voicePain(this, D, { big: e.crit || e.superCrit || (e.damage ?? 0) >= (D.stats.maxHealth ?? 100) * 0.2 });
     });
+    // enemies shouting as they swing, now and then (core/Voices.js)
+    ev.on('attackStart', ({ fighter, state }) => voiceAttack(this, fighter, state));
     // the SHOULDER SMASH sets off: a grunt, the plant, dust off his back foot
     ev.on('attackStart', ({ fighter: f, state }) => {
       if (state !== 'shoulder') return;
@@ -270,6 +275,7 @@ export class ArenaScene extends Phaser.Scene {
     this.wrathFX = new WrathFX(this); // Rurik's Kingsfire and the King's Wrath, and men blown apart by his fire (effects/WrathFX.js)
     ev.on('kill', (e) => {
       this.kills++;
+      voiceDeath(this, e); // his last cry (core/Voices.js)
       if (e.finisher) return; // executions do their own gore (setupFinishers)
       if (!e.move?.noBlood) playSfx(this, DK.kill, { volume: 0.55, spread: 100, minGapMs: 90 }); // the killing blow lands (Deadly Kombat)
       // killed by fire (a grate, or a fire spell that didn't blow him apart): no fountain
