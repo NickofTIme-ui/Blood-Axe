@@ -179,8 +179,8 @@ export class VillageBackdrop {
       const sec = this.data.sections.find((q) => q.id === id);
       const prop = (tag) => sec?.props?.find((pr) => pr.tag === tag);
       // (a set piece: its painting if there is one, else drawn here)
-      const piece = (name, x0, x1, draw) => {
-        const img = this.art.piece(name, x0, x1);
+      const piece = (name, x0, x1, draw, opts) => {
+        const img = this.art.piece(name, x0, x1, opts);
         if (img) this.paintedFire.add(img); else draw();
         return x1;
       };
@@ -195,7 +195,7 @@ export class VillageBackdrop {
         }
         x = this.width; continue;
       }
-      if (id === 'hall' && x >= sec.x0 + 200 && x < sec.x0 + 1200) { x = piece('longhall', sec.x0 + 200, sec.x0 + 1200, () => this.drawLonghall(g, sec.x0 + 200, sec.x0 + 1200, top)); continue; }
+      if (id === 'hall' && x >= sec.x0 + 200 && x < sec.x0 + 1200) { x = piece('longhall', sec.x0 + 200, sec.x0 + 1200, () => this.drawLonghall(g, sec.x0 + 200, sec.x0 + 1200, top), { bottom: 40 }); continue; } // (down on the paving's step: stageVillage 'hall' groundTopFade)
       const barn = id === 'mill' && prop('barn');
       if (barn && x >= barn.x - 130 && x < barn.x + 150) { x = piece('barn', barn.x - 130, barn.x + 150, () => this.drawBarn(g, barn.x - 130, barn.x + 150, top)); continue; }
       const stab = id === 'stables' && prop('stables');
