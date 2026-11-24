@@ -62,8 +62,16 @@ export class Terrain {
   // The highest solid block under (x, z) — what a man there stands on (null: the floor).
   blockAt(x, z) {
     let best = null;
-    for (const b of this.blocks) if (b.solid && this.inside(b, x, z) && (!best || b.top > best.top)) best = b;
+    for (const b of this.blocks) if (b.solid && this.underFoot(b, x, z) && (!best || b.top > best.top)) best = b;
     return best;
+  }
+
+  // Standing on b at (x, z)? A bridge's `grip` ([back, front] px) widens its footing past the
+  // block to where its painting reaches: the round trunk, the raft's overhanging logs
+  // (Nick, 2026-11-24: "hard to know the borders with the art", he kept going in)
+  underFoot(b, x, z) {
+    const [gb, gf] = b.grip ?? [0, 0];
+    return x > b.x0 && x < b.x1 && z >= b.z0 - gb && z <= b.z1 + gf;
   }
 
   // Shallow water under (x, z) on the floor itself (not on a log or a stone over it): how much

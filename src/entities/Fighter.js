@@ -10,7 +10,9 @@
 
 import { StateMachine } from '../core/StateMachine.js';
 import { FIGHTER_STATES, actionCancel } from './fighterStates.js';
-import { STEP, FOOT } from '../stage/Terrain.js';
+import { STEP, FOOT, PIT_FLOOR } from '../stage/Terrain.js';
+// (states in which the brink of a bridge doesn't hold a hero: he was hit, thrown or is done)
+const RAIL_OFF = new Set(['hitstun', 'knockdown', 'getup', 'executed', 'dead', 'grabbed', 'burning']);
 import { JUGGLE } from '../combat/Juggle.js';
 import { GRAB } from '../combat/Grab.js';
 
@@ -188,14 +190,23 @@ export class Fighter {
       // the moment he's high enough, instead of dying against it)
       const air = this.h > this.floor || this.vh > 0;
       const wall = (x, z) => T?.wallAt(x, z, this.h) || solid?.(x, z, this.h);
+      // A hero walking (or rolling) along a bridge over the water doesn't step off its side
+      // by accident: the brink holds him, like a ledge's edge. Knocked, thrown or jumping off,
+      // in he goes (Nick, 2026-11-24: "walking across the tree bridges... you fall in often")
+      // (the same at the ford's shallows, whose deep channel the painting doesn't show apart)
+      const railed = T && this.team === 'player' && !air && wasGrounded && !this.thrown && !RAIL_OFF.has(this.state)
+        && ((this.floorBlock?.solid && this.h <= this.floorBlock.top) || (!this.floorBlock && T.wadeAt(this.x, this.z) < 1));
+      const brink = (x, z) => railed && T.groundAt(x, z, FOOT) <= PIT_FLOOR;
       const nx = this.x + this.vx * dt;
       const hitX = wall(nx, this.z);
-      if (!hitX) this.x = nx;
+      if (!hitX && brink(nx, this.z)) this.vx = 0;
+      else if (!hitX) this.x = nx;
       else if (this.bump(hitX, this.vx)) { this.x = nx; this.vx *= this.thrown ? 0.86 : 0.72; } // (through it, the pieces flying)
       else { this.slideRound(hitX, dt); if (!air) this.vx = 0; this.walled = true; }
       const nz = this.z + this.vz * dt;
       const hitZ = wall(this.x, nz);
-      if (!hitZ) this.z = nz;
+      if (!hitZ && brink(this.x, nz)) this.vz = 0;
+      else if (!hitZ) this.z = nz;
       else if ((this.state === 'dodge' || this.thrown) && this.bump(hitZ, this.vx, this.vz)) { this.z = nz; if (this.thrown) this.vz *= 0.72; } // (rolled or thrown through it)
       else { if (!air) this.vz = 0; this.walled = true; }
       // carried into a wall (a finisher places both men itself): out the nearest side once it lets go

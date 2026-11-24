@@ -3780,6 +3780,29 @@ test('wood: the ford\'s shallows slow everyone wading them, the hero, his foes a
   assert(st.terrain.wadeAt(e.x, e.z) < 1, 'a foe in it wades too');
 });
 
+test('wood: a hero walking the ford\'s log bridge, or the shallows, isn\'t walked off into the channel; knocked or jumping, he still goes in', () => {
+  // on the raft, walking down (toward us) past its front edge: held on its painted logs
+  const { world, p, st, c, run } = woodSetup(WOOD_SEC('ford'), { x: 5200, z: 440, hold: { down: true } });
+  const raft = st.terrain.blockAt(5200, 440);
+  assert(raft && raft.grip, 'the raft has its grip');
+  run(90, () => killFoes(world));
+  assert(p.h >= 0 && st.terrain.groundAt(p.x, p.z, 5) === raft.top, `still on the raft (z ${Math.round(p.z)}, h ${Math.round(p.h)})`);
+  assert(p.z > raft.z1, `out on its overhanging front log (z ${Math.round(p.z)} > ${raft.z1})`);
+  // walking up it: held at its back edge
+  c.hold = { up: true };
+  run(120, () => killFoes(world));
+  assert(p.h >= 0 && p.z < raft.z0 && p.z >= raft.z0 - raft.grip[0], `held at its back (z ${Math.round(p.z)})`);
+  // in the shallows beside the channel, walking into it: held at its edge
+  p.x = 5120; p.z = 320; st.placeOnGround(p); c.hold = { right: true };
+  run(120, () => killFoes(world));
+  assert(p.h >= 0 && p.x < 5170, `held on the shallows' edge (x ${Math.round(p.x)}, h ${Math.round(p.h)})`);
+  // knocked off it: in he goes
+  p.x = 5200; p.z = 440; st.placeOnGround(p); c.hold = {};
+  p.fsm.change('knockdown');
+  run(40, () => { killFoes(world); if (p.state === 'knockdown') { p.vz = -300; p.vx = 0; } });
+  assert(p.h < 0 || p.z < raft.z0 - raft.grip[0], `knocked off, he goes in (z ${Math.round(p.z)}, h ${Math.round(p.h)})`);
+});
+
 test('wood: the opening walks the three in to the tree line, plays its words with the convoy\'s lanterns, then lets them go', () => {
   const world = new World({ seed: 11 });
   const c = new Scripted({}, {});

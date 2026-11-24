@@ -279,7 +279,7 @@ export const STAGE_WOOD = {
     // (too wide to jump: the notched pine, felled across it, is the way over; Vexa's double
     // jump can still clear it)
     { kind: 'pit', x0: 790, x1: 980, ...FULL },
-    { kind: 'block', x0: 774, x1: 998, z0: 400, z1: 452, top: 10, mat: 'log', tag: 'felled', hideArt: true }, // (the notched pine, once it's down)
+    { kind: 'block', x0: 774, x1: 998, z0: 400, z1: 452, top: 10, mat: 'log', tag: 'felled', hideArt: true, grip: [6, 8] }, // (the notched pine, once it's down)
     { kind: 'block', x0: 6690, x1: 6980, z0: 294, z1: 342, top: 10, mat: 'log', tag: 'convoyPine', hideArt: true }, // (the convoy's pine, once it's down across the road)
 
     // ---- III THE CAGE CARTS: a ravine stream crossed on stepping stones
@@ -305,7 +305,7 @@ export const STAGE_WOOD = {
     // too (and Ansel, lame), under the deadfall and the log pile (stage/Terrain.js 'wade')
     { kind: 'wade', x0: 5000, x1: 5350, ...FULL, slow: 0.5 }, // (narrower: the log pile and the lanterns stand on dry banks either side)
     { kind: 'pit', x0: 5160, x1: 5240, ...FULL },
-    { kind: 'block', x0: 5140, x1: 5260, z0: 380, z1: 470, top: 10, mat: 'log' },
+    { kind: 'block', x0: 5140, x1: 5260, z0: 380, z1: 470, top: 10, mat: 'log', grip: [8, 16] }, // (grip: out to its painted logs' edges, stage/Terrain.js underFoot)
 
     // ---- IV the log pile up the far bank (and its posts once it's let go): solid, like the
     // rest of the wood's things (Nick, 2026-11-15: "a lot of stuff you can walk right through")

@@ -6,6 +6,13 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 24 November 2026 (cloud; ON MAIN (Nick: "push"), NOT on itch).
+  LEVEL 2 LOG BRIDGES EASIER TO CROSS (Nick: "walking across the tree bridges is difficult you fall in often, hard to
+  know the borders with the art"). Bridges' footing reaches their painted logs (terrain block `grip: [back, front]`,
+  stage/Terrain.js underFoot: felled pine [6, 8], ford raft [8, 16]); a hero WALKING or rolling can't step off a bridge
+  into the water, nor from the ford's shallows into its unseen deep channel (entities/Fighter.js integrate, `railed`);
+  hit, thrown or jumping, he still goes in. Test in tests/logic-test.js. No art changed.
+
 - 24 November 2026 (cloud; ON MAIN bb0dd05 (Nick: "push all"), NOT on itch).
   LEVEL 2 ART: THE HANGED DEAD AND ANSEL REPAINTED (Nick: "i also want the art for the hanging guys redone, bring up
   the quality, the rope and all"; "the guy with the broken leg needs new art bring up the quality"). ChatGPT (Nick's
