@@ -145,6 +145,12 @@ export function tryActions(f, allowed = null) {
       return true;
     }
   }
+  // the Mage's COMET: heavy while sprinting on his feet (combat/Mage.js)
+  if (ok('heavy') && f.sprinting && f.state === 'walk' && s.moves.comet && c.peek('heavy') && ready(f, s.moves.comet, 'comet')) {
+    c.consume('heavy');
+    f.fsm.change('comet');
+    return true;
+  }
   if (ok('heavy') && usable(f, s.moves.heavy) && c.peek('heavy') && ready(f, s.moves.heavy, stateFor(f, 'heavy'))) {
     c.consume('heavy');
     f.fsm.change(stateFor(f, 'heavy'));
@@ -520,9 +526,14 @@ export const FIGHTER_STATES = {
       if (s.states?.dodge === 'blink' && !f.airBlinked && f.stamina >= s.dodge.cost && c.consume('dodge')) return f.fsm.change('blink');
       // a hero kit's air moves (the Rogue: kick = shuriken fan, heavy = falling viper)
       const ak = s.states?.airKick;
-      if (ak && !f.fanUsed && !(f.cool[ak] > 0) && f.stamina >= (s.kit?.[ak]?.stamina ?? 0) && c.consume('kick')) return f.fsm.change(ak);
+      // (the Mage's DOWNBURST: his own once-per-air, and it costs mana)
+      if (ak && !f.fanUsed && !(ak === 'downburst' && f.burstUsed) && !(f.cool[ak] > 0) && f.stamina >= (s.kit?.[ak]?.stamina ?? 0) &&
+        f.mana >= (s.kit?.[ak]?.manaCost ?? 0) && c.consume('kick')) return f.fsm.change(ak);
       const am = s.states?.airMagic;
-      if (am && !f.fanUsed && !(f.cool[am] > 0) && c.consume('magic')) return f.fsm.change(am);
+      // (the Mage's FALLING BULWARK: the barrier's mana and cooldown, once per time in the air)
+      const wall = am === 'wardDrop';
+      if (am && !f.fanUsed && !(wall && f.wallDropped) && !(f.cool[wall ? 'ward' : am] > 0) && f.mana >= (wall ? s.spell?.cost ?? 0 : 0) &&
+        c.consume('magic')) return f.fsm.change(am);
       const ah = s.states?.airHeavy;
       if (ah && f.air >= (s.kit?.[ah]?.minHeight ?? s.kit?.dive?.minHeight ?? 0) && (ah !== 'plunge' || plungeReady(f)) && c.consume('heavy')) return f.fsm.change(ah);
       if (!f.airAttackUsed && s.moves.air && c.consume('attack')) f.fsm.change('airAttack');

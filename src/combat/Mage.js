@@ -277,6 +277,69 @@ function tempestTargets(f, K) {
     .sort((a, b) => Math.abs(a.x - f.x) - Math.abs(b.x - f.x) || a.id - b.id);
 }
 
+// ---------------------------------------------------------------- the air and the run (2026-11-26)
+
+// DOWNBURST: the men under him and just ahead, nearest first.
+export function downburstTargets(f, K) {
+  return foes(f)
+    .map((e) => ({ e, dx: (e.x - f.x) * f.facing, dz: e.z - f.z }))
+    .filter((o) => o.dx >= -K.behind && o.dx <= K.reach && Math.abs(o.dz) <= K.depth &&
+      o.e.h <= f.h + 30 && f.h - o.e.h <= K.below)
+    .sort((a, b) => Math.abs(a.dx) - Math.abs(b.dx) || a.e.id - b.e.id);
+}
+
+// The Force Blast driven straight down: the men under it slammed into the floor (a man in
+// the air spiked down, to bounce), crates under it smashed.
+function releaseDownburst(f, K) {
+  const w = f.world;
+  const targets = downburstTargets(f, K);
+  const floor = f.floor ?? 0;
+  w.events.emit('downburst', { fighter: f, x: f.x + f.facing * 24, z: f.z, h: f.h, floor, count: targets.length, reach: K.reach });
+  for (const { e } of targets) {
+    const heavy = e.stats.boss || e.stats.maxHealth >= kitOf(f).force.heavyHealth;
+    const move = {
+      cut: 'crush', fx: 'force', noBlood: true, static: K.static, spike: true,
+      damage: K.damage, hitstun: heavy ? 26 : 34, hitstop: 8, shake: 8,
+      knockback: { x: heavy ? 60 : K.push, y: 0 }, knockdown: !heavy, breaksGuard: true, guardDamage: 50, unblockable: true,
+    };
+    w.combat.resolve(f, e, move, { kind: 'magic', fromX: f.x, dir: Math.sign(e.x - f.x) || f.facing, contact: { x: e.x, h: e.h + e.stats.body.h * 0.8 } });
+  }
+  const left = f.x - K.behind * (f.facing > 0 ? 1 : 0) - K.reach * (f.facing > 0 ? 0 : 1);
+  f.propStrike = { box: { left, right: left + K.reach + K.behind, bottom: 0, top: 80, z: f.z }, depth: K.depth, smash: 2, id: w.frame };
+}
+
+// FALLING BULWARK: the barrier placed from the air; every man under where it lands is
+// crushed first (combat/Barrier.js place then moves him off the line, as for any wall).
+function dropWall(f, B, D) {
+  const w = f.world;
+  const k = B[B.kind ?? 'earth'];
+  const x = clampX(w, f.x + f.facing * D.distance);
+  const crushed = [];
+  for (const e of foes(f)) {
+    if (Math.abs(e.x - x) > k.thickness / 2 + D.reach || e.air > 140) continue;
+    const move = {
+      cut: 'crush', fx: 'wallDrop', static: D.static,
+      damage: D.damage, hitstun: 40, hitstop: 10, shake: 10,
+      knockback: { x: D.push, y: D.lift }, knockdown: true, breaksGuard: true, guardDamage: 80, unblockable: true,
+    };
+    w.combat.resolve(f, e, move, { kind: 'magic', fromX: x, dir: Math.sign(e.x - x) || f.facing, contact: { x: e.x, h: e.h + e.stats.body.h } });
+    crushed.push(e);
+  }
+  const b = w.barriers.place(f, B.kind ?? 'earth', { ...B, distance: Math.abs(x - f.x) }, { dropped: true });
+  w.events.emit('wallDrop', { fighter: f, barrier: b, x, crushed });
+  return b;
+}
+
+// COMET: every man close to the line from `from` to `to` (and low enough), in the order
+// he passes them.
+export function cometTargets(f, from, to, K) {
+  const len = Math.abs(to.x - from.x) || 1;
+  return foes(f)
+    .map((e) => ({ e, t: ((e.x - from.x) * Math.sign(to.x - from.x || f.facing)) / len }))
+    .filter((o) => o.t >= -0.05 && o.t <= 1.08 && Math.abs(o.e.z - from.z) <= K.width + o.e.stats.body.w * 0.3 && o.e.air <= K.height)
+    .sort((a, b) => a.t - b.t || a.e.id - b.e.id);
+}
+
 // ---------------------------------------------------------------- the states
 
 // api: helpers from entities/fighterStates.js (handed over, so neither file imports the
@@ -525,6 +588,140 @@ export function mageStates({ tryActions, stopMoving, friction, faceInput, aimTur
         if (frame >= m.startup + m.active + m.recovery) f.fsm.change('idle');
       },
       exit(f) { f.skyTargets = []; },
+    },
+
+    // DOWNBURST (kick in the air): he hangs a beat, then drives the force down under him;
+    // the blast throws him back up into a short hang. Then he falls as from any jump.
+    downburst: {
+      enter(f) {
+        const K = kitOf(f).downburst;
+        f.burstUsed = true;
+        f.cool.downburst = K.cooldown;
+        f.mana = Math.max(0, f.mana - K.manaCost);
+        f.jumpHeld = false;
+        f.vx *= 0.3; f.vz = 0;
+        f.burstAt = 0;
+        f.world.events.emit('attackStart', { fighter: f, state: 'downburst' });
+      },
+      update(f, frame) {
+        const K = kitOf(f).downburst;
+        f.propStrike = null;
+        if (!f.burstAt) {
+          f.vh = f.stats.gravity / 60; // (held at that height while it winds up)
+          if (frame >= K.startup) {
+            f.burstAt = frame;
+            releaseDownburst(f, K);
+            f.vh = K.rebound;
+          }
+          return;
+        }
+        if (f.grounded && frame > f.burstAt + 1) { f.world.events.emit('jumpLand', { fighter: f }); return f.fsm.change('idle'); }
+        if (frame >= f.burstAt + K.recovery) f.fsm.change('jump');
+      },
+      exit(f) { f.propStrike = null; },
+    },
+
+    // FALLING BULWARK (magic in the air): the staff swung down at the floor ahead and the
+    // wall comes down out of the sky onto whoever is there.
+    wardDrop: {
+      enter(f) {
+        f.wallDropped = true;
+        f.mana = Math.max(0, f.mana - f.stats.spell.cost);
+        f.jumpHeld = false;
+        f.vx *= 0.3; f.vz = 0;
+        f.wardPlaced = 0;
+        f.world.events.emit('wardStart', { fighter: f, air: true });
+      },
+      update(f, frame) {
+        const B = kitOf(f).barrier;
+        const D = kitOf(f).wardDrop;
+        if (!f.wardPlaced) {
+          f.vh = f.stats.gravity / 60; // (hung there while he calls it down)
+          if (frame >= D.castAt) {
+            dropWall(f, B, D);
+            f.cool.ward = B.cooldown;
+            f.wardPlaced = frame;
+            f.world.events.emit('wardSlam', { fighter: f, kind: B.kind ?? 'earth', air: true });
+          }
+          return;
+        }
+        if (f.grounded) { f.world.events.emit('jumpLand', { fighter: f }); return f.fsm.change('idle'); }
+        if (frame >= f.wardPlaced + D.recovery) f.fsm.change('jump');
+      },
+    },
+
+    // SPRINT + Y: the COMET. Gathered for the startup, then he IS the lightning: a streak
+    // down the lane (untouchable, through bodies) that shocks every man on the line as he
+    // passes, then re-forms at the end of it and skids out of it.
+    comet: {
+      enter(f) {
+        const m = f.stats.moves.comet;
+        const K = kitOf(f).comet;
+        stopMoving(f);
+        faceInput(f);
+        f.startMove(m);
+        f.mana = Math.max(0, f.mana - (m.manaCost ?? 0));
+        f.cool.comet = K.cooldown;
+        f.sprinting = false;
+        const w = f.world;
+        let to = { x: clampX(w, f.x + f.facing * K.distance), z: f.z };
+        // never into a wall: pulled back along the line until he fits (stage/Terrain.js)
+        const T = w.terrain;
+        if (T) {
+          const full = to.x;
+          for (let k = 1; k <= 12 && T.wallAt(to.x, to.z, f.h); k++) to = { x: full + (f.x - full) * (k / 12), z: f.z };
+        }
+        f.cometFrom = { x: f.x, z: f.z };
+        f.cometTo = to;
+        f.cometHit = new Set();
+        f.cometList = cometTargets(f, f.cometFrom, to, K).map((o) => o.e);
+        w.events.emit('attackStart', { fighter: f, state: 'comet', move: m });
+        w.events.emit('cometCall', { fighter: f, from: f.cometFrom, to });
+      },
+      update(f, frame) {
+        const m = f.move;
+        const K = kitOf(f).comet;
+        const go = frame - m.startup; // frames into the streak
+        f.invincible = go >= -2 && go <= K.frames + 2;
+        if (go < 0) { friction(f, 0.6); return; }
+        if (go <= K.frames) {
+          // along the line, a little faster at the start
+          const u = 1 - (1 - go / K.frames) ** 2;
+          const x = f.cometFrom.x + (f.cometTo.x - f.cometFrom.x) * u;
+          f.vx = 0; f.vz = 0;
+          f.x = x;
+          f.cometGone = go < K.frames;
+          if (go === 0) f.world.events.emit('cometGo', { fighter: f, from: f.cometFrom, to: f.cometTo });
+          // shock every man he has just passed (in the order he meets them)
+          for (const e of f.cometList) {
+            if (f.cometHit.has(e.id) || !e.alive || e.removeMe) continue;
+            if ((e.x - f.x) * f.facing > 4) continue;
+            f.cometHit.add(e.id);
+            f.world.combat.resolve(f, e, m, { kind: 'magic', fromX: e.x - f.facing * 20, dir: f.facing, contact: { x: e.x, h: e.h + e.stats.body.h * 0.55 } });
+            if (e.alive) e.shock = Math.max(e.shock ?? 0, 28);
+            f.world.events.emit('cometHit', { fighter: f, target: e });
+          }
+          if (go === K.frames) {
+            f.cometGone = false;
+            f.vx = f.facing * 260; // he comes out of it skidding
+            f.world.events.emit('cometArrive', { fighter: f, x: f.x, z: f.z, hits: f.cometHit.size });
+          }
+          return;
+        }
+        friction(f, 0.82);
+        const since = frame - m.startup - K.frames;
+        for (const win of m.cancels ?? []) {
+          if (frame >= win.from && frame <= win.to && tryActions(f, win.into)) return;
+        }
+        if (since >= m.recovery) f.fsm.change('idle');
+      },
+      exit(f) {
+        // cut short (a finisher, a stage reset): he always ends up whole, at the line's end
+        if (f.cometGone && f.cometTo) { f.x = f.cometTo.x; f.z = f.cometTo.z; }
+        f.cometGone = false;
+        f.invincible = false;
+        f.cometList = [];
+      },
     },
 
     // STONE SPIKES (THE CATACLYSM, D-pad down): the staff driven into the floor, and the

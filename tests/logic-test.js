@@ -32,6 +32,7 @@ import { BladeChain, CHAIN_PHYS } from '../src/view/BladeChain.js';
 import { DYES } from '../src/view/dye.js';
 import { handshake } from '../src/net/Link.js';
 import { impalePin } from '../src/combat/Finisher.js';
+import { restoreFromExecution } from '../src/combat/Executions.js';
 import { grabbable } from '../src/combat/Grab.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS, staticOn } from '../src/combat/Mage.js';
 const staticOnOf = (e, w) => staticOn(e, w.frame);
@@ -558,6 +559,26 @@ test('finisher: tap attack behind a runner = throat, he dies', () => {
   assert(!r.alive, 'runner should be dead');
   assert(r.diedLying, 'he went over on his face: he stays down');
   assert(t.p.state === 'idle', `player back to idle, is ${t.p.state}`);
+});
+
+test('execution restore: each man executed gives back 20% of max health, stamina, mana (capped)', () => {
+  const t = setup({ script: { 1: ['attack'] }, gap: 70 });
+  const r = runner(t);
+  const S = t.p.stats;
+  t.p.health = S.maxHealth * 0.5; t.p.stamina = S.maxStamina * 0.9; t.p.mana = 0;
+  const got = []; t.world.events.on('executionRestore', (e) => got.push(e));
+  t.run(140);
+  assert(!r.alive && got.length === 1 && got[0].fighter === t.p, `restores ${got.length}`);
+  assert(Math.abs(t.p.health - S.maxHealth * 0.7) < 1, `health ${t.p.health} / ${S.maxHealth}`);
+  assert(t.p.stamina <= S.maxStamina && t.p.stamina > S.maxStamina * 0.95, `stamina capped near full ${t.p.stamina}`);
+  if (S.maxMana > 0) assert(t.p.mana >= S.maxMana * 0.2 - 0.01, `mana ${t.p.mana}`);
+  // a plain kill gives nothing back
+  const hp = t.p.health;
+  t.world.events.emit('kill', { attacker: t.p, defender: r, kind: 'melee' });
+  assert(t.p.health === hp && got.length === 1, 'only executions restore');
+  // a hero with no mana bar just skips it
+  const g = restoreFromExecution({ stats: { maxHealth: 100, maxStamina: 0 }, health: 10, stamina: 0 });
+  assert(g.health === 20 && g.stamina === 0 && g.mana === 0, JSON.stringify(g));
 });
 
 test('finisher: hold attack = impale, lifted on the blade, then booted off', () => {
@@ -3239,6 +3260,57 @@ test('oryn: heavy in the air is the METEOR DROP: down hard, men close are floore
   assert(e.health < e.stats.maxHealth && (['knockdown', 'getup', 'dead'].includes(e.state) || !e.alive), `floored (${e.state})`);
   assert(!e.alive || staticOnOf(e, t.world) >= 1, 'marked');
   assert(t.p.cool.plunge > 0, 'cools down');
+});
+
+test('oryn: kick in the air is the DOWNBURST: the men under him slammed down and marked, and it throws him back up (once a jump)', () => {
+  const t = mageSetup({ script: { 1: ['jump'], 14: ['kick'], 40: ['kick'] }, hold: (n) => ({ jump: n < 12 }), foes: [[660], [900]] });
+  const seen = new Set(); let blasts = 0; let rose = false; let lastH = 0; let after = false;
+  t.world.events.on('downburst', () => { blasts++; after = true; });
+  const mana = t.p.mana;
+  for (let i = 0; i < 100; i++) { t.run(1); seen.add(t.p.state); if (after && t.p.h > lastH + 0.5) rose = true; lastH = t.p.h; }
+  assert(seen.has('downburst') && blasts === 1, `one downburst a jump (${[...seen]}, ${blasts})`);
+  const [e, far] = t.es;
+  assert(e.health < e.stats.maxHealth && (['knockdown', 'getup', 'lying', 'dead'].includes(e.state) || !e.alive || e.isDowned), `the man under him floored (${e.state})`);
+  assert(!e.alive || staticOnOf(e, t.world) >= 1, 'and marked');
+  assert(far.health === far.stats.maxHealth, 'out of reach: untouched');
+  assert(rose, 'the blast kicked him back up');
+  assert(t.p.mana < mana, 'it cost mana');
+  assert(t.p.grounded && !['downburst', 'jump'].includes(t.p.state), `landed after (${t.p.state})`);
+});
+
+test('oryn: magic in the air is the FALLING BULWARK: the wall comes down on the man under it, then stands', () => {
+  const t = mageSetup({ script: { 1: ['jump'], 14: ['magic'] }, hold: (n) => ({ jump: n < 12 }), foes: [[720]] });
+  const drops = []; t.world.events.on('wallDrop', (e) => drops.push(e));
+  const mana = t.p.mana;
+  const seen = new Set();
+  for (let i = 0; i < 60; i++) { t.run(1); seen.add(t.p.state); }
+  assert(seen.has('wardDrop') && drops.length === 1, `called down (${[...seen]})`);
+  const e = t.es[0];
+  assert(drops[0].crushed.includes(e) && e.health < e.stats.maxHealth, `the man under it crushed (${e.health})`);
+  const b = t.world.barriers.list[0];
+  assert(b && b.state === 'up' && b.dropped, 'a standing wall');
+  assert(Math.abs(e.x - b.x) >= b.half, 'and he is not left inside it');
+  assert(t.p.mana <= mana - CHARACTERS.mage.spell.cost + 6 && t.p.cool.ward > 0, 'the barrier\'s mana and cooldown');
+  // not twice in one jump, nor with the barrier cooling down
+  const two = mageSetup({ script: { 1: ['jump'], 12: ['magic'], 30: ['magic'] }, hold: (n) => ({ jump: n < 10 }) });
+  let n = 0; two.world.events.on('wallDrop', () => n++);
+  two.run(60);
+  assert(n === 1, `one a jump (${n})`);
+});
+
+test('oryn: sprint + Y is the COMET: a streak of lightning through the line, every man on it shocked and marked, untouchable', () => {
+  const t = mageSetup({ script: { 1: ['sprint'], 14: ['heavy'] }, hold: (n) => (n < 16 ? { right: true } : {}), foes: [[800], [860, 430], [900, 560]] });
+  const seen = new Set(); let inv = false;
+  const x0 = t.p.x;
+  for (let i = 0; i < 80; i++) { t.run(1); seen.add(t.p.state); if (t.p.state === 'comet' && t.p.cometGone) inv ||= t.p.invincible; }
+  assert(seen.has('comet') && !seen.has('bolt'), `the comet, not the lightning (${[...seen]})`);
+  const [a, b, off] = t.es;
+  assert(a.health < a.stats.maxHealth && b.health < b.stats.maxHealth, 'both men on the line struck');
+  assert((!a.alive || staticOnOf(a, t.world) >= 1) && (!b.alive || staticOnOf(b, t.world) >= 1), 'and marked');
+  assert(off.health === off.stats.maxHealth, 'a man well off the line is passed by');
+  assert(t.p.x > b.x, `he came out past them (${t.p.x.toFixed(0)} from ${x0})`);
+  assert(inv, 'untouchable while he is lightning');
+  assert(t.p.cool.comet > 0 || t.p.state !== 'comet', 'cools down');
 });
 
 test('oryn: STONE SPIKES (D-pad down, the Cataclysm) run along the floor and throw men up; the TEMPEST strikes every man in reach', () => {

@@ -215,6 +215,28 @@ export class StripHeroView {
         return T.hold[Math.floor(tick / 6) % T.hold.length];
       }
 
+      // ---- the air and the run (2026-11-26)
+      case 'downburst': {
+        const F = (A.downburst ?? A.force).frames; const D = K.downburst;
+        if (!f.burstAt) return spread(F.slice(0, 2), fr / Math.max(1, D.startup));
+        const t = fr - f.burstAt;
+        return t < 5 ? F[2] : F[Math.min(F.length - 1, 3)];
+      }
+      case 'wardDrop': {
+        const F = (A.wardDrop ?? A.ward).frames; const D = K.wardDrop;
+        const n = F.length;
+        if (!f.wardPlaced) return spread(F.slice(0, Math.max(1, n - 3)), fr / Math.max(1, D.castAt));
+        const t = fr - f.wardPlaced;
+        return t < 6 ? F[n - 3] : t < 10 ? F[n - 2] : F[n - 1];
+      }
+      case 'comet': {
+        const C = A.comet; const m = f.move;
+        if (!C || !m) return A.idle.frames[0];
+        if (fr < m.startup) return spread(C.gather, fr / Math.max(1, m.startup));
+        if (f.cometGone) return null; // he is the lightning: only the streak (MageFX)
+        return spread(C.arrive, (fr - m.startup - K.comet.frames) / Math.max(1, m.recovery));
+      }
+
       // ---- the Rogue's kit (combat/Rogue.js)
       case 'knife': return spread(A.knife.frames, fr / (K.knife.startup + K.knife.recovery));
       case 'mine': return A.mine.frames[0];
