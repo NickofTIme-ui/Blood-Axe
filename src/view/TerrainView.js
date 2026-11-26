@@ -623,6 +623,8 @@ export class TerrainView {
       && this.scene.textures.exists(artKey('mine', 'stone_0'))) { this.drawStones(v, x0, x1, yTop0, yTop1); return; }
     // (the mine's lift up to Pip: the painted platform on its two chains, run on up into the dark)
     if (this.mine && b.kind === 'lift' && this.scene.textures.exists(artKey('mine', 'lift'))) { this.drawMineLift(v, x0, x1, yTop0, yTop1); return; }
+    // (the mine's rotten planks: painted boards, split and green with rot, on their two ropes)
+    if (this.mine && b.kind === 'crumble' && this.scene.textures.exists(artKey('mine', 'planks_rotten'))) { this.drawMinePlanks(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'siegeGate') { this.drawSiegeGate(v, x0, x1); return; }
     if (b.mat === 'iron' && b.kind === 'block') { this.drawPortcullis(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
@@ -698,8 +700,25 @@ export class TerrainView {
     front.setDepth(b.z1 + .5);
   }
 
-  // Stepping stones in a wood stream: two or three wet boulders filling the block's footing,
-  // mossy and lit on top where you land, dark and wet down into the water, foam round them.
+  // The mine's rotten planks (assets/env/mine/planks_rotten.png, ChatGPT 2026-11-26): the
+  // boards drawn out along their grain to run the block's depth, hung on two ropes from the
+  // dark when they're off the floor.
+  drawMinePlanks(v, x0, x1, yTop0, yTop1) {
+    const { top, front, b } = v;
+    const key = artKey('mine', 'planks_rotten');
+    const depth = yTop1 - yTop0;
+    // one bundle of boards, drawn out along its grain to run the block's depth (its front
+    // ends, the boards' thickness, hang just below where you land)
+    v.art ??= this.scene.add.image(0, 0, key).setOrigin(0.5, 0);
+    const fr = v.art.frame;
+    v.art.setPosition((x0 + x1) / 2, yTop0 - 4).setScale((x1 - x0) * 1.2 / fr.width, (depth + 22) / fr.height)
+      .setFlipX(Math.round(b.x0 / 10) % 2 === 1).setDepth(b.z1 + 0.6).setVisible(true);
+    top.setVisible(false);
+    front.clear();
+    if (b.top > 0) front.fillStyle(0x8a7a5a, 0.9).fillRect(x0 + 6, yTop1 - 400, 2, 400 - depth).fillRect(x1 - 8, yTop1 - 400, 2, 400 - depth);
+    front.setDepth(b.z0 - 0.6).setVisible(b.top > 0);
+  }
+
   // The mine's lift (assets/env/mine/lift.png, ChatGPT 2026-11-26): its timber floor is where you
   // stand, the rail behind; the chains from its corners run on up out of sight (lift_chain.png,
   // repeated), so it hangs from the dark rather than from nothing.
@@ -725,6 +744,8 @@ export class TerrainView {
     top.setVisible(false); front.setVisible(false);
   }
 
+  // Stepping stones in a wood stream: two or three wet boulders filling the block's footing,
+  // mossy and lit on top where you land, dark and wet down into the water, foam round them.
   drawStones(v, x0, x1, yTop0, yTop1) {
     const { top, front, b } = v;
     const w = x1 - x0; const depth = yTop1 - yTop0;
