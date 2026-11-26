@@ -296,7 +296,7 @@ export const STAGE_MINE = {
       flee: { x: 1400, z: 330 }, gather: { x: 11640, z: 310 },
     },
     // (optional: left on the high ledge when the lift was cut; reach him)
-    { id: 'pip', name: 'Pip', x: 3600, z: 300, pose: 'child', rescue: 'reach', flee: null, gather: { x: 11650, z: 420 } },
+    { id: 'pip', name: 'Pip', art: 'pip', x: 3600, z: 300, pose: 'child', rescue: 'reach', flee: null, gather: { x: 11650, z: 420 } },
     // behind the fallen rock in the escape passage
     {
       id: 'passage', name: 'the miners in the passage', x: 10990, z: 400, pose: 'group', rescue: 'wreckage', tag: 'passage',

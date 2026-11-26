@@ -92,6 +92,8 @@ const CELLS = {
   // ...and the boy trapped up on a roof (Tam; drawStranded): clinging, waving (two beats),
   // calling, flinching from the sparks, reaching down to a hero, relieved, climbing down
   'boy-roof': { cling: 0, wave: [1, 2], call: 3, flinch: 4, reach: 5, relief: 6, climb: 7, stand: 6 },
+  'pip-roof': { cling: 0, wave: [1, 2], call: 3, flinch: 4, reach: 5, relief: 6, climb: 7, stand: 6 },
+  pip: { stand: 0, cower: 1, wave: 2, run: RUN },
   elder: { stand: 0, sit: 1, wave: 2, kneel: 3, cower: 1 },
   // Hale the smith (stage/SmithLife.js): his walk is the run's four beats; grieving at the
   // vigil (kneel/sit), his hand over his eyes
@@ -304,7 +306,8 @@ export class NpcView {
   // hero; a hero close by, he leans down to him; reached, he's relieved, then turns and
   // climbs down the back of the roof, sinking out of sight as he fades (stage/Story.js free)
   drawStranded(n, g, y, k, t) {
-    if (!SPRITES['boy-roof'] || (n.state !== 'trapped' && n.state !== 'free')) return false;
+    const sheet = n.art && SPRITES[`${n.art}-roof`] ? `${n.art}-roof` : 'boy-roof'; // (Pip on his own sheet)
+    if (!SPRITES[sheet] || (n.state !== 'trapped' && n.state !== 'free')) return false;
     let pose; let dy = 0; let tt = t;
     let dir = n.dir ?? -1;
     if (n.state === 'free') {
@@ -329,7 +332,7 @@ export class NpcView {
         tt = t * 0.5; // (a wave beat every 14 frames, not the run's 7)
       }
     }
-    this.figure(g, n.x, y + dy, k, pose, tt, 0, dir, 'boy-roof');
+    this.figure(g, n.x, y + dy, k, pose, tt, 0, dir, sheet);
     return true;
   }
 
@@ -411,7 +414,7 @@ export class NpcView {
       return;
     }
     if (n.pose === 'child' && n.rescue === 'reach' && this.drawStranded(n, g, y, k, t)) return;
-    if (n.pose === 'child') return this.figure(g, n.x, y, k * 0.7 / (SPRITES.boy ? 0.7 : 1), pose, t, tun(1), dir, 'boy');
+    if (n.pose === 'child') { const own = n.art && SPRITES[n.art] ? n.art : 'boy'; return this.figure(g, n.x, y, k * 0.7 / (SPRITES[own] ? 0.7 : 1), pose, t, tun(1), dir, own); }
     if (n.pose === 'family' && n.split) {
       // torn apart at the well (stage/WellRescue.js): Mira on her own, and her boy wherever
       // he is (at the end of the butcher's arm, on the stones, down the well). Her own sheet

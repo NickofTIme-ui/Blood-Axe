@@ -211,6 +211,10 @@ export const SPRITE_SHEETS = {
   // x2, call, flinch, reach down, relief, climb down (ChatGPT, 2026-10-24, from the boy sheet
   // above). Height: his standing pose as tall as the boy's (about 157 px)
   'boy-roof': { file: 'assets/sprites/npc/boy_roof.png', frames: 8, height: 181, grade: NPC_GRADE, centre: true },
+  // Pip, the miner's boy stranded on the ledge over the lift shaft (Hollow Mountain): the same poses
+  // as Tam's two sheets, as him (ChatGPT, 2026-11-26; tools/bake-pose-row.py)
+  'pip-roof': { file: 'assets/sprites/npc/pip_roof.png', frames: 8, height: 181, grade: NPC_GRADE, centre: true },
+  pip: { file: 'assets/sprites/npc/pip.png', frames: 6, height: 170, grade: NPC_GRADE },
   elder: { file: 'assets/sprites/npc/elder.png', frames: 4, height: 228, grade: NPC_GRADE },
   // Hale the smith, on his feet at the start of level 1 (he stood on the villager sheet, the
   // same man Varek kills: Nick, 2026-11-02, "he looks copy and pasted"). ChatGPT, from the
