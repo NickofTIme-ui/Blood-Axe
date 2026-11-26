@@ -17,4 +17,8 @@ export const VEXA_SHEETS = [
   sheet('breath', 6),    // her idle (5 Nov): one guard pose breathing, edited from a single image, steadied on pose 0
   sheet('roundhouse', 6), // SPINNING ROUNDHOUSE (24 Nov, job 25): planted, back turned, knee chambered, the heel to his head, through, guard
   sheet('block', 8),    // guard, a blow on it, recover, guard round, body hit, head hit, falling, dead
+  sheet('airattack', 6), // JUMP ATTACK (26 Nov): take-off, tucked, lead cut, crossing cut, through, dropping
+  sheet('dive', 6),      // DIVE: turning over, diving daggers first, nearly down, the strike on one knee, crouch, guard
+  sheet('fade', 6),      // FADE: leaning away, gliding back, wrapped in the cloak, sliding in, coiled, guard
+  sheet('knifethrow', 6), // KNIFE THROW: guard, the draw from the thigh, wound up by the ear, the throw, through, guard
 ];
