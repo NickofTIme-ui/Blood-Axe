@@ -621,6 +621,8 @@ export class TerrainView {
     // (the mine's river: its own painted stepping stones, wet black rock in foam)
     if (this.mine && b.kind === 'block' && b.mat !== 'log' && b.top <= 40 && this.terrain.inPit((x0 + x1) / 2, b.z1 - 1)
       && this.scene.textures.exists(artKey('mine', 'stone_0'))) { this.drawStones(v, x0, x1, yTop0, yTop1); return; }
+    // (the mine's lift up to Pip: the painted platform on its two chains, run on up into the dark)
+    if (this.mine && b.kind === 'lift' && this.scene.textures.exists(artKey('mine', 'lift'))) { this.drawMineLift(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'siegeGate') { this.drawSiegeGate(v, x0, x1); return; }
     if (b.mat === 'iron' && b.kind === 'block') { this.drawPortcullis(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
@@ -698,6 +700,31 @@ export class TerrainView {
 
   // Stepping stones in a wood stream: two or three wet boulders filling the block's footing,
   // mossy and lit on top where you land, dark and wet down into the water, foam round them.
+  // The mine's lift (assets/env/mine/lift.png, ChatGPT 2026-11-26): its timber floor is where you
+  // stand, the rail behind; the chains from its corners run on up out of sight (lift_chain.png,
+  // repeated), so it hangs from the dark rather than from nothing.
+  drawMineLift(v, x0, x1, yTop0, yTop1) {
+    const { top, front, b } = v;
+    const s = this.scene;
+    const key = artKey('mine', 'lift'); const ck = artKey('mine', 'lift_chain');
+    const fr = s.textures.getFrame(key);
+    const W = (x1 - x0) * 1.35; const k = W / fr.width;
+    const cx = (x0 + x1) / 2;
+    v.art ??= s.add.image(0, 0, key).setOrigin(0.5, 0.97);
+    v.art.setPosition(cx, yTop1 + 6).setScale(k).setDepth(b.z0 - 0.4).setVisible(true);
+    const imgTop = yTop1 + 6 - fr.height * k * 0.97;
+    if (s.textures.exists(ck)) {
+      const cf = s.textures.getFrame(ck);
+      v.chains ??= [0, 1].map(() => s.add.tileSprite(0, 0, cf.width, 10, ck).setOrigin(0.5, 1));
+      [158 / 976, 818 / 976].forEach((u, i) => {
+        const h = Math.max(10, imgTop + 4 - (yTop0 - 900));
+        v.chains[i].setPosition(cx + (u - 0.5) * W, imgTop + 4).setSize(cf.width, h / k).setScale(k).setTilePosition(0, -(b.top / k) % cf.height)
+          .setDepth(b.z0 - 0.45).setVisible(true);
+      });
+    }
+    top.setVisible(false); front.setVisible(false);
+  }
+
   drawStones(v, x0, x1, yTop0, yTop1) {
     const { top, front, b } = v;
     const w = x1 - x0; const depth = yTop1 - yTop0;
