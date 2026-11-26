@@ -12,6 +12,10 @@ branch, or ChatGPT's work gets lost.
   full; a hero without a bar skips it. One central place: src/combat/Executions.js (installed in core/World.js, listens to
   'kill' events carrying `finisher` or `sentence`), so new finishers count as long as their kill event sets `finisher`.
   Cue: ArenaScene.restoreFX (red/green/blue motes drawn into the hero + a low swell). Test in tests/logic-test.js.
+- 26 November 2026 (cloud; ON MAIN 6f67a3f, Nick "push all"; not on itch yet). VORN 30% BIGGER (Nick: "Vorn is
+  too small"): berserker gets `tuned: { size: 1.3 }` (body, hitboxes, AI reach grow; same damage and speed). Grab's
+  giant check now ignores a kind's own tune (Vorn and Gorrak always grabbable). Stonebreaker (cloned from Vorn) sets
+  tuned:null; bosses (Hruk, Forgemaster) unaffected. 3 Ascent tests from ChatGPT's level 4 still fail (not from this).
 - 26 November 2026 (cloud; ON MAIN, Nick "push it to main"; not on itch yet). LEVEL 2 CAGE
   CARTS BLEND: ground_carts.jpg has a row of big dark rocks painted along its top, which made a hard dark band behind
   the cage carts; the 'carts' section now has `groundTopFade` {depth 110, hold 0.42} (same tool as the church/hall
