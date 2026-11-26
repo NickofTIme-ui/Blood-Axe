@@ -1,3 +1,4 @@
+import {HERO_VISUAL_SCALE} from './depths.js';
 // StripHeroView.js — Draws a hero from painted strips alone (the Mage and the Rogue:
 // data/heroStrips.js). Same two methods as every other view: update() and destroy().
 //
@@ -74,7 +75,7 @@ export class StripHeroView {
     const t = HERO_STRIPS[this.f.stats.id]?.strips[strip]?.tips?.[i];
     if (!t) return null;
     const s = this.sprite;
-    const k = depthScale(this.f.z) / this.sheet.res;
+    const k = depthScale(this.f.z) * HERO_VISUAL_SCALE / this.sheet.res;
     return { x: s.x + (t[0] - this.sheet.ax) * k * this.f.facing, y: s.y + (t[1] - this.sheet.ay) * k };
   }
 
@@ -275,7 +276,7 @@ export class StripHeroView {
     }
     this.last = ref;
 
-    const k = depthScale(f.z) / this.sheet.res;
+    const k = depthScale(f.z) * HERO_VISUAL_SCALE / this.sheet.res;
     let sx = k; let sy = k; let bob = 0; let lean = 0; let push = 0;
 
     // the Mage floats: off the floor unless he's been knocked out of the air

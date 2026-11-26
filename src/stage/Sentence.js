@@ -229,7 +229,7 @@ export class Sentence {
         this.go('after');
       }
     } else if (this.step === 'after') {
-      if (this.t >= SENTENCE.after) this.finish();
+      if (this.t >= (this.afterFor??SENTENCE.after)) this.finish();
     }
     this.steer();
     return this.running;
@@ -265,7 +265,8 @@ export class Sentence {
     // the music: the swing starts so its first active frame lands on the crest; the
     // words fill the time before it. Too many words for the track: it starts later.
     this.swingAt = SENTENCE.slice - (this.blowOf.frames.startup ?? 0) - 1;
-    this.speechEnd = this.swingAt - SENTENCE.raise;
+    this.afterFor=def.after??SENTENCE.after;
+    this.speechEnd = this.swingAt - (def.raise??SENTENCE.raise);
     this.natural = lines.map(([, text]) => this.stage.story?.frames(text) ?? 120);
     const need = Math.round(this.natural.reduce((a, n) => a + n, 0) * SENTENCE.pace);
     const budget = this.speechEnd - SENTENCE.arrive - SENTENCE.stand;
@@ -337,6 +338,7 @@ export class Sentence {
 
   // Roll how this one goes: never the same head, or the same fall, as the last man's.
   howHeGoes(b) {
+    if(this.speaker==='MALGOR')return {head:'drop',body:'linger'};
     const pick = (list, last, salt) => {
       const pool = list.filter((x) => x !== last);
       return pool[Math.floor(this.world.roll(b.id, salt) * pool.length)];
@@ -409,6 +411,7 @@ export function speakerOf(name = '') {
 // The charges, the hero's question, his last words (or his silence), the sentence.
 export function sentenceLines(b, h, def, speaker = speakerOf(b.stats.name)) {
   const hero = (h.stats.name ?? 'Rurik').toUpperCase();
+  if(def.lines)return def.lines.map(([who,text])=>[who==='$HERO'?hero:who,text]);
   const crimes = def.crimes?.length ? def.crimes : GENERIC_CRIMES;
   const lines = [[hero, `${b.stats.name}. On your knees, hear your crimes.`]];
   for (const c of crimes) lines.push([hero, c]);

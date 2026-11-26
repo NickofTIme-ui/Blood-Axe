@@ -99,6 +99,13 @@ export const EXECUTION_GEAR = {
 // neck cut is a level line across the frame, and his pauldrons stand as high as his
 // neck (bowed, the helmet sits lower than them): the head would take a slab of shoulder.
 export const EXECUTION_HEAD = {
+  // Measured from the imported 832x960 kneel frame. Banner finials are not his crown.
+  warlord: {
+    'kneel:1': {
+      head:[[417,735],[430,710],[450,706],[482,685],[477,710],[487,718],[478,742],[471,759],[452,773],[439,780],[424,763]],
+      neck:[[423,763],[449,781]],
+    },
+  },
   gladiator: {
     'kneel:1': {
       head: [[214,304],[224,294],[234,284],[258,288],[268,310],[262,326],[250,336],[236,338],[224,332],[216,320]],

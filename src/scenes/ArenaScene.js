@@ -50,6 +50,8 @@ import { sharedProgress } from '../progression/Progress.js';
 import { CHARACTERS } from '../data/characters.js';
 import { WAVES, BAD_GUYS, ENEMIES } from '../data/enemies.js';
 import { FATALITY_LABELS } from '../combat/Fatality.js';
+import {AscentDestruction} from '../view/AscentDestruction.js';
+import {AscentFarewellView} from '../view/AscentFarewellView.js';
 import { playMusic, playCue, stopMusic, toggleMute, currentMusic } from '../core/Music.js';
 import { syncSanctuaryMusic } from '../core/SanctuaryMusic.js';
 import { syncWoodMusic } from '../core/WoodMusic.js';
@@ -495,6 +497,7 @@ export class ArenaScene extends Phaser.Scene {
     // (after the StageView: it makes the 'glow' texture the terrain's lanterns use)
     this.terrainView = this.stage.terrain || this.stageData.theme ? new TerrainView(this, this.stage) : null;
     // a campaign level's villagers, its dead and the other Oath Keepers (view/NpcView.js)
+    this.ascentDestruction=this.stage.ascentSiege?new AscentDestruction(this,this.stage):null;
     this.npcView = this.stage.story ? new NpcView(this, this.stage) : null;
     if (this.stageData.king) this.setupKing(this.world.events); // (King Hakon in the square: stage/KingHakon.js)
     // warm firelight on the fighters near the village's fires (view/FireLight.js)
@@ -510,6 +513,7 @@ export class ArenaScene extends Phaser.Scene {
     ev.on('lessonDone', ({ skipped }) => playSfx(this, 'block', { volume: skipped ? 0.25 : 0.55, pitch: skipped ? -200 : 900, minGapMs: 0 }));
     ev.on('practiceDone', () => { this.callout('PRACTICE DONE', '#ffd24a', 30); playSfx(this, 'finisher', { volume: 0.5, pitch: 200, minGapMs: 0 }); });
     this.setupBirthright(ev);
+    this.ascentFarewell=this.stage.ascentSiege?new AscentFarewellView(this,ev):null;
     this.stage.start(this.players, { section: this.startSection });
     this.prepareTestMoment();
     this.nextReady = false;
@@ -755,6 +759,13 @@ export class ArenaScene extends Phaser.Scene {
   setupStageEvents(ev) {
     // (the HUD starts a frame after the arena: until it's up, it picks the state up itself)
     const hud = () => { const h = this.scene.get('HUD'); return h?.arena === this && h.card?.active ? h : null; };
+    ev.on('ascentEngineHit', () => { this.callout('THEIR OWN STONES!', '#e7d8ad', 21); });
+    ev.on('propBreak', ({ prop }) => {
+      if (this.stageId !== 'shatteredAscent' || prop.tag !== 'battery') return;
+      const left = this.stage.props.filter(p => p.tag === 'battery' && !p.broken).length;
+      this.callout(left ? `${left} GUN${left > 1 ? 'S' : ''} STILL FIRING` : 'THE BATTERY IS SILENT', '#e7d8ad', 22);
+      // Silencing the engines stops their fire, not the level music.
+    });
     ev.on('sectionStart', ({ index, section }) => {
       hud()?.sectionCard?.(index, section);
       // a campaign checkpoint: CONTINUE starts here
@@ -762,6 +773,7 @@ export class ArenaScene extends Phaser.Scene {
       if (index > 0) playSfx(this, 'block', { volume: 0.4, pitch: -900, minGapMs: 0 }); // the way shuts behind you
     });
     ev.on('sectionClear', ({ last, section }) => {
+      if(this.stageId==='shatteredAscent'&&section.id==='camp')return;
       if (last) return;
       // (a stretch with no fight — a climb — opens at once: no GO, its hint stays up)
       if (!section.waves?.length && !section.boss) return;
@@ -1855,6 +1867,7 @@ export class ArenaScene extends Phaser.Scene {
     this.liftShadows();
     this.terrainView?.update();
     this.npcView?.update();
+    this.ascentFarewell?.update();
     this.kingView?.draw(this.stage.king);
     this.speakerMarker?.update();
     this.parallax.update(Math.min(delta, 100) / 1000 * (this.paused ? 0 : 1));
@@ -1994,7 +2007,9 @@ export class ArenaScene extends Phaser.Scene {
     let x;
     const S = this.stage.sentence;
     const pair = S?.running && S.boss && S.hero;
-    if (pair) x = (S.boss.x + S.hero.x) / 2;
+    if(this.stage.ascentSiege?.wound)x=(this.stage.ascentSiege.wound.boss.x+this.stage.ascentSiege.wound.npc.x)/2;
+    else if(this.ascentFarewell?.active)x=this.ascentFarewell.npc.x+48;
+    else if (pair) x = (S.boss.x + S.hero.x) / 2;
     else if (this.stage.king?.cinema) x = this.stage.king.focusX(this.player.x); // (the king's fight: him and his son both in view)
     else if (this.mode === 'local' && up.length) x = up.reduce((s, p) => s + p.x, 0) / up.length;
     else x = (this.player.alive || !up.length ? this.player : up[0]).x;
@@ -2008,6 +2023,7 @@ export class ArenaScene extends Phaser.Scene {
       const ground = this.mode === 'local' && up.length ? Math.max(...up.map((p) => Math.max(0, p.floor))) : Math.max(0, who.floor);
       y = who.z - ground - 70;
     }
+    if(this.ascentFarewell?.active)y=this.ascentFarewell.npc.z-this.ascentFarewell.npc.h-55;
     this.camFocus.setPosition(x, y);
   }
 

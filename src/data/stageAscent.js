@@ -1,311 +1,1222 @@
-// stageAscent.js — THE CAMPAIGN, LEVEL 4: THE SHATTERED ASCENT (docs/campaign/plan.md). Out
-// of the mountain on its far face, the Oath Keepers take the old road up the cliffs toward
-// the Iron Gates, with the Black Keep in full view across the gorge. The King has sent his
-// Siege Commander to destroy the route: catapults on the heights shell the road, the stair
-// is broken, the bridge half gone. Grey rock, wind, the castle close. Everything here is
-// drawn in code (view/AscentView.js); the painted art is requested in
-// docs/campaign/art-levels-1-2.md.
-//
-// Same format as data/stageMine.js. New here: the bombardment (hazard 'bombard': catapult
-// stones aimed at the heroes, each one's landing spot shown on the ground first; `silence`:
-// it fires one stone fewer for every catapult with that tag smashed, and stops when they are
-// all gone), catapults (prop 'catapult'), and a section that holds until every prop with a
-// tag is broken (`needs`: the battery). Built for the weakest jumper, walking, no upgrades
-// (ups of 85 at most, gaps of 60 at most); a test walks it with every hero.
-//
-// THE ROUTE
-//   I   THE CLIFF ROAD     the old road along the cliff; the others take the high paths; loose
-//                          rock (taught alone); a horn above; the first Ashen on the road
-//   II  THE BROKEN STAIR   steps cut in the cliff, a ledge that gives way over the drop, men
-//                          waiting on the landing; up at the back, a goatherd girl (optional).
-//                          A shrine
-//   III THE SHELTER        the miners freed in the mountain went up the road ahead and are
-//                          pinned under an overhang by Ashen men and the first stones: defend them
-//   IV  THE BOMBARDMENT    the crossing: open road under the catapults, the half-gone bridge
-//                          over the gorge, men on the far side. Keep moving
-//   V   THE BATTERY        up onto the heights: smash the three catapults (each one gone, one
-//                          stone fewer); a captive made to haul the stones (Bram)
-//   VI  THE SIEGE CAMP     a shrine; SIEGE COMMANDER ORSK. At two thirds he has the Keep fire
-//                          on his own camp; at one third he goes berserk
-//   VII THE HIGH PASS      horns from the Keep: the Ashen pull back to the Iron Gates; the
-//                          saved gather; on
-
-const FULL = { z0: 282, z1: 520 };
-
+// Orsk's mountain siegeworks. Route geometry retained; garrison encounters expanded.
 export const STAGE_ASCENT = {
-  id: 'shatteredAscent',
-  name: 'THE SHATTERED ASCENT',
-  chapter: 'IV',
-  next: { id: 'ironGates', name: 'THE IRON GATES', chapter: 'V' },
-  doneTitle: 'THE ASCENT IS TAKEN',
-  width: 9800,
-  theme: 'ascent',
-  tall: true,
-  castle: { x: 1250, scale: 0.6, detail: 0.85 }, // close now: it fills the sky across the gorge (x: see view/AscentView.js HORIZON)
-  music: 'cliffs', // (core/Music.js)
-  companions: { leaveAfter: 'opening', meet: 9200, farewell: 'gates' },
-
-  sections: [
+  "id": "shatteredAscent",
+  "name": "THE SHATTERED ASCENT",
+  "chapter": "IV",
+  "next": {
+    "id": "ironGates",
+    "name": "THE IRON GATES",
+    "chapter": "V"
+  },
+  "doneTitle": "THE ASCENT IS TAKEN",
+  "width": 9800,
+  "theme": "ascent",
+  "tall": true,
+  "castle": {
+    "x": 1250,
+    "scale": 0.6,
+    "detail": 0.85
+  },
+  "music": "cliffs",
+  "companions": {
+    "leaveAfter": "opening",
+    "meet": 9200,
+    "farewell": "gates"
+  },
+  "sections": [
     {
-      id: 'road', name: 'THE CLIFF ROAD', x0: 0, x1: 1400,
-      spawn: { x: 150, z: 440 },
-      objective: 'Climb the old road',
-      hint: 'Loose rock: watch the ground for its shadow',
-      fightAt: 1020,
-      waves: [['grunt', 'grunt', 'stalker'], ['butcher', 'grunt']],
-      props: [
-        { kind: 'barrel', x: 420, z: 300, drop: null },
-        { kind: 'crate', x: 1300, z: 480, drop: 'health' },
-      ],
-      hazards: [
-        // loose rock, taught alone on the open road before the first fight
-        { type: 'beam', look: 'rock', x: 820, z: 420, w: 80, d: 80, period: 200, warn: 80, phase: 0 },
-      ],
-    },
-    {
-      id: 'stair', name: 'THE BROKEN STAIR', x0: 1400, x1: 3000,
-      spawn: { x: 1460, z: 440 },
-      objective: 'Up the broken stair',
-      hint: 'The ledge will not hold you long: keep moving',
-      fightAt: 2320,
-      // the men waiting on the landing
-      spawns: [[{ x: 2340, z: 380, inPlace: true }, { x: 2540, z: 440, inPlace: true }, { x: 2560, z: 370, inPlace: true }], [{ x: 2560, z: 380 }, { x: 2560, z: 470 }]],
-      waves: [['grunt', 'stalker', 'grunt'], ['butcher', 'grunt']],
-      props: [{ kind: 'crate', x: 2900, z: 480, drop: 'mana' }],
-      hazards: [
-        { type: 'beam', look: 'rock', x: 1760, z: 440, w: 80, d: 80, period: 230, warn: 80, phase: 90 },
-      ],
-      rest: { x: 2900, z: 320, kind: 'oath' },
-    },
-    {
-      id: 'shelter', name: 'THE SHELTER', x0: 3000, x1: 4500,
-      spawn: { x: 3060, z: 440 },
-      objective: 'Defend the miners under the rock',
-      hint: 'A stone is coming where its shadow grows',
-      fightAt: 3620,
-      waves: [['grunt', 'grunt', 'butcher'], ['stalker', 'grunt', 'grunt']],
-      props: [{ kind: 'barrel', x: 4400, z: 490, drop: 'health' }],
-      hazards: [
-        // the first stones: one at a time, slow (they teach the shadow)
-        { type: 'bombard', period: 260, warn: 90, shots: 1, silence: 'battery' },
-      ],
-    },
-    {
-      id: 'bombardment', name: 'THE BOMBARDMENT', x0: 4500, x1: 6200,
-      spawn: { x: 4560, z: 440 },
-      objective: 'Cross under the catapults',
-      hint: 'Keep moving. Do not stop on the bridge',
-      fightAt: 5720,
-      waves: [['grunt', 'stalker', 'grunt'], ['penitent', 'grunt']],
-      props: [{ kind: 'crate', x: 6100, z: 480, drop: 'health' }],
-      hazards: [
-        { type: 'bombard', period: 190, warn: 75, shots: 2, silence: 'battery' },
-        { type: 'beam', look: 'rock', x: 5620, z: 360, w: 80, d: 80, period: 220, warn: 80, phase: 30 },
-      ],
-    },
-    {
-      id: 'battery', name: 'THE BATTERY', x0: 6200, x1: 7600,
-      spawn: { x: 6260, z: 440 },
-      objective: 'Smash the catapults',
-      hint: 'Every catapult smashed is one stone fewer',
-      fightAt: 6700,
-      needs: 'battery', // (the way on stays shut until every catapult is wrecked)
-      spawns: [[{ x: 7420, z: 340 }, { x: 7440, z: 460 }], [{ x: 7420, z: 380 }, { x: 7440, z: 470 }], [{ x: 6600, z: 330 }, { x: 7440, z: 420 }]],
-      waves: [['grunt', 'grunt', 'stalker'], ['butcher', 'grunt', 'grunt'], ['ghoul', 'stalker']],
-      props: [
-        // the battery: three catapults on the heights (each smashed, one stone fewer)
-        { kind: 'catapult', tag: 'battery', x: 6820, z: 310, drop: null },
-        { kind: 'catapult', tag: 'battery', x: 7060, z: 330, drop: 'health' },
-        { kind: 'catapult', tag: 'battery', x: 7320, z: 310, drop: null },
-        // Bram, chained to the stone pile and made to haul for them
-        { kind: 'shackle', tag: 'bram', x: 7190, z: 300, drop: null },
-      ],
-      hazards: [
-        { type: 'bombard', period: 200, warn: 75, shots: 2, silence: 'battery' },
-      ],
-    },
-    {
-      id: 'camp', name: 'THE SIEGE CAMP', x0: 7600, x1: 9000,
-      spawn: { x: 7660, z: 440 },
-      objective: 'Kill Siege Commander Orsk',
-      hint: 'When the Keep fires on the camp, watch the shadows',
-      fightAt: 7980,
-      waves: [['grunt', 'stalker', 'grunt']],
-      props: [
-        { kind: 'barrel', x: 8200, z: 300, drop: null },
-        { kind: 'crate', x: 8900, z: 480, drop: 'health' },
-      ],
-      hazards: [
-        // at two thirds he signals the Keep to fire on his own camp (it hits his men too)
-        { type: 'bombard', when: 'phase:barrage', period: 170, warn: 70, shots: 2, damage: 18 },
-      ],
-      rest: { x: 7680, z: 320, kind: 'oath' },
-      // the King's Siege Commander: the Berserker's kind, in a commander's plate
-      boss: {
-        type: 'berserker', look: 'orsk', name: 'Siege Commander Orsk', health: 3.0, damage: 1.15, escort: ['grunt', 'grunt'],
-        entrance: { from: 160, to: 360, speed: 70, stepEvery: 28, awe: 30 },
-        // beaten: his crimes and his sentence (stage/Sentence.js)
-        sentence: {
-          speaker: 'ORSK',
-          crimes: [
-            'You loosed your stones on miners pinned under the rock.',
-            'You chained Bram to your catapults and worked him like a mule.',
-            'You burned the road behind us, and your own men with it.',
-          ],
-          last: 'The King sent me to bury you. He will send another.',
-        },
-        phases: [
-          { id: 'barrage', at: 0.66, adds: ['grunt', 'stalker'] },
-          { id: 'berserk', at: 0.33, rage: true, adds: ['butcher'], damage: 1.25, speed: 1.2, ai: { attackCooldown: [20, 50] } },
-        ],
+      "id": "road",
+      "name": "THE CLIFF ROAD",
+      "x0": 0,
+      "x1": 1400,
+      "spawn": {
+        "x": 150,
+        "z": 440
       },
-    },
-    {
-      id: 'pass', name: 'THE HIGH PASS', x0: 9000, x1: 9800,
-      spawn: { x: 9060, z: 440 },
-      objective: 'On to the Iron Gates',
-      hint: '',
-      waves: [],
-      props: [],
-      hazards: [],
-    },
-  ],
-
-  // down toward the Iron Gates once the last words are said
-  exit: { x: 9600, after: 'gates' },
-
-  terrain: [
-    // ---- I THE CLIFF ROAD: a fallen boulder on the road to hop (or walk round)
-    { kind: 'block', x0: 560, x1: 650, z0: 390, z1: 470, top: 40 },
-
-    // ---- II THE BROKEN STAIR: steps cut in the cliff, a ledge that gives way, the landing
-    { kind: 'block', x0: 1650, x1: 1850, ...FULL, top: 70 },              // +70
-    { kind: 'block', x0: 1850, x1: 2050, ...FULL, top: 140 },             // +70
-    { kind: 'pit', x0: 2050, x1: 2260, ...FULL },                        // the drop
-    { kind: 'crumble', x0: 2090, x1: 2150, z0: 350, z1: 480, top: 140, fall: 40, back: 200 }, // gap 40
-    { kind: 'crumble', x0: 2195, x1: 2260, z0: 350, z1: 480, top: 140, fall: 40, back: 200 }, // gap 45
-    { kind: 'block', x0: 2260, x1: 2600, ...FULL, top: 140 },             // the landing
-    { kind: 'block', x0: 2600, x1: 2750, ...FULL, top: 70 },              // down
-    // (up at the back of the landing: a goat path where a girl is stranded; optional. Over
-    // the landing only, so the step down from it is clear at every depth and the men below
-    // can climb back up)
-    { kind: 'block', x0: 2380, x1: 2520, z0: 282, z1: 340, top: 220 },
-
-    // ---- IV THE BOMBARDMENT: the half-gone bridge over the gorge
-    { kind: 'pit', x0: 5100, x1: 5400, ...FULL },
-    { kind: 'crumble', x0: 5140, x1: 5200, z0: 350, z1: 480, top: 0, fall: 30, back: 160 }, // gap 40
-    { kind: 'crumble', x0: 5245, x1: 5305, z0: 350, z1: 480, top: 0, fall: 30, back: 160 }, // gap 45
-    { kind: 'crumble', x0: 5350, x1: 5400, z0: 350, z1: 480, top: 0, fall: 30, back: 160 }, // gap 45
-
-    // ---- V THE BATTERY: up onto the heights where the catapults stand
-    { kind: 'block', x0: 6400, x1: 6560, ...FULL, top: 70 },              // +70
-    { kind: 'block', x0: 6560, x1: 7500, ...FULL, top: 140 },             // the heights
-    { kind: 'block', x0: 7500, x1: 7600, ...FULL, top: 70 },              // down to the camp
-  ],
-
-  // signal braziers along the road
-  lanterns: [
-    { x: 500, z: 290 }, { x: 1600, z: 290 }, { x: 2900, z: 290 }, { x: 3500, z: 290 }, { x: 4600, z: 290 },
-    { x: 5600, z: 290 }, { x: 7700, z: 290 }, { x: 9100, z: 290 },
-  ],
-
-  // the dead (view only): miners caught by the stones on the road up
-  bodies: [{ x: 1200, z: 480, pose: 1 }, { x: 3300, z: 490, pose: 0 }, { x: 4800, z: 470, pose: 2 }, { x: 5900, z: 340, pose: 1 }],
-
-  npcs: [
-    // Nicholas, the mountain guide (Nick, in the game): the pilgrim from the wood road, come
-    // round the mountain to meet them. He leads them up the old road (stage/Story.js
-    // `guide`) and is struck down by the Keep's fire on Orsk's camp.
-    {
-      id: 'nicholas', name: 'Nicholas', art: 'nicholas', x: 330, z: 420,
-      guide: { section: 'camp', falls: ['phase:camp:barrage', 'clear:camp'], cry: 'struck', words: 'lastWords' },
-    },
-    // (optional: a goatherd stranded on the goat path above the landing; reach her)
-    { id: 'wren', name: 'Wren', x: 2450, z: 310, pose: 'child', rescue: 'reach', flee: null, gather: { x: 9300, z: 330 } },
-    // the miners from the mountain, pinned under the overhang
-    {
-      id: 'shelter', name: 'the miners under the rock', x: 3960, z: 310, pose: 'group', rescue: 'defend',
-      flee: { x: 3200, z: 330 }, gather: { x: 9220, z: 480 },
-    },
-    // Hilde's brother, chained at the battery and made to haul the stones
-    {
-      id: 'bram', name: 'Bram', x: 7190, z: 312, pose: 'chained', rescue: 'wreckage', tag: 'bram',
-      flee: { x: 6300, z: 480 }, gather: { x: 9380, z: 420 },
-    },
-  ],
-
-  story: [
-    {
-      id: 'opening', on: 'start', hold: true, delay: 150,
-      lines: [
-        ['VEXA', 'The old road. Cut into the cliff, all the way to his gates.'],
-        ['ORYN', 'And the Keep, right there across the gorge. Close enough to count its towers.'],
-        ['RURIK', 'Take the high paths. I keep the road. If they want to stop us, they come through me.'],
+      "objective": "Break through the cliff checkpoint",
+      "hint": "Watch the falling-stone shadow, then take the road",
+      "fightAt": 1020,
+      "waves": [
+        [
+          "grunt",
+          "siegeguard",
+          "siegeguard",
+          "grunt"
+        ]
       ],
-    },
-    {
-      id: 'guide', on: 'start', hold: true,
-      lines: [
-        ['NICHOLAS', 'Oath Keepers. I said I\'d find you on this side. I keep my word.'],
-        ['NICHOLAS', 'Stay on my heels. This mountain has killed more men than the Ashen ever will.'],
-        ['RURIK', 'Lead on, Nicholas.'],
+      "props": [
+        {
+          "kind": "barrel",
+          "x": 420,
+          "z": 300,
+          "drop": null
+        },
+        {
+          "kind": "crate",
+          "x": 1300,
+          "z": 480,
+          "drop": "health"
+        },
+        {
+          "kind": "crate",
+          "look": "crate-long",
+          "x": 980,
+          "z": 302,
+          "drop": null
+        },
+        {
+          "kind": "barrel",
+          "look": "keg2",
+          "x": 1220,
+          "z": 306,
+          "drop": null
+        }
       ],
-    },
-    { id: 'horn', at: 420, lines: [['VOICE', '(a horn, high on the cliffs) The Oath Keepers! On the ascent! To the road!']] },
-    { id: 'rocks', at: 640, lines: [['NICHOLAS', 'Loose rock! Watch for its shadow!']] },
-    { id: 'stair', at: 1500, calm: true, lines: [['NICHOLAS', 'The thaw took the stair. The ledge won\'t hold you long. Keep moving. Don\'t look down.']] },
-    { id: 'wren', on: 'rescued:wren', lines: [['WREN', 'My goats ran when the stones came. I know the back path. Thank you!']] },
-    { id: 'shelterCry', at: 3200, lines: [['VOICE', 'Help! Up here, under the rock! They have us pinned!']] },
-    { id: 'stones', at: 3320, lines: [['NICHOLAS', 'Catapults! Where the shadow grows, the stone falls. Move!']] },
-    { id: 'shelter', on: 'rescued:shelter', lines: [['MINER', 'We came up ahead of you and walked into their catapults. We\'ll hold here.']] },
-    {
-      id: 'hilde', on: 'rescued:shelter', if: 'saved:hilde',
-      lines: [['HILDE', 'You came for us again. My brother\'s up at the catapults. They\'ve got him hauling stones.']],
-    },
-    { id: 'bridge', at: 4900, lines: [['NICHOLAS', 'Half the bridge is gone. Don\'t stop on it! I\'ll go round by the goat path.']] },
-    { id: 'battery', on: 'enter:battery', lines: [['ORYN', '(from above) The battery! Smash the catapults and the hill goes quiet.']] },
-    { id: 'silenced', on: 'broken:battery', lines: [['RURIK', 'Quiet at last.']] },
-    {
-      id: 'bram', on: 'rescued:bram', if: 'saved:hilde',
-      lines: [['BRAM', 'Hilde lives? Then I\'m going to find her. Go. Finish this.']],
-    },
-    {
-      id: 'bramAlone', on: 'rescued:bram', unless: 'saved:hilde',
-      lines: [['BRAM', 'They worked me like a mule. Never again. Go on, I\'ll find my way down.']],
-    },
-    { id: 'camp', at: 7700, calm: true, lines: [['VEXA', '(from the cliff) Orsk is in the camp ahead. He burned the road behind us with his own hands.']] },
-    { id: 'orsk', on: 'boss:camp', lines: [['ORSK', 'So these are the Oath Keepers. The King sent me to bury you. I brought a mountain.']] },
-    { id: 'barrage', on: 'phase:camp:barrage', lines: [['ORSK', 'Signal the Keep! Fire on my position! Bring it all down!']] },
-    // the Keep's first stones come down on the camp, and on the guide
-    { id: 'struck', on: 'phase:camp:barrage', lines: [['NICHOLAS', '(under the falling stones) Get clear! ...Don\'t look back. Finish him!']] },
-    { id: 'berserk', on: 'phase:camp:berserk', lines: [['ORSK', 'Enough! I\'ll break you myself!']] },
-    {
-      id: 'retreat', on: 'clear:camp', calm: true,
-      lines: [['VOICE', '(horns from the Keep, long and low, again and again)'], ['RURIK', 'They\'re sounding the retreat.']],
-    },
-    // his last words (a held scene; then he is gone)
-    {
-      id: 'lastWords', on: 'clear:camp', calm: true, hold: true,
-      lines: [
-        ['RURIK', 'Nicholas. Stay with me. The miners can carry you down.'],
-        ['NICHOLAS', 'No. I\'ve walked this road a thousand times. Today was the first time it mattered.'],
-        ['NICHOLAS', 'A guide only shows the way. The walking was always yours.'],
-        ['NICHOLAS', 'When you stand before that king, he\'ll ask who you are. Tell him: the ones he couldn\'t burn.'],
-        ['NICHOLAS', 'Keep your oath, Rurik. For all of us.'],
-        ['RURIK', 'On my life.'],
+      "hazards": [
+        {
+          "type": "beam",
+          "look": "rock",
+          "x": 820,
+          "z": 420,
+          "w": 80,
+          "d": 80,
+          "period": 200,
+          "warn": 80,
+          "phase": 0,
+          "until": "clear"
+        }
       ],
+      "spawns": [
+        [
+          {
+            "x": 1200,
+            "z": 370,
+            "inPlace": true
+          },
+          {
+            "x": 1230,
+            "z": 470,
+            "inPlace": true
+          },
+          {
+            "x": 1320,
+            "z": 340,
+            "inPlace": true
+          },
+          {
+            "x": 1320,
+            "z": 450,
+            "inPlace": true
+          }
+        ]
+      ]
     },
-    { id: 'gathered', at: 9150, calm: true, if: 'rescued:shelter', lines: [['MINER', 'We hold the pass. Nobody comes up this road again.']] },
     {
-      id: 'gates', at: 9300, calm: true, hold: true,
-      lines: [
-        ['VEXA', 'Look at them. Every man on the mountain, running for the Iron Gates.'],
-        ['ORYN', 'He\'s pulling his army behind his walls. That isn\'t strength.'],
-        ['RURIK', 'It\'s fear. The gates, then the Keep. For Nicholas.'],
+      "id": "stair",
+      "name": "THE CUT ROAD",
+      "x0": 1400,
+      "x1": 3000,
+      "spawn": {
+        "x": 1460,
+        "z": 440
+      },
+      "objective": "Break through the road guard",
+      "hint": "Keep the old road open",
+      "fightAt": 2320,
+      "spawns": [
+        [
+          {
+            "x": 2480,
+            "z": 400,
+            "inPlace": true
+          },
+          {
+            "x": 2500,
+            "z": 475,
+            "inPlace": true
+          },
+          {
+            "x": 2560,
+            "z": 355,
+            "inPlace": true
+          }
+        ]
       ],
+      "waves": [
+        [
+          "grunt",
+          "stonebreaker",
+          "siegeguard"
+        ]
+      ],
+      "props": [
+        {
+          "kind": "urn",
+          "x": 2480,
+          "z": 310,
+          "drop": "charm",
+          "secret": true
+        }
+      ],
+      "hazards": [],
+      "rest": {
+        "x": 2810,
+        "z": 395,
+        "kind": "oath"
+      }
     },
+    {
+      "id": "shelter",
+      "name": "THE SHELTER",
+      "x0": 3000,
+      "x1": 4500,
+      "spawn": {
+        "x": 3060,
+        "z": 440
+      },
+      "objective": "Drive the siege troops from the refuge",
+      "hint": "The overhang is safe. Their stones can kill their own men",
+      "fightAt": 3620,
+      "waves": [
+        [
+          "grunt",
+          "siegeguard",
+          "stalker",
+          "siegeguard",
+          "stonebreaker",
+          "grunt",
+          "stalker",
+          "grunt"
+        ]
+      ],
+      "props": [
+        {
+          "kind": "barrel",
+          "x": 4400,
+          "z": 490,
+          "drop": "health"
+        },
+        {
+          "kind": "crate",
+          "look": "crate-long",
+          "x": 3850,
+          "z": 290,
+          "drop": "mana"
+        },
+        {
+          "kind": "barrel",
+          "look": "keg2",
+          "x": 4170,
+          "z": 300,
+          "drop": null
+        },
+        {
+          "kind": "barrel",
+          "x": 4360,
+          "z": 335,
+          "drop": "health"
+        }
+      ],
+      "hazards": [
+        {
+          "type": "bombard",
+          "period": 280,
+          "warn": 145,
+          "shots": 1,
+          "silence": "battery",
+          "until": "clear",
+          "cover": {
+            "x0": 3770,
+            "x1": 4220,
+            "z0": 282,
+            "z1": 355
+          },
+          "destructive": true,
+          "radius": 92,
+          "depth": 44,
+          "damage": 28
+        }
+      ],
+      "spawns": [
+        [
+          {
+            "x": 3640,
+            "z": 430,
+            "inPlace": true
+          },
+          {
+            "x": 3750,
+            "z": 485,
+            "inPlace": true
+          },
+          {
+            "x": 3870,
+            "z": 395,
+            "inPlace": true
+          },
+          {
+            "x": 4050,
+            "z": 465,
+            "inPlace": true
+          },
+          {
+            "x": 4220,
+            "z": 410,
+            "inPlace": true
+          },
+          {
+            "x": 4330,
+            "z": 485,
+            "inPlace": true
+          },
+          {
+            "x": 4120,
+            "z": 350,
+            "inPlace": true
+          },
+          {
+            "x": 4420,
+            "z": 410,
+            "inPlace": true
+          }
+        ]
+      ]
+    },
+    {
+      "id": "bombardment",
+      "name": "THE OLD CAUSEWAY",
+      "x0": 4500,
+      "x1": 6200,
+      "spawn": {
+        "x": 4560,
+        "z": 440
+      },
+      "objective": "Cross the broken causeway",
+      "hint": "Keep to the bridge deck. Move between volleys",
+      "fightAt": 5650,
+      "waves": [
+        [
+          "siegeguard",
+          "grunt",
+          "stalker"
+        ]
+      ],
+      "props": [
+        {
+          "kind": "crate",
+          "x": 6100,
+          "z": 480,
+          "drop": "health"
+        },
+        {
+          "kind": "barrel",
+          "look": "barrel-grey",
+          "x": 4850,
+          "z": 302,
+          "drop": null
+        },
+        {
+          "kind": "crate",
+          "look": "crate-v6",
+          "x": 5580,
+          "z": 490,
+          "drop": "mana"
+        }
+      ],
+      "hazards": [
+        {
+          "type": "bombard",
+          "period": 250,
+          "warn": 145,
+          "shots": 2,
+          "silence": "battery",
+          "destructive": true,
+          "radius": 92,
+          "depth": 44,
+          "damage": 28
+        },
+        {
+          "type": "bombard",
+          "period": 250,
+          "warn": 145,
+          "shots": 1,
+          "visualOnly": true,
+          "scenery": [
+            {
+              "x": 5030,
+              "z": 238
+            },
+            {
+              "x": 5230,
+              "z": 238
+            },
+            {
+              "x": 5500,
+              "z": 238
+            }
+          ],
+          "destructive": true,
+          "radius": 92,
+          "depth": 44,
+          "damage": 28
+        }
+      ],
+      "spawns": [
+        [
+          {
+            "x": 5740,
+            "z": 390,
+            "inPlace": true
+          },
+          {
+            "x": 5870,
+            "z": 470,
+            "inPlace": true
+          },
+          {
+            "x": 6010,
+            "z": 350,
+            "inPlace": true
+          }
+        ]
+      ]
+    },
+    {
+      "id": "battery",
+      "name": "THE BATTERY",
+      "x0": 6200,
+      "x1": 7600,
+      "spawn": {
+        "x": 6260,
+        "z": 440
+      },
+      "objective": "Destroy the battery and open the siege gate",
+      "hint": "Bait their stones onto the engines, or smash them yourself",
+      "fightAt": 6700,
+      "needs": "battery",
+      "spawns": [
+        [
+          {
+            "x": 6660,
+            "z": 450,
+            "inPlace": true
+          },
+          {
+            "x": 6770,
+            "z": 350,
+            "inPlace": true
+          },
+          {
+            "x": 6880,
+            "z": 485,
+            "inPlace": true
+          },
+          {
+            "x": 7010,
+            "z": 420,
+            "inPlace": true
+          },
+          {
+            "x": 7170,
+            "z": 350,
+            "inPlace": true
+          },
+          {
+            "x": 7280,
+            "z": 480,
+            "inPlace": true
+          },
+          {
+            "x": 7370,
+            "z": 410,
+            "inPlace": true
+          },
+          {
+            "x": 7460,
+            "z": 350,
+            "inPlace": true
+          },
+          {
+            "x": 7130,
+            "z": 485,
+            "inPlace": true
+          }
+        ],
+        [
+          {
+            "x": 6800,
+            "z": 485,
+            "inPlace": true
+          },
+          {
+            "x": 7100,
+            "z": 360,
+            "inPlace": true
+          },
+          {
+            "x": 7350,
+            "z": 450,
+            "inPlace": true
+          }
+        ]
+      ],
+      "waves": [
+        [
+          "siegeguard",
+          "grunt",
+          "siegeguard",
+          "stonebreaker",
+          "siegeguard",
+          "stalker",
+          "stonebreaker",
+          "grunt",
+          "siegeguard"
+        ],
+        [
+          "stalker",
+          "siegeguard",
+          "stalker"
+        ]
+      ],
+      "props": [
+        {
+          "kind": "catapult",
+          "tag": "battery",
+          "x": 6820,
+          "z": 310,
+          "drop": null
+        },
+        {
+          "kind": "catapult",
+          "tag": "battery",
+          "x": 7060,
+          "z": 420,
+          "drop": "health"
+        },
+        {
+          "kind": "catapult",
+          "tag": "battery",
+          "x": 7320,
+          "z": 310,
+          "drop": null
+        },
+        {
+          "kind": "shackle",
+          "tag": "bram",
+          "x": 7190,
+          "z": 300,
+          "drop": null
+        },
+        {
+          "kind": "barrel",
+          "look": "keg2",
+          "x": 6650,
+          "z": 303,
+          "drop": "mana"
+        },
+        {
+          "kind": "crate",
+          "look": "crate-long",
+          "x": 7380,
+          "z": 492,
+          "drop": null
+        },
+        {
+          "kind": "crate",
+          "x": 6610,
+          "z": 500,
+          "drop": "mana"
+        }
+      ],
+      "hazards": [
+        {
+          "type": "bombard",
+          "period": 250,
+          "warn": 145,
+          "shots": 3,
+          "silence": "battery",
+          "destructive": true,
+          "radius": 92,
+          "depth": 44,
+          "damage": 28
+        }
+      ]
+    },
+    {
+      "id": "camp",
+      "name": "THE SIEGE CAMP",
+      "x0": 7600,
+      "x1": 9000,
+      "spawn": {
+        "x": 7660,
+        "z": 440
+      },
+      "objective": "Kill Siege Commander Orsk",
+      "hint": "When the Keep fires on the camp, watch the shadows",
+      "fightAt": 7980,
+      "waves": [
+        [
+          "siegeguard",
+          "stonebreaker",
+          "siegeguard"
+        ]
+      ],
+      "props": [
+        {
+          "kind": "barrel",
+          "x": 8200,
+          "z": 300,
+          "drop": null
+        },
+        {
+          "kind": "crate",
+          "x": 8900,
+          "z": 480,
+          "drop": "health"
+        },
+        {
+          "kind": "crate",
+          "look": "crate-v5",
+          "x": 7820,
+          "z": 495,
+          "drop": "mana"
+        }
+      ],
+      "hazards": [
+        {
+          "type": "bombard",
+          "when": "phase:barrage",
+          "period": 250,
+          "warn": 145,
+          "shots": 1,
+          "damage": 28,
+          "destructive": true,
+          "radius": 92,
+          "depth": 44
+        }
+      ],
+      "rest": {
+        "x": 7680,
+        "z": 320,
+        "kind": "oath"
+      },
+      "boss": {
+        "type": "berserker",
+        "look": "orsk",
+        "name": "Orsk - The Siege Commander",
+        "health": 3,
+        "damage": 1.15,
+        "entrance": {
+          "from": 160,
+          "to": 360,
+          "speed": 70,
+          "stepEvery": 28,
+          "awe": 30
+        },
+        "sentence": {
+          "speaker": "ORSK",
+          "crimes": [
+            "You loosed your stones on miners pinned under the rock.",
+            "You chained Bram to your catapults and worked him like a mule.",
+            "You burned the road behind us, and your own men with it."
+          ],
+          "last": "The King sent me to bury you. He will send another."
+        },
+        "phases": [
+          {
+            "id": "barrage",
+            "at": 0.66
+          },
+          {
+            "id": "berserk",
+            "at": 0.33,
+            "rage": true,
+            "damage": 1.1
+          }
+        ]
+      },
+      "spawns": [
+        [
+          {
+            "x": 8010,
+            "z": 390,
+            "inPlace": true
+          },
+          {
+            "x": 8230,
+            "z": 470,
+            "inPlace": true
+          },
+          {
+            "x": 8420,
+            "z": 390,
+            "inPlace": true
+          }
+        ]
+      ]
+    },
+    {
+      "id": "pass",
+      "name": "THE HIGH PASS",
+      "x0": 9000,
+      "x1": 9800,
+      "spawn": {
+        "x": 9060,
+        "z": 440
+      },
+      "objective": "Gather the survivors and descend to the Iron Gates",
+      "hint": "",
+      "waves": [],
+      "props": [],
+      "hazards": []
+    }
   ],
-
-  // the fourth castle cutaway, after the level (scenes/CutawayScene.js)
-  cutaway: 'retreat',
+  "exit": {
+    "x": 9600,
+    "after": "gates"
+  },
+  "terrain": [
+    {
+      "kind": "block",
+      "x0": 560,
+      "x1": 650,
+      "z0": 390,
+      "z1": 470,
+      "top": 35
+    },
+    {
+      "kind": "block",
+      "x0": 6320,
+      "x1": 6400,
+      "z0": 282,
+      "z1": 520,
+      "top": 35
+    },
+    {
+      "kind": "block",
+      "x0": 6400,
+      "x1": 6480,
+      "z0": 282,
+      "z1": 520,
+      "top": 70
+    },
+    {
+      "kind": "block",
+      "x0": 6480,
+      "x1": 6560,
+      "z0": 282,
+      "z1": 520,
+      "top": 105
+    },
+    {
+      "kind": "block",
+      "x0": 6560,
+      "x1": 7500,
+      "mat": "siegeGround",
+      "z0": 282,
+      "z1": 520,
+      "top": 140
+    },
+    {
+      "kind": "block",
+      "x0": 7500,
+      "x1": 7580,
+      "z0": 282,
+      "z1": 520,
+      "top": 70
+    },
+    {
+      "kind": "block",
+      "x0": 7465,
+      "x1": 7500,
+      "z0": 282,
+      "z1": 520,
+      "top": 330,
+      "tag": "batteryGate",
+      "mat": "siegeGate"
+    },
+    {
+      "kind": "pit",
+      "x0": 5000,
+      "x1": 5600,
+      "z0": 282,
+      "z1": 520
+    },
+    {
+      "kind": "block",
+      "x0": 4940,
+      "x1": 5660,
+      "z0": 350,
+      "z1": 465,
+      "top": 0,
+      "hideArt": true,
+      "tag": "causeway"
+    }
+  ],
+  "lanterns": [
+    {
+      "x": 500,
+      "z": 290
+    },
+    {
+      "x": 1600,
+      "z": 290
+    },
+    {
+      "x": 2900,
+      "z": 290
+    },
+    {
+      "x": 3500,
+      "z": 290
+    },
+    {
+      "x": 4600,
+      "z": 290
+    },
+    {
+      "x": 5600,
+      "z": 290
+    },
+    {
+      "x": 7700,
+      "z": 290
+    },
+    {
+      "x": 9100,
+      "z": 290
+    }
+  ],
+  "bodies": [
+    {
+      "x": 1200,
+      "z": 480,
+      "pose": 1
+    },
+    {
+      "x": 3300,
+      "z": 490,
+      "pose": 0
+    },
+    {
+      "x": 4800,
+      "z": 470,
+      "pose": 2
+    },
+    {
+      "x": 5900,
+      "z": 340,
+      "pose": 1
+    }
+  ],
+  "npcs": [
+    {
+      "id": "nicholas",
+      "name": "Nicholas",
+      "art": "nicholas",
+      "x": 330,
+      "z": 420,
+      "guide": {
+        "section": "camp",
+        "falls": [
+          "clear:camp"
+        ],
+        "cry": "struck",
+        "words": "lastWords"
+      }
+    },
+    {
+      "id": "wren",
+      "name": "Wren",
+      "x": 2450,
+      "z": 310,
+      "pose": "child",
+      "rescue": "reach",
+      "flee": null,
+      "gather": {
+        "x": 9300,
+        "z": 330
+      }
+    },
+    {
+      "id": "shelter",
+      "name": "the miners under the rock",
+      "x": 3960,
+      "z": 310,
+      "pose": "group",
+      "rescue": "defend",
+      "flee": {
+        "x": 3200,
+        "z": 330
+      },
+      "gather": {
+        "x": 9220,
+        "z": 480
+      }
+    },
+    {
+      "id": "bram",
+      "name": "Bram",
+      "x": 7190,
+      "z": 312,
+      "pose": "chained",
+      "rescue": "wreckage",
+      "tag": "bram",
+      "flee": {
+        "x": 6300,
+        "z": 480
+      },
+      "gather": {
+        "x": 9380,
+        "z": 420
+      }
+    }
+  ],
+  "story": [
+    {
+      "id": "opening",
+      "on": "start",
+      "hold": true,
+      "delay": 150,
+      "lines": [
+        [
+          "VEXA",
+          "The Keep. Across the gorge."
+        ],
+        [
+          "ORYN",
+          "His guns cover the road."
+        ],
+        [
+          "RURIK",
+          "Take the high paths. We take the battery."
+        ]
+      ]
+    },
+    {
+      "id": "guide",
+      "on": "start",
+      "hold": false,
+      "lines": [
+        [
+          "NICHOLAS",
+          "The prisoners are up there. I know a way in."
+        ],
+        [
+          "RURIK",
+          "Stay close."
+        ]
+      ]
+    },
+    {
+      "id": "horn",
+      "at": 420,
+      "lines": [
+        [
+          "ORSK",
+          "(from the battery above) The Oath Keepers. Break the road beneath them!"
+        ]
+      ]
+    },
+    {
+      "id": "rocks",
+      "at": 640,
+      "lines": [
+        [
+          "VOICE",
+          "",
+          {
+            "autoAdvance": true,
+            "minFrames": 1
+          }
+        ]
+      ]
+    },
+    {
+      "id": "stair",
+      "at": 1500,
+      "calm": true,
+      "lines": [
+        [
+          "VOICE",
+          "",
+          {
+            "autoAdvance": true,
+            "minFrames": 1
+          }
+        ]
+      ]
+    },
+    {
+      "id": "wren",
+      "on": "rescued:wren",
+      "lines": [
+        [
+          "WREN",
+          "My goats ran when the stones came. I know the back path. Thank you!"
+        ]
+      ]
+    },
+    {
+      "id": "shelterCry",
+      "at": 3200,
+      "lines": [
+        [
+          "VOICE",
+          "Help! Up here, under the rock! They have us pinned!"
+        ]
+      ]
+    },
+    {
+      "id": "stones",
+      "at": 3320,
+      "lines": [
+        [
+          "VOICE",
+          "",
+          {
+            "autoAdvance": true,
+            "minFrames": 1
+          }
+        ]
+      ]
+    },
+    {
+      "id": "shelter",
+      "on": "rescued:shelter",
+      "lines": [
+        [
+          "MINER",
+          "We came up ahead of you and walked into their catapults. We'll hold here."
+        ]
+      ]
+    },
+    {
+      "id": "hilde",
+      "on": "rescued:shelter",
+      "if": "saved:hilde",
+      "lines": [
+        [
+          "HILDE",
+          "You came for us again. My brother's up at the catapults. They've got him hauling stones."
+        ]
+      ]
+    },
+    {
+      "id": "bridge",
+      "at": 4900,
+      "lines": [
+        [
+          "VOICE",
+          "",
+          {
+            "autoAdvance": true,
+            "minFrames": 1
+          }
+        ]
+      ]
+    },
+    {
+      "id": "battery",
+      "on": "enter:battery",
+      "lines": [
+        [
+          "ORYN",
+          "Break the guns. Or let their own stones do it."
+        ]
+      ]
+    },
+    {
+      "id": "silenced",
+      "on": "broken:battery",
+      "lines": [
+        [
+          "RURIK",
+          "Quiet at last."
+        ]
+      ]
+    },
+    {
+      "id": "bram",
+      "on": "rescued:bram",
+      "if": "saved:hilde",
+      "lines": [
+        [
+          "BRAM",
+          "Hilde lives? Then I'm going to find her. Go. Finish this."
+        ]
+      ]
+    },
+    {
+      "id": "bramAlone",
+      "on": "rescued:bram",
+      "unless": "saved:hilde",
+      "lines": [
+        [
+          "BRAM",
+          "They worked me like a mule. Never again. Go on, I'll find my way down."
+        ]
+      ]
+    },
+    {
+      "id": "camp",
+      "at": 7700,
+      "calm": true,
+      "lines": [
+        [
+          "VEXA",
+          "(from the cliff) Orsk is in the camp ahead. He burned the road behind us with his own hands."
+        ]
+      ]
+    },
+    {
+      "id": "orsk",
+      "on": "boss:camp",
+      "lines": [
+        [
+          "ORSK",
+          "So these are the Oath Keepers. The King sent me to bury you. I brought a mountain."
+        ]
+      ]
+    },
+    {
+      "id": "barrage",
+      "on": "phase:camp:barrage",
+      "lines": [
+        [
+          "ORSK",
+          "Signal the Keep! Fire on my position! Bring it all down!"
+        ]
+      ]
+    },
+    {
+      "id": "struck",
+      "on": "cut:nicholas",
+      "lines": [
+        [
+          "RURIK",
+          "Nicholas!",
+          {
+            "minFrames": 50
+          }
+        ]
+      ]
+    },
+    {
+      "id": "berserk",
+      "on": "phase:camp:berserk",
+      "lines": [
+        [
+          "ORSK",
+          "Enough! I'll break you myself!"
+        ]
+      ]
+    },
+    {
+      "id": "retreat",
+      "on": "clear:camp",
+      "calm": true,
+      "lines": [
+        [
+          "VOICE",
+          "",
+          {
+            "autoAdvance": true,
+            "minFrames": 1
+          }
+        ]
+      ]
+    },
+    {
+      "id": "lastWords",
+      "boxed": true,
+      "on": "clear:camp",
+      "calm": true,
+      "hold": true,
+      "lines": [
+        [
+          "RURIK",
+          "Nicholas.",
+          {
+            "moment": "nicholasAttend",
+            "minFrames": 55
+          }
+        ],
+        [
+          "NICHOLAS",
+          "You got him?",
+          {
+            "moment": "nicholasReach",
+            "minFrames": 55
+          }
+        ],
+        [
+          "RURIK",
+          "He's dead.",
+          {
+            "moment": "nicholasSettle",
+            "minFrames": 50
+          }
+        ],
+        [
+          "NICHOLAS",
+          "Good.",
+          {
+            "moment": "nicholasFade",
+            "minFrames": 60
+          }
+        ],
+        [
+          "VOICE",
+          "",
+          {
+            "moment": "nicholasDies",
+            "minFrames": 150,
+            "autoAdvance": true
+          }
+        ],
+        [
+          "RURIK",
+          "Rest, my friend.",
+          {
+            "minFrames": 75
+          }
+        ]
+      ],
+      "delay": 45
+    },
+    {
+      "id": "gathered",
+      "at": 9150,
+      "calm": true,
+      "if": "rescued:shelter",
+      "lines": [
+        [
+          "MINER",
+          "We hold the pass. Nobody comes up this road again."
+        ]
+      ]
+    },
+    {
+      "id": "gates",
+      "at": 9300,
+      "calm": true,
+      "hold": true,
+      "lines": [
+        [
+          "VEXA",
+          "Look at them. Every man on the mountain, running for the Iron Gates."
+        ],
+        [
+          "ORYN",
+          "He's pulling his army behind his walls. That isn't strength."
+        ],
+        [
+          "RURIK",
+          "It's fear. The gates, then the Keep. For Nicholas."
+        ]
+      ]
+    }
+  ],
+  "cutaway": "retreat"
 };

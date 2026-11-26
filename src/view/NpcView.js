@@ -340,6 +340,8 @@ export class NpcView {
     for (const img of v.imgs) img.setVisible(false);
     if(n.millCaptive){v.g.setVisible(false);v.halo.setVisible(false);v.shadow.setVisible(false);v.tip.setVisible(false);v.meter.clear();return;}
     v.father?.setVisible(false);
+    v.guideDeath?.setVisible(false);
+    v.shadow.setScale(1);
     if(n.stableMaster){
       v.halo.setVisible(false);v.tip.setVisible(false);v.meter.clear();
       v.worker??=new StableMasterView(this.scene,v);v.worker.draw(n);return;
@@ -393,6 +395,7 @@ export class NpcView {
     const tun = (i) => TUNIC[(v.seed + i) % TUNIC.length];
     // (n.act: a pose the stage plays for a moment, stage/MillRescue.js jumpDown)
     const pose = n.act ?? ((n.state === 'idle' && n.lifePose) || (n.state === 'fleeing' || n.gatherMoving ? 'run' : n.mourning ? (n.pose==='family'||n.pose==='child'?'cower':'kneel') : n.state === 'threatened' || n.cower ? 'cower' : n.state === 'trapped' ? 'wave' : 'stand'));
+    if(n.guide && ['dying','dead'].includes(n.state) && this.drawGuideDeath(n,v,y,k))return;
     if (n.state === 'dead' && SPRITES.nicholas && n.art === 'nicholas') { this.figure(g, n.x, y, k, 'lie', t, 0, 1, 'nicholas'); return; }
     if (n.pose === 'captive-kneel' && this.drawKneeling(n, v, g, y, k, t)) return;
     if (n.state === 'lost' || n.state === 'dead') { this.fallen(g, n.x, y, k, tun(0)); return; }
@@ -577,6 +580,24 @@ export class NpcView {
   // he sits against the rock. Where he goes round by his own way he fades out, and back in.
   // His steps keep pace with the ground he covers (one beat per GUIDE_STEP px), so his feet
   // don't skate, and he sinks gently on each footfall.
+  drawGuideDeath(n,v,y,k){
+    const S=SPRITES['nicholas-death'];if(!S)return false;
+    const moment=n.farewellMoment,age=n.t-(n.farewellAt??0);
+    let frame=n.t<18?0:n.t<58?1:2;
+    if(moment==='nicholasReach')frame=3;
+    if(moment==='nicholasFade')frame=4;
+    const dead=n.state==='dead'||moment==='nicholasDies';
+    if(dead)frame=age<50&&n.state!=='dead'?4:5;
+    const settling=frame<2?Math.sin(n.t*.13)*1.4:0;
+    const breath=dead?0:Math.sin(this.scene.time.now*.003)*.003;
+    v.guideDeath??=this.scene.add.image(0,0,S.key,'f0').setOrigin(.5,1);
+    v.guideDeath.setTexture(S.key,'f'+frame).setPosition(n.x+settling,y)
+      .setScale(k*.5,k*.5*(1+breath)).setAngle(frame===0?-3:0)
+      .setAlpha(v.g.alpha).setTint(0xffffff).setDepth(n.z+.02).setVisible(true);
+    v.shadow.setScale(frame<2?1:1.45,1).setAlpha(.3);
+    v.halo.setVisible(false);return true;
+  }
+
   drawGuide(n, v, g, y, k, t, dir) {
     const who = SPRITES.nicholas ? 'nicholas' : SPRITES.miner ? 'miner' : 'villager'; // (the stand-in: the villager cut at the heroes' height)
     const point = n.pointing && Math.floor((t + v.seed * 40) / 170) % 3 === 2;
@@ -1070,6 +1091,11 @@ export class NpcView {
         // dark at the back, fading as they go, not running on ahead along the road
         c.away ??= { x: f.x + 60 + c.i * 90, z: st.world.bounds.minZ - 50 };
         target = { ...c.away, leave: true, away: true };
+      }
+      const farewell=this.scene.ascentFarewell;
+      if(farewell?.active){
+        const n=farewell.npc;
+        target={x:n.x+(c.id==='warrior'?88:185+c.i*48),z:n.z+(c.id==='warrior'?22:50+c.i*20),face:-1};
       }
       // (picked up from a checkpoint past the start: they went ahead long ago)
       if (c.mode === 'start' && !c.ticked && st.index > 0) c.mode = 'gone';

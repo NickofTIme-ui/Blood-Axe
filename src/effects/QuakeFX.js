@@ -3,6 +3,7 @@
 // and the wave of broken stone rolling out across the lane. It only listens to world
 // events (combat/Quake.js) and reads the live waves; nothing here changes the fight.
 
+import {SPRITES} from '../view/levelArt.js';
 import { DEPTH } from '../view/depths.js';
 import { softTex } from './Gore.js';
 import { playSfx } from '../core/Sfx.js';
@@ -16,7 +17,8 @@ const DUST = 0x8a7a60;
 export class QuakeFX {
   constructor(scene) {
     this.scene = scene;
-    this.cracks = [];
+    this.cracks = [];this.waveArt=new Map();
+    scene.world.events.on('quakeEnd',({wave})=>{for(const im of this.waveArt.get(wave.id)??[])im.destroy();this.waveArt.delete(wave.id);});
     softTex(scene);
     const ev = scene.world.events;
     const W = SETTINGS.world;
@@ -72,6 +74,10 @@ export class QuakeFX {
   // the split in the floor where the glaive went in: a jagged dark line across the lane
   // at the impact, fading out over a few seconds
   crack(x, z) {
+    if(this.scene.textures.exists('lvl-ascent-crater')){
+      const im=this.scene.add.image(x,z,'lvl-ascent-crater').setDisplaySize(180,74).setDepth(DEPTH.decals+1);
+      this.scene.tweens.add({targets:im,alpha:0,delay:8000,duration:1600,onComplete:()=>im.destroy()});return;
+    }
     const g = this.scene.add.graphics().setDepth(DEPTH.decals + 1);
     const lines = [[0x1a120c, 5], [0x3a2a1c, 2]];
     for (const [color, w] of lines) {
@@ -90,6 +96,13 @@ export class QuakeFX {
     if (this.scene.paused) return;
     const waves = this.scene.world.quakes?.list ?? [];
     for (const w of waves) {
+      const S=SPRITES['earthbreaker-wave'];
+      if(S){
+        let rows=this.waveArt.get(w.id);if(!rows){rows=Array.from({length:7},()=>this.scene.add.image(0,0,S.key,'f0').setOrigin(.5,1));this.waveArt.set(w.id,rows);}
+        rows.forEach((im,i)=>{const z=this.top+(i+1)/rows.length*(this.bottom-this.top),y0=Math.floor(i*S.fh/rows.length),y1=Math.floor((i+1)*S.fh/rows.length);im.setTexture(S.key,'f0').setOrigin(w.dir>0?.75:.25,1).setCrop(0,y0,S.fw,y1-y0).setPosition(w.x,this.bottom+5).setFlipX(w.dir<0).setDisplaySize(w.cfg.width+62,this.bottom-this.top+52).setDepth(z+.1).setTint(0xcfc4b6).setAlpha(Math.min(.9,w.t/4));});
+        if(w.t%5===0)this.dust(w.x,w.z,1,.65);
+        continue;
+      }
       for (let i = 0; i < 3; i++) {
         const z = rand(this.top, this.bottom);
         this.rock(w.x + rand(-w.cfg.width / 2, w.cfg.width / 2), z, w.dir * rand(20, 90), rand(160, 340), 1.4);

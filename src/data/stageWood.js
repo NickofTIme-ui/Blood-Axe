@@ -72,6 +72,7 @@ export const STAGE_WOOD = {
       objective: 'Follow the convoy',
       hint: 'Chop the notched pine: it falls across the stream',
       fightAt: 1000,
+      entranceSide: 1, // Reinforcements stay on the combat bank, beyond the opening stream.
       // the convoy's rear guard: men up in the branches over the road, and their hounds out of
       // the trees (the crows go up first: a spawn's `tell`); then the rest of them, with a
       // HORNBLOWER who runs for the back of the road: stop him, or his horn calls more (`horn`)
@@ -85,7 +86,7 @@ export const STAGE_WOOD = {
           { x: 1090, z: 450, drop: 430, tell: 88 }, { x: 1350, z: 380, drop: 430, tell: 92 },
           { x: 1440, z: 300 }, { x: 1460, z: 480 },
         ],
-        [{ x: 1460, z: 300 }, { x: 1470, z: 460 }, { x: 700, z: 380 }],
+        [{ x: 1460, z: 300 }, { x: 1470, z: 460 }, { x: 1100, z: 380 }],
       ],
       horn: ['grunt', 'stalker', 'grunt'],
       props: [

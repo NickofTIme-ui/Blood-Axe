@@ -140,11 +140,11 @@ const PAINTED_AT = [{ x: 133, y: 371 }, { x: 275, y: 250 }, { x: 433, y: 358 }, 
 // the roads between the places on the painted map, along its own dotted roads (one per
 // level: from place i to place i+1); the first is how they came into the village
 const PAINTED_ROADS = [
-  [[133, 371], [176, 377], [205, 362], [218, 338], [234, 312], [252, 302], [266, 284], [275, 250]],
-  [[275, 250], [262, 282], [262, 300], [288, 304], [312, 318], [332, 336], [348, 346], [380, 362], [410, 364], [433, 358]],
-  [[433, 358], [462, 340], [484, 318], [488, 292], [496, 268], [518, 252], [538, 228], [552, 204], [566, 184]],
-  [[566, 184], [571, 214], [577, 246], [583, 282], [598, 312], [628, 328], [660, 324], [680, 306], [684, 275]],
-  [[684, 275], [712, 262], [744, 252], [760, 240], [758, 212], [772, 192], [806, 178], [836, 160], [826, 138], [812, 114], [804, 91]],
+ [[133,371],[180,362],[215,317],[244,279],[275,250]],
+ [[275,250],[319,285],[365,324],[400,349],[433,358]],
+ [[433,358],[478,320],[503,271],[539,231],[566,184]],
+ [[566,184],[583,247],[608,293],[645,305],[684,275]],
+ [[684,275],[718,245],[756,221],[786,179],[804,135],[804,91]],
 ];
 const INTO_VILLAGE = [[40, 420], [70, 400], [100, 392], [133, 371]];
 // a road as evenly spaced points (every `step` px), each with its heading
@@ -1027,8 +1027,8 @@ export class CutawayScene extends Phaser.Scene {
     m.add(pathLayer);
     const dab = (pt, n) => {
       if (this.textures.exists('map-path')) {
-        const d = this.add.image(pt.x, pt.y, 'map-path', n % 8).setRotation(pt.ang + (((n * 37) % 11) - 5) * 0.03);
-        d.setScale(20 / d.width * (0.9 + ((n * 13) % 5) * 0.05));
+        const d = this.add.image(pt.x, pt.y, 'map-path', n % 8).setRotation(pt.ang);
+        d.setScale(13 / d.width);
         pathLayer.add(d);
         return d;
       }

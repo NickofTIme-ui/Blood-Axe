@@ -163,7 +163,6 @@ export class Story {
       'village:hale': 'Ashen troops burned the village. Survivors are trapped in the square. Help them.',
       'village:mira': 'They took my husband north, toward the castle. We’ll wait at the north gate.',
       'wood:joren': 'Mira’s alive? Thank the gods. They drove the other prisoners farther north.',
-      'gates:vincent': 'Vincent. I built these gates. Break both winch chains to open them. I’ll take the tower.',
       'keep:ilse': 'Rurik! My father’s alive? Thank the gods. I’ll find him.',
     };
     for (const b of this.beats) {
@@ -218,6 +217,7 @@ export class Story {
   // A minor villager's line in a held scene: said as a shout-out over him, not in the box
   // (his villager, there to be seen; else null and the line keeps the box)
   bark(c){
+    if(c.beat.boxed)return null;
     const who=c.beat.lines[c.index][0];
     if(!MINOR.has(who))return null;
     const n=this.npcs.find(n=>n.id===who.toLowerCase()||n.name?.toUpperCase()===who);
@@ -724,7 +724,8 @@ export class Story {
     const dx = n.parked != null ? 0 : tx - n.x;
     if (!n.walking && Math.abs(dx) > G.go) n.walking = true;
     else if (n.walking && Math.abs(dx) <= G.settle) n.walking = false;
-    const top = G.speed * (Math.abs(dx) > G.go * 4 ? G.catchUp : 1);
+    const pace = Math.max(G.speed, (lead.stats?.walkSpeed ?? G.speed) * 1.18);
+    const top = pace * (Math.abs(dx) > G.go * 4 ? G.catchUp : 1);
     const wx = n.walking ? Math.sign(dx) * Math.min(top, 40 + Math.abs(dx) * 2.4) : 0;
     const dz = n.lane - n.z;
     const wz = Math.abs(dz) > 4 ? Math.sign(dz) * Math.min(G.speed * 0.6, Math.abs(dz) * 2) : 0;

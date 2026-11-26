@@ -65,7 +65,7 @@ export class SpeakerMarker {
     const line = this.scene.stage?.story?.line;
     const at = line?.text.trim() && this.find(line.who); // (a silent line: nobody is speaking)
     this.at = at || null;
-    if (!at) return;
+    if (!at || this.scene.ascentFarewell?.active || this.scene.stage.sentence?.running) return;
     const col = SIDE_COLOR[speakerSide(line.who)];
     const t = this.scene.time.now;
     const x = at.x;

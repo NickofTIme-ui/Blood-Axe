@@ -355,6 +355,7 @@ export class SpriteEnemyView {
     const s = this.sprite;
     const m = f.move;
     s.clearTint();
+    if(f.stats.armorTint)s.setTint(f.stats.armorTint);
     const winding = ATTACKS.includes(st) && m && isDanger(st, m) && fr <= m.startup;
     dangerEdge(s, winding && !(f.flash > 0), 0.5 + 0.5 * Math.cos(fr * Math.PI / 3));
     if (f.flash > 0) {
