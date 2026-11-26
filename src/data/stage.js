@@ -178,6 +178,7 @@ export const PROPS = {
   // Nick, 2026-10-24, swings at the barn wood went straight through it)
   barricade: { hp: 3, w: 96, h: 70, reach: 80, hitW: 125 }, // (hitW: as wide as the painted boards, drawn w * 1.3)
   shackle: { hp: 3, w: 30, h: 84 }, // (the mine) a post a captive is chained to: break it and he's free
+  steammain: { hp: 4, w: 170, h: 70 }, // (the mine) the furnace's steam main along the back of the hall: burst it and the steam scalds whoever's in front of it
   counterweight: { hp: 5, w: 70, h: 120 }, // (the mine) the stone that holds a gate down: break its chain and the gate rises (`opens`)
   rubble: { hp: 6, w: 110, h: 90 }, // (the mine) loose fall in a passage: dig it out (`opens`: the rock wall behind it)
   catapult: { hp: 7, w: 130, h: 120 }, // (the Shattered Ascent) a siege catapult on the heights: wreck it and the bombardment thins (hazard 'bombard', `silence`)

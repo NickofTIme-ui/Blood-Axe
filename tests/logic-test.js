@@ -4351,6 +4351,20 @@ test('mine: the Chain Warden throws his hook down the lane: it catches a hero st
   assert(!p.hooked, 'let go');
 });
 
+test('mine: the Crusher Hall\'s steam main is cold till it is burst; burst, it scalds whoever stands in front of it', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('crusher'), { x: 6300, z: 480 });
+  const main = st.props.find((pr) => pr.kind === 'steammain');
+  const hz = st.hazards.find((h) => h.pipe);
+  assert(main && hz, 'a steam main and its steam');
+  p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  let scalds = 0; world.events.on('hazardHit', (e) => { if (e.hazard === hz) scalds++; });
+  run(60 * 8, () => { p.health = p.stats.maxHealth; p.x = hz.x; p.z = hz.z; p.h = 0; });
+  assert(scalds === 0, `nothing while it holds (${scalds})`);
+  st.breakProp(main, 1);
+  run(60 * 8, () => { p.health = p.stats.maxHealth; p.x = hz.x; p.z = hz.z; });
+  assert(scalds >= 1, `burst, it scalds (${scalds})`);
+});
+
 test('mine: the chase runs on through three stretches: each picks the rock up where it was, runs faster, and a death puts it back behind that stretch\'s start', () => {
   const ids = ['collapse', 'gallery', 'leap'];
   const walls = ids.map((id) => STAGE_MINE.sections[MINE_SEC(id)].hazards.find((h) => h.type === 'collapse'));

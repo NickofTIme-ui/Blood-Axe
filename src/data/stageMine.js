@@ -132,11 +132,17 @@ export const STAGE_MINE = {
       id: 'crusher', name: 'THE CRUSHER HALL', x0: 5800, x1: 7300,
       spawn: { x: 5860, z: 440 },
       objective: 'Wreck the Ore Crushers',
-      hint: 'Iron does not flinch: hit it between its blows',
+      hint: 'Iron does not flinch: hit it between its blows. Burst the steam pipe on them',
       fightAt: 6150,
       waves: [['grunt', 'grunt', 'stalker'], ['crusher', 'crusher', 'grunt']],
-      props: [{ kind: 'crate', x: 7200, z: 480, drop: 'health' }],
+      props: [
+        { kind: 'crate', x: 7200, z: 480, drop: 'health' },
+        // the furnace's steam main along the back of the hall: burst it and the steam scalds the
+        // lane in front of it from then on (lure them in front of it)
+        { kind: 'steammain', tag: 'steammain', x: 6620, z: 296, drop: null },
+      ],
       hazards: [
+        { type: 'fire', look: 'steam', pipe: true, when: 'broken:steammain', x: 6620, z: 345, w: 320, d: 70, phase: 40 },
         // the hall's steam vents: the furnace's boiler blowing off through the floor grates (fire
         // on the ground is the village's; here it scalds: hiss and wisps, then a white jet)
         { type: 'fire', look: 'steam', x: 6400, z: 340, w: 110, d: 60, phase: 0 },

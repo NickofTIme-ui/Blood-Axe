@@ -1520,6 +1520,7 @@ export class Stage {
     if (hz.until === 'clear' && this.index === hz.section && this.phase !== 'fight') return false; // (its section's fight won: the bowmen are gone)
     if (!hz.when) return true;
     if (hz.when.startsWith('freed:')) return !!this.story?.rescued.has(hz.when.slice(6));
+    if (hz.when.startsWith('broken:')) return this.props.some((pr) => pr.tag === hz.when.slice(7) && pr.broken); // (a thing smashed sets it off: the mine's steam main)
     const b = this.boss;
     if (!b || !b.alive || this.index < hz.section || this.index > hz.last) return false;
     if (hz.when === 'boss') return true;

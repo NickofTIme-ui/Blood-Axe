@@ -388,6 +388,26 @@ export class StageView {
       c.fillStyle = '#3a2616'; c.beginPath(); c.moveTo(w / 2 - 10, h); c.lineTo(w / 2 - 10, h - 50); c.lineTo(w / 2, h - 40); c.lineTo(w / 2 + 10, h - 58); c.lineTo(w / 2 + 10, h); c.fill();
       c.fillStyle = '#6a6a72'; c.fillRect(w / 2 + 14, h - 8, 26, 6);
     });
+    // (the mine) the furnace's steam main: a fat riveted iron pipe on brackets with a wheel
+    // valve, sweating; broken: split open, the plates peeled back
+    const pipe = (c, w, h, split) => {
+      c.fillStyle = '#2a1c12'; c.fillRect(18, h - 40, 10, 40); c.fillRect(w - 28, h - 40, 10, 40); // brackets
+      c.fillStyle = '#4a4a52'; c.fillRect(0, h - 66, w, 34);
+      c.fillStyle = '#6a6a72'; c.fillRect(0, h - 66, w, 6);
+      c.fillStyle = '#2a2a30'; c.fillRect(0, h - 38, w, 6);
+      c.fillStyle = '#9a9aa2'; for (let x = 8; x < w; x += 22) { c.beginPath(); c.arc(x, h - 49, 2, 0, 7); c.fill(); }
+      if (!split) {
+        c.strokeStyle = '#8a3a20'; c.lineWidth = 4; c.beginPath(); c.arc(w / 2, h - 82, 14, 0, 7); c.stroke();
+        c.beginPath(); c.moveTo(w / 2 - 14, h - 82); c.lineTo(w / 2 + 14, h - 82); c.moveTo(w / 2, h - 96); c.lineTo(w / 2, h - 68); c.stroke();
+        c.fillStyle = '#4a4a52'; c.fillRect(w / 2 - 3, h - 70, 6, 6);
+      } else {
+        c.fillStyle = '#0c0c0e'; c.beginPath(); c.moveTo(w / 2 - 30, h - 66); c.lineTo(w / 2 + 34, h - 66); c.lineTo(w / 2 + 10, h - 36); c.lineTo(w / 2 - 18, h - 40); c.fill();
+        c.fillStyle = '#6a6a72'; c.beginPath(); c.moveTo(w / 2 - 30, h - 66); c.lineTo(w / 2 - 40, h - 92); c.lineTo(w / 2 - 14, h - 66); c.fill();
+        c.beginPath(); c.moveTo(w / 2 + 34, h - 66); c.lineTo(w / 2 + 50, h - 88); c.lineTo(w / 2 + 18, h - 66); c.fill();
+      }
+    };
+    this.canvasTex('prop-steammain', 200, 110, (c, w, h) => pipe(c, w, h, false));
+    this.canvasTex('prop-steammain-broken', 200, 110, (c, w, h) => pipe(c, w, h, true));
     // (the mine) the counterweight: a dressed stone hung on a chain that runs up over a
     // wheel to the portcullis; broken: the chain snapped, the stone dropped and split
     this.canvasTex('prop-counterweight', 160, 260, (c, w, h) => {
@@ -1227,7 +1247,12 @@ export class StageView {
         .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 4.1);
       hz.puffs = Array.from({ length: 14 }, (_, i) => ({ img: s.add.image(hz.x, hz.z, 'glow').setTint(0xe8f0f4).setVisible(false), seed: i * 1.7 }));
     }
-    hz.view.setVisible(true);
+    // (the burst steam main: no grate; nothing at all till the pipe is split)
+    if (hz.pipe) {
+      const on = this.stage.beamLive(hz);
+      hz.view.setVisible(false); hz.glow.setVisible(on);
+      if (!on) { hz.puffs.forEach((p) => p.img.setVisible(false)); return; }
+    } else hz.view.setVisible(true);
     const phase = this.stage.firePhase(hz);
     const t = hz.t % 210;
     const warm = phase === 'warn' ? (t - 110) / 50 : phase === 'burst' ? 1 : 0.05;
@@ -1240,8 +1265,16 @@ export class StageView {
       const u = ((age * (jet ? 2.2 : 0.8) + p.seed * 37) % 100) / 100; // 0 at the grate, 1 at the top
       const hgt = jet ? 4 + u * 200 * Math.min(1, age / 6) : 4 + u * 60;
       const fall = jet ? Math.max(0, 1 - Math.max(0, age - 38) / 12) : 1;
-      const x = hz.x + Math.sin(p.seed * 3 + u * 4) * hz.w * (jet ? 0.12 + u * 0.25 : 0.2);
       const size = (jet ? 34 + u * 90 : 18 + u * 30);
+      if (hz.pipe) {
+        // out of the split in the pipe at the back, rolling forward and down across the lane
+        const x = hz.x + Math.sin(p.seed * 5.3) * hz.w * 0.12 * (1 + u * 3);
+        const z = hz.z - hz.d / 2 + u * hz.d * (jet ? 1.4 : 0.5);
+        p.img.setVisible(true).setPosition(x, z - 55 + u * 30).setDisplaySize(size * 1.3, size * 0.8)
+          .setAlpha((jet ? 0.6 : 0.3) * (1 - u * 0.8) * fall).setDepth(z + 0.5);
+        return;
+      }
+      const x = hz.x + Math.sin(p.seed * 3 + u * 4) * hz.w * (jet ? 0.12 + u * 0.25 : 0.2);
       p.img.setVisible(true).setPosition(x, hz.z - hgt).setDisplaySize(size, size * 0.8)
         .setAlpha((jet ? 0.55 : 0.3) * (1 - u) * fall).setDepth(hz.z + 0.5);
     });
@@ -2055,6 +2088,16 @@ export class StageView {
     listenScorpion(this);
     ev.on('propHit', ({ prop, dir }) => this.propHit(prop, dir));
     ev.on('propBreak', ({ prop, dir, blast, power }) => this.propBreak(prop, dir, blast, power));
+    ev.on('propBreak', ({ prop }) => {
+      if (prop.kind !== 'steammain') return;
+      // the main splits: a scream of steam, a cloud rolling out over the lane
+      playSfx(this.scene, 'rogueSmoke', { volume: 1, pitch: -500, minGapMs: 0 });
+      playSfx(this.scene, 'clash', { volume: 0.7, pitch: -1200, minGapMs: 0 });
+      this.scene.fx?.shake(5, 20);
+      for (let i = 0; i < 24; i++) {
+        this.scene.gore.spawn({ x: prop.x + rand(-40, 40), z: prop.z + rand(0, 30), h: rand(40, 70), vx: rand(-140, 140), vz: rand(60, 220), vh: rand(20, 120), tint: 0xdfe8ee, scale: rand(1, 2.2), decal: false, life: rand(40, 70) });
+      }
+    });
     ev.on('propImpact', ({ prop }) => {
       const v = this.propSprites.get(prop.id);
       if (!v) return;
