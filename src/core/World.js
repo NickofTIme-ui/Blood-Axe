@@ -15,6 +15,7 @@ import { Wraths } from '../combat/Wrath.js';
 import { installSkills } from '../combat/Skills.js';
 import { installRogue } from '../combat/RogueMoves.js';
 import { installStyle, tickStyle } from '../combat/Style.js';
+import { installExecutions } from '../combat/Executions.js';
 
 export class World {
   constructor({ seed } = {}) {
@@ -39,6 +40,7 @@ export class World {
     installSkills(this); // (skill-tree behaviours: combat/Skills.js; inert without skills)
     installRogue(this);  // (Vexa's: combat/RogueMoves.js)
     installStyle(this);  // (the combo counter and style rank: combat/Style.js)
+    installExecutions(this); // (every execution gives back 20% health, stamina, mana: combat/Executions.js)
     // Dice. Every roll the simulation makes comes from roll(): a number fixed by the
     // seed, the tick, who's asking and what about — never Math.random — so two machines
     // given the same seed and the same button presses play out the same fight (online

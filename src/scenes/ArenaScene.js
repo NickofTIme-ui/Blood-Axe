@@ -738,6 +738,31 @@ export class ArenaScene extends Phaser.Scene {
     this.gore.spark(x, z, h, 0xff5010, 12);
   }
 
+  // An execution gave the hero back a fifth of his bars (combat/Executions.js): the
+  // dead man's blood drawn up into him — red, green and blue motes (health, stamina,
+  // mana) rising round him into a warm flash at the chest, and a low swell.
+  restoreFX({ fighter: f, gained }) {
+    if (!f) return;
+    const H = f.stats.body?.h ?? 90;
+    const cx = f.x, cy = f.z - f.h - H * 0.55;
+    const cols = [];
+    if (gained.health > 0) cols.push(0xff3a2a);
+    if (gained.stamina > 0) cols.push(0x6ee06a);
+    if (gained.mana > 0) cols.push(0x5aa8ff);
+    if (!cols.length) cols.push(0xffd24a); // (all full: still a glint, so the rule reads)
+    const depth = DEPTH.popups - 2;
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const r = 34 + (i % 3) * 8;
+      const mote = this.add.circle(cx + Math.cos(a) * r, f.z - f.h - 4 + Math.sin(a) * 8, 3, cols[i % cols.length], 0.95)
+        .setDepth(depth).setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({ targets: mote, x: cx, y: cy, scale: 0.4, duration: 380 + (i % 4) * 40, delay: (i % 4) * 30, ease: 'Quad.easeIn', onComplete: () => mote.destroy() });
+    }
+    const glow = this.add.circle(cx, cy, 18, cols[0], 0).setDepth(depth).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: glow, alpha: 0.55, scale: 2.2, delay: 360, duration: 140, yoyo: true, onComplete: () => glow.destroy() });
+    this.time.delayedCall(300, () => playSfx(this, 'fireWhoosh', { volume: 0.25, pitch: -900, spread: 60, minGapMs: 120 }));
+  }
+
   // Big dismemberment: shout it, punch the camera.
   fatalityFX(e) {
     const label = FATALITY_LABELS[e.fatality];
@@ -1308,6 +1333,7 @@ export class ArenaScene extends Phaser.Scene {
       if (kind === 'chain') this.callout(`EXECUTION x${targets.length}`, '#ff2a1a');
     });
     ev.on('finisherBeat', (b) => this.finisherFX(b));
+    ev.on('executionRestore', (e) => this.restoreFX(e)); // (combat/Executions.js: +20% health, stamina, mana)
     // a finisher cut him in two: the pieces are the sprite itself (effects/SpriteCut.js)
     ev.on('finisherSplit', ({ victim: v, cut, pieces }) => {
       const dir = v.execBy?.facing ?? v.facing;
