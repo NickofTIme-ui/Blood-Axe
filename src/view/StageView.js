@@ -9,6 +9,8 @@ import {siegeFlight} from './SiegeFlight.js';
 import { SETTINGS } from '../config/settings.js';
 import { PHYSICS } from '../effects/Physics.js';
 import { drawStampedeTrail } from './StampedeTrail.js';
+import { drawOreCarts, drawWardenHook } from './OreCarts.js';
+import { hookLine } from '../stage/WardenHook.js';
 import { DEPTH } from './depths.js';
 import { PICKUPS, PROPS, PROP_LOOKS } from '../data/stage.js';
 import { playSfx, REC } from '../core/Sfx.js';
@@ -386,6 +388,26 @@ export class StageView {
       c.fillStyle = '#3a2616'; c.beginPath(); c.moveTo(w / 2 - 10, h); c.lineTo(w / 2 - 10, h - 50); c.lineTo(w / 2, h - 40); c.lineTo(w / 2 + 10, h - 58); c.lineTo(w / 2 + 10, h); c.fill();
       c.fillStyle = '#6a6a72'; c.fillRect(w / 2 + 14, h - 8, 26, 6);
     });
+    // (the mine) the furnace's steam main: a fat riveted iron pipe on brackets with a wheel
+    // valve, sweating; broken: split open, the plates peeled back
+    const pipe = (c, w, h, split) => {
+      c.fillStyle = '#2a1c12'; c.fillRect(18, h - 40, 10, 40); c.fillRect(w - 28, h - 40, 10, 40); // brackets
+      c.fillStyle = '#4a4a52'; c.fillRect(0, h - 66, w, 34);
+      c.fillStyle = '#6a6a72'; c.fillRect(0, h - 66, w, 6);
+      c.fillStyle = '#2a2a30'; c.fillRect(0, h - 38, w, 6);
+      c.fillStyle = '#9a9aa2'; for (let x = 8; x < w; x += 22) { c.beginPath(); c.arc(x, h - 49, 2, 0, 7); c.fill(); }
+      if (!split) {
+        c.strokeStyle = '#8a3a20'; c.lineWidth = 4; c.beginPath(); c.arc(w / 2, h - 82, 14, 0, 7); c.stroke();
+        c.beginPath(); c.moveTo(w / 2 - 14, h - 82); c.lineTo(w / 2 + 14, h - 82); c.moveTo(w / 2, h - 96); c.lineTo(w / 2, h - 68); c.stroke();
+        c.fillStyle = '#4a4a52'; c.fillRect(w / 2 - 3, h - 70, 6, 6);
+      } else {
+        c.fillStyle = '#0c0c0e'; c.beginPath(); c.moveTo(w / 2 - 30, h - 66); c.lineTo(w / 2 + 34, h - 66); c.lineTo(w / 2 + 10, h - 36); c.lineTo(w / 2 - 18, h - 40); c.fill();
+        c.fillStyle = '#6a6a72'; c.beginPath(); c.moveTo(w / 2 - 30, h - 66); c.lineTo(w / 2 - 40, h - 92); c.lineTo(w / 2 - 14, h - 66); c.fill();
+        c.beginPath(); c.moveTo(w / 2 + 34, h - 66); c.lineTo(w / 2 + 50, h - 88); c.lineTo(w / 2 + 18, h - 66); c.fill();
+      }
+    };
+    this.canvasTex('prop-steammain', 200, 110, (c, w, h) => pipe(c, w, h, false));
+    this.canvasTex('prop-steammain-broken', 200, 110, (c, w, h) => pipe(c, w, h, true));
     // (the mine) the counterweight: a dressed stone hung on a chain that runs up over a
     // wheel to the portcullis; broken: the chain snapped, the stone dropped and split
     this.canvasTex('prop-counterweight', 160, 260, (c, w, h) => {
@@ -1128,6 +1150,7 @@ export class StageView {
       if (hz.type === 'collapse') { this.drawCollapse(hz, cam); continue; }
       if (hz.type === 'bombard') { this.drawBombard(hz); continue; }
       if (hz.type === 'ballista') { drawScorpion(this, hz); continue; }
+      if (hz.type === 'hook') { drawWardenHook(this, hz, hookLine(this.stage, hz)); continue; }
       if (hz.x < cam.x - 200 || hz.x > cam.right + 200) {
         hz.view?.setVisible(false);
         hz.hot?.setVisible(false);
@@ -1224,7 +1247,12 @@ export class StageView {
         .setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 4.1);
       hz.puffs = Array.from({ length: 14 }, (_, i) => ({ img: s.add.image(hz.x, hz.z, 'glow').setTint(0xe8f0f4).setVisible(false), seed: i * 1.7 }));
     }
-    hz.view.setVisible(true);
+    // (the burst steam main: no grate; nothing at all till the pipe is split)
+    if (hz.pipe) {
+      const on = this.stage.beamLive(hz);
+      hz.view.setVisible(false); hz.glow.setVisible(on);
+      if (!on) { hz.puffs.forEach((p) => p.img.setVisible(false)); return; }
+    } else hz.view.setVisible(true);
     const phase = this.stage.firePhase(hz);
     const t = hz.t % 210;
     const warm = phase === 'warn' ? (t - 110) / 50 : phase === 'burst' ? 1 : 0.05;
@@ -1237,8 +1265,16 @@ export class StageView {
       const u = ((age * (jet ? 2.2 : 0.8) + p.seed * 37) % 100) / 100; // 0 at the grate, 1 at the top
       const hgt = jet ? 4 + u * 200 * Math.min(1, age / 6) : 4 + u * 60;
       const fall = jet ? Math.max(0, 1 - Math.max(0, age - 38) / 12) : 1;
-      const x = hz.x + Math.sin(p.seed * 3 + u * 4) * hz.w * (jet ? 0.12 + u * 0.25 : 0.2);
       const size = (jet ? 34 + u * 90 : 18 + u * 30);
+      if (hz.pipe) {
+        // out of the split in the pipe at the back, rolling forward and down across the lane
+        const x = hz.x + Math.sin(p.seed * 5.3) * hz.w * 0.12 * (1 + u * 3);
+        const z = hz.z - hz.d / 2 + u * hz.d * (jet ? 1.4 : 0.5);
+        p.img.setVisible(true).setPosition(x, z - 55 + u * 30).setDisplaySize(size * 1.3, size * 0.8)
+          .setAlpha((jet ? 0.6 : 0.3) * (1 - u * 0.8) * fall).setDepth(z + 0.5);
+        return;
+      }
+      const x = hz.x + Math.sin(p.seed * 3 + u * 4) * hz.w * (jet ? 0.12 + u * 0.25 : 0.2);
       p.img.setVisible(true).setPosition(x, hz.z - hgt).setDisplaySize(size, size * 0.8)
         .setAlpha((jet ? 0.55 : 0.3) * (1 - u) * fall).setDepth(hz.z + 0.5);
     });
@@ -1764,7 +1800,9 @@ export class StageView {
     const on = S.phase !== 'idle' && Math.max(...xs) > cam.x - 200 && Math.min(...xs) < cam.right + 200;
     g.setVisible(on); hg.setVisible(on);
     for (const sp of hz.horseImgs ?? []) sp.setVisible(false);
+    for (const sp of hz.cartImgs ?? []) sp.setVisible(false);
     if (!on) return;
+    if (hz.look === 'cart') { drawOreCarts(this, hz, cam, S, g, hg); return; } // (the mine's runaway ore carts)
     const t = this.scene.time.now / 16.7;
     const dir = S.dir;
     const door = P.pts[0];
@@ -2050,6 +2088,16 @@ export class StageView {
     listenScorpion(this);
     ev.on('propHit', ({ prop, dir }) => this.propHit(prop, dir));
     ev.on('propBreak', ({ prop, dir, blast, power }) => this.propBreak(prop, dir, blast, power));
+    ev.on('propBreak', ({ prop }) => {
+      if (prop.kind !== 'steammain') return;
+      // the main splits: a scream of steam, a cloud rolling out over the lane
+      playSfx(this.scene, 'rogueSmoke', { volume: 1, pitch: -500, minGapMs: 0 });
+      playSfx(this.scene, 'clash', { volume: 0.7, pitch: -1200, minGapMs: 0 });
+      this.scene.fx?.shake(5, 20);
+      for (let i = 0; i < 24; i++) {
+        this.scene.gore.spawn({ x: prop.x + rand(-40, 40), z: prop.z + rand(0, 30), h: rand(40, 70), vx: rand(-140, 140), vz: rand(60, 220), vh: rand(20, 120), tint: 0xdfe8ee, scale: rand(1, 2.2), decal: false, life: rand(40, 70) });
+      }
+    });
     ev.on('propImpact', ({ prop }) => {
       const v = this.propSprites.get(prop.id);
       if (!v) return;
@@ -2149,7 +2197,26 @@ export class StageView {
         this.scene.gore.spawn({ x: hz.x + rand(-hz.w / 2, hz.w / 2), z: hz.z + rand(-6, 6), h: y + 4, vx: rand(-160, 160), vz: rand(-30, 30), vh: rand(80, 260), tint: i % 3 ? 0x3a2414 : 0xff8a30, texture: 'px', scale: rand(0.8, 1.8), decal: false, life: rand(30, 60) });
       }
     });
+    // the mine's lift starting up under a man: the chain taking the strain, the winch clanking
+    ev.on('liftStart', () => { playSfx(this.scene, 'gateOpen', { volume: 0.6, pitch: -200, minGapMs: 800 }); playSfx(this.scene, 'woodCreak', { volume: 0.4, minGapMs: 800 }); });
+    // the Chain Warden's hook (stage/WardenHook.js): the chain whirring, the throw, the catch
+    ev.on('hookWind', () => playSfx(this.scene, 'gateOpen', { volume: 0.55, pitch: 300, minGapMs: 0 }));
+    ev.on('hookThrow', () => playSfx(this.scene, 'whiff', { volume: 0.8, pitch: -500, minGapMs: 0 }));
+    ev.on('hookCatch', ({ fighter }) => {
+      playSfx(this.scene, 'clash', { volume: 0.7, pitch: -700, minGapMs: 0 });
+      this.scene.gore?.spark(fighter.x, fighter.z, fighter.h + 50, 0xffc080, 10);
+      this.scene.fx?.shake(3, 12);
+    });
     ev.on('stampedeWarn', ({ hazard: hz }) => {
+      if (hz.look === 'cart') {
+        // the chocks knocked out up the line: a chain rattling loose, the rails starting to sing
+        if (this.scene.player.x > hz.x0 - 500 && this.scene.player.x < hz.x1 + 500) {
+          playSfx(this.scene, 'gateOpen', { volume: 0.6, pitch: -500, minGapMs: 0 });
+          playSfx(this.scene, 'woodCreak', { volume: 0.5, pitch: -300, minGapMs: 0 });
+          this.scene.fx?.shake(2, 50);
+        }
+        return;
+      }
       if (this.scene.player.x > hz.x0 - 700 && this.scene.player.x < hz.x1 + 700) {
         playSfx(this.scene, 'kick', { volume: 0.7, pitch: -2000, minGapMs: 0 });
         playSfx(this.scene, REC.horseWhinny, { volume: 0.55, spread: 120, minGapMs: 0 }); // the horses screaming in the burning stable
@@ -2157,6 +2224,14 @@ export class StageView {
       }
     });
     ev.on('stampedeBurst', ({ hazard: hz }) => {
+      if (hz.look === 'cart') {
+        if (this.scene.player.x > hz.x0 - 500 && this.scene.player.x < hz.x1 + 500) {
+          playSfx(this.scene, 'kick', { volume: 0.8, pitch: -2400, minGapMs: 0 }); // the thunder of it on the rails
+          playSfx(this.scene, 'clash', { volume: 0.45, pitch: -900, minGapMs: 0 });
+          this.scene.fx?.shake(4, 40);
+        }
+        return;
+      }
       // the herd breaks out of the door: a thud of hooves and a burst of dust and embers
       const d = hz.door;
       if (!d || Math.abs(this.scene.player.x - d.x) > 1100) return;

@@ -10,7 +10,7 @@
 //
 // Kinds (data: a stage's `terrain` list):
 //   block   { x0, x1, z0, z1, top }                     a ledge, a step, a platform
-//   lift    { ..., move: { axis: 'top' | 'x', range, period, phase } }
+//   lift    { ..., move: { axis: 'top' | 'x', range, period, phase, ride } } (ride: only moves while stood on)
 //           a platform that rides up and down (or along); whoever stands on it rides too
 //   crumble { ..., fall: 32, back: 240 }  a rotten plank: stood on, it shakes for `fall`
 //           frames, drops, and is back `back` frames later
@@ -142,7 +142,17 @@ export class Terrain {
     for (const b of this.blocks) {
       if (b.kind === 'lift') {
         const m = b.move;
-        const k = (Math.sin(((t + (m.phase ?? 0)) / m.period) * Math.PI * 2 - Math.PI / 2) + 1) / 2; // 0..1..0
+        let k;
+        if (m.ride) {
+          // (a ride: it climbs while someone stands on it, and sinks back once he steps off;
+          // the mine's lift up to Pip's ledge)
+          const on = this.world.fighters.some((f) => f.alive && f.grounded && f.team === 'player' && (f.floorBlock === b
+            || (f.x >= b.x0 && f.x <= b.x1 && f.z >= b.z0 && f.z <= b.z1 && Math.abs(f.h - b.top) < 3))); // (at the bottom it sits level with the gallery round it)
+          b.ride = Math.max(0, Math.min(1, (b.ride ?? 0) + (on ? 2 : -1.5) / (m.period / 2)));
+          k = (1 - Math.cos(b.ride * Math.PI)) / 2; // (eased at both ends)
+          if (on && b.ride < 1 && !b.rising) this.world.events.emit('liftStart', { block: b });
+          b.rising = on && b.ride < 1;
+        } else k = (Math.sin(((t + (m.phase ?? 0)) / m.period) * Math.PI * 2 - Math.PI / 2) + 1) / 2; // 0..1..0
         const off = k * m.range;
         const prevX0 = b.x0; const prevTop = b.top;
         if (m.axis === 'x') { b.x0 = b.base.x0 + off; b.x1 = b.base.x1 + off; } else b.top = b.base.top + off;

@@ -60,7 +60,7 @@ const NO_GRAB = new Set(['executed', 'execute', 'kneel', 'dead', 'knockdown', 'g
 // Can this man be picked up? Not a boss, a machine or a giant; on his feet, near the floor.
 export function grabbable(e) {
   const s = e.stats;
-  return e.alive && !e.removeMe && !s.boss && !s.machine && !s.noGrab && (s.size ?? 1) <= 1.25 &&
+  return e.alive && !e.removeMe && !s.boss && !s.machine && !s.noGrab && (s.size ?? 1) / (s.tunedSize ?? 1) <= 1.25 &&
     !NO_GRAB.has(e.state) && !e.entering && !e.cinematic && !e.held && !e.immortal &&
     e.h - (e.floor ?? 0) < GRAB.high;
 }
@@ -307,7 +307,7 @@ export function updateThrown(world) {
       const dir = Math.sign(f.vx) || t.spin;
       const by = t.by;
       const keep = by?.hitstop ?? 0;
-      const boss = !!o.stats.boss || (o.stats.size ?? 1) > 1.25;
+      const boss = !!o.stats.boss || (o.stats.size ?? 1) / (o.stats.tunedSize ?? 1) > 1.25;
       world.combat.resolve(by ?? f, o, boss ? { ...BODY, knockdown: false, knockback: { x: 60, y: 0 } } : BODY, {
         dir, kind: 'melee', fromX: f.x, contact: { x: (o.x + f.x) / 2, h: o.h + o.stats.body.h * 0.55 },
       });

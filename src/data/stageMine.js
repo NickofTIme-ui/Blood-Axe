@@ -64,7 +64,7 @@ export const STAGE_MINE = {
       id: 'workings', name: 'THE WORKINGS', x0: 1300, x1: 2800,
       spawn: { x: 1360, z: 440 },
       objective: 'Strike the shackles',
-      hint: 'Break the posts they are chained to',
+      hint: 'Break the posts they are chained to. Mind the rails: jump the carts',
       fightAt: 1600,
       waves: [['grunt', 'crusher', 'grunt', 'grunt'], ['crusher', 'crusher', 'stalker'], ['ghoul', 'butcher', 'ghoul', 'crusher', 'ghoul']], // (a Crusher, then two; then the overseer and the ghouls up out of the deep shafts. No thralls: they're the Iron Gates')
       props: [
@@ -73,7 +73,12 @@ export const STAGE_MINE = {
         { kind: 'shackle', tag: 'miners', x: 2440, z: 300, drop: null },
         { kind: 'barrel', x: 2620, z: 490, drop: 'health' },
       ],
-      hazards: [],
+      hazards: [
+        // the overseers knock the chocks out up the line: loaded ore carts down the rails at you
+        // while the fight is on (jump clear, or knock them onto the rails: a cart smashes a man
+        // apart). Stage.updateStampede, view/OreCarts.js
+        { type: 'stampede', look: 'cart', during: 'fight', x0: 1250, x1: 2850, z: 418, d: 46, dir: -1, count: 1, speed: 9, reach: 60, period: 380, warn: 110, phase: 150 },
+      ],
       rest: { x: 2700, z: 320, kind: 'oath' },
     },
     {
@@ -95,11 +100,15 @@ export const STAGE_MINE = {
       id: 'river', name: 'THE UNDERGROUND RIVER', x0: 4300, x1: 5800,
       spawn: { x: 4360, z: 440 },
       objective: 'Kill the Chain Warden',
-      hint: 'Stepping stones: tap jump from stone to stone',
+      hint: 'Stepping stones: tap jump from stone to stone. Jump the Warden\'s hook',
       fightAt: 5260,
       waves: [['crusher', 'stalker', 'grunt']],
       props: [{ kind: 'barrel', x: 5700, z: 300, drop: 'health' }],
-      hazards: [],
+      hazards: [
+        // the Warden's hook on its chain: thrown down the lane, hauls a hero in hand over hand
+        // (jump it, or step out of its line; faster in his rage). stage/WardenHook.js
+        { type: 'hook', x: 5400, z: 400 },
+      ],
       // the keeper of the chains: the Ghoul's kind, grown into the mine's jailer
       boss: {
         type: 'ghoul', name: 'The Chain Warden', health: 2.6, damage: 1.1,
@@ -123,11 +132,17 @@ export const STAGE_MINE = {
       id: 'crusher', name: 'THE CRUSHER HALL', x0: 5800, x1: 7300,
       spawn: { x: 5860, z: 440 },
       objective: 'Wreck the Ore Crushers',
-      hint: 'Iron does not flinch: hit it between its blows',
+      hint: 'Iron does not flinch: hit it between its blows. Burst the steam pipe on them',
       fightAt: 6150,
       waves: [['grunt', 'grunt', 'stalker'], ['crusher', 'crusher', 'grunt']],
-      props: [{ kind: 'crate', x: 7200, z: 480, drop: 'health' }],
+      props: [
+        { kind: 'crate', x: 7200, z: 480, drop: 'health' },
+        // the furnace's steam main along the back of the hall: burst it and the steam scalds the
+        // lane in front of it from then on (lure them in front of it)
+        { kind: 'steammain', tag: 'steammain', x: 6620, z: 296, drop: null },
+      ],
       hazards: [
+        { type: 'fire', look: 'steam', pipe: true, when: 'broken:steammain', x: 6620, z: 345, w: 320, d: 70, phase: 40 },
         // the hall's steam vents: the furnace's boiler blowing off through the floor grates (fire
         // on the ground is the village's; here it scalds: hiss and wisps, then a white jet)
         { type: 'fire', look: 'steam', x: 6400, z: 340, w: 110, d: 60, phase: 0 },
@@ -216,7 +231,7 @@ export const STAGE_MINE = {
     { kind: 'crumble', x0: 3565, x1: 3620, z0: 350, z1: 470, top: 140, fall: 40, back: 200 }, // gap 45
     { kind: 'block', x0: 3620, x1: 3760, ...FULL, top: 140 },             // the gallery goes on
     // (the lift up to the high ledge at the back: the optional rescue)
-    { kind: 'lift', x0: 3650, x1: 3730, z0: 282, z1: 340, top: 140, move: { axis: 'top', range: 85, period: 260, phase: 0 } },
+    { kind: 'lift', x0: 3650, x1: 3730, z0: 282, z1: 340, top: 140, move: { axis: 'top', range: 85, period: 260, phase: 0, ride: true } }, // (it carries you up while you stand on it)
     { kind: 'block', x0: 3540, x1: 3650, z0: 282, z1: 330, top: 225 },    // the high ledge (low enough that the camera keeps Pip in frame)
     { kind: 'block', x0: 3760, x1: 3840, ...FULL, top: 70 },              // down
     // the portcullis: iron, chained to its counterweight (gone once that's broken)
