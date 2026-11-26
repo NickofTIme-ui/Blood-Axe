@@ -98,6 +98,7 @@ export const LEVEL_ART = {
     props: {
       shackle: { file: 'prop_shackle.png', pair: true }, counterweight: { file: 'prop_counterweight.png', pair: true },
       rubble: { file: 'prop_rubble.png', pair: true },
+      steammain: { file: 'prop_steammain.png', pair: true }, // (the Crusher Hall's steam main, whole and burst: ChatGPT 2026-11-26)
     },
     surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, plank: { fit: true } },
   },
