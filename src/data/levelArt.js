@@ -100,6 +100,8 @@ export const LEVEL_ART = {
       shackle: { file: 'prop_shackle.png', pair: true }, counterweight: { file: 'prop_counterweight.png', pair: true },
       rubble: { file: 'prop_rubble.png', pair: true },
       steammain: { file: 'prop_steammain.png', pair: true }, // (the Crusher Hall's steam main, whole and burst: ChatGPT 2026-11-26)
+      crate: { file: 'prop_crate.png', pair: true, texture: 'prop-mine-crate' },
+      barrel: { file: 'prop_barrel.png', pair: true, texture: 'prop-mine-barrel' }, // (and its barrels: the miners' water casks, whole and burst in a puddle) // (the mine's crates: iron-strapped ore crates under the King's ember brand, whole and smashed: ChatGPT 2026-11-26)
     },
     surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, plank: { fit: true } },
   },

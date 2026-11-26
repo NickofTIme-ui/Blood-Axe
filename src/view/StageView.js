@@ -35,7 +35,7 @@ const HORSE = { scale: 0.72, ahead: 84, lift: 0, dz: 16, step: 36, gallop: 0.62 
 // they stand (origin y). The convoy wagon's painting has its wheels 18% up from the bottom
 // edge, so drawn from the bottom it floated ~70 px above where it really is and blows only
 // landed on the empty mud under it (Nick, 2026-11-24: "serious hit detection work")
-export const PROP_FOOT = { wagon: 0.82 };
+export const PROP_FOOT = { wagon: 0.82, crate: 0.96, barrel: 0.97 }; // (crate, barrel: the mine's, data/levelArt.js; the only level-painted ones)
 
 const rand = (a, b) => a + Math.random() * (b - a);
 // a colour darkened (k < 1) or lightened
@@ -750,7 +750,7 @@ export class StageView {
     const lvl = (this.scene.registry.get('levelArt') ?? []).includes(key);
     // (a painted look: drawn exactly as tall as the game holds it, data/stage.js PROP_LOOKS)
     const fit = !lvl && PROP_LOOKS[pr.look] && key === `prop-${pr.look}` ? pr.h : 0;
-    const s = lvl ? (pr.w * (pr.kind==='catapult'?1.9:1.3)) / this.scene.textures.get(key).getSourceImage().width
+    const s = lvl ? (pr.w * (pr.kind==='catapult' || key.startsWith('prop-mine-') ? 1.9 : 1.3)) / this.scene.textures.get(key).getSourceImage().width
       : fit ? fit / this.scene.textures.get(key).getSourceImage().height
       : this.hd.has(key) || this.art2.has(key) ? 0.25 : 0.5 * (pr.size ?? 1);
     if (pr.kind === 'wall') {
@@ -788,6 +788,8 @@ export class StageView {
   propKey(pr) {
     const base = `prop-${pr.kind}`;
     if ((this.scene.registry.get('levelArt') ?? []).includes(base)) return base; // (a level's own painting of it)
+    const theme = this.scene.stageData?.theme; // (a level's own painting of a common kind, its crates: data/levelArt.js `texture: 'prop-<theme>-<kind>'`)
+    if (theme && (this.scene.registry.get('levelArt') ?? []).includes(`prop-${theme}-${pr.kind}`)) return `prop-${theme}-${pr.kind}`;
     if (pr.look && this.art2.has(`prop-${pr.look}`)) return `prop-${pr.look}`;
     const kinds = (VARIANTS[pr.kind] ?? []).map((k) => `prop-${k}`).filter((k) => this.art2.has(k));
     return kinds.length ? kinds[(pr.id * 7 + (pr.x >> 4)) % kinds.length] : base;
