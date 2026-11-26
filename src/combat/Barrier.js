@@ -48,7 +48,8 @@ export class Barriers {
   }
 
   // Raise a wall in front of `owner`. kind: 'earth'. cfg: kit.barrier.
-  place(owner, kind, cfg) {
+  // (opts.dropped: the Falling Bulwark, called down out of the sky: the view drops it in)
+  place(owner, kind, cfg, opts = {}) {
     const w = this.world;
     const bd = w.bounds;
     const k = cfg[kind];
@@ -68,6 +69,7 @@ export class Barriers {
       hp: k.hp ?? 0, maxHp: k.hp ?? 0,
       state: 'up', t: 0, collapse: cfg.collapse,
       sides: new Map(), cool: new Map(), hitBy: new WeakSet(), cfg: k, standoff: cfg.standoff ?? 0,
+      dropped: !!opts.dropped,
     };
     // whoever is standing on the line goes to the nearer side, clear of the stone/flame
     const mine = Math.sign(owner.x - x) || -owner.facing; // the caster's side

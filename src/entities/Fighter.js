@@ -251,6 +251,7 @@ export class Fighter {
 
     if (this.grounded) {
       this.fanUsed = false; // (one shuriken fan per time in the air)
+      this.burstUsed = false; this.wallDropped = false; // (Oryn: one Downburst, one Falling Bulwark per time in the air)
       this.airBlinked = false; this.airBlinks = 0; // (one air blink per time in the air; Phase Walk: two)
       if (this.state !== 'plunge') this.plungeBounced = false; // (Skyfall: one bounce per leap; the crater it lands in still counts)
       this.framesSinceGrounded = 0;

@@ -119,7 +119,8 @@ export const HERO_ANIMS = {
     light1: swing(seq('combo1', [0, 1]), seq('combo1', [2]), seq('combo1', [3, 4])),
     light2: swing(seq('combo2', [0, 1]), seq('combo2', [2]), seq('combo2', [3, 4])),
     light3: swing(seq('combo3', [0, 1, 2]), seq('combo3', [3]), seq('combo3', [3, 3, 4])),
-    airAttack: swing(seq('combo3', [2]), seq('combo3', [3]), seq('combo3', [3])),
+    // the air chop: his own air strip (26 Nov 2026), staff raised behind the head, chopped down
+    airAttack: { needs: ['air'], ...swing(seq('air', [0]), seq('air', [1]), seq('air', [1])) },
     bolt: { frames: seq('bolt', [0, 1, 2, 3, 4, 5]) },
     force: { frames: seq('force', [0, 1, 2, 3, 4]) },
     ward: { frames: seq('ward', [0, 1, 2, 3, 4, 5]) },
@@ -137,7 +138,7 @@ export const HERO_ANIMS = {
     // the pole-vault kick: the run in, the staff planted, up on it; the flying kick; down
     shoulder: { needs: ['vault'], ...swing(seq('vault', [0, 1, 2]), seq('vault', [3]), seq('vault', [4, 5])) },
     // Y, Y, X: the thunder staff (the spinning slam, charged)
-    thunder: swing(seq('combo3', [1, 2]), seq('combo3', [3]), seq('combo3', [3, 3, 4])),
+    thunder: { needs: ['thunder'], ...swing(seq('thunder', [1, 2]), seq('thunder', [3]), seq('thunder', [4, 4, 5])) },
     // the UPDRAFT: the staff swept low, then up, ending raised
     updraft: { needs: ['updraft'], ...swing(seq('updraft', [0, 1]), seq('updraft', [2, 3]), seq('updraft', [4, 5])) },
     // the SKYFALL BOLT: the staff to the sky, the flash; then pointed down at them, planted
@@ -145,9 +146,14 @@ export const HERO_ANIMS = {
     // METEOR DROP: the staff raised at the top, diving head first, landed, rising
     plunge: { needs: ['meteor'], hang: seq('meteor', [0]), fall: seq('meteor', [1]), land: seq('meteor', [2, 2, 3]) },
     // STONE SPIKES: the staff called up, then driven down and planted
-    spikes: { needs: ['skyfall'], frames: seq('skyfall', [0, 1, 3, 4, 4, 5]) },
+    spikes: { needs: ['spikes'], frames: seq('spikes', [0, 1, 2, 3, 4, 5]) },
     // THE TEMPEST: staff up, the flash held; planted at the end
     tempest: { needs: ['skyfall'], hold: seq('skyfall', [1, 2]), end: seq('skyfall', [4, 5]) },
+    // the air and the run (2026-11-26): DOWNBURST (kick in the air), FALLING BULWARK (magic
+    // in the air), COMET (sprint + heavy)
+    downburst: { needs: ['air'], frames: seq('air', [2, 2, 3, 3]) },
+    wardDrop: { needs: ['air'], frames: seq('air', [4, 4, 4, 5, 5, 5]) },
+    comet: { gather: seq('blink', [1, 2]), arrive: seq('blink', [3, 4, 5]) },
     // GRAB AND THROW: his own strip (8 poses as Rurik's neck grip)
     grab: { needs: ['grab'], poses: seq('grab', [0, 1, 2, 3, 4, 5, 6, 7]) },
     // finishers borrow his casting poses (kind -> strip)
