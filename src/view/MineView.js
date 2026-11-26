@@ -15,6 +15,7 @@ import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { drawCastle } from './castle.js';
 import { PaintedLevel } from './levelArt.js';
+import { playSfx } from '../core/Sfx.js';
 
 const COL = {
   dark: 0x050608, rockFar: 0x0e1014, rockMid: 0x16181d, rock: 0x1f2228, rockLit: 0x3a3430,
@@ -216,6 +217,36 @@ export class MineBackdrop {
       if (d.y > 420) { d.y = -20; d.x = Math.random() * wv.width; }
       const wx = wv.x + d.x;
       d.img.setPosition(wx, wv.y + d.y).setVisible(wx < this.dayX);
+    }
+    this.sounds();
+  }
+
+  // The mine's life you hear (phase 5): while anyone is still chained at the ore face, a whip
+  // cracks over them every few seconds and someone cries out; deep in, the Crusher's hammer
+  // pounds the rock until the hall is reached; water dripping in the dark all the way through.
+  sounds() {
+    const s = this.scene; const now = s.time.now;
+    const px = s.player?.x ?? 0;
+    this.nextWhip ??= now + 3000; this.nextPound ??= now + 2000; this.nextDrip ??= now + 1500;
+    const chained = this.data.npcs.filter((n) => n.pose === 'chained' && !this.stage.story?.rescued.has(n.id));
+    if (now > this.nextWhip) {
+      this.nextWhip = now + 4500 + Math.random() * 4000;
+      const n = chained.find((q) => Math.abs(q.x - px) < 1100);
+      if (n) {
+        const v = 0.25 + 0.45 * (1 - Math.abs(n.x - px) / 1100);
+        playSfx(s, 'woodWhip', { volume: v, minGapMs: 0 });
+        s.time.delayedCall(260, () => playSfx(s, 'manPain', { volume: v * 0.8, spread: 200, minGapMs: 0 }));
+      }
+    }
+    const hall = this.data.sections.find((q) => q.id === 'crusher');
+    if (hall && now > this.nextPound && px < hall.x0 && px > hall.x0 - 4500) {
+      this.nextPound = now + 1700 + Math.random() * 600;
+      const v = 0.15 + 0.4 * (1 - (hall.x0 - px) / 4500);
+      playSfx(s, 'kick', { volume: v, pitch: -2600, minGapMs: 0 }); // (far off, through the rock)
+    }
+    if (now > this.nextDrip && px < this.dayX) {
+      this.nextDrip = now + 900 + Math.random() * 2400;
+      playSfx(s, 'waterBubble', { volume: 0.12 + Math.random() * 0.1, pitch: 600 + Math.random() * 600, minGapMs: 0 });
     }
   }
 }
