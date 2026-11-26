@@ -32,6 +32,7 @@ import { BladeChain, CHAIN_PHYS } from '../src/view/BladeChain.js';
 import { DYES } from '../src/view/dye.js';
 import { handshake } from '../src/net/Link.js';
 import { impalePin } from '../src/combat/Finisher.js';
+import { restoreFromExecution } from '../src/combat/Executions.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS, staticOn } from '../src/combat/Mage.js';
 const staticOnOf = (e, w) => staticOn(e, w.frame);
 import { STORM } from '../src/combat/Storm.js';
@@ -541,6 +542,26 @@ test('finisher: tap attack behind a runner = throat, he dies', () => {
   assert(!r.alive, 'runner should be dead');
   assert(r.diedLying, 'he went over on his face: he stays down');
   assert(t.p.state === 'idle', `player back to idle, is ${t.p.state}`);
+});
+
+test('execution restore: each man executed gives back 20% of max health, stamina, mana (capped)', () => {
+  const t = setup({ script: { 1: ['attack'] }, gap: 70 });
+  const r = runner(t);
+  const S = t.p.stats;
+  t.p.health = S.maxHealth * 0.5; t.p.stamina = S.maxStamina * 0.9; t.p.mana = 0;
+  const got = []; t.world.events.on('executionRestore', (e) => got.push(e));
+  t.run(140);
+  assert(!r.alive && got.length === 1 && got[0].fighter === t.p, `restores ${got.length}`);
+  assert(Math.abs(t.p.health - S.maxHealth * 0.7) < 1, `health ${t.p.health} / ${S.maxHealth}`);
+  assert(t.p.stamina <= S.maxStamina && t.p.stamina > S.maxStamina * 0.95, `stamina capped near full ${t.p.stamina}`);
+  if (S.maxMana > 0) assert(t.p.mana >= S.maxMana * 0.2 - 0.01, `mana ${t.p.mana}`);
+  // a plain kill gives nothing back
+  const hp = t.p.health;
+  t.world.events.emit('kill', { attacker: t.p, defender: r, kind: 'melee' });
+  assert(t.p.health === hp && got.length === 1, 'only executions restore');
+  // a hero with no mana bar just skips it
+  const g = restoreFromExecution({ stats: { maxHealth: 100, maxStamina: 0 }, health: 10, stamina: 0 });
+  assert(g.health === 20 && g.stamina === 0 && g.mana === 0, JSON.stringify(g));
 });
 
 test('finisher: hold attack = impale, lifted on the blade, then booted off', () => {

@@ -27,6 +27,7 @@ import * as states from '../entities/fighterStates.js';
 import * as mage from '../combat/Mage.js';
 import * as rogue from '../combat/Rogue.js';
 import * as finisher from '../combat/Finisher.js';
+import * as executions from '../combat/Executions.js';
 import * as session from './Session.js';
 
 // The source text of a value: functions and classes as written, data as JSON, and the
@@ -44,7 +45,7 @@ export function simVersion() {
   if (cached) return cached;
   const src = [CHARACTERS, ENEMIES, WAVES, STAGE, STAGES, PICKUPS, PROPS, ACTIONS,
     World, Stage, CombatSystem, Fighter, EnemyBrain, createEnemy, Projectile, Barriers, Mines,
-    { ...states }, { ...mage }, { ...rogue }, { ...finisher }, { ...session }].map((v) => text(v)).join('\n');
+    { ...states }, { ...mage }, { ...rogue }, { ...finisher }, { ...executions }, { ...session }].map((v) => text(v)).join('\n');
   let h = 2166136261;
   for (let i = 0; i < src.length; i++) { h ^= src.charCodeAt(i); h = Math.imul(h, 16777619); }
   cached = (h >>> 0).toString(36).toUpperCase().padStart(7, '0').slice(-5);
