@@ -32,6 +32,7 @@ import { BladeChain, CHAIN_PHYS } from '../src/view/BladeChain.js';
 import { DYES } from '../src/view/dye.js';
 import { handshake } from '../src/net/Link.js';
 import { impalePin } from '../src/combat/Finisher.js';
+import { grabbable } from '../src/combat/Grab.js';
 import { planChainLightning, forceTargets, MAGE_FINISHERS, staticOn } from '../src/combat/Mage.js';
 const staticOnOf = (e, w) => staticOn(e, w.frame);
 import { STORM } from '../src/combat/Storm.js';
@@ -404,6 +405,22 @@ test("Gorrak and Sliv are tuned to Nick's numbers; the hangman who shares Gorrak
   assert(sp >= 0.88 && sp <= 1.14 && s.stats.meleeMult === k.meleeMult, 'Sliv 5% quicker, same hits');
   const h = createEnemy(world, 'executioner', 680, 420);
   assert(h.stats.body.h === b.body.h && h.stats.meleeMult === b.meleeMult, 'the hangman keeps his own size and hits');
+});
+
+test('Vorn is drawn and fights 30% bigger, can still be grabbed; the Stonebreaker keeps his size', () => {
+  const world = new World();
+  const v = createEnemy(world, 'berserker', 600, 420), b = ENEMIES.berserker;
+  const sz = v.stats.size / 1.3;
+  assert(sz >= 0.94 && sz <= 1.06, `Vorn drawn ${v.stats.size.toFixed(2)}x`);
+  assert(v.stats.body.h === Math.round(b.body.h * 1.3) && v.stats.body.w === Math.round(b.body.w * 1.3), 'Vorn body grows 30%');
+  assert(Math.abs(v.stats.moves.heavy.hitbox.h - b.moves.heavy.hitbox.h * 1.3) < 1e-6, 'his swings grow with him');
+  assert(Math.abs(v.controller.ai.attackRange - b.ai.attackRange * 1.3) < 1e-6, 'he fights from his longer reach');
+  assert(v.stats.meleeMult === b.meleeMult, 'same hits, only bigger');
+  assert(grabbable(v), 'a grown Vorn can still be grabbed');
+  if (ENEMIES.stonebreaker) {
+    const s = createEnemy(world, 'stonebreaker', 640, 420);
+    assert(s.stats.body.h === ENEMIES.stonebreaker.body.h, 'the Stonebreaker keeps his own size');
+  }
 });
 
 test('each bad guy fights and lands hits (specials included)', () => {

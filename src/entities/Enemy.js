@@ -462,7 +462,7 @@ function retune(f) {
   for (const [k, m] of Object.entries(s.moves)) moves[k] = m.hitbox ? { ...m, hitbox: box(m.hitbox) } : m;
   f.stats = {
     ...s, moves,
-    size: s.size * size,
+    size: s.size * size, tunedSize: size, // (grown as a kind, not a giant: he can still be grabbed)
     body: { ...s.body, w: Math.round(s.body.w * size), h: Math.round(s.body.h * size) },
     meleeMult: s.meleeMult * damage,
     walkSpeed: s.walkSpeed * speed, depthSpeed: s.depthSpeed * speed,

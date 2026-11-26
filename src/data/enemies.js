@@ -488,6 +488,7 @@ export const ENEMIES = {
     look: { color: 0x5a3a26, accent: 0xc8c8c8, skin: 0xb46e4a },
 
     variety: { speed: [0.88, 1.14], size: [0.94, 1.06], toughness: 1 },
+    tuned: { size: 1.3 }, // (Nick, 2026-11-26: "Vorn is too small, make him 30 percent bigger")
 
     maxHealth: 120, maxStamina: 100,
     walkSpeed: 145, depthSpeed: 100,
