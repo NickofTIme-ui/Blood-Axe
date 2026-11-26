@@ -6,8 +6,8 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 26 November 2026 (cloud, branch claude/project-thread-dl3j3l on top of 6c3fea7 = PC ChatGPT build + level 3; NOT on main
-  until Nick says push). EXECUTIONS RESTORE 20% (Nick's rule): every man a hero executes (Rurik's throat / impale / halve /
+- 26 November 2026 (cloud; ON MAIN, Nick "push all"; not on itch yet; built on 6c3fea7 = PC ChatGPT build + level 3).
+  EXECUTIONS RESTORE 20% (Nick's rule): every man a hero executes (Rurik's throat / impale / halve /
   chain, Oryn's and Vexa's finishers, a boss sentence) gives that hero back 20% of MAX health, stamina and mana, capped at
   full; a hero without a bar skips it. One central place: src/combat/Executions.js (installed in core/World.js, listens to
   'kill' events carrying `finisher` or `sentence`), so new finishers count as long as their kill event sets `finisher`.
