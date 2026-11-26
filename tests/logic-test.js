@@ -4325,6 +4325,83 @@ test('mine: the collapse chases you: it hurts whoever it catches and throws him 
   assert(last.to + 30 < rubble.x - rubble.w / 2, 'the fallen rock can be dug out in front of it');
 });
 
+test('mine: the Workings\' ore carts come down the rails only while the fight is on: one runs a man down where he stands, and it smashes an enemy apart', () => {
+  // (none while he's still at the mine mouth)
+  const M = mineSetup(MINE_SEC('mouth'), { x: 1200, z: 440 });
+  M.p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  let early = 0; M.world.events.on('stampedeWarn', () => early++);
+  M.run(60 * 8, () => { M.p.health = M.p.stats.maxHealth; });
+  assert(early === 0, `no carts before the Workings' fight (${early})`);
+  const { world, p, st, run } = mineSetup(MINE_SEC('workings'), { x: 1650, z: 418 });
+  const hz = st.hazards.find((h) => h.type === 'stampede' && h.look === 'cart');
+  assert(hz && hz.section === MINE_SEC('workings'), 'a cart lane in the Workings');
+  p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  let warned = 0; world.events.on('stampedeWarn', (e) => { if (e.hazard === hz) warned++; });
+  let hits = 0; let smashed = 0;
+  world.events.on('hazardHit', (e) => { if (e.hazard !== hz) return; if (e.fighter === p) hits++; else if (e.fighter.team === 'enemy' && !e.fighter.alive) smashed++; });
+  for (let i = 0; i < 60 * 25 && !hits; i++) run(1, () => { p.health = p.stats.maxHealth; p.x = 1650; p.z = 418; });
+  assert(st.phase === 'fight' && warned >= 1 && hits === 1, `run down on the rails (${st.phase}, ${warned} warned, ${hits} hits)`);
+  // an enemy left on the rails is smashed apart
+  run(60 * 2, () => { p.health = p.stats.maxHealth; p.z = 300; });
+  const foe = st.livingFoes().find((e) => !e.stats.boss);
+  assert(foe, 'an enemy to put on the rails');
+  for (let i = 0; i < 60 * 12 && !smashed; i++) run(1, () => { p.health = p.stats.maxHealth; p.z = 300; if (foe.alive && foe.state !== 'knockdown') { foe.x = 1700; foe.z = 418; foe.h = 0; foe.vx = foe.vz = 0; } });
+  assert(smashed >= 1, `the cart smashes an enemy on the rails apart (${smashed})`);
+});
+
+test('mine: the Chain Warden throws his hook down the lane: it catches a hero standing in it and hauls him in to a blow at his feet', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('river'), { x: 5400, z: 440 });
+  const hz = st.hazards.find((h) => h.type === 'hook');
+  assert(hz && hz.section === MINE_SEC('river'), 'the hook belongs to the river');
+  p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  bossUp(st, run, p);
+  const b = st.boss;
+  assert(b && b.alive, `the Warden is up (${b?.alive}, ${st.phase}, x ${Math.round(p.x)})`);
+  let caught = 0; let blows = 0;
+  world.events.on('hookCatch', (e) => { if (e.fighter === p) caught++; });
+  world.events.on('hazardHit', (e) => { if (e.hazard === hz && e.fighter === p) blows++; });
+  let from = null;
+  for (let i = 0; i < 60 * 20 && !blows; i++) {
+    run(1, () => {
+      p.health = p.stats.maxHealth; b.health = b.stats.maxHealth;
+      if (!caught) { b.x = 5600; b.z = 420; b.vx = 0; p.x = 5330; p.z = 420; p.h = 0; from = p.x; }
+    });
+  }
+  assert(caught >= 1 && blows >= 1, `caught and struck (${caught}, ${blows})`);
+  assert(Math.abs(p.x - b.x) < Math.abs(from - 5600) - 60, `hauled in toward him (${Math.round(p.x)} from ${Math.round(from)}, Warden at ${Math.round(b.x)})`);
+  assert(!p.hooked, 'let go');
+});
+
+test('mine: the Crusher Hall\'s steam main is cold till it is burst; burst, it scalds whoever stands in front of it', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('crusher'), { x: 6300, z: 480 });
+  const main = st.props.find((pr) => pr.kind === 'steammain');
+  const hz = st.hazards.find((h) => h.pipe);
+  assert(main && hz, 'a steam main and its steam');
+  p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  let scalds = 0; world.events.on('hazardHit', (e) => { if (e.hazard === hz) scalds++; });
+  run(60 * 8, () => { p.health = p.stats.maxHealth; p.x = hz.x; p.z = hz.z; p.h = 0; });
+  assert(scalds === 0, `nothing while it holds (${scalds})`);
+  st.breakProp(main, 1);
+  run(60 * 8, () => { p.health = p.stats.maxHealth; p.x = hz.x; p.z = hz.z; });
+  assert(scalds >= 1, `burst, it scalds (${scalds})`);
+});
+
+test('mine: the lift up to Pip\'s ledge rides: it waits at the bottom, carries a hero up while he stands on it, and sinks back once he steps off', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('shaft'), { x: 3690, z: 310 });
+  const lift = st.terrain.blocks.find((b) => b.kind === 'lift');
+  p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  const base = lift.base.top;
+  p.x = 3200; p.z = 440; st.placeOnGround(p);
+  run(200, () => { p.health = p.stats.maxHealth; });
+  assert(lift.top === base, `it waits at the bottom (${lift.top})`);
+  p.x = 3690; p.z = 310; p.h = p.floor = lift.top + 1; st.placeOnGround(p);
+  run(200, () => { p.health = p.stats.maxHealth; });
+  assert(lift.top > base + 80 && Math.abs(p.h - lift.top) < 2, `carried up (${lift.top}, feet ${p.h}, on ${p.floorBlock?.kind}, grounded ${p.grounded}, ride ${lift.ride})`);
+  p.x = 3600; p.z = 300; p.h = p.floor = 225; st.placeOnGround(p);
+  run(300, () => { p.health = p.stats.maxHealth; });
+  assert(lift.top === base, `back down without him (${lift.top})`);
+});
+
 test('mine: the chase runs on through three stretches: each picks the rock up where it was, runs faster, and a death puts it back behind that stretch\'s start', () => {
   const ids = ['collapse', 'gallery', 'leap'];
   const walls = ids.map((id) => STAGE_MINE.sections[MINE_SEC(id)].hazards.find((h) => h.type === 'collapse'));
