@@ -7,7 +7,7 @@ export function installAscentEnemies(E){
  guard.damageProfile={blade:.55,magic:1.4,shock:2}; guard.armorTint=0x525968;
  E.siegeguard=guard;
  const brute=structuredClone(E.berserker);
- Object.assign(brute,{id:'stonebreaker',name:'Ashen Stonebreaker',title:'The siege hammer',look:'stonebreaker',art:'berserker',body:{w:62,h:132},maxHealth:145,walkSpeed:125,depthSpeed:90,variety:{speed:[.94,1.04],size:[1,1.06],toughness:.5}});
+ Object.assign(brute,{id:'stonebreaker',name:'Ashen Stonebreaker',title:'The siege hammer',look:'stonebreaker',art:'berserker',body:{w:62,h:132},maxHealth:145,walkSpeed:125,depthSpeed:90,variety:{speed:[.94,1.04],size:[1,1.06],toughness:.5},tuned:null}); // (Vorn's 30% growth is his own: the Stonebreaker keeps his size)
  brute.ai={...brute.ai,maxCrowd:1,attackCooldown:[65,100],heavyChance:.5,comboChance:.15,blockChance:.04};
  for(const m of Object.values(brute.moves))m.cut='blunt';
  brute.moves.heavy={...brute.moves.heavy,name:'Break the Line',startup:52,recovery:46,damage:24,lunge:70};
