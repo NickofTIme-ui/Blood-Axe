@@ -147,6 +147,9 @@ export const ENEMY_STRIPS = {
   // cudgel, the whip's lash for the hook) and the Houndmaster (the Stalker's moves)
   wagonmaster: bossSet('wagonmaster'),
   houndmaster: bossSet('houndmaster'),
+  // Hollow Mountain: the Chain Warden ('ghoul' with `look: 'warden'`, the Ghoul's moves: his
+  // hook on its chain for the spiked ball, a short iron club for the knife). ChatGPT 2026-11-26
+  warden: bossSet('warden'),
 };
 // hanging limp on Rurik's blade (the impale finisher, view/ImpaledRig.js): intact, back
 // arm gone, front arm gone, both gone. ChatGPT, 2026-10-25 (the grunt's came first)
@@ -266,7 +269,7 @@ export const ENEMY_ANIMS = {
 };
 
 // a boss's own look -> the kind whose moves (and size) he has
-export const LOOKS = { orsk: 'berserker', twin: 'gladiator', wagonmaster: 'butcher', houndmaster: 'stalker' };
+export const LOOKS = { orsk: 'berserker', twin: 'gladiator', wagonmaster: 'butcher', houndmaster: 'stalker', warden: 'ghoul' };
 for (const [look, kind] of Object.entries(LOOKS)) ENEMY_ANIMS[look] = ENEMY_ANIMS[kind];
 ENEMY_STRIPS.executioner=Object.fromEntries(Object.entries({walk:8,react:6,atk1:5,atk2:5,heavy:6,special:6}).map(([name,frames])=>[name,{file:`assets/npcs/mill-rescue/executioner-${name}.png`,frames,ref:0,ground:'drawn'}]));
 // (the Headsman's Rush: his overhead chop, held high through the charge)

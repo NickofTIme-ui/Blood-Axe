@@ -111,7 +111,7 @@ export const STAGE_MINE = {
       ],
       // the keeper of the chains: the Ghoul's kind, grown into the mine's jailer
       boss: {
-        type: 'ghoul', name: 'The Chain Warden', health: 2.6, damage: 1.1,
+        type: 'ghoul', look: 'warden', name: 'The Chain Warden', health: 2.6, damage: 1.1, size: 1.12, // (his own painted strips: a head over the ghouls)
         entrance: { from: 140, to: 320, speed: 66, stepEvery: 30, awe: 20 },
         // beaten: his crimes and his sentence (stage/Sentence.js)
         sentence: {
