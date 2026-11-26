@@ -12,6 +12,10 @@ branch, or ChatGPT's work gets lost.
   full; a hero without a bar skips it. One central place: src/combat/Executions.js (installed in core/World.js, listens to
   'kill' events carrying `finisher` or `sentence`), so new finishers count as long as their kill event sets `finisher`.
   Cue: ArenaScene.restoreFX (red/green/blue motes drawn into the hero + a low swell). Test in tests/logic-test.js.
+- 26 November 2026 (cloud; ON MAIN, Nick "push it to main"; not on itch yet). LEVEL 2 CAGE
+  CARTS BLEND: ground_carts.jpg has a row of big dark rocks painted along its top, which made a hard dark band behind
+  the cage carts; the 'carts' section now has `groundTopFade` {depth 110, hold 0.42} (same tool as the church/hall
+  seams), and the painted cage carts get the wood's light (lightProp, k 1.4) and a soft shadow pool (NpcView). No new art.
 - 24 November 2026 (cloud, branch claude/project-thread-k5ev14; NOT on main until Nick says push). LEVEL 3 PHASE 2
   (masterplan https://claude.ai/artifact/QWSRL3ruDw6bajP4Zzso8X): Workings horde -> overseer + ghouls (no thralls in the
   mine; test updated), Crusher Hall fire grates -> steam vents (`look: 'steam'`: scald, no burning, hiss), no Crusher in
