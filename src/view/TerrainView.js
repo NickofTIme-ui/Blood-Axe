@@ -580,7 +580,7 @@ export class TerrainView {
     for (const t of Object.values(v.tiles ?? {})) t.setVisible(false); // (shown again below by whichever face is painted)
     v.gables?.forEach((g) => g.setVisible(false)); v.flank?.setVisible(false);
     if (!b.solid) {
-      v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); v.arts?.forEach((a) => a.setVisible(false)); placeRoofFire(v.fire, b.x0, 0, false); // (gone: broken through, or fallen)
+      v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); v.arts?.forEach((a) => a.setVisible(false)); v.chains?.forEach((c) => c.setVisible(false)); placeRoofFire(v.fire, b.x0, 0, false); // (gone: broken through, or fallen)
       return;
     }
     // (a painted set piece stands in for it: the wood's rockslide, view/WoodView.js)
@@ -911,6 +911,24 @@ export class TerrainView {
   drawPortcullis(v, x0, x1, yTop0, yTop1) {
     const { top, front, b } = v;
     const fy = b.z1; const h = b.top;
+    // (the mine's: painted, ChatGPT 2026-11-26, sheared so it runs straight back across the
+    // lane; its near post stands at x0 on the front edge, and its chain is the lift's, on up)
+    const pk = artKey('mine', 'portcullis');
+    if (this.mine && this.scene.textures.exists(pk)) {
+      const s = this.scene;
+      const k = h / 663; // (the near post is 663 px of the picture)
+      v.art ??= s.add.image(0, 0, pk).setOrigin(0.077, 0.99);
+      v.art.setPosition(x0, fy).setScale(k).setDepth(b.z1 + 0.5).setVisible(true);
+      const ck = artKey('mine', 'lift_chain');
+      if (s.textures.exists(ck)) {
+        const cf = s.textures.getFrame(ck);
+        const ax = x0 + (0.541 - 0.077) * v.art.displayWidth; const ay = fy - (0.99 - 0.169) * v.art.displayHeight;
+        v.chains ??= [s.add.tileSprite(0, 0, cf.width, 10, ck).setOrigin(0.5, 1)];
+        v.chains[0].setPosition(ax, ay + 6).setSize(cf.width, 700 / 0.26).setScale(0.26).setDepth(b.z1 + 0.45).setVisible(true);
+      }
+      top.setVisible(false); front.setVisible(false);
+      return;
+    }
     // seen side on it's a thin wall of bars down the whole lane, back to front
     for (let z = b.z0; z <= b.z1; z += 26) {
       front.fillStyle(COL.ironDark, 1).fillRect(x0, z - h, x1 - x0, 6);
