@@ -221,7 +221,7 @@ export const STAGE_MINE = {
 
   terrain: [
     // ---- I THE MINE MOUTH: an ore cart on its rails to hop (or walk round)
-    { kind: 'block', x0: 600, x1: 690, z0: 390, z1: 470, top: 40 },
+    { kind: 'block', look: 'orecart', x0: 600, x1: 690, z0: 390, z1: 470, top: 40 },
 
     // ---- III THE LIFT SHAFT: up the old workings onto the gallery, planks over the shaft
     { kind: 'block', x0: 3000, x1: 3200, ...FULL, top: 70 },              // +70

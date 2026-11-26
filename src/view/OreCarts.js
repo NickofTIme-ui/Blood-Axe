@@ -3,7 +3,8 @@
 // The warning: the rails start to sing, sparks running along them from the end it comes
 // from, grit shaking down. Then it comes: a heavy cart heaped with ore, wheels throwing
 // sparks off the rails, its own lantern-light swinging. The painted cart (ore_cart.png,
-// its left half: 'mine-ore-cart') when it exists; drawn here until then.
+// assets/env/mine/ore_cart.png) when it exists; drawn here until then.
+import { artKey } from './levelArt.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -34,14 +35,15 @@ export function drawOreCarts(view, hz, cam, S, g, hg) {
     }
     return;
   }
-  const painted = scene.textures.exists('mine-ore-cart');
+  const CART = artKey('mine', 'ore_cart');
+  const painted = scene.textures.exists(CART);
   hz.cartImgs ??= [];
   for (const sp of hz.cartImgs) sp.setVisible(false);
   S.heads.forEach((hd, i) => {
     const k = 1 + (hd.z - 400) / 900;
     if (hd.x < cam.x - 200 || hd.x > cam.right + 200) return;
     if (painted) {
-      const sp = hz.cartImgs[i] ??= scene.add.image(0, 0, 'mine-ore-cart').setOrigin(0.5, 0.94);
+      const sp = hz.cartImgs[i] ??= scene.add.image(0, 0, CART).setOrigin(0.5, 0.94);
       sp.setPosition(hd.x, hd.z + 6).setFlipX(dir < 0).setScale((150 * k) / sp.frame.width)
         .setAngle(Math.sin(t * 0.9 + i) * 1.2).setDepth(hd.z + 1).setVisible(true);
     } else cart(hg, hd.x, hd.z, k, dir, t * 0.6 + i);
