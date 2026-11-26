@@ -1556,6 +1556,9 @@ export class Stage {
   // (No door: they run the whole lane, from x0, or x1 going back.)
   // `fodder`: a roster sent on each time a run is warned, from off-screen on the side the
   // herd is running to, down its lane, so they walk straight into it (while the fight is on).
+  // `look: 'cart'` (Hollow Mountain): runaway ore carts loosed down the rails instead, `speed`
+  // px a frame and `gap` px apart; the same rules (jump clear, or be run down; an enemy in
+  // their way is smashed apart, so knock them onto the rails).
   // Its state for the view: stampedeState(hz) -> { phase: 'idle'|'warn'|'run', warnT, heads, dir, path }
   // (heads: { x, z, i, out }: out = px it has come out of the door)
   stampedePath(hz) {
@@ -1593,14 +1596,15 @@ export class Stage {
     const k = hz.lt % P;
     if (hz.lt >= P * (hz.runs ?? Infinity)) return idle;
     if (k < W) return { ...idle, phase: 'warn', warnT: k / W };
-    const lead = (k - W) * STAMPEDE.speed;
+    const lead = (k - W) * (hz.speed ?? STAMPEDE.speed);
+    const gap = hz.gap ?? STAMPEDE.gap;
     const heads = [];
     for (let i = 0; i < (hz.count ?? 3); i++) {
-      const out = lead - i * STAMPEDE.gap;
-      if (out < 0 || out > path.len + STAMPEDE.gap) continue; // (still inside, or gone)
+      const out = lead - i * gap;
+      if (out < 0 || out > path.len + gap) continue; // (still inside, or gone)
       const at = this.stampedeAt(path, out);
-      // (a little out of line, so they read as a herd, not a train)
-      at.z += ((i * 37) % 3 - 1) * hz.d * 0.22;
+      // (a little out of line, so they read as a herd, not a train; carts keep to their rails)
+      if (hz.look !== 'cart') at.z += ((i * 37) % 3 - 1) * hz.d * 0.22;
       heads.push({ x: at.x, z: at.z, i, out });
     }
     if (!heads.length) return idle;
@@ -1608,6 +1612,11 @@ export class Stage {
   }
 
   updateStampede(hz) {
+    // (`during: 'fight'`: only while its own section's fight is on; it starts over each time)
+    if (hz.during === 'fight' && !(this.index === hz.section && this.phase === 'fight')) {
+      if (hz.live && this.stampedeState(hz).phase === 'run') { hz.lt++; return; } // (a cart already loose runs on out)
+      hz.live = false; return;
+    }
     if (!hz.live) {
       if (!this.beamLive(hz)) return;
       hz.live = true;
@@ -1630,7 +1639,7 @@ export class Stage {
     }
     for (const f of this.world.fighters) {
       if (f.h > 70) continue; // (jumped clear)
-      const hit = S.heads.find((hd) => Math.abs(f.x - hd.x) <= STAMPEDE.reach && Math.abs(f.z - hd.z) <= hz.d / 2);
+      const hit = S.heads.find((hd) => Math.abs(f.x - hd.x) <= (hz.reach ?? STAMPEDE.reach) && Math.abs(f.z - hd.z) <= hz.d / 2);
       if (!hit) continue;
       if (hz.cool.has(f.id)) continue;
       this.hurt(hz, f, STAMPEDE.damage, S.dir, 'trample');

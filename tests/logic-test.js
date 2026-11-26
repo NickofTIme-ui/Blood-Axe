@@ -4304,6 +4304,30 @@ test('mine: the collapse chases you: it hurts whoever it catches and throws him 
   assert(last.to + 30 < rubble.x - rubble.w / 2, 'the fallen rock can be dug out in front of it');
 });
 
+test('mine: the Workings\' ore carts come down the rails only while the fight is on: one runs a man down where he stands, and it smashes an enemy apart', () => {
+  // (none while he's still at the mine mouth)
+  const M = mineSetup(MINE_SEC('mouth'), { x: 1200, z: 440 });
+  M.p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  let early = 0; M.world.events.on('stampedeWarn', () => early++);
+  M.run(60 * 8, () => { M.p.health = M.p.stats.maxHealth; });
+  assert(early === 0, `no carts before the Workings' fight (${early})`);
+  const { world, p, st, run } = mineSetup(MINE_SEC('workings'), { x: 1650, z: 418 });
+  const hz = st.hazards.find((h) => h.type === 'stampede' && h.look === 'cart');
+  assert(hz && hz.section === MINE_SEC('workings'), 'a cart lane in the Workings');
+  p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  let warned = 0; world.events.on('stampedeWarn', (e) => { if (e.hazard === hz) warned++; });
+  let hits = 0; let smashed = 0;
+  world.events.on('hazardHit', (e) => { if (e.hazard !== hz) return; if (e.fighter === p) hits++; else if (e.fighter.team === 'enemy' && !e.fighter.alive) smashed++; });
+  for (let i = 0; i < 60 * 25 && !hits; i++) run(1, () => { p.health = p.stats.maxHealth; p.x = 1650; p.z = 418; });
+  assert(st.phase === 'fight' && warned >= 1 && hits === 1, `run down on the rails (${st.phase}, ${warned} warned, ${hits} hits)`);
+  // an enemy left on the rails is smashed apart
+  run(60 * 2, () => { p.health = p.stats.maxHealth; p.z = 300; });
+  const foe = st.livingFoes().find((e) => !e.stats.boss);
+  assert(foe, 'an enemy to put on the rails');
+  for (let i = 0; i < 60 * 12 && !smashed; i++) run(1, () => { p.health = p.stats.maxHealth; p.z = 300; if (foe.alive && foe.state !== 'knockdown') { foe.x = 1700; foe.z = 418; foe.h = 0; foe.vx = foe.vz = 0; } });
+  assert(smashed >= 1, `the cart smashes an enemy on the rails apart (${smashed})`);
+});
+
 test('mine: the chase runs on through three stretches: each picks the rock up where it was, runs faster, and a death puts it back behind that stretch\'s start', () => {
   const ids = ['collapse', 'gallery', 'leap'];
   const walls = ids.map((id) => STAGE_MINE.sections[MINE_SEC(id)].hazards.find((h) => h.type === 'collapse'));

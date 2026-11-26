@@ -64,7 +64,7 @@ export const STAGE_MINE = {
       id: 'workings', name: 'THE WORKINGS', x0: 1300, x1: 2800,
       spawn: { x: 1360, z: 440 },
       objective: 'Strike the shackles',
-      hint: 'Break the posts they are chained to',
+      hint: 'Break the posts they are chained to. Mind the rails: jump the carts',
       fightAt: 1600,
       waves: [['grunt', 'crusher', 'grunt', 'grunt'], ['crusher', 'crusher', 'stalker'], ['ghoul', 'butcher', 'ghoul', 'crusher', 'ghoul']], // (a Crusher, then two; then the overseer and the ghouls up out of the deep shafts. No thralls: they're the Iron Gates')
       props: [
@@ -73,7 +73,12 @@ export const STAGE_MINE = {
         { kind: 'shackle', tag: 'miners', x: 2440, z: 300, drop: null },
         { kind: 'barrel', x: 2620, z: 490, drop: 'health' },
       ],
-      hazards: [],
+      hazards: [
+        // the overseers knock the chocks out up the line: loaded ore carts down the rails at you
+        // while the fight is on (jump clear, or knock them onto the rails: a cart smashes a man
+        // apart). Stage.updateStampede, view/OreCarts.js
+        { type: 'stampede', look: 'cart', during: 'fight', x0: 1250, x1: 2850, z: 418, d: 46, dir: -1, count: 1, speed: 9, reach: 60, period: 380, warn: 110, phase: 150 },
+      ],
       rest: { x: 2700, z: 320, kind: 'oath' },
     },
     {

@@ -9,6 +9,7 @@ import {siegeFlight} from './SiegeFlight.js';
 import { SETTINGS } from '../config/settings.js';
 import { PHYSICS } from '../effects/Physics.js';
 import { drawStampedeTrail } from './StampedeTrail.js';
+import { drawOreCarts } from './OreCarts.js';
 import { DEPTH } from './depths.js';
 import { PICKUPS, PROPS, PROP_LOOKS } from '../data/stage.js';
 import { playSfx, REC } from '../core/Sfx.js';
@@ -1764,7 +1765,9 @@ export class StageView {
     const on = S.phase !== 'idle' && Math.max(...xs) > cam.x - 200 && Math.min(...xs) < cam.right + 200;
     g.setVisible(on); hg.setVisible(on);
     for (const sp of hz.horseImgs ?? []) sp.setVisible(false);
+    for (const sp of hz.cartImgs ?? []) sp.setVisible(false);
     if (!on) return;
+    if (hz.look === 'cart') { drawOreCarts(this, hz, cam, S, g, hg); return; } // (the mine's runaway ore carts)
     const t = this.scene.time.now / 16.7;
     const dir = S.dir;
     const door = P.pts[0];
@@ -2150,6 +2153,15 @@ export class StageView {
       }
     });
     ev.on('stampedeWarn', ({ hazard: hz }) => {
+      if (hz.look === 'cart') {
+        // the chocks knocked out up the line: a chain rattling loose, the rails starting to sing
+        if (this.scene.player.x > hz.x0 - 500 && this.scene.player.x < hz.x1 + 500) {
+          playSfx(this.scene, 'gateOpen', { volume: 0.6, pitch: -500, minGapMs: 0 });
+          playSfx(this.scene, 'woodCreak', { volume: 0.5, pitch: -300, minGapMs: 0 });
+          this.scene.fx?.shake(2, 50);
+        }
+        return;
+      }
       if (this.scene.player.x > hz.x0 - 700 && this.scene.player.x < hz.x1 + 700) {
         playSfx(this.scene, 'kick', { volume: 0.7, pitch: -2000, minGapMs: 0 });
         playSfx(this.scene, REC.horseWhinny, { volume: 0.55, spread: 120, minGapMs: 0 }); // the horses screaming in the burning stable
@@ -2157,6 +2169,14 @@ export class StageView {
       }
     });
     ev.on('stampedeBurst', ({ hazard: hz }) => {
+      if (hz.look === 'cart') {
+        if (this.scene.player.x > hz.x0 - 500 && this.scene.player.x < hz.x1 + 500) {
+          playSfx(this.scene, 'kick', { volume: 0.8, pitch: -2400, minGapMs: 0 }); // the thunder of it on the rails
+          playSfx(this.scene, 'clash', { volume: 0.45, pitch: -900, minGapMs: 0 });
+          this.scene.fx?.shake(4, 40);
+        }
+        return;
+      }
       // the herd breaks out of the door: a thud of hooves and a burst of dust and embers
       const d = hz.door;
       if (!d || Math.abs(this.scene.player.x - d.x) > 1100) return;
