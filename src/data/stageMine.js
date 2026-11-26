@@ -48,7 +48,7 @@ export const STAGE_MINE = {
 
   sections: [
     {
-      id: 'mouth', name: 'THE MINE MOUTH', x0: 0, x1: 1300,
+      id: 'mouth', ground: 'm-mouth', groundFade: 160, name: 'THE MINE MOUTH', x0: 0, x1: 1300,
       spawn: { x: 150, z: 440 },
       objective: 'Follow the tracks into the mountain',
       hint: 'Hop the ore cart',
@@ -61,7 +61,7 @@ export const STAGE_MINE = {
       hazards: [],
     },
     {
-      id: 'workings', name: 'THE WORKINGS', x0: 1300, x1: 2800,
+      id: 'workings', ground: 'm-workings', groundFade: 160, name: 'THE WORKINGS', x0: 1300, x1: 2800,
       spawn: { x: 1360, z: 440 },
       objective: 'Strike the shackles',
       hint: 'Break the posts they are chained to. Mind the rails: jump the carts',

@@ -28,6 +28,10 @@ export const GROUNDS = {
   'w-ford': 'assets/env/wood/ground_ford.jpg',
   'w-convoy': 'assets/env/wood/ground_convoy.jpg',
   'w-kennels': 'assets/env/wood/ground_kennels.jpg',
+  // Hollow Mountain's own floors, one per area (data/stageMine.js sections' `ground`; ChatGPT,
+  // 2026-11-26, the level 3 masterplan's phase 3)
+  'm-mouth': 'assets/env/mine/ground_mouth.jpg',
+  'm-workings': 'assets/env/mine/ground_workings.jpg',
 };
 
 // Make an image tile seamlessly left-to-right by blending its last `frac` into its start.
