@@ -9,7 +9,8 @@ import {siegeFlight} from './SiegeFlight.js';
 import { SETTINGS } from '../config/settings.js';
 import { PHYSICS } from '../effects/Physics.js';
 import { drawStampedeTrail } from './StampedeTrail.js';
-import { drawOreCarts } from './OreCarts.js';
+import { drawOreCarts, drawWardenHook } from './OreCarts.js';
+import { hookLine } from '../stage/WardenHook.js';
 import { DEPTH } from './depths.js';
 import { PICKUPS, PROPS, PROP_LOOKS } from '../data/stage.js';
 import { playSfx, REC } from '../core/Sfx.js';
@@ -1129,6 +1130,7 @@ export class StageView {
       if (hz.type === 'collapse') { this.drawCollapse(hz, cam); continue; }
       if (hz.type === 'bombard') { this.drawBombard(hz); continue; }
       if (hz.type === 'ballista') { drawScorpion(this, hz); continue; }
+      if (hz.type === 'hook') { drawWardenHook(this, hz, hookLine(this.stage, hz)); continue; }
       if (hz.x < cam.x - 200 || hz.x > cam.right + 200) {
         hz.view?.setVisible(false);
         hz.hot?.setVisible(false);
@@ -2151,6 +2153,14 @@ export class StageView {
       for (let i = 0; i < 18; i++) {
         this.scene.gore.spawn({ x: hz.x + rand(-hz.w / 2, hz.w / 2), z: hz.z + rand(-6, 6), h: y + 4, vx: rand(-160, 160), vz: rand(-30, 30), vh: rand(80, 260), tint: i % 3 ? 0x3a2414 : 0xff8a30, texture: 'px', scale: rand(0.8, 1.8), decal: false, life: rand(30, 60) });
       }
+    });
+    // the Chain Warden's hook (stage/WardenHook.js): the chain whirring, the throw, the catch
+    ev.on('hookWind', () => playSfx(this.scene, 'gateOpen', { volume: 0.55, pitch: 300, minGapMs: 0 }));
+    ev.on('hookThrow', () => playSfx(this.scene, 'whiff', { volume: 0.8, pitch: -500, minGapMs: 0 }));
+    ev.on('hookCatch', ({ fighter }) => {
+      playSfx(this.scene, 'clash', { volume: 0.7, pitch: -700, minGapMs: 0 });
+      this.scene.gore?.spark(fighter.x, fighter.z, fighter.h + 50, 0xffc080, 10);
+      this.scene.fx?.shake(3, 12);
     });
     ev.on('stampedeWarn', ({ hazard: hz }) => {
       if (hz.look === 'cart') {

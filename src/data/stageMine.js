@@ -100,11 +100,15 @@ export const STAGE_MINE = {
       id: 'river', name: 'THE UNDERGROUND RIVER', x0: 4300, x1: 5800,
       spawn: { x: 4360, z: 440 },
       objective: 'Kill the Chain Warden',
-      hint: 'Stepping stones: tap jump from stone to stone',
+      hint: 'Stepping stones: tap jump from stone to stone. Jump the Warden\'s hook',
       fightAt: 5260,
       waves: [['crusher', 'stalker', 'grunt']],
       props: [{ kind: 'barrel', x: 5700, z: 300, drop: 'health' }],
-      hazards: [],
+      hazards: [
+        // the Warden's hook on its chain: thrown down the lane, hauls a hero in hand over hand
+        // (jump it, or step out of its line; faster in his rage). stage/WardenHook.js
+        { type: 'hook', x: 5400, z: 400 },
+      ],
       // the keeper of the chains: the Ghoul's kind, grown into the mine's jailer
       boss: {
         type: 'ghoul', name: 'The Chain Warden', health: 2.6, damage: 1.1,

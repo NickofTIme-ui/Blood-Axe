@@ -104,6 +104,7 @@
 // opts.flags (the campaign's one-time flags: a sequence's progress). start(players,
 // { section }) starts at a later section's checkpoint.
 
+import { updateWardenHook } from './WardenHook.js';
 import { Tutorial } from './Tutorial.js';
 import { STAGE, PICKUPS, PROPS, PROP_LOOKS, PROP_VARIANTS } from '../data/stage.js';
 import { ENEMIES, HORDE_SIZE } from '../data/enemies.js';
@@ -1483,6 +1484,7 @@ export class Stage {
       else if (hz.type === 'bombard') this.updateBombard(hz);
       else if (hz.type === 'ballista') this.updateBallista(hz);
       else if (hz.type === 'drift') this.updateDrift(hz);
+      else if (hz.type === 'hook') updateWardenHook(this, hz);
       else this.updateBlade(hz);
     }
   }

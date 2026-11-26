@@ -85,3 +85,41 @@ function cart(g, x, z, k, dir, p) {
     }
   }
 }
+
+// The Chain Warden's hook (stage/WardenHook.js): the chain whirling round over his head as he
+// winds up, then a heavy iron hook flying out on it down the lane, and hauled back hand over
+// hand (with a hero on it, when it caught one).
+export function drawWardenHook(view, hz, line) {
+  const scene = view.scene;
+  const g = hz.g = hz.g ?? scene.add.graphics();
+  g.clear();
+  g.setVisible(!!line);
+  if (!line) return;
+  const t = scene.time.now / 16.7;
+  const hx = line.fromX; const hy = line.fromZ - line.fromH;
+  let tx; let ty;
+  if (line.phase === 'wind') {
+    // whirling: the hook going round on a yard of chain over his head
+    const a = t * 0.45;
+    tx = hx + Math.cos(a) * 46; ty = hy - 34 + Math.sin(a) * 14;
+  } else {
+    tx = line.tipX; ty = line.tipZ - (line.caught ? 46 : 40);
+  }
+  // the chain: links along the line, sagging a little when it's hauled
+  const n = Math.max(4, Math.round(Math.hypot(tx - hx, ty - hy) / 9));
+  const sag = line.phase === 'haul' ? 14 : 4;
+  for (let i = 0; i <= n; i++) {
+    const u = i / n;
+    const x = hx + (tx - hx) * u; const y = hy + (ty - hy) * u + Math.sin(u * Math.PI) * sag;
+    g.fillStyle(i % 2 ? 0x55555c : 0x8a8a92, 1).fillEllipse(x, y, i % 2 ? 7 : 5, i % 2 ? 4 : 6);
+  }
+  // the hook: a heavy barbed iron crook
+  const d = line.dir;
+  g.lineStyle(5, 0x2a2a2e, 1).beginPath();
+  g.arc(tx + d * 4, ty + 8, 10, -Math.PI / 2, Math.PI * 0.75, d < 0).strokePath();
+  g.lineStyle(2, 0xc8c8d0, 0.8).beginPath();
+  g.arc(tx + d * 4, ty + 8, 10, -Math.PI / 2, Math.PI * 0.2, d < 0).strokePath();
+  g.fillStyle(0x2a2a2e, 1).fillTriangle(tx + d * 14, ty + 10, tx + d * 20, ty + 2, tx + d * 10, ty + 2);
+  if (line.phase === 'wind' && line.t > line.warn - 14) g.fillStyle(0xffe0a0, 0.8).fillCircle(tx, ty, 3); // (the glint before it flies)
+  g.setDepth(Math.max(line.fromZ, line.tipZ) + 2);
+}
