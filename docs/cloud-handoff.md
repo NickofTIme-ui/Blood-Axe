@@ -6,7 +6,7 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 26 November 2026 (cloud, branch claude/project-thread-ijntyq; NOT on main until Nick says push). LEVEL 2 CAGE
+- 26 November 2026 (cloud; ON MAIN, Nick "push it to main"; not on itch yet). LEVEL 2 CAGE
   CARTS BLEND: ground_carts.jpg has a row of big dark rocks painted along its top, which made a hard dark band behind
   the cage carts; the 'carts' section now has `groundTopFade` {depth 110, hold 0.42} (same tool as the church/hall
   seams), and the painted cage carts get the wood's light (lightProp, k 1.4) and a soft shadow pool (NpcView). No new art.
