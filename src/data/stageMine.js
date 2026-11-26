@@ -129,7 +129,7 @@ export const STAGE_MINE = {
       },
     },
     {
-      id: 'crusher', name: 'THE CRUSHER HALL', x0: 5800, x1: 7300,
+      id: 'crusher', ground: 'm-hall', groundFade: 160, name: 'THE CRUSHER HALL', x0: 5800, x1: 7300,
       spawn: { x: 5860, z: 440 },
       objective: 'Wreck the Ore Crushers',
       hint: 'Iron does not flinch: hit it between its blows. Burst the steam pipe on them',
@@ -156,7 +156,7 @@ export const STAGE_MINE = {
     // lurches forward in surges. Planks that give way, a broken gallery of pillars over the
     // drop, a gauntlet of falling rock, and a last leap over the chasm to the passage.
     {
-      id: 'collapse', name: 'THE COLLAPSE', x0: 7300, x1: 8600,
+      id: 'collapse', ground: 'm-collapse', groundFade: 160, name: 'THE COLLAPSE', x0: 7300, x1: 8600,
       spawn: { x: 7380, z: 440 },
       objective: 'Run! Outrun the falling mountain',
       hint: 'Do not stop. The rock will not',
@@ -171,7 +171,7 @@ export const STAGE_MINE = {
       ],
     },
     {
-      id: 'gallery', name: 'THE BROKEN GALLERY', x0: 8600, x1: 9900,
+      id: 'gallery', ground: 'm-collapse', groundFade: 160, name: 'THE BROKEN GALLERY', x0: 8600, x1: 9900,
       spawn: { x: 8680, z: 440 },
       objective: 'Run! Leap the broken gallery',
       hint: 'Pillar to pillar. The rotten ones fall away under you',
@@ -185,7 +185,7 @@ export const STAGE_MINE = {
       ],
     },
     {
-      id: 'leap', name: 'THE LAST LEAP', x0: 9900, x1: 11000,
+      id: 'leap', ground: 'm-collapse', groundFade: 160, name: 'THE LAST LEAP', x0: 9900, x1: 11000,
       spawn: { x: 9980, z: 440 },
       objective: 'Run! Over the chasm, dig out the passage',
       hint: 'Through the falling rock, over the chasm. Break the fallen rock at the end',
