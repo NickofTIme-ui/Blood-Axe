@@ -4365,6 +4365,22 @@ test('mine: the Crusher Hall\'s steam main is cold till it is burst; burst, it s
   assert(scalds >= 1, `burst, it scalds (${scalds})`);
 });
 
+test('mine: the lift up to Pip\'s ledge rides: it waits at the bottom, carries a hero up while he stands on it, and sinks back once he steps off', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('shaft'), { x: 3690, z: 310 });
+  const lift = st.terrain.blocks.find((b) => b.kind === 'lift');
+  p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  const base = lift.base.top;
+  p.x = 3200; p.z = 440; st.placeOnGround(p);
+  run(200, () => { p.health = p.stats.maxHealth; });
+  assert(lift.top === base, `it waits at the bottom (${lift.top})`);
+  p.x = 3690; p.z = 310; p.h = p.floor = lift.top + 1; st.placeOnGround(p);
+  run(200, () => { p.health = p.stats.maxHealth; });
+  assert(lift.top > base + 80 && Math.abs(p.h - lift.top) < 2, `carried up (${lift.top}, feet ${p.h}, on ${p.floorBlock?.kind}, grounded ${p.grounded}, ride ${lift.ride})`);
+  p.x = 3600; p.z = 300; p.h = p.floor = 225; st.placeOnGround(p);
+  run(300, () => { p.health = p.stats.maxHealth; });
+  assert(lift.top === base, `back down without him (${lift.top})`);
+});
+
 test('mine: the chase runs on through three stretches: each picks the rock up where it was, runs faster, and a death puts it back behind that stretch\'s start', () => {
   const ids = ['collapse', 'gallery', 'leap'];
   const walls = ids.map((id) => STAGE_MINE.sections[MINE_SEC(id)].hazards.find((h) => h.type === 'collapse'));

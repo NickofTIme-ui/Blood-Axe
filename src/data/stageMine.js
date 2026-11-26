@@ -231,7 +231,7 @@ export const STAGE_MINE = {
     { kind: 'crumble', x0: 3565, x1: 3620, z0: 350, z1: 470, top: 140, fall: 40, back: 200 }, // gap 45
     { kind: 'block', x0: 3620, x1: 3760, ...FULL, top: 140 },             // the gallery goes on
     // (the lift up to the high ledge at the back: the optional rescue)
-    { kind: 'lift', x0: 3650, x1: 3730, z0: 282, z1: 340, top: 140, move: { axis: 'top', range: 85, period: 260, phase: 0 } },
+    { kind: 'lift', x0: 3650, x1: 3730, z0: 282, z1: 340, top: 140, move: { axis: 'top', range: 85, period: 260, phase: 0, ride: true } }, // (it carries you up while you stand on it)
     { kind: 'block', x0: 3540, x1: 3650, z0: 282, z1: 330, top: 225 },    // the high ledge (low enough that the camera keeps Pip in frame)
     { kind: 'block', x0: 3760, x1: 3840, ...FULL, top: 70 },              // down
     // the portcullis: iron, chained to its counterweight (gone once that's broken)

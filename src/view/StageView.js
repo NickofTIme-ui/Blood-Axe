@@ -2197,6 +2197,8 @@ export class StageView {
         this.scene.gore.spawn({ x: hz.x + rand(-hz.w / 2, hz.w / 2), z: hz.z + rand(-6, 6), h: y + 4, vx: rand(-160, 160), vz: rand(-30, 30), vh: rand(80, 260), tint: i % 3 ? 0x3a2414 : 0xff8a30, texture: 'px', scale: rand(0.8, 1.8), decal: false, life: rand(30, 60) });
       }
     });
+    // the mine's lift starting up under a man: the chain taking the strain, the winch clanking
+    ev.on('liftStart', () => { playSfx(this.scene, 'gateOpen', { volume: 0.6, pitch: -200, minGapMs: 800 }); playSfx(this.scene, 'woodCreak', { volume: 0.4, minGapMs: 800 }); });
     // the Chain Warden's hook (stage/WardenHook.js): the chain whirring, the throw, the catch
     ev.on('hookWind', () => playSfx(this.scene, 'gateOpen', { volume: 0.55, pitch: 300, minGapMs: 0 }));
     ev.on('hookThrow', () => playSfx(this.scene, 'whiff', { volume: 0.8, pitch: -500, minGapMs: 0 }));
