@@ -6,8 +6,8 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-  every man a hero executes (Rurik's throat / impale / halve /
 - 26 November 2026 (cloud; ON MAIN with Oryn's finish, Nick "push all"). EXECUTIONS RESTORE 20% (Nick's rule): every man a hero executes (Rurik's throat / impale / halve /
+  every man a hero executes (Rurik's throat / impale / halve /
   chain, Oryn's and Vexa's finishers, a boss sentence) gives that hero back 20% of MAX health, stamina and mana, capped at
   full; a hero without a bar skips it. One central place: src/combat/Executions.js (installed in core/World.js, listens to
   'kill' events carrying `finisher` or `sentence`), so new finishers count as long as their kill event sets `finisher`.
