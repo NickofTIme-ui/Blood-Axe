@@ -271,7 +271,7 @@ export class BootScene extends Phaser.Scene {
       for (const side of ['B', 'F', 'N']) {
         if (have.has(`flee${side}`) && have.has(`cower${side}`)) scared[side] = scaredAnims(side);
       }
-      sheets[id] = { key: `enemy-${id}`, anims, scared, res: RES, fw, fh, ax: FRAME.AX * RES * cell, ay: FRAME.AY * RES * cell };
+      sheets[id] = { key: `enemy-${id}`, anims, scared, res: RES, fw, fh, ax: (FRAME.AX + (strips.walk?.wide ?? 0)) * RES * cell, ay: FRAME.AY * RES * cell };
     }
     return sheets;
   }

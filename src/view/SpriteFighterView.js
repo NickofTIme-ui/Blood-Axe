@@ -1,3 +1,4 @@
+import {HERO_VISUAL_SCALE} from './depths.js';
 // SpriteFighterView.js — Draws a fighter with a real sprite sheet.
 //
 // Same job as FighterView (update() + destroy()), but picks animation frames from
@@ -419,7 +420,7 @@ export class SpriteFighterView {
     const f = this.f;
     const st = f.state;
     const fr = f.fsm.frame;
-    const scale = this.meta.scale * depthScale(f.z);
+    const scale = this.meta.scale * depthScale(f.z) * HERO_VISUAL_SCALE;
     const s = this.sprite;
 
     // charge stalk: distance moved along his facing (backwards is negative), in strides

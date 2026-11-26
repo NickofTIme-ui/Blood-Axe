@@ -47,7 +47,7 @@ const CUTS = {
 // wind-up, the hold, the whip, the settle, the reload, how far the arm goes back over the
 // top and how far past its rest it whips
 const VOLLEY = { draw: 200, snap: 50, settle: 260, stagger: 70, lean: 5, kick: -4 };
-const THROW = { wind: 340, hold: 90, whip: 120, settle: 520, reload: 900, back: 52, past: -26 };
+const THROW = { wind: 620, hold: 100, whip: 90, settle: 650, reload: 1350, back: 65, past: -34 };
 // The burst: chunks across and down, their throw (px/s), the fall, how long they lie, dust puffs
 const BURST = { cols: 4, rows: 3, speed: 260, up: 420, gravity: 1500, lie: 1400, dust: 7 };
 
@@ -257,8 +257,8 @@ export class SiegeAnim {
     // the frame bucks against its wheels
     const base = v.img;
     this.scene.tweens.chain({ targets: base, tweens: [
-      { scaleY: v.s * 0.94, scaleX: v.s * 1.04, angle: 2, duration: 70, ease: 'Quad.easeOut' },
-      { scaleY: v.s, scaleX: v.s, angle: 0, duration: 380, ease: 'Elastic.easeOut', easeParams: [1.2, 0.35] },
+      { x:pr.x+9, y:pr.z-(pr.y??0)-3, angle:2, duration:65, ease:'Quad.easeOut' },
+      { x:pr.x,y:pr.z-(pr.y??0),angle:0,duration:620,ease:'Back.easeOut' },
     ] });
     this.dustAt(pr, v, 14);
   }

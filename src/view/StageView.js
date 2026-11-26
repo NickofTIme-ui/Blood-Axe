@@ -5,6 +5,7 @@
 // Props and pickups are painted here as small canvas textures (pixel art at 2x), so the
 // stage works with no extra image files.
 
+import {siegeFlight} from './SiegeFlight.js';
 import { SETTINGS } from '../config/settings.js';
 import { PHYSICS } from '../effects/Physics.js';
 import { drawStampedeTrail } from './StampedeTrail.js';
@@ -727,7 +728,7 @@ export class StageView {
     const lvl = (this.scene.registry.get('levelArt') ?? []).includes(key);
     // (a painted look: drawn exactly as tall as the game holds it, data/stage.js PROP_LOOKS)
     const fit = !lvl && PROP_LOOKS[pr.look] && key === `prop-${pr.look}` ? pr.h : 0;
-    const s = lvl ? (pr.w * 1.3) / this.scene.textures.get(key).getSourceImage().width
+    const s = lvl ? (pr.w * (pr.kind==='catapult'?1.9:1.3)) / this.scene.textures.get(key).getSourceImage().width
       : fit ? fit / this.scene.textures.get(key).getSourceImage().height
       : this.hd.has(key) || this.art2.has(key) ? 0.25 : 0.5 * (pr.size ?? 1);
     if (pr.kind === 'wall') {
@@ -1346,15 +1347,18 @@ export class StageView {
     const st = hz.stones.clear();
     hz.fire?.clear();
     for (const q of hz.stoneImgs ?? []) q.used = false;
+    for (const q of hz.markImgs ?? []) q.used = false;
     for (const s of shells) {
       s.gy ??= this.stage.terrain ? Math.max(0, this.stage.terrain.groundAt(s.x, s.z)) : 0;
       const k = Math.max(0, Math.min(1, (hz.t - s.from) / Math.max(1, s.land - s.from)));
       const gy = s.z - s.gy;
       const R = hz.radius ?? 64;
       g.fillStyle(0x000000, 0.15 + 0.5 * k).fillEllipse(s.x, gy, R * (0.5 + 1.1 * k), R * 0.38 * (0.5 + 1.1 * k));
-      if (!this.drawLandingMark(hz, s, gy, R, k)) g.lineStyle(2, hz.friendly ? 0xd8e8ff : 0xff5a3a, 0.25 + 0.55 * k).strokeEllipse(s.x, gy, R * 2, R * 0.75);
+      // Enemy catapult targets flash for 30 fixed ticks (half a second).
+      const showMark=hz.look==='arrows'||hz.friendly||hz.t-s.from<30;
+      if (showMark && !this.drawLandingMark(hz, s, gy, R, k)) g.lineStyle(2, hz.friendly ? 0xd8e8ff : 0xff5a3a, 0.25 + 0.55 * k).strokeEllipse(s.x, gy, R * 2, R * 0.75);
       if (hz.look === 'arrows') { if (k >= ARROWS.loose) this.drawArrows(st, s, gy, (k - ARROWS.loose) / (1 - ARROWS.loose), hz); continue; }
-      if (k < 0.45) continue;
+      if (k < (hz.destructive ? .38 : .45)) continue;
       if (hz.friendly) {
         // (your own people's: plain sling stones, thrown from behind you, a flat arc)
         const f = (k - 0.45) / 0.55;
@@ -1364,10 +1368,11 @@ export class StageView {
         continue;
       }
       // the stone: the last half of its flight, falling steeply onto the mark
-      const f = (k - 0.45) / 0.55;
-      const sy = gy - 720 * (1 - f) * (1 - f) - 12;
-      const side = this.siege.sideOf(hz, s.x); // (it comes in from the catapult's side)
-      const sx = s.x + side * 140 * (1 - f);
+      const f = hz.destructive?(k-.38)/.62:(k-.45)/.55;
+      const sy0 = gy - 720 * (1 - f) * (1 - f) - 12;
+      const side = s.flightSide ??= this.siege.sideOf(hz, s.x); // (it comes in from the catapult's side)
+      const path=hz.destructive?siegeFlight(s.x,gy,f,side):null;
+      const sx = path?.x ?? s.x + side * 140 * (1 - f),sy=path?.y??sy0;
       st.setDepth(s.z + 1);
       if (this.drawStone(hz, s, sx, sy, f, side)) continue;
       // (a pitch-soaked stone, burning: it reads against the sky and the Keep alike)
@@ -1413,14 +1418,15 @@ export class StageView {
     const im = hz.stoneImgs[i] ??= this.scene.add.image(0, 0, key);
     im.used = true;
     const R = SIEGE_STONE.radius;
-    im.setTexture(key).setDisplaySize(R * 2, R * 2).setPosition(sx, sy).setRotation(f * 9 + i).setDepth(s.z + 1.2).setVisible(true)
+    im.setTexture(key).setDisplaySize(R * 2, R * 2).setPosition(sx, sy).setRotation((hz.destructive?f*3.8*side:f*9)+i).setDepth(s.z + 1.2).setVisible(true)
       .setTint(0xffffff, 0xffffff, 0xffb070, 0xff9050); // (lit from below by its own fire)
     // the fire: a glow round it, a tail of flame streaming back up its path, smoke above
     const g = hz.fire ??= this.scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
     g.setDepth(s.z + 1.1).setVisible(true);
     const t = this.scene.time.now / 60;
     // back along its path (up, and toward the catapult)
-    const vx = -side * 140; const vy = 1440 * (1 - f) + 40; const m = Math.hypot(vx, vy);
+    const flight=hz.destructive?siegeFlight(s.x,0,f,side):null;
+    const vx=flight?.vx??-side*140,vy=flight?.vy??1440*(1-f)+40,m=Math.hypot(vx,vy);
     const back = (n) => ({ x: sx - (vx / m) * n * 11, y: sy - (vy / m) * n * 11 });
     for (let n = 9; n >= 1; n--) {
       const p = back(n);
@@ -2147,6 +2153,7 @@ export class StageView {
       }
     });
     ev.on('shellLand', ({ hazard: hz, shell: s }) => {
+      if(hz.destructive&&hz.look!=='arrows')return;
       const y = s.y ?? 0;
       if (hz.look === 'arrows') {
         // a volley landing: a patter of thuds, dirt kicked up, the arrows left standing in it

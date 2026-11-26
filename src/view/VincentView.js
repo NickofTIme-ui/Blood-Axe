@@ -46,7 +46,7 @@ export function drawVincent(scene, holder, g, x, y, k, pose, t, dir, depth) {
     holder.vimg ??= scene.add.image(x, y, S.key, 'f0').setOrigin(0.5, 1);
     const br = Array.isArray(c) ? 0 : Math.sin(scene.time.now * 0.0026);
     holder.vimg.setTexture(S.key, `f${Math.min(i, S.count - 1)}`).setPosition(x, y + (Array.isArray(c) ? [1.5, -1, 1.5, -1][beat % 4] * k : 0))
-      .setScale(k * 0.5 * (1 - 0.008 * br), k * 0.5 * (1 + 0.018 * br)).setFlipX(dir < 0).setDepth(depth).setVisible(true);
+      .setScale(k * 0.68 * (1 - 0.008 * br), k * 0.68 * (1 + 0.018 * br)).setFlipX(dir < 0).setDepth(depth).setVisible(true);
     return;
   }
   holder.vimg?.setVisible(false);
@@ -161,12 +161,20 @@ export function drawScorpion(sv, hz) {
     const pose = hz.recoil > 0 ? 'loose' : hz.aim ? (hz.t - hz.aim.from < (hz.aim.fire - hz.aim.from) * 0.55 ? 'crank' : 'aim') : 'stand';
     drawVincent(s, hz, g, ex - (SPRITES.scorpion ? 125 * k : 46 * ek), y + 2, k, pose, t, 1, z + 0.2);
   }
+  for(const im of hz.boltArt??[])im.setVisible(false);
+  let boltIndex=0;
   // the bolts in flight
   for (const b of hz.bolts ?? []) {
     const by = b.z - ground(b.x, b.z) - b.h;
     bolts.setDepth(b.z + 1);
     bolts.fillStyle(0xffffff, 0.18).fillRect(b.x - 220, by - 2, 200, 4); // (its streak)
     bolts.fillStyle(0xffffff, 0.35).fillRect(b.x - 110, by - 1, 100, 2);
+    if(SPRITES['scorpion-bolt']){
+      const S=SPRITES['scorpion-bolt'];hz.boltArt??=[];
+      const im=hz.boltArt[boltIndex]??=s.add.image(0,0,S.key,'f0').setOrigin(.9,.5);boltIndex++;
+      im.setPosition(b.x,by).setDisplaySize(128,40).setDepth(b.z+1.1).setVisible(true);
+      continue;
+    }
     bolts.fillStyle(WOOD, 1).fillRect(b.x - 84, by - 2.5, 84, 5);
     bolts.fillStyle(0xd8d0c0, 1).fillTriangle(b.x - 84, by - 2, b.x - 70, by - 2, b.x - 92, by - 9).fillTriangle(b.x - 84, by + 2, b.x - 70, by + 2, b.x - 92, by + 9);
     bolts.fillStyle(IRON, 1).fillTriangle(b.x, by - 6, b.x, by + 6, b.x + 20, by);

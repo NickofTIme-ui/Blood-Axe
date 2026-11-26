@@ -115,6 +115,8 @@ import { Sequence } from './Sequence.js';
 import { Sentence } from './Sentence.js';
 import { LOOT } from '../data/trophies.js';
 import { Controller } from '../core/Controller.js';
+import { installOrsk } from '../entities/OrskDuel.js';
+import { AscentSiege } from './AscentSiege.js';
 import { VillageOpening } from './VillageOpening.js';
 import { MillRescue } from './MillRescue.js';
 import { WellRescue } from './WellRescue.js';
@@ -271,6 +273,7 @@ export class Stage {
       for (const h of sec.hazards ?? []) this.hazards.push({ id: id++, section: si, ...h, t: h.phase ?? 0, cool: new Map() });
     }
     this.fitLooks();
+    if (data.id === 'shatteredAscent') this.ascentSiege = new AscentSiege(this);
     // Gallows Wood's own traps and men (stage/WoodTraps.js): pines, log piles, snares, stakes,
     // the ford's current, the hornblower and the woodsman's net
     if (data.traps || this.props.some((pr) => pr.kind === 'pine' || pr.kind === 'logpile' || pr.kind === 'signal')) this.woodTraps = new WoodTraps(this);
@@ -694,7 +697,7 @@ export class Stage {
           return;
         }
         // someone can see that spot: he comes on from off-screen on its side instead, in its lane
-        let side = Math.sign(x - (heroes[0]?.x ?? x)) || 1;
+        let side = this.section.entranceSide ?? (Math.sign(x - (heroes[0]?.x ?? x)) || 1);
         if (this.sealedSide(side, heroes)) side = -side;
         const e = createEnemy(this.world, type, offscreenX(this.world, heroes, side, late[side > 0 ? 1 : 0]++), at.z, { entering: true });
         if (at.worry) e.worry = { x: at.worry.x, z: at.worry.z }; // (he runs on to the tree)
@@ -705,7 +708,7 @@ export class Stage {
     roster.forEach((type, k) => {
       // from off-screen, alternating sides; they walk on (Enemy.js offscreenX). Not from
       // behind a wall nobody can climb (a portcullis still down): he'd stand there for good
-      let side = k % 2 === 0 ? 1 : -1;
+      let side = this.section.entranceSide ?? (k % 2 === 0 ? 1 : -1);
       if (this.sealedSide(side, heroes)) side = -side;
       const x = offscreenX(this.world, heroes, side, k >> 1);
       const z = b.minZ + 20 + ((k * 71) % Math.max(1, b.maxZ - b.minZ - 40)); // spread over the lane
@@ -795,6 +798,7 @@ export class Stage {
     boss.health = boss.stats.maxHealth;
     boss.dye = null; // (his own colours: no grunt's dye)
     boss.phase = 0; // (how many of his phase thresholds he has passed)
+    if (def.look === 'orsk') installOrsk(boss);
     return boss;
   }
 
@@ -847,6 +851,7 @@ export class Stage {
     this.millRescue?.update();
     this.wellRescue?.update();
     if (!this.world.hold) this.woodTraps?.update();
+    this.ascentSiege?.update();
     this.updatePickups();
     this.updateDowned();
     if (!this.world.hold) this.updateLatecomers(); // (standing still while a boss walks in is not being stuck)
@@ -1725,9 +1730,9 @@ export class Stage {
       hz.bombardStarted = true;
       hz.t = 0;
     }
-    if (!shots) { hz.shells = hz.shells.filter((s) => s.land > hz.t); }
+    if (!shots) { hz.shells = hz.shells.filter((s) => s.land >= hz.t); }
     // a post wrecked: what it had in the air is gone, its marks off the ground with it
-    if (hz.silence && hz.shells.length) {
+    if (hz.silence && hz.shells.length && !hz.destructive) {
       const down = new Set(this.props.filter((pr) => pr.tag === hz.silence && pr.broken).map((pr) => pr.id));
       if (down.size) hz.shells = hz.shells.filter((s) => s.post == null || !down.has(s.post));
     }
@@ -1744,13 +1749,17 @@ export class Stage {
       let fired = 0;
       for (let i = 0; i < shots && heroes.length; i++) {
         const p = heroes[i % heroes.length];
+        const covered = (q) => hz.cover && q.x >= hz.cover.x0 && q.x <= hz.cover.x1 && q.z >= hz.cover.z0 && q.z <= hz.cover.z1;
+        if (covered(p)) continue;
         const r = this.world.rngFor(hz.id, hz.t + i);
         const ahead = Math.sign(p.vx || p.facing || 1);
         let x = p.x + (r() * 2 - 1) * B.spread * 0.6 + ahead * (i % 2 ? B.spread : B.spread * 0.3);
         const z = Math.max(b.minZ + 10, Math.min(b.maxZ - 10, p.z + (r() * 2 - 1) * 50));
         x = Math.max(b.minX + 20, Math.min(b.maxX - 20, x));
-        if (this.nearDrop(x, z, arrows ? B.arrowClear : B.pitClear)) continue;
-        hz.shells.push({ x, z, from: hz.t, land: hz.t + (hz.warn ?? B.warn), post: posts.length ? posts[i % posts.length].id : null });
+        if (!hz.scenery && this.nearDrop(x, z, arrows ? B.arrowClear : B.pitClear)) continue;
+        const scenic = hz.scenery?.[(Math.floor(hz.t / P) + i) % hz.scenery.length];
+        if (scenic && Math.abs(scenic.x - p.x) > 600) continue;
+        hz.shells.push({ x: scenic?.x ?? x, z: scenic?.z ?? z, from: hz.t, land: hz.t + (hz.warn ?? B.warn), post: posts.length ? posts[i % posts.length].id : null });
         fired++;
       }
       if (fired) this.world.events.emit('shellLaunch', { hazard: hz, count: fired });
@@ -1760,10 +1769,14 @@ export class Stage {
       const y = this.terrain ? Math.max(0, this.terrain.groundAt(s.x, s.z)) : 0;
       s.y = y;
       this.world.events.emit('shellLand', { hazard: hz, shell: s });
+      if (hz.visualOnly) continue;
       for (const f of this.world.fighters) {
         if (hz.friendly && (f.team !== 'enemy' || f.stats.boss)) continue;
+        if (hz.cover && f.x >= hz.cover.x0 && f.x <= hz.cover.x1 && f.z >= hz.cover.z0 && f.z <= hz.cover.z1) continue;
         if (Math.abs(f.x - s.x) > (hz.radius ?? B.radius) || Math.abs(f.z - s.z) > (hz.depth ?? B.depth) || Math.abs(f.h - y) > 70) continue;
-        this.hurt(hz, f, hz.damage ?? B.damage, Math.sign(f.x - s.x) || 1, arrows ? 'arrow' : 'beam');
+        const direct=hz.destructive&&!arrows&&f.team==='enemy'&&!f.stats.boss&&Math.abs(f.x-s.x)<=48&&Math.abs(f.z-s.z)<=30;
+        const damage=hz.destructive&&f.team==='enemy'&&!f.stats.boss?(direct?f.health+f.stats.maxHealth:85):(hz.damage??B.damage);
+        this.hurt(hz,f,damage,Math.sign(f.x-s.x)||1,direct?'siege':hz.destructive?'siegeBlast':arrows?'arrow':'beam');
       }
     }
     hz.shells = hz.shells.filter((s) => s.land > hz.t);
@@ -1830,9 +1843,9 @@ export class Stage {
         if (f.stats.boss && !bolt.boss) continue; // (he's yours)
         if (f.x < x0 - 20 || f.x > bolt.x + 20 || Math.abs(f.z - bolt.z) > B.depth || f.h > B.high) continue;
         bolt.hit.add(f.id);
-        const dmg = f.stats.boss ? Math.min(f.stats.maxHealth * (hz.share ?? B.share), f.health - 1) : hz.damage ?? B.damage;
+        const dmg = f.stats.boss ? Math.min(f.stats.maxHealth * (hz.share ?? B.share), f.health - 1) : f.health+f.stats.maxHealth;
         if (f.stats.boss) hz.cool.delete(f.id);
-        this.hurt(hz, f, Math.max(0, dmg), 1, 'bolt');
+        this.hurt(hz, f, Math.max(0, dmg), 1, f.stats.boss?'bolt':'siege');
         this.world.events.emit('boltHit', { hazard: hz, bolt, fighter: f });
       }
       if (bolt.x >= maxX) bolt.done = true;
@@ -1907,7 +1920,7 @@ export class Stage {
 
   // A hazard hurting anyone (players and enemies alike).
   hurt(hz, f, dmg, dir, kind) {
-    const crushed=kind==='trample'&&f.team!=='player'&&!f.stats.boss;
+    const crushed=(kind==='trample'||kind==='siege')&&f.team!=='player'&&!f.stats.boss;
     if (!f.alive || (f.invincible&&!crushed) || f.entering || f.cinematic || f.state === 'executed' || f.state === 'execute' || f.state === 'grabbed' || hz.cool.has(f.id)) return;
     if(crushed)dmg=f.health+f.stats.maxHealth;
     // the Mage's staff twirl: arrows glance off the spinning staff (combat/Mage.js)
@@ -1926,11 +1939,11 @@ export class Stage {
     else {
       f.fsm.change('knockdown', kind === 'fire' || kind === 'beam' || kind === 'arrow'
         ? { vx: dir * 160, vh: 260 }
-        : kind === 'trample' ? { vx: dir * 620, vh: 380 } : kind === 'log' ? { vx: dir * 640, vh: 470 } : kind === 'bolt' ? { vx: dir * 760, vh: 240 } : { vx: dir * 420, vh: 320 });
+        : kind==='siegeBlast'?{vx:dir*560,vh:420}:kind === 'trample' ? { vx: dir * 620, vh: 380 } : kind === 'log' ? { vx: dir * 640, vh: 470 } : kind === 'bolt' ? { vx: dir * 760, vh: 240 } : { vx: dir * 420, vh: 320 });
     }
     const e = {
       attacker: null, defender: f, dir, kind: 'hazard', hazard: kind,
-      move: { cut: crushed ? 'crush' : kind === 'fire' ? 'fire' : kind === 'bolt' || kind === 'arrow' ? 'pierce' : kind === 'crate' || kind === 'beam' || kind === 'trample' || kind === 'log' ? 'blunt' : 'slash', damage: dmg, hitstop: 6, fx: crushed?'trample':undefined },
+      move: { cut: crushed ? 'crush' : kind === 'fire' ? 'fire' : kind === 'bolt' || kind === 'arrow' ? 'pierce' : kind === 'siegeBlast' || kind === 'crate' || kind === 'beam' || kind === 'trample' || kind === 'log' ? 'blunt' : 'slash', damage: dmg, hitstop: 6, fx: crushed?'trample':undefined },
       x: f.x, z: f.z, h: f.h + f.stats.body.h * 0.5, damage: dmg, fatality: crushed?'explode':'none',
     };
     this.world.events.emit('hazardHit', { hazard: hz, fighter: f, kind });

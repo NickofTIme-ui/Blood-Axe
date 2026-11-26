@@ -109,9 +109,10 @@ export const LEVEL_ART = {
     ],
     wall: { height: 140 }, // (low: the Keep across the gorge shows over it)
     ground: true,
-    pieces: ['overhang', 'palisade', 'camp', 'gates_view'],
+    pieces: ['overhang', 'palisade', 'camp', 'gates_view', 'causeway', 'gorge', 'crater', 'scene_road', 'scene_refuge', 'scene_battery', 'scene_camp'],
+      tiles: { refuge_floor: {height: 348}, siege_floor: {height: 348} },
     props: { catapult: { file: 'prop_catapult.png', pair: true } },
-    surfaces: { plank: { fit: true } }, // (the half-gone bridge's planks, cut from the plank bridge in assets/incoming/bridges_raw.png)
+    surfaces: { rock_top: { px: 348 }, siege_top: { px: 348 }, rock_front: { px: 140 }, plank: { fit: true } }, // (the half-gone bridge's planks, cut from the plank bridge in assets/incoming/bridges_raw.png)
   },
   gates: {
     dir: 'assets/env/gates/',
@@ -264,6 +265,8 @@ export const SPRITE_SHEETS = {
   nicholas: { file: 'assets/sprites/npc/nicholas.png', frames: 9, height: 235, centre: true, grade: { contrast: 1.16, saturation: 1.22, outline: 2, rim: 0.5 } },
   // his walk: an eight-pose cycle (docs/nicholas-art-prompts.md, "walk"); until it's in he
   // walks on the sheet's three stride poses. (height: tune it on screen next to his stand)
+  'rurik-farewell': { file:'assets/sprites/npc/rurik_farewell.png',frames:4,height:235,centre:false },
+  'nicholas-death': { file:'assets/sprites/npc/nicholas_death.png',frames:6,height:235,centre:false,grade:{contrast:1.04,saturation:1.05,outline:0,rim:.25} },
   'nicholas-walk': { file: 'assets/sprites/npc/nicholas_walk.png', frames: 8, height: 232, centre: true, grade: { contrast: 1.04, saturation: 1.05, outline: 0, rim: 0.25 } },
   // Irvolino, the miller (made in ChatGPT from his photo: docs/irvolino-art-prompts.md): the
   // villager sheet's 8 poses. He leads the miller's people out of the barn; until he's
@@ -277,6 +280,8 @@ export const SPRITE_SHEETS = {
   // Vincent, the Gatewright (view/VincentView.js; made in ChatGPT from his photo:
   // docs/vincent-art-prompts.md): stand, grip the bars, crank, aim, loose, walk x3, wave
   vincent: { file: 'assets/sprites/npc/vincent.png', frames: 9, height: 205 },
+  'scorpion-bolt': {file:'assets/sprites/npc/scorpion_bolt.png',frames:1,height:46},
+  'earthbreaker-wave': {file:'assets/sprites/npc/earthbreaker_wave.png',frames:1,height:360},
   scorpion: { file: 'assets/sprites/npc/scorpion.png', frames: 1, height: 190 }, // his Gate Scorpion, side on
   'hound-walk': { file: 'assets/enemies/strips/hound_walk.png', frames: 6, height: 120 },
   'hound-atk1': { file: 'assets/enemies/strips/hound_atk1.png', frames: 4, height: 120 },

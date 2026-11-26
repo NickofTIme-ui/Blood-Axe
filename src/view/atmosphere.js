@@ -22,7 +22,7 @@ export const AIR = {
   village: { haze: 0x2e2638, far: 0.34, wall: 0.26, wallFoot: 0.55, floorBack: 0.45, floorFront: 0.22 },
   wood: { haze: 0x2a3438, far: 0.3, wall: 0.24, wallFoot: 0.5, floorBack: 0.42, floorFront: 0.22 },
   mine: { haze: 0x1e1c22, far: 0.22, wall: 0.2, wallFoot: 0.5, floorBack: 0.4, floorFront: 0.2 },
-  ascent: { haze: 0x5a6070, far: 0.24, wall: 0.16, wallFoot: 0.4, floorBack: 0.32, floorFront: 0.18 },
+  ascent: { haze: 0x697b83, far: 0.36, wall: 0.18, wallFoot: 0.48, floorBack: 0.36, floorFront: 0.14 },
   gates: { haze: 0x2e2630, far: 0.3, wall: 0.22, wallFoot: 0.5, floorBack: 0.42, floorFront: 0.22 },
   keep: { haze: 0x241e2c, far: 0.3, wall: 0.22, wallFoot: 0.5, floorBack: 0.42, floorFront: 0.22 },
 };

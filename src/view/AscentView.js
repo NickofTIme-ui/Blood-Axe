@@ -14,7 +14,9 @@
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { drawCastle } from './castle.js';
-import { PaintedLevel } from './levelArt.js';
+import { PaintedLevel, featheredKey } from './levelArt.js';
+import {AscentPlates} from './AscentPlates.js';
+import { AscentRouteView } from './AscentRouteView.js';
 
 const COL = {
   skyTop: 0x3a4250, skyLow: 0x8a94a0, cloud: 0x5a626e, cloudLit: 0x9aa2ac,
@@ -46,12 +48,20 @@ export class AscentBackdrop {
     this.gusts = [];
     const art = this.art = new PaintedLevel(scene, 'ascent', this.width);
     if (art.has('sky')) art.layer('sky', DEPTH.sky); else this.drawSky();
-    if (art.has('far')) art.layer('far', DEPTH.far - 1); else this.drawKeep();
-    if (art.has('mid')) art.layer('mid', DEPTH.far + 2); else this.drawCrags();
-    if (art.has('wall')) art.wall(); else this.drawCliff();
+    if (art.has('far')) {
+      // One destination across the gorge; never tile the castle.
+      const key = featheredKey(scene, 'lvl-ascent-far', { left: .18, right: .18 });
+      this.keepVista = scene.add.image(SETTINGS.width * 0.52, SETTINGS.world.floorTop - 12, key).setOrigin(0.5, 1).setDisplaySize(1000, 300).setScrollFactor(0, 0.8).setDepth(DEPTH.far - 1);
+    } else this.drawKeep();
+    if (art.has('mid')) art.layer('mid', DEPTH.far + 2).setTint(0xb8c3c5); else this.drawCrags();
+    if (art.has('wall')) art.wall().setTint(0xd4d6cc); else this.drawCliff();
     if (art.has('ground')) art.ground(); else this.drawRoad();
+    this.plates=new AscentPlates(scene);
+    if(this.plates.has('battery'))this.keepVista?.setVisible(false);
+    this.routeView = new AscentRouteView(scene,stage);
     this.drawSetPieces();
     this.drawWind();
+
   }
 
   get pad() { return SETTINGS.width * 2; }
@@ -162,7 +172,7 @@ export class AscentBackdrop {
     const s = this.scene;
     const top = SETTINGS.world.floorTop - 50;
     const shelter = this.sec('shelter');
-    if (shelter && !this.art.piece('overhang', shelter.x0 + 800, shelter.x0 + 1200)) {
+    if (shelter && !this.plates.has('refuge') && !this.art.piece('overhang', shelter.x0 + 730, shelter.x0 + 1240, { feather: { left: .12, right: .12, bottom: .16 } })) {
       const x = shelter.x0 + 1000;
       const g = s.add.graphics().setDepth(DEPTH.floor - 0.98);
       g.fillStyle(COL.cliff, 1).fillRect(x - 280, top - CLIFF - 40, 560, 50); // the rock jutting out over it
@@ -171,8 +181,10 @@ export class AscentBackdrop {
       g.fillStyle(COL.cliffLit, 1).fillRect(x - 280, top - CLIFF - 46, 560, 8); // the lip of the overhang
       for (let i = 0; i < 6; i++) g.fillStyle(0x4a4650, 1).fillCircle(x - 200 + i * 22, top - 10 - (i % 2) * 14, 13); // stones piled at its mouth
     }
+    // A readable cool shadow identifies the same protected pocket used by bombardment.
+    s.add.image(3995, 318, 'glow').setDisplaySize(500, 120).setTint(0x101a20).setAlpha(.42).setDepth(DEPTH.floor + .2);
     const battery = this.sec('battery');
-    if (battery && !this.art.piece('palisade', battery.x0 + 300, battery.x1 - 60)) {
+    if (battery && !this.plates.has('battery') && !this.art.piece('palisade', battery.x0 + 360, battery.x1 - 80, { bottom: -120, feather: { left: .1, right: .1, bottom: .08 } })) {
       const g = s.add.graphics().setDepth(DEPTH.floor - 0.98);
       for (let x = battery.x0 + 300; x < battery.x1 - 60; x += 22) {
         const h = 120 + ((x * 7) % 30);
@@ -185,7 +197,7 @@ export class AscentBackdrop {
       for (let i = 0; i < 14; i++) pile.fillStyle(i % 2 ? 0x4a4650 : 0x5a5660, 1).fillCircle(px + (i % 5) * 18 - 40, top - 10 - Math.floor(i / 5) * 16, 12);
     }
     const camp = this.sec('camp');
-    if (camp && !this.art.piece('camp', camp.x0 + 200, camp.x1 - 100)) {
+    if (camp && !this.plates.has('camp') && !this.art.piece('camp', camp.x0 + 200, camp.x1 - 100, { feather: { left: .1, right: .1, bottom: .08 } })) {
       const g = s.add.graphics().setDepth(DEPTH.floor - 0.98);
       for (let x = camp.x0 + 260; x < camp.x1 - 100; x += 260) {
         g.fillStyle(0x3a2e26, 1).fillTriangle(x - 80, top, x + 80, top, x, top - 110); // a tent
@@ -236,11 +248,13 @@ export class AscentBackdrop {
 
   update() {
     const t = this.scene.time.now / 16.7;
+    this.routeView?.update();
+
     for (const f of this.flickers) f.img.setAlpha(f.base + Math.sin(t * f.rate + f.base * 40) * f.amp + (Math.random() - 0.5) * f.amp * 0.3);
     for (const c of this.clouds) c.img.x = Math.sin(t * 0.0006 * (1 + c.speed)) * 160; // (driven back and forth by the wind)
     const wv = this.scene.cameras.main.worldView;
     for (const g of this.gusts) {
-      g.x -= g.v;
+      g.x -= g.v * ([0.65, 1, 0.25, 1.5, 1.1, 0.6, 0.8][this.stage.index] ?? 1);
       if (g.x < -40) { g.x = wv.width + 40; g.y = Math.random() * wv.height; }
       g.img.setPosition(wv.x + g.x, wv.y + g.y + Math.sin(t * 0.05 + g.sway) * 8);
     }

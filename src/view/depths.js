@@ -23,3 +23,6 @@ export const DEPTH = {
   popups: 5000,
   debug: 9000,
 };
+
+// Shared visual size of the three heroes; collision dimensions remain authored.
+export const HERO_VISUAL_SCALE = 1.05;

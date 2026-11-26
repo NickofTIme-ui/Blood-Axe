@@ -253,6 +253,9 @@ export class HUDScene extends Phaser.Scene {
   }
 
   updateDialogue() {
+    const cinema=this.arena.stage?.sentence?.running||this.arena.ascentFarewell?.active;
+    this.card?.setVisible(!cinema);this.cardSub?.setVisible(!cinema);
+    if(cinema){this.go?.setVisible(false);this.bossUi?.parts.forEach(p=>p.setVisible(false));}
     const D = this.dialogue;
     const story = this.arena.stage?.story;
     const line = story?.line;
@@ -279,6 +282,10 @@ export class HUDScene extends Phaser.Scene {
     this.card.setText(section.name);
     epicFill(this.card, ['#ff7a5a', '#d0101a', '#5a0006']);
     this.cardSub.setText(`${roman}  ·  ${section.objective}`);
+    if (this.arena.stage.data.id === 'shatteredAscent') {
+      this.card.setPosition(SETTINGS.width / 2, 110).setFontSize(30);
+      this.cardSub.setPosition(SETTINGS.width / 2, 142).setFontSize(15);
+    }
     // (a section that teaches something says how, under the objective)
     this.objective = `${section.objective}${section.hint ? `\n${section.hint}` : ''}`;
     this.showGo(false);
@@ -598,6 +605,9 @@ export class HUDScene extends Phaser.Scene {
     this.updateBoss();
     this.updateRescueAlert();
     this.updateTally();
+    const quiet=this.arena.stage?.sentence?.running||this.arena.ascentFarewell?.active;
+    this.banner.setVisible(!quiet);this.styleMeter.parts.forEach(p=>p.setVisible(!quiet));
+    if(quiet)this.bossUi?.parts.forEach(p=>p.setVisible(false));
     this.waitText.setY(SETTINGS.height - 40 - this.lift);
     if (this.go.visible) this.go.setAlpha(0.55 + 0.45 * Math.sin(this.time.now * 0.008)).setX(SETTINGS.width - 24 + Math.sin(this.time.now * 0.008) * 6);
 

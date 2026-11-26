@@ -297,9 +297,14 @@ export class TerrainView {
         continue;
       }
       const g = s.add.graphics().setDepth(DEPTH.floor + 4);
+      if (this.theme === 'ascent') { this.drawAscentGorge(p, g); continue; }
       g.fillStyle(this.water ? 0x0c1820 : 0x000000, 1).fillRect(p.x0, p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0), p.x1 - p.x0, p.z1 - p.z0 + (p.z0 <= SETTINGS.world.floorTop ? 50 : 0) + 40);
       // a cold glow at the lip so the edge reads (in the village: a burning cellar, its fire far
       // down; in the wood: a stream, black water running fast)
+      if (this.theme === 'ascent') {
+        vFade(g, p.x0 + 3, p.z0, p.x1 - p.x0 - 6, p.z1 - p.z0 + 40, 0x667b8a, 0.1, 0.42);
+        for (let k = 0; k < 7; k++) g.fillStyle(0x8da1ac, 0.04).fillEllipse((p.x0+p.x1)/2, p.z0+65+k*38, (p.x1-p.x0)*0.9, 16);
+      }
       const paintedWater = this.water && s.textures.exists('water-src');
       if (paintedWater) {
         g.clear(); // (the painted water alone, its banks worn: no dark box or ruled edges round it)
@@ -342,6 +347,18 @@ export class TerrainView {
   // stones, knee-deep, so it reads as water you can walk into (Nick, 2026-11-16: no more
   // invisible river). The painted water, paler and browner than the deep channel and half
   // see-through, the stones of the bed under it, ripples running with it. Under the channel.
+  drawAscentGorge(p, g) {
+    const s=this.scene,top=p.z0-30,h=SETTINGS.height+180-top,w=p.x1-p.x0;
+    // Paint depth as an image. Gradient-filled polygons triangulate into visible wedges.
+    const key=artKey('ascent','gorge');
+    const mask=s.make.graphics({add:false}).fillStyle(0xffffff,1).fillPoints(raggedRect(p.x0,top,w,h,p.x0,'none',5),true);
+    if(s.textures.exists(key)){
+      const im=s.add.image(p.x0,top,key).setOrigin(0).setDisplaySize(w,h).setTint(0xb4c1c5).setDepth(DEPTH.floor+4.02);
+      im.setMask(mask.createGeometryMask());
+    }else g.fillStyle(0x31454d,1).fillRect(p.x0,top,w,h);
+    s.events.once('shutdown',()=>mask.destroy());
+  }
+
   drawWades() {
     const s = this.scene;
     const painted = this.paintedWater('wade');
@@ -582,6 +599,7 @@ export class TerrainView {
       if (b.mat === 'log' && v.art) { this.drawLogRaft(v, x0, x1, yTop0, yTop1); return; }
       if (b.mat !== 'log') { this.drawStones(v, x0, x1, yTop0, yTop1); return; }
     }
+    if (b.mat === 'siegeGate') { this.drawSiegeGate(v, x0, x1); return; }
     if (b.mat === 'iron' && b.kind === 'block') { this.drawPortcullis(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
     if (this.village || (this.water && b.mat === 'log')) { this.drawVillageBlock(v, x0, x1, w, yTop0, yTop1); return; } // (the wood's fallen trees: as the village's beams)
@@ -591,8 +609,10 @@ export class TerrainView {
     const mat = b.kind === 'crumble' ? 'plank' : b.kind === 'lift' ? 'iron' : 'rock';
     const C = mat === 'plank' ? [COL.plankTop, COL.plankRim, COL.plankFront]
       : mat === 'iron' ? [COL.iron, COL.ironRim, COL.ironDark] : [COL.rockTop, COL.rockRim, COL.rockFront];
+    if (this.theme === 'ascent') { if (mat === 'rock') C[1] = 0x93988f; else if (mat === 'plank') { C[0]=0x5e5950; C[1]=0x939081; C[2]=0x292b28; } }
     // top face (where you stand): the lightest surface around (painted, when its tile exists)
-    const topArt = mat !== 'iron' && this.surface(v, 'top', mat === 'plank' ? 'plank' : 'rock_top', x0, yTop0, w, yTop1 - yTop0, b.z0 - 0.6);
+    const sceneDeck=false; // Deck remains under the proportionally sized scene.
+    const topArt = sceneDeck || mat !== 'iron' && this.surface(v, 'top', mat === 'plank' ? 'plank' : (b.mat === 'siegeGround' || (this.theme === 'ascent' && b.x0 >= 6200 && b.x1 <= 7600)) ? 'siege_top' : 'rock_top', x0, yTop0, w, yTop1 - yTop0, b.z0 - 0.6);
     if (!topArt) top.fillStyle(C[0], 1).fillRect(x0, yTop0, w, yTop1 - yTop0);
     if (mat === 'plank' && !topArt) { top.fillStyle(COL.plankCrack, 0.8); for (let x = x0 + 16; x < x1; x += 18) top.fillRect(x, yTop0, 2, yTop1 - yTop0); }
     if (mat === 'rock' && !topArt) {
@@ -607,7 +627,7 @@ export class TerrainView {
     }
     if (!topArt) raggedLine(top, x0, x1, yTop0, C[1], 0.75, 2, b.x0);
     // the landing rim along the front edge
-    raggedLine(front, x0, x1, yTop1 - 0.5, C[1], 0.9, 3, b.x0 + 7);
+    raggedLine(front, x0, x1, yTop1 - .5, C[1], this.theme === 'ascent' ? .28 : .9, this.theme === 'ascent' ? 1.2 : 3, b.x0 + 7);
     // front face, down to the floor (or into the dark, over a pit)
     const floorY = b.z1;
     // rock goes down to the floor (or on down into the dark over a pit); a plank and the
@@ -630,11 +650,26 @@ export class TerrainView {
     } else {
       front.fillStyle(COL.plankCrack, 1);
       for (let x = x0 + 10; x < x1; x += 22) front.fillRect(x, yTop1 + 2, 2, depthDown);
+      // The ascent is a broken road bridge, not suspended stepping platforms.
+      if (this.theme === 'ascent') {
+        if (!topArt) {
+        top.lineStyle(2, 0x3a251a, 0.9);
+        for (let y = yTop0 + 13; y < yTop1; y += 16) top.lineBetween(x0, y, x1, y);
+        top.lineStyle(1, 0xbea785, 0.6);
+        for (let y = yTop0 + 5; y < yTop1; y += 16) top.lineBetween(x0 + 3, y, x1 - 3, y);
+        }
+        front.lineStyle(1, 0x797e71, .25).lineBetween(x0, yTop1 + 2, x1, yTop1 + 2);
+      } else {
       // hung on two ropes from above
       front.fillStyle(0x8a7a5a, 0.9).fillRect(x0 + 6, yTop1 - 400, 2, 400).fillRect(x1 - 8, yTop1 - 400, 2, 400);
+      }
     }
-    top.setDepth(b.z0 - 0.5);
-    front.setDepth(b.z1 + 0.5);
+    if (this.theme === 'ascent') {
+      vFade(front,x0,yTop1+1,w,Math.min(depthDown,18),0x070d12,.38,0);
+      if (mat === 'rock' && !b.bridgePier) vFade(top,x0,yTop0,w,14,0x101820,.22,0);
+    }
+    top.setDepth(b.z0 - .5);
+    front.setDepth(b.z1 + .5);
   }
 
   // Stepping stones in a wood stream: two or three wet boulders filling the block's footing,
@@ -765,6 +800,7 @@ export class TerrainView {
 
   surface(v, slot, name, x, y, w, h, depth, amp) {
     const key = artKey(this.theme, `surf-${name}`);
+
     if (!name || w <= 0 || h <= 0 || !this.scene.textures.exists(key)) return false;
     const conf = LEVEL_ART[this.theme]?.surfaces?.[name] ?? {};
     v.tiles ??= {};
@@ -772,6 +808,7 @@ export class TerrainView {
     const img = this.scene.textures.get(key).getSourceImage();
     const sc = (conf.fit ? h : conf.px ?? 128) / img.height;
     t.setPosition(x, y).setSize(w, h).setDisplaySize(w, h).setTileScale(sc, sc).setDepth(depth).setVisible(true);
+    if (this.theme === 'ascent') t.setTint(slot === 'front' ? 0xa8b0ae : 0xe5e5d8);
     t.tilePositionX = x / sc;
     // its outline worn and chipped (a mask), not a ruled rectangle
     v.masks ??= {};
@@ -783,6 +820,22 @@ export class TerrainView {
 
   // A portcullis (the mine): a tall iron grille across the lane, its chain running up out
   // of sight to the counterweight; gone (raised) once that's broken (Stage.openWay).
+  drawSiegeGate(v, x0, x1) {
+    const {top, front, b} = v;
+    top.setVisible(false);
+    const floor=140, y=b.z0-b.top, bottom=b.z1-floor, height=bottom-y, w=x1-x0;
+    // A continuous timber gate seen edge-on across the ridge, without repeated peaks.
+    this.surface(v,'front','plank',x0,y,w,height,b.z1+.4,1.5);
+    front.fillStyle(0x111719,.3).fillRect(x1-8,y,8,height);
+    front.lineStyle(3,0x202422,.85);
+    for(let z=b.z0+45;z<b.z1;z+=110)front.lineBetween(x0,z-floor,x1,z-floor);
+    for(const yy of[y+height*.25,y+height*.72]){
+      front.fillStyle(0x202727,.9).fillRect(x0,yy,w,7);
+      front.fillStyle(0x8a8b77,.6).fillCircle(x0+7,yy+3,1.5);
+    }
+    front.setDepth(b.z1+0.5);
+  }
+
   drawPortcullis(v, x0, x1, yTop0, yTop1) {
     const { top, front, b } = v;
     const fy = b.z1; const h = b.top;
@@ -1069,7 +1122,7 @@ export class TerrainView {
       // the painted torch post (the village: an iron cresset on a timber post, unlit) or iron
       // brazier (the gates), on magenta: cut out once; the living flame (view/TorchFlame.js)
       // burns in its cup, with a glow round it
-      const post = this.village ? 'village-torch' : this.theme === 'gates' ? 'gates-brazier' : null;
+      const post = this.village ? 'village-torch' : (this.theme === 'gates' || this.theme === 'ascent') ? 'gates-brazier' : null;
       if (post && s.textures.exists(`${post}-src`)) {
         if (!s.textures.exists(post)) s.textures.addCanvas(post, keyLayer(s.textures.get(`${post}-src`).getSourceImage(), 'magenta'));
         const img = s.add.image(l.x, y0 + 3, post).setOrigin(0.5, 0.98).setDepth(l.z - 0.2);

@@ -14,6 +14,14 @@ import { furyArmor } from './Skills.js';
 import { juggles, juggleHit } from './Juggle.js';
 import { addStatic, staticOn } from './Mage.js';
 
+// Elemental hits take priority over the physical delivery of an enchanted strike.
+export function armorDamageMultiplier(stats,move,kind){
+ const p=stats.damageProfile;if(!p)return 1;
+ if(move.cut==='shock'||move.fx==='lightning')return p.shock??p.magic??1;
+ if(kind==='magic'||move.cut==='fire'||move.cut==='ice')return p.magic??1;
+ if(['slash','chop','cleave','pierce'].includes(move.cut))return p.blade??1;
+ return 1;
+}
 const FEEL = SETTINGS.feel;
 const ATTACK_STATES = ['light1', 'light2', 'light3', 'launcher', 'sunder', 'heavy', 'special1', 'special2', 'shoulder'];
 
@@ -166,7 +174,7 @@ export class CombatSystem {
       // ---- BLOCK (or guard break)
       const guardDamage = (move.guardDamage ?? 10) * def.stats.guardEfficiency;
       const chip = move.damage * (melee ? attacker.stats.meleeMult : attacker.stats.magicMult) *
-        armMult(attacker) * (1 - def.stats.blockReduction);
+        armMult(attacker) * (1 - def.stats.blockReduction) * armorDamageMultiplier(def.stats,move,ctx.kind);
       def.health = Math.max(1, def.health - chip); // chip damage can't kill
 
       if (move.breaksGuard || def.stamina - guardDamage <= 0) {
@@ -213,7 +221,7 @@ export class CombatSystem {
     const sunder = !!move.sunder && juggles(attacker, def);
     let damage = move.damage * mult * (counter ? FEEL.counterMultiplier : 1) * exposed *
       (crit ? FEEL.critMultiplier : 1) * juggleMult * (riposte ? RIPOSTE.mult : 1) *
-      (def.ward ?? 1); // (ward: a boss taking only part of a blow: King Vaurath's guard, stage/Stage.js)
+      (def.ward ?? 1) * armorDamageMultiplier(def.stats,move,ctx.kind); // (ward: a boss taking only part of a blow: King Vaurath's guard, stage/Stage.js)
     if (sunder) damage = Math.max(damage, def.health + 1);
     // the Mage's THUNDER STAFF sets off the Static his staff left (combat/Mage.js)
     const S = attacker?.stats.kit?.static;
