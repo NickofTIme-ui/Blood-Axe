@@ -184,8 +184,11 @@ export const HERO_ANIMS = {
     // (moves2, her second moves sheet: 0-2 the leg sweep, 3 the sidearm throw, 4 setting a
     // mine, 5 springing away, 6 the fan thrown in the air, 7 the boot planted to vault)
     sweep: { needs: ['moves2'], ...swing(seq('moves2', [0]), seq('moves2', [1]), seq('moves2', [2])) },
-    airAttack: swing(seq('air', [1]), seq('air', [6]), seq('air', [6])),
-    knife: { needs: ['moves2'], frames: [...seq('moves', [4]), ...seq('moves2', [3, 3])] }, // the knife drawn, the sidearm throw
+    // her own jump attack (26 Nov, ChatGPT): tucked, the lead cut, the crossing cut, through, dropping
+    airAttack: { needs: ['airattack'], ...swing(seq('airattack', [1]), seq('airattack', [2, 3]), seq('airattack', [4, 5])) },
+    // her own knife throw (26 Nov): drawn from the thigh, wound up by her ear, thrown, through, guard
+    // (spread over startup + recovery, 3 + 6 frames: the throw pose lands on frame 3, as the knife leaves)
+    knife: { needs: ['knifethrow'], frames: seq('knifethrow', [1, 2, 3, 4, 4, 5]) },
     mine: { needs: ['moves2'], frames: seq('moves2', [4, 5]) },
     dodge: { frames: seq('dodge', [0, 1, 2, 3]) },
     dodgeBack: { frames: seq('dodge', [4, 5, 6, 7]) },
@@ -204,7 +207,7 @@ export const HERO_ANIMS = {
     rush: { needs: ['rush'], ...swing(seq('rush', [0]), seq('rush', [1, 2, 3]), seq('rush', [4, 5])) },   // SHADOW RUSH: sprint, the dive forward, the two cuts; the skid and the turn back
     backstab: { needs: ['backstab'], frames: seq('backstab', [0, 1, 2, 3, 4, 5]) }, // out of the smoke: arrived, cocked, the stab, held, pull out, guard
     cuts: { needs: ['cuts'], rise: seq('cuts', [0]), slash: seq('cuts', [1, 2, 3, 4]), spike: seq('cuts', [5, 6]), drop: seq('cuts', [6]), land: seq('cuts', [7]) }, // THOUSAND CUTS
-    fade: { frames: seq('dodge', [4, 5, 6, 7]) },       // FADE: the handspring away
+    fade: { needs: ['fade'], frames: seq('fade', [0, 1, 2, 3, 4, 5]) }, // FADE (26 Nov, her own): leaning away, the glide back, wrapped in the cloak, sliding in, coiled, guard
     // GRAB AND THROW (combat/Grab.js): her own strip (8 poses as Rurik's neck grip: ready,
     // clamp, four march steps, the shove wound up, the shove)
     grab: { needs: ['grab'], poses: seq('grab', [0, 1, 2, 3, 4, 5, 6, 7]) },
@@ -213,7 +216,7 @@ export const HERO_ANIMS = {
     vault: { needs: ['moves2'], frames: seq('moves2', [7]) }, // a boot planted on his shoulder, coiled
     launched: { frames: seq('air', [3]) },  // the long rise off a teammate's shoulder
     fan: { needs: ['moves2'], frames: seq('moves2', [6]) },  // both arms whipping the fan down
-    dive: { frames: seq('air', [5, 6, 7]) }, // diving, the strike, the landing crouch
+    dive: { needs: ['dive'], frames: seq('dive', [1, 3, 4]) }, // (26 Nov, her own) diving daggers first, the strike on one knee, the landing crouch
     hitstun: { needs: ['block'], frames: seq('block', [4]) }, // a hard hit to the body
     stagger: { needs: ['block'], frames: seq('block', [5]) }, // a hit to the head, snapped back
     flying: { frames: seq('react', [2]) },
