@@ -206,7 +206,7 @@ export const STAGE_MINE = {
       ],
     },
     {
-      id: 'far', name: 'THE FAR SIDE', x0: 11000, x1: 11700,
+      id: 'far', ground: 'm-far', groundFade: 160, name: 'THE FAR SIDE', x0: 11000, x1: 11700,
       spawn: { x: 11060, z: 440 },
       objective: 'Out into the light',
       hint: '',

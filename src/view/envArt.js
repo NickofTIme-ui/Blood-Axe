@@ -36,6 +36,7 @@ export const GROUNDS = {
   'm-river': 'assets/env/mine/ground_river.jpg',
   'm-hall': 'assets/env/mine/ground_hall.jpg',
   'm-collapse': 'assets/env/mine/ground_collapse.jpg', // (the chase, all three stretches)
+  'm-far': 'assets/env/mine/ground_far.jpg', // (out in the daylight on the far face)
 };
 
 // Make an image tile seamlessly left-to-right by blending its last `frac` into its start.
