@@ -721,9 +721,16 @@ export class NpcView {
         // the wood's painted cage cart (assets/env/wood/cage_cart.png): its cage locked, or
         // its door hanging open; the prisoners crouch inside, behind its bars
         const cw = (n.group ? 250 : 220) * ck;
-        v.cage ??= this.scene.add.image(0, 0, 'cagecart').setOrigin(0.5, 0.97);
+        // (in the wood's own light, dark at the wheels, on a soft pool of shadow: it was drawn
+        // bright and flat and looked pasted on the mud, Nick 2026-11-26)
+        if (!v.cage) {
+          v.cage = this.scene.add.image(0, 0, 'cagecart').setOrigin(0.5, 0.97);
+          lightProp(v.cage, PROP_LIGHT.gallowsWood, 1.4);
+          v.cageShadow = this.scene.add.image(0, 0, 'glow').setTint(0x000000).setAlpha(0.7);
+        }
         v.cage.setTexture(open ? 'cagecart-broken' : 'cagecart').setPosition(cx, cz + 8).setDepth(cz + 0.5).setVisible(true);
         v.cage.setScale(cw / v.cage.frame.width);
+        v.cageShadow.setPosition(cx, cz + 4).setDisplaySize(cw * 1.15, 30).setDepth(DEPTH.shadows).setVisible(true);
         v.cageH = v.cage.displayHeight * 0.3 - 34; // (the prisoners crouch on its floor, over the wheels)
         return;
       }

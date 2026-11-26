@@ -136,6 +136,10 @@ export const STAGE_WOOD = {
     },
     {
       id: 'carts', ground: 'w-carts', groundFade: 160, name: 'THE CAGE CARTS', x0: 2900, x1: 4400,
+      // (its painting has a row of big dark rocks along its top: laid over the wall's own mud they
+      // made a hard dark band behind the cage carts; rubbed out so the two muds run into each other,
+      // Nick 2026-11-26: "the art blend is really bad here")
+      groundTopFade: { depth: 110, hold: 0.42, x0: 2900, x1: 4400, feather: 120 },
       spawn: { x: 2960, z: 440 },
       objective: 'Open the cages',
       hint: 'Smash the red lantern on its pole: while it burns, more of them come out of the mist. Then hold E (D-pad up) at a cage lock',
