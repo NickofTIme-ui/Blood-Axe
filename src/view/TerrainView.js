@@ -696,6 +696,15 @@ export class TerrainView {
       vFade(front,x0,yTop1+1,w,Math.min(depthDown,18),0x070d12,.38,0);
       if (mat === 'rock' && !b.bridgePier) vFade(top,x0,yTop0,w,14,0x101820,.22,0);
     }
+    // (the mine's broken gallery: a pillar left standing over the drop wears its painted face,
+    // timber-braced and iron-banded, fading into the black below: ChatGPT 2026-11-26)
+    const pk = artKey('mine', 'pillar');
+    if (this.mine && mat === 'rock' && w <= 90 && b.top >= 100 && this.terrain.inPit((x0 + x1) / 2, b.z1 + 2) && this.scene.textures.exists(pk)) {
+      v.art ??= this.scene.add.image(0, 0, pk).setOrigin(0.5, 0.1);
+      const kx = (w * 1.16) / (v.art.frame.width * 0.8);
+      v.art.setPosition((x0 + x1) / 2, yTop1).setScale(kx, kx * 1.35).setDepth(b.z1 + 0.5).setVisible(true);
+      front.setVisible(false);
+    }
     top.setDepth(b.z0 - .5);
     front.setDepth(b.z1 + .5);
   }
