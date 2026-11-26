@@ -6,12 +6,15 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 26 November 2026 (cloud, branch claude/project-thread-dl3j3l on top of 6c3fea7 = PC ChatGPT build + level 3; NOT on main
-  until Nick says push). EXECUTIONS RESTORE 20% (Nick's rule): every man a hero executes (Rurik's throat / impale / halve /
+- 26 November 2026 (cloud; ON MAIN with Oryn's finish, Nick "push all"). EXECUTIONS RESTORE 20% (Nick's rule): every man a hero executes (Rurik's throat / impale / halve /
   chain, Oryn's and Vexa's finishers, a boss sentence) gives that hero back 20% of MAX health, stamina and mana, capped at
   full; a hero without a bar skips it. One central place: src/combat/Executions.js (installed in core/World.js, listens to
   'kill' events carrying `finisher` or `sentence`), so new finishers count as long as their kill event sets `finisher`.
   Cue: ArenaScene.restoreFX (red/green/blue motes drawn into the hero + a low swell). Test in tests/logic-test.js.
+- 26 November 2026 (cloud; ON MAIN, Nick "push it to main"; not on itch yet). LEVEL 2 CAGE
+  CARTS BLEND: ground_carts.jpg has a row of big dark rocks painted along its top, which made a hard dark band behind
+  the cage carts; the 'carts' section now has `groundTopFade` {depth 110, hold 0.42} (same tool as the church/hall
+  seams), and the painted cage carts get the wood's light (lightProp, k 1.4) and a soft shadow pool (NpcView). No new art.
 - 24 November 2026 (cloud, branch claude/project-thread-k5ev14; NOT on main until Nick says push). LEVEL 3 PHASE 2
   (masterplan https://claude.ai/artifact/QWSRL3ruDw6bajP4Zzso8X): Workings horde -> overseer + ghouls (no thralls in the
   mine; test updated), Crusher Hall fire grates -> steam vents (`look: 'steam'`: scald, no burning, hiss), no Crusher in
