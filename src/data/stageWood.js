@@ -239,7 +239,7 @@ export const STAGE_WOOD = {
       // them. (His own painted strips, enemyStrips.js `houndmaster`: the Stalker's moves in his
       // own look; until they load he wears the Stalker's.)
       boss: {
-        type: 'stalker', look: 'houndmaster', name: 'The Houndmaster', health: 3.6, damage: 1.1, size: 1.2, // (size: a head over his men: Nick, 2026-11-16)
+        type: 'stalker', look: 'houndmaster', name: 'The Houndmaster', health: 10.8, damage: 1.1, size: 1.2, // (size: a head over his men: Nick, 2026-11-16; health tripled from 3.6: Nick, 2026-11-26)
         // his two hounds come bursting out of the middle kennel once he's walked in (they
         // stood parked beside him as an escort: Nick, 2026-11-16 "should come out of the kennel")
         pensAtStart: [1],
