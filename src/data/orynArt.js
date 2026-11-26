@@ -15,4 +15,9 @@ export const ORYN_SHEETS = [
   sheet('grab', 8),      // GRAB AND THROW: ready, the clamp, four march steps, the shove wound up, the shove
   sheet('block', 8),     // guard, a blow on it, recover, guard round, body hit, head hit, falling, dead
   sheet('finSpires', 8), // IMPALING SPIRES: ready, staff raised, the slam, planted, rising spires held, the fist, turning, ready
+  // the 26 Nov 2026 set (docs/mage-art-prompts.md section 15; tools/bake-oryn-nov26.py,
+  // originals in art-incoming/oryn-nov26/)
+  sheet('thunder', 6),   // THUNDER STAFF: ready, whirled up behind, raised blazing, smashed down, planted, ready
+  sheet('spikes', 6),    // STONE SPIKES: ready, staff lifted foot down, driven in, leaning on it, hand swept along the floor, pulled free
+  sheet('air', 6),       // IN THE AIR: chop raised, chop down, palm gathered, palm thrust down (DOWNBURST), staff raised, staff pointed down (FALLING BULWARK)
 ];

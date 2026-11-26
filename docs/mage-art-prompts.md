@@ -398,3 +398,35 @@ drawn at (FX_STRIPS height) to keep the download small. Originals: art/mage-fx/ 
 project files mage-fx/originals/). A tiny Phaser page that plays each effect over a level
 backdrop, with a before (code-drawn) mode, is in project files mage-fx/preview-harness/
 (the full game OOMs in the cloud's headless browser).
+
+---
+
+## 15. The air and the run (26 November 2026): Downburst, Falling Bulwark, Comet, and his last borrowed poses
+
+These replace borrowed poses (data/heroStrips.js HERO_ANIMS.mage: airAttack, downburst,
+wardDrop, thunder, spikes). Same chat, same rules. Baked by tools/bake-oryn-strips.py
+(originals in art-incoming/oryn-second-set/).
+
+> Same character, same scale. **6 poses in one row**, facing right, black background, wide
+> gaps. HIGH IN THE AIR (no floor under him, robe and cloak lifted by the fall): (1) the staff
+> raised behind his head in both hands, ready to chop; (2) the staff chopped down hard in
+> front of him, pointing down past his boots; (3) staff in his right hand, his free left hand
+> drawn up to his chest, palm down, fingers spread; (4) that left palm thrust straight DOWN
+> under him, arm locked, robe blown upward; (5) the staff raised high over his head in both
+> hands, head tipped up; (6) the staff swung down to point at the floor ahead and below him.
+
+Save as `mage_air.png`.
+
+> Same, **6 poses**. THE THUNDER STAFF: (1) ready, staff crackling; (2) the staff whirled up
+> behind him over his shoulder; (3) raised straight overhead in both hands, the staff head
+> blazing white-blue, body arched back; (4) smashed down onto the floor in front of him,
+> body bent over it; (5) held there planted, leaning on it; (6) pulled back up to ready.
+
+Save as `mage_thunder.png`.
+
+> Same, **6 poses**. STONE SPIKES: (1) ready; (2) the staff lifted high in both hands, point
+> down; (3) the staff driven point-first into the floor in front of him, crouched low over
+> it; (4) holding it buried, leaning on it, his free hand open low over the floor; (5) that
+> free hand swept forward along the floor, palm down; (6) pulling the staff free, rising.
+
+Save as `mage_spikes.png`.

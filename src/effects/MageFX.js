@@ -102,6 +102,25 @@ export class MageFX {
     ev.on('tempestStart', ({ fighter, frames }) => { this.rune(fighter.x, fighter.z, 240, { life: frames, bright: true }); this.sound('elecFull', fighter); this.darken(frames, 0.5); this.tempestRise(fighter, frames); });
     ev.on('tempestWave', ({ fighter }) => { this.sound('storm', fighter); this.scene.fx?.shake(6, 12); });
     ev.on('twirlHit', ({ fighter }) => this.sound('twirlHit', fighter));
+    // ---- the air and the run (2026-11-26): DOWNBURST, FALLING BULWARK, COMET
+    ev.on('downburst', (e) => this.downburst(e));
+    ev.on('wardStart', ({ fighter, air }) => { if (air) { this.sound('boltCharge', fighter); this.flashAt(this.staffTip(fighter), 0xffd8a0, 18); } });
+    ev.on('wallDrop', (e) => this.wallDrop(e));
+    ev.on('cometCall', ({ fighter }) => { this.sound('elecCharge', fighter); this.rune(fighter.x, fighter.z, 110, { life: 16, bright: true }); this.flashAt(this.staffTip(fighter), 0xe0f0ff, 18); });
+    ev.on('cometGo', (e) => this.comet(e));
+    ev.on('cometHit', ({ fighter, target }) => {
+      const c = { x: target.x, y: target.z - target.h - target.stats.body.h * 0.6 };
+      this.flashAt(c, 0xd8e4ff, 20);
+      this.scene.gore.spark(target.x, target.z, target.h + target.stats.body.h * 0.6, 0x9ab8ff, 14);
+      this.bolt({ x: c.x - fighter.facing * 30, y: c.y - 30 }, { x: c.x + fighter.facing * 20, y: c.y + 30 }, target.z, false, 0.7);
+      this.sound('boltImpact', fighter);
+    });
+    ev.on('cometArrive', ({ fighter, x, z, hits }) => {
+      this.blinkPuff(x, z, fighter, false);
+      this.pulse(x, z, 0, 0x9ab8ff, 70 + hits * 10);
+      this.sound('blinkIn', fighter);
+      if (hits) this.scene.fx?.shake(4 + hits * 2, 10);
+    });
     ev.on('jump', ({ fighter }) => { if (isMage(fighter)) this.pulse(fighter.x, fighter.z, 4, 0xffa040, 26); });
     ev.on('hit', (e) => {
       if (!isMage(e.attacker)) return;
@@ -675,6 +694,61 @@ export class MageFX {
     this.scene.gore.spark(x + dir * 34, z, f.h + 70, 0xffd0a0, 8);
   }
 
+  // DOWNBURST: the force driven down from his palm into the floor under him: the wave of it
+  // rolling down, a ring blown out flat across the floor, dust thrown out of it.
+  downburst({ fighter: f, x, z, h, floor = 0, count }) {
+    this.sound('force', f);
+    if (count) this.sound('earthHit', f);
+    const top = z - h - (f.stats.hover?.height ?? 0) - 40;
+    const ground = z - floor;
+    const W = FX.mageforce;
+    // painted: the wave of force rolling out of his palm, turned to point at the floor
+    if (W) this.paint('mageforce', x, top, { h: Math.max(110, Math.min(240, ground - top + 40)), ox: 0, oy: 0.5, rot: Math.PI / 2, depth: z + 1, fps: 24 })?.setOrigin(0, 0.5);
+    else this.bolt({ x, y: top }, { x, y: ground }, z, false, 0.8);
+    this.pulse(x, z - floor, 0, 0xeef0ff, 150);
+    this.pulse(x, z - floor, 0, 0xffc080, 110);
+    this.flashAt({ x, y: ground - 10 }, 0xeef0ff, 26);
+    for (let i = 0; i < 30; i++) {
+      const a = rand(0, Math.PI * 2);
+      const sp = rand(240, 560);
+      this.scene.gore.spawn({
+        x: x + Math.cos(a) * rand(6, 20), z: z + Math.sin(a) * rand(2, 10), h: floor + rand(1, 8),
+        vx: Math.cos(a) * sp, vz: Math.sin(a) * sp * 0.35, vh: rand(30, 160),
+        tint: Math.random() < 0.7 ? 0x8a7a60 : 0xd8d0c0, scale: rand(0.4, 0.9), decal: false, life: Math.floor(rand(14, 26)),
+      });
+    }
+    this.scene.fx.shake(6 + Math.min(count, 4), 12);
+    if (count) this.scene.rumble?.(0.8, 0.5, 140);
+  }
+
+  // FALLING BULWARK: the wall's own view drops it in (EarthWallView, b.dropped); here the
+  // crack of it landing on the men under it.
+  wallDrop({ fighter: f, x, crushed }) {
+    this.sound('earthBreak', f);
+    if (crushed.length) this.sound('spiresErupt', f);
+    for (const e of crushed) {
+      this.flashAt({ x: e.x, y: e.z - e.h - e.stats.body.h }, 0xffe8d0, 20);
+      this.scene.gore.spark(e.x, e.z, e.h + e.stats.body.h * 0.9, 0xffd0a0, 10);
+    }
+  }
+
+  // COMET: he goes out as lightning at one end of the line and the streak runs to the other.
+  comet({ fighter: f, from, to }) {
+    this.sound('blinkOut', f);
+    this.sound('boltCast', f);
+    this.blinkPuff(from.x, from.z, f, true);
+    const y = (z) => z - (f.h ?? 0) - (f.stats.hover?.height ?? 0) - 58;
+    const a = { x: from.x, y: y(from.z) };
+    const b = { x: to.x, y: y(to.z) };
+    this.bolt(a, b, from.z, true, 1.4);
+    this.bolt({ x: a.x, y: a.y - 14 }, { x: b.x, y: b.y + 10 }, from.z, false, 1.1);
+    // the afterglow of his passing along the floor, and the dust it tears up
+    const n = Math.max(3, Math.round(Math.abs(b.x - a.x) / 40));
+    for (let i = 0; i <= n; i++) this.scene.gore.spark(a.x + ((b.x - a.x) * i) / n, from.z, 50, i % 2 ? 0x9ab8ff : 0xe8eeff, 3);
+    this.pulse(from.x, from.z, 0, 0x9ab8ff, 60);
+    this.scene.fx?.shake(4, 8);
+  }
+
   // Sparks and a puff of smoke where he broke apart / re-formed; a fading afterimage.
   blinkPuff(x, z, f, out) {
     const h = (f.stats.hover?.height ?? 0) + 50;
@@ -1049,6 +1123,8 @@ function rockChipTex(scene) {
   g.destroy();
 }
 
+const DROP_FRAMES = 6; // (the Falling Bulwark: frames from the sky to the floor)
+
 class EarthWallView {
   constructor(scene, b) {
     this.scene = scene;
@@ -1072,7 +1148,8 @@ class EarthWallView {
       const n = 6;
       for (let i = 0; i <= n; i++) pts.push({ x: -w / 2 + (w * i) / n + rand(-2, 2), y: -h + Math.abs(Math.sin(i * 1.9 + z)) * 18 * (i % 2 ? 1 : 0.4) });
       // erupts when the crack reaches it
-      const delay = 6 + Math.round((Math.abs(z - this.zc) / Math.max(1, this.z1 - this.z0)) * 14) + Math.floor(rand(0, 3));
+      // (dropped out of the sky, the Falling Bulwark: all of it falls at once, a frame or two apart)
+      const delay = b.dropped ? Math.floor(rand(0, 3)) : 6 + Math.round((Math.abs(z - this.zc) / Math.max(1, this.z1 - this.z0)) * 14) + Math.floor(rand(0, 3));
       const slab = {
         z, h, w, pts, off: rand(-4, 4), tone: Math.floor(rand(0, 3)), delay, crack: rand(0.2, 0.8), lean: rand(-0.06, 0.06),
         burst: false, chip: 0, flash: 0, topple: 0,
@@ -1200,9 +1277,16 @@ class EarthWallView {
     const J = this.jolt;
     const shove = J.t < 24 ? J.dir * 5 * J.power * Math.exp(-J.t / 5) * Math.cos(J.t * 1.3) : 0;
 
+    // (dropped: the floor splits when it lands, with a heavy crash and a ring of dust)
+    if (b.dropped && this.t === DROP_FRAMES + 1) {
+      this.scene.fx.shake(10, 18);
+      this.scene.rumble?.(1, 0.9, 220);
+      for (let i = 0; i < 12; i++) this.dust(b.x + rand(-b.half * 1.6, b.half * 1.6), rand(this.z0, this.z1), rand(0, 16), rand(44, 70), { vx: rand(-60, 60), rise: rand(6, 20), alpha: 0.6, life: 1000 });
+      for (let i = 0; i < 24; i++) this.chip(b.x + rand(-b.half, b.half), rand(this.z0, this.z1), rand(0, 20), rand(-280, 280), rand(160, 420), rand(0.8, 1.6), 44);
+    }
     // the crack in the floor, torn open ahead of the stone, closing as the wall goes
     const cg = this.crackG.clear();
-    const reach = Math.min(1, this.t / 10) * (this.z1 - this.z0);
+    const reach = Math.min(1, Math.max(0, this.t - (b.dropped ? DROP_FRAMES : 0)) / 10) * (this.z1 - this.z0);
     const open = this.fall >= 0 ? Math.max(0, 1 - this.fall / 24) : 1;
     if (open > 0) {
       for (const pts of this.fissure) {
@@ -1226,8 +1310,14 @@ class EarthWallView {
       const since = this.t - s.delay;
       // up out of the ground with a punch past its height, then settling (ease out back)
       const u = Math.min(1, Math.max(0, since / 8));
-      const up = u <= 0 ? 0 : 1 + 2.70158 * (u - 1) ** 3 + 1.70158 * (u - 1) ** 2;
-      if (since === 1 && !s.burst) { s.burst = true; this.erupt(s); }
+      let up = u <= 0 ? 0 : 1 + 2.70158 * (u - 1) ** 3 + 1.70158 * (u - 1) ** 2;
+      // THE FALLING BULWARK: whole, out of the sky, faster and faster, and it lands with a crash
+      let drop = 0;
+      if (b.dropped) {
+        up = since >= 0 ? 1 : 0;
+        drop = since < DROP_FRAMES ? -((1 - Math.max(0, since) / DROP_FRAMES) ** 2) * 560 : 0;
+        if (since === DROP_FRAMES && !s.burst) { s.burst = true; this.erupt(s); s.flash = 0.9; }
+      } else if (since === 1 && !s.burst) { s.burst = true; this.erupt(s); }
       if (since === 8) s.flash = Math.max(s.flash, 0.45); // the magic flares as it locks in
       const down = this.fall >= 0 ? Math.min(1, Math.max(0, (this.fall - s.delay * 0.4) / (b.collapse * 0.7))) : 0;
       const k = Math.max(0, up) * (1 - down) * (1 - s.chip);
@@ -1239,7 +1329,7 @@ class EarthWallView {
       if (k <= 0) return;
       const near = Math.max(0.35, 1 - Math.abs(s.z - J.z) / 60);
       const x = b.x + s.off + shove * near + (since < 8 ? rand(-1.5, 1.5) : 0) + (this.fall >= 0 ? rand(-1, 1) * down * 3 : 0);
-      const y = s.z + down * (this.broken ? 14 : 6);
+      const y = s.z + down * (this.broken ? 14 : 6) + drop;
       const tilt = s.lean * (1 - u) + s.topple * down + shove * near * 0.004;
       if (s.img) {
         // painted slab: rises out of the floor (the part still underground is cut off by

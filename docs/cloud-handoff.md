@@ -6,8 +6,8 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 26 November 2026 (cloud; ON MAIN, Nick "push all"; not on itch yet; built on 6c3fea7 = PC ChatGPT build + level 3).
-  EXECUTIONS RESTORE 20% (Nick's rule): every man a hero executes (Rurik's throat / impale / halve /
+  every man a hero executes (Rurik's throat / impale / halve /
+- 26 November 2026 (cloud; ON MAIN with Oryn's finish, Nick "push all"). EXECUTIONS RESTORE 20% (Nick's rule): every man a hero executes (Rurik's throat / impale / halve /
   chain, Oryn's and Vexa's finishers, a boss sentence) gives that hero back 20% of MAX health, stamina and mana, capped at
   full; a hero without a bar skips it. One central place: src/combat/Executions.js (installed in core/World.js, listens to
   'kill' events carrying `finisher` or `sentence`), so new finishers count as long as their kill event sets `finisher`.
@@ -2129,6 +2129,15 @@ Nick: "snare trap needs a sounds, also hold the NPC for longer".
 - Nick: "kick then spinning roundhouse when they are close". Kick, and once the crescent kick has landed (so he's close), kick again: `moves.roundhouse` (src/data/characters.js; chain on `moves.kick`, onHit, frames 7-19), state `roundhouse` in combat/Rogue.js. Lunges after him, 12 damage, to the head, knocks him flat. Sound + 3 afterimages in effects/RogueFX.js. Logic test.
 - Art: ChatGPT strip in chat "BA · Rogue · Strips" (docs/rogue-art-prompts.md job 25), baked by tools/bake-vexa-strip.py (6 poses, ref 5, 180) into `assets/sprites/heroes-hd/vexa-rogue-roundhouse.png`, listed in data/vexaArt.js. Source strip (60% of ChatGPT's 2172 px original): project files `vexa-roundhouse/rogue_roundhouse.png`. Without the sheet she plays her kick poses.
 
+## Cloud, 2026-11-26: Oryn's moveset finished (Downburst, Falling Bulwark, Comet) and his last borrowed poses painted
+- Nick: "i want vexa and mage Fully fleshed out and finnished, whatever needs to be done". Built on the PC's ChatGPT build merged into git (6c3fea7, level 3 thread).
+- **New moves** (`src/data/characters.js` mage `states` / `moves.comet` / `kit.downburst|wardDrop|comet`, `src/combat/Mage.js`):
+  - Kick (RB / O) in the air = **DOWNBURST**: the Force Blast driven down under him; men below and just ahead slammed flat (a man in the air is spiked and bounces), marked with Static, crates smashed; the blast kicks him back up into a short hang. 8 mana, once per jump.
+  - Magic (LB / U) in the air = **FALLING BULWARK**: the Earthen Bulwark dropped out of the sky 120 px ahead; whoever is under it is crushed (24, Static x2) and thrown aside, then it stands as a normal wall (barrier mana + cooldown, once per jump). `Barriers.place(..., { dropped: true })`; `EarthWallView` drops the slabs in (`DROP_FRAMES`).
+  - Sprint + heavy (Y) = **COMET**: he goes to lightning and streaks 360 px down the lane, untouchable; every man on the line is shocked, knocked down and marked (Static x2), and he re-forms past them. 16 mana, short cooldown.
+  - Routing: `fighterStates.js` (air kick/magic gates, sprint + heavy before the plain heavy). Effects: `MageFX` `downburst`, `wallDrop`, `comet` + events `cometCall/Go/Hit/Arrive`. Logic tests for all three.
+- **Art (ChatGPT, chat "BA · Mage · Strips", prompts `docs/mage-art-prompts.md` section 15)**: `oryn-mage-air` (air chop, Downburst, Falling Bulwark), `oryn-mage-thunder` (Thunder Staff), `oryn-mage-spikes` (Stone Spikes). Baked by `python tools/bake-oryn-nov26.py`, originals in `art-incoming/oryn-nov26/`, listed in `src/data/orynArt.js`. The air chop, Thunder Staff and Stone Spikes no longer borrow other poses. The Comet uses his blink poses (he's only lightning in between).
+- Sim change: both online players need the new build. npm test: only the 3 level 4 (ascent) failures that came with ChatGPT's level 4 rework. Not played by a person (the cloud's browser can't boot the full game); the new effects were drawn in the FX preview harness without errors.
 ## Cloud, 2026-11-26: Vexa's last shared poses are her own (not on itch)
 - Nick: "i want vexa and mage fully fleshed out and finished". She already had Rurik's move count (16 kit moves vs his 13). Her jump attack, dive, Fade and knife throw borrowed other strips; now each has its own ChatGPT strip (`rogue_airattack`, `rogue_dive`, `rogue_fade`, `rogue_knifethrow`, HD sheets in `src/data/vexaArt.js`, anims in `HERO_ANIMS.rogue`). Still shared: her plain jump (air 0-1), the launch off a teammate's shoulder (air 3) and the kick (moves strip).
 - Not checked: Fade by real input (attack + jump with the stick held away), knife throw timing in a fight, the fan. The PC checked jump attack and dive by input and Fade by forcing the state, muted. No blood layers (main dropped BloodCoat).

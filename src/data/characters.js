@@ -243,8 +243,9 @@ export const CHARACTERS = {
     look: { color: 0x1c2550, accent: 0x6a4a2a, skin: 0xd8b494 },
     // the buttons his kit replaces: dodge = BLINK, heavy = CHAIN LIGHTNING,
     // kick = FORCE BLAST, magic = ARCANE BARRIER (tap fire, hold earth)
-    // (in the air: heavy = METEOR DROP, the shared 'plunge' state with his kit.plunge)
-    states: { dodge: 'blink', heavy: 'bolt', kick: 'force', cast: 'ward', charge: 'twirl', airHeavy: 'plunge' },
+    // (in the air: heavy = METEOR DROP, the shared 'plunge' state with his kit.plunge;
+    // kick = DOWNBURST, magic = FALLING BULWARK; on the run: heavy = COMET. 2026-11-26)
+    states: { dodge: 'blink', heavy: 'bolt', kick: 'force', cast: 'ward', charge: 'twirl', airHeavy: 'plunge', airKick: 'downburst', airMagic: 'wardDrop' },
 
     maxHealth: 100, maxStamina: 90, maxMana: 120,
     // (his mana is meant to come from fighting: a slow trickle on its own, a lot from the
@@ -404,6 +405,19 @@ export const CHARACTERS = {
         hitbox: { x: 12, y: 30, w: 62, h: 56 },
         cancels: [{ from: 22, to: 38, into: ['attack', 'heavy', 'dodge', 'block'] }],
       },
+      // SPRINT + Y: the COMET (2026-11-26). He goes to lightning and streaks along the lane
+      // straight through the men in his way: each one he passes is shocked, spun and marked
+      // with Static, and he re-forms past the last. Untouchable while he's light. The run's
+      // numbers are kit.comet; this gates the button (and its mana).
+      comet: {
+        cut: 'shock', fx: 'comet', noBlood: true, static: 2, maims: 0.25,
+        startup: 6, active: 9, recovery: 16,
+        damage: 12, hitstun: 30, hitstop: 4, shake: 4,
+        knockback: { x: 260, y: 220 }, knockdown: true, breaksGuard: true, guardDamage: 40,
+        manaCost: 16,
+        hitbox: { x: 0, y: 0, w: 0, h: 0 },
+        cancels: [{ from: 16, to: 31, into: ['attack', 'heavy', 'dodge', 'block'] }],
+      },
       // Y, Y, then X: THUNDER STAFF. The lightning held in the staff and brought down on
       // the man in front: a huge electrified smash (sets off his Static like a bolt does).
       thunder: {
@@ -487,6 +501,21 @@ export const CHARACTERS = {
       // falling star; where he lands the floor bursts, everyone close is thrown down and
       // marked with Static (combat/Skills.js 'plunge'). Cools down so it can't be pogoed.
       plunge: { speed: 1250, radius: 120, depth: 48, damage: 22, launch: 300, bounce: 0, minHeight: 30, hang: 9, cooldown: 120, static: 1, meteor: true },
+      // DOWNBURST (kick in the air, 2026-11-26): he turns the Force Blast down under him. The
+      // men below and just ahead are slammed into the floor (a man in the air is spiked down
+      // and bounces), the dust blows out flat, and the blast kicks HIM back up into a short
+      // hang (one per time in the air). `reach` ahead / `behind` back from his feet,
+      // `depth` across the lane; `below`: how far under him it reaches.
+      downburst: { manaCost: 8, cooldown: 50, startup: 6, recovery: 14, reach: 150, behind: 50, depth: 46, below: 260, damage: 10, push: 180, rebound: 380, static: 1 },
+      // FALLING BULWARK (magic in the air, 2026-11-26): the Earthen Bulwark dropped out of
+      // the sky instead of raised from the floor. It lands `distance` ahead of him: every man
+      // under it is crushed flat (`damage`, Static) and thrown to the nearer side, then it
+      // stands as an ordinary wall (same mana and cooldown as the barrier).
+      wardDrop: { distance: 120, castAt: 8, recovery: 12, damage: 24, lift: 240, push: 220, reach: 22, static: 2 },
+      // the COMET (sprint + heavy, 2026-11-26; moves.comet is the blow): `distance` px along
+      // the lane in `frames` frames, hitting every man within `width` of his line (`height`:
+      // a man up in the air higher than this is flown under)
+      comet: { distance: 360, frames: 9, width: 34, height: 100, cooldown: 70 },
       // STONE SPIKES (skill tree, THE CATACLYSM; D-pad down / H): the staff into the floor
       // and a line of stone spikes bursts out along it, one after another, throwing each man
       // it reaches up into the air (combat/Storm.js 'spikes')
