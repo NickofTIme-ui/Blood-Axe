@@ -32,6 +32,8 @@ export const GROUNDS = {
   // 2026-11-26, the level 3 masterplan's phase 3)
   'm-mouth': 'assets/env/mine/ground_mouth.jpg',
   'm-workings': 'assets/env/mine/ground_workings.jpg',
+  'm-shaft': 'assets/env/mine/ground_shaft.jpg',
+  'm-river': 'assets/env/mine/ground_river.jpg',
 };
 
 // Make an image tile seamlessly left-to-right by blending its last `frac` into its start.

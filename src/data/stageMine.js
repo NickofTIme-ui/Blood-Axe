@@ -82,7 +82,7 @@ export const STAGE_MINE = {
       rest: { x: 2700, z: 320, kind: 'oath' },
     },
     {
-      id: 'shaft', name: 'THE LIFT SHAFT', x0: 2800, x1: 4300,
+      id: 'shaft', ground: 'm-shaft', groundFade: 160, name: 'THE LIFT SHAFT', x0: 2800, x1: 4300,
       spawn: { x: 2860, z: 440 },
       objective: 'Raise the portcullis',
       hint: 'Break the counterweight\'s chain to raise the gate',
@@ -97,7 +97,7 @@ export const STAGE_MINE = {
       hazards: [],
     },
     {
-      id: 'river', name: 'THE UNDERGROUND RIVER', x0: 4300, x1: 5800,
+      id: 'river', ground: 'm-river', groundFade: 160, name: 'THE UNDERGROUND RIVER', x0: 4300, x1: 5800,
       spawn: { x: 4360, z: 440 },
       objective: 'Kill the Chain Warden',
       hint: 'Stepping stones: tap jump from stone to stone. Jump the Warden\'s hook',
