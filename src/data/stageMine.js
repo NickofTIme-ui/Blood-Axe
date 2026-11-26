@@ -53,7 +53,7 @@ export const STAGE_MINE = {
       objective: 'Follow the tracks into the mountain',
       hint: 'Hop the ore cart',
       fightAt: 860,
-      waves: [['grunt', 'grunt', 'stalker'], ['butcher', 'grunt', 'stalker']], // (an overseer; the Crusher is only heard here, pounding deeper in)
+      waves: [['grunt', 'grunt', 'stalker'], ['butcher:overseer', 'grunt', 'stalker']], // (an overseer; the Crusher is only heard here, pounding deeper in)
       props: [
         { kind: 'crate', x: 1180, z: 480, drop: 'health' },
         { kind: 'barrel', x: 420, z: 300, drop: null },
@@ -66,7 +66,7 @@ export const STAGE_MINE = {
       objective: 'Strike the shackles',
       hint: 'Break the posts they are chained to. Mind the rails: jump the carts',
       fightAt: 1600,
-      waves: [['grunt', 'crusher', 'grunt', 'grunt'], ['crusher', 'crusher', 'stalker'], ['ghoul', 'butcher', 'ghoul', 'crusher', 'ghoul']], // (a Crusher, then two; then the overseer and the ghouls up out of the deep shafts. No thralls: they're the Iron Gates')
+      waves: [['grunt', 'crusher', 'grunt', 'grunt'], ['crusher', 'crusher', 'stalker'], ['ghoul', 'butcher:overseer', 'ghoul', 'crusher', 'ghoul']], // (a Crusher, then two; then the overseer and the ghouls up out of the deep shafts. No thralls: they're the Iron Gates')
       props: [
         { kind: 'shackle', tag: 'tobin', x: 1900, z: 300, drop: null },
         { kind: 'shackle', tag: 'hilde', x: 2160, z: 300, drop: null },
@@ -87,7 +87,7 @@ export const STAGE_MINE = {
       objective: 'Raise the portcullis',
       hint: 'Break the counterweight\'s chain to raise the gate',
       fightAt: 3860,
-      waves: [['grunt', 'stalker', 'grunt'], ['butcher', 'ghoul']],
+      waves: [['grunt', 'stalker', 'grunt'], ['butcher:overseer', 'ghoul']],
       props: [
         // the counterweight: its chain holds the portcullis down (`opens` the terrain tagged
         // 'portcullis')

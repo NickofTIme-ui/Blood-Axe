@@ -1744,7 +1744,7 @@ export class ArenaScene extends Phaser.Scene {
     // (strips: wears another's; a boss's own set (`look`) once it's painted, else his kind's)
     const sheets = this.registry.get('enemySprites');
     // (a man with a job of his own wears his own look: the convoy's Wagonmaster, stage/WoodTraps.js)
-    const own = { driver: 'wagonmaster' }[f.role] ?? f.stats.look;
+    const own = { driver: 'wagonmaster', overseer: 'overseer' }[f.role] ?? f.stats.look; // (the mine's Overseers too)
     const sheet = f.team === 'enemy' && !this.dollsOnly && (sheets?.[own] ?? sheets?.[f.stats.strips ?? f.stats.id]);
     if (sheet && f.stats.art && ENEMY_ART[f.stats.art]) return new SpriteEnemyView(this, f, sheet);
     if (f.stats.art && ENEMY_ART[f.stats.art]) return new EnemyView(this, f);
