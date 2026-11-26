@@ -588,6 +588,25 @@ export class TerrainView {
     v.top.setVisible(true); v.front.setVisible(true);
     // a log bridge over the water: its walkway is the bark tile as before, and its front the
     // painted fallen tree (assets/env/bridge_log.png), roots and broken end past the banks
+    // (the mine's river: squared pit props laid side by side across it, iron-banded, not the
+    // wood's mossy log; one per 30 of depth, the back ones darker)
+    if (this.mine && b.mat === 'log' && this.terrain.inPit((x0 + x1) / 2, b.z1 - 1) && this.scene.textures.exists(artKey('mine', 'timber_bridge'))) {
+      const key = artKey('mine', 'timber_bridge');
+      const depth = yTop1 - yTop0;
+      const rows = Math.max(2, Math.round(depth / 30));
+      const lw = (x1 - x0) * 1.12;
+      v.arts ??= [];
+      for (let i = 0; i < rows; i++) {
+        const img = v.arts[i] ??= this.scene.add.image(0, 0, key).setOrigin(0.5, 0.25);
+        const k = 0.62 + 0.38 * (i / Math.max(1, rows - 1));
+        const g = Math.round(255 * k);
+        img.setPosition((x0 + x1) / 2 + (i % 2 ? 8 : -6), yTop0 + depth * ((i + 0.5) / rows)).setScale(lw / img.frame.width)
+          .setFlipX(i % 2 === 1).setTint(Phaser.Display.Color.GetColor(g, g, g))
+          .setDepth(i === rows - 1 ? b.z1 + 0.6 : b.z0 - 0.5 + i * 0.01).setVisible(true);
+      }
+      top.setVisible(false); front.setVisible(false);
+      return;
+    }
     if (b.mat === 'log' && this.terrain.inPit((x0 + x1) / 2, b.z1 - 1) && paintedLog(this.scene)) {
       v.art ??= this.scene.add.image(0, 0, 'bridge-log').setOrigin(0.5, LOG_FIT.walk);
       const lw = (x1 - x0) * LOG_FIT.wide;
@@ -599,6 +618,9 @@ export class TerrainView {
       if (b.mat === 'log' && v.art) { this.drawLogRaft(v, x0, x1, yTop0, yTop1); return; }
       if (b.mat !== 'log') { this.drawStones(v, x0, x1, yTop0, yTop1); return; }
     }
+    // (the mine's river: its own painted stepping stones, wet black rock in foam)
+    if (this.mine && b.kind === 'block' && b.mat !== 'log' && b.top <= 40 && this.terrain.inPit((x0 + x1) / 2, b.z1 - 1)
+      && this.scene.textures.exists(artKey('mine', 'stone_0'))) { this.drawStones(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'siegeGate') { this.drawSiegeGate(v, x0, x1); return; }
     if (b.mat === 'iron' && b.kind === 'block') { this.drawPortcullis(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
@@ -682,7 +704,7 @@ export class TerrainView {
     const rows = Math.max(2, Math.round(depth / 45));
     // painted (ChatGPT, 2026-11-19: three wet boulders, tools/cut-water-art.py): one per row,
     // their flat tops where you land, the back ones darker
-    const keys = [1, 2, 3].map((n) => artKey('wood', `water_stone_${n}`)).filter((k) => this.scene.textures.exists(k));
+    const keys = (this.mine ? [0, 1, 2].map((n) => artKey('mine', `stone_${n}`)) : [1, 2, 3].map((n) => artKey('wood', `water_stone_${n}`))).filter((k) => this.scene.textures.exists(k));
     if (keys.length) {
       v.arts ??= [];
       for (let i = 0; i < rows; i++) {
