@@ -6,6 +6,16 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 27 November 2026 (cloud, branch claude/project-thread-t9nruf; NOT on main until Nick says push). LEVEL 4, THE
+  SHATTERED ASCENT, CLAUDE'S POLISH (Nick: "good framework, art style good, execution UGLY"; Claude owns level 4 now).
+  One continuous painting (view/AscentPlates.js SPOTS: each spot names the scene it wants and a mirrored stand-in);
+  soft horizon (atmosphere.js floorSoft); seamless rock/plank tiles; siege guards no longer pitch black; code boulder and
+  battery slivers gone. The wind off the peaks (stage/AscentWind.js, `wind` per section): warned gusts push everyone down
+  the road and, on the causeway, toward the gorge (a grounded hero never goes over; Ashen men do). Its own sounds
+  (tools/sfx-gen/ascent.js -> assets/audio/sfx/ascent-*.wav; view/AscentAudio.js): wind bed, gust, catapult launch,
+  falling-stone whistle. Nicholas has his lines back; Orsk named again. The 3 failing ascent tests fixed.
+  STILL TO PAINT (ChatGPT, PC Chrome): docs/ascent-art-prompts.md (road_b, road_c, causeway, camp_b, boulder); they plug in
+  by filename. Causeway gap (x 5226-5700) and the battery's front face look plain until then.
 - 27 November 2026 (cloud, branch claude/project-thread-pftf2b; NOT on main until Nick says push). LEVEL 6, THE
   BLACK KEEP, ROUND 2 (masterplan doc https://claude.ai/artifact/3G7ZmCYYUkpExaqVkDack9). The two heroes nobody plays
   fight beside you (entities/Ally.js; `allies: true`; never in `players`, so story/camera/game over ignore them;
