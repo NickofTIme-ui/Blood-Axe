@@ -632,6 +632,9 @@ export class TerrainView {
     // (the gates: a burned-out ram on the road, the village's burnt cart in the town)
     const painted = { cart: 'cartwreck', ram: 'prop-ram', orecart: artKey('mine', 'ore_cart') }[b.look];
     if (painted && this.scene.textures.exists(painted)) { this.drawPaintedBlock(v, x0, x1, painted); return; }
+    // (the Ashen Throne: the colossus's stone fists to climb, the King's plinth: painted)
+    const keepPiece = this.theme === 'keep' && { arm: 'fist', shoulder: 'fist', chest: 'plinth' }[b.look];
+    if (keepPiece && this.scene.textures.exists(artKey('keep', keepPiece))) { this.drawKeepPiece(v, x0, x1, yTop0, artKey('keep', keepPiece)); return; }
     const mat = b.kind === 'crumble' ? 'plank' : b.kind === 'lift' ? 'iron' : 'rock';
     const C = mat === 'plank' ? [COL.plankTop, COL.plankRim, COL.plankFront]
       : mat === 'iron' ? [COL.iron, COL.ironRim, COL.ironDark] : [COL.rockTop, COL.rockRim, COL.rockFront];
@@ -1164,6 +1167,28 @@ export class TerrainView {
   // timbers and rubble (prop_wreckage.png, its burnt-out half, the smoke cropped off): one heap
   // per 50 of depth, every other one smaller and set aside. A little wider than the block, so it reads.
   // (The gates' burned ram, `look` 'ram', stands like a cart: whole, one per block.)
+  // One painted piece standing in for a whole block (the Keep's fists and plinth, on magenta,
+  // cut to the thing itself): as wide as the block and a little over, its flat top at the
+  // block's back edge, its foot on the floor at the block's front.
+  drawKeepPiece(v, x0, x1, yTop0, tex) {
+    const { top, front, b } = v;
+    const s = this.scene;
+    const over = 18;
+    // (two halves of the one picture: what's above the block's front edge sits behind
+    // whoever stands on it, the face below in front of whoever stands behind it)
+    const yA = yTop0 - 8; const yB = b.z1 + 6; const yCut = b.z1 - b.top;
+    const H = s.textures.getFrame(tex).height; const W = s.textures.getFrame(tex).width;
+    const cut = Math.round(H * Math.max(0, Math.min(1, (yCut - yA) / (yB - yA))));
+    const flip = b.look === 'shoulder' || (b.look === 'arm' && b.x0 > 16800);
+    v.arts ??= [s.add.image(0, 0, tex).setOrigin(0.5, 1), s.add.image(0, 0, tex).setOrigin(0.5, 1)];
+    v.arts.forEach((img, i) => img.setPosition((x0 + x1) / 2, yB).setDisplaySize(x1 - x0 + over, yB - yA)
+      .setCrop(0, i ? cut : 0, W, i ? H - cut : cut).setFlipX(flip).setDepth(i ? b.z1 + 0.4 : b.z0 - 0.5).setVisible(true));
+    v.grounds ??= [];
+    v.grounds[0] ??= groundUnder(s, (x0 + x1) / 2, b.z1 - 2, (x1 - x0) * 1.1, b.z1 + 0.4, { seed: b.id * 7, deep: 1.2 });
+    moveGround(v.grounds[0], (x0 + x1) / 2, b.z1 - 2);
+    top.setVisible(false); front.setVisible(false);
+  }
+
   drawPaintedBlock(v, x0, x1, tex) {
     const { top, b } = v;
     const s = this.scene;

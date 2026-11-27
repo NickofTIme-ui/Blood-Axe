@@ -63,7 +63,7 @@ export const STAGE_KEEP = {
 
   sections: [
     {
-      id: 'causeway', name: 'THE ASH CAUSEWAY', x0: 0, x1: 1900,
+      id: 'causeway', ground: 'k-causeway', groundFade: 160, name: 'THE ASH CAUSEWAY', x0: 0, x1: 1900,
       spawn: { x: 150, z: 420 },
       objective: 'Cross the causeway',
       hint: 'When the gale howls, get behind the parapet',
@@ -319,7 +319,7 @@ export const STAGE_KEEP = {
       ],
     },
     {
-      id: 'crown', name: 'THE CROWN WALK', x0: 13200, x1: 14700,
+      id: 'crown', ground: 'k-causeway', groundFade: 160, name: 'THE CROWN WALK', x0: 13200, x1: 14700,
       spawn: { x: 13280, z: 420 },
       objective: 'Cross the battlements. Kill the Crown Guard',
       hint: 'The gale again: behind the merlons',
@@ -365,7 +365,7 @@ export const STAGE_KEEP = {
       rest: { x: 15820, z: 330, kind: 'oath' },
     },
     {
-      id: 'throne', name: 'THE ASHEN THRONE', ...THRONE,
+      id: 'throne', ground: 'k-throne', groundFade: 160, name: 'THE ASHEN THRONE', ...THRONE,
       spawn: { x: 15980, z: 420 },
       objective: 'King Vaurath',
       hint: 'Parry his blows. When he guards, wait',

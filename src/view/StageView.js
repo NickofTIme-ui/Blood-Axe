@@ -1181,9 +1181,23 @@ export class StageView {
     if (!hz.view) {
       // Restore the original stone-rimmed firepit from props.png, including the
       // matching ember-lit artwork. Legacy look:'cart' mustn't cover this trap.
-      hz.view = this.scene.add.image(hz.x, hz.z, 'grate')
+      // (the colossus's breath, `look: 'breath'`: no grate, a smooth scorched patch of floor
+      // that glows as the ash fire gathers; drawn big and soft so it never pixelates)
+      const breath = hz.look === 'breath';
+      if (breath) this.canvasTex('scorch', 512, 256, (c, w, h) => {
+        c.imageSmoothingEnabled = true;
+        c.save(); c.scale(1, h / w);
+        const g = c.createRadialGradient(w / 2, w / 2, 8, w / 2, w / 2, w / 2);
+        g.addColorStop(0, 'rgba(20,10,8,0.85)'); g.addColorStop(0.6, 'rgba(26,14,12,0.6)'); g.addColorStop(1, 'rgba(26,14,12,0)');
+        c.fillStyle = g; c.beginPath(); c.arc(w / 2, w / 2, w / 2, 0, 7); c.fill(); c.restore();
+        c.strokeStyle = 'rgba(255,120,40,0.16)'; c.lineWidth = 6;
+        for (let i = 0; i < 9; i++) { const a = i * 0.7; c.beginPath(); c.moveTo(w / 2 + Math.cos(a) * 30, h / 2 + Math.sin(a) * 14); c.lineTo(w / 2 + Math.cos(a) * (120 + i * 9), h / 2 + Math.sin(a) * (52 + i * 4)); c.stroke(); }
+      });
+      hz.view = this.scene.add.image(hz.x, hz.z, breath ? 'scorch' : 'grate')
         .setDisplaySize(hz.w, hz.d * 0.75).setDepth(DEPTH.floor + 4);
-      hz.hot = this.painted.has('grate-hot')
+      hz.hot = breath
+        ? this.scene.add.image(hz.x, hz.z, 'scorch').setDisplaySize(hz.w, hz.d * 0.75).setTint(0xff7a30).setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + 4.05).setAlpha(0)
+        : this.painted.has('grate-hot')
         ? this.scene.add.image(hz.x, hz.z, 'grate-hot').setDisplaySize(hz.w, hz.d * 0.75).setDepth(DEPTH.floor + 4.05).setAlpha(0)
         : this.scene.add.ellipse(hz.x, hz.z, hz.w * 0.82, hz.d * 0.52, 0xc4420e, 1).setDepth(DEPTH.floor + 4.05).setAlpha(0);
       hz.glow = this.scene.add.image(hz.x, hz.z, 'glow').setDisplaySize(hz.w * 1.6, hz.d * 1.4).setTint(0xff6020)

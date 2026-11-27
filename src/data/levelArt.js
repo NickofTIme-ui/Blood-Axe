@@ -155,6 +155,7 @@ export const LEVEL_ART = {
       causeway: { height: 330, key: 'magenta' }, battlements: { height: 280, key: 'magenta' },
       hall: { height: 760 }, cells: { height: 760 }, forge: { height: 760 }, root: { height: 760 }, spire: { height: 760 },
     },
+    pieces: ['throne_hall', 'colossus', 'fist', 'plinth'], // (the Ashen Throne's hall, and the colossus that wakes behind it: view/KeepView.js drawThrone)
     props: { pin: { file: 'prop_pin.png', pair: true }, conduit: { file: 'prop_conduit.png', pair: true }, spire: { file: 'prop_spire.png', pair: true } },
     surfaces: { rock_top: { fit: true }, rock_front: { px: 160 } },
   },
