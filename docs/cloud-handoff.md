@@ -15,6 +15,12 @@ branch, or ChatGPT's work gets lost.
   ford footbridge = ChatGPT assets/env/wood/bridge_raft.png (TerrainView.drawLogRaft). STILL OPEN: hound run/idle/bark/
   howl strips and Hornblower/Woodsman looks (need the reference strips attached in ChatGPT; prompts
   docs/hound-art-prompts.md). Raws: /mnt/project-files/level2-polish-nov27/raw/.
+- 27 November 2026, later (cloud, branch claude/project-thread-gi0nk2; NOT on main until Nick says push). LEVEL 5
+  POLISH PASS (ON MAIN, Nick "push all"): gatehouse stair/landing stones at a man's scale and darkened (levelArt gates surfaces px + tint,
+  TerrainView.surface honours `tint`); the gatehouse pit is a stone shaft into the dark (TerrainView.gatesShaft), no
+  ruled lines; the winch room's main gate uses the painted grille sheared across the lane (drawPortcullis, gates
+  branch); caltrops/plates/bolt re-cut as RGBA with soft shadows (no pink); the murder-hole rockfall greyed in the
+  gates. Still to do (ChatGPT, needs Nick's PC Chrome): own grounds for yard and town; a stone arch over the drop gate.
 - 27 November 2026 (cloud, branch claude/project-thread-pftf2b; NOT on main until Nick says push). LEVEL 6, THE
   BLACK KEEP, ROUND 2 (masterplan doc https://claude.ai/artifact/3G7ZmCYYUkpExaqVkDack9). The two heroes nobody plays
   fight beside you (entities/Ally.js; `allies: true`; never in `players`, so story/camera/game over ignore them;

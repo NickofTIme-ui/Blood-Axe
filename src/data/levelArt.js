@@ -140,7 +140,8 @@ export const LEVEL_ART = {
       caltrop2: { file: 'piece_caltrop2.png', texture: 'gates-caltrop-2' } },
     // the gatehouse stair and landing (dressed stone) and the guardroom's rotten floor
     // (prompts: docs/gates-art-prompts.md)
-    surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, plank: { fit: true } },
+    // (stones at a man's scale, and lit like the floor round them: 2026-11-27 polish pass)
+    surfaces: { rock_top: { px: 150, tint: 0x9a948c }, rock_front: { px: 160, tint: 0xb0aaa2 }, plank: { fit: true } },
   },
   // THE BLACK KEEP (view/KeepView.js): each part of the Keep has its own wall (`tiles`);
   // what isn't painted stays drawn in code. Prompts: docs/keep-art-prompts.md
