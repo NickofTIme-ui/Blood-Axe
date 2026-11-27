@@ -2172,3 +2172,8 @@ Nick: "snare trap needs a sounds, also hold the NPC for longer".
 ## Cloud, 2026-11-26: Vexa's last shared poses are her own (not on itch)
 - Nick: "i want vexa and mage fully fleshed out and finished". She already had Rurik's move count (16 kit moves vs his 13). Her jump attack, dive, Fade and knife throw borrowed other strips; now each has its own ChatGPT strip (`rogue_airattack`, `rogue_dive`, `rogue_fade`, `rogue_knifethrow`, HD sheets in `src/data/vexaArt.js`, anims in `HERO_ANIMS.rogue`). Still shared: her plain jump (air 0-1), the launch off a teammate's shoulder (air 3) and the kick (moves strip).
 - Not checked: Fade by real input (attack + jump with the stick held away), knife throw timing in a fight, the fan. The PC checked jump attack and dive by input and Fade by forcing the state, muted. No blood layers (main dropped BloodCoat).
+
+## Between-level scenes polish (27 Nov, on main 144a16b)
+Black Keep cutaways (CutawayScene.js): war map end zoom stays on the painting, readable road count, crown kept clear of the
+letterbox, scene V line fixed and retitled "NO ONE LEFT TO SEND", painted war table / toppled table / thrown map / captain's ash
+(assets/cinematics/keep-*.png). HUD: each level's first card shows "CHAPTER II · GALLOWS WOOD". Not on itch yet.
