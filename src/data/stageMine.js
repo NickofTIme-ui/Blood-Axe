@@ -192,7 +192,7 @@ export const STAGE_MINE = {
       waves: [],
       props: [
         // the escape passage, choked with fallen rock: the last miners are behind it
-        { kind: 'rubble', tag: 'passage', x: 10820, z: 400, opens: 'passage', drop: null },
+        { kind: 'rubble', tag: 'passage', x: 10820, z: 400, opens: 'passage', drop: null, dug: { from: 5, every: 75 } }, // (break it once and the miners behind it dig from their side too: Stage.updateDiggers)
       ],
       hazards: [
         { type: 'collapse', x0: 9860, to: 10620, speed: 118, damage: 30, surge: { every: 220, for: 50, mult: 1.7 } },

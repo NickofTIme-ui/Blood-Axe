@@ -4474,6 +4474,18 @@ test('mine: the lift up to Pip\'s ledge rides: it waits at the bottom, carries a
   assert(lift.top === base, `back down without him (${lift.top})`);
 });
 
+test('mine: the miners behind the last fall of rock dig from their side once you have started on it', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('leap'), { x: 10700, z: 420 });
+  const pr = st.props.find((q) => q.kind === 'rubble' && q.tag === 'passage');
+  p.invincible = true;
+  const heard = []; world.events.on('diggersHeard', () => heard.push(1));
+  run(200);
+  assert(!pr.broken && pr.hp > pr.dug.from && heard.length === 0, `untouched, nobody digs (${pr.hp})`);
+  pr.hp = pr.dug.from;
+  run(pr.dug.every * (pr.dug.from + 1) + 10);
+  assert(heard.length === 1 && (pr.broken || pr.opened), `heard once, and dug through (${pr.hp}, broken ${pr.broken})`);
+});
+
 test('mine: the chase runs on through three stretches: each picks the rock up where it was, runs faster, and a death puts it back behind that stretch\'s start', () => {
   const ids = ['collapse', 'gallery', 'leap'];
   const walls = ids.map((id) => STAGE_MINE.sections[MINE_SEC(id)].hazards.find((h) => h.type === 'collapse'));

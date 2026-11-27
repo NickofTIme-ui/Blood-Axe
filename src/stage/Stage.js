@@ -1138,6 +1138,7 @@ export class Stage {
 
   updateProps() {
     this.chestPrompt = null;
+    this.updateDiggers();
     if (!this.world.hold && !this.story?.holding) {
       for (const f of this.players ?? [this.player]) {
         if (!f?.alive || !f.grounded || !['idle','walk'].includes(f.state)) continue;
@@ -1222,6 +1223,22 @@ export class Stage {
         pr.x = under.x + Math.max(-room, Math.min(room, pr.dx ?? 0));
         pr.y = under.y + Math.round(under.h * (PROP_LOOKS[under.look]?.top ?? 0.92));
       }
+    }
+  }
+
+  // A fall of rock with people behind it (`dug: { from, every }`, the mine's last passage):
+  // once you've broken it down to `from`, the trapped miners hear you and dig from their side
+  // too, one blow of their picks every `every` frames, so the way opens faster while the
+  // roof comes down (level 3 polish, 2026-11-27: the freed help dig).
+  updateDiggers() {
+    if (this.world.hold || this.story?.holding) return;
+    for (const pr of this.props) {
+      if (!pr.dug || pr.broken || pr.opened || pr.hp > pr.dug.from) continue;
+      if (!pr.digging) { pr.digging = 1; this.world.events.emit('diggersHeard', { prop: pr }); }
+      if (++pr.digging % pr.dug.every !== 0) continue;
+      pr.hp -= 1;
+      if (pr.hp > 0) { this.world.events.emit('propHit', { prop: pr, dir: -1, chain: true }); this.world.events.emit('diggerBlow', { prop: pr }); this.shakeOff?.(pr, -1); continue; }
+      this.breakProp(pr, -1, false, 1);
     }
   }
 
