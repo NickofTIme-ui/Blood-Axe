@@ -4990,6 +4990,22 @@ test('keep: the gale gives warning, then pushes; behind the stones it does not',
   assert(pushed(hz.shelter.z - 10) === 0, 'behind the stones, nothing');
 });
 
+test('keep: the wind never blows a hero off the edge (Nick: no blowing the players off the maps); the King\'s men can still go over', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('causeway'), { x: 800, z: 380 });
+  const T = st.terrain;
+  const pit = T.pits.find((q) => q.x0 < 800 && q.x1 > 800);
+  assert(pit, 'an open edge in front at x 800');
+  let fell = false;
+  const hz = st.hazards.find((h) => h.type === 'drift'); const log = [];
+  const noFoes = () => { for (const f of world.fighters) if (f.team === 'enemy') f.removeMe = true; };
+  run(1400, (i) => { p.health = p.stats.maxHealth; noFoes(); if (i % 50 === 0) log.push(Math.round(p.z)); if (T.inPit(p.x, p.z)) fell = true; });
+  assert(!fell && p.z < pit.z0 - 10 && log.at(-1) > 400, `pushed, but held short of the drop through every gust (${log.join(' ')}, edge ${pit.z0})`);
+  const e = createEnemy(world, 'grunt', 820, pit.z0 - 20);
+  let over = false;
+  run(1400, () => { p.health = p.stats.maxHealth; if (e.alive && T.inPit(e.x, e.z)) over = true; e.brain && (e.brain.sample = () => {}); });
+  assert(over || !e.alive, `an enemy at the edge can still be blown over (z ${Math.round(e.z)})`);
+});
+
 test('every level: no enemy and no boss ever pops into view (each comes on from off-screen, or stood there before anyone could see the spot)', () => {
   const heal = (w, st, p) => { p.health = p.stats.maxHealth; };
   const levels = [
