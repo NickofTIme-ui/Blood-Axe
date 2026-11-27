@@ -1076,7 +1076,7 @@ export class NpcView {
   // through the gate after it
   updateCompanions() {
     if (!this.companions.length) return;
-    this.puppets.frame++;
+    if (this.puppets) this.puppets.frame++; // (a level of allies only: no puppets of their own)
     const st = this.stage;
     const gate = st.sections[st.sections.length - 1];
     const gx = st.data.exit?.x ?? gate.x1 - 100;

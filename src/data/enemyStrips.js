@@ -285,3 +285,25 @@ ENEMY_STRIPS.orsk = Object.fromEntries(Object.entries({ walk: 8, react: 6, atk1:
 for(const id of ['siegeguard','stonebreaker'])ENEMY_STRIPS[id]=Object.fromEntries(Object.entries({walk:8,react:6,atk1:5,atk2:5,heavy:6,special:6}).map(([name,frames])=>[name,{file:DIR+'/'+id+'_'+name+'.png',frames,ref:0,ground:'drawn',wide:36}]));
 ENEMY_ANIMS.siegeguard={...ENEMY_ANIMS.grunt,special1:ENEMY_ANIMS.berserker.special1};
 ENEMY_ANIMS.stonebreaker={...ENEMY_ANIMS.berserker};
+
+// King Vaurath, the Ashen Crown (the Black Keep's last boss): his own painted body at last,
+// on magenta (black and ember armour). ChatGPT, 27 November 2026; prompts
+// docs/keep-king-strip-prompts.md. Over the standard set: chop (the held-back third cut, also
+// the ash wave held at the top) and cast (his sorcery: the Keep obeying him, f.stripPose).
+ENEMY_STRIPS.king = Object.fromEntries(Object.entries({
+  ...bossSet('king'),
+  chop: { file: `${DIR}/king_chop.png`, frames: 5, ref: 0, ground: 'drawn' },
+  cast: { file: `${DIR}/king_cast.png`, frames: 6, ref: 0, ground: 'drawn', optional: true },
+}).map(([n, s]) => [n, { ...s, bg: 'magenta' }]));
+ENEMY_ANIMS.king = {
+  ...COMMON,
+  light1: quick('atk1'), light2: quick('atk2'),
+  // the third cut: both hands high, HELD at the top (the tell), then down to the floor
+  light3: { needs: ['chop'], phases: { startup: seq('chop', [0, 1, 2, 2]), active: seq('chop', [3]), recovery: seq('chop', [3, 4]) } },
+  // the thrust: drawn back to the hip, coiled, the long lunge, full reach
+  heavy: { needs: ['heavy'], phases: { startup: seq('heavy', [0, 1, 2, 2]), active: seq('heavy', [3, 4]), recovery: seq('heavy', [4, 5]) } },
+  // the glide: dropping low, then low over the floor with the blade levelled, the stab at the end
+  special1: { needs: ['special'], phases: { startup: seq('special', [0, 1, 1]), active: seq('special', [2, 3, 4, 2, 3, 4]), recovery: seq('special', [5, 5, 0]) } },
+  // the ash wave: the chop held long overhead, then into the floor
+  special2: { needs: ['chop'], phases: { startup: seq('chop', [0, 1, 2, 2, 2, 2, 2]), active: seq('chop', [3]), recovery: seq('chop', [3, 3, 3, 4]) } },
+};

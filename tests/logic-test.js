@@ -4907,6 +4907,47 @@ test('keep: the King duels: three parries or blocks break his composure and open
   assert(counters.length === 1 && p.health < hp, 'a blow into his guard burns back');
 });
 
+test('keep: the blade lock: parry the King\'s glide and the blades lock; mash to throw his guard wide, or he throws you off', () => {
+  for (const mash of [true, false]) {
+    const { world, p, st, run } = keepSetup(KEEP_SEC('throne'), { x: 16400, z: 420 });
+    st.fightOn = true; st.waveIndex = 99;
+    run(90, () => { p.health = p.stats.maxHealth; });
+    const k = st.boss;
+    const ends = []; world.events.on('bladeLockEnd', (e) => ends.push({ ...e, state: k.state, open: k.openFor }));
+    world.events.emit('parry', { attacker: k, defender: p, move: k.stats.moves.light1 });
+    assert(!st.bladeLock.active, 'a parried cut does not lock');
+    p.x = k.x - 80; p.z = k.z;
+    world.events.emit('parry', { attacker: k, defender: p, move: k.stats.moves.special1 });
+    assert(st.bladeLock.active, 'the parried glide locks blades');
+    const hp = p.health;
+    run(30, () => {});
+    assert(Math.abs(Math.abs(k.x - p.x) - 64) < 1 && k.invincible && p.invincible && k.stripPose, `chest to chest, untouchable (${Math.round(k.x - p.x)})`);
+    run(400, (i) => { if (mash && i % 5 === 0) p.controller.registerPress('attack'); });
+    assert(ends.length === 1 && !st.bladeLock.active && !k.stripPose && !k.invincible && !p.invincible, 'it ends once');
+    if (mash) assert(ends[0].won && ends[0].open > 0 && ends[0].state === 'stagger', `mashed: his guard thrown wide (${ends[0].state}, ${ends[0].open})`);
+    else assert(!ends[0].won && p.health < hp && p.state === 'knockdown', `left alone: he throws you off (${p.state}, ${p.health}/${hp})`);
+  }
+});
+
+test('keep: the King\'s last swing: in his last phase, near the end, he puts everything into one thrust, once', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('throne'), { x: 16400, z: 420 });
+  st.fightOn = true; st.waveIndex = 99;
+  run(90, () => { p.health = p.stats.maxHealth; });
+  const k = st.boss;
+  run(600, () => { p.health = p.stats.maxHealth; p.x = k.x - 300; });
+  const swings = []; world.events.on('kingLastSwing', (e) => swings.push(e));
+  const def = STAGE_KEEP.sections[KEEP_SEC('throne')].boss;
+  k.phase = def.phases.length; k.held = false;
+  k.health = k.stats.maxHealth * 0.3;
+  run(10, () => { p.health = p.stats.maxHealth; });
+  assert(!swings.length, 'not yet');
+  k.health = k.stats.maxHealth * def.lastSwing.at - 1;
+  let thrust = false;
+  run(120, () => { p.health = p.stats.maxHealth; if (k.move === k.stats.moves.heavy) thrust = true; });
+  assert(swings.length === 1 && k.lastSwung, 'his last swing comes, once');
+  assert(thrust, `and it is the thrust (${k.state})`);
+});
+
 test('keep: the colossus: at half health the King is held in the statue, untouchable, until every spire breaks; then the heart opens; at a quarter he comes down and the ground shrinks', () => {
   const { world, p, st, run } = keepSetup(KEEP_SEC('throne'), { x: 16400, z: 420 });
   st.fightOn = true; st.waveIndex = 99;

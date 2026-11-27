@@ -408,6 +408,10 @@ export const STAGE_KEEP = {
         // I, THE DUEL: little gets through his guard until his composure breaks (three parries
         // of his blows, or guards broken); then he staggers wide open
         duel: { composure: 3, ward: 0.3, open: 160, counter: { damage: 14, reach: 130 } },
+        // parry his glide and the blades lock: mash attack to throw his guard wide (stage/BladeLock.js)
+        lock: true,
+        // IV, at the very end: everything he has left in one last thrust, the world slowed round it
+        lastSwing: { at: 0.12, move: 'heavy' },
         sentence: {
           speaker: 'VAURATH',
           crimes: [

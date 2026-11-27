@@ -1099,6 +1099,27 @@ export class ArenaScene extends Phaser.Scene {
       this.callout(level >= section.rise.tiers.length ? 'THE FIRE REACHES THE TOP!' : 'THE FIRE CLIMBS A TIER!', '#ff7a30', 22);
       playSfx(this, 'fireWhoosh', { volume: 0.8, pitch: -300, minGapMs: 0 });
     });
+    // King Vaurath's blade lock (stage/BladeLock.js) and his last swing (Stage lastSwing)
+    ev.on('bladeLock', ({ hero, boss }) => {
+      this.callout('BLADES LOCKED!  ·  MASH ATTACK!', '#ffb050', 26);
+      playSfx(this, 'clash', { volume: 0.9, pitch: -200, minGapMs: 0 });
+      this.cameras.main.shake(160, 0.006);
+      this.gore?.spark((hero.x + boss.x) / 2, boss.z, 70, 0xffb050, 18);
+    });
+    ev.on('bladePush', ({ hero, boss }) => {
+      this.gore?.spark((hero.x + boss.x) / 2, boss.z, 70, 0xffd890, 4);
+      playSfx(this, 'clash', { volume: 0.35, pitch: 200, minGapMs: 70 });
+    });
+    ev.on('bladeLockEnd', ({ won }) => {
+      this.callout(won ? 'HIS GUARD IS THROWN WIDE!' : 'HE THROWS YOU OFF!', won ? '#ffd24a' : '#ff6040', 24);
+      if (won) this.slowmo(0.5, 260);
+      this.cameras.main.shake(200, won ? 0.008 : 0.005);
+    });
+    ev.on('kingLastSwing', () => {
+      this.callout('HIS LAST SWING  ·  PARRY IT!', '#ff9a50', 28);
+      this.slowmo(0.3, 1300);
+      playSfx(this, 'dkSlam', { volume: 0.7, pitch: -1200, minGapMs: 0 });
+    });
   }
 
   applySkills(fresh = false) {
