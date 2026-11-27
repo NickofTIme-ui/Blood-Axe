@@ -4468,10 +4468,22 @@ test('mine: the lift up to Pip\'s ledge rides: it waits at the bottom, carries a
   assert(lift.top === base, `it waits at the bottom (${lift.top})`);
   p.x = 3690; p.z = 310; p.h = p.floor = lift.top + 1; st.placeOnGround(p);
   run(200, () => { p.health = p.stats.maxHealth; });
-  assert(lift.top > base + 80 && Math.abs(p.h - lift.top) < 2, `carried up (${lift.top}, feet ${p.h}, on ${p.floorBlock?.kind}, grounded ${p.grounded}, ride ${lift.ride})`);
-  p.x = 3600; p.z = 300; p.h = p.floor = 225; st.placeOnGround(p);
+  assert(lift.top > base + 55 && Math.abs(p.h - lift.top) < 2, `carried up (${lift.top}, feet ${p.h}, on ${p.floorBlock?.kind}, grounded ${p.grounded}, ride ${lift.ride})`);
+  p.x = 3600; p.z = 300; p.h = p.floor = 200; st.placeOnGround(p);
   run(300, () => { p.health = p.stats.maxHealth; });
   assert(lift.top === base, `back down without him (${lift.top})`);
+});
+
+test('mine: the miners behind the last fall of rock dig from their side once you have started on it', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('leap'), { x: 10700, z: 420 });
+  const pr = st.props.find((q) => q.kind === 'rubble' && q.tag === 'passage');
+  p.invincible = true;
+  const heard = []; world.events.on('diggersHeard', () => heard.push(1));
+  run(200);
+  assert(!pr.broken && pr.hp > pr.dug.from && heard.length === 0, `untouched, nobody digs (${pr.hp})`);
+  pr.hp = pr.dug.from;
+  run(pr.dug.every * (pr.dug.from + 1) + 10);
+  assert(heard.length === 1 && (pr.broken || pr.opened), `heard once, and dug through (${pr.hp}, broken ${pr.broken})`);
 });
 
 test('mine: the chase runs on through three stretches: each picks the rock up where it was, runs faster, and a death puts it back behind that stretch\'s start', () => {

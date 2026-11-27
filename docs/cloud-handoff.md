@@ -2199,3 +2199,9 @@ Nick: "snare trap needs a sounds, also hold the NPC for longer".
 Black Keep cutaways (CutawayScene.js): war map end zoom stays on the painting, readable road count, crown kept clear of the
 letterbox, scene V line fixed and retitled "NO ONE LEFT TO SEND", painted war table / toppled table / thrown map / captain's ash
 (assets/cinematics/keep-*.png). HUD: each level's first card shows "CHAPTER II · GALLOWS WOOD". Not on itch yet.
+
+## Cloud, 2026-11-27: level 3 polish (on main 07b6faf, not on itch)
+- Planks laid as duckboards on a pit prop (TerrainView.drawMinePlanks), falling rock warned by shadow and grit (StageView.rockfallWarning), Pip's ledge at top 200, wall cross-fade `wallFade: 0.16`, river bridge close-laid.
+- Drops in the mine that aren't the river use painted chasms (assets/env/mine/chasm.png tall, chasm_wide.png wide; TerrainView.mineChasm).
+- Last passage: rubble `dug: { from, every }`, the miners dig from inside (Stage.updateDiggers, callout).
+- New ChatGPT art: chasm, chasm_wide, keep_far (the Black Keep on the far side, MineView.paintedDaylight), browner rubble_wall, torch-lit surf_rock_top.

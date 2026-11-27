@@ -192,7 +192,7 @@ export const STAGE_MINE = {
       waves: [],
       props: [
         // the escape passage, choked with fallen rock: the last miners are behind it
-        { kind: 'rubble', tag: 'passage', x: 10820, z: 400, opens: 'passage', drop: null },
+        { kind: 'rubble', tag: 'passage', x: 10820, z: 400, opens: 'passage', drop: null, dug: { from: 5, every: 75 } }, // (break it once and the miners behind it dig from their side too: Stage.updateDiggers)
       ],
       hazards: [
         { type: 'collapse', x0: 9860, to: 10620, speed: 118, damage: 30, surge: { every: 220, for: 50, mult: 1.7 } },
@@ -231,8 +231,8 @@ export const STAGE_MINE = {
     { kind: 'crumble', x0: 3565, x1: 3620, z0: 350, z1: 470, top: 140, fall: 40, back: 200 }, // gap 45
     { kind: 'block', x0: 3620, x1: 3760, ...FULL, top: 140 },             // the gallery goes on
     // (the lift up to the high ledge at the back: the optional rescue)
-    { kind: 'lift', x0: 3650, x1: 3730, z0: 282, z1: 340, top: 140, move: { axis: 'top', range: 85, period: 260, phase: 0, ride: true } }, // (it carries you up while you stand on it)
-    { kind: 'block', x0: 3540, x1: 3650, z0: 282, z1: 330, top: 225 },    // the high ledge (low enough that the camera keeps Pip in frame)
+    { kind: 'lift', x0: 3650, x1: 3730, z0: 282, z1: 340, top: 140, move: { axis: 'top', range: 60, period: 260, phase: 0, ride: true } }, // (it carries you up while you stand on it)
+    { kind: 'block', x0: 3540, x1: 3650, z0: 282, z1: 330, top: 200 },    // the high ledge (low enough that the camera keeps Pip in frame: at 225 his head was cut off, level 3 polish)
     { kind: 'block', x0: 3760, x1: 3840, ...FULL, top: 70 },              // down
     // the portcullis: iron, chained to its counterweight (gone once that's broken)
     { kind: 'block', tag: 'portcullis', mat: 'iron', x0: 4160, x1: 4190, ...FULL, top: 300 },
