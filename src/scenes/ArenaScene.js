@@ -1082,7 +1082,7 @@ export class ArenaScene extends Phaser.Scene {
   // own picks when they're richer)
   setupAllies(ev) {
     this.allies = [];
-    if (!this.stageData.allies) return;
+    if (!this.stageData.allies) return; // (the Keep's other events are hooked up below, with its allies)
     const ids = ['warrior', 'mage', 'rogue'].filter((h) => !this.heroIds.includes(h));
     const pts = this.stageData.veteran?.points ?? 0;
     this.allies = addAllies(this.world, this.players, ids, (id, base) => {
@@ -1092,6 +1092,13 @@ export class ArenaScene extends Phaser.Scene {
     this.npcView?.adoptAllies(this.allies);
     if (this.veteranGiven > 0) this.time.delayedCall(2600, () => this.callout(`+${this.veteranGiven} SKILL POINTS  ·  kneel at a shrine to spend them`, '#ffd24a', 30));
     ev.on('allyDown', ({ fighter }) => this.callout(`${fighter.stats.name.toUpperCase()} FALLS BACK`, '#c0a080', 18));
+    // the Keep's set pieces (stage/KeepSetPieces.js): the war drums, the line breaking, the fire climbing
+    ev.on('drumBeat', () => { playSfx(this, 'dkSlam', { volume: 0.55, pitch: -1000, minGapMs: 0 }); this.cameras.main.shake(90, 0.0025); });
+    ev.on('formationBroken', () => { this.callout('THE DRUMS ARE SILENT  ·  THE LINE BREAKS!', '#ffd24a', 24); playSfx(this, 'clash', { volume: 0.6, pitch: -300 }); });
+    ev.on('fireRises', ({ level, section }) => {
+      this.callout(level >= section.rise.tiers.length ? 'THE FIRE REACHES THE TOP!' : 'THE FIRE CLIMBS A TIER!', '#ff7a30', 22);
+      playSfx(this, 'fireWhoosh', { volume: 0.8, pitch: -300, minGapMs: 0 });
+    });
   }
 
   applySkills(fresh = false) {
