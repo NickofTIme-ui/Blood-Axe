@@ -1,11 +1,10 @@
-// TitleScene.js — First thing on launch: the cover art (assets/ui/cover.jpg) with the
-// title music, then a SELECT CHARACTER button that leads to the character select.
+// TitleScene.js — First thing on launch: THE OATHKEEPERS title screen with the title music.
 //
-// The painting is 4:3 and the screen 16:9, so it's shown whole in the middle, over a
-// blurred, darkened copy of itself that fills the sides. It fades up from black with a
-// slow push-in and embers drifting up; the button fades in a moment later.
-// Left / right (keys, stick or D-pad) move between the buttons; Enter / J / Space / (A)
-// or a click chooses. M toggles the music.
+// The screen is one picture (assets/ui/title-oathkeepers.jpg, built from art/title/): a
+// cartridge-box layout on a black grid, the logo top left and the painting framed on the
+// right. It fades up from black; the menu stacks down the left column under the logo.
+// Up / down or left / right (keys, stick or D-pad) move between the buttons; Enter / J /
+// Space / (A) or a click chooses. M toggles the music.
 
 import { SETTINGS } from '../config/settings.js';
 import { InputManager } from '../core/InputManager.js';
@@ -34,40 +33,14 @@ export class TitleScene extends Phaser.Scene {
 
     if (this.textures.exists('cover')) {
       const src = this.textures.get('cover').getSourceImage();
-      // the sides: the same painting, filling the screen, blurred and pushed back
-      const back = this.add.image(W / 2, H / 2, 'cover').setScale(W / src.width).setAlpha(0).setTint(0x6a4a4a);
-      back.preFX?.addBlur(1, 2, 2, 1.6, 0xffffff, 4);
-      this.tweens.add({ targets: back, alpha: 0.55, duration: 1600 });
-      // the painting itself, whole, slowly pushing in
-      const k = H / src.height;
-      this.cover = this.add.image(W / 2, H / 2, 'cover').setScale(k * 1.0).setAlpha(0);
-      this.tweens.add({ targets: this.cover, alpha: 1, duration: 1400, ease: 'Sine.easeIn' });
-      this.tweens.add({ targets: this.cover, scale: k * 1.045, duration: 22000, ease: 'Sine.easeOut' });
-      // soften the painting's left/right edges into the blurred sides
-      const edgeW = 70;
-      const coverW = src.width * k;
-      const edges = this.add.graphics();
-      for (let i = 0; i < edgeW; i += 2) {
-        const a = 0.75 * (1 - i / edgeW) ** 1.6;
-        edges.fillStyle(0x000000, a);
-        edges.fillRect(W / 2 - coverW / 2 + i, 0, 2, H);
-        edges.fillRect(W / 2 + coverW / 2 - i - 2, 0, 2, H);
-      }
+      this.cover = this.add.image(0, 0, 'cover').setOrigin(0).setScale(W / src.width).setAlpha(0);
+      this.tweens.add({ targets: this.cover, alpha: 1, duration: 1200, ease: 'Sine.easeIn' });
     } else {
       // no cover art (it failed to load): the name on black, so the game still starts
-      const t = this.add.text(W / 2, H * 0.4, 'BLOOD AXE', { fontFamily: FONT.display, fontSize: '80px' })
-        .setOrigin(0.5).setStroke('#0a0000', 9);
+      const t = this.add.text(136, 110, 'THE\nOATHKEEPERS', { fontFamily: FONT.display, fontSize: '40px', align: 'center' })
+        .setOrigin(0.5).setStroke('#0a0000', 7);
       epicFill(t, ['#ff7a5a', '#d0101a', '#6a0008', '#200002']);
     }
-
-    // embers drifting up through it
-    this.embers = [];
-    this.emberG = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
-
-    // a dark band behind the button so it reads over the painting
-    const band = this.add.graphics().setAlpha(0);
-    for (let i = 0; i < 90; i += 2) band.fillStyle(0x000000, 0.7 * (i / 90)).fillRect(0, H - 90 + i, W, 2);
-    this.tweens.add({ targets: band, alpha: 1, delay: 900, duration: 900 });
 
     this.lobby = null;
     this.makeButtons(H - 44);
@@ -120,26 +93,35 @@ export class TitleScene extends Phaser.Scene {
     const resume = at && STAGES[at.level] ? at : null;
     const entries = []; // [x, y, label, width, act, options]
     if (page === 'main') {
+      // the left column under the logo (the cover's red rule is at y 236-246)
+      const x = 132;
+      const bw = 232;
+      const top = 278;
+      const gap = 42;
+      const opts = { h: 34, size: 17 };
       if (resume) {
         const D = STAGES[resume.level];
         const where = resume.section > 0 ? `  ·  ${D.sections[resume.section]?.name ?? ''}` : '';
-        entries.push([W / 2, y - 74, `CONTINUE:  ${D.chapter}  ${D.name}${where}`, 600, () => this.go('solo', null, resume.level, resume.section), { h: 64, size: 26 }]);
+        this.cutTitle = this.add.text(x, 258, `${D.chapter}  ${D.name}${where}`, {
+          fontFamily: FONT.ui, fontSize: '12px', color: '#e8e0d0', align: 'center', wordWrap: { width: bw + 10 },
+        }).setOrigin(0.5).setAlpha(0);
+        this.tweens.add({ targets: this.cutTitle, alpha: 0.85, delay, duration: 700 });
+        entries.push([x, top, 'CONTINUE', bw, () => this.go('solo', null, resume.level, resume.section), { h: 40, size: 22 }]);
+        entries.push([x, top + gap + 4, 'NEW CAMPAIGN', bw, () => this.go('solo', null, 'village'), opts]);
       } else {
-        entries.push([W / 2, y - 74, 'THE CAMPAIGN  ·  BEGIN', 600, () => this.go('solo', null, 'village'), { h: 64, size: 30 }]);
+        entries.push([x, top, 'BEGIN CAMPAIGN', bw, () => this.go('solo', null, 'village'), { h: 40, size: 20 }]);
       }
-      // (the row under it: five buttons with a campaign started, four without)
-      const row = resume ? [-384, -192, 0, 192, 384] : [-345, -115, 115, 345];
-      const bw = resume ? 180 : 215;
-      const small = resume ? { size: 18 } : undefined;
-      if (resume) entries.push([W / 2 + row.shift(), y, 'NEW CAMPAIGN', bw, () => this.go('solo', null, 'village'), small]);
-      // THE PRACTICE YARD: every move, one at a time (data/stagePractice.js)
-      entries.push([W / 2 + row.shift(), y, 'PRACTICE', bw, () => this.go('solo', null, 'practice'), small]);
-      // (two players carry on from the same checkpoint)
-      entries.push([W / 2 + row.shift(), y, '2 PLAYERS', bw,
-        () => this.go('local', null, resume?.level ?? 'village', resume?.section), small]);
-      // (online plays the campaign too, from the host's checkpoint: SelectScene.tryStartNet)
-      entries.push([W / 2 + row.shift(), y, 'ONLINE CO-OP', bw, () => this.openLobby(), small]);
-      entries.push([W / 2 + row.shift(), y, "DIRECTOR'S CUT", bw, () => this.openCut(), small]);
+      const at0 = top + gap + 4 + (resume ? gap : 0);
+      const rest = [
+        // THE PRACTICE YARD: every move, one at a time (data/stagePractice.js)
+        ['PRACTICE', () => this.go('solo', null, 'practice')],
+        // (two players carry on from the same checkpoint)
+        ['2 PLAYERS', () => this.go('local', null, resume?.level ?? 'village', resume?.section)],
+        // (online plays the campaign too, from the host's checkpoint: SelectScene.tryStartNet)
+        ['ONLINE CO-OP', () => this.openLobby()],
+        ["DIRECTOR'S CUT", () => this.openCut()],
+      ];
+      rest.forEach(([label, act], i) => entries.push([x, at0 + i * gap, label, bw, act, opts]));
     } else {
       this.cutDim = this.add.rectangle(0, y - 196, W, SETTINGS.height, 0x050000, 0.72).setOrigin(0);
       this.cutTitle = this.add.text(W / 2, y - 164, "DIRECTOR'S CUT  ·  THE EARLIER BUILDS", { fontFamily: FONT.display, fontSize: '26px' })
@@ -392,21 +374,5 @@ export class TitleScene extends Phaser.Scene {
       else if (this.page === 'cut' && (c.consume('back') || c.consume('dodge'))) this.closeCut();
     }
     if (!this.sound.locked && this.soundHint.alpha > 0) this.soundHint.setAlpha(Math.max(0, this.soundHint.alpha - 0.05));
-
-    // embers: slow, flickering, drifting
-    const W = SETTINGS.width;
-    const H = SETTINGS.height;
-    if (this.embers.length < 45 && Math.random() < 0.35) {
-      this.embers.push({ x: Math.random() * W, y: H + 4, vy: 0.3 + Math.random() * 0.7, vx: (Math.random() - 0.5) * 0.3, s: 1 + Math.random() * 1.8, ph: Math.random() * 6.28, t: 0 });
-    }
-    const g = this.emberG.clear();
-    for (const e of this.embers) {
-      e.t++;
-      e.y -= e.vy;
-      e.x += e.vx + Math.sin(e.ph + e.t * 0.04) * 0.3;
-      const a = Math.min(1, e.t / 30) * Math.min(1, e.y / (H * 0.5)) * (0.55 + 0.45 * Math.sin(e.t * 0.25 + e.ph));
-      g.fillStyle(e.s > 2.2 ? 0xffb050 : 0xff6a20, Math.max(0, a) * 0.9).fillRect(e.x, e.y, e.s, e.s);
-    }
-    this.embers = this.embers.filter((e) => e.y > -6);
   }
 }
