@@ -1066,6 +1066,7 @@ export class CutawayScene extends Phaser.Scene {
     const from = R[t];
     const to = R[t + 1];
     const tok = this.token(from.x, from.y).setAlpha(0);
+    tok.face(march ? march[0].ang : Math.atan2(to.y - from.y, to.x - from.x)); // (set down already facing its road)
     m.add(tok);
     const roads = this.add.text(W / 2, painted ? H - 80 : y0 + ph - 34, ROADS[t], { fontFamily: FONT.display, fontSize: '22px' }).setOrigin(0.5).setAlpha(0);
     roads.setLetterSpacing?.(4);
@@ -1105,6 +1106,7 @@ export class CutawayScene extends Phaser.Scene {
             onUpdate: () => {
               const k = Math.min(march.length - 1, Math.round(step.u * (march.length - 1)));
               tok.setPosition(march[k].x, march[k].y);
+              tok.face(march[Math.min(march.length - 1, k + 2)].ang, 0.12); // (it turns into the road's bends, not snapping)
               for (; laid <= k; laid++) { const d = dab(march[laid], laid + 3); d.setScale(d.scaleX * 1.25); this.tweens.add({ targets: d, scale: d.scaleX / 1.25, duration: 220 }); }
             },
           });
@@ -1214,6 +1216,30 @@ export class CutawayScene extends Phaser.Scene {
     const c = this.add.container(x, y);
     const glow = this.add.image(0, 0, 'glow').setScale(1.3).setTint(0xff3020).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.7);
     this.tweens.add({ targets: glow, alpha: 0.35, duration: 600, yoyo: true, repeat: -1 });
+    c.face = () => c; // (the drawn coin has no front)
+    // the painted war wagon, sprite-stacked (Nick, 27 Nov): its slices, ground first, drawn one
+    // above the other so the pile reads as a small solid wagon; turning every slice the same way
+    // turns the wagon. The stack is squashed for the map's low camera (the squash is on the
+    // container, so it comes after each slice's turn), and the lift undoes the squash.
+    if (this.textures.exists('war-wagon-stack')) {
+      const n = this.textures.get('war-wagon-stack').frameTotal - 1; // (less the __BASE frame)
+      const S = 0.55; const SQUASH = 0.6;
+      const stack = this.add.container(0, 6).setScale(S, S * SQUASH);
+      const slices = [];
+      for (let z = 0; z < n; z++) slices.push(this.add.image(0, -z / SQUASH, 'war-wagon-stack', z));
+      stack.add(slices);
+      const shadow = this.add.ellipse(0, 7, 40, 18, 0x000000, 0.45);
+      c.add([glow, shadow, stack]);
+      c.heading = Math.PI / 2;
+      // face a heading (radians, 0 = right, as roadPoints gives them); the sheet's front points down
+      c.face = (ang, ease = 1) => {
+        const d = Phaser.Math.Angle.Wrap(ang - c.heading);
+        c.heading += d * ease;
+        for (const s of slices) s.setRotation(c.heading - Math.PI / 2);
+        return c;
+      };
+      return c;
+    }
     const g = this.add.graphics();
     g.fillStyle(0xc8a040, 1).fillCircle(0, 0, 14);
     g.fillStyle(0x9a1010, 1).fillCircle(0, 0, 11);
