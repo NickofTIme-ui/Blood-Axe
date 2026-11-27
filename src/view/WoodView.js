@@ -206,8 +206,11 @@ export class WoodBackdrop {
     const s = this.scene;
     const D = this.data;
     const top = SETTINGS.world.floorTop - 50;
-    if (D.gallows && this.art.piece('hanging_tree', D.gallows.x - 260, D.gallows.x + 120, { depth: D.gallows.z - 2, bottom: D.gallows.z - top })) {
-      // (painted)
+    const tree = D.gallows && this.art.piece('hanging_tree', D.gallows.x - 260, D.gallows.x + 120, { depth: D.gallows.z - 2, bottom: D.gallows.z - top });
+    if (tree) {
+      // (painted pale, grey-white and much brighter than the wood round it, it looked pasted
+      // on: Nick's review 2026-11-27. In the wood's own cold light, a shade darker at its roots)
+      lightProp(tree, PROP_LIGHT.gallowsWood, 0.72);
     } else if (D.gallows) {
       // a great dead oak with a long bough out over the road; the rope hangs from it (NpcView)
       const { x, z } = D.gallows;
@@ -234,7 +237,9 @@ export class WoodBackdrop {
       // (painted: the heap fills the road's end from the back wall to the front of the
       // lane, in front of everyone, and the rock block under it isn't drawn; the camera
       // never looks past the level's end, so it reads as the road buried)
-      if (slide && this.art.piece('rockslide', slide.x0 - 70, slide.x1 + 420, { depth: slide.z1 + 2, bottom: SETTINGS.height + 10 - top })) {
+      const heap = slide && this.art.piece('rockslide', slide.x0 - 60, slide.x0 + 520, { depth: slide.z1 + 2, bottom: SETTINGS.height + 10 - top });
+      if (heap) lightProp(heap, PROP_LIGHT.gallowsWood, 0.92); // (its pale grey stone in the wood's night light, 2026-11-27)
+      if (heap) {
         const b = this.stage.terrain?.blocks.find((q) => q.x0 === slide.x0 && q.top === slide.top);
         if (b) b.hideArt = true;
       } else if (slide) {
