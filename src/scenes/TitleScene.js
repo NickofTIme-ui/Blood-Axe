@@ -78,9 +78,9 @@ export class TitleScene extends Phaser.Scene {
   }
 
   // The menu. MAIN: the campaign, big and first (CONTINUE from its last checkpoint once
-  // it has been started), then a new campaign, two players on one machine, and the
-  // DIRECTOR'S CUT: the earlier builds and modes — the Oath Road (the first stage, one or
-  // two players), online co-op on the Oath Road and THE GALLOWS ASCENT (the
+  // it has been started), then a new campaign, two players, online co-op and SETTINGS.
+  // SETTINGS ('cut'): the practice yard, test mode, the director's cut builds — the Oath
+  // Road (the first stage, one or two players or online) and THE GALLOWS ASCENT (the
   // platforming slice, data/stageGallows.js) — and RESET HERO LEVEL (Progress.resetLevel).
   makeButtons(y, page = 'main', delay = 1500) {
     const W = SETTINGS.width;
@@ -113,27 +113,29 @@ export class TitleScene extends Phaser.Scene {
       }
       const at0 = top + gap + 4 + (resume ? gap : 0);
       const rest = [
-        // THE PRACTICE YARD: every move, one at a time (data/stagePractice.js)
-        ['PRACTICE', () => this.go('solo', null, 'practice')],
         // (two players carry on from the same checkpoint)
         ['2 PLAYERS', () => this.go('local', null, resume?.level ?? 'village', resume?.section)],
         // (online plays the campaign too, from the host's checkpoint: SelectScene.tryStartNet)
         ['ONLINE CO-OP', () => this.openLobby()],
-        ["DIRECTOR'S CUT", () => this.openCut()],
+        // SETTINGS: the practice yard, test mode, the director's cut builds, reset level
+        ['SETTINGS', () => this.openCut()],
       ];
       rest.forEach(([label, act], i) => entries.push([x, at0 + i * gap, label, bw, act, opts]));
     } else {
-      this.cutDim = this.add.rectangle(0, y - 196, W, SETTINGS.height, 0x050000, 0.72).setOrigin(0);
-      this.cutTitle = this.add.text(W / 2, y - 164, "DIRECTOR'S CUT  ·  THE EARLIER BUILDS", { fontFamily: FONT.display, fontSize: '26px' })
+      this.cutDim = this.add.rectangle(0, y - 254, W, SETTINGS.height, 0x050000, 0.78).setOrigin(0);
+      this.cutTitle = this.add.text(W / 2, y - 222, 'SETTINGS', { fontFamily: FONT.display, fontSize: '26px' })
         .setOrigin(0.5).setStroke('#0a0000', 6);
       epicFill(this.cutTitle, ['#fff2c8', '#e0b060', '#7a4a10']);
+      // THE PRACTICE YARD: every move, one at a time (data/stagePractice.js)
+      entries.push([W / 2 - 150, y - 174, 'PRACTICE', 260, () => this.go('solo', null, 'practice')]);
+      entries.push([W / 2 + 150, y - 174, this.testText(), 260, () => this.toggleTest(), { size: 19 }]);
+      // the DIRECTOR'S CUT: the earlier builds
       entries.push([W / 2 - 270, y - 116, 'THE OATH ROAD', 230, () => this.go('solo')]);
       entries.push([W / 2, y - 116, 'OATH ROAD: 2 PLAYERS', 250, () => this.go('local'), { size: 19 }]);
       entries.push([W / 2 + 270, y - 116, 'OATH ROAD: ONLINE', 230, () => this.openLobby('oath')]);
       entries.push([W / 2 - 190, y - 58, 'THE GALLOWS ASCENT', 300, () => this.go('solo', null, 'gallows')]);
       entries.push([W / 2 + 190, y - 58, this.resetText(), 330, () => this.resetLevel()]);
-      entries.push([W / 2 - 150, y, this.testText(), 260, () => this.toggleTest(), { size: 19 }]);
-      entries.push([W / 2 + 150, y, 'BACK', 200, () => this.closeCut()]);
+      entries.push([W / 2, y, 'BACK', 200, () => this.closeCut()]);
     }
     this.buttons = entries.map(([x, by, label, w, act, opts], i) => {
       const b = this.makeButton(x, by, label, w, act, delay + i * 80, opts);
@@ -142,8 +144,8 @@ export class TitleScene extends Phaser.Scene {
       return b;
     });
     this.button = this.buttons[0];
-    this.resetBtn = page === 'cut' ? this.buttons[4] : null;
-    this.testBtn = page === 'cut' ? this.buttons[5] : null;
+    this.resetBtn = page === 'cut' ? this.buttons[6] : null;
+    this.testBtn = page === 'cut' ? this.buttons[1] : null;
     showTestTag();
     this.armedReset = false;
     this.pick(0);
@@ -171,7 +173,7 @@ export class TitleScene extends Phaser.Scene {
   closeCut() {
     playSfx(this, 'swingAlt', { volume: 0.4, pitch: -200 });
     this.makeButtons(SETTINGS.height - 44, 'main', 0);
-    this.pick(this.buttons.length - 1); // (back on the DIRECTOR'S CUT button)
+    this.pick(this.buttons.length - 1); // (back on the SETTINGS button)
   }
 
   // RESET HERO LEVEL: press once to arm it, again to do it. Blood, skill picks and the
