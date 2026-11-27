@@ -6,8 +6,17 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 27 November 2026 (cloud, thread "Review level 2 for polish"; ON MAIN ad2b265, Nick "push all"). LEVEL 2 POLISH:
+  convoy wagon/prisoners/pine moved to z 348 so the Wagonmaster's head stays on screen; no market props in the wood
+  (named plain crates, sacks for trestle/urns); oath shrines (TerrainView, gallowsWood only) and the hanging tree tinted
+  to PROP_LIGHT.gallowsWood; red "=" blaze retouched off trap_pine.png; signal lantern glow = soft ADD 'glow' images;
+  tripwires = dark sagging cords; kennel snare moved to 8310; field shouts hide when the speaker is off screen
+  (NpcView); Rurik tells Joren about Mira; one-line hints; rockslide drawn on screen (block from 8900, exit 8860);
+  ford footbridge = ChatGPT assets/env/wood/bridge_raft.png (TerrainView.drawLogRaft). STILL OPEN: hound run/idle/bark/
+  howl strips and Hornblower/Woodsman looks (need the reference strips attached in ChatGPT; prompts
+  docs/hound-art-prompts.md). Raws: /mnt/project-files/level2-polish-nov27/raw/.
 - 27 November 2026, later (cloud, branch claude/project-thread-gi0nk2; NOT on main until Nick says push). LEVEL 5
-  POLISH PASS: gatehouse stair/landing stones at a man's scale and darkened (levelArt gates surfaces px + tint,
+  POLISH PASS (ON MAIN, Nick "push all"): gatehouse stair/landing stones at a man's scale and darkened (levelArt gates surfaces px + tint,
   TerrainView.surface honours `tint`); the gatehouse pit is a stone shaft into the dark (TerrainView.gatesShaft), no
   ruled lines; the winch room's main gate uses the painted grille sheared across the lane (drawPortcullis, gates
   branch); caltrops/plates/bolt re-cut as RGBA with soft shadows (no pink); the murder-hole rockfall greyed in the
