@@ -29,8 +29,8 @@
 // play out by themselves).  ESC (pad B or Start): skip the scene. Skipping changes nothing:
 // the scene is only shown, and its outcome is the level's (already saved).
 //
-// Art: everything here is painted except the war map, its table, the helm and the stand-ins
-// used when a painted piece fails to load. Prompts for those: docs/black-keep-scenes.md.
+// Art: everything here is painted (the war table, the thrown map and the ash: ChatGPT, 27 Nov)
+// except the stand-ins used when a painted piece fails to load. Prompts for those: docs/black-keep-scenes.md.
 
 import { SETTINGS } from '../config/settings.js';
 import { FONT, epicFill } from '../view/fonts.js';
@@ -190,7 +190,12 @@ const SPOT = {
   kneel: [330, 430], // the bearer of the news
   table: [672, 396], // the war table at the foot of the dais (scenes 1-3)
   ash: [300, 436], // where the captain burned (scene 4, and still there in 5)
+  floorMap: [418, 482], // where the thrown war map lands, and stays (scenes 3-5)
 };
+// how wide the painted props are in the hall (px): the war table, the thrown map, the ash
+const PROP_W = { table: 176, floorMap: 196, ash: 140 };
+// (and lit by the hall: a violet cast and a little darker, so they sit in it and don't glare)
+const PROP_TINT = 0xb4a6c8;
 // where the camera looks for each shot: [x, y, zoom]
 const SHOTS = {
   wide: [480, 270, 1],
@@ -525,6 +530,20 @@ export class CutawayScene extends Phaser.Scene {
   // the war table, the map spread on it and the little markers standing on the map
   drawTable() {
     const [x, y] = SPOT.table;
+    if (this.textures.exists('keep-war-table')) { // (ChatGPT, 27 Nov: the table with the map and markers on it)
+      const c = this.add.container(x, y);
+      const t = this.add.image(0, 2, 'keep-war-table').setOrigin(0.5, 1);
+      t.setScale(PROP_W.table / t.width).setTint(PROP_TINT);
+      c.add(t);
+      c.tableArt = t;
+      // the map that flies off it when he throws it (the painted map, crumpled: hidden until then)
+      const map = this.textures.exists('keep-floor-map') ? this.add.image(0, -t.displayHeight + 8, 'keep-floor-map').setAlpha(0).setTint(PROP_TINT) : this.add.container(0, 0);
+      if (map.setScale) map.setScale(70 / map.width);
+      c.add(map);
+      this.table = c; this.tableMap = map;
+      this.root.add(c);
+      return;
+    }
     const c = this.add.container(x, y).setScale(1.35);
     const g = this.add.graphics();
     g.fillStyle(0x140c08, 1).fillRect(-52, -40, 7, 40).fillRect(45, -40, 7, 40).fillRect(-40, -40, 5, 34);
@@ -545,6 +564,26 @@ export class CutawayScene extends Phaser.Scene {
   // what's been left on the floor since the third scene: the thrown map, its markers, and
   // (from the fourth) the captain's ash
   leftovers(W, H) {
+    if (this.textures.exists('keep-floor-map')) { // (ChatGPT, 27 Nov: the table on its side, the map, the ash)
+      const [tx, ty] = SPOT.table;
+      if (this.textures.exists('keep-war-table-fallen')) {
+        const f = this.add.image(tx - 10, ty + 6, 'keep-war-table-fallen').setOrigin(0.5, 1);
+        this.root.add(f.setScale(PROP_W.table / f.width).setTint(PROP_TINT));
+      }
+      const [mx, my] = SPOT.floorMap;
+      const m = this.add.image(mx, my, 'keep-floor-map').setOrigin(0.5, 1).setAngle(-3);
+      this.root.add(m.setScale(PROP_W.floorMap / m.width).setTint(PROP_TINT));
+      if (this.t >= 4 && this.textures.exists('keep-captain-ash')) {
+        const [ax, ay] = SPOT.ash;
+        const a = this.add.image(ax, ay + 4, 'keep-captain-ash').setOrigin(0.5, 1);
+        this.root.add(a.setScale(PROP_W.ash / a.width));
+        // a few embers still alive in it
+        const glow = this.add.image(ax + 6, ay - 4, 'glow').setScale(1.4, 0.5).setTint(0xff6a20).setAlpha(0.3).setBlendMode(Phaser.BlendModes.ADD);
+        this.root.add(glow);
+        this.tweens.add({ targets: glow, alpha: { from: 0.15, to: 0.4 }, duration: 700, yoyo: true, repeat: -1 });
+      }
+      return;
+    }
     const g = this.add.graphics();
     g.fillStyle(0x7a6440, 0.9).fillTriangle(380, 470, 458, 462, 446, 486).fillTriangle(380, 470, 446, 486, 372, 488);
     g.fillStyle(0x2a1a0c, 0.6).fillCircle(430, 476, 5);
@@ -783,14 +822,32 @@ export class CutawayScene extends Phaser.Scene {
         this.cameras.main.shake(300, 0.01);
         playSfx(this, 'kick', { volume: 0.9, pitch: -1200, minGapMs: 0 });
         playSfx(this, 'dkWhooshLong1', { volume: 0.7, pitch: -400, minGapMs: 0 });
-        this.tweens.add({ targets: this.tableMap, x: -290, y: 74, angle: -170, duration: 650, ease: 'Quad.easeOut' });
-        for (let i = 0; i < 9; i++) {
+        const painted = !!this.table.tableArt;
+        if (painted) { // (the painted map: off the table and down the hall, landing where it stays)
+          const [mx, my] = SPOT.floorMap; const M = this.tableMap;
+          if (M.setTexture) {
+            M.setAlpha(1).setOrigin(0.5, 1);
+            const end = PROP_W.floorMap / M.width;
+            this.tweens.add({ targets: M, x: mx - tx, y: my - ty, angle: { from: 40, to: 357 }, scale: end, duration: 650, ease: 'Quad.easeOut',
+              onComplete: () => { // (out of the table, so it doesn't topple with it)
+                this.table.remove(M); M.setPosition(mx, my); this.root.addAt(M, this.root.getIndex(this.table)); } });
+          }
+        } else this.tweens.add({ targets: this.tableMap, x: -290, y: 74, angle: -170, duration: 650, ease: 'Quad.easeOut' });
+        for (let i = 0; i < (painted ? 0 : 9); i++) {
           const m = this.add.rectangle(tx + (i - 4) * 9, ty - 56, 4, 8, i % 3 ? 0x101014 : 0x6a1010);
           this.root.add(m);
           this.tweens.add({ targets: m, x: tx - 120 - Math.random() * 320, y: H - 60 - Math.random() * 46, angle: Math.random() * 720, duration: 500 + Math.random() * 400, ease: 'Quad.easeOut' });
         }
         // the table goes over
-        this.tweens.add({ targets: this.table, angle: -78, x: tx - 30, y: ty + 4, duration: 380, ease: 'Quad.easeIn', onComplete: () => { playSfx(this, 'woodFall', { volume: 0.35, pitch: 300, minGapMs: 0 }); this.cameras.main.shake(160, 0.006); } });
+        const landed = () => { playSfx(this, 'woodFall', { volume: 0.35, pitch: 300, minGapMs: 0 }); this.cameras.main.shake(160, 0.006); };
+        if (painted && this.textures.exists('keep-war-table-fallen')) { // (tips, then lies on its side: the painting of it fallen)
+          this.tweens.add({ targets: this.table, angle: -24, duration: 200, ease: 'Quad.easeIn', onComplete: () => {
+            const T = this.table.tableArt;
+            this.table.setAngle(0).setPosition(tx - 10, ty + 6);
+            T.setTexture('keep-war-table-fallen').setPosition(0, 0).setScale(PROP_W.table / T.width);
+            landed();
+          } });
+        } else this.tweens.add({ targets: this.table, angle: -78, x: tx - 30, y: ty + 4, duration: 380, ease: 'Quad.easeIn', onComplete: landed });
         this.stagger(this.messenger, 20);
         this.eyes.setAlpha(1).setFillStyle(0xffd080);
       });

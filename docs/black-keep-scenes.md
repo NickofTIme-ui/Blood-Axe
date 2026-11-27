@@ -53,3 +53,11 @@ is already his when the player gets there.
   cast = the captain burned (IV), defy = sword raised, "Let them come." (V).
 - Malgor's fallen helm `assets/cinematics/malgor-helm.png` (scene V), rolls in and comes to
   rest on its side.
+
+## Props in the hall (ChatGPT on Nick's PC, 27 Nov)
+
+The last code-drawn pieces, now painted (keyed off magenta, trimmed, 560 px wide;
+`assets/cinematics/`, loaded in BootScene): `keep-war-table` (scenes I-III, with the map and
+markers on it), `keep-war-table-fallen` (it goes over in III and stays down in IV-V),
+`keep-floor-map` (the map he throws, landing at `SPOT.floorMap`), `keep-captain-ash` (V).
+Sizes in the hall: `PROP_W` in CutawayScene.js. The drawn shapes stay only as a fallback.
