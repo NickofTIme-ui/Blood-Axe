@@ -815,6 +815,19 @@ export class TerrainView {
   // the walk to the front, each further one darker, so the walk is trunks lashed together
   drawLogRaft(v, x0, x1, yTop0, yTop1) {
     const { top, front, b } = v;
+    if (this.scene.textures.exists('wood-raft')) {
+      // the painted footbridge: four logs lashed side by side, seen from above and in front
+      // (Nick's review 2026-11-27: the trunk laid over itself read as a flat raft from above,
+      // with code lashings like two sticks). Its walk fills the block back to front.
+      v.raft ??= this.scene.add.image(0, 0, 'wood-raft').setOrigin(0.5, 0);
+      const lw = (x1 - x0) * 2.0;
+      v.raft.setPosition((x0 + x1) / 2, yTop0 - 10).setDisplaySize(lw, (yTop1 - yTop0) + 34)
+        .setTint(0xc8ccc4, 0xc8ccc4, 0x8a9088, 0x8a9088).setDepth(b.z0 + 0.2).setVisible(true);
+      v.art?.setVisible(false);
+      for (const a of v.arts ?? []) a.setVisible(false);
+      top.setVisible(false); front.setVisible(false);
+      return;
+    }
     const depth = yTop1 - yTop0;
     const n = Math.max(2, Math.round(depth / 24));
     const lw = (x1 - x0) * LOG_FIT.wide;
