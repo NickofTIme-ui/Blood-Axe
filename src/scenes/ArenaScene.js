@@ -929,6 +929,15 @@ export class ArenaScene extends Phaser.Scene {
       this.nextReady = !!N; // (ENTER: on to the next level, once the tally is up)
       this.tallyUp = true;
     };
+    // the finale: the epilogue (scenes/EpilogueScene.js) before the tally
+    if (D.epilogue) {
+      this.time.delayedCall(2200, () => {
+        if (!this.sys.isActive()) return;
+        this.cutawayOn = true;
+        this.scene.launch('Epilogue', { rescued: this.progress?.rescuedIds().length ?? 0, onDone: () => { this.cutawayOn = false; tally(); } });
+      });
+      return;
+    }
     if (!D.cutaway) { this.time.delayedCall(1600, tally); return; }
     this.time.delayedCall(1800, () => {
       if (!this.sys.isActive()) return;

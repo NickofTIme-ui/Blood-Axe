@@ -49,6 +49,7 @@ export const STAGE_KEEP = {
   doneTitle: 'THE OATH IS KEPT',
   width: 17400,
   theme: 'keep',
+  epilogue: true, // the end of the campaign: scenes/EpilogueScene.js, before the tally
   music: 'showdown', // (core/Music.js: Nick's track for the last level)
   tall: true,
   castle: { x: 900, scale: 1.25, detail: 1 },
@@ -215,7 +216,7 @@ export const STAGE_KEEP = {
         // crossbows on the gantry across the cavern
         { type: 'bombard', look: 'arrows', period: 260, warn: 70, shots: 1, damage: 9 },
       ],
-      rest: { x: 7060, z: 440, kind: 'oath' },
+      rest: { x: 7100, z: 330, kind: 'oath' }, // (at the back, off the line you land on: not knelt at the moment you arrive)
     },
     {
       id: 'mill', name: 'THE ASH MILL', x0: 8600, x1: 10000,
@@ -281,7 +282,7 @@ export const STAGE_KEEP = {
         { type: 'beam', look: 'rock', x: 11320, z: 415, w: 80, d: 90, period: 200, warn: 80, phase: 70 },
         { type: 'beam', look: 'rock', x: 11500, z: 415, w: 80, d: 90, period: 220, warn: 80, phase: 140 },
       ],
-      rest: { x: 10120, z: 400, kind: 'oath' },
+      rest: { x: 10130, z: 330, kind: 'oath' }, // (at the back, clear of where you come in)
       light: 0x8ab0d8, mood: 0.3,
     },
     {
