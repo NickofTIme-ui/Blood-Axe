@@ -157,6 +157,7 @@ export class WoodTrapsView {
         S.flare = Math.max(0, S.flare - 1); S.shake = Math.max(0, S.shake - 1);
         S.img.setPosition(down ? x - 20 : x, z + 6).setDepth(z).setAngle(down ? 0 : Math.sin(S.shake * 0.9) * S.shake * 0.35);
         if (pr.broken) {
+          for (const h of S.halo ?? []) h.setVisible(false);
           // the last embers in the smashed lantern, going out
           const k = Math.max(0, 1 - (pr.brokenT = (pr.brokenT ?? 0) + 1) / 400);
           if (k > 0) gl.fillStyle(0xff4020, 0.14 * k * (0.7 + 0.3 * Math.sin(now / 90))).fillCircle(x + S.img.displayWidth * 0.82 - 20, z - 10, 26);
@@ -168,8 +169,15 @@ export class WoodTrapsView {
         const fl = (0.75 + 0.25 * Math.sin(now / 70) * Math.sin(now / 113)) * (1 + 1.6 * S.flare / 40);
         const w = S.img.displayWidth; const h = S.img.displayHeight;
         const lx = x + (SIGNAL.fire.x - SIGNAL.pole) * w; const ly = z + 6 - (1 - SIGNAL.fire.y) * h;
-        gl.fillStyle(0xff4020, 0.13 * fl).fillCircle(lx, ly, 90 + S.flare * 2).fillStyle(0xff6030, 0.18 * fl).fillCircle(lx, ly, 40).fillStyle(0xffb070, 0.22 * fl).fillCircle(lx, ly, 14);
-        gl.fillStyle(0xff4020, 0.08 * fl).fillEllipse(lx - 10, z + 4, 150, 26); // (its red on the mud)
+        // (soft light, not flat discs: Nick's review 2026-11-27, the glow read as a red circle
+        // pasted on. The 'glow' puff fades to nothing at its rim, added onto what's under it)
+        S.halo ??= [0, 1, 2, 3].map(() => this.scene.add.image(0, 0, 'glow').setBlendMode(Phaser.BlendModes.ADD));
+        const [wide, mid, core, mud] = S.halo;
+        const d = z + 2;
+        wide.setVisible(true).setPosition(lx, ly).setDepth(d).setTint(0xff3a18).setDisplaySize(2 * (110 + S.flare * 2), 2 * (110 + S.flare * 2)).setAlpha(0.45 * fl);
+        mid.setVisible(true).setPosition(lx, ly).setDepth(d).setTint(0xff6a30).setDisplaySize(110, 110).setAlpha(0.42 * fl);
+        core.setVisible(true).setPosition(lx, ly).setDepth(d).setTint(0xffc080).setDisplaySize(40, 40).setAlpha(0.55 * fl);
+        mud.setVisible(true).setPosition(lx - 10, z + 4).setDepth(z - 1).setTint(0xff4020).setDisplaySize(220, 40).setAlpha(0.22 * fl); // (its red on the mud)
         const sp = (now / 900 + x) % 1;
         gl.fillStyle(0xffb060, 0.8 * (1 - sp)).fillCircle(lx + Math.sin(now / 300) * 6, ly - 20 - sp * 60, 1.6);
         const show = fight && this.stage.index === M?.section;
@@ -595,12 +603,21 @@ export class WoodTrapsView {
     g.setDepth(t.z - 1); fr.setDepth(t.z + 2);
     // the wire: a cord across the lane between two pegs, a glint on it while it's set
     const z0 = t.z - D.lane; const z1 = t.z + D.lane;
-    g.fillStyle(0x2a2216, 1).fillRect(t.x - 2, z0 - 12, 4, 14).fillRect(t.x - 2, z1 - 10, 4, 14);
+    // (Nick's review 2026-11-27: a pale straight line from peg to peg stood up on screen like a
+    // white stick. Now a dark cord that runs a little across the road, low and sagging in the
+    // mud between two driven pegs, with only its glint catching the light)
+    const xa = t.x - 14; const xb = t.x + 14;
+    const peg = (x, z) => { g.fillStyle(0x000000, 0.35).fillEllipse(x + 2, z + 1, 14, 4); g.fillStyle(0x2a1e12, 1).fillTriangle(x - 4, z - 12, x + 4, z - 12, x, z + 2); g.fillStyle(0x4a3a24, 1).fillRect(x - 4, z - 14, 8, 3); };
+    peg(xa, z0 - 2); peg(xb, z1);
     if (t.state === 'set') {
-      g.lineStyle(1.5, 0xa89870, 0.85).lineBetween(t.x, z0 - 6, t.x + 1, z1 - 4);
-      g.fillStyle(0xe8f0ff, 0.3 + 0.35 * Math.max(0, Math.sin(t0 / 330 + t.id))).fillCircle(t.x, t.z + Math.sin(t0 / 900) * D.lane * 0.6, 2);
+      const pts = []; const N = 10;
+      for (let i = 0; i <= N; i++) { const k = i / N; pts.push({ x: xa + (xb - xa) * k, y: z0 - 12 + (z1 - z0 + 10) * k + Math.sin(k * Math.PI) * 4 }); }
+      g.lineStyle(2.5, 0x140e08, 0.75).strokePoints(pts);
+      g.lineStyle(1, 0x6a5a40, 0.55).strokePoints(pts.map((q) => ({ x: q.x - 0.5, y: q.y - 0.5 })));
+      const k = 0.5 + 0.5 * Math.sin(t0 / 900); const q = pts[Math.round(k * N)];
+      g.fillStyle(0xe8f0ff, 0.25 + 0.35 * Math.max(0, Math.sin(t0 / 330 + t.id))).fillCircle(q.x, q.y, 1.8);
     } else {
-      g.lineStyle(1.5, 0xa89870, 0.7).lineBetween(t.x, z0 - 6, t.x + 8, z0 + 4).lineBetween(t.x, z1 - 4, t.x - 6, z1 - 14); // (snapped)
+      g.lineStyle(2, 0x140e08, 0.7).lineBetween(xa, z0 - 12, xa + 10, z0 + 2).lineBetween(xb, z1 - 12, xb - 8, z1 - 22); // (snapped)
     }
     // the trunk: where it is on screen; its shadow on the road grows as it comes down
     const y = t.z - at.h; const px = t.x; const py = t.z - (D.len + 50);
