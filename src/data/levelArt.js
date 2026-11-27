@@ -48,7 +48,10 @@ export const LEVEL_ART = {
     props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' },
       archers: { file: 'prop_archers.png', pair: true }, barricade: { file: 'prop_barricade.png', pair: true } },
     surfaces: { roof_top: { fit: true }, roof_front: { px: 180 }, beam: { px: 40 }, board: { fit: true },
-      eave: { fit: true, key: 'magenta' } }, // (a roof's slate edge hanging over its house front)
+      eave: { fit: true, key: 'magenta' }, // (a roof's slate edge hanging over its house front)
+      // the burning ridge along a roof's back, ridge tiles with fire and smoke over them (cut out
+      // already): the roofs' flat top line read as the lid of a box (Nick's level 1 polish, 2026-11-27)
+      ridge_fire: { fit: true } },
   },
   wood: {
     dir: 'assets/env/wood/',

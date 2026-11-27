@@ -47,6 +47,14 @@ export class ShoutPlate {
     let minTop = view.y + edge;
     if (left < view.x + view.width * HUD_LEFT.w) minTop = Math.max(minTop, view.y + view.height * HUD_LEFT.h);
     if (right > view.x + view.width * BANNER.x0 && left < view.x + view.width * BANNER.x1) minTop = Math.max(minTop, view.y + view.height * BANNER.h);
+    // ...and below the section's title card while it's up (the mill yard's name landed right
+    // on the hangman's "STAND BACK OR HE DROPS!": Nick's level 1 polish, 2026-11-27)
+    const hud = this.scene.scene?.get?.('HUD'), card = hud?.card, sub = hud?.cardSub;
+    if (card?.visible && sub && card.alpha > 0.05) {
+      const k = view.width / hud.scale.width; // (the HUD's screen px to the world's)
+      const cx = view.x + card.x * k, span = Math.max(card.displayWidth, sub.displayWidth) / 2 * k;
+      if (right > cx - span && left < cx + span) minTop = Math.max(minTop, view.y + (sub.y + sub.displayHeight / 2) * k);
+    }
     y = Math.max(y, minTop + h + pad);
     // two shouts at once (the miller and his hangman) don't land on each other: a later one
     // this frame steps below any it would overlap
