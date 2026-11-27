@@ -79,6 +79,11 @@
 //                       taking full damage, for `open` frames (kingOpen). Hit while he guards,
 //                       he answers at once (`counter`: { damage, reach }; emberCounter).
 //                       Only in his first phase. Emits kingComposure { boss, count, of }
+//   boss.lock: true | { ... }   KING VAURATH's blade lock: parry his glide and the blades lock;
+//                       mash attack to throw his guard wide (stage/BladeLock.js, LOCK)
+//   boss.lastSwing: { at, move }   in his last phase, down to `at` of his health, he puts all
+//                       he has left into one blow (`move`), the world slowed round it: parry
+//                       it or get clear. Emits kingLastSwing { boss }
 //   boss.phases[]: ward: { tag, mult }   while any prop with that tag stands he takes only
 //                       `mult` of the damage (the Keep's ember conduits feed him)
 //                  hold: { tag, x, z, heart: { x, z } }   he is out of reach (invincible,
@@ -104,6 +109,8 @@
 // opts.flags (the campaign's one-time flags: a sequence's progress). start(players,
 // { section }) starts at a later section's checkpoint.
 
+import { KeepSetPieces } from './KeepSetPieces.js';
+import { BladeLock } from './BladeLock.js';
 import { updateWardenHook } from './WardenHook.js';
 import { updateDropGate, updateCaltrops } from './GatesTraps.js';
 import { Tutorial } from './Tutorial.js';
@@ -276,6 +283,10 @@ export class Stage {
     }
     this.fitLooks();
     if (data.id === 'shatteredAscent') this.ascentSiege = new AscentSiege(this);
+    // the Black Keep's drum formation and rising fire (stage/KeepSetPieces.js)
+    if (this.sections.some((s) => s.formation || s.rise)) this.keep = new KeepSetPieces(this);
+    // King Vaurath's blade lock: parry his glide and it's strength against strength (stage/BladeLock.js)
+    if (this.sections.some((s) => s.boss?.lock)) this.bladeLock = new BladeLock(this);
     // Gallows Wood's own traps and men (stage/WoodTraps.js): pines, log piles, snares, stakes,
     // the ford's current, the hornblower and the woodsman's net
     if (data.traps || this.props.some((pr) => pr.kind === 'pine' || pr.kind === 'logpile' || pr.kind === 'signal')) this.woodTraps = new WoodTraps(this);
@@ -822,6 +833,27 @@ export class Stage {
 
   // ------------------------------------------------------------ per frame
 
+  // THE VETERAN HOUSEHOLD (a level's `veteran.enemies`: the Black Keep): the King's own men
+  // use everything they have. Each man, once, as he comes: he guards more, strings his
+  // blows together, reaches for his heavy and his specials more often, and doesn't stand
+  // about between swings. Never faster wind-ups (the TELEGRAPH rule stays) and never more
+  // health: just a better fighter. Bosses are tuned by hand already.
+  veteranize() {
+    const V = { block: 0.12, combo: 0.2, heavy: 0.08, cooldown: 0.78, special: 0.7, threat: 1.15, ...this.data.veteran.tune };
+    for (const f of this.world.fighters) {
+      if (f.team !== 'enemy' || f.vet || f.stats.boss || !f.controller?.ai) continue;
+      f.vet = true;
+      const ai = (f.controller.ai = { ...f.controller.ai });
+      const up = (v, by, cap) => Math.max(v ?? 0, Math.min(cap, (v ?? 0) + by)); // (never less than he had)
+      ai.blockChance = up(ai.blockChance, V.block, 0.5);
+      ai.comboChance = up(ai.comboChance, V.combo, 0.85);
+      ai.heavyChance = up(ai.heavyChance, V.heavy, 0.5);
+      if (ai.attackCooldown) ai.attackCooldown = ai.attackCooldown.map((n) => Math.round(n * V.cooldown));
+      if (ai.specialEvery) ai.specialEvery = Math.round(ai.specialEvery * V.special);
+      if (ai.threatRange) ai.threatRange *= V.threat;
+    }
+  }
+
   update() {
     if (!this.player || this.phase === 'idle') return;
     if(this.opening?.active) {
@@ -830,6 +862,9 @@ export class Stage {
       return;
     }
     this.opening?.tail(); // (the commanders still running off)
+    if (this.data.veteran?.enemies) this.veteranize();
+    this.keep?.update();
+    this.bladeLock?.update();
     if (this.walkOut) { this.updateWalkOut(); return; }
     // KING HAKON in the market square (stage/KingHakon.js): met on the way in from the road;
     // while he fights and the two of them talk, the stage is his
@@ -1008,6 +1043,16 @@ export class Stage {
     if (ph?.release && b.brain) {
       b.controller = b.brain; b.brain = null;
       b.held = false; b.invincible = false;
+    }
+    // his last swing: everything he has left in one blow, the world slowed round it
+    const LS = def.lastSwing;
+    if (LS && !b.lastSwung && b.phase >= phases.length && !b.held && b.health > 1 && b.health <= b.stats.maxHealth * (LS.at ?? 0.12)) b.lastSwung = 'due';
+    // (it comes as soon as he's free to swing: not mid-blow, not down)
+    if (b.lastSwung === 'due' && ['idle', 'walk', 'block'].includes(b.state) && !this.bladeLock?.active) {
+      b.lastSwung = true;
+      if (b.state === 'block') b.fsm.change('idle');
+      b.controller.registerPress(LS.move ?? 'heavy');
+      this.world.events.emit('kingLastSwing', { boss: b });
     }
     // the room closing in
     const S = ph?.squeeze;
@@ -1524,6 +1569,7 @@ export class Stage {
     if (!hz.when) return true;
     if (hz.when.startsWith('freed:')) return !!this.story?.rescued.has(hz.when.slice(6));
     if (hz.when.startsWith('broken:')) return this.props.some((pr) => pr.tag === hz.when.slice(7) && pr.broken); // (a thing smashed sets it off: the mine's steam main)
+    if (hz.when.startsWith('rise:')) return this.index === hz.section && (this.keep?.rise.level ?? 0) >= +hz.when.slice(5); // (the Keep's prison wing: the fire has reached this tier)
     const b = this.boss;
     if (!b || !b.alive || this.index < hz.section || this.index > hz.last) return false;
     if (hz.when === 'boss') return true;

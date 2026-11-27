@@ -14,6 +14,7 @@ import { ArenaScene } from './scenes/ArenaScene.js';
 import { HUDScene } from './scenes/HUDScene.js';
 import { SkillScene } from './scenes/SkillScene.js';
 import { CutawayScene } from './scenes/CutawayScene.js';
+import { EpilogueScene } from './scenes/EpilogueScene.js';
 import { BirthrightScene } from './scenes/BirthrightScene.js';
 import { loadFonts } from './view/fonts.js';
 import { playStartupIntro } from './core/StartupIntro.js';
@@ -69,7 +70,7 @@ const config = {
   // (a laptop with two graphics chips: ask for the strong one, not the power-saving one)
   render: { powerPreference: 'high-performance' },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [BootScene, TitleScene, SelectScene, ArenaScene, HUDScene, SkillScene, CutawayScene, BirthrightScene],
+  scene: [BootScene, TitleScene, SelectScene, ArenaScene, HUDScene, SkillScene, CutawayScene, BirthrightScene, EpilogueScene],
 };
 
 document.title = SETTINGS.title;

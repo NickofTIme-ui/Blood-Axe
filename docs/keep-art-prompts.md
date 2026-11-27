@@ -109,3 +109,25 @@ and the Keep's new enemies (they use existing sprites with a different look).
 ```
 [style block] Two versions of the same object side by side for a side-scrolling brawler, each in its own half, same scale, same camera: LEFT, a jagged spire of black basalt and gold, one point of a giant stone crown, cracked with violet light glowing in the cracks; RIGHT, the same spire shattered at the base, broken stone and gold, the light gone. Each about twice as tall as it is wide, its foot on the bottom edge. FLAT PURE MAGENTA (#FF00FF) background, nothing magenta in the art. 2:1, about 1774 x 887. No text.
 ```
+
+---
+
+## Round 2 (27 November 2026): made and wired in
+
+ChatGPT chat "Generate Black Keep Tile Art" (Bloody Axe project). The style reference sent
+with the first prompt was the "Keep Art References" artifact's `#env-style` sheet (this
+level's floor and hall wall on top, the gates' stair top and face below, for what they are).
+Raw downloads are kept in project files `level6-art/raw/`.
+
+| File | What | Notes |
+|---|---|---|
+| `assets/env/keep/surf_rock_top.png` | every ledge, gallery and tier top | black basalt slabs, violet sheen, ember cracks; tiles all ways |
+| `assets/env/keep/surf_rock_front.png` | every ledge face | basalt courses, iron rings; tiles left/right |
+| `assets/env/keep/tile_causeway.png` | the causeway's back edge (replaced the hall-like wall) | a low broken parapet, gibbet cages, top 60% magenta so the sky and the Keep show |
+| `assets/scenes/epilogue_fall.jpg` | epilogue picture 1 | the Keep falling at dawn, the three seen from behind |
+| `assets/scenes/epilogue_home.jpg` | epilogue picture 2 | the village rebuilt in spring, the three walking home |
+| `assets/enemies/strips/king_*.png` | King Vaurath's 9 strips | prompts: docs/keep-king-strip-prompts.md |
+
+Still to paint (round 3): the throne room backdrop and dais, the colossus (arm, shoulder,
+chest), a painted floor per area, the crossbow rack, cell doors, the Executioner,
+Forgemaster and Crown knight strips and portraits.

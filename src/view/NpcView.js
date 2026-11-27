@@ -1053,7 +1053,7 @@ export class NpcView {
     this.companions = [];
     const played = new Set(this.scene.heroIds ?? []);
     const ids = HEROES.filter((h) => !played.has(h));
-    if (!ids.length || !this.story) return;
+    if (!ids.length || !this.story || this.stage.data.allies) return; // (a level's allies fight for real: adoptAllies)
     this.puppets = new World({ seed: 1 });
     const at = this.stage.section?.spawn ?? { x: 150, z: 440 };
     ids.forEach((id, i) => {
@@ -1066,11 +1066,17 @@ export class NpcView {
     });
   }
 
+  // the level's allies (entities/Ally.js) are real fighters with their own views: listed
+  // here only so whoever is talking can be found (view/SpeakerMarker.js); never moved here
+  adoptAllies(allies) {
+    for (const f of allies) this.companions.push({ id: f.stats.id, f, view: this.scene.views.get(f.id), mode: 'ally', i: this.companions.length });
+  }
+
   // where they are: with you at the start; off searching; at the gate for the vow; gone
   // through the gate after it
   updateCompanions() {
     if (!this.companions.length) return;
-    this.puppets.frame++;
+    if (this.puppets) this.puppets.frame++; // (a level of allies only: no puppets of their own)
     const st = this.stage;
     const gate = st.sections[st.sections.length - 1];
     const gx = st.data.exit?.x ?? gate.x1 - 100;
@@ -1080,6 +1086,7 @@ export class NpcView {
     const cam = this.scene.cameras.main.worldView;
     for (const c of this.companions) {
       const f = c.f;
+      if (c.mode === 'ally') continue;
       if(st.opening?.active) {
         const moving=st.opening.progress<1;
         f.x=-280+360*st.opening.progress-c.i*55;

@@ -653,7 +653,8 @@ export class TerrainView {
     }
     // (the mine: a torch-lit rim, not a white line round every ledge: Nick's level 3 review)
     const lit = this.mine || this.theme === 'gates'; // (and the gatehouse's stone: brazier-lit, not a white line)
-    const rim = lit && mat !== 'iron' ? (mat === 'plank' ? 0x9a6a3a : 0x7a6a58) : C[1];
+    // (the Black Keep: a faint violet torchlit edge on its painted basalt: level 6 review)
+    const rim = lit && mat !== 'iron' ? (mat === 'plank' ? 0x9a6a3a : 0x7a6a58) : this.theme === 'keep' && mat === 'rock' ? 0x6a5a88 : C[1];
     if (!topArt) raggedLine(top, x0, x1, yTop0, rim, 0.75, 2, b.x0);
     // the landing rim along the front edge
     raggedLine(front, x0, x1, yTop1 - 0.5, rim, lit ? 0.7 : this.theme === 'ascent' ? .28 : 0.9, lit ? 2 : this.theme === 'ascent' ? 1.2 : 3, b.x0 + 7);
@@ -1223,14 +1224,16 @@ export class TerrainView {
       // brazier (the gates), on magenta: cut out once; the living flame (view/TorchFlame.js)
       // burns in its cup, with a glow round it
       // (the mine: the same iron brazier as the gates, not the wood's green lantern pole: level 3 review)
-      const post = this.village ? 'village-torch' : (this.theme === 'gates' || this.theme === 'ascent' || this.mine) ? 'gates-brazier' : null;
+      // (the Black Keep: the same iron brazier, burning the King's cold violet fire: level 6 review)
+      const keep = this.theme === 'keep';
+      const post = this.village ? 'village-torch' : (this.theme === 'gates' || this.theme === 'ascent' || this.mine || keep) ? 'gates-brazier' : null;
       if (post && s.textures.exists(`${post}-src`)) {
         if (!s.textures.exists(post)) s.textures.addCanvas(post, keyLayer(s.textures.get(`${post}-src`).getSourceImage(), 'magenta'));
         const img = s.add.image(l.x, y0 + 3, post).setOrigin(0.5, 0.98).setDepth(l.z - 0.2);
         img.setScale(TORCH_H / img.height);
         const cup = y0 - TORCH_H * (this.village ? TORCH_CUP : BRAZIER_CUP);
-        torchFlame(s, l.x, cup, { height: 30, depth: l.z - 0.15 });
-        const glow = s.add.image(l.x, cup - 12, 'glow').setScale(2.2).setTint(COL.lantern).setAlpha(0.45).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
+        torchFlame(s, l.x, cup, { height: 30, depth: l.z - 0.15, tint: keep ? 0xa890ff : null });
+        const glow = s.add.image(l.x, cup - 12, 'glow').setScale(2.2).setTint(keep ? 0xa88aff : COL.lantern).setAlpha(0.45).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
         s.tweens.add({ targets: glow, alpha: { from: 0.3, to: 0.55 }, duration: 260 + (l.x % 200), yoyo: true, repeat: -1 });
         continue;
       }

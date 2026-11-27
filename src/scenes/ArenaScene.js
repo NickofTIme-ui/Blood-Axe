@@ -6,6 +6,8 @@
 //   2. run as many fixed 1/60 s simulation steps as time has passed
 //   3. update visuals (views, debug overlay)
 
+import { addAllies } from '../entities/Ally.js';
+import { ensureFloor, veteranStats } from '../progression/Veteran.js';
 import { SETTINGS } from '../config/settings.js';
 import { World } from '../core/World.js';
 import { InputManager, realPads } from '../core/InputManager.js';
@@ -462,6 +464,9 @@ export class ArenaScene extends Phaser.Scene {
       this.progress=makePreviewProgress(this.progress,this.stageData,this.startSection);
     }
     this.progress?.play(this.stageId); // (level 1: Rurik's old sword until Brann gives him Oathkeeper)
+    // THE VETERAN FLOOR (progression/Veteran.js): the last levels start everyone with their
+    // advanced skills, however they got here
+    this.veteranGiven = this.stageData.veteran && !this.stageData.practice ? ensureFloor(this.progress, this.stageData.veteran.points) : 0;
     // online, the host's own campaign save still follows the game (checkpoints, levels,
     // the saved), so CONTINUE picks up there next time. Written to only, never read here.
     this.netSave = this.mode === 'net' && this.netInfo?.index === 0 && this.campaign ? this.registry.get('progress') : null;
@@ -515,6 +520,7 @@ export class ArenaScene extends Phaser.Scene {
     this.setupBirthright(ev);
     this.ascentFarewell=this.stage.ascentSiege?new AscentFarewellView(this,ev):null;
     this.stage.start(this.players, { section: this.startSection });
+    this.setupAllies(ev);
     this.prepareTestMoment();
     this.nextReady = false;
     this.tallyUp = false;   // (this machine's tally is on screen: the 'ready' bit online)
@@ -923,6 +929,15 @@ export class ArenaScene extends Phaser.Scene {
       this.nextReady = !!N; // (ENTER: on to the next level, once the tally is up)
       this.tallyUp = true;
     };
+    // the finale: the epilogue (scenes/EpilogueScene.js) before the tally
+    if (D.epilogue) {
+      this.time.delayedCall(2200, () => {
+        if (!this.sys.isActive()) return;
+        this.cutawayOn = true;
+        this.scene.launch('Epilogue', { rescued: this.progress?.rescuedIds().length ?? 0, onDone: () => { this.cutawayOn = false; tally(); } });
+      });
+      return;
+    }
     if (!D.cutaway) { this.time.delayedCall(1600, tally); return; }
     this.time.delayedCall(1800, () => {
       if (!this.sys.isActive()) return;
@@ -1071,6 +1086,51 @@ export class ArenaScene extends Phaser.Scene {
   // ------------------------------------------------------------ progression
 
   // Each hero's stats with his skill picks (a fresh copy each time; health kept in proportion).
+  // THE OATH KEEPERS FIGHT TOGETHER (entities/Ally.js): a level's `allies` brings the
+  // heroes nobody plays into the fight beside you, with the veteran build (or the save's
+  // own picks when they're richer)
+  setupAllies(ev) {
+    this.allies = [];
+    if (!this.stageData.allies) return; // (the Keep's other events are hooked up below, with its allies)
+    const ids = ['warrior', 'mage', 'rogue'].filter((h) => !this.heroIds.includes(h));
+    const pts = this.stageData.veteran?.points ?? 0;
+    this.allies = addAllies(this.world, this.players, ids, (id, base) => {
+      const own = this.progress?.statsFor(id, base);
+      return pts && !(this.progress?.spent(id) >= pts) ? veteranStats(id, base, pts) : own ?? base;
+    });
+    this.npcView?.adoptAllies(this.allies);
+    if (this.veteranGiven > 0) this.time.delayedCall(2600, () => this.callout(`+${this.veteranGiven} SKILL POINTS  ·  kneel at a shrine to spend them`, '#ffd24a', 30));
+    ev.on('allyDown', ({ fighter }) => this.callout(`${fighter.stats.name.toUpperCase()} FALLS BACK`, '#c0a080', 18));
+    // the Keep's set pieces (stage/KeepSetPieces.js): the war drums, the line breaking, the fire climbing
+    ev.on('drumBeat', () => { playSfx(this, 'dkSlam', { volume: 0.55, pitch: -1000, minGapMs: 0 }); this.cameras.main.shake(90, 0.0025); });
+    ev.on('formationBroken', () => { this.callout('THE DRUMS ARE SILENT  ·  THE LINE BREAKS!', '#ffd24a', 24); playSfx(this, 'clash', { volume: 0.6, pitch: -300 }); });
+    ev.on('fireRises', ({ level, section }) => {
+      this.callout(level >= section.rise.tiers.length ? 'THE FIRE REACHES THE TOP!' : 'THE FIRE CLIMBS A TIER!', '#ff7a30', 22);
+      playSfx(this, 'fireWhoosh', { volume: 0.8, pitch: -300, minGapMs: 0 });
+    });
+    // King Vaurath's blade lock (stage/BladeLock.js) and his last swing (Stage lastSwing)
+    ev.on('bladeLock', ({ hero, boss }) => {
+      this.callout('BLADES LOCKED!  ·  MASH ATTACK!', '#ffb050', 26);
+      playSfx(this, 'clash', { volume: 0.9, pitch: -200, minGapMs: 0 });
+      this.cameras.main.shake(160, 0.006);
+      this.gore?.spark((hero.x + boss.x) / 2, boss.z, 70, 0xffb050, 18);
+    });
+    ev.on('bladePush', ({ hero, boss }) => {
+      this.gore?.spark((hero.x + boss.x) / 2, boss.z, 70, 0xffd890, 4);
+      playSfx(this, 'clash', { volume: 0.35, pitch: 200, minGapMs: 70 });
+    });
+    ev.on('bladeLockEnd', ({ won }) => {
+      this.callout(won ? 'HIS GUARD IS THROWN WIDE!' : 'HE THROWS YOU OFF!', won ? '#ffd24a' : '#ff6040', 24);
+      if (won) this.slowmo(0.5, 260);
+      this.cameras.main.shake(200, won ? 0.008 : 0.005);
+    });
+    ev.on('kingLastSwing', () => {
+      this.callout('HIS LAST SWING  ·  PARRY IT!', '#ff9a50', 28);
+      this.slowmo(0.3, 1300);
+      playSfx(this, 'dkSlam', { volume: 0.7, pitch: -1200, minGapMs: 0 });
+    });
+  }
+
   applySkills(fresh = false) {
     if (!this.progress) return;
     for (const p of this.players) {

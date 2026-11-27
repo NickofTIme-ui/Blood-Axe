@@ -23,6 +23,8 @@ import { STAGE_MINE } from '../src/data/stageMine.js';
 import { STAGE_ASCENT } from '../src/data/stageAscent.js';
 import { STAGE_GATES } from '../src/data/stageGates.js';
 import { STAGE_KEEP } from '../src/data/stageKeep.js';
+import { addAllies } from '../src/entities/Ally.js';
+import { ensureFloor, veteranPicks, veteranStats } from '../src/progression/Veteran.js';
 import { STAGES } from '../src/data/stages.js';
 import { LINE, NPC, GUIDE, TREED } from '../src/stage/Story.js';
 import { SPEAKERS, NARRATION, PORTRAIT_IDS, speakerInfo } from '../src/data/speakers.js';
@@ -76,7 +78,9 @@ function setup({ player = 'warrior', script = {}, hold = {}, dummyScript = {}, d
 }
 
 let failed = 0;
+const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null; // (ONLY=keep node tests/logic-test.js: just those)
 function test(name, fn) {
+  if (ONLY && !ONLY.test(name)) return;
   try { fn(); console.log(`  ok   ${name}`); }
   catch (e) { failed++; console.log(`  FAIL ${name}\n       ${e.message}`); }
 }
@@ -4903,6 +4907,47 @@ test('keep: the King duels: three parries or blocks break his composure and open
   assert(counters.length === 1 && p.health < hp, 'a blow into his guard burns back');
 });
 
+test('keep: the blade lock: parry the King\'s glide and the blades lock; mash to throw his guard wide, or he throws you off', () => {
+  for (const mash of [true, false]) {
+    const { world, p, st, run } = keepSetup(KEEP_SEC('throne'), { x: 16400, z: 420 });
+    st.fightOn = true; st.waveIndex = 99;
+    run(90, () => { p.health = p.stats.maxHealth; });
+    const k = st.boss;
+    const ends = []; world.events.on('bladeLockEnd', (e) => ends.push({ ...e, state: k.state, open: k.openFor }));
+    world.events.emit('parry', { attacker: k, defender: p, move: k.stats.moves.light1 });
+    assert(!st.bladeLock.active, 'a parried cut does not lock');
+    p.x = k.x - 80; p.z = k.z;
+    world.events.emit('parry', { attacker: k, defender: p, move: k.stats.moves.special1 });
+    assert(st.bladeLock.active, 'the parried glide locks blades');
+    const hp = p.health;
+    run(30, () => {});
+    assert(Math.abs(Math.abs(k.x - p.x) - 64) < 1 && k.invincible && p.invincible && k.stripPose, `chest to chest, untouchable (${Math.round(k.x - p.x)})`);
+    run(400, (i) => { if (mash && i % 5 === 0) p.controller.registerPress('attack'); });
+    assert(ends.length === 1 && !st.bladeLock.active && !k.stripPose && !k.invincible && !p.invincible, 'it ends once');
+    if (mash) assert(ends[0].won && ends[0].open > 0 && ends[0].state === 'stagger', `mashed: his guard thrown wide (${ends[0].state}, ${ends[0].open})`);
+    else assert(!ends[0].won && p.health < hp && p.state === 'knockdown', `left alone: he throws you off (${p.state}, ${p.health}/${hp})`);
+  }
+});
+
+test('keep: the King\'s last swing: in his last phase, near the end, he puts everything into one thrust, once', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('throne'), { x: 16400, z: 420 });
+  st.fightOn = true; st.waveIndex = 99;
+  run(90, () => { p.health = p.stats.maxHealth; });
+  const k = st.boss;
+  run(600, () => { p.health = p.stats.maxHealth; p.x = k.x - 300; });
+  const swings = []; world.events.on('kingLastSwing', (e) => swings.push(e));
+  const def = STAGE_KEEP.sections[KEEP_SEC('throne')].boss;
+  k.phase = def.phases.length; k.held = false;
+  k.health = k.stats.maxHealth * 0.3;
+  run(10, () => { p.health = p.stats.maxHealth; });
+  assert(!swings.length, 'not yet');
+  k.health = k.stats.maxHealth * def.lastSwing.at - 1;
+  let thrust = false;
+  run(120, () => { p.health = p.stats.maxHealth; if (k.move === k.stats.moves.heavy) thrust = true; });
+  assert(swings.length === 1 && k.lastSwung, 'his last swing comes, once');
+  assert(thrust, `and it is the thrust (${k.state})`);
+});
+
 test('keep: the colossus: at half health the King is held in the statue, untouchable, until every spire breaks; then the heart opens; at a quarter he comes down and the ground shrinks', () => {
   const { world, p, st, run } = keepSetup(KEEP_SEC('throne'), { x: 16400, z: 420 });
   st.fightOn = true; st.waveIndex = 99;
@@ -5799,9 +5844,88 @@ test("vexa: CHAIN REACTION sets her other mines off; SPREADING MARK jumps; EXECU
   assert(!(m2.health > 0), 'brought under a third: executed');
 });
 
+
+
+test('keep: the Oath Keepers fight together: the two heroes nobody plays fight beside you with their veteran kits, kill men, and never die', () => {
+  for (const hero of ['warrior', 'mage', 'rogue']) {
+    const { world, p, st, run } = keepSetup(KEEP_SEC('causeway'), { x: 760, z: 420, hero });
+    const ids = ['warrior', 'mage', 'rogue'].filter((h) => h !== hero);
+    const allies = addAllies(world, [p], ids, (id, base) => veteranStats(id, base, 30));
+    const kills = new Map(allies.map((a) => [a, 0])); const moves = new Map(allies.map((a) => [a, new Set()]));
+    world.events.on('kill', (e) => { if (kills.has(e.attacker)) kills.set(e.attacker, kills.get(e.attacker) + 1); });
+    run(60 * 120, () => {
+      p.health = p.stats.maxHealth; // (the hero stands by: the allies do the work)
+      for (const a of allies) if (!['idle', 'walk', 'hit', 'knockdown', 'getup', 'jump', 'block'].includes(a.state)) moves.get(a).add(a.state);
+    });
+    if (process.env.ALLY_LOG) console.log(hero, allies.map((a) => `${a.stats.id}: ${kills.get(a)} kills, ${[...moves.get(a)]}`).join(' | '), 'left', st.livingFoes().length, st.section.id);
+    for (const a of allies) {
+      assert(a.alive && !a.removeMe, `${hero}: ${a.stats.id} is still standing`);
+      assert(kills.get(a) >= 2, `${hero}: ${a.stats.id} killed ${kills.get(a)} men`);
+      assert(moves.get(a).size >= 3, `${hero}: ${a.stats.id} used ${[...moves.get(a)]}`);
+      assert(a.stats !== CHARACTERS[a.stats.id] && Object.keys(a.stats.skills ?? {}).length >= 3, `${hero}: ${a.stats.id} has the veteran build`);
+    }
+    assert(st.players.length === 1 && !st.players.includes(allies[0]), 'allies are not players (no story, no checkpoints, no game over)');
+  }
+});
+
+test('keep: the veteran household: every man of the Keep guards, strings blows and reaches for his heavy more, never with faster wind-ups or more health; bosses untouched', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('causeway'), { x: 760, z: 420 });
+  run(60 * 3, () => { p.health = p.stats.maxHealth; });
+  const men = world.fighters.filter((f) => f.team === 'enemy');
+  assert(men.length && men.every((f) => f.vet), 'every man is a veteran');
+  for (const f of men) {
+    const base = ENEMIES[f.stats.id].ai;
+    const ai = f.controller.ai;
+    assert(ai.blockChance >= (base.blockChance ?? 0) && ai.comboChance >= (base.comboChance ?? 0) && ai.attackCooldown[1] < base.attackCooldown[1], `${f.stats.id} guards, combos and swings more`);
+    assert(f.stats.maxHealth <= ENEMIES[f.stats.id].maxHealth * 1.3, `${f.stats.id}: no extra health`);
+  }
+});
+
+test('keep: the drum formation: the drummers beat, the shield line steps forward as one with its guard up, and breaks when both drummers die', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('muster'), { x: 2320, z: 430 });
+  const beats = []; let broke = 0;
+  world.events.on('drumBeat', (e) => beats.push(e.x)); world.events.on('formationBroken', () => broke++);
+  run(60 * 6, () => { p.health = p.stats.maxHealth; });
+  const men = world.fighters.filter((f) => f.team === 'enemy' && f.alive);
+  const drummers = men.filter((f) => f.role === 'drummer'); const line = men.filter((f) => f.role === 'line');
+  assert(drummers.length === 2 && line.length === 4, `two drummers and four in the line (${men.map((f) => f.role)})`);
+  assert(beats.length >= 3 && beats[beats.length - 1] < beats[0], `the line comes on beat by beat (${beats.map(Math.round)})`);
+  assert(line.filter((f) => f.state === 'block').length >= 2, `shields locked between beats (${line.map((f) => f.state)})`);
+  assert(drummers.every((f) => f.floor >= 60), 'the drummers are up on the balcony');
+  for (const d of drummers) slay(world, d);
+  run(10);
+  assert(broke === 1 && line.every((f) => !f.formation && !f.script), 'both drummers dead: the line breaks into a brawl');
+});
+
+test('keep: the rising fire takes a tier at a time; a cell still shut on a burned tier is lost, and dying puts it back', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('cells'), { x: 3780, z: 430 });
+  const sec = st.section; const rises = [];
+  world.events.on('fireRises', (e) => rises.push(e.level));
+  const tier1 = st.hazards.filter((hz) => hz.when === 'rise:1');
+  assert(tier1.length && tier1.every((hz) => !st.beamLive(hz)), 'cold to begin with');
+  run(sec.rise.every + 5, () => { p.health = p.stats.maxHealth; p.x = 3780; });
+  assert(rises.join() === '1' && tier1.every((hz) => st.beamLive(hz)), `the bottom tier catches (${rises})`);
+  assert(st.story.lost.has('cellsLow') && !st.story.lost.has('cellsMid'), 'the cell left shut on it is lost; the next is not yet');
+  st.story.resetSection(st.index); st.enterSection(st.index, true);
+  assert(!st.story.lost.has('cellsLow') && st.keep.rise.level === 0 && tier1.every((hz) => !st.beamLive(hz)), 'tried again: the cell is shut and the fire low');
+});
+
+test('keep: the veteran floor tops the shared pool up to 30 points once (more earned is kept) and gives Oathkeeper\'s fire', () => {
+  const pr = new Progress(null);
+  assert(ensureFloor(pr, 30) === 28 && pr.earned === 30 && pr.hasFlag('oathkeeper'), `topped up (${pr.earned})`);
+  assert(ensureFloor(pr, 30) === 0 && pr.earned === 30, 'only once');
+  const rich = new Progress(null); rich.data.bonus = 40;
+  assert(ensureFloor(rich, 30) === 0 && rich.earned === 40, 'more earned is kept');
+  for (const h of ['warrior', 'mage', 'rogue']) {
+    const { picks, progress } = veteranPicks(h, 30);
+    assert(progress.available(h) <= 1 && picks.length >= 8, `${h}: the whole 30 spent across the tree (${picks})`);
+  }
+  assert(STAGE_KEEP.allies === true && STAGE_KEEP.veteran?.points === 30, 'the Keep has both');
+});
+
+
 for (const [name, fn] of later) {
   try { await fn(); console.log(`  ok   ${name}`); } catch (e) { failed++; console.log(`  FAIL ${name}\n       ${e.message}`); }
 }
 console.log(failed ? `\n${failed} test(s) FAILED` : '\nAll tests passed.');
 process.exit(failed ? 1 : 0);
-
