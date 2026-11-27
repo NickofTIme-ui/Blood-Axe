@@ -114,7 +114,7 @@ export const LEVEL_ART = {
     ],
     wall: { height: 140 }, // (low: the Keep across the gorge shows over it)
     ground: true,
-    pieces: ['overhang', 'palisade', 'camp', 'gates_view', 'causeway', 'gorge', 'crater', 'scene_road', 'scene_refuge', 'scene_battery', 'scene_camp'],
+    pieces: ['overhang', 'palisade', 'camp', 'gates_view', 'causeway', 'gorge', 'crater', 'scene_road', 'scene_refuge', 'scene_battery', 'scene_camp', 'scene_road_b', 'scene_road_c', 'scene_causeway', 'scene_camp_b', 'boulder'],
       tiles: { refuge_floor: {height: 348}, siege_floor: {height: 348} },
     props: { catapult: { file: 'prop_catapult.png', pair: true } },
     surfaces: { rock_top: { px: 348 }, siege_top: { px: 348 }, rock_front: { px: 140 }, plank: { fit: true } }, // (the half-gone bridge's planks, cut from the plank bridge in assets/incoming/bridges_raw.png)

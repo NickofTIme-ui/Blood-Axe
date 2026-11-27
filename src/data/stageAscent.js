@@ -682,6 +682,15 @@ export const STAGE_ASCENT = {
   "terrain": [
     {
       "kind": "block",
+      "x0": 560,
+      "x1": 650,
+      "z0": 400,
+      "z1": 460,
+      "top": 35,
+      "look": "boulder"
+    },
+    {
+      "kind": "block",
       "x0": 6330,
       "x1": 6440,
       "z0": 282,

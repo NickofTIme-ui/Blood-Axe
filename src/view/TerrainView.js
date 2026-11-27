@@ -630,7 +630,7 @@ export class TerrainView {
     if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
     if (this.village || (this.water && b.mat === 'log')) { this.drawVillageBlock(v, x0, x1, w, yTop0, yTop1); return; } // (the wood's fallen trees: as the village's beams)
     // (the gates: a burned-out ram on the road, the village's burnt cart in the town)
-    const painted = { cart: 'cartwreck', ram: 'prop-ram', orecart: artKey('mine', 'ore_cart') }[b.look];
+    const painted = { cart: 'cartwreck', ram: 'prop-ram', orecart: artKey('mine', 'ore_cart'), boulder: artKey('ascent', 'boulder') }[b.look];
     if (painted && this.scene.textures.exists(painted)) { this.drawPaintedBlock(v, x0, x1, painted); return; }
     const mat = b.kind === 'crumble' ? 'plank' : b.kind === 'lift' ? 'iron' : 'rock';
     const C = mat === 'plank' ? [COL.plankTop, COL.plankRim, COL.plankFront]
@@ -1169,7 +1169,7 @@ export class TerrainView {
     const { top, b } = v;
     const s = this.scene;
     const frame = s.textures.getFrame(tex);
-    const cart = b.look === 'cart' || b.look === 'ram' || b.look === 'orecart';
+    const cart = b.look === 'cart' || b.look === 'ram' || b.look === 'orecart' || b.look === 'boulder'; // (the ascent's fallen boulder: whole, one per block)
     const painted = frame.width > 200; // (else the small code cart, StageView)
     const n = cart ? (b.z1 - b.z0 > 120 ? 2 : 1) : Math.max(1, Math.round((b.z1 - b.z0) / 50)); // (a heap or two, never a stamped row)
     const wide = x1 - x0 + (cart ? 70 : 60); const cx = (x0 + x1) / 2;

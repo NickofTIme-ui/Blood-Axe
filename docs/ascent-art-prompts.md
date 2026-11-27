@@ -54,3 +54,5 @@ on the road itself. Pieces: flat pure magenta (#FF00FF) background, nothing mage
 > background. No text.
 
 When a picture lands: save it at the exact path above and reload the game; nothing else.
+
+All five painted 2026-11-27 (ChatGPT chat "Generate Game Background", text prompts only, no reference attached); raw copies in project files level4-art/. The boulder is the road block at x 560 (`look: "boulder"`).

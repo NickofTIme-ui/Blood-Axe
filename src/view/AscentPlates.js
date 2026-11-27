@@ -41,7 +41,8 @@ export class AscentPlates {
       this.names.add(want); this.spans.push([x, x + w]);
     });
     // local warm spill at the painted camp fires, kept behind the fighters
-    if (this.has('camp')) for (const [x, y] of [[8400, 190], [8720, 190], [7700, 190]]) {
+    const fires = has('camp_b') ? [[7690, 280], [8040, 280]] : [[7700, 190]]; // (camp_b's two braziers, or the stand-in's)
+    if (this.has('camp')) for (const [x, y] of [[8400, 190], [8720, 190], ...fires]) {
       const glow = scene.add.image(x, y, 'glow').setDisplaySize(190, 135).setTint(0xd4864b).setAlpha(.11).setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.floor + .06);
       scene.tweens.add({ targets: glow, alpha: .17, duration: 780 + x % 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     }
