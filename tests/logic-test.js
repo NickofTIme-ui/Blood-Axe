@@ -5027,6 +5027,22 @@ test('keep: the gale gives warning, then pushes; behind the stones it does not',
   assert(pushed(hz.shelter.z - 10) === 0, 'behind the stones, nothing');
 });
 
+test('keep: the wind never blows a hero off the edge (Nick: no blowing the players off the maps); the King\'s men can still go over', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('causeway'), { x: 800, z: 380 });
+  const T = st.terrain;
+  const pit = T.pits.find((q) => q.x0 < 800 && q.x1 > 800);
+  assert(pit, 'an open edge in front at x 800');
+  let fell = false;
+  const hz = st.hazards.find((h) => h.type === 'drift'); const log = [];
+  const noFoes = () => { for (const f of world.fighters) if (f.team === 'enemy') f.removeMe = true; };
+  run(1400, (i) => { p.health = p.stats.maxHealth; noFoes(); if (i % 50 === 0) log.push(Math.round(p.z)); if (T.inPit(p.x, p.z)) fell = true; });
+  assert(!fell && p.z < pit.z0 - 10 && log.at(-1) > 400, `pushed, but held short of the drop through every gust (${log.join(' ')}, edge ${pit.z0})`);
+  const e = createEnemy(world, 'grunt', 820, pit.z0 - 20);
+  let over = false;
+  run(1400, () => { p.health = p.stats.maxHealth; if (e.alive && T.inPit(e.x, e.z)) over = true; e.brain && (e.brain.sample = () => {}); });
+  assert(over || !e.alive, `an enemy at the edge can still be blown over (z ${Math.round(e.z)})`);
+});
+
 test('every level: no enemy and no boss ever pops into view (each comes on from off-screen, or stood there before anyone could see the spot)', () => {
   const heal = (w, st, p) => { p.health = p.stats.maxHealth; };
   const levels = [
@@ -5630,6 +5646,19 @@ test('sentence: the hero asks for his last words; some answer, some say nothing'
   assert(still[3] === `RURIK: ${ASK}` && still[4] === `HRUK: ${SILENCE}` && still[5] === `RURIK: ${NOTHING}` && still[6].includes('sentence you to die'), `he says nothing (${still})`);
   const bosses = Object.values(STAGES).flatMap((d) => d.sections.map((q) => q.boss?.sentence)).filter(Boolean);
   assert(bosses.some((x) => x.silent) && bosses.some((x) => x.last && !x.silent), 'some answer, some don\'t');
+});
+
+test('keep: Rurik\'s judgment: the King\'s sentence is Rurik\'s to pass, in his own words; anyone else reads the crimes', () => {
+  const def = STAGES.blackKeep.sections.find((q) => q.id === 'throne').boss.sentence;
+  const king = { stats: { name: 'King Vaurath, the Ashen Crown' } };
+  const rurik = sentenceLines(king, { stats: { id: 'warrior', name: 'Rurik' } }, def, 'VAURATH');
+  assert(def.by === 'warrior' && rurik.some(([w, t]) => w === 'VAURATH' && t.includes('kingdom')) && rurik.at(-1)[1].includes('sentence you to die') && rurik.some(([, t]) => t.includes('Hakon')), `his own words (${rurik.length})`);
+  const vexa = sentenceLines(king, { stats: { id: 'rogue', name: 'Vexa' } }, def, 'VAURATH');
+  assert(!vexa.some(([, t]) => t.includes('Hakon')) && vexa.some(([, t]) => t.includes('chained')) && vexa.every(([w]) => w !== 'RURIK'), 'anyone else: the crimes, in their own voice');
+  const S = new Sentence({ world: { events: { on() {} } }, players: [], section: { boss: { sentence: def } } });
+  S.stage = { players: [{ alive: true, stats: { id: 'rogue' }, x: 0 }, { alive: true, stats: { id: 'warrior' }, x: 900 }], section: { boss: { sentence: def } } };
+  const b = { x: 10, lastAttacker: S.stage.players[0] };
+  assert(S.pickHero(b) === S.stage.players[1], 'Rurik passes it, though Vexa struck last');
 });
 
 test('sentence: no two go alike: the head and the fall are rolled from the lists, never the same as the last man\'s, and the same on both online machines', () => {

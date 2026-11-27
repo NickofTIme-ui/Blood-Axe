@@ -192,7 +192,7 @@ const ARROW_SLOW = 1.4;
 const BALLISTA = { period: 240, warn: 70, speed: 30, range: 1700, depth: 30, high: 110, damage: 80, roll: 4, bossWarn: 90, share: 0.15, first: 90 };
 // The Black Keep's wind and moving floors (hazard 'drift'): a gust's warning and push
 // (frames), by default; how fast a squeezed room closes in (px a frame)
-const DRIFT = { warn: 90, for: 120 };
+const DRIFT = { warn: 90, for: 120, margin: 75 }; // (margin: a hero is never pushed within this many frames' push of a drop)
 const SQUEEZE = 0.6;
 // King Vaurath's duel (boss.duel): the defaults
 const DUEL = { composure: 3, ward: 0.3, open: 160, counter: { damage: 14, reach: 130 } };
@@ -1089,8 +1089,12 @@ export class Stage {
       const band = hz.bands ? hz.bands.find((q) => f.z >= q.z0 && f.z < q.z1) : hz;
       if (!band) continue;
       const dx = (band.vx ?? 0) / 60; const dz = (band.vz ?? 0) / 60;
-      if (dx && !T?.wallAt(f.x + dx * 4, f.z, f.h)) f.x = Math.max(B.minX, Math.min(B.maxX, f.x + dx));
-      if (dz && !T?.wallAt(f.x, f.z + dz * 4, f.h)) f.z = Math.max(B.minZ, Math.min(B.maxZ, f.z + dz));
+      // (the heroes and their allies are never blown off an edge: the push stops a good step short
+      // of any drop. Nick, 2026-11-27: "i dont like the wind blowing the players off the maps".
+      // The King's men can still go over.)
+      const safe = (x, z) => f.team !== 'player' || (f.grounded && !['knockdown', 'hitstun', 'stagger'].includes(f.state) && (!T || (!T.inPit(x, z) && T.groundAt(x, z) >= T.groundAt(f.x, f.z) - 2)));
+      if (dx && !T?.wallAt(f.x + dx * 4, f.z, f.h) && safe(f.x + dx * DRIFT.margin, f.z)) f.x = Math.max(B.minX, Math.min(B.maxX, f.x + dx));
+      if (dz && !T?.wallAt(f.x, f.z + dz * 4, f.h) && safe(f.x, f.z + dz * DRIFT.margin)) f.z = Math.max(B.minZ, Math.min(B.maxZ, f.z + dz));
     }
   }
 
