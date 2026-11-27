@@ -10,11 +10,14 @@
 //   boss.sentence: false   (a machine has nothing to answer for)
 //   stats.machine          (the same, by type: the Ore Crusher, should one be a boss)
 //   the section a `sequence` ends (the king's judgment: stage/Sequence.js)
-// Stage data on the boss: sentence: { speaker, last, silent, crimes: [line, ...] }
+// Stage data on the boss: sentence: { speaker, last, silent, crimes: [line, ...], by, lines }
 //   speaker  how his own line is labelled (default: the first word of his name)
 //   last     his last words, said on his knees when the hero asks for them
 //   silent   he has none: asked, he says nothing (his `last` is kept, unused)
 //   crimes   the hero's charges, one line each (default: GENERIC)
+//   by       whose sentence it is (a hero's id): he passes it whoever struck last, if he stands
+//   lines    the whole scene, [who, text] ('$HERO': the executioner), in place of the above;
+//            with `by`, only when he is the one passing it (anyone else: the crimes)
 // The hero's side (data/characters.js `sentence`): { move, fatality, cut, as } — which of
 // his moves is the killing blow, how it takes the man apart (default: heavy, decap), and
 // the name he passes the sentence in.
@@ -128,6 +131,10 @@ export class Sentence {
   // Who passes the sentence: the hero who beat him, or the nearest one standing.
   pickHero(b) {
     const alive = this.stage.players.filter((p) => p.alive && !p.downed);
+    // (`sentence.by`: the one whose sentence it is to pass, when he's standing: the King's is Rurik's)
+    const by = this.stage.section?.boss?.sentence?.by;
+    const own = by && alive.find((p) => p.stats.id === by);
+    if (own) return own;
     if (alive.includes(b.lastAttacker)) return b.lastAttacker;
     return alive.sort((a, c) => Math.abs(a.x - b.x) - Math.abs(c.x - b.x))[0] ?? null;
   }
@@ -411,7 +418,7 @@ export function speakerOf(name = '') {
 // The charges, the hero's question, his last words (or his silence), the sentence.
 export function sentenceLines(b, h, def, speaker = speakerOf(b.stats.name)) {
   const hero = (h.stats.name ?? 'Rurik').toUpperCase();
-  if(def.lines)return def.lines.map(([who,text])=>[who==='$HERO'?hero:who,text]);
+  if (def.lines && (!def.by || h.stats.id === def.by)) return def.lines.map(([who, text]) => [who === '$HERO' ? hero : who, text]); // (`by`: his own words, only in his mouth)
   const crimes = def.crimes?.length ? def.crimes : GENERIC_CRIMES;
   const lines = [[hero, `${b.stats.name}. On your knees, hear your crimes.`]];
   for (const c of crimes) lines.push([hero, c]);

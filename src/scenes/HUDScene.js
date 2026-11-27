@@ -544,6 +544,8 @@ export class HUDScene extends Phaser.Scene {
       // only the man you're hitting, and the named ones (bosses, a section's champion):
       // a bar for every grunt on screen was a row of clutter (Nick's level 1 review, 2026-11-03)
       .filter((f) => f.id === this.focusId || f.stats.boss || f.stats.named)
+      // (a boss already on the big bar up top isn't shown a second time down here: Varek had two)
+      .filter((f) => f !== this.bossUi?.boss)
       .sort((a, b) => (a.id === this.focusId ? -1 : b.id === this.focusId ? 1 : Math.abs(a.x - p.x) - Math.abs(b.x - p.x)))
       .slice(0, MAX_ENEMY_BARS);
     for (let i = 0; i < Math.max(onScreen.length, this.enemyBars.length); i++) {

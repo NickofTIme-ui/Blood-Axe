@@ -63,7 +63,7 @@ export const STAGE_KEEP = {
 
   sections: [
     {
-      id: 'causeway', name: 'THE ASH CAUSEWAY', x0: 0, x1: 1900,
+      id: 'causeway', ground: 'k-causeway', groundFade: 160, name: 'THE ASH CAUSEWAY', x0: 0, x1: 1900,
       spawn: { x: 150, z: 420 },
       objective: 'Cross the causeway',
       hint: 'When the gale howls, get behind the parapet',
@@ -319,7 +319,7 @@ export const STAGE_KEEP = {
       ],
     },
     {
-      id: 'crown', name: 'THE CROWN WALK', x0: 13200, x1: 14700,
+      id: 'crown', ground: 'k-causeway', groundFade: 160, name: 'THE CROWN WALK', x0: 13200, x1: 14700,
       spawn: { x: 13280, z: 420 },
       objective: 'Cross the battlements. Kill the Crown Guard',
       hint: 'The gale again: behind the merlons',
@@ -365,7 +365,7 @@ export const STAGE_KEEP = {
       rest: { x: 15820, z: 330, kind: 'oath' },
     },
     {
-      id: 'throne', name: 'THE ASHEN THRONE', ...THRONE,
+      id: 'throne', ground: 'k-throne', groundFade: 160, name: 'THE ASHEN THRONE', ...THRONE,
       spawn: { x: 15980, z: 420 },
       objective: 'King Vaurath',
       hint: 'Parry his blows. When he guards, wait',
@@ -413,8 +413,22 @@ export const STAGE_KEEP = {
         lock: true,
         // IV, at the very end: everything he has left in one last thrust, the world slowed round it
         lastSwing: { at: 0.12, move: 'heavy' },
+        // RURIK'S JUDGMENT: his to pass, whoever struck the last blow (anyone else, if he's down)
         sentence: {
           speaker: 'VAURATH',
+          by: 'warrior',
+          lines: [
+            ['RURIK', 'Vaurath. On your knees, the Ashen Crown hears what it answers for.'],
+            ['RURIK', 'For the burning of our village.'],
+            ['RURIK', 'For the murder of our people. And of my father, Hakon, their king.'],
+            ['RURIK', 'For those you chained and carried away, and ground into your Ashen.'],
+            ['VAURATH', 'I made a kingdom out of ash. What will you make of it, boy?'],
+            ['RURIK', 'A home. With no crown over it.'],
+            ['ORYN', 'They are all watching, Rurik. Every one we brought home.'],
+            ['RURIK', 'Have you any last words?'],
+            ['VAURATH', 'Kneel... I told you to kneel...'],
+            ['RURIK', 'By the oath I keep, I, Rurik, the people\'s king, sentence you to die.'],
+          ],
           crimes: [
             'For the burning of our village.',
             'For the murder of our people.',

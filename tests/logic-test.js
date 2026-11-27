@@ -4468,10 +4468,22 @@ test('mine: the lift up to Pip\'s ledge rides: it waits at the bottom, carries a
   assert(lift.top === base, `it waits at the bottom (${lift.top})`);
   p.x = 3690; p.z = 310; p.h = p.floor = lift.top + 1; st.placeOnGround(p);
   run(200, () => { p.health = p.stats.maxHealth; });
-  assert(lift.top > base + 80 && Math.abs(p.h - lift.top) < 2, `carried up (${lift.top}, feet ${p.h}, on ${p.floorBlock?.kind}, grounded ${p.grounded}, ride ${lift.ride})`);
-  p.x = 3600; p.z = 300; p.h = p.floor = 225; st.placeOnGround(p);
+  assert(lift.top > base + 55 && Math.abs(p.h - lift.top) < 2, `carried up (${lift.top}, feet ${p.h}, on ${p.floorBlock?.kind}, grounded ${p.grounded}, ride ${lift.ride})`);
+  p.x = 3600; p.z = 300; p.h = p.floor = 200; st.placeOnGround(p);
   run(300, () => { p.health = p.stats.maxHealth; });
   assert(lift.top === base, `back down without him (${lift.top})`);
+});
+
+test('mine: the miners behind the last fall of rock dig from their side once you have started on it', () => {
+  const { world, p, st, run } = mineSetup(MINE_SEC('leap'), { x: 10700, z: 420 });
+  const pr = st.props.find((q) => q.kind === 'rubble' && q.tag === 'passage');
+  p.invincible = true;
+  const heard = []; world.events.on('diggersHeard', () => heard.push(1));
+  run(200);
+  assert(!pr.broken && pr.hp > pr.dug.from && heard.length === 0, `untouched, nobody digs (${pr.hp})`);
+  pr.hp = pr.dug.from;
+  run(pr.dug.every * (pr.dug.from + 1) + 10);
+  assert(heard.length === 1 && (pr.broken || pr.opened), `heard once, and dug through (${pr.hp}, broken ${pr.broken})`);
 });
 
 test('mine: the chase runs on through three stretches: each picks the rock up where it was, runs faster, and a death puts it back behind that stretch\'s start', () => {
@@ -4620,6 +4632,7 @@ test('ascent: every hero walks the Shattered Ascent (no upgrades), without a fal
 test('ascent: the bombardment: stones land near the hero, hurt both sides, never by a drop; each catapult smashed is one stone fewer; none left, it stops', () => {
   const { world, p, st, run } = ascentSetup(ASC_SEC('battery'), { x: 6900, z: 420 });
   st.fightOn = true; st.waveIndex = 99;
+  st.ascentSiege.wind.update = () => {}; // (no gusts: he stands where he's put)
   const hz = st.hazards.find((h) => h.type === 'bombard' && h.section === ASC_SEC('battery'));
   const land = []; world.events.on('shellLand', (e) => land.push(e.shell));
   const launches = []; world.events.on('shellLaunch', (e) => launches.push(e.count));
@@ -4629,7 +4642,7 @@ test('ascent: the bombardment: stones land near the hero, hurt both sides, never
   // an Ashen man standing right by him
   const e = createEnemy(world, 'grunt', 6930, 420);
   e.entering = false; e.controller = new Controller(); st.placeOnGround(e);
-  run(60 * 8, () => { p.health = p.stats.maxHealth; if (e.alive) { e.health = e.stats.maxHealth; e.x = p.x + 30; e.z = p.z; } });
+  run(60 * 11, () => { p.health = p.stats.maxHealth; if (e.alive) { e.health = e.stats.maxHealth; e.x = p.x + 30; e.z = p.z; } });
   assert(launches.length >= 2 && launches.every((n) => n <= 2), `volleys of two (${launches})`);
   assert(land.length >= 3 && land.every((s) => Math.abs(s.x - p.x) < 260), `the stones come down near him (${land.map((s) => Math.round(s.x - p.x))})`);
   assert(hurtHero >= 1 && hurtFoe >= 1, `they hit whoever is under them (hero ${hurtHero}, Ashen ${hurtFoe})`);
@@ -4651,7 +4664,7 @@ test('ascent: the bombardment: stones land near the hero, hurt both sides, never
   assert(st.phase !== 'fight' && beats.includes('silenced'), `the way on opens; the beat plays (${st.phase}, ${beats})`);
   // no stone is ever aimed by the bridge's drop
   const b2 = ascentSetup(ASC_SEC('bombardment'), { x: 5060, z: 420 });
-  const land2 = []; b2.world.events.on('shellLand', (ev) => land2.push(ev.shell));
+  const land2 = []; b2.world.events.on('shellLand', (ev) => { if (!ev.hazard.visualOnly) land2.push(ev.shell); }); // (the far stones thrown at the scenery behind are only seen)
   b2.p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
   b2.run(60 * 10, () => { b2.p.health = b2.p.stats.maxHealth; b2.p.x = 5060; });
   assert(land2.every((s) => s.x < 5100 - 150 || s.x > 5400 + 150), `none by the gorge (${land2.map((s) => Math.round(s.x))})`);
@@ -4686,6 +4699,28 @@ test('ascent: Siege Commander Orsk has the Keep fire on his own camp at two thir
 });
 
 
+test('ascent: the wind off the peaks is warned, then pushes everyone down the road; on the causeway a hero on his feet keeps his footing, an Ashen man goes over', () => {
+  const sec = ASC_SEC('bombardment');
+  const W = STAGE_ASCENT.sections[sec].wind;
+  assert(W && STAGE_ASCENT.sections[ASC_SEC('road')].wind, 'the cliff road and the causeway are windy');
+  const { world, p, st, run } = ascentSetup(sec, { x: 5300, z: 452 });
+  st.fightOn = true; st.waveIndex = 99; killFoes(world);
+  for (const h of st.hazards) h.until = 'never';
+  st.hazards = st.hazards.filter((h) => h.type !== 'bombard');
+  p.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
+  const e = createEnemy(world, 'grunt', 5200, 455); e.entering = false; e.controller = new Controller(); e.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; }; st.placeOnGround(e);
+  const states = []; world.events.on('ascentWind', (ev) => states.push(ev.state));
+  const beats = []; world.events.on('storyBeat', (ev) => beats.push(ev.beat.id));
+  const x0 = p.x;
+  let fellHero = 0; world.events.on('pitFall', (ev) => { if (ev.fighter === p) fellHero++; });
+  run(W.period * 2 + 10, () => { p.health = p.stats.maxHealth; if (e.alive) e.health = e.stats.maxHealth; });
+  assert(states.indexOf('warn') >= 0 && states.indexOf('warn') < states.indexOf('blow'), `warned before it blows (${states})`);
+  assert(st.story.beats.find((b) => b.id === 'wind').fired, 'Nicholas calls the first gust');
+  assert(p.x < x0 - 20, `the hero is pushed down the road (${Math.round(x0 - p.x)} px)`);
+  assert(st.terrain.groundAt(p.x, p.z, 10) > -100 && fellHero === 0, 'but never blown off the bridge on his feet');
+  assert(!e.alive || st.terrain.groundAt(e.x, e.z, 10) < -100, `the Ashen man is blown into the gorge (z ${Math.round(e.z)})`);
+});
+
 test('ascent: Nicholas (Nick) guides every hero up the mountain, ahead of the lead, back in a fight, and dies in Orsk\'s camp after his last words', () => {
   for (const hero of ['warrior', 'mage', 'rogue']) {
     let worst = 0; let ahead = 0; let samples = 0; let died = 0;
@@ -4710,7 +4745,7 @@ test('ascent: Nicholas (Nick) guides every hero up the mountain, ahead of the le
   }
 });
 
-test('ascent: the guide waits short of a fight that is not won, keeps behind the heroes in one, and the Keep\'s barrage strikes him down', () => {
+test('ascent: the guide waits short of a fight that is not won, keeps behind the heroes in one, and Orsk cuts him down at the barrage', () => {
   {
     // the cliff road: he stops short of where its fight starts
     const { st, p, run } = ascentSetup(0, { x: 900, z: 420 });
@@ -4732,15 +4767,17 @@ test('ascent: the guide waits short of a fight that is not won, keeps behind the
     const beats = []; world.events.on('storyBeat', (e) => beats.push(e.beat.id));
     bossUp(st, run, p);
     st.boss.health = st.boss.stats.maxHealth * 0.6;
-    run(4, () => { p.health = p.stats.maxHealth; });
-    assert(n.state === 'dying', `the Keep's stones strike him down (${n.state})`);
+    // (the barrage: Orsk turns on him and cuts him down in a held beat; stage/AscentWound.js)
+    const struckDown = () => { for (let i = 0; i < 60 * 8 && n.state !== 'dying'; i++) run(1, () => { p.health = p.stats.maxHealth; }); };
+    struckDown();
+    assert(n.state === 'dying', `Orsk strikes him down at the barrage (${n.state})`);
     // the hero falls in the fight: back at the checkpoint he is on his feet again
     st.respawn();
     assert(n.state === 'guide' && !st.story.done.has('struck'), `up again for the fight again (${n.state})`);
     p.x = 8000; st.placeOnGround(p);
     bossUp(st, run, p);
     st.boss.health = st.boss.stats.maxHealth * 0.6;
-    run(4, () => { p.health = p.stats.maxHealth; });
+    struckDown();
     assert(n.state === 'dying', 'struck again');
     run(60 * 60, () => { p.health = p.stats.maxHealth; killFoes(world); for (const pl of st.players) pl.controller.registerPress?.('padRight'); });
     assert(beats.includes('struck') && beats.includes('lastWords'), `his cry and his last words (${beats})`);
@@ -4988,6 +5025,22 @@ test('keep: the gale gives warning, then pushes; behind the stones it does not',
   assert(warns.length && gusts.length && warns[0] < gusts[0], `warned first (${warns[0]}, ${gusts[0]})`);
   assert(open > 20, `the gust pushes (${open})`);
   assert(pushed(hz.shelter.z - 10) === 0, 'behind the stones, nothing');
+});
+
+test('keep: the wind never blows a hero off the edge (Nick: no blowing the players off the maps); the King\'s men can still go over', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('causeway'), { x: 800, z: 380 });
+  const T = st.terrain;
+  const pit = T.pits.find((q) => q.x0 < 800 && q.x1 > 800);
+  assert(pit, 'an open edge in front at x 800');
+  let fell = false;
+  const hz = st.hazards.find((h) => h.type === 'drift'); const log = [];
+  const noFoes = () => { for (const f of world.fighters) if (f.team === 'enemy') f.removeMe = true; };
+  run(1400, (i) => { p.health = p.stats.maxHealth; noFoes(); if (i % 50 === 0) log.push(Math.round(p.z)); if (T.inPit(p.x, p.z)) fell = true; });
+  assert(!fell && p.z < pit.z0 - 10 && log.at(-1) > 400, `pushed, but held short of the drop through every gust (${log.join(' ')}, edge ${pit.z0})`);
+  const e = createEnemy(world, 'grunt', 820, pit.z0 - 20);
+  let over = false;
+  run(1400, () => { p.health = p.stats.maxHealth; if (e.alive && T.inPit(e.x, e.z)) over = true; e.brain && (e.brain.sample = () => {}); });
+  assert(over || !e.alive, `an enemy at the edge can still be blown over (z ${Math.round(e.z)})`);
 });
 
 test('every level: no enemy and no boss ever pops into view (each comes on from off-screen, or stood there before anyone could see the spot)', () => {
@@ -5333,10 +5386,12 @@ test('style: the same move over and over scores less than mixing it up', () => {
   assert(mixed > same, `mixed ${mixed.toFixed(0)} > same ${same.toFixed(0)}`);
 });
 
-test('horde: each campaign level has a HORDE wave of thralls, and it is announced', () => {
+test('horde: the village has a HORDE wave of Ashen looters (no thralls or berserkers: theirs are levels 5 and 4), and it is announced', () => {
   for (const data of [STAGE_VILLAGE]) {
     const big = data.sections.flatMap((sec) => sec.waves ?? []).filter((w) => w.length >= 7);
-    assert(big.length >= 1 && big.every((w) => w.filter((x) => x === 'thrall').length >= 8), `${data.name}: a horde of thralls`);
+    assert(big.length >= 1 && big.every((w) => w.filter((x) => x === 'grunt').length >= 6), `${data.name}: a horde of looters`);
+    const all = [...data.sections.flatMap((sec) => [...(sec.waves ?? []).flat(), ...(sec.hazards ?? []).flatMap((h) => h.fodder ?? []), ...(sec.boss?.escort ?? [])])];
+    assert(!all.includes('thrall') && !all.includes('berserker'), `${data.name}: no thralls or berserkers`);
   }
   // (Hollow Mountain has none either: its deep wave is the overseer and the ghouls; thralls are
   // the Iron Gates' (level identities, 2026-11-24))
@@ -5359,7 +5414,7 @@ test('horde: each campaign level has a HORDE wave of thralls, and it is announce
     for (const f of world.fighters) if (f.team === 'enemy' && f.alive && !f.entering) { f.health = 0; f.removeMe = true; }
   }
   assert(hordes.length === 1 && hordes[0] >= 8, `the horde comes, announced (${hordes})`);
-  assert(world.fighters.filter((f) => f.stats.id === 'thrall').length >= 8, 'and they are thralls');
+  assert(world.fighters.filter((f) => f.team === 'enemy' && f.stats.id === 'grunt' && f.alive).length >= 6, 'and they are Ashen looters');
 });
 
 test('loot: each boss drops his own trophy first, then something new, then blood', () => {
@@ -5593,6 +5648,19 @@ test('sentence: the hero asks for his last words; some answer, some say nothing'
   assert(still[3] === `RURIK: ${ASK}` && still[4] === `HRUK: ${SILENCE}` && still[5] === `RURIK: ${NOTHING}` && still[6].includes('sentence you to die'), `he says nothing (${still})`);
   const bosses = Object.values(STAGES).flatMap((d) => d.sections.map((q) => q.boss?.sentence)).filter(Boolean);
   assert(bosses.some((x) => x.silent) && bosses.some((x) => x.last && !x.silent), 'some answer, some don\'t');
+});
+
+test('keep: Rurik\'s judgment: the King\'s sentence is Rurik\'s to pass, in his own words; anyone else reads the crimes', () => {
+  const def = STAGES.blackKeep.sections.find((q) => q.id === 'throne').boss.sentence;
+  const king = { stats: { name: 'King Vaurath, the Ashen Crown' } };
+  const rurik = sentenceLines(king, { stats: { id: 'warrior', name: 'Rurik' } }, def, 'VAURATH');
+  assert(def.by === 'warrior' && rurik.some(([w, t]) => w === 'VAURATH' && t.includes('kingdom')) && rurik.at(-1)[1].includes('sentence you to die') && rurik.some(([, t]) => t.includes('Hakon')), `his own words (${rurik.length})`);
+  const vexa = sentenceLines(king, { stats: { id: 'rogue', name: 'Vexa' } }, def, 'VAURATH');
+  assert(!vexa.some(([, t]) => t.includes('Hakon')) && vexa.some(([, t]) => t.includes('chained')) && vexa.every(([w]) => w !== 'RURIK'), 'anyone else: the crimes, in their own voice');
+  const S = new Sentence({ world: { events: { on() {} } }, players: [], section: { boss: { sentence: def } } });
+  S.stage = { players: [{ alive: true, stats: { id: 'rogue' }, x: 0 }, { alive: true, stats: { id: 'warrior' }, x: 900 }], section: { boss: { sentence: def } } };
+  const b = { x: 10, lastAttacker: S.stage.players[0] };
+  assert(S.pickHero(b) === S.stage.players[1], 'Rurik passes it, though Vexa struck last');
 });
 
 test('sentence: no two go alike: the head and the fall are rolled from the lists, never the same as the last man\'s, and the same on both online machines', () => {

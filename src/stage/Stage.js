@@ -192,7 +192,7 @@ const ARROW_SLOW = 1.4;
 const BALLISTA = { period: 240, warn: 70, speed: 30, range: 1700, depth: 30, high: 110, damage: 80, roll: 4, bossWarn: 90, share: 0.15, first: 90 };
 // The Black Keep's wind and moving floors (hazard 'drift'): a gust's warning and push
 // (frames), by default; how fast a squeezed room closes in (px a frame)
-const DRIFT = { warn: 90, for: 120 };
+const DRIFT = { warn: 90, for: 120, margin: 75 }; // (margin: a hero is never pushed within this many frames' push of a drop)
 const SQUEEZE = 0.6;
 // King Vaurath's duel (boss.duel): the defaults
 const DUEL = { composure: 3, ward: 0.3, open: 160, counter: { damage: 14, reach: 130 } };
@@ -1089,8 +1089,12 @@ export class Stage {
       const band = hz.bands ? hz.bands.find((q) => f.z >= q.z0 && f.z < q.z1) : hz;
       if (!band) continue;
       const dx = (band.vx ?? 0) / 60; const dz = (band.vz ?? 0) / 60;
-      if (dx && !T?.wallAt(f.x + dx * 4, f.z, f.h)) f.x = Math.max(B.minX, Math.min(B.maxX, f.x + dx));
-      if (dz && !T?.wallAt(f.x, f.z + dz * 4, f.h)) f.z = Math.max(B.minZ, Math.min(B.maxZ, f.z + dz));
+      // (the heroes and their allies are never blown off an edge: the push stops a good step short
+      // of any drop. Nick, 2026-11-27: "i dont like the wind blowing the players off the maps".
+      // The King's men can still go over.)
+      const safe = (x, z) => f.team !== 'player' || (f.grounded && !['knockdown', 'hitstun', 'stagger'].includes(f.state) && (!T || (!T.inPit(x, z) && T.groundAt(x, z) >= T.groundAt(f.x, f.z) - 2)));
+      if (dx && !T?.wallAt(f.x + dx * 4, f.z, f.h) && safe(f.x + dx * DRIFT.margin, f.z)) f.x = Math.max(B.minX, Math.min(B.maxX, f.x + dx));
+      if (dz && !T?.wallAt(f.x, f.z + dz * 4, f.h) && safe(f.x, f.z + dz * DRIFT.margin)) f.z = Math.max(B.minZ, Math.min(B.maxZ, f.z + dz));
     }
   }
 
@@ -1138,6 +1142,7 @@ export class Stage {
 
   updateProps() {
     this.chestPrompt = null;
+    this.updateDiggers();
     if (!this.world.hold && !this.story?.holding) {
       for (const f of this.players ?? [this.player]) {
         if (!f?.alive || !f.grounded || !['idle','walk'].includes(f.state)) continue;
@@ -1222,6 +1227,22 @@ export class Stage {
         pr.x = under.x + Math.max(-room, Math.min(room, pr.dx ?? 0));
         pr.y = under.y + Math.round(under.h * (PROP_LOOKS[under.look]?.top ?? 0.92));
       }
+    }
+  }
+
+  // A fall of rock with people behind it (`dug: { from, every }`, the mine's last passage):
+  // once you've broken it down to `from`, the trapped miners hear you and dig from their side
+  // too, one blow of their picks every `every` frames, so the way opens faster while the
+  // roof comes down (level 3 polish, 2026-11-27: the freed help dig).
+  updateDiggers() {
+    if (this.world.hold || this.story?.holding) return;
+    for (const pr of this.props) {
+      if (!pr.dug || pr.broken || pr.opened || pr.hp > pr.dug.from) continue;
+      if (!pr.digging) { pr.digging = 1; this.world.events.emit('diggersHeard', { prop: pr }); }
+      if (++pr.digging % pr.dug.every !== 0) continue;
+      pr.hp -= 1;
+      if (pr.hp > 0) { this.world.events.emit('propHit', { prop: pr, dir: -1, chain: true }); this.world.events.emit('diggerBlow', { prop: pr }); this.shakeOff?.(pr, -1); continue; }
+      this.breakProp(pr, -1, false, 1);
     }
   }
 
@@ -1823,6 +1844,7 @@ export class Stage {
         const z = Math.max(b.minZ + 10, Math.min(b.maxZ - 10, p.z + (r() * 2 - 1) * 50));
         x = Math.max(b.minX + 20, Math.min(b.maxX - 20, x));
         if (!hz.scenery && this.nearDrop(x, z, arrows ? B.arrowClear : B.pitClear)) continue;
+        if (!hz.scenery && hz.spare?.some(([a, b2]) => x >= a && x <= b2)) continue; // (`spare`: stretches no stone is thrown at: the Ascent's causeway, where a blast would throw a man off it)
         const scenic = hz.scenery?.[(Math.floor(hz.t / P) + i) % hz.scenery.length];
         if (scenic && Math.abs(scenic.x - p.x) > 600) continue;
         hz.shells.push({ x: scenic?.x ?? x, z: scenic?.z ?? z, from: hz.t, land: hz.t + (hz.warn ?? B.warn), post: posts.length ? posts[i % posts.length].id : null });

@@ -48,7 +48,10 @@ export const LEVEL_ART = {
     props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' },
       archers: { file: 'prop_archers.png', pair: true }, barricade: { file: 'prop_barricade.png', pair: true } },
     surfaces: { roof_top: { fit: true }, roof_front: { px: 180 }, beam: { px: 40 }, board: { fit: true },
-      eave: { fit: true, key: 'magenta' } }, // (a roof's slate edge hanging over its house front)
+      eave: { fit: true, key: 'magenta' }, // (a roof's slate edge hanging over its house front)
+      // the burning ridge along a roof's back, ridge tiles with fire and smoke over them (cut out
+      // already): the roofs' flat top line read as the lid of a box (Nick's level 1 polish, 2026-11-27)
+      ridge_fire: { fit: true } },
   },
   wood: {
     dir: 'assets/env/wood/',
@@ -92,10 +95,11 @@ export const LEVEL_ART = {
       { name: 'mid', key: 'magenta', scroll: 0.45, bottom: -20, height: 300 },
     ],
     wall: { height: 340 },
-    wallMore: ['wall_b', 'wall_c'], // (the back wall: heavier framing and a ladder, then a blue ore seam: ChatGPT 2026-11-26)
+    wallMore: ['wall_b', 'wall_c'], wallFade: 0.16, // (a wide cross-fade: at 0.06 the change from bare rock to timber framing showed as a hard line, level 3 polish)
+    // (the back wall: heavier framing and a ladder, then a blue ore seam: ChatGPT 2026-11-26)
     ground: true,
     pieces: ['furnace', 'water_river', // (the underground river's crossings: view/TerrainView.js paintedWater)
-      'stone_0', 'stone_1', 'stone_2', 'timber_bridge', 'ore_cart', 'ore_cart_broken', 'lift', 'lift_chain', 'planks_rotten', 'portcullis', 'pillar'], // (its stepping stones and the pit-prop bridge, cut out: ChatGPT 2026-11-26)
+      'stone_0', 'stone_1', 'stone_2', 'timber_bridge', 'ore_cart', 'ore_cart_broken', 'lift', 'lift_chain', 'planks_rotten', 'portcullis', 'pillar', 'chasm', 'chasm_wide', 'keep_far'], // (its stepping stones and the pit-prop bridge, cut out: ChatGPT 2026-11-26)
     props: {
       shackle: { file: 'prop_shackle.png', pair: true }, counterweight: { file: 'prop_counterweight.png', pair: true },
       rubble: { file: 'prop_rubble.png', pair: true },
@@ -114,7 +118,7 @@ export const LEVEL_ART = {
     ],
     wall: { height: 140 }, // (low: the Keep across the gorge shows over it)
     ground: true,
-    pieces: ['overhang', 'palisade', 'camp', 'gates_view', 'causeway', 'gorge', 'crater', 'scene_road', 'scene_refuge', 'scene_battery', 'scene_camp'],
+    pieces: ['overhang', 'palisade', 'camp', 'gates_view', 'causeway', 'gorge', 'crater', 'scene_road', 'scene_refuge', 'scene_battery', 'scene_camp', 'scene_road_b', 'scene_road_c', 'scene_causeway', 'scene_camp_b', 'boulder'],
       tiles: { refuge_floor: {height: 348}, siege_floor: {height: 348} },
     props: { catapult: { file: 'prop_catapult.png', pair: true } },
     surfaces: { rock_top: { px: 348 }, siege_top: { px: 348 }, rock_front: { px: 140 }, plank: { fit: true } }, // (the half-gone bridge's planks, cut from the plank bridge in assets/incoming/bridges_raw.png)
@@ -156,6 +160,7 @@ export const LEVEL_ART = {
       causeway: { height: 330, key: 'magenta' }, battlements: { height: 280, key: 'magenta' },
       hall: { height: 760 }, cells: { height: 760 }, forge: { height: 760 }, root: { height: 760 }, spire: { height: 760 },
     },
+    pieces: ['throne_hall', 'colossus', 'fist', 'plinth'], // (the Ashen Throne's hall, and the colossus that wakes behind it: view/KeepView.js drawThrone)
     props: { pin: { file: 'prop_pin.png', pair: true }, conduit: { file: 'prop_conduit.png', pair: true }, spire: { file: 'prop_spire.png', pair: true } },
     surfaces: { rock_top: { fit: true }, rock_front: { px: 160 } },
   },
