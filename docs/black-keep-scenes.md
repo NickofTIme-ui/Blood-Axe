@@ -16,7 +16,7 @@ Code: `src/scenes/CutawayScene.js` (played by `ArenaScene.campaignLevelDone` aft
 | 2 Gallows Wood | II · THE CAGES ARE EMPTY | irritated: cracks the throne arm with his fist | the wood went quiet; every prisoner walked free |
 | 3 Hollow Mountain | III · THE MOUNTAIN COULD NOT HOLD THEM | frustrated: throws the war map across the hall | even Malgor's men have started saying their names |
 | 4 Shattered Ascent | IV · THE ARMY RUNS | uneasy: burns his own captain for saying they can't be killed | his army is running from them |
-| 5 Iron Gates | V · THE GATES HAVE FALLEN | afraid: his fire gutters out; then the doors boom, he relights it: "Let them come." | they're at his door |
+| 5 Iron Gates | V · NO ONE LEFT TO SEND | afraid: his fire gutters out; then the doors boom, he relights it: "Let them come." | they're at his door |
 
 ## The one shape every scene has
 

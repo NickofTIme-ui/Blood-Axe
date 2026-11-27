@@ -96,13 +96,13 @@ export const CUTAWAYS = {
     ],
   },
   fear: {
-    chapter: 4, numeral: 'V', title: 'THE GATES HAVE FALLEN',
+    chapter: 4, numeral: 'V', title: 'NO ONE LEFT TO SEND', // (not the level's own 'THE GATES HAVE FALLEN': that's its callout and its tally)
     noMalgor: true, // (he died at the gates)
     beats: [
       { act: 'enter', run: true },
       { who: 'MESSENGER', text: 'My king... the gates are open. The Marshal...' },
       { act: 'helm' }, // the Iron Marshal's helm, dented and split, rolled across the floor to the foot of the dais
-      { who: 'VAURATH', text: 'Three times he asked me. Three times I told him no.' },
+      { who: 'VAURATH', text: 'Three times he begged me to let him ride. The one time I said yes, they killed him.' },
       { act: 'gutter' }, // fear: the ember-fire gathers in his hand, shakes, and gutters out
       { who: 'MESSENGER', text: 'The town is burning, my king. The people are going over to them.' },
       { who: 'VAURATH', text: 'Then burn the prison wing. Every cell. Every soul.' },
@@ -196,8 +196,8 @@ const SHOTS = {
   wide: [480, 270, 1],
   king: [778, 222, 1.62],
   kneel: [390, 360, 1.42],
-  malgor: [600, 300, 1.42],
-  two: [560, 300, 1.16],
+  malgor: [600, 255, 1.42], // (high enough that the king's crown stays clear of the letterbox)
+  two: [560, 290, 1.16],
   hall: [240, 330, 1.3],
 };
 // the king's guard along the back of the hall, in desertion order (the first ones stay
@@ -1072,7 +1072,10 @@ export class CutawayScene extends Phaser.Scene {
     roads.setLetterSpacing?.(4);
     epicFill(roads, ['#c03020', '#7a0a08', '#300402']);
     m.add(roads);
-    if (painted) roads.setStroke('#140a04', 6);
+    if (painted) { // (bright on the painted parchment, so it reads: blood red on brown did not)
+      epicFill(roads, ['#ffd0a0', '#e04020', '#7a0a08']);
+      roads.setStroke('#0a0402', 7).setShadow(0, 2, '#000000', 6, true, true);
+    }
     const nx = R[t + 1];
     const keep = R[R.length - 1];
     const burst = (x, y, tint, s = 3) => {
@@ -1141,7 +1144,11 @@ export class CutawayScene extends Phaser.Scene {
       // the fourth, the loudest: in on the Black Keep, and it flares
       [16.3, () => {
         const z = 1.16;
-        this.tweens.add({ targets: m, scale: z, x: (W / 2 - keep.x * z) * 0.5, y: (H / 2 - keep.y * z) * 0.5, duration: 2600, ease: 'Sine.easeInOut' });
+        // (half way in on the Keep, but never past the painting's edges: no black at the sides)
+        const mx = Phaser.Math.Clamp((W / 2 - keep.x * z) * 0.5, W - W * z, 0);
+        const my = painted ? Phaser.Math.Clamp((H / 2 - keep.y * z) * 0.5, H - (W / 1.5 - 50) * z, 50 * z) : (H / 2 - keep.y * z) * 0.5;
+        this.tweens.add({ targets: m, scale: z, x: mx, y: my, duration: 2600, ease: 'Sine.easeInOut' });
+        this.tweens.add({ targets: roads, alpha: 0, duration: 900 }); // (the count has been read: out of the way of NEXT)
         burst(keep.x, keep.y - 8, t >= 4 ? 0xff2010 : 0x9070ff, 6);
         this.cameras.main.shake(300, 0.006);
       }],
