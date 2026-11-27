@@ -15,7 +15,7 @@
 //
 // THE ROUTE
 //   I   THE ASHEN ROAD     arrival; the others split off to search; Hale the smith; looters
-//   II  THE MARKET SQUARE  a mother and her son held at the well (defend); burning carts; a shrine
+//   II  THE MARKET SQUARE  a mother and her son held at the well (defend); fire pits that flare; a shrine
 //   III THE BURNING ROOFS  up onto the roofs, along a fallen beam, charred boards over the
 //                          cellars; arrows start falling from the archers by the mill
 //                          ahead; two men waiting on the second roof; optional: a boy on a
@@ -156,7 +156,7 @@ export const STAGE_VILLAGE = {
       spawn: { x: 1460, z: 440 },
       objective: 'Save the family at the well',
       fightAfter: 'kingParting', // (the men at the well wait while the king and his son part)
-      hint: 'The burning carts flare up: watch for the glow',
+      hint: 'The fire pits flare up: watch for the glow',
       // they're at the well with the mother and her boy when you come into the square
       // ...and then the HORDE: a pack of thralls from both ends of the square (one against many)
       waves: [['grunt', 'butcher', 'grunt', 'grunt'], ['stalker', 'grunt', 'grunt'], [...Array(9).fill('thrall'), 'butcher']],

@@ -1401,6 +1401,11 @@ export class StageView {
     const s = this.scene;
     hz.slab ??= s.add.image(0, 0, 'rockfall-slab').setOrigin(0.5, 1);
     hz.heap ??= s.add.image(0, 0, 'rockfall-heap').setOrigin(0.5, 1);
+    // (the mine's slab has blue ore in it: the gatehouse's murder hole drops plain grey stone)
+    if (!hz.dulled && this.scene.stageData?.theme === 'gates') {
+      hz.dulled = true;
+      for (const im of [hz.slab, hz.heap]) { const m = im.preFX?.addColorMatrix(); if (m) m.saturate(-0.9); else im.setTint(0x9a9088); }
+    }
     const fit = (img, w) => img.setScale(w / img.frame.width);
     if (phase === 'warn') {
       g.fillStyle(0x000000, 0.2 + 0.5 * warnT).fillEllipse(hz.x, gy, hz.w * (0.6 + 0.6 * warnT), hz.d * 0.5 * (0.6 + 0.6 * warnT));
