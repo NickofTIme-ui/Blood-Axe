@@ -20,7 +20,9 @@ branch, or ChatGPT's work gets lost.
   TerrainView.surface honours `tint`); the gatehouse pit is a stone shaft into the dark (TerrainView.gatesShaft), no
   ruled lines; the winch room's main gate uses the painted grille sheared across the lane (drawPortcullis, gates
   branch); caltrops/plates/bolt re-cut as RGBA with soft shadows (no pink); the murder-hole rockfall greyed in the
-  gates. Still to do (ChatGPT, needs Nick's PC Chrome): own grounds for yard and town; a stone arch over the drop gate.
+  gates. Later the same day: the yard and town have their own painted grounds (assets/env/gates/ground_yard.jpg,
+  ground_town.jpg; envArt 'g-yard'/'g-town', sections' `ground`), and the drop gate hangs from a painted stone lintel
+  (prop_lintel.png) with the grille masked above the beam (GatesFoesView.drawGate).
 - 27 November 2026 (cloud, branch claude/project-thread-pftf2b; NOT on main until Nick says push). LEVEL 6, THE
   BLACK KEEP, ROUND 2 (masterplan doc https://claude.ai/artifact/3G7ZmCYYUkpExaqVkDack9). The two heroes nobody plays
   fight beside you (entities/Ally.js; `allies: true`; never in `players`, so story/camera/game over ignore them;

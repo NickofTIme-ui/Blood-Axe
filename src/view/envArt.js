@@ -37,6 +37,10 @@ export const GROUNDS = {
   'm-hall': 'assets/env/mine/ground_hall.jpg',
   'm-collapse': 'assets/env/mine/ground_collapse.jpg', // (the chase, all three stretches)
   'm-far': 'assets/env/mine/ground_far.jpg', // (out in the daylight on the far face)
+  // the Iron Gates' own floors where the level opens out (data/stageGates.js sections' `ground`;
+  // ChatGPT, 2026-11-27 polish pass): the gate yard, the burning lower town
+  'g-yard': 'assets/env/gates/ground_yard.jpg',
+  'g-town': 'assets/env/gates/ground_town.jpg',
 };
 
 // Make an image tile seamlessly left-to-right by blending its last `frac` into its start.
