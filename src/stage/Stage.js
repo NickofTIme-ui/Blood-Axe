@@ -1823,6 +1823,7 @@ export class Stage {
         const z = Math.max(b.minZ + 10, Math.min(b.maxZ - 10, p.z + (r() * 2 - 1) * 50));
         x = Math.max(b.minX + 20, Math.min(b.maxX - 20, x));
         if (!hz.scenery && this.nearDrop(x, z, arrows ? B.arrowClear : B.pitClear)) continue;
+        if (!hz.scenery && hz.spare?.some(([a, b2]) => x >= a && x <= b2)) continue; // (`spare`: stretches no stone is thrown at: the Ascent's causeway, where a blast would throw a man off it)
         const scenic = hz.scenery?.[(Math.floor(hz.t / P) + i) % hz.scenery.length];
         if (scenic && Math.abs(scenic.x - p.x) > 600) continue;
         hz.shells.push({ x: scenic?.x ?? x, z: scenic?.z ?? z, from: hz.t, land: hz.t + (hz.warn ?? B.warn), post: posts.length ? posts[i % posts.length].id : null });

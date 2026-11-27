@@ -17,6 +17,7 @@ import { drawCastle } from './castle.js';
 import { PaintedLevel, featheredKey } from './levelArt.js';
 import {AscentPlates} from './AscentPlates.js';
 import { AscentRouteView } from './AscentRouteView.js';
+import { AscentAudio } from './AscentAudio.js';
 
 const COL = {
   skyTop: 0x3a4250, skyLow: 0x8a94a0, cloud: 0x5a626e, cloudLit: 0x9aa2ac,
@@ -61,6 +62,7 @@ export class AscentBackdrop {
     this.routeView = new AscentRouteView(scene,stage);
     this.drawSetPieces();
     this.drawWind();
+    this.audio = new AscentAudio(scene, stage);
 
   }
 
@@ -242,19 +244,40 @@ export class AscentBackdrop {
   drawWind() {
     for (let i = 0; i < 26; i++) {
       const img = this.scene.add.image(0, 0, 'dot').setTint(0xc8ccd0).setScale(i % 3 ? 0.25 : 1.6, 0.18).setAlpha(i % 3 ? 0.5 : 0.18).setDepth(DEPTH.floor + 3.5);
-      this.gusts.push({ img, x: Math.random() * SETTINGS.width, y: Math.random() * SETTINGS.height, v: 6 + Math.random() * 8, sway: Math.random() * 6 });
+      this.gusts.push({ img, x: Math.random() * SETTINGS.width, y: Math.random() * SETTINGS.height, v: 6 + Math.random() * 8, sway: Math.random() * 6, sx: i % 3 ? 0.25 : 1.6, base: i % 3 ? 0.5 : 0.18 });
     }
+    // a gust's sheet of blown grit and snow across the whole view (seen only while one blows)
+    const key = 'ascent-wind-sheet';
+    if (!this.scene.textures.exists(key)) {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 256; const x = c.getContext('2d');
+      const r = rng(77);
+      for (let i = 0; i < 260; i++) {
+        const y = r() * 256; const len = 20 + r() * 120; const a = 0.08 + r() * 0.28;
+        x.strokeStyle = `rgba(214,220,224,${a})`; x.lineWidth = 0.6 + r() * 1.6;
+        x.beginPath(); x.moveTo(r() * 512, y); x.lineTo(r() * 512 + len, y - len * 0.12); x.stroke();
+      }
+      this.scene.textures.addCanvas(key, c);
+    }
+    this.windSheet = this.scene.add.tileSprite(0, 0, SETTINGS.width, SETTINGS.height, key).setOrigin(0).setScrollFactor(0).setDepth(DEPTH.floor + 3.6).setAlpha(0);
   }
 
   update() {
     const t = this.scene.time.now / 16.7;
     this.routeView?.update();
+    this.audio?.update();
 
     for (const f of this.flickers) f.img.setAlpha(f.base + Math.sin(t * f.rate + f.base * 40) * f.amp + (Math.random() - 0.5) * f.amp * 0.3);
     for (const c of this.clouds) c.img.x = Math.sin(t * 0.0006 * (1 + c.speed)) * 160; // (driven back and forth by the wind)
     const wv = this.scene.cameras.main.worldView;
+    // the gusts (stage/AscentWind.js): grit streams faster and thicker as one comes, then flies
+    const W = this.stage.ascentSiege?.wind;
+    const want = W?.state === 'blow' ? 3.2 + W.k * 2 : W?.state === 'warn' ? 2 : 1;
+    this.gale = (this.gale ?? 1) + (want - this.gale) * 0.06;
+    const sheet = Math.max(0, this.gale - 1.4) / 3.8;
+    this.windSheet?.setAlpha(sheet * 0.55).setTilePosition((this.windSheet.tilePositionX ?? 0) + 6 * this.gale, 0);
     for (const g of this.gusts) {
-      g.x -= g.v * ([0.65, 1, 0.25, 1.5, 1.1, 0.6, 0.8][this.stage.index] ?? 1);
+      g.img.setAlpha((g.base ?? 0.4) * Math.min(2.2, 0.6 + this.gale * 0.4)).setScale(g.sx * (0.7 + this.gale * 0.45), 0.18);
+      g.x -= g.v * this.gale * ([0.65, 1, 0.25, 1.5, 1.1, 0.6, 0.8][this.stage.index] ?? 1);
       if (g.x < -40) { g.x = wv.width + 40; g.y = Math.random() * wv.height; }
       g.img.setPosition(wv.x + g.x, wv.y + g.y + Math.sin(t * 0.05 + g.sway) * 8);
     }

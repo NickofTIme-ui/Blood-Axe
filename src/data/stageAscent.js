@@ -33,6 +33,7 @@ export const STAGE_ASCENT = {
         "x": 150,
         "z": 440
       },
+      "wind": {"period": 560, "warn": 100, "blow": 80, "x": -60, "first": 250},
       "objective": "Break through the cliff checkpoint",
       "hint": "Watch the falling-stone shadow, then take the road",
       "fightAt": 1020,
@@ -291,8 +292,9 @@ export const STAGE_ASCENT = {
         "x": 4560,
         "z": 440
       },
+      "wind": {"period": 480, "warn": 100, "blow": 90, "x": -55, "z": 48, "deck": [4940, 5660], "first": 180},
       "objective": "Cross the broken causeway",
-      "hint": "Keep to the bridge deck. Move between volleys",
+      "hint": "Cross between the gusts. Knock them off the bridge when the wind blows",
       "fightAt": 5650,
       "waves": [
         [
@@ -325,6 +327,7 @@ export const STAGE_ASCENT = {
       ],
       "hazards": [
         {
+          "spare": [[4850, 5750]],
           "type": "bombard",
           "period": 250,
           "warn": 145,
@@ -390,6 +393,7 @@ export const STAGE_ASCENT = {
         "x": 6260,
         "z": 440
       },
+      "wind": {"period": 600, "warn": 100, "blow": 80, "x": -50},
       "objective": "Destroy the battery and open the siege gate",
       "hint": "Bait their stones onto the engines, or smash them yourself",
       "fightAt": 6700,
@@ -490,7 +494,7 @@ export const STAGE_ASCENT = {
           "kind": "catapult",
           "tag": "battery",
           "x": 7060,
-          "z": 420,
+          "z": 336,
           "drop": "health"
         },
         {
@@ -533,7 +537,7 @@ export const STAGE_ASCENT = {
           "type": "bombard",
           "period": 250,
           "warn": 145,
-          "shots": 3,
+          "shots": 2,
           "silence": "battery",
           "destructive": true,
           "radius": 92,
@@ -588,7 +592,7 @@ export const STAGE_ASCENT = {
           "when": "phase:barrage",
           "period": 250,
           "warn": 145,
-          "shots": 1,
+          "shots": 2,
           "damage": 28,
           "destructive": true,
           "radius": 92,
@@ -603,7 +607,7 @@ export const STAGE_ASCENT = {
       "boss": {
         "type": "berserker",
         "look": "orsk",
-        "name": "Orsk - The Siege Commander",
+        "name": "Siege Commander Orsk",
         "health": 3,
         "damage": 1.15,
         "entrance": {
@@ -678,39 +682,15 @@ export const STAGE_ASCENT = {
   "terrain": [
     {
       "kind": "block",
-      "x0": 560,
-      "x1": 650,
-      "z0": 390,
-      "z1": 470,
-      "top": 35
-    },
-    {
-      "kind": "block",
-      "x0": 6320,
-      "x1": 6400,
-      "z0": 282,
-      "z1": 520,
-      "top": 35
-    },
-    {
-      "kind": "block",
-      "x0": 6400,
-      "x1": 6480,
+      "x0": 6330,
+      "x1": 6440,
       "z0": 282,
       "z1": 520,
       "top": 70
     },
     {
       "kind": "block",
-      "x0": 6480,
-      "x1": 6560,
-      "z0": 282,
-      "z1": 520,
-      "top": 105
-    },
-    {
-      "kind": "block",
-      "x0": 6560,
+      "x0": 6440,
       "x1": 7500,
       "mat": "siegeGround",
       "z0": 282,
@@ -878,20 +858,7 @@ export const STAGE_ASCENT = {
       "on": "start",
       "hold": true,
       "delay": 150,
-      "lines": [
-        [
-          "VEXA",
-          "The Keep. Across the gorge."
-        ],
-        [
-          "ORYN",
-          "His guns cover the road."
-        ],
-        [
-          "RURIK",
-          "Take the high paths. We take the battery."
-        ]
-      ]
+      "lines": [["VEXA", "The Keep. Right there across the gorge. Close enough to count its towers."], ["ORYN", "And his catapults on every height between us and it."], ["RURIK", "Take the high paths. I keep the road. If they want to stop us, they come through me."]]
     },
     {
       "id": "guide",
@@ -919,33 +886,20 @@ export const STAGE_ASCENT = {
       ]
     },
     {
+      "id": "wind",
+      "on": "wind",
+      "lines": [["NICHOLAS", "Wind off the peaks! Plant your feet, and let it take them!"]]
+    },
+    {
       "id": "rocks",
       "at": 640,
-      "lines": [
-        [
-          "VOICE",
-          "",
-          {
-            "autoAdvance": true,
-            "minFrames": 1
-          }
-        ]
-      ]
+      "lines": [["NICHOLAS", "Loose rock above! Watch the ground for its shadow."]]
     },
     {
       "id": "stair",
       "at": 1500,
       "calm": true,
-      "lines": [
-        [
-          "VOICE",
-          "",
-          {
-            "autoAdvance": true,
-            "minFrames": 1
-          }
-        ]
-      ]
+      "lines": [["NICHOLAS", "They cut the old road to slow you. Stay off the edge; the drop goes all the way down."]]
     },
     {
       "id": "wren",
@@ -970,16 +924,7 @@ export const STAGE_ASCENT = {
     {
       "id": "stones",
       "at": 3320,
-      "lines": [
-        [
-          "VOICE",
-          "",
-          {
-            "autoAdvance": true,
-            "minFrames": 1
-          }
-        ]
-      ]
+      "lines": [["NICHOLAS", "Catapults! Where the shadow grows, the stone falls. Under the rock is safe!"]]
     },
     {
       "id": "shelter",
@@ -1005,26 +950,12 @@ export const STAGE_ASCENT = {
     {
       "id": "bridge",
       "at": 4900,
-      "lines": [
-        [
-          "VOICE",
-          "",
-          {
-            "autoAdvance": true,
-            "minFrames": 1
-          }
-        ]
-      ]
+      "lines": [["NICHOLAS", "The causeway's cracked through. Cross between the volleys and don't stop on it!"]]
     },
     {
       "id": "battery",
       "on": "enter:battery",
-      "lines": [
-        [
-          "ORYN",
-          "Break the guns. Or let their own stones do it."
-        ]
-      ]
+      "lines": [["NICHOLAS", "The battery! Smash the engines, or stand by one and let their own stones do it."]]
     },
     {
       "id": "silenced",
@@ -1116,16 +1047,7 @@ export const STAGE_ASCENT = {
       "id": "retreat",
       "on": "clear:camp",
       "calm": true,
-      "lines": [
-        [
-          "VOICE",
-          "",
-          {
-            "autoAdvance": true,
-            "minFrames": 1
-          }
-        ]
-      ]
+      "lines": [["VOICE", "(horns from the Keep, long and low, again and again)"], ["RURIK", "They're sounding the retreat."]]
     },
     {
       "id": "lastWords",
@@ -1133,56 +1055,7 @@ export const STAGE_ASCENT = {
       "on": "clear:camp",
       "calm": true,
       "hold": true,
-      "lines": [
-        [
-          "RURIK",
-          "Nicholas.",
-          {
-            "moment": "nicholasAttend",
-            "minFrames": 55
-          }
-        ],
-        [
-          "NICHOLAS",
-          "You got him?",
-          {
-            "moment": "nicholasReach",
-            "minFrames": 55
-          }
-        ],
-        [
-          "RURIK",
-          "He's dead.",
-          {
-            "moment": "nicholasSettle",
-            "minFrames": 50
-          }
-        ],
-        [
-          "NICHOLAS",
-          "Good.",
-          {
-            "moment": "nicholasFade",
-            "minFrames": 60
-          }
-        ],
-        [
-          "VOICE",
-          "",
-          {
-            "moment": "nicholasDies",
-            "minFrames": 150,
-            "autoAdvance": true
-          }
-        ],
-        [
-          "RURIK",
-          "Rest, my friend.",
-          {
-            "minFrames": 75
-          }
-        ]
-      ],
+      "lines": [["RURIK", "Nicholas. Stay with me. The miners can carry you down.", {"moment": "nicholasAttend", "minFrames": 70}], ["NICHOLAS", "Did you get him?", {"moment": "nicholasReach", "minFrames": 55}], ["RURIK", "He's dead. The mountain is ours.", {"moment": "nicholasSettle", "minFrames": 60}], ["NICHOLAS", "Then I walked this road a thousand times for today. A guide only shows the way. The walking was always yours.", {"moment": "nicholasSettle", "minFrames": 90}], ["NICHOLAS", "When that king asks who you are, tell him: the ones he couldn't burn. Keep your oath, Rurik.", {"moment": "nicholasFade", "minFrames": 90}], ["VOICE", "", {"moment": "nicholasDies", "minFrames": 150, "autoAdvance": true}], ["RURIK", "On my life. Rest now, my friend.", {"minFrames": 75}]],
       "delay": 45
     },
     {

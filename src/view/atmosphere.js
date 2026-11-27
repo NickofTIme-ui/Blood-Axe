@@ -22,7 +22,7 @@ export const AIR = {
   village: { haze: 0x2e2638, far: 0.34, wall: 0.26, wallFoot: 0.55, floorBack: 0.45, floorFront: 0.22 },
   wood: { haze: 0x2a3438, far: 0.3, wall: 0.24, wallFoot: 0.5, floorBack: 0.42, floorFront: 0.22 },
   mine: { haze: 0x1e1c22, far: 0.22, wall: 0.2, wallFoot: 0.5, floorBack: 0.4, floorFront: 0.2 },
-  ascent: { haze: 0x697b83, far: 0.36, wall: 0.18, wallFoot: 0.48, floorBack: 0.36, floorFront: 0.14 },
+  ascent: { haze: 0x697b83, far: 0.36, wall: 0.18, wallFoot: 0.48, floorBack: 0.26, floorFront: 0.14, floorSoft: true }, // (soft: its painted scenes run up past the lane's back edge, so a hard dark band there cut straight through the cliffs)
   gates: { haze: 0x2e2630, far: 0.3, wall: 0.22, wallFoot: 0.5, floorBack: 0.42, floorFront: 0.22 },
   keep: { haze: 0x241e2c, far: 0.3, wall: 0.22, wallFoot: 0.5, floorBack: 0.42, floorFront: 0.22 },
 };
@@ -61,8 +61,9 @@ export function applyAtmosphere(scene, theme, width) {
   }
   // the street: occlusion at the back edge, the middle clear, a little shade at the front
   if (A.floorBack || A.floorFront) {
-    const k = gradient(scene, `air-floor-${theme}`, [[0, 0x000000, A.floorBack], [0.16, 0x000000, A.floorBack * 0.3], [0.3, 0x000000, 0],
-      [0.82, 0x000000, 0], [1, 0x000000, A.floorFront]]);
+    const k = gradient(scene, `air-floor-${theme}`, A.floorSoft
+      ? [[0, 0x000000, 0], [0.17, 0x000000, A.floorBack], [0.3, 0x000000, A.floorBack * 0.25], [0.42, 0x000000, 0], [0.82, 0x000000, 0], [1, 0x000000, A.floorFront]]
+      : [[0, 0x000000, A.floorBack], [0.16, 0x000000, A.floorBack * 0.3], [0.3, 0x000000, 0], [0.82, 0x000000, 0], [1, 0x000000, A.floorFront]]);
     scene.add.image(-W, top, k).setOrigin(0).setDisplaySize(width + W * 2, H - top + 40).setDepth(DEPTH.floor + 0.5);
   }
 }

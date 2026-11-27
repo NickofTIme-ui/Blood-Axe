@@ -1,8 +1,10 @@
 // Level 4's siege interactions. All gameplay uses the world's fixed tick/events.
 import {AscentWound} from './AscentWound.js';
+import {AscentWind} from './AscentWind.js';
 export class AscentSiege {
   constructor(stage) {
     this.stage = stage;
+    this.wind = new AscentWind(stage); // (the gusts off the peaks: stage/AscentWind.js)
     stage.world.events.on('bossPhase',({boss,phase})=>{
       const n=stage.story.npc('nicholas');
       if(phase.id==='barrage'&&stage.index===5&&n?.state==='guide')this.wound=new AscentWound(stage,boss,n);
@@ -42,6 +44,7 @@ export class AscentSiege {
     });
   }
   update() {
+    this.wind.update();
     const n=this.stage.story.npc('nicholas');
     if(this.wound&&!this.wound.update())this.wound=null;
     if(n?.state==='guide'){n.farewellMoment=null;this.farewell=false;}

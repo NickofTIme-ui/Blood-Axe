@@ -696,6 +696,7 @@ export class TerrainView {
     }
     if (this.theme === 'ascent') {
       vFade(front,x0,yTop1+1,w,Math.min(depthDown,18),0x070d12,.38,0);
+      if (mat === 'rock' && depthDown > 60) vFade(front,x0,yTop1+18,w,depthDown-18,0x0a1014,0,.5); // (a tall face falls into shade toward its foot: it reads as a drop, not a grey slab)
       if (mat === 'rock' && !b.bridgePier) vFade(top,x0,yTop0,w,14,0x101820,.22,0);
     }
     // (the mine's broken gallery: a pillar left standing over the drop wears its painted face,
