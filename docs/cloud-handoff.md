@@ -6,6 +6,10 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 27 November 2026 (cloud, thread "Fix iron guards flickering"; branch claude/project-thread-bseu01, NOT on main until
+  Nick says push). Level 5 Iron Guards (`ironclad`) no longer strobe solid white each time a light blow glances off
+  their plate (CombatSystem sets `glintAt` instead of `flash` on a glance; SpriteEnemyView gives a short cold steel
+  tint). Also fixed: levelArt.js had the arbalest's painted bolt (`gates-bolt`) commented out by the lintel line.
 - 27 November 2026 (cloud, branch claude/project-thread-t9nruf; NOT on main until Nick says push). LEVEL 4, THE
   SHATTERED ASCENT, CLAUDE'S POLISH (Nick: "good framework, art style good, execution UGLY"; Claude owns level 4 now).
   One continuous painting (view/AscentPlates.js SPOTS: each spot names the scene it wants and a mirrored stand-in);

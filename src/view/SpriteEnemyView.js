@@ -363,6 +363,8 @@ export class SpriteEnemyView {
       this.flashAge = (this.flashAge ?? 0) + 1;
       if (this.flashAge <= 4 || (f.hitstop === 0 && P.age % 4 < 2)) s.setTintFill(0xffffff);
       else s.setTint(0xff8a7a);
+    } else if (f.glintAt != null && tick - f.glintAt >= 0 && tick - f.glintAt < 5) {
+      s.setTint(0xdde6ff); // a blow glanced off his plate (combat/GatesArmor.js)
     } else if (winding) {
       // (the red edge, set above)
     } else if ((st === 'stagger' || st === 'guardBreak') && Math.floor(fr / 4) % 2 === 0) {

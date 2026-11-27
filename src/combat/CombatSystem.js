@@ -248,7 +248,11 @@ export class CombatSystem {
       !(def.maimed?.armF && def.maimed?.armB) && def.health - damage <= 0 && healthBefore >= def.stats.maxHealth * 0.3 &&
       this.world.rngFor(def.id, 24)() < (typeof move.maims === 'number' ? move.maims : 0.35);
     def.health = Math.max(def.spare || def.immortal || blasted ? 1 : 0, def.health - damage); // (spare: a boss beaten to his knees, not killed: stage/Sequence.js; immortal: config/testMode.js)
-    def.flash = 6;
+    // (a blow glancing off plate doesn't flash him solid white: the Iron Guard soaks a run of
+    // them without flinching, and the strobe read as him blinking off the screen. A quick
+    // cold glint on the steel instead: view/SpriteEnemyView.js)
+    if (plate?.glance) def.glintAt = this.world.frame;
+    else def.flash = 6;
     if (attacker) def.lastAttacker = attacker; // (a kick off a ledge into a pit is his kill)
     // the Mage's staff refills him: mana equal to the health his melee blow took (data/characters.js manaOnMelee)
     if (melee && attacker?.stats.manaOnMelee && attacker.alive) {
