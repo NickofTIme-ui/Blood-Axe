@@ -137,7 +137,7 @@ export const LEVEL_ART = {
     props: { winch: { file: 'prop_winch.png', pair: true }, ram: { file: 'prop_ram.png' },
       // the garrison's and the traps' pieces (data/gatesEnemies.js, stage/GatesTraps.js; ChatGPT
       // 2026-11-27, cut from gates_pieces.png by hand): the drop gate, the bolt, four plates, caltrops
-      dropgate: { file: 'prop_dropgate.png' }, bolt: { file: 'piece_bolt.png', texture: 'gates-bolt' },
+      dropgate: { file: 'prop_dropgate.png' }, lintel: { file: 'prop_lintel.png' }, // (the stone beam it drops out of) bolt: { file: 'piece_bolt.png', texture: 'gates-bolt' },
       plate0: { file: 'piece_plate0.png', texture: 'gates-plate-0' }, plate1: { file: 'piece_plate1.png', texture: 'gates-plate-1' },
       plate2: { file: 'piece_plate2.png', texture: 'gates-plate-2' }, plate3: { file: 'piece_plate3.png', texture: 'gates-plate-3' },
       caltrop0: { file: 'piece_caltrop0.png', texture: 'gates-caltrop-0' }, caltrop1: { file: 'piece_caltrop1.png', texture: 'gates-caltrop-1' },

@@ -37,6 +37,10 @@ export const GROUNDS = {
   'm-hall': 'assets/env/mine/ground_hall.jpg',
   'm-collapse': 'assets/env/mine/ground_collapse.jpg', // (the chase, all three stretches)
   'm-far': 'assets/env/mine/ground_far.jpg', // (out in the daylight on the far face)
+  // the Iron Gates' own floors where the level opens out (data/stageGates.js sections' `ground`;
+  // ChatGPT, 2026-11-27 polish pass): the gate yard, the burning lower town
+  'g-yard': 'assets/env/gates/ground_yard.jpg',
+  'g-town': 'assets/env/gates/ground_town.jpg',
   // The Black Keep's own floors, one per area (data/stageKeep.js sections' `ground`; ChatGPT,
   // 2026-11-27, level 6 round 3)
   'k-causeway': 'assets/env/keep/ground_causeway.jpg', // (and the Crown Walk, the battlements' stone)

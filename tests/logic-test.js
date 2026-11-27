@@ -5386,10 +5386,12 @@ test('style: the same move over and over scores less than mixing it up', () => {
   assert(mixed > same, `mixed ${mixed.toFixed(0)} > same ${same.toFixed(0)}`);
 });
 
-test('horde: each campaign level has a HORDE wave of thralls, and it is announced', () => {
+test('horde: the village has a HORDE wave of Ashen looters (no thralls or berserkers: theirs are levels 5 and 4), and it is announced', () => {
   for (const data of [STAGE_VILLAGE]) {
     const big = data.sections.flatMap((sec) => sec.waves ?? []).filter((w) => w.length >= 7);
-    assert(big.length >= 1 && big.every((w) => w.filter((x) => x === 'thrall').length >= 8), `${data.name}: a horde of thralls`);
+    assert(big.length >= 1 && big.every((w) => w.filter((x) => x === 'grunt').length >= 6), `${data.name}: a horde of looters`);
+    const all = [...data.sections.flatMap((sec) => [...(sec.waves ?? []).flat(), ...(sec.hazards ?? []).flatMap((h) => h.fodder ?? []), ...(sec.boss?.escort ?? [])])];
+    assert(!all.includes('thrall') && !all.includes('berserker'), `${data.name}: no thralls or berserkers`);
   }
   // (Hollow Mountain has none either: its deep wave is the overseer and the ghouls; thralls are
   // the Iron Gates' (level identities, 2026-11-24))
@@ -5412,7 +5414,7 @@ test('horde: each campaign level has a HORDE wave of thralls, and it is announce
     for (const f of world.fighters) if (f.team === 'enemy' && f.alive && !f.entering) { f.health = 0; f.removeMe = true; }
   }
   assert(hordes.length === 1 && hordes[0] >= 8, `the horde comes, announced (${hordes})`);
-  assert(world.fighters.filter((f) => f.stats.id === 'thrall').length >= 8, 'and they are thralls');
+  assert(world.fighters.filter((f) => f.team === 'enemy' && f.stats.id === 'grunt' && f.alive).length >= 6, 'and they are Ashen looters');
 });
 
 test('loot: each boss drops his own trophy first, then something new, then blood', () => {
