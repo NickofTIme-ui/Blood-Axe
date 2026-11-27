@@ -291,7 +291,7 @@ ENEMY_ANIMS.stonebreaker={...ENEMY_ANIMS.berserker};
 // docs/keep-king-strip-prompts.md. Over the standard set: chop (the held-back third cut, also
 // the ash wave held at the top) and cast (his sorcery: the Keep obeying him, f.stripPose).
 ENEMY_STRIPS.king = Object.fromEntries(Object.entries({
-  ...bossSet('king'),
+  ...(({ jump, drop, ...rest }) => rest)(bossSet('king')), // (the throne room has no ledges)
   chop: { file: `${DIR}/king_chop.png`, frames: 5, ref: 0, ground: 'drawn' },
   cast: { file: `${DIR}/king_cast.png`, frames: 6, ref: 0, ground: 'drawn', optional: true },
 }).map(([n, s]) => [n, { ...s, bg: 'magenta' }]));
