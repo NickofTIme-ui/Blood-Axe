@@ -60,7 +60,7 @@ export function buildLevelArt(scene) {
         const rows = ['wall', ...A.wallMore.filter(have)].map((n) => keyLayer(T.get(src(theme, n)).getSourceImage(), 'magenta'));
         // (one texture no wider than 4096, what every graphics card takes: the rows are drawn
         // at about the size the game shows them anyway)
-        add(artKey(theme, 'wall'), chainSeamless(rows, 0.06, 4096));
+        add(artKey(theme, 'wall'), chainSeamless(rows, A.wallFade ?? 0.06, 4096));
       }
       for (const [name, kind] of [['wall', 'magenta'], ['ground', 'opaque']]) {
         if (!A[name] || !have(name) || made.includes(artKey(theme, name))) continue;

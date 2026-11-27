@@ -353,6 +353,7 @@ export class ArenaScene extends Phaser.Scene {
       for (let i = 0; i < 10; i++) this.gore.spawn({ x: fighter.x + fighter.facing * 40 + (Math.random() - 0.5) * 50, z: fighter.z, h: 2, vx: (Math.random() - 0.5) * 220, vz: 0, vh: 60 + Math.random() * 140, tint: 0x8a7a60, scale: 0.5 + Math.random() * 0.6, decal: false, life: 22 });
     });
     ev.on('kill', (e) => { if (e.sunder) this.callout('SUNDERED!', '#ff2a1a', 34); });
+    ev.on('diggersHeard', () => this.callout('THEY\'RE DIGGING FROM THE OTHER SIDE!', '#ffd27a', 22)); // (the mine's last passage: Stage.updateDiggers)
     ev.on('roll', ({ fighter }) => {
       const heroRoll=fighter.team==='player'&&['warrior','rogue'].includes(fighter.stats.id);
       playSfx(this, heroRoll?'heroRoll':'roll', { volume: fighter.team === 'player' ? 0.7 : 0.3, spread: heroRoll?65:120 });

@@ -1369,8 +1369,7 @@ export class StageView {
   drawRockfall(g, hz, gy, y, phase, warnT, since) {
     if (this.paintedRockfall(g, hz, gy, y, phase, warnT, since)) return;
     if (phase === 'warn') {
-      g.fillStyle(0x000000, 0.2 + 0.5 * warnT).fillEllipse(hz.x, gy, hz.w * (0.6 + 0.6 * warnT), hz.d * 0.5 * (0.6 + 0.6 * warnT));
-      g.lineStyle(2, 0xc8b8a0, 0.3 + 0.5 * warnT).strokeEllipse(hz.x, gy, hz.w * 1.2, hz.d * 0.6);
+      this.rockfallWarning(g, hz, gy, warnT);
       // the slab working loose overhead
       const shake = Math.sin(hz.t * 1.7) * 3 * warnT;
       const by = gy - 250 + warnT * 26;
@@ -1392,6 +1391,24 @@ export class StageView {
     }
   }
 
+  // Where the rock will land (level 3 polish, 2026-11-27: a white ring read as a hole in the
+  // floor): a soft shadow that darkens and spreads to the rock's full reach, a ring of grit
+  // and dust on the floor round it, and a thin stream of grit pouring down from the crack.
+  rockfallWarning(g, hz, gy, warnT) {
+    const sx = hz.w * 1.2, sz = hz.d * 0.6;
+    for (let i = 0; i < 3; i++) {
+      const k = 1 - i * 0.18;
+      g.fillStyle(0x000000, (0.12 + 0.28 * warnT) * (0.6 + i * 0.25)).fillEllipse(hz.x, gy, sx * k * (0.7 + 0.3 * warnT), sz * k * (0.7 + 0.3 * warnT));
+    }
+    g.fillStyle(0x8a7a66, 0.18 + 0.3 * warnT);
+    for (let i = 0; i < 14; i++) {
+      const a = i * 0.45 + (hz.x % 7);
+      g.fillCircle(hz.x + Math.cos(a) * sx * 0.5 * (0.85 + 0.15 * Math.sin(i * 3.1)), gy + Math.sin(a) * sz * 0.5, 1.5 + (i % 3));
+    }
+    const sway = Math.sin(hz.t * 0.3) * 2;
+    g.fillStyle(0x9a8a74, 0.12 + 0.3 * warnT).fillRect(hz.x - 2 + sway, gy - 420, 3 + warnT * 3, 420);
+  }
+
   // The falling rock, painted (assets/env/mine/rockfall.png, on magenta: the slab of roof
   // working loose, then the same rock smashed into a heap): the slab shakes overhead while
   // its shadow grows, drops in the warning's last fifth, and lies broken while the dust
@@ -1408,8 +1425,7 @@ export class StageView {
     }
     const fit = (img, w) => img.setScale(w / img.frame.width);
     if (phase === 'warn') {
-      g.fillStyle(0x000000, 0.2 + 0.5 * warnT).fillEllipse(hz.x, gy, hz.w * (0.6 + 0.6 * warnT), hz.d * 0.5 * (0.6 + 0.6 * warnT));
-      g.lineStyle(2, 0xc8b8a0, 0.3 + 0.5 * warnT).strokeEllipse(hz.x, gy, hz.w * 1.2, hz.d * 0.6);
+      this.rockfallWarning(g, hz, gy, warnT);
       const f = Math.max(0, (warnT - 0.8) / 0.2);
       const shake = Math.sin(hz.t * 1.7) * 3 * Math.min(warnT, 0.8) * (1 - f);
       const hang = gy - 220 + Math.min(warnT, 0.8) * 26;
