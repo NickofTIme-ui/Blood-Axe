@@ -1169,8 +1169,12 @@ export class NpcView {
     const field=this.story?.fieldLine;
     const n=field?.npc??help;
     // (a held scene: only a villager's own shout-out, no help cries)
-    this.fieldShout.setVisible(!!n&&(!!field||!this.story?.holding));
-    if(n){this.fieldWords.setText(field?.text??n.helpText);this.fieldShout.place(n.x,n.z-(n.h??0)-125);}
+    // (and never pinned to the screen's edge for someone who's walked off it: the plate only
+    // shows while its speaker is on screen, or just past its edge)
+    const view=this.scene.cameras.main.worldView;
+    const seen=!!n&&n.x>view.x-60&&n.x<view.right+60;
+    this.fieldShout.setVisible(seen&&(!!field||!this.story?.holding));
+    if(seen){this.fieldWords.setText(field?.text??n.helpText);this.fieldShout.place(n.x,n.z-(n.h??0)-125);}
   }
 }
 

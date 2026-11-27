@@ -143,7 +143,7 @@ export const STAGE_WOOD = {
       groundTopFade: { depth: 110, hold: 0.42, x0: 2900, x1: 4400, feather: 120 },
       spawn: { x: 2960, z: 440 },
       objective: 'Open the cages',
-      hint: 'Smash the red lantern on its pole: while it burns, more of them come out of the mist. Then hold E (D-pad up) at a cage lock',
+      hint: 'Smash the red lantern: while it burns, more come out of the mist',
       fightAt: 3560,
       // (the first drops out of the branches over the carts: the crows go up first)
       spawns: [[{ x: 3660, z: 360, drop: 430, tell: 84 }, { x: 3820, z: 470, drop: 430, tell: 100 }, { x: 3560, z: 300, drop: 430, tell: 116 }], []],
@@ -200,7 +200,7 @@ export const STAGE_WOOD = {
       id: 'convoy', ground: 'w-convoy', groundFade: 160, name: 'THE CONVOY', x0: 5600, x1: 7200,
       spawn: { x: 5660, z: 440 },
       objective: 'Stop the prisoner wagon',
-      hint: 'Stop the wagon: smash it, knock the Wagonmaster off, or chop the notched pine: in its path it blocks the road, on top of it it smashes the wagon open',
+      hint: 'Stop the wagon: smash it, or chop the notched pine across its road',
       fightAt: 5860,
       // (the last: the kennel wagon's hounds let loose, with their handler. It was a horde of
       // thralls: the market square's, again; the wood's pack is its own)
@@ -208,8 +208,9 @@ export const STAGE_WOOD = {
       props: [
         // its roof is a floor that rolls with it; the Wagonmaster drives it and whips at anyone
         // near; a notched pine up ahead can be dropped across the road to block it
-        { kind: 'wagon', tag: 'convoy', x: 6080, z: 320, roll: { to: 7110, speed: 22, driver: 'butcher:driver' }, roof: { top: 138, d: 32 } },
-        { kind: 'pine', x: 6980, z: 318, fellDir: -1, len: 300, bridge: 'convoyPine', drop: null },
+        { kind: 'wagon', tag: 'convoy', x: 6080, z: 348, // (28 px nearer than it was: the Wagonmaster on its roof kept his head under the top of the screen, 2026-11-27)
+          roll: { to: 7110, speed: 22, driver: 'butcher:driver' }, roof: { top: 138, d: 32 } },
+        { kind: 'pine', x: 6980, z: 346, fellDir: -1, len: 300, bridge: 'convoyPine', drop: null },
         { kind: 'barrel', x: 5700, z: 480, drop: 'health' },
         // the convoy's supplies, dumped at the roadside to lighten the wagons
         ...group([['crate-v1', 5726, 302], ['crate-v5', 5780, 300], ['barrel-tar', 5840, 302]]),
@@ -220,7 +221,7 @@ export const STAGE_WOOD = {
       id: 'kennels', ground: 'w-kennels', groundFade: 160, name: 'THE KENNELS', x0: 7200, x1: 8400,
       spawn: { x: 7260, z: 440 },
       objective: 'Kill the Houndmaster',
-      hint: 'Knock a hound into an open pen and the gate slams on it. When he whistles, move! Dodge out of his chain. Hit him before his horn sounds',
+      hint: 'Knock his hounds into the open pens: the gates slam on them', // (one tip; the whistle, chain and horn each get their own callout in the fight)
       // the pens at the back of the clearing, under the painted kennels: hounds behind bars
       pens: [{ x: 7640, z: 270, count: 2 }, { x: 7820, z: 270, count: 2 }, { x: 8030, z: 270, count: 2 }],
       fightAt: 7560,
@@ -285,7 +286,7 @@ export const STAGE_WOOD = {
     // jump can still clear it)
     { kind: 'pit', x0: 790, x1: 980, ...FULL },
     { kind: 'block', x0: 774, x1: 998, z0: 400, z1: 452, top: 10, mat: 'log', tag: 'felled', hideArt: true, grip: [6, 8] }, // (the notched pine, once it's down)
-    { kind: 'block', x0: 6690, x1: 6980, z0: 294, z1: 342, top: 10, mat: 'log', tag: 'convoyPine', hideArt: true }, // (the convoy's pine, once it's down across the road)
+    { kind: 'block', x0: 6690, x1: 6980, z0: 322, z1: 370, top: 10, mat: 'log', tag: 'convoyPine', hideArt: true }, // (the convoy's pine, once it's down across the road)
 
     // ---- III THE CAGE CARTS: a ravine stream crossed on stepping stones
     { kind: 'pit', x0: 3080, x1: 3380, ...FULL },
@@ -349,7 +350,7 @@ export const STAGE_WOOD = {
     { type: 'deadfall', section: 4, x: 6560, z: 460 },
     { type: 'snare', section: 4, x: 6860, z: 494 },
     { type: 'snare', section: 5, x: 7460, z: 494 },
-    { type: 'snare', section: 5, x: 8160, z: 306 },
+    { type: 'snare', section: 5, x: 8310, z: 310 }, // (was at 8160, drawn on the offal barrels: 2026-11-27)
   ],
 
   lanterns: WOOD_LANTERNS,
@@ -392,7 +393,7 @@ export const STAGE_WOOD = {
       to: { x: 5440 }, flee: null, gather: { x: 5500, z: 330 }, // (he hides on the far bank, as he says, not at the end)
     },
     {
-      id: 'convoy', name: 'the prisoners in the wagon', x: 6080, z: 320, pose: 'convoy', rescue: 'convoy', tag: 'convoy',
+      id: 'convoy', name: 'the prisoners in the wagon', x: 6080, z: 348, pose: 'convoy', rescue: 'convoy', tag: 'convoy',
       people: 5, freeFor: 95, // (five of them, scrambling out of the back of the wreck one by one: view/NpcView.js crowdHead)
       flee: { x: 5700, z: 500 },
     },
@@ -419,7 +420,7 @@ export const STAGE_WOOD = {
       ],
     },
     { id: 'rope', at: 1640, lines: [['JOREN', 'Up here! The dogs! I can\'t hold on!']] },
-    { id: 'joren', on: 'rescued:joren', calm: true, lines: [['JOREN', 'Mira? She lives? ...Thank the gods.'], ['JOREN', 'The cages went on up the road. Hurry.']] },
+    { id: 'joren', on: 'rescued:joren', calm: true, lines: [['RURIK', 'Joren. Mira lives, and the boy. She sent us after you.'], ['JOREN', 'Mira... thank the gods.'], ['JOREN', 'The cages went on up the road. Hurry.']] }, // (Rurik tells him first: he can't know she lived)
     { id: 'joren-lost', on: 'lost:joren', calm: true, lines: [['RURIK', 'Too late. Forgive me, Joren.']] },
     { id: 'carts', at: 3420, lines: [['VOICE', 'Here! The cages! They left us when the wheels broke!']] },
     { id: 'locks', on: 'clear:carts', calm: true, lines: [['RURIK', 'The guards are dead. Now the locks.']] },
@@ -433,7 +434,7 @@ export const STAGE_WOOD = {
     { id: 'convoyPine', on: 'wave:convoy:1', lines: [['RURIK', 'That pine up the road is notched to fall. Drop it on the wagon!']] }, // (Nick, 2026-11-24: the pine had no purpose)
     { id: 'wagon', on: 'rescued:convoy', lines: [['PRISONER', 'Wheel\'s smashed! Out, all of you! Run!']] },
     { id: 'wagon-lost', on: 'lost:convoy', calm: true, lines: [['RURIK', 'Gone. We\'ll find you at the Keep. I swear it.']] },
-    { id: 'kennels', at: 7300, calm: true, lines: [['ORYN', '(from the trees) The Houndmaster runs the convoy. Kneel at the shrine. Then put him down.']] },
+    { id: 'kennels', at: 7300, calm: true, lines: [['ORYN', 'Kennels. The Houndmaster runs this convoy. Kneel at the shrine, then put him down.']] },
     { id: 'houndmaster', on: 'boss:kennels', lines: [['HOUNDMASTER', 'Oath Keepers. Good. My dogs haven\'t eaten in days.']] },
     { id: 'pack', on: 'phase:kennels:pack', lines: [['HOUNDMASTER', 'Up, my beauties! Pull them down!']] },
     { id: 'frenzy', on: 'phase:kennels:frenzy', lines: [['HOUNDMASTER', 'Then I\'ll feed you to them by hand!']] },
