@@ -48,7 +48,10 @@ export const LEVEL_ART = {
     props: { wreckage: { file: 'prop_wreckage.png', pair: true }, cartwreck: { file: 'prop_cart.png', pair: true, texture: 'cartwreck' },
       archers: { file: 'prop_archers.png', pair: true }, barricade: { file: 'prop_barricade.png', pair: true } },
     surfaces: { roof_top: { fit: true }, roof_front: { px: 180 }, beam: { px: 40 }, board: { fit: true },
-      eave: { fit: true, key: 'magenta' } }, // (a roof's slate edge hanging over its house front)
+      eave: { fit: true, key: 'magenta' }, // (a roof's slate edge hanging over its house front)
+      // the burning ridge along a roof's back, ridge tiles with fire and smoke over them (cut out
+      // already): the roofs' flat top line read as the lid of a box (Nick's level 1 polish, 2026-11-27)
+      ridge_fire: { fit: true } },
   },
   wood: {
     dir: 'assets/env/wood/',
@@ -140,7 +143,8 @@ export const LEVEL_ART = {
       caltrop2: { file: 'piece_caltrop2.png', texture: 'gates-caltrop-2' } },
     // the gatehouse stair and landing (dressed stone) and the guardroom's rotten floor
     // (prompts: docs/gates-art-prompts.md)
-    surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, plank: { fit: true } },
+    // (stones at a man's scale, and lit like the floor round them: 2026-11-27 polish pass)
+    surfaces: { rock_top: { px: 150, tint: 0x9a948c }, rock_front: { px: 160, tint: 0xb0aaa2 }, plank: { fit: true } },
   },
   // THE BLACK KEEP (view/KeepView.js): each part of the Keep has its own wall (`tiles`);
   // what isn't painted stays drawn in code. Prompts: docs/keep-art-prompts.md

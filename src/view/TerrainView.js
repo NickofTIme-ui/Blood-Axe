@@ -333,9 +333,10 @@ export class TerrainView {
         g.fillStyle(0x6a8aa0, 0.25).fillRect(p.x0, p.z0 - 50, p.x1 - p.x0, 6);
       }
       if (this.village) this.burningCellar(p, g);
+      if (this.theme === 'gates') this.gatesShaft(p, g);
       // (a ruled lip only where nothing painted marks the edge: the village's cellars read by
       // their own fire and shadowed walls)
-      const ruled = !paintedWater && !this.village;
+      const ruled = !paintedWater && !this.village && this.theme !== 'gates';
       if (ruled) g.lineStyle(2, 0x6a8aa8, 0.6);
       if (ruled) g.lineBetween(p.x0, p.z0, p.x0, p.z1 + 40);
       if (ruled) g.lineBetween(p.x1, p.z0, p.x1, p.z1 + 40);
@@ -488,6 +489,34 @@ export class TerrainView {
       const f = s.add.tileSprite(x, top, 16, H, 'water-foam').setOrigin(0).setFlipX(flip).setAlpha(0.55).setDepth(d + 0.04).setMask(mask);
       s.tweens.add({ targets: f, tilePositionY: -256, duration: 2250 + (x % 7) * 60, repeat: -1 });
     }
+  }
+
+  // The gatehouse's murder pit (level 5), not a flat black box: its stone shaft (the
+  // gatehouse's own dressed-stone face, darkened) going down into the dark, the light from
+  // the passage catching only the first courses below the lip. (2026-11-27 polish pass)
+  gatesShaft(p, g) {
+    const s = this.scene;
+    const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0); const bot = p.z1 + 40; const H = bot - top; const w = p.x1 - p.x0;
+    g.fillStyle(0x040303, 1).fillRect(p.x0, top, w, H);
+    const key = artKey('gates', 'surf-rock_front');
+    if (s.textures.exists(key)) {
+      const img = s.textures.get(key).getSourceImage();
+      const sc = 150 / img.height;
+      s.add.tileSprite(p.x0, top, w, H, key).setOrigin(0).setTileScale(sc, sc).setTint(0x6a625a).setDepth(DEPTH.floor + 4.01);
+    }
+    const gk = `gates-shaft-${Math.round(w)}x${Math.round(H)}`;
+    if (!s.textures.exists(gk)) {
+      const c = document.createElement('canvas'); c.width = Math.ceil(w); c.height = Math.ceil(H);
+      const x = c.getContext('2d');
+      const v = x.createLinearGradient(0, 0, 0, H);
+      v.addColorStop(0, 'rgba(4,3,3,0.35)'); v.addColorStop(0.3, 'rgba(4,3,3,0.75)'); v.addColorStop(0.65, 'rgba(4,3,3,0.97)'); v.addColorStop(1, 'rgba(4,3,3,1)');
+      x.fillStyle = v; x.fillRect(0, 0, w, H);
+      const hz = x.createLinearGradient(0, 0, w, 0); // (its side walls fall into shadow)
+      hz.addColorStop(0, 'rgba(0,0,0,0.6)'); hz.addColorStop(0.18, 'rgba(0,0,0,0)'); hz.addColorStop(0.82, 'rgba(0,0,0,0)'); hz.addColorStop(1, 'rgba(0,0,0,0.6)');
+      x.fillStyle = hz; x.fillRect(0, 0, w, H);
+      s.textures.addCanvas(gk, c);
+    }
+    s.add.image(p.x0, top, gk).setOrigin(0).setDepth(DEPTH.floor + 4.02);
   }
 
   // A burning cellar, not a black hole (the village's pits): the dark falls smoothly to
@@ -891,7 +920,7 @@ export class TerrainView {
       const top = Math.max(yTop0, pk.y);
       const t = (top - pk.y) / ((ft.y - pk.y) || 1); // (where the board crosses the roof's back edge)
       const cx = pk.x + (ft.x - pk.x) * t;
-      g.fillStyle(0x0a0604, 0.78).fillPoints([{ x: cx, y: top }, ft, { x: edge, y: ft.y }, { x: edge, y: top }], true);
+      g.fillStyle(0x0a0604, 0.55).fillPoints([{ x: cx, y: top }, ft, { x: edge, y: ft.y }, { x: edge, y: top }], true);
     }
   }
 
@@ -906,6 +935,7 @@ export class TerrainView {
     const sc = (conf.fit ? h : conf.px ?? 128) / img.height;
     t.setPosition(x, y).setSize(w, h).setDisplaySize(w, h).setTileScale(sc, sc).setDepth(depth).setVisible(true);
     if (this.theme === 'ascent') t.setTint(slot === 'front' ? 0xa8b0ae : 0xe5e5d8);
+    else if (conf.tint) t.setTint(conf.tint); // (level 5's gatehouse stone: down to the floor's light, Nick's polish pass)
     t.tilePositionX = x / sc;
     // its outline worn and chipped (a mask), not a ruled rectangle
     v.masks ??= {};
@@ -951,6 +981,26 @@ export class TerrainView {
         v.chains ??= [s.add.tileSprite(0, 0, cf.width, 10, ck).setOrigin(0.5, 1)];
         v.chains[0].setPosition(ax, ay + 6).setSize(cf.width, 700 / 0.26).setScale(0.26).setDepth(b.z1 + 0.45).setVisible(true);
       }
+      top.setVisible(false); front.setVisible(false);
+      return;
+    }
+    // (the Iron Gates': the painted grille (prop_dropgate.png, ChatGPT 2026-11-27), sheared
+    // once onto a slant across the lane, back foot at the back edge, front foot at x0 on the
+    // front edge, so it reads as a gate straight across the way, not a ladder)
+    if (this.theme === 'gates' && this.scene.textures.exists('prop-dropgate')) {
+      const s = this.scene; const T = s.textures;
+      const lean = 150; const depth = b.z1 - b.z0; const H = h + 40;
+      const key = `prop-dropgate-wall-${b.id}`;
+      if (!T.exists(key)) {
+        const src = T.get('prop-dropgate').getSourceImage();
+        const c = document.createElement('canvas'); c.width = lean; c.height = Math.ceil(H + depth);
+        const g = c.getContext('2d');
+        g.setTransform(lean / src.width, depth / src.width, 0, H / src.height, 0, 0);
+        g.drawImage(src, 0, 0);
+        T.addCanvas(key, c);
+      }
+      v.art ??= s.add.image(0, 0, key).setOrigin(0, 0);
+      v.art.setPosition(x0 - lean, b.z0 - H).setDepth(b.z1 + 0.5).setVisible(true);
       top.setVisible(false); front.setVisible(false);
       return;
     }
@@ -1043,10 +1093,15 @@ export class TerrainView {
     // its ends (painted beam): built, not a box cut square out of the shingles
     const ridged = bigRoof && topArt && this.surface(v, 'ridge', 'beam', x0 - 10, yTop0 - 9, w + 20, 14, b.z0 - 0.55, 3);
     if (ridged) v.tiles.ridge.setTint(0x8a7060);
+    // the painted burning ridge over that beam, the full width, its tiles on the roof's back edge
+    // and its smoke rising off it; over the gable ends' shadowed flanks, under their peaks
+    // (ridge tiles at 0.72 of the strip's height, so they sit on the beam)
+    const RIDGE_H = 96;
+    if (ridged) this.surface(v, 'ridgeFire', 'ridge_fire', x0 - 10, yTop0 - 9 - RIDGE_H * 0.72, w + 20, RIDGE_H, b.z0 - 0.42, 0);
     // and fire running along the ridge, the length of the roof (view/RoofFire.js): behind
     // whoever stands on it, in front of the ridge beam (Nick, 2026-10-24)
     if (bigRoof && this.village) {
-      if (v.fire === undefined) v.fire = roofFire(this.scene, x0 + 4, x1 - 4, yTop0 + 3, { height: 72, depth: b.z0 - 0.45, seed: Math.round(b.x0) });
+      if (v.fire === undefined) v.fire = roofFire(this.scene, x0 + 4, x1 - 4, yTop0 + 3, { height: 72, depth: b.z0 - 0.38, seed: Math.round(b.x0) });
       placeRoofFire(v.fire, x0 + 4, yTop0 + 3, true);
     }
     if (!base && mat !== 'board' && !ridged) fade(top, x0 - 4, yTop0 - 22, w + 8, 22, 0x000000, 0, 0.7);

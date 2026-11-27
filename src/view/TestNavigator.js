@@ -26,7 +26,7 @@ export const TEST_SCENES=[
 export const KEEP_SCENES=[
   ['I · The village stands (after level 1)','learns'],['II · The cages are empty (after level 2)','convoy'],
   ['III · The mountain could not hold them (after level 3)','collapse'],['IV · The army runs (after level 4)','retreat'],
-  ['V · The gates have fallen (after level 5)','fear'],
+  ['V · No one left to send (after level 5)','fear'],
 ];
 
 // The level picker: the campaign's levels in play order, named as the game names them
