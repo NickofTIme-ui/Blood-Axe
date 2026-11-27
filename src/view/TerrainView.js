@@ -333,9 +333,10 @@ export class TerrainView {
         g.fillStyle(0x6a8aa0, 0.25).fillRect(p.x0, p.z0 - 50, p.x1 - p.x0, 6);
       }
       if (this.village) this.burningCellar(p, g);
+      if (this.theme === 'gates') this.gatesShaft(p, g);
       // (a ruled lip only where nothing painted marks the edge: the village's cellars read by
       // their own fire and shadowed walls)
-      const ruled = !paintedWater && !this.village;
+      const ruled = !paintedWater && !this.village && this.theme !== 'gates';
       if (ruled) g.lineStyle(2, 0x6a8aa8, 0.6);
       if (ruled) g.lineBetween(p.x0, p.z0, p.x0, p.z1 + 40);
       if (ruled) g.lineBetween(p.x1, p.z0, p.x1, p.z1 + 40);
@@ -488,6 +489,34 @@ export class TerrainView {
       const f = s.add.tileSprite(x, top, 16, H, 'water-foam').setOrigin(0).setFlipX(flip).setAlpha(0.55).setDepth(d + 0.04).setMask(mask);
       s.tweens.add({ targets: f, tilePositionY: -256, duration: 2250 + (x % 7) * 60, repeat: -1 });
     }
+  }
+
+  // The gatehouse's murder pit (level 5), not a flat black box: its stone shaft (the
+  // gatehouse's own dressed-stone face, darkened) going down into the dark, the light from
+  // the passage catching only the first courses below the lip. (2026-11-27 polish pass)
+  gatesShaft(p, g) {
+    const s = this.scene;
+    const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0); const bot = p.z1 + 40; const H = bot - top; const w = p.x1 - p.x0;
+    g.fillStyle(0x040303, 1).fillRect(p.x0, top, w, H);
+    const key = artKey('gates', 'surf-rock_front');
+    if (s.textures.exists(key)) {
+      const img = s.textures.get(key).getSourceImage();
+      const sc = 150 / img.height;
+      s.add.tileSprite(p.x0, top, w, H, key).setOrigin(0).setTileScale(sc, sc).setTint(0x6a625a).setDepth(DEPTH.floor + 4.01);
+    }
+    const gk = `gates-shaft-${Math.round(w)}x${Math.round(H)}`;
+    if (!s.textures.exists(gk)) {
+      const c = document.createElement('canvas'); c.width = Math.ceil(w); c.height = Math.ceil(H);
+      const x = c.getContext('2d');
+      const v = x.createLinearGradient(0, 0, 0, H);
+      v.addColorStop(0, 'rgba(4,3,3,0.35)'); v.addColorStop(0.3, 'rgba(4,3,3,0.75)'); v.addColorStop(0.65, 'rgba(4,3,3,0.97)'); v.addColorStop(1, 'rgba(4,3,3,1)');
+      x.fillStyle = v; x.fillRect(0, 0, w, H);
+      const hz = x.createLinearGradient(0, 0, w, 0); // (its side walls fall into shadow)
+      hz.addColorStop(0, 'rgba(0,0,0,0.6)'); hz.addColorStop(0.18, 'rgba(0,0,0,0)'); hz.addColorStop(0.82, 'rgba(0,0,0,0)'); hz.addColorStop(1, 'rgba(0,0,0,0.6)');
+      x.fillStyle = hz; x.fillRect(0, 0, w, H);
+      s.textures.addCanvas(gk, c);
+    }
+    s.add.image(p.x0, top, gk).setOrigin(0).setDepth(DEPTH.floor + 4.02);
   }
 
   // A burning cellar, not a black hole (the village's pits): the dark falls smoothly to
@@ -892,6 +921,7 @@ export class TerrainView {
     const sc = (conf.fit ? h : conf.px ?? 128) / img.height;
     t.setPosition(x, y).setSize(w, h).setDisplaySize(w, h).setTileScale(sc, sc).setDepth(depth).setVisible(true);
     if (this.theme === 'ascent') t.setTint(slot === 'front' ? 0xa8b0ae : 0xe5e5d8);
+    else if (conf.tint) t.setTint(conf.tint); // (level 5's gatehouse stone: down to the floor's light, Nick's polish pass)
     t.tilePositionX = x / sc;
     // its outline worn and chipped (a mask), not a ruled rectangle
     v.masks ??= {};
@@ -937,6 +967,26 @@ export class TerrainView {
         v.chains ??= [s.add.tileSprite(0, 0, cf.width, 10, ck).setOrigin(0.5, 1)];
         v.chains[0].setPosition(ax, ay + 6).setSize(cf.width, 700 / 0.26).setScale(0.26).setDepth(b.z1 + 0.45).setVisible(true);
       }
+      top.setVisible(false); front.setVisible(false);
+      return;
+    }
+    // (the Iron Gates': the painted grille (prop_dropgate.png, ChatGPT 2026-11-27), sheared
+    // once onto a slant across the lane, back foot at the back edge, front foot at x0 on the
+    // front edge, so it reads as a gate straight across the way, not a ladder)
+    if (this.theme === 'gates' && this.scene.textures.exists('prop-dropgate')) {
+      const s = this.scene; const T = s.textures;
+      const lean = 150; const depth = b.z1 - b.z0; const H = h + 40;
+      const key = `prop-dropgate-wall-${b.id}`;
+      if (!T.exists(key)) {
+        const src = T.get('prop-dropgate').getSourceImage();
+        const c = document.createElement('canvas'); c.width = lean; c.height = Math.ceil(H + depth);
+        const g = c.getContext('2d');
+        g.setTransform(lean / src.width, depth / src.width, 0, H / src.height, 0, 0);
+        g.drawImage(src, 0, 0);
+        T.addCanvas(key, c);
+      }
+      v.art ??= s.add.image(0, 0, key).setOrigin(0, 0);
+      v.art.setPosition(x0 - lean, b.z0 - H).setDepth(b.z1 + 0.5).setVisible(true);
       top.setVisible(false); front.setVisible(false);
       return;
     }

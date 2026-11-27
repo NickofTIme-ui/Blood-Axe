@@ -6,6 +6,12 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 27 November 2026, later (cloud, branch claude/project-thread-gi0nk2; NOT on main until Nick says push). LEVEL 5
+  POLISH PASS: gatehouse stair/landing stones at a man's scale and darkened (levelArt gates surfaces px + tint,
+  TerrainView.surface honours `tint`); the gatehouse pit is a stone shaft into the dark (TerrainView.gatesShaft), no
+  ruled lines; the winch room's main gate uses the painted grille sheared across the lane (drawPortcullis, gates
+  branch); caltrops/plates/bolt re-cut as RGBA with soft shadows (no pink); the murder-hole rockfall greyed in the
+  gates. Still to do (ChatGPT, needs Nick's PC Chrome): own grounds for yard and town; a stone arch over the drop gate.
 - 27 November 2026 (cloud, branch claude/project-thread-pftf2b; NOT on main until Nick says push). LEVEL 6, THE
   BLACK KEEP, ROUND 2 (masterplan doc https://claude.ai/artifact/3G7ZmCYYUkpExaqVkDack9). The two heroes nobody plays
   fight beside you (entities/Ally.js; `allies: true`; never in `players`, so story/camera/game over ignore them;
