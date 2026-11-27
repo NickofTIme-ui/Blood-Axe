@@ -413,8 +413,22 @@ export const STAGE_KEEP = {
         lock: true,
         // IV, at the very end: everything he has left in one last thrust, the world slowed round it
         lastSwing: { at: 0.12, move: 'heavy' },
+        // RURIK'S JUDGMENT: his to pass, whoever struck the last blow (anyone else, if he's down)
         sentence: {
           speaker: 'VAURATH',
+          by: 'warrior',
+          lines: [
+            ['RURIK', 'Vaurath. On your knees, the Ashen Crown hears what it answers for.'],
+            ['RURIK', 'For the burning of our village.'],
+            ['RURIK', 'For the murder of our people. And of my father, Hakon, their king.'],
+            ['RURIK', 'For those you chained and carried away, and ground into your Ashen.'],
+            ['VAURATH', 'I made a kingdom out of ash. What will you make of it, boy?'],
+            ['RURIK', 'A home. With no crown over it.'],
+            ['ORYN', 'They are all watching, Rurik. Every one we brought home.'],
+            ['RURIK', 'Have you any last words?'],
+            ['VAURATH', 'Kneel... I told you to kneel...'],
+            ['RURIK', 'By the oath I keep, I, Rurik, the people\'s king, sentence you to die.'],
+          ],
           crimes: [
             'For the burning of our village.',
             'For the murder of our people.',

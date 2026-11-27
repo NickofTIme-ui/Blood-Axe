@@ -5611,6 +5611,19 @@ test('sentence: the hero asks for his last words; some answer, some say nothing'
   assert(bosses.some((x) => x.silent) && bosses.some((x) => x.last && !x.silent), 'some answer, some don\'t');
 });
 
+test('keep: Rurik\'s judgment: the King\'s sentence is Rurik\'s to pass, in his own words; anyone else reads the crimes', () => {
+  const def = STAGES.blackKeep.sections.find((q) => q.id === 'throne').boss.sentence;
+  const king = { stats: { name: 'King Vaurath, the Ashen Crown' } };
+  const rurik = sentenceLines(king, { stats: { id: 'warrior', name: 'Rurik' } }, def, 'VAURATH');
+  assert(def.by === 'warrior' && rurik.some(([w, t]) => w === 'VAURATH' && t.includes('kingdom')) && rurik.at(-1)[1].includes('sentence you to die') && rurik.some(([, t]) => t.includes('Hakon')), `his own words (${rurik.length})`);
+  const vexa = sentenceLines(king, { stats: { id: 'rogue', name: 'Vexa' } }, def, 'VAURATH');
+  assert(!vexa.some(([, t]) => t.includes('Hakon')) && vexa.some(([, t]) => t.includes('chained')) && vexa.every(([w]) => w !== 'RURIK'), 'anyone else: the crimes, in their own voice');
+  const S = new Sentence({ world: { events: { on() {} } }, players: [], section: { boss: { sentence: def } } });
+  S.stage = { players: [{ alive: true, stats: { id: 'rogue' }, x: 0 }, { alive: true, stats: { id: 'warrior' }, x: 900 }], section: { boss: { sentence: def } } };
+  const b = { x: 10, lastAttacker: S.stage.players[0] };
+  assert(S.pickHero(b) === S.stage.players[1], 'Rurik passes it, though Vexa struck last');
+});
+
 test('sentence: no two go alike: the head and the fall are rolled from the lists, never the same as the last man\'s, and the same on both online machines', () => {
   const { st, ev, run, world, p } = sentenceSetup('warrior');
   const b = st.boss;
