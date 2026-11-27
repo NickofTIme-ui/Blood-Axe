@@ -11,7 +11,7 @@ import { ENEMIES } from '../src/data/enemies.js';
 import { Stage } from '../src/stage/Stage.js';
 import { STAGE_GATES } from '../src/data/stageGates.js';
 import { LINE } from '../src/stage/Story.js';
-import { DROPGATE } from '../src/stage/GatesTraps.js';
+import { DROPGATE, gateX } from '../src/stage/GatesTraps.js';
 
 SETTINGS.feel.critChance = 0;
 LINE.wait = false;
@@ -155,24 +155,48 @@ test('drop gate: a foe under it when it lands is crushed; a hero is hurt and flu
   st.story.lines = []; // (quiet)
   const hz = st.hazards.find((h) => h.type === 'dropgate');
   assert(hz, 'the winch room has its drop gate');
-  const foe = createEnemy(world, 'grunt', hz.x, 400);
+  const foe = createEnemy(world, 'grunt', gateX(hz, 400), 400);
   foe.controller.sample = function () { this.held = {}; this.moveX = 0; this.moveZ = 0; };
-  p.x = hz.x + 4; p.z = 470; p.controller = new Still();
+  p.z = 470; p.x = gateX(hz, p.z) + 4; p.controller = new Still();
   let crushed = false;
   world.events.on('dropgateCrush', () => { crushed = true; });
   const h0 = p.health;
   for (let i = 0; i < DROPGATE.period + 60 && !crushed; i++) {
-    if (hz.gate?.phase !== 'down') { foe.x = hz.x; p.x = hz.x + 4; p.health = Math.max(p.health, 1); }
+    if (hz.gate?.phase !== 'down') { foe.x = gateX(hz, foe.z); p.x = gateX(hz, p.z) + 4; p.health = Math.max(p.health, 1); }
     world.tick(); st.update();
   }
   assert(crushed && !foe.alive, 'the Ashen man under it died');
-  assert(p.health < h0 && Math.abs(p.x - hz.x) > DROPGATE.half, `the hero was hurt and thrown clear (${p.health}/${h0}, x ${p.x - hz.x})`);
+  assert(p.health < h0 && Math.abs(p.x - gateX(hz, p.z)) > DROPGATE.half, `the hero was hurt and thrown clear (${p.health}/${h0}, x ${p.x - gateX(hz, p.z)})`);
   // while it's down: walking into it, he stops at it
   p.health = p.stats.maxHealth; p.fsm.change('idle');
   const pad = new Pad(); p.controller = pad;
-  p.x = hz.x - 80; pad.hold = { right: true };
+  p.x = gateX(hz, p.z) - 80; pad.hold = { right: true };
   for (let i = 0; i < 40; i++) { world.tick(); st.update(); }
-  if (hz.gate.phase === 'down') assert(p.x < hz.x - DROPGATE.half, `the gate stopped him (${p.x - hz.x})`);
+  if (hz.gate.phase === 'down') assert(p.x < gateX(hz, p.z) - DROPGATE.half, `the gate stopped him (${p.x - gateX(hz, p.z)})`);
+});
+
+test('the gate run: four gates fall one after another, never all at once, with a safe spot between each', () => {
+  const world = new World({ seed: 5 });
+  const p = world.addFighter(new Fighter({ stats: CHARACTERS.warrior, team: 'player', x: 200, z: 440, controller: new Still() }));
+  const sec = STAGE_GATES.sections.findIndex((q) => q.id === 'winch');
+  const st = new Stage(world, STAGE_GATES, {});
+  st.start(p, { section: sec });
+  st.story.lines = [];
+  const gates = st.hazards.filter((h) => h.type === 'dropgate').sort((a, b) => a.x - b.x);
+  assert(gates.length >= 4, `a run of gates (${gates.length})`);
+  const order = [];
+  world.events.on('dropgate:down', ({ hazard }) => order.push(gates.indexOf(hazard)));
+  // the hero waits in the gap between the 2nd and 3rd gate the whole time: never hit
+  const h0 = p.health;
+  let allShut = false;
+  for (let i = 0; i < 520; i++) {
+    p.x = (gateX(gates[1], p.z) + gateX(gates[2], p.z)) / 2;
+    world.tick(); st.update();
+    if (gates.every((g) => g.gate && (g.gate.phase === 'down' || g.gate.phase === 'fall'))) allShut = true;
+  }
+  assert(order.slice(0, 4).join() === '0,1,2,3', `they fall in order, back to front (${order.join()})`);
+  assert(!allShut, 'there is always a way forward');
+  assert(p.health === h0, `the gap between two gates is safe (${p.health}/${h0})`);
 });
 
 test('caltrops: a man walking onto them is hurt and hops; jumping, he passes over', () => {
