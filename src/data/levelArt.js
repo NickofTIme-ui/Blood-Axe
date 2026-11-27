@@ -130,7 +130,14 @@ export const LEVEL_ART = {
     ground: true,
     pieces: ['gatehouse', 'winch_room', 'town', 'inner_wall', 'keep_road'],
     // (ram: the burned-out ram on the road, a block's `look`, view/TerrainView.js drawPaintedBlock)
-    props: { winch: { file: 'prop_winch.png', pair: true }, ram: { file: 'prop_ram.png' } },
+    props: { winch: { file: 'prop_winch.png', pair: true }, ram: { file: 'prop_ram.png' },
+      // the garrison's and the traps' pieces (data/gatesEnemies.js, stage/GatesTraps.js; ChatGPT
+      // 2026-11-27, cut from gates_pieces.png by hand): the drop gate, the bolt, four plates, caltrops
+      dropgate: { file: 'prop_dropgate.png' }, bolt: { file: 'piece_bolt.png', texture: 'gates-bolt' },
+      plate0: { file: 'piece_plate0.png', texture: 'gates-plate-0' }, plate1: { file: 'piece_plate1.png', texture: 'gates-plate-1' },
+      plate2: { file: 'piece_plate2.png', texture: 'gates-plate-2' }, plate3: { file: 'piece_plate3.png', texture: 'gates-plate-3' },
+      caltrop0: { file: 'piece_caltrop0.png', texture: 'gates-caltrop-0' }, caltrop1: { file: 'piece_caltrop1.png', texture: 'gates-caltrop-1' },
+      caltrop2: { file: 'piece_caltrop2.png', texture: 'gates-caltrop-2' } },
     // the gatehouse stair and landing (dressed stone) and the guardroom's rotten floor
     // (prompts: docs/gates-art-prompts.md)
     surfaces: { rock_top: { fit: true }, rock_front: { px: 160 }, plank: { fit: true } },

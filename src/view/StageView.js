@@ -20,6 +20,7 @@ import { BladeChain } from './BladeChain.js';
 import { DANGER } from './dangerCue.js';
 import { cutPieces, keyLayer } from './envArt.js';
 import { drawScorpion, listenScorpion } from './VincentView.js';
+import { GatesFoesView } from './GatesFoesView.js';
 import { SiegeAnim } from './SiegeAnim.js';
 import { PropShatter, SHATTER, LAMP_ART } from './PropShatter.js';
 import { propLight, lightProp, rimGlow, groundUnder, moveGround } from './propGround.js';
@@ -121,6 +122,7 @@ export class StageView {
     this.makePairs();
     this.pickupSprites = new Map();
     this.listen();
+    this.gatesFoes = new GatesFoesView(scene, stage); // (the Iron Gates garrison's tells and clangs)
   }
 
   // ------------------------------------------------------------ textures
@@ -2477,6 +2479,7 @@ export class StageView {
     this.chestHint.setVisible(!!chest && !chest.opened);
     if(chest)this.chestHint.setPosition(chest.x,chest.z-(chest.y??0)-chest.h-10).setDepth(chest.z+100);
     this.siege.update();
+    this.gatesFoes.update();
     this.syncStacked();
     this.syncPairs();
     this.syncTumble();

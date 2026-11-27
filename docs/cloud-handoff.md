@@ -6,6 +6,18 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 27 November 2026 (cloud, branch claude/project-thread-gi0nk2; NOT on main until Nick says push). LEVEL 5 NEW FOES,
+  TRAPS AND MUSIC (Nick: level 5 already polished, build on it; every hero must use the whole kit). Three garrison foes,
+  ChatGPT-painted strips (assets/enemies/strips/warden5_*, ironclad_*, arbalest_*): GATE WARDEN `warden5` (pavise: frontal
+  blows ring off; opened by kicks/guard-breakers, launches, attacks from above, Vexa's sweep, or from behind), IRON GUARD
+  `ironclad` (3 plates: light hits glance x0.25 no flinch, heavy/launch/crit/fire/shock crack one; plates fly off as painted
+  pieces), ARBALESTER `arbalest` (red aim line ~60 frames, one piercing bolt, parryable, windlass reload). Code:
+  data/gatesEnemies.js, combat/GatesArmor.js (hooked in CombatSystem.resolve), entities/Arbalest.js (f.script),
+  view/GatesFoesView.js. Traps: stage/GatesTraps.js 'dropgate' (spiked portcullis in the winch room, x 3330: rattles and
+  shadows, slams, crushes Ashen outright, hurts heroes; painted prop_dropgate.png sheared across the lane) and 'caltrops'
+  (yard + town). Placed through field/gatehouse/winch/yard/town/marshal waves with story beats. MUSIC: level 5's own
+  war-drum march, procedural and ours (tools/sfx-gen/gates-drums.js -> assets/audio/iron-gates.mp3, Music key 'gates').
+  Tests: tests/gates-foes-test.js (in npm test). Art raw + prompts: /mnt/project-files/level5-art/.
 - 26 November 2026 (cloud; ON MAIN with Oryn's finish, Nick "push all"). EXECUTIONS RESTORE 20% (Nick's rule): every man a hero executes (Rurik's throat / impale / halve /
   every man a hero executes (Rurik's throat / impale / halve /
   chain, Oryn's and Vexa's finishers, a boss sentence) gives that hero back 20% of MAX health, stamina and mana, capped at

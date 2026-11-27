@@ -285,3 +285,21 @@ ENEMY_STRIPS.orsk = Object.fromEntries(Object.entries({ walk: 8, react: 6, atk1:
 for(const id of ['siegeguard','stonebreaker'])ENEMY_STRIPS[id]=Object.fromEntries(Object.entries({walk:8,react:6,atk1:5,atk2:5,heavy:6,special:6}).map(([name,frames])=>[name,{file:DIR+'/'+id+'_'+name+'.png',frames,ref:0,ground:'drawn',wide:36}]));
 ENEMY_ANIMS.siegeguard={...ENEMY_ANIMS.grunt,special1:ENEMY_ANIMS.berserker.special1};
 ENEMY_ANIMS.stonebreaker={...ENEMY_ANIMS.berserker};
+
+// THE IRON GATES' garrison (data/gatesEnemies.js): the Gate Warden behind his pavise, the
+// Iron Guard in plate, the Arbalester. ChatGPT 2026-11-27, chat "BA · Level 5 · Iron Gates
+// foes"; prompts in project files level5-art/prompts.md. Each strip as laid out there.
+for (const id of ['warden5', 'ironclad', 'arbalest']) ENEMY_STRIPS[id] = Object.fromEntries(Object.entries({ walk: 8, react: 6, atk1: 5, atk2: 5, heavy: 6, special: 6 }).map(([name, frames]) => [name, { file: `${DIR}/${id}_${name}.png`, frames, ref: 0, ground: 'drawn', wide: 36 }]));
+// the charge (both of them): 0 crouch, 1 push off, 2-3 running, 4 impact, 5 recover
+const GATES_CHARGE = { needs: ['special'], phases: { startup: seq('special', [0, 1, 1]), active: seq('special', [2, 3, 2, 3, 4]), recovery: seq('special', [4, 5]) } };
+ENEMY_ANIMS.warden5 = { ...COMMON, light1: quick('atk1'), light2: quick('atk2'), heavy: big('heavy'), special1: GATES_CHARGE };
+ENEMY_ANIMS.ironclad = { ...COMMON, light1: quick('atk1'), light2: quick('atk2'), heavy: big('heavy'), special1: GATES_CHARGE };
+ENEMY_ANIMS.arbalest = {
+  ...COMMON, light1: quick('atk1'),
+  // the shot: 0 raise, 1 aim, 2 aim steady (held: the red line), 3 loose, 4 lower
+  special1: { needs: ['atk2'], phases: { startup: seq('atk2', [0, 1, 2, 2, 2, 2, 2]), active: seq('atk2', [3]), recovery: seq('atk2', [3, 4]) } },
+  // kneeling: 0 down on a knee, 1 aim, 2 steady (held), 3 loose, 4 hold, 5 stand
+  special2: { needs: ['special'], phases: { startup: seq('special', [0, 1, 2, 2, 2, 2, 2]), active: seq('special', [3]), recovery: seq('special', [4, 5]) } },
+  // the windlass: 0 nose down, foot in the stirrup, 1-3 cranking (twice round), 4 the bolt in, 5 up
+  heavy: { needs: ['heavy'], phases: { startup: seq('heavy', [0, 1, 2, 3, 1, 2, 3, 4]), active: seq('heavy', [5]), recovery: seq('heavy', [5]) } },
+};

@@ -11,6 +11,7 @@ export const STAGE_GATES = {
   "doneTitle": "THE GATES HAVE FALLEN",
   "width": 10400,
   "theme": "gates",
+  "music": "gates",
   "tall": true,
   "castle": {
     "x": 1150,
@@ -33,7 +34,7 @@ export const STAGE_GATES = {
         "z": 440
       },
       "objective": "Reach the gates",
-      "hint": "Stones from the wall: watch the ground for the shadow",
+      "hint": "Stones from the wall: watch for the shadow. A pavise: break it open, or get round it",
       "fightAt": 980,
       "waves": [
         [
@@ -46,9 +47,12 @@ export const STAGE_GATES = {
           "thrall"
         ],
         [
-          "grunt",
-          "stalker",
-          "butcher"
+          "warden5"
+        ],
+        [
+          "warden5",
+          "warden5",
+          "arbalest"
         ]
       ],
       "props": [
@@ -120,8 +124,8 @@ export const STAGE_GATES = {
       "waves": [
         [
           "grunt",
-          "stalker",
-          "grunt"
+          "arbalest",
+          "stalker"
         ],
         [
           "butcher",
@@ -187,7 +191,7 @@ export const STAGE_GATES = {
         "z": 440
       },
       "objective": "Kill the twins. Break the winch",
-      "hint": "Both chains hold the gate: break them both",
+      "hint": "Both chains hold the gate: break them both. Time the drop gate, or put them under it",
       "fightAt": 3640,
       "needs": "winch",
       "waves": [
@@ -198,7 +202,7 @@ export const STAGE_GATES = {
         ],
         [
           "butcher",
-          "grunt"
+          "arbalest"
         ]
       ],
       "props": [
@@ -225,7 +229,14 @@ export const STAGE_GATES = {
           "drop": null
         }
       ],
-      "hazards": [],
+      "hazards": [
+        {
+          "type": "dropgate",
+          "x": 3330,
+          "period": 330,
+          "phase": 0
+        }
+      ],
       "boss": {
         "type": "gladiator",
         "look": "twin",
@@ -263,7 +274,7 @@ export const STAGE_GATES = {
         "z": 440
       },
       "objective": "Hold the gate",
-      "hint": "They want the gate back. Do not let them have it",
+      "hint": "They want the gate back. Light cuts glance off plate: hit the Iron Guard hard",
       "fightAt": 5300,
       "waves": [
         [
@@ -277,13 +288,13 @@ export const STAGE_GATES = {
           "thrall"
         ],
         [
-          "grunt",
-          "butcher",
-          "stalker",
-          "grunt"
+          "warden5",
+          "warden5",
+          "arbalest",
+          "arbalest"
         ],
         [
-          "gladiator",
+          "ironclad",
           "grunt",
           "penitent"
         ]
@@ -330,6 +341,13 @@ export const STAGE_GATES = {
           "if": "saved:vincent",
           "x": 4960,
           "z": 400
+        },
+        {
+          "type": "caltrops",
+          "x": 5620,
+          "w": 150,
+          "z0": 330,
+          "z1": 430
         }
       ]
     },
@@ -349,12 +367,13 @@ export const STAGE_GATES = {
       "waves": [
         [
           "grunt",
-          "butcher",
-          "stalker"
+          "arbalest",
+          "stalker",
+          "butcher"
         ],
         [
           "penitent",
-          "grunt",
+          "ironclad",
           "grunt"
         ]
       ],
@@ -388,6 +407,13 @@ export const STAGE_GATES = {
           "warn": 75,
           "shots": 1,
           "damage": 18
+        },
+        {
+          "type": "caltrops",
+          "x": 7180,
+          "w": 130,
+          "z0": 400,
+          "z1": 500
         }
       ],
       "rest": {
@@ -410,9 +436,9 @@ export const STAGE_GATES = {
       "fightAt": 8260,
       "waves": [
         [
-          "grunt",
-          "stalker",
-          "grunt"
+          "ironclad",
+          "warden5",
+          "arbalest"
         ]
       ],
       "props": [
@@ -465,8 +491,8 @@ export const STAGE_GATES = {
         "health": 4,
         "damage": 1.1,
         "escort": [
-          "grunt",
-          "grunt"
+          "ironclad",
+          "arbalest"
         ],
         "entrance": {
           "from": 160,
@@ -480,11 +506,26 @@ export const STAGE_GATES = {
           "raise": 54,
           "after": 155,
           "lines": [
-            ["$HERO", "You heard them at the gate."],
-            ["MALGOR", "I had my orders."],
-            ["$HERO", "And you kept it shut."],
-            ["MALGOR", "Get on with it."],
-            ["$HERO", "For everyone outside."]
+            [
+              "$HERO",
+              "You heard them at the gate."
+            ],
+            [
+              "MALGOR",
+              "I had my orders."
+            ],
+            [
+              "$HERO",
+              "And you kept it shut."
+            ],
+            [
+              "MALGOR",
+              "Get on with it."
+            ],
+            [
+              "$HERO",
+              "For everyone outside."
+            ]
           ],
           "crimes": [
             "Three times you begged your king for our heads.",
@@ -1333,6 +1374,65 @@ export const STAGE_GATES = {
         [
           "RURIK",
           "Then we go through them. For the ones still inside. Now we end it."
+        ]
+      ]
+    },
+    {
+      "id": "pavise",
+      "on": "wave:field:2",
+      "lines": [
+        [
+          "ORYN",
+          "(from the ditch) Pavises! Iron-bound oak. A blade into the face of that just rings."
+        ],
+        [
+          "VEXA",
+          "So go round. Or over. Or kick it out of his hands."
+        ]
+      ]
+    },
+    {
+      "id": "crossbows",
+      "on": "wave:field:3",
+      "lines": [
+        [
+          "VEXA",
+          "Crossbow behind them! See the red line? Get off it before he looses."
+        ]
+      ]
+    },
+    {
+      "id": "dropgate",
+      "at": 3200,
+      "calm": true,
+      "lines": [
+        [
+          "ORYN",
+          "(from the stair) A drop gate in the passage, spiked. Wait for it to lift. Better: put them under it."
+        ]
+      ]
+    },
+    {
+      "id": "ironGuard",
+      "on": "wave:yard:3",
+      "lines": [
+        [
+          "RURIK",
+          "The Marshal's Iron Guard. Small cuts won't bite that plate."
+        ],
+        [
+          "ORYN",
+          "Then crack it. Hit hard, lift them, burn them. Iron falls heavy."
+        ]
+      ]
+    },
+    {
+      "id": "caltrops",
+      "at": 5480,
+      "lines": [
+        [
+          "VEXA",
+          "Caltrops on the stones! Jump them, or drive them through."
         ]
       ]
     }

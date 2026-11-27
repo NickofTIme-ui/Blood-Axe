@@ -624,7 +624,7 @@ export class TerrainView {
     // (the mine's lift up to Pip: the painted platform on its two chains, run on up into the dark)
     if (this.mine && b.kind === 'lift' && this.scene.textures.exists(artKey('mine', 'lift'))) { this.drawMineLift(v, x0, x1, yTop0, yTop1); return; }
     // (the mine's rotten planks: painted boards, split and green with rot, on their two ropes)
-    if (this.mine && b.kind === 'crumble' && this.scene.textures.exists(artKey('mine', 'planks_rotten'))) { this.drawMinePlanks(v, x0, x1, yTop0, yTop1); return; }
+    if ((this.mine || this.theme === 'gates') && b.kind === 'crumble' && this.scene.textures.exists(artKey('mine', 'planks_rotten'))) { this.drawMinePlanks(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'siegeGate') { this.drawSiegeGate(v, x0, x1); return; }
     if (b.mat === 'iron' && b.kind === 'block') { this.drawPortcullis(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
@@ -652,10 +652,11 @@ export class TerrainView {
       }
     }
     // (the mine: a torch-lit rim, not a white line round every ledge: Nick's level 3 review)
-    const rim = this.mine && mat !== 'iron' ? (mat === 'plank' ? 0x9a6a3a : 0x7a6a58) : C[1];
+    const lit = this.mine || this.theme === 'gates'; // (and the gatehouse's stone: brazier-lit, not a white line)
+    const rim = lit && mat !== 'iron' ? (mat === 'plank' ? 0x9a6a3a : 0x7a6a58) : C[1];
     if (!topArt) raggedLine(top, x0, x1, yTop0, rim, 0.75, 2, b.x0);
     // the landing rim along the front edge
-    raggedLine(front, x0, x1, yTop1 - 0.5, rim, this.mine ? 0.7 : this.theme === 'ascent' ? .28 : 0.9, this.mine ? 2 : this.theme === 'ascent' ? 1.2 : 3, b.x0 + 7);
+    raggedLine(front, x0, x1, yTop1 - 0.5, rim, lit ? 0.7 : this.theme === 'ascent' ? .28 : 0.9, lit ? 2 : this.theme === 'ascent' ? 1.2 : 3, b.x0 + 7);
     // front face, down to the floor (or into the dark, over a pit)
     const floorY = b.z1;
     // rock goes down to the floor (or on down into the dark over a pit); a plank and the

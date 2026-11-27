@@ -14,6 +14,7 @@ import { ENEMIES } from '../data/enemies.js';
 import { usable } from './fighterStates.js';
 import { SETTINGS } from '../config/settings.js';
 import { hunt, setHunt } from './HoundHunt.js';
+import { arbalestScript } from './Arbalest.js';
 
 // Enemies never pop into view: a new one is placed just past the edge of anything a
 // hero's screen can show, and walks on (his brain's 'entering' leg, below). Placement
@@ -491,6 +492,7 @@ export function createEnemy(world, typeId, x, z, opts = {}) {
     f.facing = Math.sign(world.bounds.minX + world.bounds.maxX - 2 * x) || -1;
   }
   if (role) f.role = role;
+  if (stats.shooter) f.script = arbalestScript; // (the Iron Gates' crossbowmen: entities/Arbalest.js)
   world.addFighter(f);
   vary(world, f);
   brain.cooldown = brain.randInt(stats.ai.attackCooldown, 15);

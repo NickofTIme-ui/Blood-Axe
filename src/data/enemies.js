@@ -1,4 +1,5 @@
 import {installAscentEnemies} from './ascentEnemies.js';
+import {installGatesEnemies} from './gatesEnemies.js';
 // enemies.js â€” Enemy stats, moves and AI tuning. Same stat format as characters.js
 // (see the guide at the top of that file), plus:
 //
@@ -901,3 +902,4 @@ ENEMIES.executioner={...ENEMIES.butcher,id:'executioner',name:'The Hangman',titl
 }
 
 installAscentEnemies(ENEMIES);
+installGatesEnemies(ENEMIES); // (the Iron Gates garrison: data/gatesEnemies.js)
