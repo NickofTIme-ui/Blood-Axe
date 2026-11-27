@@ -919,7 +919,7 @@ export class TerrainView {
       const top = Math.max(yTop0, pk.y);
       const t = (top - pk.y) / ((ft.y - pk.y) || 1); // (where the board crosses the roof's back edge)
       const cx = pk.x + (ft.x - pk.x) * t;
-      g.fillStyle(0x0a0604, 0.78).fillPoints([{ x: cx, y: top }, ft, { x: edge, y: ft.y }, { x: edge, y: top }], true);
+      g.fillStyle(0x0a0604, 0.55).fillPoints([{ x: cx, y: top }, ft, { x: edge, y: ft.y }, { x: edge, y: top }], true);
     }
   }
 
@@ -1092,10 +1092,15 @@ export class TerrainView {
     // its ends (painted beam): built, not a box cut square out of the shingles
     const ridged = bigRoof && topArt && this.surface(v, 'ridge', 'beam', x0 - 10, yTop0 - 9, w + 20, 14, b.z0 - 0.55, 3);
     if (ridged) v.tiles.ridge.setTint(0x8a7060);
+    // the painted burning ridge over that beam, the full width, its tiles on the roof's back edge
+    // and its smoke rising off it; over the gable ends' shadowed flanks, under their peaks
+    // (ridge tiles at 0.72 of the strip's height, so they sit on the beam)
+    const RIDGE_H = 96;
+    if (ridged) this.surface(v, 'ridgeFire', 'ridge_fire', x0 - 10, yTop0 - 9 - RIDGE_H * 0.72, w + 20, RIDGE_H, b.z0 - 0.42, 0);
     // and fire running along the ridge, the length of the roof (view/RoofFire.js): behind
     // whoever stands on it, in front of the ridge beam (Nick, 2026-10-24)
     if (bigRoof && this.village) {
-      if (v.fire === undefined) v.fire = roofFire(this.scene, x0 + 4, x1 - 4, yTop0 + 3, { height: 72, depth: b.z0 - 0.45, seed: Math.round(b.x0) });
+      if (v.fire === undefined) v.fire = roofFire(this.scene, x0 + 4, x1 - 4, yTop0 + 3, { height: 72, depth: b.z0 - 0.38, seed: Math.round(b.x0) });
       placeRoofFire(v.fire, x0 + 4, yTop0 + 3, true);
     }
     if (!base && mat !== 'board' && !ridged) fade(top, x0 - 4, yTop0 - 22, w + 8, 22, 0x000000, 0, 0.7);
