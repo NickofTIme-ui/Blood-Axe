@@ -826,11 +826,14 @@ export class ArenaScene extends Phaser.Scene {
     ev.on('bossSpawn', ({ boss }) => {
       // (his view was made as he was added, before Stage.makeBoss gave him his own `look`:
       // remade now so he wears his own painted strips, e.g. the Houndmaster, Orsk)
-      const look = typeof boss.stats.look === 'string' ? boss.stats.look : null;
-      const view = this.views.get(boss.id);
-      if (look && this.registry.get('enemySprites')?.[look] && view?.sheet && view.sheet !== this.registry.get('enemySprites')[look]) {
-        view.destroy();
-        this.views.set(boss.id, this.makeView(boss));
+      // (and his twin's: Ser Berric came on in the Gladiator's strips, not the Crown Guard's)
+      for (const f of this.stage.twins ?? [boss]) {
+        const look = typeof f.stats.look === 'string' ? f.stats.look : null;
+        const view = this.views.get(f.id);
+        if (look && this.registry.get('enemySprites')?.[look] && view?.sheet && view.sheet !== this.registry.get('enemySprites')[look]) {
+          view.destroy();
+          this.views.set(f.id, this.makeView(f));
+        }
       }
       playMusic(this, this.stage.section?.boss?.music ?? 'boss'); // (a boss's own `music`: King Vaurath keeps the finale's track)
       this.callout(boss.stats.name.toUpperCase(), '#ff2a1a', 26);

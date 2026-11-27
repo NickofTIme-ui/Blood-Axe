@@ -260,10 +260,10 @@ export class PaintedLevel {
     if (!this.has(`tile-${name}`)) return false;
     const key = artKey(this.theme, `tile-${name}`);
     const img = this.scene.textures.get(key).getSourceImage();
-    const h = this.A.tiles[name].height;
+    const { height: h, lift = 0 } = this.A.tiles[name]; // (lift: stood up on a raised floor)
     const top = SETTINGS.world.floorTop - 50;
     const s = h / img.height;
-    return this.scene.add.tileSprite(x0, top - h + 8, x1 - x0, h, key).setOrigin(0).setTileScale(s, s).setDepth(depth);
+    return this.scene.add.tileSprite(x0, top - h + 8 - lift, x1 - x0, h, key).setOrigin(0).setTileScale(s, s).setDepth(depth);
   }
 
   // the street itself, from the back wall down past the bottom of the screen

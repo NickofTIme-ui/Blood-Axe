@@ -2207,3 +2207,11 @@ letterbox, scene V line fixed and retitled "NO ONE LEFT TO SEND", painted war ta
 - Drops in the mine that aren't the river use painted chasms (assets/env/mine/chasm.png tall, chasm_wide.png wide; TerrainView.mineChasm).
 - Last passage: rubble `dug: { from, every }`, the miners dig from inside (Stage.updateDiggers, callout).
 - New ChatGPT art: chasm, chasm_wide, keep_far (the Black Keep on the far side, MineView.paintedDaylight), browner rubble_wall, torch-lit surf_rock_top.
+
+## Cloud, 2026-11-27 late: level 6 polish pass ("hit it hard")
+- New ChatGPT art (chat "Generate Black Keep Tile Art", raws in project files level6-art/raw/):
+  - The King's Headsman: `assets/enemies/strips/headsman_*.png` (six strips, LOOKS headsman -> butcher: Bull Charge = his Rush, Earthbreaker = his Fall). Scaffold boss is now `look: 'headsman'`, speaker HEADSMAN.
+  - `assets/env/keep/tile_scaffold.png` (magenta sky): parapet, gibbets, crown banner, turret, bell. New tile option `lift` (view/levelArt.js tile()) stands it up on the scaffold's raised floor; the code tower/bell only draw without it.
+  - `assets/env/keep/prop_archers.png` pair, texture `prop-keep-archers`. StageView.propKey now prefers a level's own `prop-<theme>-<kind>`; SiegeAnim only cuts the painting its CUTS were measured on (the gates' one).
+  - `assets/env/keep/tomb.png`, `sarcophagus.png`: `look: 'tomb'` blocks (tall one when top > 150). The front-lane tombs in the Kings' Root are now top 70 (they hid the fight).
+- Code: keep crumble planks use the mine's painted duckboards; mill `crusher` fires use the smooth scorch, not the stretched grate; the drum formation's shield line stands on a slant (`formation.slant`, default 26); a boss's twin also gets his own painted look on spawn (Ser Berric was in Gladiator strips).

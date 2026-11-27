@@ -41,6 +41,7 @@ export const SPEAKERS = {
   HROLF: { name: 'Hrolf' },
   MESSENGER: { name: 'Messenger' },
   EXECUTIONER: { name: 'The Executioner' },
+  HEADSMAN: { name: 'The King\'s Headsman' },
   FORGEMASTER: { name: 'The Forgemaster' },
   CAPTAIN: { name: 'Captain' },
   // the people
@@ -81,7 +82,7 @@ export const SPEAKERS = {
 // Oath Keepers, the people they fight for): deep blue. view/DialogueBox.js and the marker
 // over the speaker (view/SpeakerMarker.js) both read it.
 export const FOES = new Set(['VAURATH', 'MALGOR', 'VAREK', 'CINDER', 'HRUK', 'HOUNDMASTER', 'WARDEN', 'OVERSEER', 'ORSK',
-  'HASK', 'HROLF', 'MESSENGER', 'EXECUTIONER', 'FORGEMASTER', 'CAPTAIN']);
+  'HASK', 'HROLF', 'MESSENGER', 'EXECUTIONER', 'HEADSMAN', 'FORGEMASTER', 'CAPTAIN']);
 export const speakerSide = (who = '') => (NARRATION.has(who) ? 'none' : FOES.has(who) ? 'foe' : 'ally');
 
 const cap = (w) => w.charAt(0) + w.slice(1).toLowerCase();
