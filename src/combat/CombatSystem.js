@@ -13,6 +13,7 @@ const BLADES_CUT = new Set(['slash', 'chop', 'cleave']); // (as in Fatality.js: 
 import { furyArmor } from './Skills.js';
 import { juggles, juggleHit } from './Juggle.js';
 import { addStatic, staticOn } from './Mage.js';
+import { shieldCheck, plateCheck } from './GatesArmor.js';
 
 // Elemental hits take priority over the physical delivery of an enchanted strike.
 export function armorDamageMultiplier(stats,move,kind){
@@ -147,6 +148,9 @@ export class CombatSystem {
     // an unblockable blow (the Warlord's Earthbreaker): no parry, no guard — it lands
     const guarded = !move.unblockable;
 
+    // THE GATE WARDEN'S PAVISE (combat/GatesArmor.js): a blow into its face rings off it
+    if (def.stats.pavise && shieldCheck(this.world, attacker, def, move, ctx, facingSource) === 'blocked') return;
+
     // ---- PARRY: block tapped just in time, facing the attack
     if (guarded && facingSource && def.parryActive) {
       def.hitstop = FEEL.parryHitstop;
@@ -222,6 +226,9 @@ export class CombatSystem {
     let damage = move.damage * mult * (counter ? FEEL.counterMultiplier : 1) * exposed *
       (crit ? FEEL.critMultiplier : 1) * juggleMult * (riposte ? RIPOSTE.mult : 1) *
       (def.ward ?? 1) * armorDamageMultiplier(def.stats,move,ctx.kind); // (ward: a boss taking only part of a blow: King Vaurath's guard, stage/Stage.js)
+    // THE IRON GUARD'S PLATE (combat/GatesArmor.js): light blows glance, heavy ones crack it
+    const plate = def.stats.plates ? plateCheck(this.world, attacker, def, move, ctx, { crit, superCrit }) : null;
+    if (plate) damage *= plate.mult;
     if (sunder) damage = Math.max(damage, def.health + 1);
     // the Mage's THUNDER STAFF sets off the Static his staff left (combat/Mage.js)
     const S = attacker?.stats.kit?.static;
@@ -249,7 +256,7 @@ export class CombatSystem {
     }
     if (discharged) { def.static = null; bus.emit('staticBurst', { by: attacker, target: def, n: discharged }); }
     else if (move.static && S && def.health > 0) addStatic(attacker, def, move.static);
-    const armored = hasSuperArmor(def);
+    const armored = hasSuperArmor(def) || !!plate?.glance;
     if (!armored) def.faceToward(ctx.fromX);
     event.damage = damage;
     event.counter = counter;
@@ -307,7 +314,7 @@ export class CombatSystem {
     // Hard blade hits can take an arm clean off.
     // (not the boss: he doesn't lose an arm, lose his nerve and get executed like fodder —
     // he's fought to the end)
-    if (def.stats.art && !def.stats.boss) {
+    if (def.stats.art && !def.stats.boss && !(def.plates > 0)) { // (no arm comes off through plate)
       const limb = chooseMaim({
         cut: move.cut, damage, counter, maxHealth: def.stats.maxHealth, maimed: def.maimed, maims: move.maims ?? false, overhead: !!move.overhead,
       }, blasted ? () => 0 : this.world.rngFor(def.id, 22));

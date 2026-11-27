@@ -6,6 +6,28 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 27 November 2026 (cloud, branch claude/project-thread-pftf2b; NOT on main until Nick says push). LEVEL 6, THE
+  BLACK KEEP, ROUND 2 (masterplan doc https://claude.ai/artifact/3G7ZmCYYUkpExaqVkDack9). The two heroes nobody plays
+  fight beside you (entities/Ally.js; `allies: true`; never in `players`, so story/camera/game over ignore them;
+  immortal, they fall back to get their breath). Arriving tops the shared skill pool up to 30 points and the allies get
+  a whole-tree build (progression/Veteran.js; `veteran: { points, enemies }`); the Keep's men guard, chain and use
+  heavies more (Stage.veteranize). Muster Hall drum formation and the cells' rising fire (stage/KeepSetPieces.js).
+  King Vaurath in his own ChatGPT strips (king_*.png, 9 strips, magenta), the blade lock on a parried glide
+  (stage/BladeLock.js) and his last swing (`boss.lastSwing`). Keep stone for every ledge (assets/env/keep/surf_*),
+  an open causeway parapet, violet braziers, shrines moved off the arrival spots, the epilogue
+  (scenes/EpilogueScene.js, assets/scenes/epilogue_*.jpg). Art list and round 3 in docs/keep-art-prompts.md.
+- 27 November 2026 (cloud, branch claude/project-thread-gi0nk2; ON MAIN, Nick "push all"). LEVEL 5 NEW FOES,
+  TRAPS AND MUSIC (Nick: level 5 already polished, build on it; every hero must use the whole kit). Three garrison foes,
+  ChatGPT-painted strips (assets/enemies/strips/warden5_*, ironclad_*, arbalest_*): GATE WARDEN `warden5` (pavise: frontal
+  blows ring off; opened by kicks/guard-breakers, launches, attacks from above, Vexa's sweep, or from behind), IRON GUARD
+  `ironclad` (3 plates: light hits glance x0.25 no flinch, heavy/launch/crit/fire/shock crack one; plates fly off as painted
+  pieces), ARBALESTER `arbalest` (red aim line ~60 frames, one piercing bolt, parryable, windlass reload). Code:
+  data/gatesEnemies.js, combat/GatesArmor.js (hooked in CombatSystem.resolve), entities/Arbalest.js (f.script),
+  view/GatesFoesView.js. Traps: stage/GatesTraps.js 'dropgate' (spiked portcullis in the winch room, x 3330: rattles and
+  shadows, slams, crushes Ashen outright, hurts heroes; painted prop_dropgate.png sheared across the lane) and 'caltrops'
+  (yard + town). Placed through field/gatehouse/winch/yard/town/marshal waves with story beats. MUSIC: level 5's own
+  war-drum march, procedural and ours (tools/sfx-gen/gates-drums.js -> assets/audio/iron-gates.mp3, Music key 'gates').
+  Tests: tests/gates-foes-test.js (in npm test). Art raw + prompts: /mnt/project-files/level5-art/.
 - 26 November 2026 (cloud; ON MAIN with Oryn's finish, Nick "push all"). EXECUTIONS RESTORE 20% (Nick's rule): every man a hero executes (Rurik's throat / impale / halve /
   every man a hero executes (Rurik's throat / impale / halve /
   chain, Oryn's and Vexa's finishers, a boss sentence) gives that hero back 20% of MAX health, stamina and mana, capped at

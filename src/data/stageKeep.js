@@ -49,10 +49,17 @@ export const STAGE_KEEP = {
   doneTitle: 'THE OATH IS KEPT',
   width: 17400,
   theme: 'keep',
+  epilogue: true, // the end of the campaign: scenes/EpilogueScene.js, before the tally
   music: 'showdown', // (core/Music.js: Nick's track for the last level)
   tall: true,
   castle: { x: 900, scale: 1.25, detail: 1 },
   companions: { leaveAfter: 'opening', meet: 16400, farewell: 'oathKept' },
+  // THE OATH KEEPERS FIGHT TOGETHER (entities/Ally.js): for the first time the two heroes
+  // nobody plays fight beside you all the way, with their whole kits
+  allies: true,
+  // ...and everyone has their advanced skills by now (progression/Veteran.js): the pool is
+  // topped up to this many points; the allies spend it across their whole tree
+  veteran: { points: 30, enemies: true }, // (enemies: the household fights with everything: Stage.veteranize)
 
   sections: [
     {
@@ -79,10 +86,19 @@ export const STAGE_KEEP = {
       id: 'muster', name: 'THE MUSTER HALL', x0: 1900, x1: 3700,
       spawn: { x: 1980, z: 440 },
       objective: 'Break the muster',
-      hint: 'Wreck the crossbows on the balcony. Watch the chandeliers',
+      hint: 'Kill the drummers on the balcony and the shield line breaks. A heavy blow breaks a shield',
       fightAt: 2300,
+      // THE DRUM FORMATION (stage/KeepSetPieces.js): two drummers on the balcony beat the
+      // time, and on every beat the shield line steps forward as one, shields locked, and
+      // strikes at whoever is in front of it. A heavy breaks a shield; round the end works
+      // too. Kill both drummers and the line breaks into a brawl
+      formation: { beat: 78, step: 32, hold: 90, lanes: [362, 408, 454, 498] },
+      spawns: [[
+        { x: 2760, z: 304, inPlace: true }, { x: 3160, z: 304, inPlace: true },
+        { x: 2660, z: 362, inPlace: true }, { x: 2660, z: 408, inPlace: true }, { x: 2660, z: 454, inPlace: true }, { x: 2660, z: 498, inPlace: true },
+      ]],
       waves: [
-        ['grunt', 'grunt', 'grunt', 'grunt', 'grunt'],
+        ['grunt:drummer', 'grunt:drummer', 'gladiator:line', 'gladiator:line', 'gladiator:line', 'gladiator:line'],
         ['gladiator', 'gladiator', 'penitent', 'penitent'],
         ['berserker', 'berserker', 'grunt', 'stalker'],
       ],
@@ -106,7 +122,13 @@ export const STAGE_KEEP = {
       id: 'cells', name: 'THE BURNING CELLS', x0: 3700, x1: 5500,
       spawn: { x: 3760, z: 420 },
       objective: 'Open the cells. Climb',
-      hint: 'Hold E at a cell door once the guards are down. The fire climbs',
+      hint: 'Hold E at a cell door once the guards are down. The fire climbs a tier at a time',
+      // THE RISING FIRE (stage/KeepSetPieces.js): every `every` frames the fire takes the next
+      // tier up; a cell still shut on a tier it has taken is lost. Dying puts it back
+      rise: {
+        every: 60 * 35,
+        tiers: [{ cells: ['cellsLow'] }, { cells: ['cellsMid'] }, { cells: [] }, { cells: ['ilse'] }],
+      },
       // small and close: two jailers on each tier, hounds on the stair
       spawns: [
         [{ x: 4150, z: 420, inPlace: true }, { x: 4220, z: 380, inPlace: true }],
@@ -127,6 +149,15 @@ export const STAGE_KEEP = {
         { type: 'fire', x: 4380, z: 440, w: 80, d: 80, y: 140, phase: 150 },
         // a crossbow on the tier above you, whichever tier you're on
         { type: 'bombard', look: 'arrows', period: 230, warn: 70, shots: 1, damage: 9 },
+        // the fire taking each tier in turn (`rise:<n>`: once it has reached that tier)
+        { type: 'fire', when: 'rise:1', x: 3990, z: 380, w: 120, d: 100, y: 70, phase: 0 },
+        { type: 'fire', when: 'rise:1', x: 4180, z: 450, w: 110, d: 90, y: 70, phase: 90 },
+        { type: 'fire', when: 'rise:2', x: 4320, z: 400, w: 100, d: 100, y: 140, phase: 30 },
+        { type: 'fire', when: 'rise:2', x: 4570, z: 430, w: 110, d: 90, y: 140, phase: 120 },
+        { type: 'fire', when: 'rise:3', x: 4720, z: 390, w: 110, d: 100, y: 210, phase: 60 },
+        { type: 'fire', when: 'rise:3', x: 4910, z: 440, w: 110, d: 90, y: 210, phase: 150 },
+        { type: 'fire', when: 'rise:4', x: 5080, z: 430, w: 110, d: 90, y: 280, phase: 20 },
+        { type: 'fire', when: 'rise:4', x: 5230, z: 380, w: 100, d: 90, y: 280, phase: 110 },
       ],
     },
     {
@@ -185,7 +216,7 @@ export const STAGE_KEEP = {
         // crossbows on the gantry across the cavern
         { type: 'bombard', look: 'arrows', period: 260, warn: 70, shots: 1, damage: 9 },
       ],
-      rest: { x: 7060, z: 440, kind: 'oath' },
+      rest: { x: 7100, z: 330, kind: 'oath' }, // (at the back, off the line you land on: not knelt at the moment you arrive)
     },
     {
       id: 'mill', name: 'THE ASH MILL', x0: 8600, x1: 10000,
@@ -251,7 +282,7 @@ export const STAGE_KEEP = {
         { type: 'beam', look: 'rock', x: 11320, z: 415, w: 80, d: 90, period: 200, warn: 80, phase: 70 },
         { type: 'beam', look: 'rock', x: 11500, z: 415, w: 80, d: 90, period: 220, warn: 80, phase: 140 },
       ],
-      rest: { x: 10120, z: 400, kind: 'oath' },
+      rest: { x: 10130, z: 330, kind: 'oath' }, // (at the back, clear of where you come in)
       light: 0x8ab0d8, mood: 0.3,
     },
     {
@@ -378,6 +409,10 @@ export const STAGE_KEEP = {
         // I, THE DUEL: little gets through his guard until his composure breaks (three parries
         // of his blows, or guards broken); then he staggers wide open
         duel: { composure: 3, ward: 0.3, open: 160, counter: { damage: 14, reach: 130 } },
+        // parry his glide and the blades lock: mash attack to throw his guard wide (stage/BladeLock.js)
+        lock: true,
+        // IV, at the very end: everything he has left in one last thrust, the world slowed round it
+        lastSwing: { at: 0.12, move: 'heavy' },
         sentence: {
           speaker: 'VAURATH',
           crimes: [
@@ -503,15 +538,15 @@ export const STAGE_KEEP = {
   npcs: [
     // THE BURNING CELLS: the village's people, taken north in level 1, a cell on each tier
     {
-      id: 'cellsLow', name: 'the village\'s people', x: 4120, z: 336, pose: 'cage', group: true, rescue: 'cage', section: 'cells',
+      id: 'cellsLow', name: 'the village\'s people', x: 4120, z: 336, pose: 'cage', group: true, rescue: 'cage', section: 'cells', burns: true,
       lock: { x: 4120, z: 370 }, flee: null, gather: { x: 16560, z: 360 },
     },
     {
-      id: 'cellsMid', name: 'the smith\'s apprentices', x: 4560, z: 316, pose: 'cage', group: true, rescue: 'cage', section: 'cells',
+      id: 'cellsMid', name: 'the smith\'s apprentices', x: 4560, z: 316, pose: 'cage', group: true, rescue: 'cage', section: 'cells', burns: true,
       lock: { x: 4560, z: 350 }, flee: null, gather: { x: 16620, z: 470 },
     },
     {
-      id: 'ilse', name: 'Ilse', x: 5320, z: 300, pose: 'cage', rescue: 'cage', section: 'cells',
+      id: 'ilse', name: 'Ilse', x: 5320, z: 300, pose: 'cage', rescue: 'cage', section: 'cells', burns: true,
       lock: { x: 5320, z: 334 }, flee: null, gather: { x: 16700, z: 450 },
     },
     // THE HEADSMAN'S SCAFFOLD: the last of them, kneeling in a line at the block
@@ -536,15 +571,15 @@ export const STAGE_KEEP = {
       lines: [
         ['ORYN', 'The Black Keep. It makes its own sky.'],
         ['VEXA', 'Look at its face. He had himself carved into it, sitting on his throne.'],
-        ['RURIK', 'Every road we walked ends here. The causeway first. Oryn, the wall. Vexa, under it.'],
+        ['RURIK', 'Every road we walked ends here. No splitting up this time. All three of us, all the way to him.'],
       ],
     },
-    { id: 'gale', at: 300, lines: [['ORYN', '(from the wall walk) The wind off the chasm! When it howls, get behind the stones!']] },
+    { id: 'gale', at: 300, lines: [['ORYN', 'The wind off the chasm! When it howls, get behind the stones!']] },
     { id: 'postern', at: 600, if: 'saved:vincent', lines: [['VINCENT', '(from under the causeway) His doors are mine. I\'ll have the wicket open. Hold them on the bridge.']] },
     { id: 'shields', on: 'fight:causeway', lines: [['VOICE', '(drums, shields slamming together) HOLD THE CAUSEWAY!']] },
     { id: 'doors', on: 'clear:causeway', calm: true, lines: [['VEXA', 'No more running behind carts.'], ['ORYN', 'Then we go in the front.']] },
     { id: 'muster', at: 2050, lines: [['ORYN', 'That\'s every man he has left.'], ['RURIK', 'Then this is the last time we do this.']] },
-    { id: 'bows', on: 'fight:muster', lines: [['VEXA', '(from the balcony stair) Crossbows on the balcony! Wreck them!']] },
+    { id: 'bows', on: 'fight:muster', lines: [['VEXA', 'Crossbows on the balcony! Wreck them!']] },
     { id: 'smoke', on: 'clear:muster', calm: true, lines: [['VEXA', 'The cells are up those stairs. I can smell the smoke from here.']] },
     { id: 'cells', at: 3760, lines: [['RURIK', 'He\'s burning them in their cells. Climb!']] },
     { id: 'cellOpen', on: 'rescued:cellsLow', lines: [['VOICE', '(from the cell) Oath Keepers? You came all this way?'], ['RURIK', 'We said we would. Get down the far stair.']] },

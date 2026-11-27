@@ -624,7 +624,7 @@ export class TerrainView {
     // (the mine's lift up to Pip: the painted platform on its two chains, run on up into the dark)
     if (this.mine && b.kind === 'lift' && this.scene.textures.exists(artKey('mine', 'lift'))) { this.drawMineLift(v, x0, x1, yTop0, yTop1); return; }
     // (the mine's rotten planks: painted boards, split and green with rot, on their two ropes)
-    if (this.mine && b.kind === 'crumble' && this.scene.textures.exists(artKey('mine', 'planks_rotten'))) { this.drawMinePlanks(v, x0, x1, yTop0, yTop1); return; }
+    if ((this.mine || this.theme === 'gates') && b.kind === 'crumble' && this.scene.textures.exists(artKey('mine', 'planks_rotten'))) { this.drawMinePlanks(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'siegeGate') { this.drawSiegeGate(v, x0, x1); return; }
     if (b.mat === 'iron' && b.kind === 'block') { this.drawPortcullis(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
@@ -652,10 +652,12 @@ export class TerrainView {
       }
     }
     // (the mine: a torch-lit rim, not a white line round every ledge: Nick's level 3 review)
-    const rim = this.mine && mat !== 'iron' ? (mat === 'plank' ? 0x9a6a3a : 0x7a6a58) : C[1];
+    const lit = this.mine || this.theme === 'gates'; // (and the gatehouse's stone: brazier-lit, not a white line)
+    // (the Black Keep: a faint violet torchlit edge on its painted basalt: level 6 review)
+    const rim = lit && mat !== 'iron' ? (mat === 'plank' ? 0x9a6a3a : 0x7a6a58) : this.theme === 'keep' && mat === 'rock' ? 0x6a5a88 : C[1];
     if (!topArt) raggedLine(top, x0, x1, yTop0, rim, 0.75, 2, b.x0);
     // the landing rim along the front edge
-    raggedLine(front, x0, x1, yTop1 - 0.5, rim, this.mine ? 0.7 : this.theme === 'ascent' ? .28 : 0.9, this.mine ? 2 : this.theme === 'ascent' ? 1.2 : 3, b.x0 + 7);
+    raggedLine(front, x0, x1, yTop1 - 0.5, rim, lit ? 0.7 : this.theme === 'ascent' ? .28 : 0.9, lit ? 2 : this.theme === 'ascent' ? 1.2 : 3, b.x0 + 7);
     // front face, down to the floor (or into the dark, over a pit)
     const floorY = b.z1;
     // rock goes down to the floor (or on down into the dark over a pit); a plank and the
@@ -1222,14 +1224,16 @@ export class TerrainView {
       // brazier (the gates), on magenta: cut out once; the living flame (view/TorchFlame.js)
       // burns in its cup, with a glow round it
       // (the mine: the same iron brazier as the gates, not the wood's green lantern pole: level 3 review)
-      const post = this.village ? 'village-torch' : (this.theme === 'gates' || this.theme === 'ascent' || this.mine) ? 'gates-brazier' : null;
+      // (the Black Keep: the same iron brazier, burning the King's cold violet fire: level 6 review)
+      const keep = this.theme === 'keep';
+      const post = this.village ? 'village-torch' : (this.theme === 'gates' || this.theme === 'ascent' || this.mine || keep) ? 'gates-brazier' : null;
       if (post && s.textures.exists(`${post}-src`)) {
         if (!s.textures.exists(post)) s.textures.addCanvas(post, keyLayer(s.textures.get(`${post}-src`).getSourceImage(), 'magenta'));
         const img = s.add.image(l.x, y0 + 3, post).setOrigin(0.5, 0.98).setDepth(l.z - 0.2);
         img.setScale(TORCH_H / img.height);
         const cup = y0 - TORCH_H * (this.village ? TORCH_CUP : BRAZIER_CUP);
-        torchFlame(s, l.x, cup, { height: 30, depth: l.z - 0.15 });
-        const glow = s.add.image(l.x, cup - 12, 'glow').setScale(2.2).setTint(COL.lantern).setAlpha(0.45).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
+        torchFlame(s, l.x, cup, { height: 30, depth: l.z - 0.15, tint: keep ? 0xa890ff : null });
+        const glow = s.add.image(l.x, cup - 12, 'glow').setScale(2.2).setTint(keep ? 0xa88aff : COL.lantern).setAlpha(0.45).setBlendMode(Phaser.BlendModes.ADD).setDepth(l.z - 0.1);
         s.tweens.add({ targets: glow, alpha: { from: 0.3, to: 0.55 }, duration: 260 + (l.x % 200), yoyo: true, repeat: -1 });
         continue;
       }

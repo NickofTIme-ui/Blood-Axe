@@ -71,6 +71,15 @@ export class ProjectileView {
         g.fillStyle(0x5c3519, 1).fillRect(-9, -1.4, 6, 2.8);
         g.fillStyle(0xc9a24a, 1).fillRect(-3, -2.4, 1.4, 4.8);
       }
+    } else if (d.look === 'bolt5') {
+      // the Arbalester's bolt (data/gatesEnemies.js): painted (gates_pieces.png), flat and fast
+      this.bolt = true;
+      this.glow = scene.add.graphics();
+      this.core = scene.add.image(0, 0, scene.textures.exists('gates-bolt') ? 'gates-bolt' : '__WHITE');
+      if (!scene.textures.exists('gates-bolt')) this.core.setTint(0x2a2a30);
+      this.core.setDisplaySize(64, 10);
+      this.baseScale = { x: this.core.scaleX, y: this.core.scaleY };
+      this.core.setScale(this.baseScale.x * projectile.dir, this.baseScale.y);
     } else {
       this.glow = scene.add.rectangle(0, 0, d.w + 10, d.h + 10, d.color, 0.3).setOrigin(0.5, 1);
       this.core = scene.add.rectangle(0, 0, d.w, d.h, d.color).setOrigin(0.5, 1);
@@ -105,6 +114,14 @@ export class ProjectileView {
       return;
     }
     const y = p.z - p.h;
+    if (this.bolt) {
+      // a streak of air behind it so the eye can follow it down the lane
+      const by = y - d.h / 2;
+      this.core.setPosition(p.x, by).setDepth(p.z + 0.2);
+      this.glow.clear().setDepth(p.z + 0.1).lineStyle(3, 0xd8c8a8, 0.22).lineBetween(p.x - p.dir * 34, by, p.x - p.dir * 120, by);
+      this.shadow.setScale(0.7, 0.6);
+      return;
+    }
     if (this.steel) {
       // spinning end over end (knife) / flat spin (star), turned along its flight
       const spin = this.steel === 'shuriken' ? 0.9 : 0.55;
