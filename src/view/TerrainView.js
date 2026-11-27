@@ -278,10 +278,16 @@ export class TerrainView {
     const s = this.scene;
     const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0);
     const bottom = p.z1 + 40;
-    const key = artKey('mine', 'chasm');
+    // (two paintings: a tall one for a narrow drop, a wide one for a long gap; whichever is
+    // nearer the drop's own shape, its black hole over the drop and its lips past the edges)
+    const tall = artKey('mine', 'chasm'); const wide = artKey('mine', 'chasm_wide');
+    const aspect = (p.x1 - p.x0) / (bottom - top);
+    const key = s.textures.exists(wide) && (aspect > 1 || !s.textures.exists(tall)) ? wide : tall;
     if (s.textures.exists(key)) {
-      const w = (p.x1 - p.x0) / 0.8; // (its lips past the drop's edges)
-      s.add.image((p.x0 + p.x1) / 2, top, key).setOrigin(0.5, 0).setDisplaySize(w, bottom - top).setDepth(DEPTH.floor + 4.1);
+      // (how much of each painting is the black hole: across, and down from its top)
+      const F = key === wide ? { x: 0.86, y0: 0.1, y: 0.62 } : { x: 0.6, y0: 0.06, y: 0.86 };
+      const w = (p.x1 - p.x0) / F.x; const h = (bottom - top) / F.y;
+      s.add.image((p.x0 + p.x1) / 2, top - h * F.y0, key).setOrigin(0.5, 0).setDisplaySize(w, h).setDepth(DEPTH.floor + 4.1);
       return true;
     }
     const g = s.add.graphics().setDepth(DEPTH.floor + 4);

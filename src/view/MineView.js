@@ -14,7 +14,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { drawCastle } from './castle.js';
-import { PaintedLevel } from './levelArt.js';
+import { PaintedLevel, artKey } from './levelArt.js';
 import { playSfx } from '../core/Sfx.js';
 
 const COL = {
@@ -185,6 +185,14 @@ export class MineBackdrop {
     };
     strip('sky', DEPTH.floor - 1.3);
     if (next.has('far')) strip('far', DEPTH.floor - 1.25);
+    // the Black Keep across the gorge, the thing Vexa points at (assets/env/mine/keep_far.png,
+    // ChatGPT, level 3 polish 2026-11-27), on its crag between the far peaks and the near ones
+    const kk = artKey('mine', 'keep_far');
+    if (s.textures.exists(kk)) {
+      // (over the near peaks, which are opaque: behind them it was hidden; hazed to their light)
+      const img = s.add.image(x0 + 430, top - 20, kk).setOrigin(0.5, 1).setDepth(DEPTH.floor - 1.19).setTint(0xa8b0b8).setAlpha(0.95);
+      img.setScale(240 / img.frame.height); // (its foot fades into the haze; the spires stay under the top of the screen)
+    }
     if (next.has('mid')) strip('mid', DEPTH.floor - 1.2);
     // the tunnel mouth: the cave's dark thinning out into the light, on the wall and the floor
     const g = s.add.graphics().setDepth(DEPTH.floor - 0.97);
