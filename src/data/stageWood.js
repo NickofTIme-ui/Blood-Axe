@@ -277,7 +277,7 @@ export const STAGE_WOOD = {
   ],
 
   // the pass is buried: the way on is the old mine road, once the last words are said
-  exit: { x: 8940, after: 'turn' },
+  exit: { x: 8860, after: 'turn' }, // (short of the rockslide's foot at 8900)
 
   terrain: [
     // ---- I THE WOOD ROAD: a stream with a log across it (the fallen pine that walled off
@@ -324,7 +324,9 @@ export const STAGE_WOOD = {
     shrineFootprint(SHRINE_KENNELS),
 
     // ---- VI THE BLOCKED ROAD: the rockslide across the pass (nobody climbs it)
-    { kind: 'block', x0: 9040, x1: 9200, ...FULL, top: 320 },
+    // (from 8900, not 9040: the painted heap is drawn further onto the screen, so the camera,
+    // which never looks past the level's end, shows most of it, not a stump at the edge; 2026-11-27)
+    { kind: 'block', x0: 8900, x1: 9200, ...FULL, top: 320 },
   ],
 
   // the wood's traps (stage/WoodTraps.js): snares in the leaves, a stake pit under a mat of them,
