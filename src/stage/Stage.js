@@ -821,6 +821,27 @@ export class Stage {
 
   // ------------------------------------------------------------ per frame
 
+  // THE VETERAN HOUSEHOLD (a level's `veteran.enemies`: the Black Keep): the King's own men
+  // use everything they have. Each man, once, as he comes: he guards more, strings his
+  // blows together, reaches for his heavy and his specials more often, and doesn't stand
+  // about between swings. Never faster wind-ups (the TELEGRAPH rule stays) and never more
+  // health: just a better fighter. Bosses are tuned by hand already.
+  veteranize() {
+    const V = { block: 0.12, combo: 0.2, heavy: 0.08, cooldown: 0.78, special: 0.7, threat: 1.15, ...this.data.veteran.tune };
+    for (const f of this.world.fighters) {
+      if (f.team !== 'enemy' || f.vet || f.stats.boss || !f.controller?.ai) continue;
+      f.vet = true;
+      const ai = (f.controller.ai = { ...f.controller.ai });
+      const up = (v, by, cap) => Math.max(v ?? 0, Math.min(cap, (v ?? 0) + by)); // (never less than he had)
+      ai.blockChance = up(ai.blockChance, V.block, 0.5);
+      ai.comboChance = up(ai.comboChance, V.combo, 0.85);
+      ai.heavyChance = up(ai.heavyChance, V.heavy, 0.5);
+      if (ai.attackCooldown) ai.attackCooldown = ai.attackCooldown.map((n) => Math.round(n * V.cooldown));
+      if (ai.specialEvery) ai.specialEvery = Math.round(ai.specialEvery * V.special);
+      if (ai.threatRange) ai.threatRange *= V.threat;
+    }
+  }
+
   update() {
     if (!this.player || this.phase === 'idle') return;
     if(this.opening?.active) {
@@ -829,6 +850,7 @@ export class Stage {
       return;
     }
     this.opening?.tail(); // (the commanders still running off)
+    if (this.data.veteran?.enemies) this.veteranize();
     if (this.walkOut) { this.updateWalkOut(); return; }
     // KING HAKON in the market square (stage/KingHakon.js): met on the way in from the road;
     // while he fights and the two of them talk, the stage is his

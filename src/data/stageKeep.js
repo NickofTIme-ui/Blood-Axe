@@ -53,6 +53,12 @@ export const STAGE_KEEP = {
   tall: true,
   castle: { x: 900, scale: 1.25, detail: 1 },
   companions: { leaveAfter: 'opening', meet: 16400, farewell: 'oathKept' },
+  // THE OATH KEEPERS FIGHT TOGETHER (entities/Ally.js): for the first time the two heroes
+  // nobody plays fight beside you all the way, with their whole kits
+  allies: true,
+  // ...and everyone has their advanced skills by now (progression/Veteran.js): the pool is
+  // topped up to this many points; the allies spend it across their whole tree
+  veteran: { points: 30, enemies: true }, // (enemies: the household fights with everything: Stage.veteranize)
 
   sections: [
     {
@@ -536,15 +542,15 @@ export const STAGE_KEEP = {
       lines: [
         ['ORYN', 'The Black Keep. It makes its own sky.'],
         ['VEXA', 'Look at its face. He had himself carved into it, sitting on his throne.'],
-        ['RURIK', 'Every road we walked ends here. The causeway first. Oryn, the wall. Vexa, under it.'],
+        ['RURIK', 'Every road we walked ends here. No splitting up this time. All three of us, all the way to him.'],
       ],
     },
-    { id: 'gale', at: 300, lines: [['ORYN', '(from the wall walk) The wind off the chasm! When it howls, get behind the stones!']] },
+    { id: 'gale', at: 300, lines: [['ORYN', 'The wind off the chasm! When it howls, get behind the stones!']] },
     { id: 'postern', at: 600, if: 'saved:vincent', lines: [['VINCENT', '(from under the causeway) His doors are mine. I\'ll have the wicket open. Hold them on the bridge.']] },
     { id: 'shields', on: 'fight:causeway', lines: [['VOICE', '(drums, shields slamming together) HOLD THE CAUSEWAY!']] },
     { id: 'doors', on: 'clear:causeway', calm: true, lines: [['VEXA', 'No more running behind carts.'], ['ORYN', 'Then we go in the front.']] },
     { id: 'muster', at: 2050, lines: [['ORYN', 'That\'s every man he has left.'], ['RURIK', 'Then this is the last time we do this.']] },
-    { id: 'bows', on: 'fight:muster', lines: [['VEXA', '(from the balcony stair) Crossbows on the balcony! Wreck them!']] },
+    { id: 'bows', on: 'fight:muster', lines: [['VEXA', 'Crossbows on the balcony! Wreck them!']] },
     { id: 'smoke', on: 'clear:muster', calm: true, lines: [['VEXA', 'The cells are up those stairs. I can smell the smoke from here.']] },
     { id: 'cells', at: 3760, lines: [['RURIK', 'He\'s burning them in their cells. Climb!']] },
     { id: 'cellOpen', on: 'rescued:cellsLow', lines: [['VOICE', '(from the cell) Oath Keepers? You came all this way?'], ['RURIK', 'We said we would. Get down the far stair.']] },

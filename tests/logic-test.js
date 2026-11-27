@@ -23,6 +23,8 @@ import { STAGE_MINE } from '../src/data/stageMine.js';
 import { STAGE_ASCENT } from '../src/data/stageAscent.js';
 import { STAGE_GATES } from '../src/data/stageGates.js';
 import { STAGE_KEEP } from '../src/data/stageKeep.js';
+import { addAllies } from '../src/entities/Ally.js';
+import { ensureFloor, veteranPicks, veteranStats } from '../src/progression/Veteran.js';
 import { STAGES } from '../src/data/stages.js';
 import { LINE, NPC, GUIDE, TREED } from '../src/stage/Story.js';
 import { SPEAKERS, NARRATION, PORTRAIT_IDS, speakerInfo } from '../src/data/speakers.js';
@@ -76,7 +78,9 @@ function setup({ player = 'warrior', script = {}, hold = {}, dummyScript = {}, d
 }
 
 let failed = 0;
+const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null; // (ONLY=keep node tests/logic-test.js: just those)
 function test(name, fn) {
+  if (ONLY && !ONLY.test(name)) return;
   try { fn(); console.log(`  ok   ${name}`); }
   catch (e) { failed++; console.log(`  FAIL ${name}\n       ${e.message}`); }
 }
@@ -5799,9 +5803,59 @@ test("vexa: CHAIN REACTION sets her other mines off; SPREADING MARK jumps; EXECU
   assert(!(m2.health > 0), 'brought under a third: executed');
 });
 
+
+
+test('keep: the Oath Keepers fight together: the two heroes nobody plays fight beside you with their veteran kits, kill men, and never die', () => {
+  for (const hero of ['warrior', 'mage', 'rogue']) {
+    const { world, p, st, run } = keepSetup(KEEP_SEC('causeway'), { x: 760, z: 420, hero });
+    const ids = ['warrior', 'mage', 'rogue'].filter((h) => h !== hero);
+    const allies = addAllies(world, [p], ids, (id, base) => veteranStats(id, base, 30));
+    const kills = new Map(allies.map((a) => [a, 0])); const moves = new Map(allies.map((a) => [a, new Set()]));
+    world.events.on('kill', (e) => { if (kills.has(e.attacker)) kills.set(e.attacker, kills.get(e.attacker) + 1); });
+    run(60 * 120, () => {
+      p.health = p.stats.maxHealth; // (the hero stands by: the allies do the work)
+      for (const a of allies) if (!['idle', 'walk', 'hit', 'knockdown', 'getup', 'jump', 'block'].includes(a.state)) moves.get(a).add(a.state);
+    });
+    if (process.env.ALLY_LOG) console.log(hero, allies.map((a) => `${a.stats.id}: ${kills.get(a)} kills, ${[...moves.get(a)]}`).join(' | '), 'left', st.livingFoes().length, st.section.id);
+    for (const a of allies) {
+      assert(a.alive && !a.removeMe, `${hero}: ${a.stats.id} is still standing`);
+      assert(kills.get(a) >= 2, `${hero}: ${a.stats.id} killed ${kills.get(a)} men`);
+      assert(moves.get(a).size >= 3, `${hero}: ${a.stats.id} used ${[...moves.get(a)]}`);
+      assert(a.stats !== CHARACTERS[a.stats.id] && Object.keys(a.stats.skills ?? {}).length >= 3, `${hero}: ${a.stats.id} has the veteran build`);
+    }
+    assert(st.players.length === 1 && !st.players.includes(allies[0]), 'allies are not players (no story, no checkpoints, no game over)');
+  }
+});
+
+test('keep: the veteran household: every man of the Keep guards, strings blows and reaches for his heavy more, never with faster wind-ups or more health; bosses untouched', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('causeway'), { x: 760, z: 420 });
+  run(60 * 3, () => { p.health = p.stats.maxHealth; });
+  const men = world.fighters.filter((f) => f.team === 'enemy');
+  assert(men.length && men.every((f) => f.vet), 'every man is a veteran');
+  for (const f of men) {
+    const base = ENEMIES[f.stats.id].ai;
+    const ai = f.controller.ai;
+    assert(ai.blockChance >= (base.blockChance ?? 0) && ai.comboChance >= (base.comboChance ?? 0) && ai.attackCooldown[1] < base.attackCooldown[1], `${f.stats.id} guards, combos and swings more`);
+    assert(f.stats.maxHealth <= ENEMIES[f.stats.id].maxHealth * 1.3, `${f.stats.id}: no extra health`);
+  }
+});
+
+test('keep: the veteran floor tops the shared pool up to 30 points once (more earned is kept) and gives Oathkeeper\'s fire', () => {
+  const pr = new Progress(null);
+  assert(ensureFloor(pr, 30) === 28 && pr.earned === 30 && pr.hasFlag('oathkeeper'), `topped up (${pr.earned})`);
+  assert(ensureFloor(pr, 30) === 0 && pr.earned === 30, 'only once');
+  const rich = new Progress(null); rich.data.bonus = 40;
+  assert(ensureFloor(rich, 30) === 0 && rich.earned === 40, 'more earned is kept');
+  for (const h of ['warrior', 'mage', 'rogue']) {
+    const { picks, progress } = veteranPicks(h, 30);
+    assert(progress.available(h) <= 1 && picks.length >= 8, `${h}: the whole 30 spent across the tree (${picks})`);
+  }
+  assert(STAGE_KEEP.allies === true && STAGE_KEEP.veteran?.points === 30, 'the Keep has both');
+});
+
+
 for (const [name, fn] of later) {
   try { await fn(); console.log(`  ok   ${name}`); } catch (e) { failed++; console.log(`  FAIL ${name}\n       ${e.message}`); }
 }
 console.log(failed ? `\n${failed} test(s) FAILED` : '\nAll tests passed.');
 process.exit(failed ? 1 : 0);
-

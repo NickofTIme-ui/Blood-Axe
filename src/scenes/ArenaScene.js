@@ -6,6 +6,8 @@
 //   2. run as many fixed 1/60 s simulation steps as time has passed
 //   3. update visuals (views, debug overlay)
 
+import { addAllies } from '../entities/Ally.js';
+import { ensureFloor, veteranStats } from '../progression/Veteran.js';
 import { SETTINGS } from '../config/settings.js';
 import { World } from '../core/World.js';
 import { InputManager, realPads } from '../core/InputManager.js';
@@ -462,6 +464,9 @@ export class ArenaScene extends Phaser.Scene {
       this.progress=makePreviewProgress(this.progress,this.stageData,this.startSection);
     }
     this.progress?.play(this.stageId); // (level 1: Rurik's old sword until Brann gives him Oathkeeper)
+    // THE VETERAN FLOOR (progression/Veteran.js): the last levels start everyone with their
+    // advanced skills, however they got here
+    this.veteranGiven = this.stageData.veteran && !this.stageData.practice ? ensureFloor(this.progress, this.stageData.veteran.points) : 0;
     // online, the host's own campaign save still follows the game (checkpoints, levels,
     // the saved), so CONTINUE picks up there next time. Written to only, never read here.
     this.netSave = this.mode === 'net' && this.netInfo?.index === 0 && this.campaign ? this.registry.get('progress') : null;
@@ -515,6 +520,7 @@ export class ArenaScene extends Phaser.Scene {
     this.setupBirthright(ev);
     this.ascentFarewell=this.stage.ascentSiege?new AscentFarewellView(this,ev):null;
     this.stage.start(this.players, { section: this.startSection });
+    this.setupAllies(ev);
     this.prepareTestMoment();
     this.nextReady = false;
     this.tallyUp = false;   // (this machine's tally is on screen: the 'ready' bit online)
@@ -1071,6 +1077,23 @@ export class ArenaScene extends Phaser.Scene {
   // ------------------------------------------------------------ progression
 
   // Each hero's stats with his skill picks (a fresh copy each time; health kept in proportion).
+  // THE OATH KEEPERS FIGHT TOGETHER (entities/Ally.js): a level's `allies` brings the
+  // heroes nobody plays into the fight beside you, with the veteran build (or the save's
+  // own picks when they're richer)
+  setupAllies(ev) {
+    this.allies = [];
+    if (!this.stageData.allies) return;
+    const ids = ['warrior', 'mage', 'rogue'].filter((h) => !this.heroIds.includes(h));
+    const pts = this.stageData.veteran?.points ?? 0;
+    this.allies = addAllies(this.world, this.players, ids, (id, base) => {
+      const own = this.progress?.statsFor(id, base);
+      return pts && !(this.progress?.spent(id) >= pts) ? veteranStats(id, base, pts) : own ?? base;
+    });
+    this.npcView?.adoptAllies(this.allies);
+    if (this.veteranGiven > 0) this.time.delayedCall(2600, () => this.callout(`+${this.veteranGiven} SKILL POINTS  ·  kneel at a shrine to spend them`, '#ffd24a', 30));
+    ev.on('allyDown', ({ fighter }) => this.callout(`${fighter.stats.name.toUpperCase()} FALLS BACK`, '#c0a080', 18));
+  }
+
   applySkills(fresh = false) {
     if (!this.progress) return;
     for (const p of this.players) {
