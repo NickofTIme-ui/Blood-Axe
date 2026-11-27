@@ -84,6 +84,7 @@ export class BootScene extends Phaser.Scene {
     this.load.spritesheet('war-wagon-stack', 'assets/cinematics/war-wagon-stack.png', { frameWidth: 48, frameHeight: 81 }); // the Oath Keepers' war wagon on the war map: 66 stacked slices cut from ChatGPT's four views (tools/stack-slices.py, docs/sprite-stacking.md)
     this.load.image('keep-war-map', 'assets/cinematics/keep-war-map.jpg'); // the king's war map after each Black Keep scene (ChatGPT, 23 Nov)
     this.load.image('bridge-log-src', 'assets/env/bridge_log.png'); // the painted log bridge (view/TerrainView.js drawBlock)
+    this.load.image('wood-raft', 'assets/env/wood/bridge_raft.png'); // Gallows Wood's ford footbridge, four lashed logs (ChatGPT, 2026-11-27; view/TerrainView.js drawLogRaft)
     this.load.image('bodies-src', 'assets/env/bodies.png'); // the painted fallen villagers (view/NpcView.js drawBodies)
     this.load.image('bodies2-src', 'assets/env/bodies2.png'); // three more of them (Nick's level 1 review, 2026-11-03)
     this.load.spritesheet('stable-master', 'assets/npcs/stable-master-frames.png',{frameWidth:338,frameHeight:240});
