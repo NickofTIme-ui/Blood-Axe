@@ -206,8 +206,11 @@ export class WoodBackdrop {
     const s = this.scene;
     const D = this.data;
     const top = SETTINGS.world.floorTop - 50;
-    if (D.gallows && this.art.piece('hanging_tree', D.gallows.x - 260, D.gallows.x + 120, { depth: D.gallows.z - 2, bottom: D.gallows.z - top })) {
-      // (painted)
+    const tree = D.gallows && this.art.piece('hanging_tree', D.gallows.x - 260, D.gallows.x + 120, { depth: D.gallows.z - 2, bottom: D.gallows.z - top });
+    if (tree) {
+      // (painted pale, grey-white and much brighter than the wood round it, it looked pasted
+      // on: Nick's review 2026-11-27. In the wood's own cold light, a shade darker at its roots)
+      lightProp(tree, PROP_LIGHT.gallowsWood, 0.72);
     } else if (D.gallows) {
       // a great dead oak with a long bough out over the road; the rope hangs from it (NpcView)
       const { x, z } = D.gallows;

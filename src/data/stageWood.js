@@ -93,18 +93,18 @@ export const STAGE_WOOD = {
         // THE NOTCHED PINE on the near bank (stage/WoodTraps.js): chop it and it falls across
         // the stream, the log bridge (terrain tag 'felled'); whoever's under it is crushed
         { kind: 'pine', x: 700, z: 426, fellDir: 1, len: 300, bridge: 'felled', drop: null },
-        { kind: 'crate', x: 1320, z: 470, drop: 'health' },
+        { kind: 'crate', look: 'crate-v0', x: 1320, z: 470, drop: 'health' }, // (the wood's crates are named plain ones: left to chance one came up the market's apples, 2026-11-27)
         { kind: 'barrel', x: 420, z: 300, drop: null },
         // a sack cart's load tipped in the ditch where a wheel went (the near edge)
         ...group([['sack', 660, 502], ['sack', 700, 506], ['crate-v2', 748, 500]]),
-        // the rear guard's camp at the road's end: their table, a crate and a jug on the ground
-        // by it, their water and ale beside it, against the trees (nothing stacked: Nick, 2026-11-24)
-        { kind: 'trestle', x: 1080, z: 300, drop: null },
-        ...group([['urn', 968, 304, { drop: 'mana' }], ['crate-v5', 1003, 302]]),
+        // the rear guard's camp at the road's end: their sacks and a crate on the ground, their
+        // water and ale beside them, against the trees (nothing stacked: Nick, 2026-11-24). (No
+        // market trestle or glazed urn: village things, out of place in the wood, 2026-11-27)
+        ...group([['sack', 968, 304, { drop: 'mana' }], ['crate-v5', 1010, 302], ['sack', 1066, 300]]),
         ...group([['barrel-v3', 1160, 302], ['keg', 1206, 306]]),
         // a SECRET: a poacher's cache in the ferns at the back of the road, behind where you
         // come in (only found by turning back)
-        { kind: 'urn', x: 64, z: 288, drop: 'charm', secret: true },
+        { kind: 'crate', look: 'sack', x: 64, z: 288, drop: 'charm', secret: true },
       ],
       hazards: [],
     },
@@ -154,14 +154,14 @@ export const STAGE_WOOD = {
       mist: { x0: 3420, x1: 4400, tag: 'signal', calls: ['grunt', 'stalker', 'grunt'] },
       props: [
         { kind: 'signal', tag: 'signal', x: 3880, z: 492, drop: null },
-        { kind: 'crate', x: 4300, z: 300, drop: 'mana' },
+        { kind: 'crate', look: 'crate-v2', x: 4300, z: 300, drop: 'mana' },
         // the broken carts' loads spilled along the near edge of the road
         ...group([['crate-v6', 3560, 500], ['crate-v0', 3612, 502], ['sack', 3660, 504]]),
         // the convoy's strongbox, dropped when the axle went
         { kind: 'chest', x: 4230, z: 498, drop: 'health' },
         // a SECRET up on the high shelf at the back (terrain: the boulder and the shelf): Vexa's
         // double jump, Oryn's rise, or Rurik with WIND STEP; nobody needs it
-        { kind: 'crate', x: 4190, z: 305, drop: 'relic', secret: true },
+        { kind: 'crate', look: 'crate-v5', x: 4190, z: 305, drop: 'relic', secret: true },
       ],
       hazards: [],
     },
@@ -213,7 +213,7 @@ export const STAGE_WOOD = {
         { kind: 'pine', x: 6980, z: 346, fellDir: -1, len: 300, bridge: 'convoyPine', drop: null },
         { kind: 'barrel', x: 5700, z: 480, drop: 'health' },
         // the convoy's supplies, dumped at the roadside to lighten the wagons
-        ...group([['crate-v1', 5726, 302], ['crate-v5', 5780, 300], ['barrel-tar', 5840, 302]]),
+        ...group([['crate-v0', 5726, 302], ['crate-v5', 5780, 300], ['barrel-tar', 5840, 302]]),
       ],
       hazards: [],
     },
@@ -227,7 +227,7 @@ export const STAGE_WOOD = {
       fightAt: 7560,
       waves: [],
       props: [
-        { kind: 'crate', x: 8300, z: 480, drop: 'health' },
+        { kind: 'crate', look: 'crate-v0', x: 8300, z: 480, drop: 'health' },
         // the kennels' feed: barrels of offal either side of the pens
         ...group([['barrel-v6', 7470, 302], ['barrel-v2', 7516, 306]]),
         ...group([['barrel-v5', 8160, 302, { drop: 'mana' }], ['keg', 8206, 306]]),

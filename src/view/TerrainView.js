@@ -16,7 +16,7 @@
 // z0), its front face just in front of them (depth z1), so whoever is on it, behind it or
 // in front of it is drawn the right way round.
 
-import { groundUnder, moveGround } from './propGround.js';
+import { groundUnder, moveGround, PROP_LIGHT, lightProp } from './propGround.js';
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { playSfx, playSplash } from '../core/Sfx.js';
@@ -1274,7 +1274,11 @@ export class TerrainView {
       if (r.kind === 'oath' && s.textures.exists('shrine-oath-src')) {
         // the painted OATH SHRINE (assets/env/shrine_oath.png, on magenta: cut out once)
         if (!s.textures.exists('shrine-oath')) s.textures.addCanvas('shrine-oath', keyLayer(s.textures.get('shrine-oath-src').getSourceImage(), 'magenta'));
-        s.add.image(r.x, y0 + 4, 'shrine-oath').setOrigin(0.5, 0.985).setScale(SHRINE_H / 512).setDepth(r.z - 0.3);
+        const stone = s.add.image(r.x, y0 + 4, 'shrine-oath').setOrigin(0.5, 0.985).setScale(SHRINE_H / 512).setDepth(r.z - 0.3);
+        // (in Gallows Wood the pale daylight stone stood out like a cut-out against the wet dark:
+        // Nick's review 2026-11-27. There it takes the wood's cold light, its own blue glow kept)
+        const L = PROP_LIGHT[s.stageId];
+        if (s.stageId === 'gallowsWood' && L) lightProp(stone, L, 0.82);
         const glow = s.add.image(r.x + 2, y0 - SHRINE_H * 0.6, 'glow').setScale(2.6).setTint(VIL.oath).setAlpha(0.4)
           .setBlendMode(Phaser.BlendModes.ADD).setDepth(r.z - 0.2);
         this.restGlows.push(glow);
