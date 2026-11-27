@@ -83,7 +83,7 @@ export const STAGE_KEEP = {
       ],
     },
     {
-      id: 'muster', name: 'THE MUSTER HALL', x0: 1900, x1: 3700,
+      id: 'muster', ground: 'k-muster', groundFade: 160, name: 'THE MUSTER HALL', x0: 1900, x1: 3700,
       spawn: { x: 1980, z: 440 },
       objective: 'Break the muster',
       hint: 'Kill the drummers on the balcony and the shield line breaks. A heavy blow breaks a shield',
@@ -119,7 +119,7 @@ export const STAGE_KEEP = {
       rest: { x: 3600, z: 320, kind: 'oath' },
     },
     {
-      id: 'cells', name: 'THE BURNING CELLS', x0: 3700, x1: 5500,
+      id: 'cells', ground: 'k-cells', groundFade: 160, name: 'THE BURNING CELLS', x0: 3700, x1: 5500,
       spawn: { x: 3760, z: 420 },
       objective: 'Open the cells. Climb',
       hint: 'Hold E at a cell door once the guards are down. The fire climbs a tier at a time',
@@ -161,7 +161,7 @@ export const STAGE_KEEP = {
       ],
     },
     {
-      id: 'scaffold', name: 'THE HEADSMAN\'S SCAFFOLD', x0: 5500, x1: 6900,
+      id: 'scaffold', ground: 'k-scaffold', groundFade: 160, name: 'THE HEADSMAN\'S SCAFFOLD', x0: 5500, x1: 6900,
       spawn: { x: 5580, z: 420 },
       objective: 'Kill the Executioner',
       hint: 'His overheads break the scaffold. Ring the bell to stun him',
@@ -194,7 +194,7 @@ export const STAGE_KEEP = {
       },
     },
     {
-      id: 'crucible', name: 'THE CRUCIBLE LINE', x0: 6900, x1: 8600,
+      id: 'crucible', ground: 'k-forge', groundFade: 160, name: 'THE CRUCIBLE LINE', x0: 6900, x1: 8600,
       spawn: { x: 7000, z: 420 },
       objective: 'Cross the Crucible Line',
       hint: 'The buckets run back to the fire: keep moving',
@@ -219,7 +219,7 @@ export const STAGE_KEEP = {
       rest: { x: 7100, z: 330, kind: 'oath' }, // (at the back, off the line you land on: not knelt at the moment you arrive)
     },
     {
-      id: 'mill', name: 'THE ASH MILL', x0: 8600, x1: 10000,
+      id: 'mill', ground: 'k-forge', groundFade: 160, name: 'THE ASH MILL', x0: 8600, x1: 10000,
       spawn: { x: 8680, z: 420 },
       objective: 'Stop the mill. Kill the Forgemaster',
       hint: 'The back of the stone turns one way, the front the other. Break the drive pins',
@@ -263,7 +263,7 @@ export const STAGE_KEEP = {
       },
     },
     {
-      id: 'root', name: 'THE KINGS\' ROOT', x0: 10000, x1: 11700,
+      id: 'root', ground: 'k-crypt', groundFade: 160, name: 'THE KINGS\' ROOT', x0: 10000, x1: 11700,
       spawn: { x: 10080, z: 420 },
       objective: 'Find the way up',
       hint: 'Mind the floor. The statues are watching',
@@ -286,7 +286,7 @@ export const STAGE_KEEP = {
       light: 0x8ab0d8, mood: 0.3,
     },
     {
-      id: 'spire', name: 'THE BURNING SPIRE', x0: 11700, x1: 13200,
+      id: 'spire', ground: 'k-spire', groundFade: 160, name: 'THE BURNING SPIRE', x0: 11700, x1: 13200,
       spawn: { x: 11800, z: 420 },
       objective: 'Ride the hoist to the top',
       hint: 'They come from every floor you pass. Keep off the open edge',

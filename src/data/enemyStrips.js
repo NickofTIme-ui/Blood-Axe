@@ -272,11 +272,16 @@ export const ENEMY_ANIMS = {
 };
 
 // a boss's own look -> the kind whose moves (and size) he has
-export const LOOKS = { orsk: 'berserker', twin: 'gladiator', wagonmaster: 'butcher', houndmaster: 'stalker', warden: 'ghoul', overseer: 'butcher' };
+export const LOOKS = { orsk: 'berserker', twin: 'gladiator', wagonmaster: 'butcher', houndmaster: 'stalker', warden: 'ghoul', overseer: 'butcher', forgemaster: 'berserker', crownguard: 'gladiator' };
 for (const [look, kind] of Object.entries(LOOKS)) ENEMY_ANIMS[look] = ENEMY_ANIMS[kind];
 ENEMY_STRIPS.executioner=Object.fromEntries(Object.entries({walk:8,react:6,atk1:5,atk2:5,heavy:6,special:6}).map(([name,frames])=>[name,{file:`assets/npcs/mill-rescue/executioner-${name}.png`,frames,ref:0,ground:'drawn'}]));
 // (the Headsman's Rush: his overhead chop, held high through the charge)
 ENEMY_ANIMS.executioner={...ENEMY_ANIMS.butcher,special1:{needs:['heavy'],phases:{startup:seq('heavy',[0,1,2,2,2]),active:seq('heavy',[3]),recovery:seq('heavy',[4,4,5])}}};
+
+// THE BLACK KEEP's own (ChatGPT 2026-11-27, chat "Generate Black Keep Tile Art"): the
+// Forgemaster (the Berserker's moves: a glowing forge hammer) and Ser Aldous of the Crown
+// Guard (the Gladiator's). Until all six of his strips are in, he wears his kind's.
+for (const id of ['forgemaster', 'crownguard']) ENEMY_STRIPS[id] = Object.fromEntries(Object.entries({ walk: 8, react: 6, atk1: 5, atk2: 5, heavy: 6, special: 6 }).map(([name, frames]) => [name, { file: `${DIR}/${id}_${name}.png`, frames, ref: 0, ground: 'drawn' }]));
 
 // Orsk: dedicated armoured siege commander, no flag; six gameplay strips.
 ENEMY_STRIPS.orsk = Object.fromEntries(Object.entries({ walk: 8, react: 6, atk1: 5, atk2: 5, heavy: 6, special: 6 }).map(([name, frames]) => [name, { file: `${DIR}/orsk_${name}.png`, frames, ref: 0, ground: 'drawn' }]));

@@ -158,8 +158,10 @@ export const STAGE_VILLAGE = {
       fightAfter: 'kingParting', // (the men at the well wait while the king and his son part)
       hint: 'The fire pits flare up: watch for the glow',
       // they're at the well with the mother and her boy when you come into the square
-      // ...and then the HORDE: a pack of thralls from both ends of the square (one against many)
-      waves: [['grunt', 'butcher', 'grunt', 'grunt'], ['stalker', 'grunt', 'grunt'], [...Array(9).fill('thrall'), 'butcher']],
+      // ...and then the HORDE: a pack of Ashen looters from both ends of the square (one against
+      // many). Ashen men, not thralls: the thrall hordes are the Iron Gates' (level 5), and
+      // berserkers the Ascent's (level 4), so each is new when you get there (Nick, 2026-11-27)
+      waves: [['grunt', 'butcher', 'grunt', 'grunt'], ['stalker', 'grunt', 'grunt'], [...Array(6).fill('grunt'), 'stalker', 'butcher']],
       spawns: [
         // (the well's set piece, stage/WellRescue.js: the man with Mira by the hood, the butcher
         // at the well's right with her boy held out over its mouth, two more looking on)
@@ -271,7 +273,7 @@ export const STAGE_VILLAGE = {
       objective: 'Free the horses',
       hint: 'Smash the bar off the stable gate. Then mind the stampede',
       fightAt: 5980,
-      waves: [['grunt', 'butcher', 'grunt'], ['berserker', 'grunt', 'stalker'], ['grunt', 'butcher', 'grunt', 'ghoul']],
+      waves: [['grunt', 'butcher', 'grunt'], ['butcher', 'grunt', 'stalker'], ['grunt', 'butcher', 'grunt', 'ghoul']],
       props: [
         { kind: 'wreckage', tag: 'stables', x: 6380, z: 300, size: 1.7, drop: null }, // (sized up to the stable gate: Nick, 2026-10-17)
         // feed barrels and a hay cart by the stables (the crates at the far end stand in the
@@ -298,9 +300,9 @@ export const STAGE_VILLAGE = {
         // swing open (phase), so whoever smashed it has the whole warning to get clear.
         // Each run sends a handful of Ashen men down its lane from the far side, straight
         // into the herd: they get smashed in heaps (Nick, 2026-10-23: more runs, more men).
-        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 330, dir: 1, d: 64, period: 330, count: 5, runs: 5, phase: 40, fodder: ['thrall', 'grunt', 'thrall'] },
-        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 430, dir: -1, d: 64, period: 330, count: 6, runs: 5, phase: 150, fodder: ['grunt', 'thrall', 'thrall', 'grunt'] },
-        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 500, dir: 1, d: 64, period: 330, count: 5, runs: 5, phase: 260, fodder: ['thrall', 'grunt', 'thrall'] },
+        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 330, dir: 1, d: 64, period: 330, count: 5, runs: 5, phase: 40, fodder: ['grunt', 'stalker', 'grunt'] },
+        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 430, dir: -1, d: 64, period: 330, count: 6, runs: 5, phase: 150, fodder: ['grunt', 'grunt', 'stalker', 'grunt'] },
+        { type: 'stampede', when: 'freed:horses', door: STABLE_DOOR, x0: 5760, x1: 7140, z: 500, dir: 1, d: 64, period: 330, count: 5, runs: 5, phase: 260, fodder: ['grunt', 'stalker', 'grunt'] },
       ],
     },
     {
@@ -334,7 +336,7 @@ export const STAGE_VILLAGE = {
       rest: SHRINE_HALL,
       // the man who directed the attack: Pitlord Kragg's kind (mace and spiked shield), a captain
       boss: { type: 'gladiator', name: 'Varek, the Ash Captain', health: 3.4, damage: 1.15, size: 1.75,
-        escort: ['grunt', 'stalker', 'grunt', 'berserker'],
+        escort: ['grunt', 'stalker', 'grunt', 'butcher'],
         adds: [], // these are his last men; no fresh army at half health
         phases: [{id:'desperate',at:0.5,damage:1.12,ai:{attackCooldown:[24,42]},rage:true}],
         entrance: { from: 140, to: 320, speed: 58, stepEvery: 34, awe: 30 },

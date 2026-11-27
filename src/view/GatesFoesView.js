@@ -138,6 +138,32 @@ GatesFoesView.prototype.drawGate = function (hz) {
       }
       for (let i = 0; i < N; i++) slices.push({ img: this.scene.add.image(0, 0, `${sk}${i}`).setOrigin(0, 0), i, cw, u: (i + 0.5) / N });
     }
+    // the stone lintel it hangs in (prop_lintel.png, ChatGPT 2026-11-27 polish pass): a beam
+    // across the lane at the height of its raised foot, sheared on the same slant; the grille
+    // shows only below the beam (it winches up into the slot, not into the sky), so hung up
+    // just its spiked foot pokes out under the stone
+    const slope = (front - back) / lean;
+    const raisedFoot = (x) => back + (x - (hz.x - lean / 2)) * slope - (H - 46); // (screen y of its raised foot at x)
+    const lineAt = (x) => raisedFoot(x) - 55;
+    if (T.exists('prop-lintel')) {
+      const src = T.get('prop-lintel').getSourceImage();
+      const over = 30; const Lw = lean + over * 2; const Lh = Math.round(Lw * src.height / src.width * 1.8);
+      const key = `prop-lintel-sheared-${lean}`;
+      if (!T.exists(key)) {
+        const c = document.createElement('canvas'); c.width = Lw; c.height = Math.ceil(Lh + Lw * slope);
+        c.getContext('2d').setTransform(Lw / src.width, (Lw * slope) / src.width, 0, Lh / src.height, 0, 0);
+        c.getContext('2d').drawImage(src, 0, 0);
+        T.addCanvas(key, c);
+      }
+      const x0 = hz.x - lean / 2 - over;
+      this.scene.add.image(x0, lineAt(x0) - 0.52 * Lh, key).setOrigin(0, 0).setDepth(front + 1);
+      const xl = x0 - 40; const xr = hz.x + lean / 2 + over + 40;
+      const m = this.scene.make.graphics({ add: false }).fillStyle(0xffffff, 1)
+        .fillPoints([{ x: xl, y: lineAt(xl) }, { x: xr, y: lineAt(xr) }, { x: xr, y: 3000 }, { x: xl, y: 3000 }], true);
+      const mask = m.createGeometryMask();
+      for (const sl of slices) sl.img.setMask(mask);
+      this.scene.events.once('shutdown', () => m.destroy());
+    }
     const shadow = this.scene.add.graphics().setDepth(DEPTH.shadows);
     v = { slices, shadow };
     this.gates.set(hz.id, v);

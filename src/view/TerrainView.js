@@ -329,6 +329,7 @@ export class TerrainView {
       }
       const g = s.add.graphics().setDepth(DEPTH.floor + 4);
       if (this.theme === 'ascent') { this.drawAscentGorge(p, g); continue; }
+      if (this.theme === 'keep') { this.drawKeepChasm(p, g); continue; }
       g.fillStyle(this.water ? 0x0c1820 : 0x000000, 1).fillRect(p.x0, p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0), p.x1 - p.x0, p.z1 - p.z0 + (p.z0 <= SETTINGS.world.floorTop ? 50 : 0) + 40);
       // a cold glow at the lip so the edge reads (in the village: a burning cellar, its fire far
       // down; in the wood: a stream, black water running fast)
@@ -379,6 +380,30 @@ export class TerrainView {
   // stones, knee-deep, so it reads as water you can walk into (Nick, 2026-11-16: no more
   // invisible river). The painted water, paler and browner than the deep channel and half
   // see-through, the stones of the bed under it, ripples running with it. Under the channel.
+  // The Black Keep's broken edges (the causeway's, the Crown Walk's): no box, a drop into the
+  // ash dark, the lip a ragged line of broken basalt, the forge's glow far below.
+  drawKeepChasm(p, g) {
+    const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0);
+    const bottom = Math.max(p.z1 + 40, SETTINGS.height + 160);
+    const w = p.x1 - p.x0;
+    g.fillStyle(0x050307, 1).fillRect(p.x0, top, w, bottom - top);
+    vFade(g, p.x0, top + 20, w, bottom - top - 20, 0x6a2a3a, 0, 0.35); // (the forge, far down)
+    vFade(g, p.x0, top, w, 40, 0x000000, 0.9, 0);
+    // the lip: chunks of broken basalt along the edge, and at the two ends
+    let seed = Math.round(p.x0) * 13 + 7;
+    const r = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let x = p.x0 - 6; x < p.x1 + 6; x += 14 + r() * 18) {
+      const h = 4 + r() * 10;
+      g.fillStyle(r() < 0.5 ? 0x2a2230 : 0x1c1620, 1).fillTriangle(x, top - 1, x + 10 + r() * 16, top - 1, x + 4 + r() * 10, top + h);
+    }
+    for (const [x, d] of [[p.x0, 1], [p.x1, -1]]) {
+      for (let y = top; y < Math.min(bottom, top + 90); y += 10 + r() * 12) {
+        const dx = 4 + r() * 12;
+        g.fillStyle(0x1c1620, 1).fillTriangle(x, y, x, y + 10 + r() * 14, x + d * dx, y + 5 + r() * 6);
+      }
+    }
+  }
+
   drawAscentGorge(p, g) {
     const s=this.scene,top=p.z0-30,h=SETTINGS.height+180-top,w=p.x1-p.x0;
     // Paint depth as an image. Gradient-filled polygons triangulate into visible wedges.

@@ -349,7 +349,9 @@ export const STAGE_GATES = {
           "z0": 330,
           "z1": 430
         }
-      ]
+      ],
+      "ground": "g-yard",
+      "groundFade": 160
     },
     {
       "id": "town",
@@ -420,7 +422,9 @@ export const STAGE_GATES = {
         "x": 7820,
         "z": 320,
         "kind": "oath"
-      }
+      },
+      "ground": "g-town",
+      "groundFade": 160
     },
     {
       "id": "marshal",
