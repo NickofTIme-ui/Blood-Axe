@@ -118,6 +118,10 @@ export class HUDScene extends Phaser.Scene {
     this.cardSub = this.add.text(W / 2, H * 0.36 + 42, '', { fontFamily: FONT.ui, fontSize: '16px', color: '#d8c8a8', align: 'center' })
       .setOrigin(0.5).setStroke('#000000', 4).setAlpha(0).setDepth(50);
     this.cardSub.setLetterSpacing?.(3);
+    // over a campaign level's first card: which chapter of the story this is (CHAPTER II  ·  GALLOWS WOOD)
+    this.cardTop = this.add.text(W / 2, H * 0.36 - 46, '', { fontFamily: FONT.display, fontSize: '18px', color: '#e8d8b8', align: 'center' })
+      .setOrigin(0.5).setStroke('#000000', 5).setAlpha(0).setDepth(50);
+    this.cardTop.setLetterSpacing?.(6);
     // boss bar (top centre, under the call-out banner)
     this.bossUi = null;
     this.makeRescueAlert();
@@ -289,8 +293,12 @@ export class HUDScene extends Phaser.Scene {
     // (a section that teaches something says how, under the objective)
     this.objective = `${section.objective}${section.hint ? `\n${section.hint}` : ''}`;
     this.showGo(false);
-    this.tweens.killTweensOf([this.card, this.cardSub]);
-    for (const t of [this.card, this.cardSub]) {
+    const D = this.arena.stage.data;
+    const chapter = index === 0 && D.chapter && D.name ? `CHAPTER ${D.chapter}  ·  ${D.name}` : '';
+    this.cardTop.setText(chapter).setPosition(this.card.x, this.card.y - (D.id === 'shatteredAscent' ? 36 : 46));
+    this.tweens.killTweensOf([this.card, this.cardSub, this.cardTop]);
+    this.cardTop.setAlpha(0);
+    for (const t of chapter ? [this.card, this.cardSub, this.cardTop] : [this.card, this.cardSub]) {
       t.setAlpha(0).setScale(1.08);
       this.tweens.add({ targets: t, alpha: 1, scale: 1, duration: 600, ease: 'Sine.easeOut' });
       this.tweens.add({ targets: t, alpha: 0, delay: 2400, duration: 700 });

@@ -16,7 +16,7 @@ Code: `src/scenes/CutawayScene.js` (played by `ArenaScene.campaignLevelDone` aft
 | 2 Gallows Wood | II · THE CAGES ARE EMPTY | irritated: cracks the throne arm with his fist | the wood went quiet; every prisoner walked free |
 | 3 Hollow Mountain | III · THE MOUNTAIN COULD NOT HOLD THEM | frustrated: throws the war map across the hall | even Malgor's men have started saying their names |
 | 4 Shattered Ascent | IV · THE ARMY RUNS | uneasy: burns his own captain for saying they can't be killed | his army is running from them |
-| 5 Iron Gates | V · THE GATES HAVE FALLEN | afraid: his fire gutters out; then the doors boom, he relights it: "Let them come." | they're at his door |
+| 5 Iron Gates | V · NO ONE LEFT TO SEND | afraid: his fire gutters out; then the doors boom, he relights it: "Let them come." | they're at his door |
 
 ## The one shape every scene has
 
@@ -53,3 +53,11 @@ is already his when the player gets there.
   cast = the captain burned (IV), defy = sword raised, "Let them come." (V).
 - Malgor's fallen helm `assets/cinematics/malgor-helm.png` (scene V), rolls in and comes to
   rest on its side.
+
+## Props in the hall (ChatGPT on Nick's PC, 27 Nov)
+
+The last code-drawn pieces, now painted (keyed off magenta, trimmed, 560 px wide;
+`assets/cinematics/`, loaded in BootScene): `keep-war-table` (scenes I-III, with the map and
+markers on it), `keep-war-table-fallen` (it goes over in III and stays down in IV-V),
+`keep-floor-map` (the map he throws, landing at `SPOT.floorMap`), `keep-captain-ash` (V).
+Sizes in the hall: `PROP_W` in CutawayScene.js. The drawn shapes stay only as a fallback.

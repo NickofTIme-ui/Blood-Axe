@@ -6,6 +6,21 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 27 November 2026 (cloud, thread "Review level 2 for polish"; ON MAIN ad2b265, Nick "push all"). LEVEL 2 POLISH:
+  convoy wagon/prisoners/pine moved to z 348 so the Wagonmaster's head stays on screen; no market props in the wood
+  (named plain crates, sacks for trestle/urns); oath shrines (TerrainView, gallowsWood only) and the hanging tree tinted
+  to PROP_LIGHT.gallowsWood; red "=" blaze retouched off trap_pine.png; signal lantern glow = soft ADD 'glow' images;
+  tripwires = dark sagging cords; kennel snare moved to 8310; field shouts hide when the speaker is off screen
+  (NpcView); Rurik tells Joren about Mira; one-line hints; rockslide drawn on screen (block from 8900, exit 8860);
+  ford footbridge = ChatGPT assets/env/wood/bridge_raft.png (TerrainView.drawLogRaft). STILL OPEN: hound run/idle/bark/
+  howl strips and Hornblower/Woodsman looks (need the reference strips attached in ChatGPT; prompts
+  docs/hound-art-prompts.md). Raws: /mnt/project-files/level2-polish-nov27/raw/.
+- 27 November 2026, later (cloud, branch claude/project-thread-gi0nk2; NOT on main until Nick says push). LEVEL 5
+  POLISH PASS (ON MAIN, Nick "push all"): gatehouse stair/landing stones at a man's scale and darkened (levelArt gates surfaces px + tint,
+  TerrainView.surface honours `tint`); the gatehouse pit is a stone shaft into the dark (TerrainView.gatesShaft), no
+  ruled lines; the winch room's main gate uses the painted grille sheared across the lane (drawPortcullis, gates
+  branch); caltrops/plates/bolt re-cut as RGBA with soft shadows (no pink); the murder-hole rockfall greyed in the
+  gates. Still to do (ChatGPT, needs Nick's PC Chrome): own grounds for yard and town; a stone arch over the drop gate.
 - 27 November 2026 (cloud, branch claude/project-thread-pftf2b; NOT on main until Nick says push). LEVEL 6, THE
   BLACK KEEP, ROUND 2 (masterplan doc https://claude.ai/artifact/3G7ZmCYYUkpExaqVkDack9). The two heroes nobody plays
   fight beside you (entities/Ally.js; `allies: true`; never in `players`, so story/camera/game over ignore them;
@@ -2163,3 +2178,8 @@ Nick: "snare trap needs a sounds, also hold the NPC for longer".
 ## Cloud, 2026-11-26: Vexa's last shared poses are her own (not on itch)
 - Nick: "i want vexa and mage fully fleshed out and finished". She already had Rurik's move count (16 kit moves vs his 13). Her jump attack, dive, Fade and knife throw borrowed other strips; now each has its own ChatGPT strip (`rogue_airattack`, `rogue_dive`, `rogue_fade`, `rogue_knifethrow`, HD sheets in `src/data/vexaArt.js`, anims in `HERO_ANIMS.rogue`). Still shared: her plain jump (air 0-1), the launch off a teammate's shoulder (air 3) and the kick (moves strip).
 - Not checked: Fade by real input (attack + jump with the stick held away), knife throw timing in a fight, the fan. The PC checked jump attack and dive by input and Fade by forcing the state, muted. No blood layers (main dropped BloodCoat).
+
+## Between-level scenes polish (27 Nov, on main 144a16b)
+Black Keep cutaways (CutawayScene.js): war map end zoom stays on the painting, readable road count, crown kept clear of the
+letterbox, scene V line fixed and retitled "NO ONE LEFT TO SEND", painted war table / toppled table / thrown map / captain's ash
+(assets/cinematics/keep-*.png). HUD: each level's first card shows "CHAPTER II · GALLOWS WOOD". Not on itch yet.
