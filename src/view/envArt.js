@@ -40,6 +40,12 @@ export const GROUNDS = {
   // The Black Keep's own floors, one per area (data/stageKeep.js sections' `ground`; ChatGPT,
   // 2026-11-27, level 6 round 3)
   'k-causeway': 'assets/env/keep/ground_causeway.jpg', // (and the Crown Walk, the battlements' stone)
+  'k-muster': 'assets/env/keep/ground_muster.jpg',
+  'k-cells': 'assets/env/keep/ground_cells.jpg',
+  'k-forge': 'assets/env/keep/ground_forge.jpg', // (the Crucible Line and the Ash Mill)
+  'k-crypt': 'assets/env/keep/ground_crypt.jpg',
+  'k-spire': 'assets/env/keep/ground_spire.jpg',
+  'k-scaffold': 'assets/env/keep/ground_scaffold.jpg',
   'k-throne': 'assets/env/keep/ground_throne.jpg',
 };
 
