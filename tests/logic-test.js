@@ -5840,6 +5840,35 @@ test('keep: the veteran household: every man of the Keep guards, strings blows a
   }
 });
 
+test('keep: the drum formation: the drummers beat, the shield line steps forward as one with its guard up, and breaks when both drummers die', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('muster'), { x: 2320, z: 430 });
+  const beats = []; let broke = 0;
+  world.events.on('drumBeat', (e) => beats.push(e.x)); world.events.on('formationBroken', () => broke++);
+  run(60 * 6, () => { p.health = p.stats.maxHealth; });
+  const men = world.fighters.filter((f) => f.team === 'enemy' && f.alive);
+  const drummers = men.filter((f) => f.role === 'drummer'); const line = men.filter((f) => f.role === 'line');
+  assert(drummers.length === 2 && line.length === 4, `two drummers and four in the line (${men.map((f) => f.role)})`);
+  assert(beats.length >= 3 && beats[beats.length - 1] < beats[0], `the line comes on beat by beat (${beats.map(Math.round)})`);
+  assert(line.filter((f) => f.state === 'block').length >= 2, `shields locked between beats (${line.map((f) => f.state)})`);
+  assert(drummers.every((f) => f.floor >= 60), 'the drummers are up on the balcony');
+  for (const d of drummers) slay(world, d);
+  run(10);
+  assert(broke === 1 && line.every((f) => !f.formation && !f.script), 'both drummers dead: the line breaks into a brawl');
+});
+
+test('keep: the rising fire takes a tier at a time; a cell still shut on a burned tier is lost, and dying puts it back', () => {
+  const { world, p, st, run } = keepSetup(KEEP_SEC('cells'), { x: 3780, z: 430 });
+  const sec = st.section; const rises = [];
+  world.events.on('fireRises', (e) => rises.push(e.level));
+  const tier1 = st.hazards.filter((hz) => hz.when === 'rise:1');
+  assert(tier1.length && tier1.every((hz) => !st.beamLive(hz)), 'cold to begin with');
+  run(sec.rise.every + 5, () => { p.health = p.stats.maxHealth; p.x = 3780; });
+  assert(rises.join() === '1' && tier1.every((hz) => st.beamLive(hz)), `the bottom tier catches (${rises})`);
+  assert(st.story.lost.has('cellsLow') && !st.story.lost.has('cellsMid'), 'the cell left shut on it is lost; the next is not yet');
+  st.story.resetSection(st.index); st.enterSection(st.index, true);
+  assert(!st.story.lost.has('cellsLow') && st.keep.rise.level === 0 && tier1.every((hz) => !st.beamLive(hz)), 'tried again: the cell is shut and the fire low');
+});
+
 test('keep: the veteran floor tops the shared pool up to 30 points once (more earned is kept) and gives Oathkeeper\'s fire', () => {
   const pr = new Progress(null);
   assert(ensureFloor(pr, 30) === 28 && pr.earned === 30 && pr.hasFlag('oathkeeper'), `topped up (${pr.earned})`);

@@ -85,10 +85,19 @@ export const STAGE_KEEP = {
       id: 'muster', name: 'THE MUSTER HALL', x0: 1900, x1: 3700,
       spawn: { x: 1980, z: 440 },
       objective: 'Break the muster',
-      hint: 'Wreck the crossbows on the balcony. Watch the chandeliers',
+      hint: 'Kill the drummers on the balcony and the shield line breaks. A heavy blow breaks a shield',
       fightAt: 2300,
+      // THE DRUM FORMATION (stage/KeepSetPieces.js): two drummers on the balcony beat the
+      // time, and on every beat the shield line steps forward as one, shields locked, and
+      // strikes at whoever is in front of it. A heavy breaks a shield; round the end works
+      // too. Kill both drummers and the line breaks into a brawl
+      formation: { beat: 78, step: 32, hold: 90, lanes: [362, 408, 454, 498] },
+      spawns: [[
+        { x: 2760, z: 304, inPlace: true }, { x: 3160, z: 304, inPlace: true },
+        { x: 2660, z: 362, inPlace: true }, { x: 2660, z: 408, inPlace: true }, { x: 2660, z: 454, inPlace: true }, { x: 2660, z: 498, inPlace: true },
+      ]],
       waves: [
-        ['grunt', 'grunt', 'grunt', 'grunt', 'grunt'],
+        ['grunt:drummer', 'grunt:drummer', 'gladiator:line', 'gladiator:line', 'gladiator:line', 'gladiator:line'],
         ['gladiator', 'gladiator', 'penitent', 'penitent'],
         ['berserker', 'berserker', 'grunt', 'stalker'],
       ],
@@ -112,7 +121,13 @@ export const STAGE_KEEP = {
       id: 'cells', name: 'THE BURNING CELLS', x0: 3700, x1: 5500,
       spawn: { x: 3760, z: 420 },
       objective: 'Open the cells. Climb',
-      hint: 'Hold E at a cell door once the guards are down. The fire climbs',
+      hint: 'Hold E at a cell door once the guards are down. The fire climbs a tier at a time',
+      // THE RISING FIRE (stage/KeepSetPieces.js): every `every` frames the fire takes the next
+      // tier up; a cell still shut on a tier it has taken is lost. Dying puts it back
+      rise: {
+        every: 60 * 35,
+        tiers: [{ cells: ['cellsLow'] }, { cells: ['cellsMid'] }, { cells: [] }, { cells: ['ilse'] }],
+      },
       // small and close: two jailers on each tier, hounds on the stair
       spawns: [
         [{ x: 4150, z: 420, inPlace: true }, { x: 4220, z: 380, inPlace: true }],
@@ -133,6 +148,15 @@ export const STAGE_KEEP = {
         { type: 'fire', x: 4380, z: 440, w: 80, d: 80, y: 140, phase: 150 },
         // a crossbow on the tier above you, whichever tier you're on
         { type: 'bombard', look: 'arrows', period: 230, warn: 70, shots: 1, damage: 9 },
+        // the fire taking each tier in turn (`rise:<n>`: once it has reached that tier)
+        { type: 'fire', when: 'rise:1', x: 3990, z: 380, w: 120, d: 100, y: 70, phase: 0 },
+        { type: 'fire', when: 'rise:1', x: 4180, z: 450, w: 110, d: 90, y: 70, phase: 90 },
+        { type: 'fire', when: 'rise:2', x: 4320, z: 400, w: 100, d: 100, y: 140, phase: 30 },
+        { type: 'fire', when: 'rise:2', x: 4570, z: 430, w: 110, d: 90, y: 140, phase: 120 },
+        { type: 'fire', when: 'rise:3', x: 4720, z: 390, w: 110, d: 100, y: 210, phase: 60 },
+        { type: 'fire', when: 'rise:3', x: 4910, z: 440, w: 110, d: 90, y: 210, phase: 150 },
+        { type: 'fire', when: 'rise:4', x: 5080, z: 430, w: 110, d: 90, y: 280, phase: 20 },
+        { type: 'fire', when: 'rise:4', x: 5230, z: 380, w: 100, d: 90, y: 280, phase: 110 },
       ],
     },
     {
@@ -509,15 +533,15 @@ export const STAGE_KEEP = {
   npcs: [
     // THE BURNING CELLS: the village's people, taken north in level 1, a cell on each tier
     {
-      id: 'cellsLow', name: 'the village\'s people', x: 4120, z: 336, pose: 'cage', group: true, rescue: 'cage', section: 'cells',
+      id: 'cellsLow', name: 'the village\'s people', x: 4120, z: 336, pose: 'cage', group: true, rescue: 'cage', section: 'cells', burns: true,
       lock: { x: 4120, z: 370 }, flee: null, gather: { x: 16560, z: 360 },
     },
     {
-      id: 'cellsMid', name: 'the smith\'s apprentices', x: 4560, z: 316, pose: 'cage', group: true, rescue: 'cage', section: 'cells',
+      id: 'cellsMid', name: 'the smith\'s apprentices', x: 4560, z: 316, pose: 'cage', group: true, rescue: 'cage', section: 'cells', burns: true,
       lock: { x: 4560, z: 350 }, flee: null, gather: { x: 16620, z: 470 },
     },
     {
-      id: 'ilse', name: 'Ilse', x: 5320, z: 300, pose: 'cage', rescue: 'cage', section: 'cells',
+      id: 'ilse', name: 'Ilse', x: 5320, z: 300, pose: 'cage', rescue: 'cage', section: 'cells', burns: true,
       lock: { x: 5320, z: 334 }, flee: null, gather: { x: 16700, z: 450 },
     },
     // THE HEADSMAN'S SCAFFOLD: the last of them, kneeling in a line at the block

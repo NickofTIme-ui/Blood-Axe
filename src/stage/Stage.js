@@ -104,6 +104,7 @@
 // opts.flags (the campaign's one-time flags: a sequence's progress). start(players,
 // { section }) starts at a later section's checkpoint.
 
+import { KeepSetPieces } from './KeepSetPieces.js';
 import { updateWardenHook } from './WardenHook.js';
 import { Tutorial } from './Tutorial.js';
 import { STAGE, PICKUPS, PROPS, PROP_LOOKS, PROP_VARIANTS } from '../data/stage.js';
@@ -275,6 +276,8 @@ export class Stage {
     }
     this.fitLooks();
     if (data.id === 'shatteredAscent') this.ascentSiege = new AscentSiege(this);
+    // the Black Keep's drum formation and rising fire (stage/KeepSetPieces.js)
+    if (this.sections.some((s) => s.formation || s.rise)) this.keep = new KeepSetPieces(this);
     // Gallows Wood's own traps and men (stage/WoodTraps.js): pines, log piles, snares, stakes,
     // the ford's current, the hornblower and the woodsman's net
     if (data.traps || this.props.some((pr) => pr.kind === 'pine' || pr.kind === 'logpile' || pr.kind === 'signal')) this.woodTraps = new WoodTraps(this);
@@ -851,6 +854,7 @@ export class Stage {
     }
     this.opening?.tail(); // (the commanders still running off)
     if (this.data.veteran?.enemies) this.veteranize();
+    this.keep?.update();
     if (this.walkOut) { this.updateWalkOut(); return; }
     // KING HAKON in the market square (stage/KingHakon.js): met on the way in from the road;
     // while he fights and the two of them talk, the stage is his
@@ -1543,6 +1547,7 @@ export class Stage {
     if (!hz.when) return true;
     if (hz.when.startsWith('freed:')) return !!this.story?.rescued.has(hz.when.slice(6));
     if (hz.when.startsWith('broken:')) return this.props.some((pr) => pr.tag === hz.when.slice(7) && pr.broken); // (a thing smashed sets it off: the mine's steam main)
+    if (hz.when.startsWith('rise:')) return this.index === hz.section && (this.keep?.rise.level ?? 0) >= +hz.when.slice(5); // (the Keep's prison wing: the fire has reached this tier)
     const b = this.boss;
     if (!b || !b.alive || this.index < hz.section || this.index > hz.last) return false;
     if (hz.when === 'boss') return true;

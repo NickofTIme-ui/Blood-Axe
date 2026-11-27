@@ -848,7 +848,7 @@ export class Story {
         continue;
       }
       if (this.sectionOf(n) !== k || this.rescued.has(n.id)) continue;
-      if (!['execution', 'escort', 'convoy', 'treed'].includes(n.rescue)) continue;
+      if (!['execution', 'escort', 'convoy', 'treed'].includes(n.rescue) && !n.burns) continue; // (burns: a Keep cell the fire can take)
       this.lost.delete(n.id);
       n.state = n.rescue === 'execution' || n.rescue === 'treed' ? 'threatened' : 'trapped';
       n.x = n.home.x; n.z = n.home.z; n.clock = 0; n.nerve = n.hp ?? NPC.nerve; n.cower = false; n.t = 0;
