@@ -153,6 +153,15 @@ export const ENEMY_STRIPS = {
   // ...and its Overseers ('butcher:overseer', the Butcher's moves: a studded club for the
   // cleaver, a whip for the chain hook). ChatGPT 2026-11-26
   overseer: bossSet('overseer'),
+  // Gallows Wood's two men with jobs (stage/WoodTraps.js roles): the HORNBLOWER ('grunt:horn',
+  // the Grunt's moves: hooded in red, a horn baldric; his horn itself is drawn on him by
+  // view/WoodTrapsView.js) and the net WOODSMAN ('stalker:net', the Stalker's moves).
+  // ChatGPT 2026-11-27, repainted over the grunt's and stalker's own strips pose for pose
+  hornblower: (({ special, ...rest }) => rest)(bossSet('hornblower')),
+  woodsman: fix(bossSet('woodsman'), {
+    react: { erase: [[1655, 210, 1752, 300]] }, // (the knife flung from the knocked-down pose, as the Stalker's)
+    special: { own: [[280, 120, 420, 330, 1]] }, // the swung sickle belongs to pose 2 (as the Stalker's)
+  }),
 };
 // hanging limp on Rurik's blade (the impale finisher, view/ImpaledRig.js): intact, back
 // arm gone, front arm gone, both gone. ChatGPT, 2026-10-25 (the grunt's came first)
@@ -272,7 +281,7 @@ export const ENEMY_ANIMS = {
 };
 
 // a boss's own look -> the kind whose moves (and size) he has
-export const LOOKS = { orsk: 'berserker', twin: 'gladiator', wagonmaster: 'butcher', houndmaster: 'stalker', warden: 'ghoul', overseer: 'butcher' };
+export const LOOKS = { orsk: 'berserker', twin: 'gladiator', wagonmaster: 'butcher', houndmaster: 'stalker', warden: 'ghoul', overseer: 'butcher', hornblower: 'grunt', woodsman: 'stalker' };
 for (const [look, kind] of Object.entries(LOOKS)) ENEMY_ANIMS[look] = ENEMY_ANIMS[kind];
 ENEMY_STRIPS.executioner=Object.fromEntries(Object.entries({walk:8,react:6,atk1:5,atk2:5,heavy:6,special:6}).map(([name,frames])=>[name,{file:`assets/npcs/mill-rescue/executioner-${name}.png`,frames,ref:0,ground:'drawn'}]));
 // (the Headsman's Rush: his overhead chop, held high through the charge)

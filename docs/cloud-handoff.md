@@ -6,6 +6,13 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 27 November 2026 (cloud, thread "Review level 2 for polish", round 2; NOT on main until Nick says push).
+  LEVEL 2 ART: the war hounds' missing poses, ChatGPT from the walk strip as reference: hound_run (gallop),
+  hound_idle, hound_bark, hound_howl, hound_flinch, hound_sniff (data/levelArt.js SPRITE_SHEETS; view/HoundView.js
+  already picks each up). The HORNBLOWER ('grunt:horn') and the net WOODSMAN ('stalker:net') now wear looks of
+  their own: hornblower_* (5 strips, the grunt's poses) and woodsman_* (6, the stalker's), ChatGPT repaints of
+  the grunt/stalker strips pose for pose (data/enemyStrips.js, ArenaScene.makeView role map). Raw ChatGPT
+  output in project files level2-polish-nov27/raw/ (looks/ for the two men).
 - 27 November 2026 (cloud, thread "Review level 2 for polish"; ON MAIN ad2b265, Nick "push all"). LEVEL 2 POLISH:
   convoy wagon/prisoners/pine moved to z 348 so the Wagonmaster's head stays on screen; no market props in the wood
   (named plain crates, sacks for trestle/urns); oath shrines (TerrainView, gallowsWood only) and the hanging tree tinted

@@ -300,6 +300,17 @@ export const SPRITE_SHEETS = {
   'earthbreaker-wave': {file:'assets/sprites/npc/earthbreaker_wave.png',frames:1,height:360},
   scorpion: { file: 'assets/sprites/npc/scorpion.png', frames: 1, height: 190 }, // his Gate Scorpion, side on
   'hound-walk': { file: 'assets/enemies/strips/hound_walk.png', frames: 6, height: 120 },
+  // the gallop, one stride (ChatGPT, from the walk strip as reference, 2026-11-27; view/HoundView.js)
+  'hound-run': { file: 'assets/enemies/strips/hound_run.png', frames: 8, height: 120 },
+  // standing, barking, howling: one ChatGPT sheet cut three ways (2026-11-27), heights kept
+  // in proportion so the dog stays one size (the howl's raised head stands taller)
+  'hound-idle': { file: 'assets/enemies/strips/hound_idle.png', frames: 4, height: 120 },
+  'hound-bark': { file: 'assets/enemies/strips/hound_bark.png', frames: 3, height: 119 },
+  'hound-howl': { file: 'assets/enemies/strips/hound_howl.png', frames: 3, height: 157 },
+  // the hit flinch and the nose-down cast (ChatGPT, 2026-11-27): sized by painted body area
+  // against the standing poses, so it's the same dog
+  'hound-flinch': { file: 'assets/enemies/strips/hound_flinch.png', frames: 3, height: 141 },
+  'hound-sniff': { file: 'assets/enemies/strips/hound_sniff.png', frames: 3, height: 136 },
   'hound-atk1': { file: 'assets/enemies/strips/hound_atk1.png', frames: 4, height: 120 },
   'hound-react': { file: 'assets/enemies/strips/hound_react.png', frames: 3, height: 120 },
   'hound-doom': { file: 'assets/enemies/strips/hound_doom.png', frames: 4, height: 120 },
