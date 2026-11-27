@@ -92,10 +92,11 @@ export const LEVEL_ART = {
       { name: 'mid', key: 'magenta', scroll: 0.45, bottom: -20, height: 300 },
     ],
     wall: { height: 340 },
-    wallMore: ['wall_b', 'wall_c'], // (the back wall: heavier framing and a ladder, then a blue ore seam: ChatGPT 2026-11-26)
+    wallMore: ['wall_b', 'wall_c'], wallFade: 0.16, // (a wide cross-fade: at 0.06 the change from bare rock to timber framing showed as a hard line, level 3 polish)
+    // (the back wall: heavier framing and a ladder, then a blue ore seam: ChatGPT 2026-11-26)
     ground: true,
     pieces: ['furnace', 'water_river', // (the underground river's crossings: view/TerrainView.js paintedWater)
-      'stone_0', 'stone_1', 'stone_2', 'timber_bridge', 'ore_cart', 'ore_cart_broken', 'lift', 'lift_chain', 'planks_rotten', 'portcullis', 'pillar'], // (its stepping stones and the pit-prop bridge, cut out: ChatGPT 2026-11-26)
+      'stone_0', 'stone_1', 'stone_2', 'timber_bridge', 'ore_cart', 'ore_cart_broken', 'lift', 'lift_chain', 'planks_rotten', 'portcullis', 'pillar', 'chasm'], // (its stepping stones and the pit-prop bridge, cut out: ChatGPT 2026-11-26)
     props: {
       shackle: { file: 'prop_shackle.png', pair: true }, counterweight: { file: 'prop_counterweight.png', pair: true },
       rubble: { file: 'prop_rubble.png', pair: true },

@@ -268,6 +268,28 @@ export class TerrainView {
     return e && this.scene.textures.exists(artKey(e[0], e[1])) ? { key: artKey(e[0], e[1]), frac: e[2] } : null;
   }
 
+  // A drop in the mine that isn't the river (the lift shaft, the collapse's chasms): the
+  // painted chasm (assets/env/mine/chasm.png, ChatGPT: shored rock lips falling away into
+  // black) stretched over it, or failing that the black of the drop, fading in from its lip.
+  // False for the river's channels (painted water).
+  mineChasm(p) {
+    const river = this.stage.sections.find((q) => q.id === 'river');
+    if (river && p.x0 >= river.x0 && p.x1 <= river.x1) return false;
+    const s = this.scene;
+    const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0);
+    const bottom = p.z1 + 40;
+    const key = artKey('mine', 'chasm');
+    if (s.textures.exists(key)) {
+      const w = (p.x1 - p.x0) / 0.8; // (its lips past the drop's edges)
+      s.add.image((p.x0 + p.x1) / 2, top, key).setOrigin(0.5, 0).setDisplaySize(w, bottom - top).setDepth(DEPTH.floor + 4.1);
+      return true;
+    }
+    const g = s.add.graphics().setDepth(DEPTH.floor + 4);
+    g.fillStyle(0x020203, 1).fillRect(p.x0, top, p.x1 - p.x0, bottom - top);
+    vFade(g, p.x0, top, p.x1 - p.x0, 40, 0x2a2420, 0.55, 0);
+    return true;
+  }
+
   // Lay a painting over a crossing from `top` to `bottom`, its water over x0..x1; and the
   // painted tile's current running over the water, faint, so it still moves
   layWater(P, x0, x1, top, bottom, depth, shape) {
@@ -287,6 +309,9 @@ export class TerrainView {
     for (const p of this.terrain?.pits ?? []) {
       // (the ford's deep channel is in the ford's own painting)
       if (ford && (this.terrain?.wades ?? []).some((w) => p.x0 >= w.x0 && p.x1 <= w.x1)) continue;
+      // (the mine: only the underground river is water. The shaft and the collapse's chasms
+      // drop into the dark: level 3 polish, 2026-11-27)
+      if (this.mine && this.mineChasm(p)) continue;
       const P = this.paintedWater('pit');
       if (P) {
         const ribbon = this.wood && p.z0 <= SETTINGS.world.floorTop;
@@ -580,7 +605,7 @@ export class TerrainView {
     for (const t of Object.values(v.tiles ?? {})) t.setVisible(false); // (shown again below by whichever face is painted)
     v.gables?.forEach((g) => g.setVisible(false)); v.flank?.setVisible(false);
     if (!b.solid) {
-      v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); v.arts?.forEach((a) => a.setVisible(false)); v.chains?.forEach((c) => c.setVisible(false)); placeRoofFire(v.fire, b.x0, 0, false); // (gone: broken through, or fallen)
+      v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); v.arts?.forEach((a) => a.setVisible(false)); v.chains?.forEach((c) => c.setVisible(false)); v.post?.setVisible(false); v.postFade?.setVisible(false); placeRoofFire(v.fire, b.x0, 0, false); // (gone: broken through, or fallen)
       return;
     }
     // (a painted set piece stands in for it: the wood's rockslide, view/WoodView.js)
@@ -593,7 +618,7 @@ export class TerrainView {
     if (this.mine && b.mat === 'log' && this.terrain.inPit((x0 + x1) / 2, b.z1 - 1) && this.scene.textures.exists(artKey('mine', 'timber_bridge'))) {
       const key = artKey('mine', 'timber_bridge');
       const depth = yTop1 - yTop0;
-      const rows = Math.max(2, Math.round(depth / 30));
+      const rows = Math.max(3, Math.round(depth / 20)); // (close-laid: at /30 the gaps between them read as floating logs, level 3 polish)
       const lw = (x1 - x0) * 1.12;
       v.arts ??= [];
       for (let i = 0; i < rows; i++) {
@@ -712,22 +737,49 @@ export class TerrainView {
   }
 
   // The mine's rotten planks (assets/env/mine/planks_rotten.png, ChatGPT 2026-11-26): the
-  // boards drawn out along their grain to run the block's depth, hung on two ropes from the
-  // dark when they're off the floor.
+  // bundle of boards turned on its side, so the boards run ACROSS the gap like a duckboard laid
+  // over the drop (stood upright along the depth, on ropes from the ceiling, they read as doors
+  // hanging in the dark: level 3 polish, 2026-11-27). Off the floor they stand on a squared pit
+  // prop going down into the dark (timber_bridge.png stood on end), not on ropes.
   drawMinePlanks(v, x0, x1, yTop0, yTop1) {
     const { top, front, b } = v;
     const key = artKey('mine', 'planks_rotten');
     const depth = yTop1 - yTop0;
-    // one bundle of boards, drawn out along its grain to run the block's depth (its front
-    // ends, the boards' thickness, hang just below where you land)
-    v.art ??= this.scene.add.image(0, 0, key).setOrigin(0.5, 0);
-    const fr = v.art.frame;
-    v.art.setPosition((x0 + x1) / 2, yTop0 - 4).setScale((x1 - x0) * 1.2 / fr.width, (depth + 22) / fr.height)
-      .setFlipX(Math.round(b.x0 / 10) % 2 === 1).setDepth(b.z1 + 0.6).setVisible(true);
+    const w = x1 - x0;
+    // short lengths of the squared pit-prop timber (timber_bridge.png, cropped) laid side by side
+    // across the gap, back to front like a duckboard, a shade greener and darker than the
+    // river's sound timber: rotten (one length per 22 of depth, the back ones darker)
+    const tk = artKey('mine', 'timber_bridge');
+    const slatKey = this.scene.textures.exists(tk) ? tk : key;
+    const rows = Math.max(3, Math.round(depth / 22));
+    v.arts ??= [];
+    for (let i = 0; i < rows; i++) {
+      const img = v.arts[i] ??= this.scene.add.image(0, 0, slatKey).setOrigin(0.5, 0.35);
+      const fw = img.frame.width;
+      const seg = slatKey === tk ? Math.round(fw * 0.28) : fw;
+      const off = slatKey === tk ? Math.round(((b.x0 * 7 + i * 331) % 1000) / 1000 * (fw - seg)) : 0;
+      img.setCrop(off, 0, seg, img.frame.height);
+      const sc = (w * 1.16) / seg;
+      const k = 0.55 + 0.35 * (i / Math.max(1, rows - 1));
+      img.setScale(sc).setPosition((x0 + x1) / 2 - (off + seg / 2 - fw / 2) * sc + ((i * 5) % 3 - 1) * 3, yTop0 + depth * ((i + 0.5) / rows))
+        .setTint(Phaser.Display.Color.GetColor(Math.round(200 * k), Math.round(215 * k), Math.round(180 * k)))
+        .setAngle(((b.x0 + i * 13) % 5 - 2) * 0.8)
+        .setDepth(i === rows - 1 ? b.z1 + 0.6 : b.z0 - 0.5 + i * 0.01).setVisible(true);
+    }
+    for (let i = rows; i < v.arts.length; i++) v.arts[i].setVisible(false);
     top.setVisible(false);
-    front.clear();
-    if (b.top > 0) front.fillStyle(0x8a7a5a, 0.9).fillRect(x0 + 6, yTop1 - 400, 2, 400 - depth).fillRect(x1 - 8, yTop1 - 400, 2, 400 - depth);
-    front.setDepth(b.z0 - 0.6).setVisible(b.top > 0);
+    front.clear().setVisible(false);
+    const pk = artKey('mine', 'timber_bridge');
+    if (b.top > 0 && this.scene.textures.exists(pk)) {
+      v.post ??= this.scene.add.image(0, 0, pk).setOrigin(0.5, 0.5).setAngle(90).setTint(0x8a8076);
+      const pf = v.post.frame; const len = 260;
+      v.post.setPosition((x0 + x1) / 2, yTop1 + 6 + len / 2).setScale(len / pf.width, Math.min(w * 0.5, 30) / pf.height)
+        .setDepth(b.z1 + 0.55).setVisible(true);
+      // (fading into the dark of the drop)
+      v.postFade ??= this.scene.add.graphics();
+      v.postFade.clear().fillGradientStyle(0x05070a, 0x05070a, 0x05070a, 0x05070a, 0, 0, 1, 1)
+        .fillRect(x0 - 4, yTop1 + 60, w + 8, len - 50).setDepth(b.z1 + 0.56).setVisible(true);
+    } else { v.post?.setVisible(false); v.postFade?.setVisible(false); }
   }
 
   // The mine's lift (assets/env/mine/lift.png, ChatGPT 2026-11-26): its timber floor is where you

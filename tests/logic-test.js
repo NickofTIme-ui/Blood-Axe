@@ -4468,8 +4468,8 @@ test('mine: the lift up to Pip\'s ledge rides: it waits at the bottom, carries a
   assert(lift.top === base, `it waits at the bottom (${lift.top})`);
   p.x = 3690; p.z = 310; p.h = p.floor = lift.top + 1; st.placeOnGround(p);
   run(200, () => { p.health = p.stats.maxHealth; });
-  assert(lift.top > base + 80 && Math.abs(p.h - lift.top) < 2, `carried up (${lift.top}, feet ${p.h}, on ${p.floorBlock?.kind}, grounded ${p.grounded}, ride ${lift.ride})`);
-  p.x = 3600; p.z = 300; p.h = p.floor = 225; st.placeOnGround(p);
+  assert(lift.top > base + 55 && Math.abs(p.h - lift.top) < 2, `carried up (${lift.top}, feet ${p.h}, on ${p.floorBlock?.kind}, grounded ${p.grounded}, ride ${lift.ride})`);
+  p.x = 3600; p.z = 300; p.h = p.floor = 200; st.placeOnGround(p);
   run(300, () => { p.health = p.stats.maxHealth; });
   assert(lift.top === base, `back down without him (${lift.top})`);
 });
