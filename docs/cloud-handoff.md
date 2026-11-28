@@ -10,6 +10,13 @@ branch, or ChatGPT's work gets lost.
   claude/project-thread-bseu01). Level 5 Iron Guards (`ironclad`) no longer strobe solid white each time a light blow glances off
   their plate (CombatSystem sets `glintAt` instead of `flash` on a glance; SpriteEnemyView gives a short cold steel
   tint). Also fixed: levelArt.js had the arbalest's painted bolt (`gates-bolt`) commented out by the lintel line.
+- 27 November 2026 (cloud, thread "Review level 2 for polish", round 2; ON MAIN, Nick "push all").
+  LEVEL 2 ART: the war hounds' missing poses, ChatGPT from the walk strip as reference: hound_run (gallop),
+  hound_idle, hound_bark, hound_howl, hound_flinch, hound_sniff (data/levelArt.js SPRITE_SHEETS; view/HoundView.js
+  already picks each up). The HORNBLOWER ('grunt:horn') and the net WOODSMAN ('stalker:net') now wear looks of
+  their own: hornblower_* (5 strips, the grunt's poses) and woodsman_* (6, the stalker's), ChatGPT repaints of
+  the grunt/stalker strips pose for pose (data/enemyStrips.js, ArenaScene.makeView role map). Raw ChatGPT
+  output in project files level2-polish-nov27/raw/ (looks/ for the two men).
 - 27 November 2026 (cloud, branch claude/project-thread-o7apvn; NOT on main until Nick says push). THE GAME IS NOW
   CALLED "THE OATHKEEPERS" (Nick). New title screen: Nick's ChatGPT painting (Rurik raising Oathkeeper on fire, Oryn,
   Vexa, King Vaurath's silhouette) framed on a black grid with a hand-set logo, one picture at
