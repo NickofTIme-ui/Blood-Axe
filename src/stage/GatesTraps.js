@@ -9,13 +9,27 @@
 //   an Ashen man dies outright (kick him, throw him, bowl him under it), a hero takes
 //   `damage` and is flung clear. Then it winches up again (`rise` frames).
 //   State for the view: hz.gate = { phase: 'up'|'warn'|'fall'|'down'|'rise', t, drop: 0..1 }
+//   It hangs on the slant the painted gate is drawn at (`lean`: its foot runs that far right
+//   from the back of the lane to the front), so "under it" depends on how deep you stand.
+//   A run of them (the winch room's gate passage, Nick 2026-11-27: "a longer sequence where
+//   the gates are dropping and you must time getting under them") just staggers `first`.
 //
 // 'caltrops'  Iron caltrops strewn over a patch of the floor (`x`, `w`, `z0`..`z1`): anyone
 //   who steps on them on foot (heroes and the Ashen alike) yelps, hops (a short stagger)
 //   and loses `damage`; a man knocked down onto them takes it again. Jump over, go round,
 //   or drive the Ashen through them.
 
-export const DROPGATE = { period: 330, warn: 72, fall: 8, down: 70, rise: 50, half: 26, damage: 30, first: 150 };
+import { SETTINGS } from '../config/settings.js';
+
+export const DROPGATE = { period: 330, warn: 72, fall: 8, down: 70, rise: 50, half: 26, damage: 30, first: 150, lean: 200 };
+const BACK = SETTINGS.world.floorTop - 32; const FRONT = SETTINGS.world.floorBottom + 6;
+
+// where the gate's foot crosses the lane at depth z
+export function gateX(hz, z) {
+  const lean = hz.lean ?? DROPGATE.lean;
+  const u = Math.max(0, Math.min(1, (z - BACK) / (FRONT - BACK)));
+  return hz.x - lean / 2 + u * lean;
+}
 export const CALTROPS = { damage: 4, stun: 16, cool: 45 };
 
 export function updateDropGate(stage, hz) {
@@ -45,19 +59,20 @@ function set(stage, hz, g, phase) {
   stage.world.events.emit(`dropgate:${phase}`, { hazard: hz });
 }
 
-const under = (f, hz, P) => Math.abs(f.x - hz.x) < P.half + f.stats.body.w * 0.3;
+const under = (f, hz, P) => Math.abs(f.x - gateX(hz, f.z)) < P.half + f.stats.body.w * 0.3;
 
 // the moment it lands: whoever is under it
 function crush(stage, hz, P) {
   for (const f of stage.world.fighters) {
     if (!f.alive || f.entering || !under(f, hz, P)) continue;
-    const dir = f.x < hz.x ? -1 : 1;
+    const gx = gateX(hz, f.z);
+    const dir = f.x < gx ? -1 : 1;
     if (f.team === 'enemy' && !f.stats.boss) {
       stage.hurt(hz, f, f.health + 1, dir, 'siege'); // (crushed: Stage.hurt kills him outright)
       stage.world.events.emit('dropgateCrush', { hazard: hz, fighter: f });
     } else if (!f.stats.boss) {
       stage.hurt(hz, f, P.damage, dir, 'beam');
-      f.x = hz.x + dir * (P.half + f.stats.body.w * 0.6);
+      f.x = gx + dir * (P.half + f.stats.body.w * 0.6);
     }
   }
 }
@@ -66,8 +81,9 @@ function crush(stage, hz, P) {
 function hold(stage, hz, P) {
   for (const f of stage.world.fighters) {
     if (!f.alive || !under(f, hz, P)) continue;
-    const dir = f.x < hz.x ? -1 : 1;
-    f.x = hz.x + dir * (P.half + f.stats.body.w * 0.3 + 1);
+    const gx = gateX(hz, f.z);
+    const dir = f.x < gx ? -1 : 1;
+    f.x = gx + dir * (P.half + f.stats.body.w * 0.3 + 1);
     if (Math.sign(f.vx) === -dir) f.vx = 0;
   }
 }

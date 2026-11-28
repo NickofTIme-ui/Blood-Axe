@@ -65,8 +65,12 @@ export class KeepSetPieces {
       if (near > (F.hold ?? 90)) D.x += dir * F.step;
       this.world.events.emit('drumBeat', { section: sec, beat: D.beat, x: D.x });
     }
+    // (dressed on a slant across the hall, the nearest lane a stride ahead of the one behind
+    // it, so the line reads as a wall of shields and not men stood on each other's heads)
+    const n = F.lanes.length;
     line.forEach((f, k) => {
-      f.formation = { x: D.x, z: F.lanes[k % F.lanes.length], dir };
+      const lane = k % n;
+      f.formation = { x: D.x - dir * (n - 1 - lane) * (F.slant ?? 26), z: F.lanes[lane], dir };
       if (!f.script) f.script = (brain, target) => this.liner(f, brain, target);
       f.formationBeat = beat;
     });

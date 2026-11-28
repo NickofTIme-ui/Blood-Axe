@@ -24,7 +24,7 @@
 //                              balcony, chandeliers on their chains. A shrine
 //   III  THE BURNING CELLS     up the five tiers of the prison wing as it burns from the
 //                              bottom: open the cells (the village's people)
-//   IV   THE HEADSMAN'S SCAFFOLD  the King's Executioner on the roof of the wing; then the
+//   IV   THE HEADSMAN'S SCAFFOLD  the King's Headsman on the roof of the wing; then the
 //                              roof gives way and everyone falls through into the forge
 //   V    THE CRUCIBLE LINE     a shrine on the slag; the buckets over the furnace mouth
 //   VI   THE ASH MILL          the turning millstone; the Forgemaster on its hub
@@ -163,7 +163,7 @@ export const STAGE_KEEP = {
     {
       id: 'scaffold', ground: 'k-scaffold', groundFade: 160, name: 'THE HEADSMAN\'S SCAFFOLD', x0: 5500, x1: 6900,
       spawn: { x: 5580, z: 420 },
-      objective: 'Kill the Executioner',
+      objective: 'Kill the Headsman',
       hint: 'His overheads break the scaffold. Ring the bell to stun him',
       fightAt: 5800,
       waves: [['grunt', 'grunt']],
@@ -177,10 +177,10 @@ export const STAGE_KEEP = {
         { type: 'beam', look: 'rock', when: 'phase:bell', x: 6350, z: 380, w: 90, d: 90, period: 200, warn: 80, phase: 100 },
       ],
       boss: {
-        type: 'butcher', look: 'executioner', name: 'The King\'s Executioner', health: 3.2, damage: 1.15, size: 1.15,
+        type: 'butcher', look: 'headsman', name: 'The King\'s Headsman', health: 3.2, damage: 1.15, size: 1.15,
         entrance: { from: 160, to: 380, speed: 54, stepEvery: 34, awe: 30 },
         sentence: {
-          speaker: 'EXECUTIONER',
+          speaker: 'HEADSMAN',
           crimes: [
             'You took the heads of men who had done nothing but be taken.',
             'You were working down the line when we walked in.',
@@ -505,14 +505,14 @@ export const STAGE_KEEP = {
     // ---- VII THE KINGS' ROOT: narrow tunnels between the tombs (two crypts open out), the
     // broken floor over the drop in the second
     { kind: 'block', x0: 10200, x1: 10500, z0: 282, z1: 360, top: 300, look: 'tomb' },
-    { kind: 'block', x0: 10200, x1: 10500, z0: 470, z1: 520, top: 300, look: 'tomb' },
+    { kind: 'block', x0: 10200, x1: 10500, z0: 470, z1: 520, top: 70, look: 'tomb' }, // (a low sarcophagus: a tall tomb in the front lane hid the fight)
     { kind: 'block', x0: 10840, x1: 11000, z0: 282, z1: 360, top: 300, look: 'tomb' },
-    { kind: 'block', x0: 10840, x1: 11000, z0: 470, z1: 520, top: 300, look: 'tomb' },
+    { kind: 'block', x0: 10840, x1: 11000, z0: 470, z1: 520, top: 70, look: 'tomb' }, // (a low sarcophagus: a tall tomb in the front lane hid the fight)
     { kind: 'pit', x0: 11060, x1: 11240, ...FULL },
     { kind: 'crumble', x0: 11100, x1: 11150, z0: 330, z1: 480, top: 0, fall: 40, back: 220 },
     { kind: 'crumble', x0: 11190, x1: 11240, z0: 330, z1: 480, top: 0, fall: 40, back: 220 },
     { kind: 'block', x0: 11400, x1: 11700, z0: 282, z1: 360, top: 300, look: 'tomb' },
-    { kind: 'block', x0: 11400, x1: 11700, z0: 470, z1: 520, top: 300, look: 'tomb' },
+    { kind: 'block', x0: 11400, x1: 11700, z0: 470, z1: 520, top: 70, look: 'tomb' }, // (a low sarcophagus: a tall tomb in the front lane hid the fight)
 
     // ---- VIII THE BURNING SPIRE: the hoist's open front edge
     { kind: 'pit', x0: 11760, x1: 13140, z0: 504, z1: 520 },
@@ -600,7 +600,7 @@ export const STAGE_KEEP = {
     { id: 'ilse', on: 'rescued:ilse', lines: [['ILSE', 'Rurik! My father... is he alive?'], ['RURIK', 'Hale\'s alive. He\'s waiting for you.']] },
     { id: 'below', on: 'clear:cells', calm: true, lines: [['ILSE', 'They take people down. Below. Nobody comes back up the same.']] },
     { id: 'bell', at: 5600, lines: [['VOICE', '(a bell, slow, on the roof; then a blade coming down)']] },
-    { id: 'headsman', on: 'boss:scaffold', lines: [['EXECUTIONER', 'Kneel in the line. It goes quicker.'], ['RURIK', 'Put it down.']] },
+    { id: 'headsman', on: 'boss:scaffold', lines: [['HEADSMAN', 'Kneel in the line. It goes quicker.'], ['RURIK', 'Put it down.']] },
     { id: 'theLine', on: 'rescued:theLine', lines: [['VOICE', '(the kneeling line, running for the stair) Go! Go!']] },
     { id: 'fall', on: 'clear:scaffold', calm: true, lines: [['VEXA', 'The roof\'s going. The whole wing is going!'], ['RURIK', 'Then down. It\'s the one way he didn\'t want us to go.']] },
     {
