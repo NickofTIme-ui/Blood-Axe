@@ -6,6 +6,12 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
+- 27 November 2026 (cloud, branch claude/project-thread-o7apvn; NOT on main until Nick says push). THE GAME IS NOW
+  CALLED "THE OATHKEEPERS" (Nick). New title screen: Nick's ChatGPT painting (Rurik raising Oathkeeper on fire, Oryn,
+  Vexa, King Vaurath's silhouette) framed on a black grid with a hand-set logo, one picture at
+  assets/ui/title-oathkeepers.jpg (source + layout in art/title/). The menu now stacks under the logo (TitleScene.js);
+  embers, blur sides and push-in are gone. Browser tab title renamed. Itch page name/art not changed yet.
+
 - 27 November 2026 (cloud, branch claude/project-thread-t9nruf; NOT on main until Nick says push). LEVEL 4, THE
   SHATTERED ASCENT, CLAUDE'S POLISH (Nick: "good framework, art style good, execution UGLY"; Claude owns level 4 now).
   One continuous painting (view/AscentPlates.js SPOTS: each spot names the scene it wants and a mirrored stand-in);
@@ -2207,3 +2213,11 @@ letterbox, scene V line fixed and retitled "NO ONE LEFT TO SEND", painted war ta
 - Drops in the mine that aren't the river use painted chasms (assets/env/mine/chasm.png tall, chasm_wide.png wide; TerrainView.mineChasm).
 - Last passage: rubble `dug: { from, every }`, the miners dig from inside (Stage.updateDiggers, callout).
 - New ChatGPT art: chasm, chasm_wide, keep_far (the Black Keep on the far side, MineView.paintedDaylight), browner rubble_wall, torch-lit surf_rock_top.
+
+## Cloud, 2026-11-27 late: level 6 polish pass ("hit it hard")
+- New ChatGPT art (chat "Generate Black Keep Tile Art", raws in project files level6-art/raw/):
+  - The King's Headsman: `assets/enemies/strips/headsman_*.png` (six strips, LOOKS headsman -> butcher: Bull Charge = his Rush, Earthbreaker = his Fall). Scaffold boss is now `look: 'headsman'`, speaker HEADSMAN.
+  - `assets/env/keep/tile_scaffold.png` (magenta sky): parapet, gibbets, crown banner, turret, bell. New tile option `lift` (view/levelArt.js tile()) stands it up on the scaffold's raised floor; the code tower/bell only draw without it.
+  - `assets/env/keep/prop_archers.png` pair, texture `prop-keep-archers`. StageView.propKey now prefers a level's own `prop-<theme>-<kind>`; SiegeAnim only cuts the painting its CUTS were measured on (the gates' one).
+  - `assets/env/keep/tomb.png`, `sarcophagus.png`: `look: 'tomb'` blocks (tall one when top > 150). The front-lane tombs in the Kings' Root are now top 70 (they hid the fight).
+- Code: keep crumble planks use the mine's painted duckboards; mill `crusher` fires use the smooth scorch, not the stretched grate; the drum formation's shield line stands on a slant (`formation.slant`, default 26); a boss's twin also gets his own painted look on spawn (Ser Berric was in Gladiator strips).

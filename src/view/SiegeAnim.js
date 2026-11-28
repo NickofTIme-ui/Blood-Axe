@@ -108,9 +108,11 @@ export class SiegeAnim {
 
   // Set a siege prop up in parts (after StageView.makeProp made its image). `painted`: its
   // texture is the level's painted art (the cuts are drawn to it).
-  setup(pr, v, painted) {
+  setup(pr, v, painted, key = `prop-${pr.kind}`) {
     if (pr.kind !== 'archers' && pr.kind !== 'catapult') return;
-    const parts = painted ? cutParts(this.scene, `prop-${pr.kind}`) : null;
+    // (the cuts fit the one painting they were drawn to: another level's own painting of the
+    // piece, the Black Keep's crossbow balcony, gets the shudder, the burst and the dust)
+    const parts = painted && key === `prop-${pr.kind}` ? cutParts(this.scene, key) : null;
     if (!parts) return;
     v.parts = parts;
     v.img.setTexture(parts.base);

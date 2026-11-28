@@ -780,7 +780,7 @@ export class StageView {
       v.ground = groundUnder(this.scene, pr.x, pr.z - y, Math.min(img.displayWidth, pr.w * 1.4), pr.z, { seed: pr.id });
       shadow.setVisible(false);
     }
-    this.siege.setup(pr, v, lvl);
+    this.siege.setup(pr, v, lvl, key);
     v.key = key;
     return v;
   }
@@ -789,9 +789,11 @@ export class StageView {
   // one picked by the prop's id (or named in the level: `look: 'sack'`, 'keg')
   propKey(pr) {
     const base = `prop-${pr.kind}`;
-    if ((this.scene.registry.get('levelArt') ?? []).includes(base)) return base; // (a level's own painting of it)
-    const theme = this.scene.stageData?.theme; // (a level's own painting of a common kind, its crates: data/levelArt.js `texture: 'prop-<theme>-<kind>'`)
+    // (a level's own painting of a kind another level paints too, or of a common kind, its
+    // crates: data/levelArt.js `texture: 'prop-<theme>-<kind>'`; first, as it's this level's)
+    const theme = this.scene.stageData?.theme;
     if (theme && (this.scene.registry.get('levelArt') ?? []).includes(`prop-${theme}-${pr.kind}`)) return `prop-${theme}-${pr.kind}`;
+    if ((this.scene.registry.get('levelArt') ?? []).includes(base)) return base; // (a level's own painting of it)
     if (pr.look && this.art2.has(`prop-${pr.look}`)) return `prop-${pr.look}`;
     const kinds = (VARIANTS[pr.kind] ?? []).map((k) => `prop-${k}`).filter((k) => this.art2.has(k));
     return kinds.length ? kinds[(pr.id * 7 + (pr.x >> 4)) % kinds.length] : base;
@@ -1183,7 +1185,9 @@ export class StageView {
       // matching ember-lit artwork. Legacy look:'cart' mustn't cover this trap.
       // (the colossus's breath, `look: 'breath'`: no grate, a smooth scorched patch of floor
       // that glows as the ash fire gathers; drawn big and soft so it never pixelates)
-      const breath = hz.look === 'breath';
+      // (the mill's crushers too: a narrow strip where the stone grinds, which the round
+      // grate stretched to fit only pixelated)
+      const breath = hz.look === 'breath' || hz.look === 'crusher';
       if (breath) this.canvasTex('scorch', 512, 256, (c, w, h) => {
         c.imageSmoothingEnabled = true;
         c.save(); c.scale(1, h / w);

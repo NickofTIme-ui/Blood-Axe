@@ -709,7 +709,7 @@ export class TerrainView {
     // (the mine's lift up to Pip: the painted platform on its two chains, run on up into the dark)
     if (this.mine && b.kind === 'lift' && this.scene.textures.exists(artKey('mine', 'lift'))) { this.drawMineLift(v, x0, x1, yTop0, yTop1); return; }
     // (the mine's rotten planks: painted boards, split and green with rot, on their two ropes)
-    if ((this.mine || this.theme === 'gates') && b.kind === 'crumble' && this.scene.textures.exists(artKey('mine', 'planks_rotten'))) { this.drawMinePlanks(v, x0, x1, yTop0, yTop1); return; }
+    if ((this.mine || this.theme === 'gates' || this.theme === 'keep') && b.kind === 'crumble' && this.scene.textures.exists(artKey('mine', 'planks_rotten'))) { this.drawMinePlanks(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'siegeGate') { this.drawSiegeGate(v, x0, x1); return; }
     if (b.mat === 'iron' && b.kind === 'block') { this.drawPortcullis(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
@@ -718,7 +718,7 @@ export class TerrainView {
     const painted = { cart: 'cartwreck', ram: 'prop-ram', orecart: artKey('mine', 'ore_cart'), boulder: artKey('ascent', 'boulder') }[b.look];
     if (painted && this.scene.textures.exists(painted)) { this.drawPaintedBlock(v, x0, x1, painted); return; }
     // (the Ashen Throne: the colossus's stone fists to climb, the King's plinth: painted)
-    const keepPiece = this.theme === 'keep' && { arm: 'fist', shoulder: 'fist', chest: 'plinth' }[b.look];
+    const keepPiece = this.theme === 'keep' && { arm: 'fist', shoulder: 'fist', chest: 'plinth', tomb: b.top > 150 ? 'tomb' : 'sarcophagus' }[b.look];
     if (keepPiece && this.scene.textures.exists(artKey('keep', keepPiece))) { this.drawKeepPiece(v, x0, x1, yTop0, artKey('keep', keepPiece)); return; }
     const mat = b.kind === 'crumble' ? 'plank' : b.kind === 'lift' ? 'iron' : 'rock';
     const C = mat === 'plank' ? [COL.plankTop, COL.plankRim, COL.plankFront]

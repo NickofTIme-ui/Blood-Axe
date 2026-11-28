@@ -31,7 +31,7 @@ export const KEEP_SCENES=[
 
 // The level picker: the campaign's levels in play order, named as the game names them
 // ("Level 2: GALLOWS WOOD"). The Director's Cut's old stages (THE OATH ROAD, THE GALLOWS
-// ASCENT) are left out: they're on the title's DIRECTOR'S CUT menu.
+// ASCENT) are left out: they're on the title's SETTINGS menu.
 export function levelChoices(stages=STAGES){
   return campaignLevels(stages).map((id,i)=>({id,label:`Level ${i+1}: ${stages[id].name}`}));
 }

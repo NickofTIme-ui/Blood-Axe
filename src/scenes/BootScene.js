@@ -100,7 +100,7 @@ export class BootScene extends Phaser.Scene {
     }
     this.load.image('sprite-palette', 'tools/sprite-pipeline/palette.png');
     this.load.image('hud-src', HUD_SRC);
-    this.load.image('cover', 'assets/ui/cover.jpg'); // title screen (scenes/TitleScene.js)
+    this.load.image('cover', 'assets/ui/title-oathkeepers.jpg'); // title screen: painting, frame and logo in one (scenes/TitleScene.js, art/title/)
     // character select (scenes/SelectScene.js): the cathedral, and each hero's full-body art
     this.load.image('select-bg', 'assets/ui/select-bg.jpg');
     for (const id of Object.keys(CHARACTERS)) this.load.image(`hero-src-${id}`, `assets/ui/hero-${id}-hd.png`);
