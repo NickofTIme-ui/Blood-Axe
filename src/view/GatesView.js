@@ -47,9 +47,12 @@ export class GatesBackdrop {
     this.motes = [];
     const art = this.art = new PaintedLevel(scene, 'gates', this.width);
     if (art.has('sky')) art.layer('sky', DEPTH.sky); else this.drawSky();
-    if (art.has('far')) art.layer('far', DEPTH.far - 1); else this.drawKeep();
-    if (art.has('mid')) art.layer('mid', DEPTH.far + 2); else this.drawTown();
-    if (art.has('wall')) art.wall(); else this.drawWalls();
+    if (art.has('far')) this.farLayer = art.layer('far', DEPTH.far - 1); else this.drawKeep();
+    if (art.has('mid')) this.midLayer = art.layer('mid', DEPTH.far + 2); else this.drawTown();
+    // (the wall behind the lane stops where the inner wall does: past it the Keep road runs
+    // out into the open, its own painted strip behind)
+    const keepSec = this.sec('keep');
+    if (art.has('wall')) art.wall(keepSec ? keepSec.x0 - 40 : undefined); else this.drawWalls();
     if (art.has('ground')) art.ground(); else this.drawGround();
     this.drawSetPieces();
     this.drawAsh();
@@ -242,7 +245,12 @@ export class GatesBackdrop {
     if (marshal) this.art.piece('inner_wall', marshal.x0, marshal.x1);
     // the Keep road: the wall ends, the ground opens out, the Keep's bridge far ahead
     const keep = this.sec('keep');
-    if (keep && !this.art.piece('keep_road', keep.x0 + 100, keep.x1 + 300)) {
+    // (the painted strip, ChatGPT 2026-11-27: a lower stretch of wall breaking into rubble, the road
+    // running off across the moor, the Black Keep on its crag at the far end. Its right and
+    // bottom edges are faded; it sits behind the inner wall, so that wall steps down into this
+    // lower, broken stretch instead of stopping on a straight edge. Sized so the Keep's spires
+    // fit the camera's view at this section's zoom.)
+    if (keep && !this.art.piece('keep_road', keep.x0 - 100, keep.x0 + 1010, { depth: DEPTH.floor - 0.985, bottom: 30, feather: { right: 0.02, bottom: 0.12 } })) {
       const g = s.add.graphics().setDepth(DEPTH.floor - 0.99);
       const x0 = keep.x0 + 60; const x1 = this.width + this.pad;
       g.fillStyle(COL.stone, 1).fillTriangle(x0 - 60, top - WALL - 140, x0 + 30, top, x0 - 60, top); // the inner wall's end
@@ -270,6 +278,15 @@ export class GatesBackdrop {
     for (const f of this.flickers) f.img.setAlpha(f.base + Math.sin(t * f.rate + f.base * 40) * f.amp + (Math.random() - 0.5) * f.amp * 0.3);
     for (const c of this.smokes) c.img.x = Math.sin(t * 0.0005 * (1 + c.speed)) * 140;
     const wv = this.scene.cameras.main.worldView;
+    // (the town's roofs and the far skyline fade as the camera comes out past the inner wall:
+    // on the Keep road the one painting of the moor and the Keep stands alone under the sky,
+    // instead of a second Keep and the town's houses showing over it)
+    const keepSec = this.sec('keep');
+    if (keepSec) {
+      const a = Phaser.Math.Clamp((keepSec.x0 - 40 - wv.x) / 700, 0, 1);
+      this.midLayer?.setAlpha(a);
+      this.farLayer?.setAlpha(a);
+    }
     for (const m of this.motes) {
       m.y += m.ember ? -m.v * 1.6 : m.v;
       m.x -= 0.3;

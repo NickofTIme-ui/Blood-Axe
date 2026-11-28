@@ -165,10 +165,14 @@ export class KeepBackdrop {
     }
     // IV THE HEADSMAN'S SCAFFOLD: the roof's low parapet; the central tower behind
     const sc = S('scaffold');
-    this.stone(g, sc.x0, sc.x1, 300, { seed: 17 }); // (the cell block's top: the roof is up there)
-    g.fillStyle(COL.stoneDark, 1).fillRect(sc.x0 + 300, top - INSIDE - 200, 360, INSIDE - 100); // the central tower, climbing out of sight
-    for (let y = top - INSIDE; y < top - 400; y += 90) g.fillStyle(COL.fire, 0.5).fillRect(sc.x0 + 470, y, 10, 30); // its slits, lit from inside
-    g.fillStyle(COL.timber, 1).fillRect(sc.x0 + 960, top - 520, 12, 240).fillRect(sc.x0 + 900, top - 520, 130, 10); // the bell frame
+    // (painted: the parapet, its gibbets and cages, the crown banner, the watch-turret and
+    // the bell, against the storm; ChatGPT 2026-11-27)
+    if (!painted('scaffold', sc.x0, sc.x1)) {
+      this.stone(g, sc.x0, sc.x1, 300, { seed: 17 }); // (the cell block's top: the roof is up there)
+      g.fillStyle(COL.stoneDark, 1).fillRect(sc.x0 + 300, top - INSIDE - 200, 360, INSIDE - 100); // the central tower, climbing out of sight
+      for (let y = top - INSIDE; y < top - 400; y += 90) g.fillStyle(COL.fire, 0.5).fillRect(sc.x0 + 470, y, 10, 30); // its slits, lit from inside
+      g.fillStyle(COL.timber, 1).fillRect(sc.x0 + 960, top - 520, 12, 240).fillRect(sc.x0 + 900, top - 520, 130, 10); // the bell frame
+    }
     // V-VI THE FORGE: the cavern, pipes as thick as towers carrying ash up into the dark
     const cr = S('crucible'); const ml = S('mill');
     if (!painted('forge', cr.x0, ml.x1)) this.stone(g, cr.x0, ml.x1, INSIDE, { col: 0x1c1416, dark: 0x0c0808, lit: 0x3a2018, seed: 23 });

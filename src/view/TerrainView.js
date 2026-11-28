@@ -329,6 +329,7 @@ export class TerrainView {
       }
       const g = s.add.graphics().setDepth(DEPTH.floor + 4);
       if (this.theme === 'ascent') { this.drawAscentGorge(p, g); continue; }
+      if (this.theme === 'keep') { this.drawKeepChasm(p, g); continue; }
       g.fillStyle(this.water ? 0x0c1820 : 0x000000, 1).fillRect(p.x0, p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0), p.x1 - p.x0, p.z1 - p.z0 + (p.z0 <= SETTINGS.world.floorTop ? 50 : 0) + 40);
       // a cold glow at the lip so the edge reads (in the village: a burning cellar, its fire far
       // down; in the wood: a stream, black water running fast)
@@ -379,6 +380,30 @@ export class TerrainView {
   // stones, knee-deep, so it reads as water you can walk into (Nick, 2026-11-16: no more
   // invisible river). The painted water, paler and browner than the deep channel and half
   // see-through, the stones of the bed under it, ripples running with it. Under the channel.
+  // The Black Keep's broken edges (the causeway's, the Crown Walk's): no box, a drop into the
+  // ash dark, the lip a ragged line of broken basalt, the forge's glow far below.
+  drawKeepChasm(p, g) {
+    const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0);
+    const bottom = Math.max(p.z1 + 40, SETTINGS.height + 160);
+    const w = p.x1 - p.x0;
+    g.fillStyle(0x050307, 1).fillRect(p.x0, top, w, bottom - top);
+    vFade(g, p.x0, top + 20, w, bottom - top - 20, 0x6a2a3a, 0, 0.35); // (the forge, far down)
+    vFade(g, p.x0, top, w, 40, 0x000000, 0.9, 0);
+    // the lip: chunks of broken basalt along the edge, and at the two ends
+    let seed = Math.round(p.x0) * 13 + 7;
+    const r = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let x = p.x0 - 6; x < p.x1 + 6; x += 14 + r() * 18) {
+      const h = 4 + r() * 10;
+      g.fillStyle(r() < 0.5 ? 0x2a2230 : 0x1c1620, 1).fillTriangle(x, top - 1, x + 10 + r() * 16, top - 1, x + 4 + r() * 10, top + h);
+    }
+    for (const [x, d] of [[p.x0, 1], [p.x1, -1]]) {
+      for (let y = top; y < Math.min(bottom, top + 90); y += 10 + r() * 12) {
+        const dx = 4 + r() * 12;
+        g.fillStyle(0x1c1620, 1).fillTriangle(x, y, x, y + 10 + r() * 14, x + d * dx, y + 5 + r() * 6);
+      }
+    }
+  }
+
   drawAscentGorge(p, g) {
     const s=this.scene,top=p.z0-30,h=SETTINGS.height+180-top,w=p.x1-p.x0;
     // Paint depth as an image. Gradient-filled polygons triangulate into visible wedges.
@@ -684,7 +709,7 @@ export class TerrainView {
     // (the mine's lift up to Pip: the painted platform on its two chains, run on up into the dark)
     if (this.mine && b.kind === 'lift' && this.scene.textures.exists(artKey('mine', 'lift'))) { this.drawMineLift(v, x0, x1, yTop0, yTop1); return; }
     // (the mine's rotten planks: painted boards, split and green with rot, on their two ropes)
-    if ((this.mine || this.theme === 'gates') && b.kind === 'crumble' && this.scene.textures.exists(artKey('mine', 'planks_rotten'))) { this.drawMinePlanks(v, x0, x1, yTop0, yTop1); return; }
+    if ((this.mine || this.theme === 'gates' || this.theme === 'keep') && b.kind === 'crumble' && this.scene.textures.exists(artKey('mine', 'planks_rotten'))) { this.drawMinePlanks(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'siegeGate') { this.drawSiegeGate(v, x0, x1); return; }
     if (b.mat === 'iron' && b.kind === 'block') { this.drawPortcullis(v, x0, x1, yTop0, yTop1); return; }
     if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
@@ -693,7 +718,7 @@ export class TerrainView {
     const painted = { cart: 'cartwreck', ram: 'prop-ram', orecart: artKey('mine', 'ore_cart'), boulder: artKey('ascent', 'boulder') }[b.look];
     if (painted && this.scene.textures.exists(painted)) { this.drawPaintedBlock(v, x0, x1, painted); return; }
     // (the Ashen Throne: the colossus's stone fists to climb, the King's plinth: painted)
-    const keepPiece = this.theme === 'keep' && { arm: 'fist', shoulder: 'fist', chest: 'plinth' }[b.look];
+    const keepPiece = this.theme === 'keep' && { arm: 'fist', shoulder: 'fist', chest: 'plinth', tomb: b.top > 150 ? 'tomb' : 'sarcophagus' }[b.look];
     if (keepPiece && this.scene.textures.exists(artKey('keep', keepPiece))) { this.drawKeepPiece(v, x0, x1, yTop0, artKey('keep', keepPiece)); return; }
     const mat = b.kind === 'crumble' ? 'plank' : b.kind === 'lift' ? 'iron' : 'rock';
     const C = mat === 'plank' ? [COL.plankTop, COL.plankRim, COL.plankFront]

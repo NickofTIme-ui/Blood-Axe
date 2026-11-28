@@ -158,11 +158,11 @@ export const LEVEL_ART = {
     ],
     ground: true,
     tiles: {
-      causeway: { height: 330, key: 'magenta' }, battlements: { height: 280, key: 'magenta' },
+      causeway: { height: 330, key: 'magenta' }, battlements: { height: 280, key: 'magenta' }, scaffold: { height: 250, lift: 185, key: 'magenta' }, // (up on the roof: the scaffold's raised floor)
       hall: { height: 760 }, cells: { height: 760 }, forge: { height: 760 }, root: { height: 760 }, spire: { height: 760 },
     },
-    pieces: ['throne_hall', 'colossus', 'fist', 'plinth'], // (the Ashen Throne's hall, and the colossus that wakes behind it: view/KeepView.js drawThrone)
-    props: { pin: { file: 'prop_pin.png', pair: true }, conduit: { file: 'prop_conduit.png', pair: true }, spire: { file: 'prop_spire.png', pair: true } },
+    pieces: ['throne_hall', 'colossus', 'fist', 'plinth', 'tomb', 'sarcophagus'], // (the Ashen Throne's hall, and the colossus that wakes behind it: view/KeepView.js drawThrone)
+    props: { archers: { file: 'prop_archers.png', pair: true, texture: 'prop-keep-archers' }, pin: { file: 'prop_pin.png', pair: true }, conduit: { file: 'prop_conduit.png', pair: true }, spire: { file: 'prop_spire.png', pair: true } },
     surfaces: { rock_top: { fit: true }, rock_front: { px: 160 } },
   },
   // THE GALLOWS ASCENT (the night climb, view/TerrainView.js): its painted backdrop, cliff
