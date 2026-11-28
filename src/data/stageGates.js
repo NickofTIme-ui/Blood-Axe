@@ -191,8 +191,8 @@ export const STAGE_GATES = {
         "z": 440
       },
       "objective": "Kill the twins. Break the winch",
-      "hint": "Both chains hold the gate: break them both. Time the drop gate, or put them under it",
-      "fightAt": 3640,
+      "hint": "Both chains hold the gate: break them both. Watch the chains rattle and run the gates, or put the Ashen under them",
+      "fightAt": 4000,
       "needs": "winch",
       "waves": [
         [
@@ -224,7 +224,7 @@ export const STAGE_GATES = {
         },
         {
           "kind": "barrel",
-          "x": 3500,
+          "x": 4060,
           "z": 490,
           "drop": null
         }
@@ -233,8 +233,38 @@ export const STAGE_GATES = {
         {
           "type": "dropgate",
           "x": 3330,
-          "period": 330,
-          "phase": 0
+          "period": 240,
+          "warn": 50,
+          "down": 56,
+          "rise": 40,
+          "first": 150
+        },
+        {
+          "type": "dropgate",
+          "x": 3510,
+          "period": 240,
+          "warn": 50,
+          "down": 56,
+          "rise": 40,
+          "first": 205
+        },
+        {
+          "type": "dropgate",
+          "x": 3690,
+          "period": 240,
+          "warn": 50,
+          "down": 56,
+          "rise": 40,
+          "first": 260
+        },
+        {
+          "type": "dropgate",
+          "x": 3870,
+          "period": 240,
+          "warn": 50,
+          "down": 56,
+          "rise": 40,
+          "first": 315
         }
       ],
       "boss": {
@@ -1412,7 +1442,7 @@ export const STAGE_GATES = {
       "lines": [
         [
           "ORYN",
-          "(from the stair) A drop gate in the passage, spiked. Wait for it to lift. Better: put them under it."
+          "(from the stair) Drop gates, a whole run of them, spiked. Wait for each to lift, then go. Better: put them under it."
         ]
       ]
     },

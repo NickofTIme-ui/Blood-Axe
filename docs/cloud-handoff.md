@@ -37,6 +37,15 @@ branch, or ChatGPT's work gets lost.
   ford footbridge = ChatGPT assets/env/wood/bridge_raft.png (TerrainView.drawLogRaft). STILL OPEN: hound run/idle/bark/
   howl strips and Hornblower/Woodsman looks (need the reference strips attached in ChatGPT; prompts
   docs/hound-art-prompts.md). Raws: /mnt/project-files/level2-polish-nov27/raw/.
+- 27 November 2026, evening (cloud, branch claude/project-thread-gi0nk2; NOT on main until Nick says push). LEVEL 5
+  KEEP ROAD + GATE RUN. Nick: the keep road art was "a patch work"; and "a longer sequence where the gates are dropping
+  and you must time getting under them". KEEP ROAD: new ChatGPT strip assets/env/gates/keep_road.png (raw
+  /mnt/project-files/level5-art/raw/ba5_keep_road_strip.png; old one keep_road_old.png there): a lower broken wall, the
+  road over the moor, the Black Keep on its crag, one painting sized for the section's zoom-2 view (960x232 of backdrop),
+  behind the inner wall; the long back wall stops at the keep section; the mid (town roofs) and far layers fade out as
+  the camera passes the inner wall (GatesView.update). GATE RUN: the winch room now has four drop gates (x 3330-3870,
+  180 apart, period 240, staggered `first` 150/205/260/315), fightAt moved to 4000, barrel to 4060. FIX: "under the
+  gate" now follows the gate's slant (GatesTraps.gateX; before it ignored depth, up to 100px off). Test: the gate run.
 - 27 November 2026, later (cloud, branch claude/project-thread-gi0nk2; NOT on main until Nick says push). LEVEL 5
   POLISH PASS (ON MAIN, Nick "push all"): gatehouse stair/landing stones at a man's scale and darkened (levelArt gates surfaces px + tint,
   TerrainView.surface honours `tint`); the gatehouse pit is a stone shaft into the dark (TerrainView.gatesShaft), no
