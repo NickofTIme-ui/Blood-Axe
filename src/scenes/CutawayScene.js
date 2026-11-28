@@ -142,23 +142,11 @@ const PAINTED_AT = [{ x: 133, y: 371 }, { x: 275, y: 250 }, { x: 433, y: 358 }, 
 const PAINTED_ROADS = [
  [[133,371],[180,362],[215,317],[244,279],[275,250]],
  [[275,250],[319,285],[365,324],[400,349],[433,358]],
- [[433,358],[478,320],[503,271],[539,231],[566,184]],
- [[566,184],[583,247],[608,293],[645,305],[684,275]],
+ [[433,358],[478,320],[503,271],[528,228],[547,196],[566,184]],
+ [[566,184],[585,195],[598,224],[612,272],[642,300],[684,275]],
  [[684,275],[718,245],[756,221],[786,179],[804,135],[804,91]],
 ];
 const INTO_VILLAGE = [[40, 420], [70, 400], [100, 392], [133, 371]];
-// a road as evenly spaced points (every `step` px), each with its heading
-const roadPoints = (pts, step = 7) => {
-  const out = [];
-  for (let i = 0; i < pts.length - 1; i++) {
-    const [ax, ay] = pts[i]; const [bx, by] = pts[i + 1];
-    const len = Math.hypot(bx - ax, by - ay); const ang = Math.atan2(by - ay, bx - ax);
-    for (let d = 0; d < len; d += step) out.push({ x: ax + (bx - ax) * d / len, y: ay + (by - ay) * d / len, ang });
-  }
-  const [lx, ly] = pts[pts.length - 1];
-  out.push({ x: lx, y: ly, ang: out.length ? out[out.length - 1].ang : 0 });
-  return out;
-};
 const ROADS = ['FOUR ROADS TO THE BLACK KEEP', 'THREE ROADS TO THE BLACK KEEP', 'TWO ROADS TO THE BLACK KEEP', 'ONE ROAD TO THE BLACK KEEP', 'NO ROADS LEFT'];
 
 // what the tension sets, scene by scene (index: the chapter, 0-4)
@@ -1077,24 +1065,49 @@ export class CutawayScene extends Phaser.Scene {
     m.add(road);
     const trail = this.add.graphics(); // (the road they take this time, inked red behind the token)
     m.add(trail);
-    // on the painted map the road is painted too: a stroke of blood-red ink laid down a dab at
-    // a time (ChatGPT's brush marks, 'map-path'), every road they've already won, and this
-    // time's road growing behind the token as it marches
+    // on the painted map the road is painted too: one smooth stroke of blood-red ink through
+    // each road's points (a spline, so it bends, never kinks), every road they've already won,
+    // and this time's road drawn on behind the token as it marches (Nick, 27 Nov: "it should
+    // flow smoothly from point to point", not a chain of brush dabs)
     const pathLayer = this.add.container(0, 0).setAlpha(0);
     m.add(pathLayer);
-    const dab = (pt, n) => {
-      if (this.textures.exists('map-path')) {
-        const d = this.add.image(pt.x, pt.y, 'map-path', n % 8).setRotation(pt.ang);
-        d.setScale(13 / d.width);
-        pathLayer.add(d);
-        return d;
-      }
-      const d = this.add.circle(pt.x, pt.y, 3.2, 0x8a1010, 0.92);
-      pathLayer.add(d);
-      return d;
+    const spline = (pts) => new Phaser.Curves.Spline(pts.map(([x, y]) => new Phaser.Math.Vector2(x, y)));
+    const ink = (g, pts) => { // (a dark edge, the blood, and a wet line along it)
+      if (pts.length < 2) return;
+      g.lineStyle(7, 0x2a0202, 0.55).strokePoints(pts);
+      g.lineStyle(4, 0x8a0c0c, 0.95).strokePoints(pts);
+      g.lineStyle(1.4, 0xe04030, 0.55).strokePoints(pts);
     };
-    if (painted) [INTO_VILLAGE, ...PAINTED_ROADS.slice(0, t)].forEach((r) => roadPoints(r).forEach((pt, n) => dab(pt, n)));
-    const march = painted ? roadPoints(PAINTED_ROADS[t]) : null;
+    // (the whole road, village to Keep, is ONE curve, so it bends through each place instead of
+    // turning sharp there; ROAD_AT is how far along it each place is)
+    let whole = null; const ROAD_AT = [];
+    if (painted) {
+      const pts = [...INTO_VILLAGE];
+      for (const r of PAINTED_ROADS) pts.push(...r.slice(1));
+      whole = spline(pts);
+      const N = 1200; const samples = [];
+      for (let k = 0; k <= N; k++) samples.push(whole.getPointAt(k / N));
+      for (const { x: px, y: py } of PAINTED_AT) {
+        let best = 0; let bd = Infinity;
+        samples.forEach((q, k) => { const d = (q.x - px) ** 2 + (q.y - py) ** 2; if (d < bd) { bd = d; best = k; } });
+        ROAD_AT.push(best / N);
+      }
+    }
+    const inkBetween = (g, u0, u1) => { // (the whole road from u0 to u1, in even steps)
+      const n = Math.max(2, Math.ceil(whole.getLength() / 3 * (u1 - u0)));
+      const pts = [];
+      for (let k = 0; k <= n; k++) pts.push(whole.getPointAt(u0 + (k / n) * (u1 - u0)));
+      ink(g, pts);
+    };
+    if (painted) {
+      const done = this.add.graphics();
+      inkBetween(done, 0, ROAD_AT[t]);
+      pathLayer.add(done);
+    }
+    // this time's stretch of it: from the place they won to the next
+    const march = painted ? { u0: ROAD_AT[t], u1: ROAD_AT[t + 1] } : null;
+    const marchInk = this.add.graphics();
+    pathLayer.add(marchInk);
     // the places, and the king's black marker on every one he still holds
     const places = []; const flags = [];
     R.forEach((r, i) => {
@@ -1110,8 +1123,8 @@ export class CutawayScene extends Phaser.Scene {
         : this.add.text(r.x, r.y + 26, r.name, { fontFamily: FONT.display, fontSize: '12px', color: '#3a2410' }).setOrigin(0.5, 0);
       const set = [g, label];
       if (!last) {
-        const f = this.flag(r.x + 18, r.y - 4);
-        if (i < t) { f.setAngle(84); f.y += 10; f.setAlpha(0.8); } // (knocked down in an earlier scene; this one's goes down as the token is set on it)
+        const f = this.flag(r.x + 24, r.y - 2);
+        if (i < t) f.knock(false); // (knocked down in an earlier scene; this one's goes down as the token is set on it)
         flags[i] = f;
         set.push(f);
       }
@@ -1123,7 +1136,7 @@ export class CutawayScene extends Phaser.Scene {
     const from = R[t];
     const to = R[t + 1];
     const tok = this.token(from.x, from.y).setAlpha(0);
-    tok.face(march ? march[0].ang : Math.atan2(to.y - from.y, to.x - from.x)); // (set down already facing its road)
+    tok.face(march ? whole.getTangentAt(march.u0).angle() : Math.atan2(to.y - from.y, to.x - from.x), 1); // (set down leaning into its road)
     m.add(tok);
     const roads = this.add.text(W / 2, painted ? H - 80 : y0 + ph - 34, ROADS[t], { fontFamily: FONT.display, fontSize: '22px' }).setOrigin(0.5).setAlpha(0);
     roads.setLetterSpacing?.(4);
@@ -1154,21 +1167,25 @@ export class CutawayScene extends Phaser.Scene {
         this.time.delayedCall(260, () => {
           burst(from.x, from.y, 0xff3020); this.cameras.main.shake(160, 0.004);
           const f = flags[t]; // (the place they just won: the king's marker goes down)
-          if (f) this.tweens.add({ targets: f, angle: 84, y: f.y + 10, alpha: 0.8, duration: 300, ease: 'Bounce.easeOut' });
+          f?.knock(true);
         });
       }],
       // it marches up the road to the next accent, inking it red behind it
       [4.25, () => {
-        if (march) { // (along the painted road, painting it as it goes)
-          let laid = 0; const step = { u: 0 };
+        if (march) { // (along the painted road, inking it as it goes: smooth, every frame)
+          const step = { u: 0 };
+          tok.lift(true);
           this.tweens.add({
             targets: step, u: 1, duration: 3800, ease: 'Sine.easeInOut',
             onUpdate: () => {
-              const k = Math.min(march.length - 1, Math.round(step.u * (march.length - 1)));
-              tok.setPosition(march[k].x, march[k].y);
-              tok.face(march[Math.min(march.length - 1, k + 2)].ang, 0.12); // (it turns into the road's bends, not snapping)
-              for (; laid <= k; laid++) { const d = dab(march[laid], laid + 3); d.setScale(d.scaleX * 1.25); this.tweens.add({ targets: d, scale: d.scaleX / 1.25, duration: 220 }); }
+              const u = march.u0 + (march.u1 - march.u0) * step.u;
+              const p = whole.getPointAt(u);
+              tok.setPosition(p.x, p.y);
+              tok.face(whole.getTangentAt(Math.min(1, u + 0.01)).angle(), 0.15);
+              marchInk.clear();
+              if (step.u > 0) inkBetween(marchInk, march.u0, u);
             },
+            onComplete: () => tok.lift(false),
           });
           return;
         }
@@ -1267,39 +1284,72 @@ export class CutawayScene extends Phaser.Scene {
 
   // the king's marker: a black pennant on a pin
   flag(x, y) {
+    // King Vaurath's marker: a black iron pennant with the Ashen Crown on it (ChatGPT, 27 Nov),
+    // and the same one knocked over once the Oath Keepers take the place
+    if (this.textures.exists('map-king-flag')) {
+      const f = this.add.image(x, y, 'map-king-flag').setOrigin(0.26, 0.97);
+      f.setScale(48 / f.height);
+      f.knock = (animate) => {
+        const down = () => {
+          if (!this.textures.exists('map-king-flag-fallen')) { f.setAngle(84).setAlpha(0.8); return; }
+          f.setTexture('map-king-flag-fallen').setOrigin(0.45, 0.9).setAngle(0);
+          f.setScale(54 / f.width);
+        };
+        if (!animate) { down(); return f; }
+        this.tweens.add({ targets: f, angle: 70, duration: 160, ease: 'Quad.easeIn', onComplete: () => {
+          down();
+          f.y -= 5;
+          this.tweens.add({ targets: f, y: f.y + 5, duration: 220, ease: 'Bounce.easeOut' });
+        } });
+        return f;
+      };
+      return f;
+    }
     const g = this.add.graphics();
     g.fillStyle(0x101014, 1).fillRect(-1, -22, 2, 24);
     g.fillTriangle(1, -22, 1, -12, 14, -17);
     g.fillStyle(0x6a50b0, 1).fillCircle(7, -17, 1.5);
     g.setPosition(x, y);
+    g.knock = (animate) => {
+      if (animate) this.tweens.add({ targets: g, angle: 84, y: g.y + 10, alpha: 0.8, duration: 300, ease: 'Bounce.easeOut' });
+      else { g.setAngle(84); g.y += 10; g.setAlpha(0.8); }
+      return g;
+    };
     return g;
   }
+
 
   // the Oath Keepers' token: a red shield with three white marks (the three), on a gold rim
   token(x, y) {
     const c = this.add.container(x, y);
-    const glow = this.add.image(0, 0, 'glow').setScale(1.3).setTint(0xff3020).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.7);
+    const glow = this.add.image(0, -4, 'glow').setScale(1.3, 0.8).setTint(0xff3020).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.7);
     this.tweens.add({ targets: glow, alpha: 0.35, duration: 600, yoyo: true, repeat: -1 });
-    c.face = () => c; // (the drawn coin has no front)
-    // the painted war wagon, sprite-stacked (Nick, 27 Nov): its slices, ground first, drawn one
-    // above the other so the pile reads as a small solid wagon; turning every slice the same way
-    // turns the wagon. The stack is squashed for the map's low camera (the squash is on the
-    // container, so it comes after each slice's turn), and the lift undoes the squash.
-    if (this.textures.exists('war-wagon-stack')) {
-      const n = this.textures.get('war-wagon-stack').frameTotal - 1; // (less the __BASE frame)
-      const S = 0.55; const SQUASH = 0.6;
-      const stack = this.add.container(0, 6).setScale(S, S * SQUASH);
-      const slices = [];
-      for (let z = 0; z < n; z++) slices.push(this.add.image(0, -z / SQUASH, 'war-wagon-stack', z));
-      stack.add(slices);
-      const shadow = this.add.ellipse(0, 7, 40, 18, 0x000000, 0.45);
-      c.add([glow, shadow, stack]);
-      c.heading = Math.PI / 2;
-      // face a heading (radians, 0 = right, as roadPoints gives them); the sheet's front points down
+    c.face = () => c; c.lift = () => c; // (the drawn coin has no lean)
+    // THE OATH KEEPERS' STANDARD (Nick, 27 Nov: the wagon "has nothing to do with game"; ChatGPT
+    // painted it): their blood-red banner with the axe and the three marks, Oathkeeper planted in
+    // its base. Set down in each place they take, carried up the road between them leaning into
+    // it, and set down again where they stop. (Rurik's blade alone if the banner isn't in.)
+    const art = ['map-oath-token', 'oathkeeper-art'].find((k) => this.textures.exists(k));
+    if (art) {
+      const shadow = this.add.ellipse(0, 1, 36, 11, 0x000000, 0.5);
+      const banner = art === 'map-oath-token';
+      const sword = this.add.image(0, 0, art).setOrigin(banner ? 0.34 : 0.5, banner ? 0.96 : 0.985);
+      sword.setScale((banner ? 78 : 64) / sword.height);
+      const blade = this.add.container(0, 0, [sword]);
+      c.add([glow, shadow, blade]);
+      c.lean = 0;
+      // lean the way it's going (radians, 0 = right): to the right along a road east, a little
       c.face = (ang, ease = 1) => {
-        const d = Phaser.Math.Angle.Wrap(ang - c.heading);
-        c.heading += d * ease;
-        for (const s of slices) s.setRotation(c.heading - Math.PI / 2);
+        c.lean += (Math.cos(ang) * 0.22 - c.lean) * ease;
+        blade.setRotation(c.lean);
+        if (banner) sword.setFlipX(Math.cos(ang) < -0.35); // (the cloth streams back along the road)
+        return c;
+      };
+      // up off the map while it travels (the shadow stays down, and shrinks), and back in
+      c.lift = (up) => {
+        this.tweens.add({ targets: blade, y: up ? -9 : 0, duration: up ? 260 : 160, ease: up ? 'Sine.easeOut' : 'Quad.easeIn' });
+        this.tweens.add({ targets: shadow, scaleX: up ? 0.7 : 1, alpha: up ? 0.6 : 1, duration: 220 });
+        if (!up) this.tweens.add({ targets: blade, rotation: 0, duration: 200, onComplete: () => { c.lean = 0; } });
         return c;
       };
       return c;
