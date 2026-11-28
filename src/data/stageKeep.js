@@ -24,7 +24,7 @@
 //                              balcony, chandeliers on their chains. A shrine
 //   III  THE BURNING CELLS     up the five tiers of the prison wing as it burns from the
 //                              bottom: open the cells (the village's people)
-//   IV   THE HEADSMAN'S SCAFFOLD  the King's Executioner on the roof of the wing; then the
+//   IV   THE HEADSMAN'S SCAFFOLD  the King's Headsman on the roof of the wing; then the
 //                              roof gives way and everyone falls through into the forge
 //   V    THE CRUCIBLE LINE     a shrine on the slag; the buckets over the furnace mouth
 //   VI   THE ASH MILL          the turning millstone; the Forgemaster on its hub
@@ -83,7 +83,7 @@ export const STAGE_KEEP = {
       ],
     },
     {
-      id: 'muster', name: 'THE MUSTER HALL', x0: 1900, x1: 3700,
+      id: 'muster', ground: 'k-muster', groundFade: 160, name: 'THE MUSTER HALL', x0: 1900, x1: 3700,
       spawn: { x: 1980, z: 440 },
       objective: 'Break the muster',
       hint: 'Kill the drummers on the balcony and the shield line breaks. A heavy blow breaks a shield',
@@ -119,7 +119,7 @@ export const STAGE_KEEP = {
       rest: { x: 3600, z: 320, kind: 'oath' },
     },
     {
-      id: 'cells', name: 'THE BURNING CELLS', x0: 3700, x1: 5500,
+      id: 'cells', ground: 'k-cells', groundFade: 160, name: 'THE BURNING CELLS', x0: 3700, x1: 5500,
       spawn: { x: 3760, z: 420 },
       objective: 'Open the cells. Climb',
       hint: 'Hold E at a cell door once the guards are down. The fire climbs a tier at a time',
@@ -161,9 +161,9 @@ export const STAGE_KEEP = {
       ],
     },
     {
-      id: 'scaffold', name: 'THE HEADSMAN\'S SCAFFOLD', x0: 5500, x1: 6900,
+      id: 'scaffold', ground: 'k-scaffold', groundFade: 160, name: 'THE HEADSMAN\'S SCAFFOLD', x0: 5500, x1: 6900,
       spawn: { x: 5580, z: 420 },
-      objective: 'Kill the Executioner',
+      objective: 'Kill the Headsman',
       hint: 'His overheads break the scaffold. Ring the bell to stun him',
       fightAt: 5800,
       waves: [['grunt', 'grunt']],
@@ -177,10 +177,10 @@ export const STAGE_KEEP = {
         { type: 'beam', look: 'rock', when: 'phase:bell', x: 6350, z: 380, w: 90, d: 90, period: 200, warn: 80, phase: 100 },
       ],
       boss: {
-        type: 'butcher', look: 'executioner', name: 'The King\'s Executioner', health: 3.2, damage: 1.15, size: 1.15,
+        type: 'butcher', look: 'headsman', name: 'The King\'s Headsman', health: 3.2, damage: 1.15, size: 1.15,
         entrance: { from: 160, to: 380, speed: 54, stepEvery: 34, awe: 30 },
         sentence: {
-          speaker: 'EXECUTIONER',
+          speaker: 'HEADSMAN',
           crimes: [
             'You took the heads of men who had done nothing but be taken.',
             'You were working down the line when we walked in.',
@@ -194,7 +194,7 @@ export const STAGE_KEEP = {
       },
     },
     {
-      id: 'crucible', name: 'THE CRUCIBLE LINE', x0: 6900, x1: 8600,
+      id: 'crucible', ground: 'k-forge', groundFade: 160, name: 'THE CRUCIBLE LINE', x0: 6900, x1: 8600,
       spawn: { x: 7000, z: 420 },
       objective: 'Cross the Crucible Line',
       hint: 'The buckets run back to the fire: keep moving',
@@ -219,7 +219,7 @@ export const STAGE_KEEP = {
       rest: { x: 7100, z: 330, kind: 'oath' }, // (at the back, off the line you land on: not knelt at the moment you arrive)
     },
     {
-      id: 'mill', name: 'THE ASH MILL', x0: 8600, x1: 10000,
+      id: 'mill', ground: 'k-forge', groundFade: 160, name: 'THE ASH MILL', x0: 8600, x1: 10000,
       spawn: { x: 8680, z: 420 },
       objective: 'Stop the mill. Kill the Forgemaster',
       hint: 'The back of the stone turns one way, the front the other. Break the drive pins',
@@ -263,7 +263,7 @@ export const STAGE_KEEP = {
       },
     },
     {
-      id: 'root', name: 'THE KINGS\' ROOT', x0: 10000, x1: 11700,
+      id: 'root', ground: 'k-crypt', groundFade: 160, name: 'THE KINGS\' ROOT', x0: 10000, x1: 11700,
       spawn: { x: 10080, z: 420 },
       objective: 'Find the way up',
       hint: 'Mind the floor. The statues are watching',
@@ -286,7 +286,7 @@ export const STAGE_KEEP = {
       light: 0x8ab0d8, mood: 0.3,
     },
     {
-      id: 'spire', name: 'THE BURNING SPIRE', x0: 11700, x1: 13200,
+      id: 'spire', ground: 'k-spire', groundFade: 160, name: 'THE BURNING SPIRE', x0: 11700, x1: 13200,
       spawn: { x: 11800, z: 420 },
       objective: 'Ride the hoist to the top',
       hint: 'They come from every floor you pass. Keep off the open edge',
@@ -505,14 +505,14 @@ export const STAGE_KEEP = {
     // ---- VII THE KINGS' ROOT: narrow tunnels between the tombs (two crypts open out), the
     // broken floor over the drop in the second
     { kind: 'block', x0: 10200, x1: 10500, z0: 282, z1: 360, top: 300, look: 'tomb' },
-    { kind: 'block', x0: 10200, x1: 10500, z0: 470, z1: 520, top: 300, look: 'tomb' },
+    { kind: 'block', x0: 10200, x1: 10500, z0: 470, z1: 520, top: 70, look: 'tomb' }, // (a low sarcophagus: a tall tomb in the front lane hid the fight)
     { kind: 'block', x0: 10840, x1: 11000, z0: 282, z1: 360, top: 300, look: 'tomb' },
-    { kind: 'block', x0: 10840, x1: 11000, z0: 470, z1: 520, top: 300, look: 'tomb' },
+    { kind: 'block', x0: 10840, x1: 11000, z0: 470, z1: 520, top: 70, look: 'tomb' }, // (a low sarcophagus: a tall tomb in the front lane hid the fight)
     { kind: 'pit', x0: 11060, x1: 11240, ...FULL },
     { kind: 'crumble', x0: 11100, x1: 11150, z0: 330, z1: 480, top: 0, fall: 40, back: 220 },
     { kind: 'crumble', x0: 11190, x1: 11240, z0: 330, z1: 480, top: 0, fall: 40, back: 220 },
     { kind: 'block', x0: 11400, x1: 11700, z0: 282, z1: 360, top: 300, look: 'tomb' },
-    { kind: 'block', x0: 11400, x1: 11700, z0: 470, z1: 520, top: 300, look: 'tomb' },
+    { kind: 'block', x0: 11400, x1: 11700, z0: 470, z1: 520, top: 70, look: 'tomb' }, // (a low sarcophagus: a tall tomb in the front lane hid the fight)
 
     // ---- VIII THE BURNING SPIRE: the hoist's open front edge
     { kind: 'pit', x0: 11760, x1: 13140, z0: 504, z1: 520 },
@@ -600,7 +600,7 @@ export const STAGE_KEEP = {
     { id: 'ilse', on: 'rescued:ilse', lines: [['ILSE', 'Rurik! My father... is he alive?'], ['RURIK', 'Hale\'s alive. He\'s waiting for you.']] },
     { id: 'below', on: 'clear:cells', calm: true, lines: [['ILSE', 'They take people down. Below. Nobody comes back up the same.']] },
     { id: 'bell', at: 5600, lines: [['VOICE', '(a bell, slow, on the roof; then a blade coming down)']] },
-    { id: 'headsman', on: 'boss:scaffold', lines: [['EXECUTIONER', 'Kneel in the line. It goes quicker.'], ['RURIK', 'Put it down.']] },
+    { id: 'headsman', on: 'boss:scaffold', lines: [['HEADSMAN', 'Kneel in the line. It goes quicker.'], ['RURIK', 'Put it down.']] },
     { id: 'theLine', on: 'rescued:theLine', lines: [['VOICE', '(the kneeling line, running for the stair) Go! Go!']] },
     { id: 'fall', on: 'clear:scaffold', calm: true, lines: [['VEXA', 'The roof\'s going. The whole wing is going!'], ['RURIK', 'Then down. It\'s the one way he didn\'t want us to go.']] },
     {

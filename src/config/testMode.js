@@ -1,7 +1,7 @@
 // testMode.js — TEST MODE, for playtesting: the heroes can't die and never run out of
 // mana or stamina, and a few keys jump between levels and checkpoints.
 //
-// Turn it on in the title screen's DIRECTOR'S CUT (TEST MODE: ON / OFF; remembered on
+// Turn it on in the title screen's SETTINGS (TEST MODE: ON / OFF; remembered on
 // this computer, so it works on itch.io too), with ?test=1 on the game's address, or
 // SHIFT+F9 in a fight (again to turn it off). Off in normal play, and never online (one machine alone can't bend the rules
 // without splitting the two games apart). A "TEST MODE" tag sits in the corner while on.
