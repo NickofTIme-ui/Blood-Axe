@@ -80,8 +80,8 @@ export class BootScene extends Phaser.Scene {
     this.load.image('malgor-helm', 'assets/cinematics/malgor-helm.png'); // Malgor's helm rolls across the hall in Black Keep scene V (ChatGPT, 23 Nov)
     // the war table, the same table knocked over, the thrown map and the burned captain's ash (Black Keep scenes I-V; ChatGPT, 27 Nov)
     for (const k of ['keep-war-table', 'keep-war-table-fallen', 'keep-floor-map', 'keep-captain-ash']) this.load.image(k, `assets/cinematics/${k}.png`);
-    this.load.spritesheet('map-path', 'assets/cinematics/map-path.png', { frameWidth: 160, frameHeight: 64 }); // the red ink road painted across the war map, a dab at a time (ChatGPT, 24 Nov)
-    this.load.spritesheet('war-wagon-stack', 'assets/cinematics/war-wagon-stack.png', { frameWidth: 48, frameHeight: 81 }); // the Oath Keepers' war wagon on the war map: 66 stacked slices cut from ChatGPT's four views (tools/stack-slices.py, docs/sprite-stacking.md)
+    // the war map's pieces: the Oath Keepers' standard, the king's black marker, and his marker knocked over (ChatGPT, 27 Nov)
+    for (const k of ['map-oath-token', 'map-king-flag', 'map-king-flag-fallen']) this.load.image(k, `assets/cinematics/${k}.png`);
     this.load.image('keep-war-map', 'assets/cinematics/keep-war-map.jpg'); // the king's war map after each Black Keep scene (ChatGPT, 23 Nov)
     this.load.image('bridge-log-src', 'assets/env/bridge_log.png'); // the painted log bridge (view/TerrainView.js drawBlock)
     this.load.image('wood-raft', 'assets/env/wood/bridge_raft.png'); // Gallows Wood's ford footbridge, four lashed logs (ChatGPT, 2026-11-27; view/TerrainView.js drawLogRaft)
