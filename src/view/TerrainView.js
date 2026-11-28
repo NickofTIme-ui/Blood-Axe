@@ -268,6 +268,34 @@ export class TerrainView {
     return e && this.scene.textures.exists(artKey(e[0], e[1])) ? { key: artKey(e[0], e[1]), frac: e[2] } : null;
   }
 
+  // A drop in the mine that isn't the river (the lift shaft, the collapse's chasms): the
+  // painted chasm (assets/env/mine/chasm.png, ChatGPT: shored rock lips falling away into
+  // black) stretched over it, or failing that the black of the drop, fading in from its lip.
+  // False for the river's channels (painted water).
+  mineChasm(p) {
+    const river = this.stage.sections.find((q) => q.id === 'river');
+    if (river && p.x0 >= river.x0 && p.x1 <= river.x1) return false;
+    const s = this.scene;
+    const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0);
+    const bottom = p.z1 + 40;
+    // (two paintings: a tall one for a narrow drop, a wide one for a long gap; whichever is
+    // nearer the drop's own shape, its black hole over the drop and its lips past the edges)
+    const tall = artKey('mine', 'chasm'); const wide = artKey('mine', 'chasm_wide');
+    const aspect = (p.x1 - p.x0) / (bottom - top);
+    const key = s.textures.exists(wide) && (aspect > 1 || !s.textures.exists(tall)) ? wide : tall;
+    if (s.textures.exists(key)) {
+      // (how much of each painting is the black hole: across, and down from its top)
+      const F = key === wide ? { x: 0.86, y0: 0.1, y: 0.62 } : { x: 0.6, y0: 0.06, y: 0.86 };
+      const w = (p.x1 - p.x0) / F.x; const h = (bottom - top) / F.y;
+      s.add.image((p.x0 + p.x1) / 2, top - h * F.y0, key).setOrigin(0.5, 0).setDisplaySize(w, h).setDepth(DEPTH.floor + 4.1);
+      return true;
+    }
+    const g = s.add.graphics().setDepth(DEPTH.floor + 4);
+    g.fillStyle(0x020203, 1).fillRect(p.x0, top, p.x1 - p.x0, bottom - top);
+    vFade(g, p.x0, top, p.x1 - p.x0, 40, 0x2a2420, 0.55, 0);
+    return true;
+  }
+
   // Lay a painting over a crossing from `top` to `bottom`, its water over x0..x1; and the
   // painted tile's current running over the water, faint, so it still moves
   layWater(P, x0, x1, top, bottom, depth, shape) {
@@ -287,6 +315,9 @@ export class TerrainView {
     for (const p of this.terrain?.pits ?? []) {
       // (the ford's deep channel is in the ford's own painting)
       if (ford && (this.terrain?.wades ?? []).some((w) => p.x0 >= w.x0 && p.x1 <= w.x1)) continue;
+      // (the mine: only the underground river is water. The shaft and the collapse's chasms
+      // drop into the dark: level 3 polish, 2026-11-27)
+      if (this.mine && this.mineChasm(p)) continue;
       const P = this.paintedWater('pit');
       if (P) {
         const ribbon = this.wood && p.z0 <= SETTINGS.world.floorTop;
@@ -298,6 +329,7 @@ export class TerrainView {
       }
       const g = s.add.graphics().setDepth(DEPTH.floor + 4);
       if (this.theme === 'ascent') { this.drawAscentGorge(p, g); continue; }
+      if (this.theme === 'keep') { this.drawKeepChasm(p, g); continue; }
       g.fillStyle(this.water ? 0x0c1820 : 0x000000, 1).fillRect(p.x0, p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0), p.x1 - p.x0, p.z1 - p.z0 + (p.z0 <= SETTINGS.world.floorTop ? 50 : 0) + 40);
       // a cold glow at the lip so the edge reads (in the village: a burning cellar, its fire far
       // down; in the wood: a stream, black water running fast)
@@ -333,9 +365,10 @@ export class TerrainView {
         g.fillStyle(0x6a8aa0, 0.25).fillRect(p.x0, p.z0 - 50, p.x1 - p.x0, 6);
       }
       if (this.village) this.burningCellar(p, g);
+      if (this.theme === 'gates') this.gatesShaft(p, g);
       // (a ruled lip only where nothing painted marks the edge: the village's cellars read by
       // their own fire and shadowed walls)
-      const ruled = !paintedWater && !this.village;
+      const ruled = !paintedWater && !this.village && this.theme !== 'gates';
       if (ruled) g.lineStyle(2, 0x6a8aa8, 0.6);
       if (ruled) g.lineBetween(p.x0, p.z0, p.x0, p.z1 + 40);
       if (ruled) g.lineBetween(p.x1, p.z0, p.x1, p.z1 + 40);
@@ -347,6 +380,30 @@ export class TerrainView {
   // stones, knee-deep, so it reads as water you can walk into (Nick, 2026-11-16: no more
   // invisible river). The painted water, paler and browner than the deep channel and half
   // see-through, the stones of the bed under it, ripples running with it. Under the channel.
+  // The Black Keep's broken edges (the causeway's, the Crown Walk's): no box, a drop into the
+  // ash dark, the lip a ragged line of broken basalt, the forge's glow far below.
+  drawKeepChasm(p, g) {
+    const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0);
+    const bottom = Math.max(p.z1 + 40, SETTINGS.height + 160);
+    const w = p.x1 - p.x0;
+    g.fillStyle(0x050307, 1).fillRect(p.x0, top, w, bottom - top);
+    vFade(g, p.x0, top + 20, w, bottom - top - 20, 0x6a2a3a, 0, 0.35); // (the forge, far down)
+    vFade(g, p.x0, top, w, 40, 0x000000, 0.9, 0);
+    // the lip: chunks of broken basalt along the edge, and at the two ends
+    let seed = Math.round(p.x0) * 13 + 7;
+    const r = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let x = p.x0 - 6; x < p.x1 + 6; x += 14 + r() * 18) {
+      const h = 4 + r() * 10;
+      g.fillStyle(r() < 0.5 ? 0x2a2230 : 0x1c1620, 1).fillTriangle(x, top - 1, x + 10 + r() * 16, top - 1, x + 4 + r() * 10, top + h);
+    }
+    for (const [x, d] of [[p.x0, 1], [p.x1, -1]]) {
+      for (let y = top; y < Math.min(bottom, top + 90); y += 10 + r() * 12) {
+        const dx = 4 + r() * 12;
+        g.fillStyle(0x1c1620, 1).fillTriangle(x, y, x, y + 10 + r() * 14, x + d * dx, y + 5 + r() * 6);
+      }
+    }
+  }
+
   drawAscentGorge(p, g) {
     const s=this.scene,top=p.z0-30,h=SETTINGS.height+180-top,w=p.x1-p.x0;
     // Paint depth as an image. Gradient-filled polygons triangulate into visible wedges.
@@ -490,6 +547,34 @@ export class TerrainView {
     }
   }
 
+  // The gatehouse's murder pit (level 5), not a flat black box: its stone shaft (the
+  // gatehouse's own dressed-stone face, darkened) going down into the dark, the light from
+  // the passage catching only the first courses below the lip. (2026-11-27 polish pass)
+  gatesShaft(p, g) {
+    const s = this.scene;
+    const top = p.z0 - (p.z0 <= SETTINGS.world.floorTop ? 50 : 0); const bot = p.z1 + 40; const H = bot - top; const w = p.x1 - p.x0;
+    g.fillStyle(0x040303, 1).fillRect(p.x0, top, w, H);
+    const key = artKey('gates', 'surf-rock_front');
+    if (s.textures.exists(key)) {
+      const img = s.textures.get(key).getSourceImage();
+      const sc = 150 / img.height;
+      s.add.tileSprite(p.x0, top, w, H, key).setOrigin(0).setTileScale(sc, sc).setTint(0x6a625a).setDepth(DEPTH.floor + 4.01);
+    }
+    const gk = `gates-shaft-${Math.round(w)}x${Math.round(H)}`;
+    if (!s.textures.exists(gk)) {
+      const c = document.createElement('canvas'); c.width = Math.ceil(w); c.height = Math.ceil(H);
+      const x = c.getContext('2d');
+      const v = x.createLinearGradient(0, 0, 0, H);
+      v.addColorStop(0, 'rgba(4,3,3,0.35)'); v.addColorStop(0.3, 'rgba(4,3,3,0.75)'); v.addColorStop(0.65, 'rgba(4,3,3,0.97)'); v.addColorStop(1, 'rgba(4,3,3,1)');
+      x.fillStyle = v; x.fillRect(0, 0, w, H);
+      const hz = x.createLinearGradient(0, 0, w, 0); // (its side walls fall into shadow)
+      hz.addColorStop(0, 'rgba(0,0,0,0.6)'); hz.addColorStop(0.18, 'rgba(0,0,0,0)'); hz.addColorStop(0.82, 'rgba(0,0,0,0)'); hz.addColorStop(1, 'rgba(0,0,0,0.6)');
+      x.fillStyle = hz; x.fillRect(0, 0, w, H);
+      s.textures.addCanvas(gk, c);
+    }
+    s.add.image(p.x0, top, gk).setOrigin(0).setDepth(DEPTH.floor + 4.02);
+  }
+
   // A burning cellar, not a black hole (the village's pits): the dark falls smoothly to
   // red-hot embers at the bottom, its side walls fall into shadow (so its edges read without
   // drawn lines), the glow breathes, and a few sparks climb out of it.
@@ -580,7 +665,7 @@ export class TerrainView {
     for (const t of Object.values(v.tiles ?? {})) t.setVisible(false); // (shown again below by whichever face is painted)
     v.gables?.forEach((g) => g.setVisible(false)); v.flank?.setVisible(false);
     if (!b.solid) {
-      v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); v.arts?.forEach((a) => a.setVisible(false)); v.chains?.forEach((c) => c.setVisible(false)); placeRoofFire(v.fire, b.x0, 0, false); // (gone: broken through, or fallen)
+      v.top.setVisible(false); v.front.setVisible(false); v.art?.setVisible(false); v.arts?.forEach((a) => a.setVisible(false)); v.chains?.forEach((c) => c.setVisible(false)); v.post?.setVisible(false); v.postFade?.setVisible(false); placeRoofFire(v.fire, b.x0, 0, false); // (gone: broken through, or fallen)
       return;
     }
     // (a painted set piece stands in for it: the wood's rockslide, view/WoodView.js)
@@ -593,7 +678,7 @@ export class TerrainView {
     if (this.mine && b.mat === 'log' && this.terrain.inPit((x0 + x1) / 2, b.z1 - 1) && this.scene.textures.exists(artKey('mine', 'timber_bridge'))) {
       const key = artKey('mine', 'timber_bridge');
       const depth = yTop1 - yTop0;
-      const rows = Math.max(2, Math.round(depth / 30));
+      const rows = Math.max(3, Math.round(depth / 20)); // (close-laid: at /30 the gaps between them read as floating logs, level 3 polish)
       const lw = (x1 - x0) * 1.12;
       v.arts ??= [];
       for (let i = 0; i < rows; i++) {
@@ -630,8 +715,11 @@ export class TerrainView {
     if (b.mat === 'rubble') { this.drawRubble(v, x0, x1, yTop0, yTop1); return; }
     if (this.village || (this.water && b.mat === 'log')) { this.drawVillageBlock(v, x0, x1, w, yTop0, yTop1); return; } // (the wood's fallen trees: as the village's beams)
     // (the gates: a burned-out ram on the road, the village's burnt cart in the town)
-    const painted = { cart: 'cartwreck', ram: 'prop-ram', orecart: artKey('mine', 'ore_cart') }[b.look];
+    const painted = { cart: 'cartwreck', ram: 'prop-ram', orecart: artKey('mine', 'ore_cart'), boulder: artKey('ascent', 'boulder') }[b.look];
     if (painted && this.scene.textures.exists(painted)) { this.drawPaintedBlock(v, x0, x1, painted); return; }
+    // (the Ashen Throne: the colossus's stone fists to climb, the King's plinth: painted)
+    const keepPiece = this.theme === 'keep' && { arm: 'fist', shoulder: 'fist', chest: 'plinth' }[b.look];
+    if (keepPiece && this.scene.textures.exists(artKey('keep', keepPiece))) { this.drawKeepPiece(v, x0, x1, yTop0, artKey('keep', keepPiece)); return; }
     const mat = b.kind === 'crumble' ? 'plank' : b.kind === 'lift' ? 'iron' : 'rock';
     const C = mat === 'plank' ? [COL.plankTop, COL.plankRim, COL.plankFront]
       : mat === 'iron' ? [COL.iron, COL.ironRim, COL.ironDark] : [COL.rockTop, COL.rockRim, COL.rockFront];
@@ -696,6 +784,7 @@ export class TerrainView {
     }
     if (this.theme === 'ascent') {
       vFade(front,x0,yTop1+1,w,Math.min(depthDown,18),0x070d12,.38,0);
+      if (mat === 'rock' && depthDown > 60) vFade(front,x0,yTop1+18,w,depthDown-18,0x0a1014,0,.5); // (a tall face falls into shade toward its foot: it reads as a drop, not a grey slab)
       if (mat === 'rock' && !b.bridgePier) vFade(top,x0,yTop0,w,14,0x101820,.22,0);
     }
     // (the mine's broken gallery: a pillar left standing over the drop wears its painted face,
@@ -712,22 +801,49 @@ export class TerrainView {
   }
 
   // The mine's rotten planks (assets/env/mine/planks_rotten.png, ChatGPT 2026-11-26): the
-  // boards drawn out along their grain to run the block's depth, hung on two ropes from the
-  // dark when they're off the floor.
+  // bundle of boards turned on its side, so the boards run ACROSS the gap like a duckboard laid
+  // over the drop (stood upright along the depth, on ropes from the ceiling, they read as doors
+  // hanging in the dark: level 3 polish, 2026-11-27). Off the floor they stand on a squared pit
+  // prop going down into the dark (timber_bridge.png stood on end), not on ropes.
   drawMinePlanks(v, x0, x1, yTop0, yTop1) {
     const { top, front, b } = v;
     const key = artKey('mine', 'planks_rotten');
     const depth = yTop1 - yTop0;
-    // one bundle of boards, drawn out along its grain to run the block's depth (its front
-    // ends, the boards' thickness, hang just below where you land)
-    v.art ??= this.scene.add.image(0, 0, key).setOrigin(0.5, 0);
-    const fr = v.art.frame;
-    v.art.setPosition((x0 + x1) / 2, yTop0 - 4).setScale((x1 - x0) * 1.2 / fr.width, (depth + 22) / fr.height)
-      .setFlipX(Math.round(b.x0 / 10) % 2 === 1).setDepth(b.z1 + 0.6).setVisible(true);
+    const w = x1 - x0;
+    // short lengths of the squared pit-prop timber (timber_bridge.png, cropped) laid side by side
+    // across the gap, back to front like a duckboard, a shade greener and darker than the
+    // river's sound timber: rotten (one length per 22 of depth, the back ones darker)
+    const tk = artKey('mine', 'timber_bridge');
+    const slatKey = this.scene.textures.exists(tk) ? tk : key;
+    const rows = Math.max(3, Math.round(depth / 22));
+    v.arts ??= [];
+    for (let i = 0; i < rows; i++) {
+      const img = v.arts[i] ??= this.scene.add.image(0, 0, slatKey).setOrigin(0.5, 0.35);
+      const fw = img.frame.width;
+      const seg = slatKey === tk ? Math.round(fw * 0.28) : fw;
+      const off = slatKey === tk ? Math.round(((b.x0 * 7 + i * 331) % 1000) / 1000 * (fw - seg)) : 0;
+      img.setCrop(off, 0, seg, img.frame.height);
+      const sc = (w * 1.16) / seg;
+      const k = 0.55 + 0.35 * (i / Math.max(1, rows - 1));
+      img.setScale(sc).setPosition((x0 + x1) / 2 - (off + seg / 2 - fw / 2) * sc + ((i * 5) % 3 - 1) * 3, yTop0 + depth * ((i + 0.5) / rows))
+        .setTint(Phaser.Display.Color.GetColor(Math.round(200 * k), Math.round(215 * k), Math.round(180 * k)))
+        .setAngle(((b.x0 + i * 13) % 5 - 2) * 0.8)
+        .setDepth(i === rows - 1 ? b.z1 + 0.6 : b.z0 - 0.5 + i * 0.01).setVisible(true);
+    }
+    for (let i = rows; i < v.arts.length; i++) v.arts[i].setVisible(false);
     top.setVisible(false);
-    front.clear();
-    if (b.top > 0) front.fillStyle(0x8a7a5a, 0.9).fillRect(x0 + 6, yTop1 - 400, 2, 400 - depth).fillRect(x1 - 8, yTop1 - 400, 2, 400 - depth);
-    front.setDepth(b.z0 - 0.6).setVisible(b.top > 0);
+    front.clear().setVisible(false);
+    const pk = artKey('mine', 'timber_bridge');
+    if (b.top > 0 && this.scene.textures.exists(pk)) {
+      v.post ??= this.scene.add.image(0, 0, pk).setOrigin(0.5, 0.5).setAngle(90).setTint(0x8a8076);
+      const pf = v.post.frame; const len = 260;
+      v.post.setPosition((x0 + x1) / 2, yTop1 + 6 + len / 2).setScale(len / pf.width, Math.min(w * 0.5, 30) / pf.height)
+        .setDepth(b.z1 + 0.55).setVisible(true);
+      // (fading into the dark of the drop)
+      v.postFade ??= this.scene.add.graphics();
+      v.postFade.clear().fillGradientStyle(0x05070a, 0x05070a, 0x05070a, 0x05070a, 0, 0, 1, 1)
+        .fillRect(x0 - 4, yTop1 + 60, w + 8, len - 50).setDepth(b.z1 + 0.56).setVisible(true);
+    } else { v.post?.setVisible(false); v.postFade?.setVisible(false); }
   }
 
   // The mine's lift (assets/env/mine/lift.png, ChatGPT 2026-11-26): its timber floor is where you
@@ -890,7 +1006,7 @@ export class TerrainView {
       const top = Math.max(yTop0, pk.y);
       const t = (top - pk.y) / ((ft.y - pk.y) || 1); // (where the board crosses the roof's back edge)
       const cx = pk.x + (ft.x - pk.x) * t;
-      g.fillStyle(0x0a0604, 0.78).fillPoints([{ x: cx, y: top }, ft, { x: edge, y: ft.y }, { x: edge, y: top }], true);
+      g.fillStyle(0x0a0604, 0.55).fillPoints([{ x: cx, y: top }, ft, { x: edge, y: ft.y }, { x: edge, y: top }], true);
     }
   }
 
@@ -905,6 +1021,7 @@ export class TerrainView {
     const sc = (conf.fit ? h : conf.px ?? 128) / img.height;
     t.setPosition(x, y).setSize(w, h).setDisplaySize(w, h).setTileScale(sc, sc).setDepth(depth).setVisible(true);
     if (this.theme === 'ascent') t.setTint(slot === 'front' ? 0xa8b0ae : 0xe5e5d8);
+    else if (conf.tint) t.setTint(conf.tint); // (level 5's gatehouse stone: down to the floor's light, Nick's polish pass)
     t.tilePositionX = x / sc;
     // its outline worn and chipped (a mask), not a ruled rectangle
     v.masks ??= {};
@@ -950,6 +1067,26 @@ export class TerrainView {
         v.chains ??= [s.add.tileSprite(0, 0, cf.width, 10, ck).setOrigin(0.5, 1)];
         v.chains[0].setPosition(ax, ay + 6).setSize(cf.width, 700 / 0.26).setScale(0.26).setDepth(b.z1 + 0.45).setVisible(true);
       }
+      top.setVisible(false); front.setVisible(false);
+      return;
+    }
+    // (the Iron Gates': the painted grille (prop_dropgate.png, ChatGPT 2026-11-27), sheared
+    // once onto a slant across the lane, back foot at the back edge, front foot at x0 on the
+    // front edge, so it reads as a gate straight across the way, not a ladder)
+    if (this.theme === 'gates' && this.scene.textures.exists('prop-dropgate')) {
+      const s = this.scene; const T = s.textures;
+      const lean = 150; const depth = b.z1 - b.z0; const H = h + 40;
+      const key = `prop-dropgate-wall-${b.id}`;
+      if (!T.exists(key)) {
+        const src = T.get('prop-dropgate').getSourceImage();
+        const c = document.createElement('canvas'); c.width = lean; c.height = Math.ceil(H + depth);
+        const g = c.getContext('2d');
+        g.setTransform(lean / src.width, depth / src.width, 0, H / src.height, 0, 0);
+        g.drawImage(src, 0, 0);
+        T.addCanvas(key, c);
+      }
+      v.art ??= s.add.image(0, 0, key).setOrigin(0, 0);
+      v.art.setPosition(x0 - lean, b.z0 - H).setDepth(b.z1 + 0.5).setVisible(true);
       top.setVisible(false); front.setVisible(false);
       return;
     }
@@ -1042,10 +1179,15 @@ export class TerrainView {
     // its ends (painted beam): built, not a box cut square out of the shingles
     const ridged = bigRoof && topArt && this.surface(v, 'ridge', 'beam', x0 - 10, yTop0 - 9, w + 20, 14, b.z0 - 0.55, 3);
     if (ridged) v.tiles.ridge.setTint(0x8a7060);
+    // the painted burning ridge over that beam, the full width, its tiles on the roof's back edge
+    // and its smoke rising off it; over the gable ends' shadowed flanks, under their peaks
+    // (ridge tiles at 0.72 of the strip's height, so they sit on the beam)
+    const RIDGE_H = 96;
+    if (ridged) this.surface(v, 'ridgeFire', 'ridge_fire', x0 - 10, yTop0 - 9 - RIDGE_H * 0.72, w + 20, RIDGE_H, b.z0 - 0.42, 0);
     // and fire running along the ridge, the length of the roof (view/RoofFire.js): behind
     // whoever stands on it, in front of the ridge beam (Nick, 2026-10-24)
     if (bigRoof && this.village) {
-      if (v.fire === undefined) v.fire = roofFire(this.scene, x0 + 4, x1 - 4, yTop0 + 3, { height: 72, depth: b.z0 - 0.45, seed: Math.round(b.x0) });
+      if (v.fire === undefined) v.fire = roofFire(this.scene, x0 + 4, x1 - 4, yTop0 + 3, { height: 72, depth: b.z0 - 0.38, seed: Math.round(b.x0) });
       placeRoofFire(v.fire, x0 + 4, yTop0 + 3, true);
     }
     if (!base && mat !== 'board' && !ridged) fade(top, x0 - 4, yTop0 - 22, w + 8, 22, 0x000000, 0, 0.7);
@@ -1177,11 +1319,33 @@ export class TerrainView {
   // timbers and rubble (prop_wreckage.png, its burnt-out half, the smoke cropped off): one heap
   // per 50 of depth, every other one smaller and set aside. A little wider than the block, so it reads.
   // (The gates' burned ram, `look` 'ram', stands like a cart: whole, one per block.)
+  // One painted piece standing in for a whole block (the Keep's fists and plinth, on magenta,
+  // cut to the thing itself): as wide as the block and a little over, its flat top at the
+  // block's back edge, its foot on the floor at the block's front.
+  drawKeepPiece(v, x0, x1, yTop0, tex) {
+    const { top, front, b } = v;
+    const s = this.scene;
+    const over = 18;
+    // (two halves of the one picture: what's above the block's front edge sits behind
+    // whoever stands on it, the face below in front of whoever stands behind it)
+    const yA = yTop0 - 8; const yB = b.z1 + 6; const yCut = b.z1 - b.top;
+    const H = s.textures.getFrame(tex).height; const W = s.textures.getFrame(tex).width;
+    const cut = Math.round(H * Math.max(0, Math.min(1, (yCut - yA) / (yB - yA))));
+    const flip = b.look === 'shoulder' || (b.look === 'arm' && b.x0 > 16800);
+    v.arts ??= [s.add.image(0, 0, tex).setOrigin(0.5, 1), s.add.image(0, 0, tex).setOrigin(0.5, 1)];
+    v.arts.forEach((img, i) => img.setPosition((x0 + x1) / 2, yB).setDisplaySize(x1 - x0 + over, yB - yA)
+      .setCrop(0, i ? cut : 0, W, i ? H - cut : cut).setFlipX(flip).setDepth(i ? b.z1 + 0.4 : b.z0 - 0.5).setVisible(true));
+    v.grounds ??= [];
+    v.grounds[0] ??= groundUnder(s, (x0 + x1) / 2, b.z1 - 2, (x1 - x0) * 1.1, b.z1 + 0.4, { seed: b.id * 7, deep: 1.2 });
+    moveGround(v.grounds[0], (x0 + x1) / 2, b.z1 - 2);
+    top.setVisible(false); front.setVisible(false);
+  }
+
   drawPaintedBlock(v, x0, x1, tex) {
     const { top, b } = v;
     const s = this.scene;
     const frame = s.textures.getFrame(tex);
-    const cart = b.look === 'cart' || b.look === 'ram' || b.look === 'orecart';
+    const cart = b.look === 'cart' || b.look === 'ram' || b.look === 'orecart' || b.look === 'boulder'; // (the ascent's fallen boulder: whole, one per block)
     const painted = frame.width > 200; // (else the small code cart, StageView)
     const n = cart ? (b.z1 - b.z0 > 120 ? 2 : 1) : Math.max(1, Math.round((b.z1 - b.z0) / 50)); // (a heap or two, never a stamped row)
     const wide = x1 - x0 + (cart ? 70 : 60); const cx = (x0 + x1) / 2;

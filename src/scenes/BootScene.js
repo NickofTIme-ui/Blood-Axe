@@ -78,6 +78,8 @@ export class BootScene extends Phaser.Scene {
     this.load.image('village-chimney-cap', 'assets/env/village/chimney_cap.png');
     this.load.image('keep-hall', 'assets/env/keep_hall.png'); // the Black Keep's throne room (scenes/CutawayScene.js)
     this.load.image('malgor-helm', 'assets/cinematics/malgor-helm.png'); // Malgor's helm rolls across the hall in Black Keep scene V (ChatGPT, 23 Nov)
+    // the war table, the same table knocked over, the thrown map and the burned captain's ash (Black Keep scenes I-V; ChatGPT, 27 Nov)
+    for (const k of ['keep-war-table', 'keep-war-table-fallen', 'keep-floor-map', 'keep-captain-ash']) this.load.image(k, `assets/cinematics/${k}.png`);
     this.load.spritesheet('map-path', 'assets/cinematics/map-path.png', { frameWidth: 160, frameHeight: 64 }); // the red ink road painted across the war map, a dab at a time (ChatGPT, 24 Nov)
     this.load.spritesheet('war-wagon-stack', 'assets/cinematics/war-wagon-stack.png', { frameWidth: 48, frameHeight: 81 }); // the Oath Keepers' war wagon on the war map: 66 stacked slices cut from ChatGPT's four views (tools/stack-slices.py, docs/sprite-stacking.md)
     this.load.image('keep-war-map', 'assets/cinematics/keep-war-map.jpg'); // the king's war map after each Black Keep scene (ChatGPT, 23 Nov)
@@ -98,7 +100,7 @@ export class BootScene extends Phaser.Scene {
     }
     this.load.image('sprite-palette', 'tools/sprite-pipeline/palette.png');
     this.load.image('hud-src', HUD_SRC);
-    this.load.image('cover', 'assets/ui/cover.jpg'); // title screen (scenes/TitleScene.js)
+    this.load.image('cover', 'assets/ui/title-oathkeepers.jpg'); // title screen: painting, frame and logo in one (scenes/TitleScene.js, art/title/)
     // character select (scenes/SelectScene.js): the cathedral, and each hero's full-body art
     this.load.image('select-bg', 'assets/ui/select-bg.jpg');
     for (const id of Object.keys(CHARACTERS)) this.load.image(`hero-src-${id}`, `assets/ui/hero-${id}-hd.png`);

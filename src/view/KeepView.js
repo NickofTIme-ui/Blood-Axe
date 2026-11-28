@@ -15,7 +15,7 @@
 import { SETTINGS } from '../config/settings.js';
 import { DEPTH } from './depths.js';
 import { drawCastle } from './castle.js';
-import { PaintedLevel } from './levelArt.js';
+import { PaintedLevel, artKey } from './levelArt.js';
 
 const COL = {
   skyTop: 0x0e0c12, skyLow: 0x3a2a32, ash: 0x4a4448, ashLit: 0x6a5a5a,
@@ -28,6 +28,9 @@ const COL = {
 
 // the stone behind the lane goes this high above it inside (the tall camera climbs 360)
 const INSIDE = 760;
+// the colossus (drawn or painted): how tall it stands, and where its heart and eyes glow
+// (px above its foot, which is the lane's back edge)
+const COLOSSUS = { h: 640, heart: -440, eyes: -560 }; // (the painted one: its chest grate 0.69 and eyes 0.875 of the way up)
 const HORIZON = 262;
 
 function rng(seed) {
@@ -291,15 +294,35 @@ export class KeepBackdrop {
     const th = this.sec('throne');
     const top = this.top;
     this.throneWalls = s.add.graphics().setDepth(DEPTH.floor - 0.9);
-    this.stone(this.throneWalls, th.x0, th.x1, INSIDE, { seed: 47 });
-    for (let x = th.x0 + 100; x < th.x1; x += 260) this.throneWalls.fillStyle(COL.stoneLit, 1).fillRect(x, top - INSIDE, 44, INSIDE);
-    this.throneWalls.fillStyle(COL.cloth, 1).fillRect(th.x0 + 640, top - 300, 220, 300); // the carpet's end at the dais
-    this.throneWalls.fillStyle(0x0a080c, 1).fillRect(th.x0 + 700, top - 220, 100, 220); // the throne
-    this.throneWalls.fillStyle(COL.gold, 0.7).fillTriangle(th.x0 + 700, top - 220, th.x0 + 800, top - 220, th.x0 + 750, top - 290);
+    // the painted hall (assets/env/keep/throne_hall.png, ChatGPT), else drawn here
+    this.throneHall = this.art.piece('throne_hall', th.x0 - 60, th.x1 + 60, { depth: DEPTH.floor - 0.9, bottom: 10 }) || null;
+    if (this.throneHall) this.throneHall.y0 = this.throneHall.y;
+    else {
+      this.stone(this.throneWalls, th.x0, th.x1, INSIDE, { seed: 47 });
+      for (let x = th.x0 + 100; x < th.x1; x += 260) this.throneWalls.fillStyle(COL.stoneLit, 1).fillRect(x, top - INSIDE, 44, INSIDE);
+      this.throneWalls.fillStyle(COL.cloth, 1).fillRect(th.x0 + 640, top - 300, 220, 300); // the carpet's end at the dais
+      this.throneWalls.fillStyle(0x0a080c, 1).fillRect(th.x0 + 700, top - 220, 100, 220); // the throne
+      this.throneWalls.fillStyle(COL.gold, 0.7).fillTriangle(th.x0 + 700, top - 220, th.x0 + 800, top - 220, th.x0 + 750, top - 290);
+    }
     // the colossus: the Keep's seated statue of the King, awake. Torso, arms on the throne's
     // arms, chained at the wrists, the crown's three spires, its chest a furnace grate
     const c = this.colossus = s.add.container(16650, top).setDepth(DEPTH.floor - 0.8).setAlpha(0);
     const g = s.add.graphics();
+    // the painted colossus (assets/env/keep/colossus.png, ChatGPT, on magenta), else drawn here
+    const ck = artKey('keep', 'colossus');
+    if (s.textures.exists(ck)) {
+      const img = s.add.image(0, 8, ck).setOrigin(0.5, 1);
+      img.setScale(COLOSSUS.h / img.height);
+      c.add(img);
+    } else this.drawColossus(g);
+    c.add(g);
+    this.heartGlow = s.add.image(0, COLOSSUS.heart, 'glow').setScale(5, 4).setTint(COL.forge).setAlpha(0.5).setBlendMode(Phaser.BlendModes.ADD);
+    this.eyeGlow = s.add.image(0, COLOSSUS.eyes, 'glow').setScale(3, 1.2).setTint(COL.fire).setAlpha(0.7).setBlendMode(Phaser.BlendModes.ADD);
+    c.add([this.heartGlow, this.eyeGlow]);
+  }
+
+  // (the code-drawn colossus, until its painting is in)
+  drawColossus(g) {
     g.fillStyle(0x16121a, 1);
     g.fillRect(-300, -120, 600, 120); // the lap
     g.fillRect(-170, -520, 340, 420); // the chest and shoulders
@@ -310,10 +333,6 @@ export class KeepBackdrop {
     g.lineStyle(6, 0x4a4a54, 1);
     for (let x = -80; x <= 80; x += 32) g.lineBetween(x, -440, x, -240);
     g.lineStyle(10, COL.ironLit, 1).lineBetween(-360, -240, -560, -500).lineBetween(360, -240, 560, -500); // the manacle chains to the walls
-    c.add(g);
-    this.heartGlow = s.add.image(0, -340, 'glow').setScale(5, 4).setTint(COL.forge).setAlpha(0.5).setBlendMode(Phaser.BlendModes.ADD);
-    this.eyeGlow = s.add.image(0, -630, 'glow').setScale(3, 1.2).setTint(COL.fire).setAlpha(0.7).setBlendMode(Phaser.BlendModes.ADD);
-    c.add([this.heartGlow, this.eyeGlow]);
   }
 
   // the stage's events: the gale, the throne's phases
@@ -324,7 +343,10 @@ export class KeepBackdrop {
     ev.on('gustStart', ({ hazard }) => { if (hazard.look === 'gale' || hazard.look === 'tilt') this.gust = hazard.for ?? 120; });
     ev.on('bossPhase', ({ phase }) => {
       if (this.stage.section?.id !== 'throne') return;
-      if (phase.id === 'keep') tw.add({ targets: this.throneWalls, alpha: 0, y: 160, duration: 1600, ease: 'Quad.in' }); // the walls fall outward
+      if (phase.id === 'keep') {
+        tw.add({ targets: this.throneWalls, alpha: 0, y: 160, duration: 1600, ease: 'Quad.in' }); // the walls fall outward
+        if (this.throneHall) tw.add({ targets: this.throneHall, alpha: 0, y: this.throneHall.y0 + 160, duration: 1600, ease: 'Quad.in' });
+      }
       if (phase.id === 'colossus') { tw.add({ targets: this.colossus, alpha: 1, duration: 1800 }); this.scene.fx?.shake?.(12, 40); }
       if (phase.id === 'last') tw.add({ targets: this.colossus, alpha: 0, y: this.top + 600, duration: 2400, ease: 'Quad.in' }); // it comes apart and falls
     });
@@ -333,6 +355,7 @@ export class KeepBackdrop {
       // back at the throne's checkpoint: the walls up again, the colossus asleep
       if (section.id !== 'throne') return;
       this.throneWalls.setAlpha(1).setY(0);
+      this.throneHall?.setAlpha(1).setY(this.throneHall.y0);
       this.colossus.setAlpha(0).setY(this.top);
       this.heartGlow.setScale(5, 4).setAlpha(0.5);
     });

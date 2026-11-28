@@ -6,7 +6,8 @@
 //   'fall'  the Black Keep falling into its own forge at dawn, the ash sky breaking
 //   'home'  spring in the village, rebuilt: the people brought home standing in it, the
 //           three Oath Keepers on the road, seen from behind
-// Then the oath, spoken one last time, THE OATH IS KEPT, and the thanks.
+// Then the oath, whole, spoken one last time (the one the Black Keep scenes build a line
+// at a time: CutawayScene OATH), THE OATH IS KEPT, and the thanks.
 // How many were brought home is read from the campaign save (progress.rescuedIds()).
 // View only (nothing in the simulation waits on it): a press or a click moves it on,
 // ESC skips to the end. Online, each machine plays its own and the tally waits for both.
@@ -15,21 +16,22 @@ import { SETTINGS } from '../config/settings.js';
 import { FONT, epicFill } from '../view/fonts.js';
 import { playMusic } from '../core/Music.js';
 import { DialogueBox } from '../view/DialogueBox.js';
+import { OATH } from './CutawayScene.js';
 
 export const EPILOGUE_ART = { fall: 'assets/scenes/epilogue_fall.jpg', home: 'assets/scenes/epilogue_home.jpg' };
 
 // the beats: a picture, then its lines (n: how many were brought home)
 export function epilogueBeats(n = 0) {
   const home = n > 0
-    ? `${n} of our people came home. They built it again, stone by stone.`
+    ? `${n} of its people came home, and they built it again, stone by stone.`
     : 'They built it again, stone by stone.';
   return [
     { pic: 'fall' },
-    { who: 'VOICE', text: '(the Black Keep sliding into its own forge; the ash sky tearing open; the first dawn in years)' },
+    { who: 'VOICE', text: 'The Black Keep slid down into its own forge. The ash sky tore open, and dawn came for the first time in years.' },
     { who: 'ORYN', text: 'Look. The sky. It\'s only a sky again.' },
     { who: 'VEXA', text: 'Every chain in that place just broke at once.' },
     { pic: 'home' },
-    { who: 'VOICE', text: `(spring, in the village that burned) ${home}` },
+    { who: 'VOICE', text: `Spring came to the village that burned. ${home}` },
     { who: 'VEXA', text: 'You know they\'ll want a statue.' },
     { who: 'RURIK', text: 'Let them build a wall instead. And a school.' },
     { who: 'ORYN', text: 'And if another crown comes up that road?' },
@@ -133,9 +135,9 @@ export class EpilogueScene extends Phaser.Scene {
     this.busy = true;
     const W = SETTINGS.width; const H = SETTINGS.height;
     this.tweens.add({ targets: this.box.root, alpha: 0, duration: 400 });
-    const shade = this.add.rectangle(0, 0, W, H, 0x000000, 0.55).setOrigin(0);
-    const lines = ['We stand for our people.', 'We stand for our home.'];
-    const said = lines.map((l, i) => this.add.text(W / 2, H * 0.34 + i * 40, l, { fontFamily: FONT.display, fontSize: '26px', color: '#f0e6d0' }).setOrigin(0.5).setStroke('#000000', 5).setAlpha(0));
+    const shade = this.add.rectangle(0, 0, W, H, 0x000000, 0.65).setOrigin(0);
+    const lines = OATH;
+    const said = lines.map((l, i) => this.add.text(W / 2, H * 0.17 + i * 38, l, { fontFamily: FONT.display, fontSize: '24px', color: '#f0e6d0' }).setOrigin(0.5).setStroke('#000000', 5).setAlpha(0));
     const title = this.add.text(W / 2, H * 0.56, 'THE OATH IS KEPT', { fontFamily: FONT.display, fontSize: '46px' }).setOrigin(0.5).setStroke('#000000', 7).setAlpha(0);
     title.setLetterSpacing?.(8);
     epicFill(title, ['#fff4d8', '#e0b060', '#6a4010']);
@@ -143,10 +145,11 @@ export class EpilogueScene extends Phaser.Scene {
     this.end.add([shade, ...said, title, thanks]);
     this.end.setAlpha(1);
     shade.setAlpha(0);
-    this.tweens.add({ targets: shade, alpha: 0.55, duration: 900 });
-    said.forEach((t, i) => this.tweens.add({ targets: t, alpha: 1, delay: 700 + i * 1300, duration: 900 }));
-    this.tweens.add({ targets: title, alpha: 1, delay: 3600, duration: 1400 });
-    this.tweens.add({ targets: thanks, alpha: 1, delay: 5200, duration: 1200, onComplete: () => { this.busy = false; } });
+    this.tweens.add({ targets: shade, alpha: 0.65, duration: 900 });
+    said.forEach((t, i) => this.tweens.add({ targets: t, alpha: 1, delay: 700 + i * 1200, duration: 900 }));
+    const after = 700 + lines.length * 1200;
+    this.tweens.add({ targets: title, alpha: 1, delay: after + 300, duration: 1400 });
+    this.tweens.add({ targets: thanks, alpha: 1, delay: after + 1900, duration: 1200, onComplete: () => { this.busy = false; } });
   }
 
   finish() {

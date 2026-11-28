@@ -6,13 +6,35 @@ to git. So cloud work must start from what the PC thread bundles into git (for
 example `/mnt/project-files/blood-axe-chatgpt-oct25.bundle`), not from an older
 branch, or ChatGPT's work gets lost.
 
-- 27 November 2026 (cloud, thread "Review level 2 for polish", round 2; NOT on main until Nick says push).
+- 27 November 2026 (cloud, thread "Review level 2 for polish", round 2; ON MAIN, Nick "push all").
   LEVEL 2 ART: the war hounds' missing poses, ChatGPT from the walk strip as reference: hound_run (gallop),
   hound_idle, hound_bark, hound_howl, hound_flinch, hound_sniff (data/levelArt.js SPRITE_SHEETS; view/HoundView.js
   already picks each up). The HORNBLOWER ('grunt:horn') and the net WOODSMAN ('stalker:net') now wear looks of
   their own: hornblower_* (5 strips, the grunt's poses) and woodsman_* (6, the stalker's), ChatGPT repaints of
   the grunt/stalker strips pose for pose (data/enemyStrips.js, ArenaScene.makeView role map). Raw ChatGPT
   output in project files level2-polish-nov27/raw/ (looks/ for the two men).
+- 27 November 2026 (cloud, branch claude/project-thread-o7apvn; NOT on main until Nick says push). THE GAME IS NOW
+  CALLED "THE OATHKEEPERS" (Nick). New title screen: Nick's ChatGPT painting (Rurik raising Oathkeeper on fire, Oryn,
+  Vexa, King Vaurath's silhouette) framed on a black grid with a hand-set logo, one picture at
+  assets/ui/title-oathkeepers.jpg (source + layout in art/title/). The menu now stacks under the logo (TitleScene.js);
+  embers, blur sides and push-in are gone. Browser tab title renamed. Itch page name/art not changed yet.
+
+- 27 November 2026 (cloud, branch claude/project-thread-t9nruf; NOT on main until Nick says push). LEVEL 4, THE
+  SHATTERED ASCENT, CLAUDE'S POLISH (Nick: "good framework, art style good, execution UGLY"; Claude owns level 4 now).
+  One continuous painting (view/AscentPlates.js SPOTS: each spot names the scene it wants and a mirrored stand-in);
+  soft horizon (atmosphere.js floorSoft); seamless rock/plank tiles; siege guards no longer pitch black; code boulder and
+  battery slivers gone. The wind off the peaks (stage/AscentWind.js, `wind` per section): warned gusts push everyone down
+  the road and, on the causeway, toward the gorge (a grounded hero never goes over; Ashen men do). Its own sounds
+  (tools/sfx-gen/ascent.js -> assets/audio/sfx/ascent-*.wav; view/AscentAudio.js): wind bed, gust, catapult launch,
+  falling-stone whistle. Nicholas has his lines back; Orsk named again. The 3 failing ascent tests fixed.
+  STILL TO PAINT (ChatGPT, PC Chrome): docs/ascent-art-prompts.md (road_b, road_c, causeway, camp_b, boulder); they plug in
+  by filename. Causeway gap (x 5226-5700) and the battery's front face look plain until then.
+- 27 November 2026 (cloud, thread "Review level 1 for polish"; ON MAIN a583511/8a4995d, Nick "push all"). LEVEL 1
+  POLISH: a boss on the top bar is no longer repeated in the bottom enemy strip (HUDScene, all levels); street shouts
+  step below the section title card while it shows (ShoutPlate); square hint names its fire pits; burning roofs get a
+  painted ridge of burning tiles across their width (ChatGPT assets/env/village/surf_ridge_fire.png, levelArt surface
+  ridge_fire, TerrainView drawVillageBlock), roof fire depth over it, gable flank shadow 0.55. STILL OPEN: Nick to
+  decide swapping level 1's thralls/berserker for Ashen men.
 - 27 November 2026 (cloud, thread "Review level 2 for polish"; ON MAIN ad2b265, Nick "push all"). LEVEL 2 POLISH:
   convoy wagon/prisoners/pine moved to z 348 so the Wagonmaster's head stays on screen; no market props in the wood
   (named plain crates, sacks for trestle/urns); oath shrines (TerrainView, gallowsWood only) and the hanging tree tinted
@@ -22,6 +44,14 @@ branch, or ChatGPT's work gets lost.
   ford footbridge = ChatGPT assets/env/wood/bridge_raft.png (TerrainView.drawLogRaft). STILL OPEN: hound run/idle/bark/
   howl strips and Hornblower/Woodsman looks (need the reference strips attached in ChatGPT; prompts
   docs/hound-art-prompts.md). Raws: /mnt/project-files/level2-polish-nov27/raw/.
+- 27 November 2026, later (cloud, branch claude/project-thread-gi0nk2; NOT on main until Nick says push). LEVEL 5
+  POLISH PASS (ON MAIN, Nick "push all"): gatehouse stair/landing stones at a man's scale and darkened (levelArt gates surfaces px + tint,
+  TerrainView.surface honours `tint`); the gatehouse pit is a stone shaft into the dark (TerrainView.gatesShaft), no
+  ruled lines; the winch room's main gate uses the painted grille sheared across the lane (drawPortcullis, gates
+  branch); caltrops/plates/bolt re-cut as RGBA with soft shadows (no pink); the murder-hole rockfall greyed in the
+  gates. Later the same day: the yard and town have their own painted grounds (assets/env/gates/ground_yard.jpg,
+  ground_town.jpg; envArt 'g-yard'/'g-town', sections' `ground`), and the drop gate hangs from a painted stone lintel
+  (prop_lintel.png) with the grille masked above the beam (GatesFoesView.drawGate).
 - 27 November 2026 (cloud, branch claude/project-thread-pftf2b; NOT on main until Nick says push). LEVEL 6, THE
   BLACK KEEP, ROUND 2 (masterplan doc https://claude.ai/artifact/3G7ZmCYYUkpExaqVkDack9). The two heroes nobody plays
   fight beside you (entities/Ally.js; `allies: true`; never in `players`, so story/camera/game over ignore them;
@@ -2179,3 +2209,14 @@ Nick: "snare trap needs a sounds, also hold the NPC for longer".
 ## Cloud, 2026-11-26: Vexa's last shared poses are her own (not on itch)
 - Nick: "i want vexa and mage fully fleshed out and finished". She already had Rurik's move count (16 kit moves vs his 13). Her jump attack, dive, Fade and knife throw borrowed other strips; now each has its own ChatGPT strip (`rogue_airattack`, `rogue_dive`, `rogue_fade`, `rogue_knifethrow`, HD sheets in `src/data/vexaArt.js`, anims in `HERO_ANIMS.rogue`). Still shared: her plain jump (air 0-1), the launch off a teammate's shoulder (air 3) and the kick (moves strip).
 - Not checked: Fade by real input (attack + jump with the stick held away), knife throw timing in a fight, the fan. The PC checked jump attack and dive by input and Fade by forcing the state, muted. No blood layers (main dropped BloodCoat).
+
+## Between-level scenes polish (27 Nov, on main 144a16b)
+Black Keep cutaways (CutawayScene.js): war map end zoom stays on the painting, readable road count, crown kept clear of the
+letterbox, scene V line fixed and retitled "NO ONE LEFT TO SEND", painted war table / toppled table / thrown map / captain's ash
+(assets/cinematics/keep-*.png). HUD: each level's first card shows "CHAPTER II · GALLOWS WOOD". Not on itch yet.
+
+## Cloud, 2026-11-27: level 3 polish (on main 07b6faf, not on itch)
+- Planks laid as duckboards on a pit prop (TerrainView.drawMinePlanks), falling rock warned by shadow and grit (StageView.rockfallWarning), Pip's ledge at top 200, wall cross-fade `wallFade: 0.16`, river bridge close-laid.
+- Drops in the mine that aren't the river use painted chasms (assets/env/mine/chasm.png tall, chasm_wide.png wide; TerrainView.mineChasm).
+- Last passage: rubble `dug: { from, every }`, the miners dig from inside (Stage.updateDiggers, callout).
+- New ChatGPT art: chasm, chasm_wide, keep_far (the Black Keep on the far side, MineView.paintedDaylight), browner rubble_wall, torch-lit surf_rock_top.
